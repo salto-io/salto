@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -420,6 +412,61 @@ describe('detailedCompare', () => {
             action: 'remove',
             elemIDs: {
               before: listID.createNestedID('2'),
+            },
+            baseChange,
+          },
+        ])
+      })
+
+      it('should work with null values in the list', () => {
+        beforeInst.value.list = [
+          null,
+          {
+            val: null,
+          },
+          {
+            val: undefined,
+          },
+        ]
+
+        afterInst.value.list = [
+          {
+            val: null,
+          },
+          {
+            val: undefined,
+          },
+          null,
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0'),
+            data: { before: { val: null }, after: { val: null } },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('0'),
+            },
+            baseChange,
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: { before: { val: undefined }, after: { val: undefined } },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('1'),
+            },
+            baseChange,
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: null, after: null },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+              after: listID.createNestedID('2'),
             },
             baseChange,
           },

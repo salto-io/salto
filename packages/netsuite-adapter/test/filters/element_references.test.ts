@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -26,6 +18,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import filterCreator from '../../src/filters/element_references'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
@@ -34,6 +27,8 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '..
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 import { LocalFilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
+
+const logging = logger('netsuite-adapter/src/filters/element_references')
 
 describe('instance_references filter', () => {
   describe('onFetch', () => {
@@ -44,13 +39,13 @@ describe('instance_references filter', () => {
     let instanceWithRefs: InstanceElement
     let customRecordType: ObjectType
     let lockedCustomRecordType: ObjectType
-
     const getIndexesMock = jest.fn()
     const elementsSourceIndex = {
       getIndexes: getIndexesMock,
     }
 
     beforeEach(async () => {
+      jest.clearAllMocks()
       getIndexesMock.mockReset()
       getIndexesMock.mockResolvedValue({
         serviceIdRecordsIndex: {},
@@ -500,7 +495,9 @@ describe('instance_references filter', () => {
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
 
-    it('should add extracted element to generated dependencies', async () => {
+    it('should add extracted elements to generated dependencies from AST', async () => {
+      const mockLogWarn = jest.spyOn(logging, 'warn')
+      const mockLogInfo = jest.spyOn(logging, 'info')
       const fileContent = `
       define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
@@ -516,6 +513,13 @@ describe('instance_references filter', () => {
             id: requestBody.salesRep,
             isDynamic: true
           });
+          // 'top_level' but in line comment
+          /* top_level but multiline 
+          this time */
+          var values = {
+            cseg_1: notAnId,
+            someValue: top_level
+          }
           return JSON.stringify(salesRep);
           }
         }
@@ -536,8 +540,26 @@ describe('instance_references filter', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
-      }).onFetch?.([fileInstance, syntacticFileInstance, syntacticFileInstance2, innerFileInstance, customRecordType])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
+      }).onFetch?.([
+        fileInstance,
+        syntacticFileInstance,
+        syntacticFileInstance2,
+        innerFileInstance,
+        customRecordType,
+        customSegmentInstance,
+        workflowInstance,
+      ])
+      expect(mockLogWarn).not.toHaveBeenCalled()
+      expect(mockLogInfo).toHaveBeenCalledTimes(1)
+      expect(mockLogInfo).toHaveBeenCalledWith(
+        'Found %d new references: %o and removed %d references: %o in file %s.',
+        1,
+        [customSegmentInstance.elemID.createNestedID(SCRIPT_ID)],
+        1,
+        [workflowInstance.elemID.createNestedID(SCRIPT_ID)],
+        fileInstance.value[PATH],
+      )
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([
           {
@@ -554,6 +576,108 @@ describe('instance_references filter', () => {
           },
           {
             reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
+            occurrences: undefined,
+          },
+        ]),
+      )
+    })
+
+    it('should add extracted elements to generated dependencies using regex if AST fails', async () => {
+      const mockLogWarn = jest.spyOn(logging, 'warn')
+      const mockLogInfo = jest.spyOn(logging, 'info')
+      const corruptedFileContent = `
+      define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
+        return{
+          post: function(requestBody){
+          // Convert JSON string to JSON  object
+          var requestBody = JSON.parse(requestBody);
+          form.clientScriptModulePath = './innerFileRef.name'
+          var semanticRef = 'customrecord1'
+          log.debug('salesRep', requestBody.salesRep;
+          // Load employee record
+          var salesRep = record.load({
+            type: 'employee',
+            id: requestBody.salesRep,
+            isDynamic: true
+          });
+          // 'top_level' in line comment
+          /* top_level in but multiline this
+          time */
+          var values = {
+            cseg_1: notAnId,
+            someValue: top_level
+          }
+          return JSON.stringify(salesRep);
+        }
+      });`
+      fileInstance.value[PATH] = '/Templates/file.js'
+      fileInstance.value.content = new StaticFile({
+        filepath: 'Templates/file.js',
+        content: Buffer.from(corruptedFileContent),
+      })
+      const syntacticFileInstance = new InstanceElement('syntacticFileInstance', fileType(), {
+        [PATH]: '/SuiteScripts/oauth_1.js',
+      })
+      const syntacticFileInstance2 = new InstanceElement('syntacticFileInstance2', fileType(), {
+        [PATH]: '/SuiteScripts/oauth_2.js',
+      })
+      const innerFileInstance = new InstanceElement('innferRefFile', fileType(), {
+        [PATH]: '/Templates/innerFileRef.name',
+      })
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([
+        fileInstance,
+        syntacticFileInstance,
+        syntacticFileInstance2,
+        innerFileInstance,
+        customRecordType,
+        customSegmentInstance,
+        workflowInstance,
+      ])
+      expect(mockLogWarn).toHaveBeenCalledTimes(1)
+      expect(mockLogWarn).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to parse file'),
+        expect.stringContaining('/Templates/file.js'),
+        expect.any(Error),
+      )
+      expect(mockLogInfo).toHaveBeenCalledTimes(1)
+      expect(mockLogInfo).toHaveBeenCalledWith(
+        expect.stringContaining('Found %d new references: %o and removed %d references: %o in file %s.'),
+        1,
+        [customSegmentInstance.elemID.createNestedID(SCRIPT_ID)],
+        1,
+        [workflowInstance.elemID.createNestedID(SCRIPT_ID)],
+        '/Templates/file.js',
+      )
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        expect.arrayContaining([
+          {
+            reference: new ReferenceExpression(innerFileInstance.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(syntacticFileInstance.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(syntacticFileInstance2.elemID.createNestedID(PATH)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
             occurrences: undefined,
           },
         ]),
@@ -629,13 +753,13 @@ describe('instance_references filter', () => {
     it('should add generated dependency for custom record fields referenced by field ID', async () => {
       const fileContent = `
       define(['N/record', function(record) {
-        return{
+        return {
           post: function(requestBody){
           var semanticRef = 'custom_field'
           log.debug('salesRep', requestBody.salesRep);
           // Load employee record
-        }
-      });`
+    }}
+    }]);`
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       await filterCreator({
         elementsSourceIndex,
@@ -660,13 +784,13 @@ describe('instance_references filter', () => {
       })
       const fileContent = `
       define(['N/record', function(record) {
-        return{
+        return {
           post: function(requestBody){
           var semanticRef = 'custom_field'
           log.debug('salesRep', requestBody.salesRep);
           // Load employee record
         }
-      });`
+    });`
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       await filterCreator({
         elementsSourceIndex,

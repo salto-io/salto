@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import nock from 'nock'
 import _ from 'lodash'
@@ -34,6 +26,7 @@ import {
   CORE_ANNOTATIONS,
   isObjectType,
   StaticFile,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -66,6 +59,12 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  GROUP_SCHEMA_TYPE_NAME,
+  PROFILE_MAPPING_TYPE_NAME,
+  APP_LOGO_TYPE_NAME,
+  NETWORK_ZONE_TYPE_NAME,
+  GROUP_RULE_TYPE_NAME,
+  USER_SCHEMA_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -521,11 +520,14 @@ describe('adapter', () => {
     let brand1: InstanceElement
     let appType: ObjectType
     let groupType: ObjectType
+    let orgSettingType: ObjectType
+    let userTypeType: ObjectType
+    let userSchemaType: ObjectType
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
 
-      const orgSettingType = new ObjectType({
+      orgSettingType = new ObjectType({
         elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
       })
       const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
@@ -560,6 +562,22 @@ describe('adapter', () => {
           },
         },
       })
+      userTypeType = new ObjectType({
+        elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      userSchemaType = new ObjectType({
+        elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
     })
 
     describe('deploy authorization server policy', () => {
@@ -586,6 +604,38 @@ describe('adapter', () => {
               refType: BuiltinTypes.SERVICE_ID,
             },
           },
+        })
+      })
+
+      describe('deploy org setting', () => {
+        it('should successfully modify org setting', async () => {
+          loadMockReplies('org_setting_modify.json')
+          const orgSetting = new InstanceElement(
+            'orgSetting',
+            orgSettingType,
+            {
+              id: 'orgsetting-fakeid1',
+              subdomain: 'subdomain',
+              phoneNumber: '00000',
+            },
+            undefined,
+            {
+              [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+            },
+          )
+          const updatedOrgSetting = orgSetting.clone()
+          updatedOrgSetting.value.phoneNumber = '12345'
+          const result = await operations.deploy({
+            changeGroup: {
+              groupID: 'orgSetting',
+              changes: [toChange({ before: orgSetting, after: updatedOrgSetting })],
+            },
+            progressReporter: nullProgressReporter,
+          })
+          expect(result.errors).toHaveLength(0)
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.phoneNumber).toEqual('12345')
+          expect(nock.pendingMocks()).toHaveLength(0)
         })
       })
 
@@ -648,8 +698,6 @@ describe('adapter', () => {
       })
 
       it('should successfully activate an authorization server policy', async () => {
-        // TODO: it looks like this action sends an unexpected PUT request to the server
-        // This should be fixed when upgrading to the new infra.
         loadMockReplies('authorization_server_policy_activate.json')
         const authorizationServerPolicy = new InstanceElement(
           'authorizationServerPolicy',
@@ -681,8 +729,6 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully deactivate an authorization server policy', async () => {
-        // TODO: it looks like this action sends an unexpected PUT request to the server
-        // This should be fixed when upgrading to the new infra.
         loadMockReplies('authorization_server_policy_deactivate.json')
         const authorizationServerPolicy = new InstanceElement(
           'authorizationServerPolicy',
@@ -835,6 +881,406 @@ describe('adapter', () => {
             refType: BuiltinTypes.SERVICE_ID,
           },
         },
+      })
+    })
+
+    describe('deploy network zone', () => {
+      let networkZoneType: ObjectType
+
+      beforeEach(() => {
+        networkZoneType = new ObjectType({
+          elemID: new ElemID(OKTA, NETWORK_ZONE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an active network zone', async () => {
+        loadMockReplies('network_zone_add_active.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ after: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'networkzone-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive network zone', async () => {
+        loadMockReplies('network_zone_add_inactive.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ after: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'networkzone-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate a network zone', async () => {
+        loadMockReplies('network_zone_activate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = networkZone.clone()
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(ACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully deactivate a network zone', async () => {
+        loadMockReplies('network_zone_deactivate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = networkZone.clone()
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify a network zone without status change', async () => {
+        loadMockReplies('network_zone_modify.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const updatedNetworkZone = networkZone.clone()
+        updatedNetworkZone.value.name = 'your_zone'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: updatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate a network zone', async () => {
+        loadMockReplies('network_zone_modify_and_activate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: INACTIVE_STATUS,
+        })
+        const activatedNetworkZone = networkZone.clone()
+        activatedNetworkZone.value.name = 'your_zone'
+        activatedNetworkZone.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: activatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate a network zone', async () => {
+        loadMockReplies('network_zone_modify_and_deactivate.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const deactivatedNetworkZone = networkZone.clone()
+        deactivatedNetworkZone.value.name = 'your_zone'
+        deactivatedNetworkZone.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone, after: deactivatedNetworkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your_zone')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove a network zone', async () => {
+        loadMockReplies('network_zone_remove.json')
+        const networkZone = new InstanceElement('networkZone', networkZoneType, {
+          id: 'networkzone-fakeid1',
+          name: 'my_zone',
+          status: ACTIVE_STATUS,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'networkZone',
+            changes: [toChange({ before: networkZone })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
+    describe('deploy group rule', () => {
+      let groupRuleType: ObjectType
+      let group: InstanceElement
+      let userSchema: InstanceElement
+      let groupRule: InstanceElement
+
+      beforeEach(() => {
+        const groupRuleGroupAssignmentType = new ObjectType({
+          elemID: new ElemID(OKTA, 'GroupRuleGroupAssignment'),
+        })
+        const groupRuleActionsType = new ObjectType({
+          elemID: new ElemID(OKTA, 'GroupRuleActions'),
+          fields: {
+            assignUserToGroups: {
+              refType: groupRuleGroupAssignmentType,
+            },
+          },
+        })
+        groupRuleType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+            actions: {
+              refType: groupRuleActionsType,
+            },
+          },
+        })
+        group = new InstanceElement('group', groupType, {
+          id: 'group-fakeid1',
+          objectClass: ['okta:user_group'],
+          type: 'OKTA_GROUP',
+          profile: {
+            name: 'Engineers',
+            description: 'all the engineers',
+          },
+        })
+        userSchema = new InstanceElement('userSchema', userSchemaType, {
+          id: 'userschema-fakeid1',
+          definitions: {
+            base: {
+              email: {
+                type: 'string',
+                title: 'email',
+              },
+            },
+          },
+        })
+        groupRule = new InstanceElement('groupRule', groupRuleType, {
+          name: 'my group rule',
+          type: 'group_rule',
+          conditions: {
+            expression: {
+              value: new TemplateExpression({
+                parts: [
+                  'substringAfter(',
+                  new ReferenceExpression(
+                    userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'email'),
+                  ),
+                  ', \'@\')=="example.com"',
+                ],
+              }),
+              type: 'urn:okta:expression:1.0',
+            },
+          },
+          actions: {
+            assignUserToGroups: { groupIds: [new ReferenceExpression(group.elemID, group)] },
+          },
+        })
+      })
+
+      it('should successfully add an active group rule', async () => {
+        loadMockReplies('group_rule_add_active.json')
+        groupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ after: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('grouprule-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully add an inactive group rule', async () => {
+        loadMockReplies('group_rule_add_inactive.json')
+        groupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ after: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('grouprule-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully activate a group rule', async () => {
+        loadMockReplies('group_rule_activate.json')
+        groupRule.value.status = INACTIVE_STATUS
+        groupRule.value.id = 'grouprule-fakeid1'
+        const activatedGroupRule = groupRule.clone()
+        activatedGroupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: activatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(ACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully deactivate a group rule', async () => {
+        loadMockReplies('group_rule_deactivate.json')
+        groupRule.value.status = ACTIVE_STATUS
+        groupRule.value.id = 'grouprule-fakeid1'
+        const deactivatedGroupRule = groupRule.clone()
+        deactivatedGroupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: deactivatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      // TODO(SALTO-6485): Allow to modify an active group rule
+      it('should successfully modify an inactive group rule without status change', async () => {
+        loadMockReplies('group_rule_modify_inactive.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const updatedGroupRule = groupRule.clone()
+        updatedGroupRule.value.name = 'your group rule'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: updatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and activate a group rule', async () => {
+        loadMockReplies('group_rule_modify_and_activate.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const activatedGroupRule = groupRule.clone()
+        activatedGroupRule.value.name = 'your group rule'
+        activatedGroupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: activatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate a group rule', async () => {
+        loadMockReplies('group_rule_modify_and_deactivate.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const deactivatedGroupRule = groupRule.clone()
+        deactivatedGroupRule.value.name = 'your group rule'
+        deactivatedGroupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: deactivatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      // TODO(SALTO-6485): Allow to remove an active group rule
+      it('should successfully remove an inactive group rule', async () => {
+        loadMockReplies('group_rule_remove_inactive.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = INACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
 
@@ -1148,17 +1594,8 @@ describe('adapter', () => {
       })
     })
     describe('deploy user type', () => {
-      let userTypeType: ObjectType
       let userType: InstanceElement
       beforeEach(() => {
-        userTypeType = new ObjectType({
-          elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
         userType = new InstanceElement('userType', userTypeType, {
           id: 'usertype-fakeid1',
           name: 'superuser',
@@ -1769,6 +2206,169 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
+    describe('deploy group schema', () => {
+      let groupSchemaType: ObjectType
+
+      beforeEach(() => {
+        groupSchemaType = new ObjectType({
+          elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully modify a group schema', async () => {
+        loadMockReplies('group_schema_modify.json')
+        const groupSchema = new InstanceElement(
+          'groupSchema',
+          groupSchemaType,
+          {
+            id: 'groupschema-fakeid1',
+            description: 'my schema',
+            definitions: {
+              custom: {
+                properties: {
+                  MyProperty: {
+                    title: 'My Property Title',
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const updatedGroupSchema = groupSchema.clone()
+        updatedGroupSchema.value.description = 'your schema'
+        // Schemas need to explicitly set deleted properties to `null`, so we check that here.
+        delete updatedGroupSchema.value.definitions.custom.properties.MyProperty
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupSchema',
+            changes: [toChange({ before: groupSchema, after: updatedGroupSchema })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.description).toEqual(
+          'your schema',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
+    describe('deploy profile mapping', () => {
+      let profileMappingType: ObjectType
+      let app: InstanceElement
+      let userType: InstanceElement
+
+      beforeEach(() => {
+        const profileMappingSourceType = new ObjectType({
+          elemID: new ElemID(OKTA, 'ProfileMappingSource'),
+          fields: {
+            id: { refType: BuiltinTypes.STRING },
+            type: { refType: BuiltinTypes.STRING },
+            name: { refType: BuiltinTypes.STRING },
+          },
+        })
+        profileMappingType = new ObjectType({
+          elemID: new ElemID(OKTA, PROFILE_MAPPING_TYPE_NAME),
+          fields: {
+            id: { refType: BuiltinTypes.SERVICE_ID },
+            source: { refType: profileMappingSourceType },
+            target: { refType: profileMappingSourceType },
+          },
+        })
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+        })
+        userType = new InstanceElement('userType', userTypeType, {
+          id: 'usertype-fakeid1',
+          name: 'superuser',
+        })
+      })
+
+      it('should successfully add a profile mapping', async () => {
+        loadMockReplies('profile_mapping_add.json')
+        const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'profileMapping',
+            changes: [toChange({ after: profileMapping })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'profilemapping-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify a profile mapping', async () => {
+        loadMockReplies('profile_mapping_modify.json')
+        const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
+          id: 'profilemapping-fakeid1',
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
+          properties: {
+            name: {
+              expression: 'user.displayName',
+              pushStatus: 'PUSH',
+            },
+          },
+        })
+        const updatedProfileMapping = profileMapping.clone()
+        updatedProfileMapping.value.properties.name.expression = 'user.name'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'profileMapping',
+            changes: [toChange({ before: profileMapping, after: updatedProfileMapping })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(
+          getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.properties.name.expression,
+        ).toEqual('user.name')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      // In production, a ProfileMapping can only be removed alongside one of its mapping sides (this is enforced by a
+      // change validator). CVs don't run in this test though, so we only run the change group for the ProfileMapping
+      // removal and the mock HTTP response will behave as if one of its sides was removed as well.
+      it('should successfully remove a profile mapping', async () => {
+        loadMockReplies('profile_mapping_remove.json')
+        const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
+          id: 'profilemapping-fakeid1',
+          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'profileMapping',
+            changes: [toChange({ before: profileMapping })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
     describe('deploy brand theme', () => {
       let brandThemeType: ObjectType
 
@@ -2049,6 +2649,93 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy app logo', () => {
+      let appLogoType: ObjectType
+      let app: InstanceElement
+      let appLogo: InstanceElement
+
+      beforeEach(() => {
+        appLogoType = new ObjectType({
+          elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        app = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          name: 'app1',
+          label: 'app1',
+          signOnMode: 'AUTO_LOGIN',
+          settings: {
+            app: {
+              url: 'https://app1.com',
+            },
+          },
+        })
+        appLogo = new InstanceElement(
+          'appLogo',
+          appLogoType,
+          {
+            fileName: 'logo.png',
+            content: new StaticFile({
+              filepath: 'applogo.png',
+              encoding: 'binary',
+              content: Buffer.from('logo-fake-binary-data'),
+            }),
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
+          },
+        )
+      })
+
+      it('should successfully add an app logo', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/apps/app-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/applogo-fakeid1' })
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appLogo',
+            changes: [toChange({ after: appLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an app logo', async () => {
+        // We need to use a regex for the POST body because the content is binary data and it's transmitted with a
+        // random boundary string, etc., so we call nock programmatically instead of loading from a file.
+        nock('https://test.okta.com/')
+          .post('/api/v1/apps/app-fakeid1/logo', /logo-fake-binary-data/)
+          .reply(201, { url: 'https://somepath.to/applogo-fakeid1' })
+
+        const updatedAppLogo = appLogo.clone()
+        updatedAppLogo.value.content = new StaticFile({
+          filepath: 'applogo.png',
+          encoding: 'binary',
+          content: Buffer.from('updated-logo-fake-binary-data'),
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'appLogo',
+            changes: [toChange({ before: appLogo, after: updatedAppLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

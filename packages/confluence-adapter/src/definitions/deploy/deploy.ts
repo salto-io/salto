@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
@@ -19,16 +11,21 @@ import { isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   addSpaceKey,
+  adjustBlogPostOnModification,
   adjustPageOnModification,
+  adjustUserReferencesOnBlogPostReverse,
+  adjustUserReferencesOnPageReverse,
   createAdjustUserReferencesReverse,
   homepageAdditionToModification,
   putHomepageIdInAdditionContext,
   shouldDeleteRestrictionOnPageModification,
   shouldNotModifyRestrictionOnPageAddition,
+  spaceChangeGroupWithItsHomepage,
 } from '../utils'
 import {
   BLOG_POST_TYPE_NAME,
   GLOBAL_TEMPLATE_TYPE_NAME,
+  GROUP_TYPE_NAME,
   LABEL_TYPE_NAME,
   PAGE_TYPE_NAME,
   PERMISSION_TYPE_NAME,
@@ -36,7 +33,6 @@ import {
   SPACE_TYPE_NAME,
   TEMPLATE_TYPE_NAME,
 } from '../../constants'
-import { spaceChangeGroupWithItsHomepage } from '../utils/space'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
@@ -90,7 +86,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['restriction', 'version'],
-                  adjust: createAdjustUserReferencesReverse(PAGE_TYPE_NAME),
+                  adjust: adjustUserReferencesOnPageReverse,
                 },
               },
             },
@@ -184,6 +180,60 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/wiki/api/v2/pages/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [BLOG_POST_TYPE_NAME]: {
+      toActionNames: homepageAdditionToModification,
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts',
+                  method: 'post',
+                },
+                transformation: {
+                  omit: ['version'],
+                  adjust: adjustUserReferencesOnBlogPostReverse,
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: {
+                transformForCheck: {
+                  omit: ['version'],
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  adjust: adjustBlogPostOnModification,
+                },
+              },
+              copyFromResponse: {
+                additional: {
+                  pick: ['version.number'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/api/v2/blogposts/{id}',
                   method: 'delete',
                 },
               },
@@ -417,6 +467,35 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/wiki/rest/api/space/{spaceKey}/permission/{id}',
                   method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [GROUP_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/group',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/wiki/rest/api/group/by-id',
+                  method: 'delete',
+                  queryArgs: {
+                    id: '{id}',
+                  },
                 },
               },
             },

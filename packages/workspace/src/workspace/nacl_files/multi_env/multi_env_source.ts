@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import path from 'path'
@@ -129,6 +121,7 @@ export type MultiEnvSource = {
     encoding: BufferEncoding
     env: string
     isTemplate?: boolean
+    hash?: string
   }) => Promise<StaticFile | undefined>
   getAll: (env: string) => Promise<AsyncIterable<Element>>
   promote: (env: string, idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>) => Promise<EnvsChanges>
@@ -172,39 +165,33 @@ const buildMultiEnvSource = (
 
   const getActiveSources = (env: string): Record<string, NaclFilesSource> => _.pick(sources, [commonSourceName, env])
 
-  const getStaticFile = async (
-    args: string | { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
-    encoding?: BufferEncoding,
-    envName?: string,
-  ): Promise<StaticFile> => {
-    let filePath: string
-    let fileEncoding: BufferEncoding
-    let environmentName: string
-
-    // Check if args is a string or an object and assign values accordingly
-    if (_.isString(args)) {
-      if (encoding === undefined || envName === undefined) {
-        throw new Error("When 'args' is a string, 'encoding' and 'envName' must be provided")
-      }
-      filePath = args
-      fileEncoding = encoding
-      environmentName = envName
-    } else {
-      filePath = args.filePath
-      fileEncoding = args.encoding
-      environmentName = args.env
-    }
-    const sourcesFiles = (
-      await Promise.all(
-        Object.values(getActiveSources(environmentName)).map(src =>
-          src.getStaticFile({
-            filePath,
-            encoding: fileEncoding,
-            isTemplate: _.isObject(args) ? args.isTemplate : undefined,
-          }),
-        ),
+  const getStaticFile = async (args: {
+    filePath: string
+    encoding: BufferEncoding
+    env: string
+    isTemplate?: boolean
+    hash?: string
+  }): Promise<StaticFile> => {
+    const { env, filePath, encoding, isTemplate, hash } = args
+    // without filtering the sources, we would run getStaticFile on an empty source and we will get invalid results. for
+    // example if common is empty, when we will run getStaticFile of buildNaclFilesSource, this will run
+    // staticFilesSource.getStaticFile, and since we are passing a hash, we will get a static file without content
+    // and not a missing staticFile. Finally we will get both common and env as sourcesFiles (common returned a static
+    // file and therefore is not filtered out). As we return sourcesFiles[0], we will return the invalid static file
+    // (without content) that came from common. To avoid this we filter the sources before the calls to get static file
+    // so that only the ones with files will be called.
+    const sourcesFiles = await awu(Object.values(getActiveSources(env)))
+      .filter(async src => !(await (await src.getElementsSource()).isEmpty()))
+      .map(src =>
+        src.getStaticFile({
+          filePath,
+          encoding,
+          isTemplate,
+          hash,
+        }),
       )
-    ).filter(values.isDefined)
+      .filter(values.isDefined)
+      .toArray()
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
       log.warn(`Found different hashes for static file ${filePath}`)
     }
@@ -225,6 +212,7 @@ const buildMultiEnvSource = (
                 encoding: staticFile.encoding,
                 env: envName,
                 isTemplate: staticFile.isTemplate,
+                hash: staticFile.hash,
               })) ?? staticFile,
           ),
         persistent,

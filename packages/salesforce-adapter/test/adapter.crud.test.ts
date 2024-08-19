@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -1193,6 +1185,49 @@ describe('SalesforceAdapter CRUD', () => {
             },
           ])
         })
+      })
+    })
+
+    describe('when the deploy gets canceled', () => {
+      let element: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      let result: DeployResult
+      beforeEach(async () => {})
+      beforeEach(async () => {
+        element = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+          },
+          mockTypes.ApexClass,
+        )
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: element })],
+        }
+        const deployResultParams = {
+          success: false,
+          canceled: true,
+        }
+        connection.metadata.deploy.mockReturnValue(
+          mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }),
+        )
+        result = await adapter.deploy({
+          changeGroup: deployChangeGroup,
+          progressReporter: nullProgressReporter,
+        })
+      })
+      it('Should return the correct error and no applied changes', () => {
+        expect(result.errors).toEqual([
+          {
+            severity: 'Error',
+            message: 'Deployment was canceled.',
+          },
+        ])
+        expect(result.appliedChanges).toBeEmpty()
       })
     })
   })

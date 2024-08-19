@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -47,6 +39,8 @@ import { getResolverCreator } from '../references/resolver_creator'
 import { ConvertError } from '../deployment'
 import { combineElementFixers } from '../references/element_fixers'
 import { FixElementsArgs } from '../fix_elements/types'
+import { QueryCriterion } from '../fetch/query'
+import { DEFAULT_CRITERIA } from '../fetch/query/fetch_criteria'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
 type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
@@ -68,6 +62,7 @@ export const createAdapter = <
   operationsCustomizations,
   clientDefaults,
   customConvertError,
+  allCriteria = DEFAULT_CRITERIA,
 }: {
   adapterName: string
   // helper for determining the names of all clients that should be created
@@ -96,6 +91,7 @@ export const createAdapter = <
     additionalChangeValidators?: (args: { config: Co }) => Record<string, ChangeValidator>
     customizeFixElements?: (args: FixElementsArgs<Options, Co>) => Record<string, FixElementsFunc>
   }
+  allCriteria?: Record<string, QueryCriterion>
   clientDefaults?: Partial<Omit<ClientDefaults<ClientRateLimitConfig>, 'pageSize'>>
   customConvertError?: ConvertError
 }): Adapter => {
@@ -157,6 +153,7 @@ export const createAdapter = <
           configInstance: context.config,
           additionalChangeValidators,
           fixElements,
+          allCriteria,
         },
         adapterImpl ?? AdapterImpl,
       )

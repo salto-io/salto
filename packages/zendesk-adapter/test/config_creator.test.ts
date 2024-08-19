@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { configType } from '../src/config'
@@ -91,7 +83,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should return adapter config with guide themes', async () => {
-      expect(resultConfig.value?.fetch?.guide).toEqual(DEFAULT_GUIDE_THEME_CONFIG)
+      expect(resultConfig.value?.fetch?.guide).toEqual({ brands: ['.*'], ...DEFAULT_GUIDE_THEME_CONFIG })
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -117,6 +109,39 @@ describe('config_creator', () => {
         ...DEFAULT_GUIDE_THEME_CONFIG,
         brands: ['.*'],
       })
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains guideOptions equal GUIDE_WITH_THEMES', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ guideOptions: 'Guide with Themes' })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual({ brands: ['.*'], ...DEFAULT_GUIDE_THEME_CONFIG })
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains guideOptions equal NO_GUIDE', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ guideOptions: 'No guide' })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config with guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
+      expect(mockLogError).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when input contains guideOptions equal GUIDE_WITHOUT_THEMES', () => {
+    beforeEach(async () => {
+      options = createMockOptionsInstance({ guideOptions: 'Guide without Themes' })
+      resultConfig = await getConfig(options)
+    })
+    it('should return adapter config without guide themes', async () => {
+      expect(resultConfig.value?.fetch?.guide).toEqual({ brands: ['.*'] })
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })

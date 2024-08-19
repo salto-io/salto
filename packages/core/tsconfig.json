@@ -21,6 +21,7 @@
     { "path": "../logging" },
     { "path": "../lowerdash" },
     { "path": "../microsoft-entra-adapter" },
+    { "path": "../microsoft-security-adapter" },
     { "path": "../netsuite-adapter" },
     { "path": "../okta-adapter" },
     { "path": "../parser" },

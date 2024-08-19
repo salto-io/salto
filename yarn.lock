@@ -4232,6 +4232,7 @@ __metadata:
     "@salto-io/logging": 0.3.61
     "@salto-io/lowerdash": 0.3.61
     "@salto-io/microsoft-entra-adapter": 0.3.61
+    "@salto-io/microsoft-security-adapter": 0.3.61
     "@salto-io/netsuite-adapter": 0.3.61
     "@salto-io/node-diff3": 3.1.0-salto.1
     "@salto-io/okta-adapter": 0.3.61
@@ -4859,6 +4860,50 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@salto-io/microsoft-security-adapter@0.3.61, @salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter":
+  version: 0.0.0-use.local
+  resolution: "@salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter"
+  dependencies:
+    "@eslint/compat": ^1.1.0
+    "@eslint/eslintrc": ^3.1.0
+    "@eslint/js": ^9.6.0
+    "@salto-io/adapter-api": 0.3.61
+    "@salto-io/adapter-components": 0.3.61
+    "@salto-io/adapter-utils": 0.3.61
+    "@salto-io/logging": 0.3.61
+    "@salto-io/lowerdash": 0.3.61
+    "@salto-io/test-utils": 0.3.61
+    "@tony.ganchev/eslint-plugin-header": ^3.1.2
+    "@types/jest": ^29.5.12
+    "@types/lodash": ^4.14.168
+    "@typescript-eslint/eslint-plugin": ^7.16.0
+    "@typescript-eslint/parser": ^7.16.0
+    axios: ^1.7.2
+    axios-mock-adapter: ^1.19.0
+    eslint: ^9.6.0
+    eslint-config-airbnb: 18.0.1
+    eslint-config-prettier: 9.1.0
+    eslint-plugin-import: ^2.29.1
+    eslint-plugin-jest: ^22.6.4
+    eslint-plugin-jsx-a11y: ^6.2.1
+    eslint-plugin-react: ^7.14.3
+    eslint-plugin-react-hooks: ^1.7.0
+    form-data: ^4.0.0
+    globals: ^15.8.0
+    jest: ^29.7.0
+    jest-circus: ^29.7.0
+    jest-junit: ^16.0.0
+    lodash: ^4.17.21
+    node-html-parser: ^6.1.5
+    prettier: 3.2.5
+    ts-jest: ^29.2.0
+    tsc-watch: ^2.2.1
+    turbo: ^2.0.6
+    typescript: 4.8.4
+    uuid: ^10.0.0
+  languageName: unknown
+  linkType: soft
+
 "@salto-io/netsuite-adapter@0.3.61, @salto-io/netsuite-adapter@workspace:packages/netsuite-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/netsuite-adapter@workspace:packages/netsuite-adapter"
@@ -4877,6 +4922,8 @@ __metadata:
     "@salto-io/test-utils": 0.3.61
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/async-lock": ^1.1.2
+    "@types/esprima": ^4.0.6
+    "@types/estraverse": ^5.1.7
     "@types/he": ^1.1.1
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4903,6 +4950,8 @@ __metadata:
     eslint-plugin-jsx-a11y: ^6.2.1
     eslint-plugin-react: ^7.14.3
     eslint-plugin-react-hooks: ^1.7.0
+    esprima: ^4.0.1
+    estraverse: ^5.3.0
     fast-xml-parser: ^4.4.0
     globals: ^15.8.0
     he: ^1.2.0
@@ -5891,6 +5940,24 @@ __metadata:
     "@types/estree": "*"
     "@types/json-schema": "*"
   checksum: bb53f0fe7a34d1a5182fdb5ddcd1293b7d2923af20a4c0f8a35cc8bca5e52b40ac79b015abb2c9ab024d11715349bdfea484ef6dc244d3d9bf4dfa58e24944fb
+  languageName: node
+  linkType: hard
+
+"@types/esprima@npm:^4.0.6":
+  version: 4.0.6
+  resolution: "@types/esprima@npm:4.0.6"
+  dependencies:
+    "@types/estree": "*"
+  checksum: 36c5ca24a6506eb5742e8c66c0372918a859535022a5605f1e898b66e4941b91384f43c6aeb5c8ca1ed984af469dfabd22e784e833175bb1ab25af40787466ba
+  languageName: node
+  linkType: hard
+
+"@types/estraverse@npm:^5.1.7":
+  version: 5.1.7
+  resolution: "@types/estraverse@npm:5.1.7"
+  dependencies:
+    "@types/estree": "*"
+  checksum: e598a73ec90c0b1989b55d55271742a7abfaa873ebe5041bfb1fbfe44fa5e64e5d759a60f4cb0a3f24b90c4ba98d87955aa836a8eea796ad4d880e4def92c23d
   languageName: node
   linkType: hard
 
@@ -10658,6 +10725,13 @@ __metadata:
   version: 5.2.0
   resolution: "estraverse@npm:5.2.0"
   checksum: ec11b70d946bf5d7f76f91db38ef6f08109ac1b36cda293a26e678e58df4719f57f67b9ec87042afdd1f0267cee91865be3aa48d2161765a93defab5431be7b8
+  languageName: node
+  linkType: hard
+
+"estraverse@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "estraverse@npm:5.3.0"
+  checksum: 072780882dc8416ad144f8fe199628d2b3e7bbc9989d9ed43795d2c90309a2047e6bc5979d7e2322a341163d22cfad9e21f4110597fe487519697389497e4e2b
   languageName: node
   linkType: hard
 

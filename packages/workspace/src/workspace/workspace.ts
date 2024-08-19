@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import path from 'path'
@@ -324,6 +316,7 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
     isTemplate?: boolean
+    hash?: string
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
@@ -573,6 +566,7 @@ export const loadWorkspace = async (
                           encoding: staticFile.encoding,
                           env: envName,
                           isTemplate: staticFile.isTemplate,
+                          hash: staticFile.hash,
                         })) ?? staticFile,
                     ),
                   persistent,
@@ -1648,8 +1642,8 @@ export const loadWorkspace = async (
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
-    getStaticFile: async ({ filepath, encoding, env, isTemplate }) =>
-      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate }),
+    getStaticFile: async ({ filepath, encoding, env, isTemplate, hash }) =>
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate, hash }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,

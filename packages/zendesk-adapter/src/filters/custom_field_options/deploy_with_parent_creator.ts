@@ -1,21 +1,14 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { inspectValue, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { createAdditionalParentChanges, getCustomFieldOptionsFromChanges } from '../utils'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../constants'
@@ -23,6 +16,8 @@ import { prepRef } from '../handle_template_expressions'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../../deployment'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 import { CustomFieldOptionsFilterCreatorParams } from './creator'
+
+const log = logger(module)
 
 export const createDeployOptionsWithParentCreator =
   ({ filterName, parentTypeName, childTypeName, onFetch }: CustomFieldOptionsFilterCreatorParams): FilterCreator =>
@@ -32,11 +27,17 @@ export const createDeployOptionsWithParentCreator =
     preDeploy: async changes => {
       getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
         option.name = option.raw_name
+        // Added option won't have id until it is deployed. The API requires to pass null for new options
+        option.id = option.id ?? null
       })
     },
     onDeploy: async changes => {
       getCustomFieldOptionsFromChanges(parentTypeName, childTypeName, changes).forEach(option => {
         delete option.name
+        if (option.id === null) {
+          log.warn('Option id is null after deploy. Option values: %s', inspectValue(option))
+          delete option.id
+        }
       })
     },
     deploy: async (changes: Change<InstanceElement>[]) => {

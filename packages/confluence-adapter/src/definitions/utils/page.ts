@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -23,14 +15,13 @@ import {
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
-import { validateValue } from './generic'
+import { createAdjustFunctionFromMultipleFunctions, validateValue } from './generic'
 import { createAdjustUserReferencesReverse } from './users'
+import { increaseVersion } from './version'
 
-const { reduceAsync } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -58,37 +49,6 @@ export const homepageAdditionToModification: ({
     }
   }
   return [change.action]
-}
-
-const isNumber = (value: unknown): value is number => typeof value === 'number'
-
-/**
- * AdjustFunction that increases the version number of a page for deploy modification change.
- */
-const increasePageVersion: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async args => {
-  const value = validateValue(args.value)
-  const version = _.get(value, 'version')
-  if (!values.isPlainRecord(version) || !isNumber(version.number)) {
-    return {
-      value: {
-        ...value,
-        version: {
-          // In case of homepage addition, we don't have a version number yet but it is "1" in the service
-          // It has been set to one when we created the space and the default homepage was created
-          number: 2,
-        },
-      },
-    }
-  }
-  return {
-    value: {
-      ...value,
-      version: {
-        ...version,
-        number: version.number + 1,
-      },
-    },
-  }
 }
 
 /**
@@ -124,19 +84,13 @@ const updateHomepageId: definitions.AdjustFunctionSingle<definitions.deploy.Chan
   return { value }
 }
 
-const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
+export const adjustUserReferencesOnPageReverse = createAdjustUserReferencesReverse(PAGE_TYPE_NAME)
 
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
-export const adjustPageOnModification: definitions.AdjustFunctionSingle<
-  definitions.deploy.ChangeAndContext
-> = async args => {
-  const value = validateValue(args.value)
-  const argsWithValidatedValue = { ...args, value }
-  return reduceAsync(
-    [increasePageVersion, updateHomepageId, adjustUserReferencesOnPageReverse],
-    async (input, func) => ({ ...argsWithValidatedValue, ...(await func(input)) }),
-    argsWithValidatedValue,
-  )
-}
+export const adjustPageOnModification = createAdjustFunctionFromMultipleFunctions([
+  increaseVersion,
+  updateHomepageId,
+  adjustUserReferencesOnPageReverse,
+])

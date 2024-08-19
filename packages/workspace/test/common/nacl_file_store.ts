@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -278,53 +270,59 @@ type salesforce.inconsistent_case {
 `,
 }
 
-export const mockDirStore = (
+export const mockDirStore = <T extends Buffer | string>(
   exclude: string[] = ['error.nacl', 'dup.nacl', 'reference_error.nacl'],
   empty = false,
-  files?: Record<string, string>,
-): MockInterface<DirectoryStore<string>> => {
-  const naclFiles: Map<string, File<string>> = empty
+  files?: Record<string, T>,
+): MockInterface<DirectoryStore<T>> => {
+  const naclFiles: Map<string, File<T>> = empty
     ? new Map()
-    : new Map(Object.entries(files ?? workspaceFiles).map(([filename, buffer]) => [filename, { filename, buffer }]))
+    : new Map(
+        Object.entries(files ?? workspaceFiles).map(([filename, buffer]) => [
+          filename,
+          { filename, buffer, timestamp: Date.now() },
+        ]),
+      )
   return {
-    list: mockFunction<DirectoryStore<string>['list']>().mockImplementation(async () =>
+    list: mockFunction<DirectoryStore<T>['list']>().mockImplementation(async () =>
       Array.from(naclFiles.keys()).filter(name => !exclude.includes(name)),
     ),
-    isEmpty: mockFunction<DirectoryStore<string>['isEmpty']>().mockResolvedValue(naclFiles.size === 0),
-    get: mockFunction<DirectoryStore<string>['get']>().mockImplementation(async filename => naclFiles.get(filename)),
-    set: mockFunction<DirectoryStore<string>['set']>().mockImplementation(async file => {
+    isEmpty: mockFunction<DirectoryStore<T>['isEmpty']>().mockResolvedValue(naclFiles.size === 0),
+    get: mockFunction<DirectoryStore<T>['get']>().mockImplementation(async filename => naclFiles.get(filename)),
+    set: mockFunction<DirectoryStore<T>['set']>().mockImplementation(async file => {
+      file.timestamp = Date.now()
       naclFiles.set(file.filename, file)
     }),
-    delete: mockFunction<DirectoryStore<string>['delete']>().mockImplementation(async fileName => {
+    delete: mockFunction<DirectoryStore<T>['delete']>().mockImplementation(async fileName => {
       naclFiles.delete(fileName)
     }),
-    clear: mockFunction<DirectoryStore<string>['clear']>().mockImplementation(async () => naclFiles.clear()),
-    rename: mockFunction<DirectoryStore<string>['rename']>().mockImplementation(() => Promise.resolve()),
-    renameFile: mockFunction<DirectoryStore<string>['renameFile']>().mockImplementation(async (filename, newName) => {
+    clear: mockFunction<DirectoryStore<T>['clear']>().mockImplementation(async () => naclFiles.clear()),
+    rename: mockFunction<DirectoryStore<T>['rename']>().mockImplementation(() => Promise.resolve()),
+    renameFile: mockFunction<DirectoryStore<T>['renameFile']>().mockImplementation(async (filename, newName) => {
       const origFile = naclFiles.get(filename)
       if (origFile !== undefined) {
         naclFiles.set(newName, origFile)
         naclFiles.delete(filename)
       }
     }),
-    flush: mockFunction<DirectoryStore<string>['flush']>().mockImplementation(() => Promise.resolve()),
-    mtimestamp: mockFunction<DirectoryStore<string>['mtimestamp']>().mockResolvedValue(0),
-    getFiles: mockFunction<DirectoryStore<string>['getFiles']>().mockImplementation(async filenames =>
+    flush: mockFunction<DirectoryStore<T>['flush']>().mockImplementation(() => Promise.resolve()),
+    mtimestamp: mockFunction<DirectoryStore<T>['mtimestamp']>().mockImplementation(
+      async fileName => naclFiles.get(fileName)?.timestamp,
+    ),
+    getFiles: mockFunction<DirectoryStore<T>['getFiles']>().mockImplementation(async filenames =>
       filenames.map(name => naclFiles.get(name)),
     ),
-    getTotalSize: mockFunction<DirectoryStore<string>['getTotalSize']>().mockResolvedValue(0),
-    clone: mockFunction<DirectoryStore<string>['clone']>().mockImplementation(() =>
+    getTotalSize: mockFunction<DirectoryStore<T>['getTotalSize']>().mockResolvedValue(0),
+    clone: mockFunction<DirectoryStore<T>['clone']>().mockImplementation(() =>
       mockDirStore(
         exclude,
         empty,
         Object.fromEntries(Array.from(naclFiles.entries()).map(([name, file]) => [name, file.buffer])),
       ),
     ),
-    getFullPath: mockFunction<DirectoryStore<string>['getFullPath']>().mockImplementation(filename => filename),
-    isPathIncluded: mockFunction<DirectoryStore<string>['isPathIncluded']>().mockReturnValue(true),
-    exists: mockFunction<DirectoryStore<string>['exists']>().mockImplementation(async filename =>
-      naclFiles.has(filename),
-    ),
+    getFullPath: mockFunction<DirectoryStore<T>['getFullPath']>().mockImplementation(filename => filename),
+    isPathIncluded: mockFunction<DirectoryStore<T>['isPathIncluded']>().mockReturnValue(true),
+    exists: mockFunction<DirectoryStore<T>['exists']>().mockImplementation(async filename => naclFiles.has(filename)),
   }
 }
 

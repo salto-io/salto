@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -22,6 +14,7 @@ import {
   isEqualElements,
   isInstanceElement,
   isObjectType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getElementGenerator } from '../../../src/fetch/element/element'
@@ -48,6 +41,37 @@ describe('element', () => {
       expect(res.errors).toEqual([])
       expect(res.elements).toHaveLength(1)
       expect(res.elements[0].isEqual(new ObjectType({ elemID: typeID, fields: {} }))).toEqual(true)
+    })
+    it('should create type with serviceId field as string and hidden fields as unknown when no entries provided', () => {
+      const generator = getElementGenerator({
+        adapterName: 'myAdapter',
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: {
+            myType: {
+              element: {
+                topLevel: { isTopLevel: true },
+                fieldCustomizations: { fieldToHide: { hide: true }, serviceId: { hide: true } },
+              },
+              resource: { serviceIDFields: ['serviceId'], directFetch: true },
+            },
+          },
+        }),
+        customNameMappingFunctions: {},
+      })
+      generator.pushEntries({
+        entries: [],
+        typeName: 'myType',
+      })
+      const res = generator.generate()
+      expect(res.errors).toEqual([])
+      expect(res.elements).toHaveLength(1)
+      expect(res.elements[0]).toBeInstanceOf(ObjectType)
+      const objType = res.elements[0] as ObjectType
+      expect(_.mapValues(objType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
+        fieldToHide: 'unknown',
+        serviceId: 'serviceid',
+      })
+      expect(objType.fields.fieldToHide?.annotations).toEqual({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
     })
     it('should not throw when type is not marked as top-level', () => {
       const generator = getElementGenerator({
@@ -453,6 +477,7 @@ describe('element', () => {
             expect.any(String),
             expect.any(String),
             fetchError.message,
+            { adapterName: 'myAdapter', typeName: 'myType' },
           )
         })
       })

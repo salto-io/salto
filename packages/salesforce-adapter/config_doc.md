@@ -343,7 +343,6 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | managedPackage               | true                   | Disallow changes to objects and fields that are part of a managed package                         |
 | picklistStandardField        | true                   | It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed        |
 | customObjectInstances        | true                   | Validate permissions of creating / update data records                                            |
-| unknownField                 | true                   | Disallow deploying an unknown field type                                                          |
 | customFieldType              | true                   | Ensure the type given to a custom field is a valid type for custom fields                         |
 | standardFieldLabel           | true                   | Disallow changing a label of a standard field                                                     |
 | mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                              |

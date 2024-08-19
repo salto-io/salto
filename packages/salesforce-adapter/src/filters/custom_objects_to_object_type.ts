@@ -80,6 +80,7 @@ import {
   STANDARD_OBJECT_META_TYPE,
   CUSTOM_OBJECT_META_TYPE,
   CUSTOM_SETTINGS_META_TYPE,
+  CUSTOM_FIELD_DEPLOYABLE_TYPES,
 } from '../constants'
 import { FilterContext, LocalFilterCreator } from '../filter'
 import {
@@ -664,6 +665,7 @@ const getNestedCustomObjectValues = async (
     getDataFromChanges(dataField, await awu(changes).filter(shouldIncludeFieldChange(fieldsToSkip)).toArray()),
   )
     .map(field => toCustomField(field as Field))
+    .filter(field => CUSTOM_FIELD_DEPLOYABLE_TYPES.includes(field.type))
     .toArray(),
 })
 

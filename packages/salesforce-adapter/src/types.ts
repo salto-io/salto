@@ -125,7 +125,6 @@ export type ChangeValidatorName =
   | 'managedPackage'
   | 'picklistStandardField'
   | 'customObjectInstances'
-  | 'unknownField'
   | 'customFieldType'
   | 'standardFieldLabel'
   | 'mapKeys'
@@ -826,7 +825,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     managedPackage: { refType: BuiltinTypes.BOOLEAN },
     picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
     customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
-    unknownField: { refType: BuiltinTypes.BOOLEAN },
     customFieldType: { refType: BuiltinTypes.BOOLEAN },
     standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
     mapKeys: { refType: BuiltinTypes.BOOLEAN },

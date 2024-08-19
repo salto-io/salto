@@ -36,6 +36,8 @@ export type MissingInternalId = {
   name: string
 }
 
+export type AdditionalQueryName = typeof TAX_SCHEDULE | typeof PROJECT_EXPENSE_TYPE | typeof ALLOCATION_TYPE
+
 type InternalIdsMap = Record<string, { name: string }>
 
 type QueryBy = 'internalId' | 'name'
@@ -366,6 +368,18 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'description',
   },
+  revenueRecognitionRule: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  incoterm: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  approvalStatus: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
 
   // could not find table
   address: undefined,
@@ -501,7 +515,7 @@ const getAllocationTypeInternalIdsMap = async (
   return internalIdsMap
 }
 
-const ADDITIONAL_QUERIES: Record<string, ReturnType<typeof getSavedSearchInternlIdsMap>> = {
+const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternlIdsMap>> = {
   [TAX_SCHEDULE]: getSavedSearchInternlIdsMap(TAX_SCHEDULE),
   [PROJECT_EXPENSE_TYPE]: getSavedSearchInternlIdsMap(PROJECT_EXPENSE_TYPE),
   [ALLOCATION_TYPE]: getAllocationTypeInternalIdsMap,
@@ -513,8 +527,9 @@ const getInternalIdsMap = async (
   tableName: string,
   items: string[],
 ): Promise<InternalIdsMap> => {
-  if (ADDITIONAL_QUERIES[tableName] !== undefined) {
-    return ADDITIONAL_QUERIES[tableName](client, queryBy, items)
+  const additionalQuery = ADDITIONAL_QUERIES[tableName as AdditionalQueryName]
+  if (additionalQuery !== undefined) {
+    return additionalQuery(client, queryBy, items)
   }
   const queryParams = QUERIES_BY_TABLE_NAME[tableName as SuiteQLTableName]
   if (queryParams === undefined) {

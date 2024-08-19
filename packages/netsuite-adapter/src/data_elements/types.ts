@@ -169,7 +169,13 @@ const ALL_TABLE_TO_INTERNAL_ID = {
   ...MANUALLY_TABLE_TO_INTERNAL_ID,
 } as const
 
-const ADDITIONAL_TABLES = ['entityStatus', 'campaignEvent'] as const
+const ADDITIONAL_TABLES = [
+  'entityStatus',
+  'campaignEvent',
+  'revenueRecognitionRule',
+  'incoterm',
+  'approvalStatus',
+] as const
 
 export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | (typeof ADDITIONAL_TABLES)[number]
 

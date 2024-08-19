@@ -119,14 +119,15 @@ const changeValidator: ClientChangeValidator = async (changes, client, additiona
     .flatMap(async ([groupId, groupChanges]) => {
       // SALTO-3016 if the real change group of all changes is different than the one used for validation
       // (e.g. only FileCabinet instances) we should skip the validation.
-      if (groupChanges.every(change => realChangesGroupIdMap.get(changeId(change)) !== groupId)) {
+      const realGroupChanges = groupChanges.filter(change => realChangesGroupIdMap.get(changeId(change)) === groupId)
+      if (realGroupChanges.length === 0) {
         return []
       }
 
       const clonedChanges = groupChanges.map(cloneChange)
       await filtersRunner(groupId).preDeploy(clonedChanges)
       const errors = await client.validate(clonedChanges, groupId, additionalDependencies)
-      const originalChangesElemIds = new Set(groupChanges.map(change => getChangeData(change).elemID.getFullName()))
+      const originalChangesElemIds = new Set(realGroupChanges.map(change => getChangeData(change).elemID.getFullName()))
 
       const [saltoElementErrors, saltoErrors] = _.partition(errors, isSaltoElementError)
 
@@ -139,7 +140,7 @@ const changeValidator: ClientChangeValidator = async (changes, client, additiona
       })
 
       const errorsOnAllChanges = saltoErrors.flatMap(error =>
-        groupChanges.map(change => ({
+        realGroupChanges.map(change => ({
           elemID: getChangeData(change).elemID,
           message: error.message,
           severity: error.severity,

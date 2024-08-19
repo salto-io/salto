@@ -88,7 +88,7 @@ export class RequestQueue<ClientOptions extends string> {
       })
       nextArgs.forEach(arg => this.enqueue(arg))
     } catch (e) {
-      log.error('Error processing args (%s): %s, stack: %s', safeJsonStringify(args), safeJsonStringify(e), e.stack)
+      log.error('Error processing args (%s): stack: %s', safeJsonStringify(args), e.stack)
       throw e
     } finally {
       this.activePromises = this.activePromises.filter(p => p.id !== promiseID)

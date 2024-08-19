@@ -10,6 +10,7 @@ import SalesforceAdapter, {
   adapter as salesforceAdapter,
   UsernamePasswordCredentials,
   OauthAccessTokenCredentials,
+  createDeployProgressReporter,
 } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
 import {
@@ -23,7 +24,6 @@ import {
   ObjectType,
   ChangeGroup,
   getChangeData,
-  ProgressReporter,
   SaltoError,
   SaltoElementError,
   isSaltoElementError,
@@ -107,9 +107,9 @@ export const getSalesforceClient = (credentials: UsernamePasswordCredentials): S
     config: { deploy: { purgeOnDelete: true } },
   })
 
-const nullProgressReporter: ProgressReporter = {
+const nullProgressReporter = createDeployProgressReporter({
   reportProgress: () => {},
-}
+})
 
 const errorToString = (error: SaltoError | SaltoElementError): string =>
   `[${error.severity}] ${error.message}${isSaltoElementError(error) ? error.elemID.getFullName() : ''}`

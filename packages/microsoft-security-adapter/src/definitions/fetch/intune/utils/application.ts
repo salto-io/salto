@@ -8,10 +8,23 @@
 
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { definitions } from '@salto-io/adapter-components'
 import { isApplicationOfType, isNonSystemApp } from '../../../utils/intune'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { APPLICATION_TYPE_NAME } from '../../../../constants/entra'
-import { APP_STORE_URL_FIELD_NAME, PACKAGE_ID_FIELD_NAME } from '../../../../constants/intune'
+import { APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } from '../../../../constants/intune'
+import { NAME_ID_FIELD } from '../../shared/defaults'
+import { getAdjustedOdataTypeFieldName } from '../../../utils/shared'
+
+/* The following parts are shared for the application elemID definition and its path definition */
+export const APPLICATION_TYPE_PART: definitions.fetch.FieldIDPart = {
+  fieldName: getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME),
+}
+export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
+  // Some ManagedAndroidStoreApp instances have the same name, so instead we use the packageId field,
+  // which should be consistent across environments.
+  { fieldName: NAME_ID_FIELD.fieldName, condition: value => !value[PACKAGE_ID_FIELD_NAME] },
+  { fieldName: PACKAGE_ID_FIELD_NAME },
+]
 
 /**
  * Omit redundant fields from application based on its type.

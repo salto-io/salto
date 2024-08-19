@@ -10,12 +10,11 @@ import { Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { intuneConstants } from '../../../constants'
-import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
-import { getAdjustedOdataTypeFieldName, transformOdataTypeField } from '../../utils/shared'
-import { PACKAGE_ID_FIELD_NAME } from '../../../constants/intune'
+import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../shared/defaults'
+import { transformOdataTypeField } from '../../utils/shared'
 import { APPLICATION_OMITTED_FIELDS } from './constants'
 import { concatAdjustFunctions, createCustomizationsWithBasePathForFetch, toOmittedFields } from '../shared/utils'
-import { omitApplicationRedundantFields } from './utils'
+import { APPLICATION_NAME_PARTS, APPLICATION_TYPE_PART, omitApplicationRedundantFields } from './utils'
 
 const { APPLICATION_TYPE_NAME } = intuneConstants
 
@@ -41,19 +40,10 @@ const graphBetaCustomizations: FetchCustomizations = {
       topLevel: {
         isTopLevel: true,
         elemID: {
-          parts: [
-            { fieldName: getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME) },
-            // Some ManagedAndroidStoreApp instances have the same name, so instead we use the packageId field,
-            // which should be consistent across environments.
-            { fieldName: NAME_ID_FIELD.fieldName, condition: value => !value[PACKAGE_ID_FIELD_NAME] },
-            { fieldName: PACKAGE_ID_FIELD_NAME },
-          ],
+          parts: [APPLICATION_TYPE_PART, ...APPLICATION_NAME_PARTS],
         },
         path: {
-          pathParts: [
-            { parts: [{ fieldName: getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME) }] },
-            { parts: [NAME_ID_FIELD, { fieldName: PACKAGE_ID_FIELD_NAME }] },
-          ],
+          pathParts: [{ parts: [APPLICATION_TYPE_PART] }, { parts: APPLICATION_NAME_PARTS }],
         },
       },
       fieldCustomizations: {

@@ -6,4 +6,4 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export { omitApplicationRedundantFields } from './application'
+export { omitApplicationRedundantFields, APPLICATION_TYPE_PART, APPLICATION_NAME_PARTS } from './application'

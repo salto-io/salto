@@ -84,8 +84,40 @@ describe('Microsoft Security adapter', () => {
           'entra_permissionGrantPolicy',
           'entra_roleDefinition',
           'entra_servicePrincipal',
+          'intune_application',
         ])
-        // TODO: Validate sub-types and structure of the elements
+        // TODO: Validate Entra sub-types and structure of the elements
+
+        /* Specific instances: */
+        const instances = elements.filter(isInstanceElement)
+
+        // Intune applications
+        const intuneApplications = instances.filter(e => e.elemID.typeName === 'intune_application')
+        expect(intuneApplications).toHaveLength(6)
+
+        const intuneApplicationNames = intuneApplications.map(e => e.elemID.name)
+        expect(intuneApplicationNames).toEqual(
+          expect.arrayContaining([
+            'iosStoreApp_test',
+            'androidStoreApp_com_test@uv',
+            'androidManagedStoreApp_com_test@uv',
+            'managedIOSStoreApp_test',
+            'managedAndroidStoreApp_com_test2@uv',
+            'managedAndroidStoreApp_com_test@uv',
+          ]),
+        )
+
+        const intuneApplicationParts = intuneApplications.map(e => e.path)
+        expect(intuneApplicationParts).toEqual(
+          expect.arrayContaining([
+            ['microsoft_security', 'Records', 'intune_application', 'iosStoreApp', 'test'],
+            ['microsoft_security', 'Records', 'intune_application', 'androidStoreApp', 'com_test'],
+            ['microsoft_security', 'Records', 'intune_application', 'androidManagedStoreApp', 'com_test'],
+            ['microsoft_security', 'Records', 'intune_application', 'managedIOSStoreApp', 'test'],
+            ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test2'],
+            ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test'],
+          ]),
+        )
       })
     })
   })

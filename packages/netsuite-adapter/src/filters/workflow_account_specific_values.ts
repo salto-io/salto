@@ -587,6 +587,26 @@ const getNameByInternalId = (
     .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
     .find(res => res !== undefined)?.name
 
+const getParamLocations = ({
+  conditionFormula,
+  param,
+  startAtIndex = 0,
+  isFirstAppearance = true,
+}: {
+  conditionFormula: string
+  param: Values
+  startAtIndex?: number
+  isFirstAppearance?: boolean
+}): { param: Values; location: number; isFirstAppearance: boolean }[] => {
+  const location = conditionFormula.indexOf(`"${param.name}"`, startAtIndex)
+  if (location === -1) {
+    return []
+  }
+  return [{ param, location, isFirstAppearance }].concat(
+    getParamLocations({ conditionFormula, param, startAtIndex: location + 1, isFirstAppearance: false }),
+  )
+}
+
 const getParametersAccountSpecificValueToTransform = (
   instance: InstanceElement,
   value: Values,
@@ -597,13 +617,27 @@ const getParametersAccountSpecificValueToTransform = (
   const conditionFormula = value[INIT_CONDITION][FORMULA]
   const allParams = getConditionParameters(value[INIT_CONDITION])
   const params = allParams
-    // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles)
-    // but only params that have selectrecordtype are represented with internalid in the formula
+    // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles),
+    // but only params that have selectrecordtype are represented with internalid in the formula.
     .filter(param => param?.[SELECT_RECORD_TYPE] !== undefined)
-  const internalIds = Array.from(matchAll(formulaWithInternalIds, /-?\d+/g))
+    // params that have a constant string `value` (e.g "INVOICE") aren't represented with internalid in the formula.
+    .filter(param => typeof param.value === 'string' && !/^[A-Z]+$/.test(param.value))
+    // each param can appear more than once in the condition formula.
+    // in that case we're expecting to see it multiple times in formulaWithInternalIds.
+    .flatMap(param => getParamLocations({ conditionFormula, param }))
+  const internalIds = Array.from(matchAll(formulaWithInternalIds, /['"]?-?\d+(\.\d*)?['"]?/g))
     .map(res => res[0])
-    // 0 (zero) can be used in a formula (e.g 'arrayIndexOf(...) < 0'), but it's not an internalid
-    .filter(internalId => internalId !== '0')
+    .filter(
+      internalId =>
+        // ignore string numbers (e.g '1', "2")
+        isNumberStr(internalId) &&
+        // ignore non integers (e.g 1.5, 2.0)
+        !internalId.includes('.') &&
+        // ignore zero and invalid numbers
+        !internalId.startsWith('0') &&
+        !internalId.startsWith('-0'),
+    )
+
   if (params.length !== internalIds.length) {
     log.warn('params length %d do not match the internal ids extracted from the formula: %o', params.length, {
       formula: {
@@ -614,9 +648,9 @@ const getParametersAccountSpecificValueToTransform = (
     })
     return []
   }
-  const sortedParams = _.sortBy(params, param => conditionFormula.indexOf(`"${param.name}"`))
-  return sortedParams.flatMap((param, index) => {
-    if (param.value !== ACCOUNT_SPECIFIC_VALUE) {
+  const sortedParams = _.sortBy(params, param => param.location)
+  return sortedParams.flatMap(({ param, isFirstAppearance }, index) => {
+    if (param.value !== ACCOUNT_SPECIFIC_VALUE || !isFirstAppearance) {
       return []
     }
     const internalId = internalIds[index]

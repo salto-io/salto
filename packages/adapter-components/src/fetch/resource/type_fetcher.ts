@@ -191,12 +191,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         success: true,
       }
     } catch (e) {
-      log.error(
-        '[%s] Error caught while fetching %s: stack: %s',
-        adapterName,
-        typeName,
-        (e as Error).stack,
-      )
+      log.error('[%s] Error caught while fetching %s: stack: %s', adapterName, typeName, (e as Error).stack)
       done = true
       return {
         success: false,

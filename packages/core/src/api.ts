@@ -47,6 +47,7 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
@@ -592,19 +593,18 @@ export const rename = async (
 }
 
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
-  adapterCreators[adapterName].configCreator?.optionsType
+  adapterCreators[adapterName]?.configCreator?.optionsType
 
 /**
  * @deprecated
  */
 export const getAdditionalReferences = async (workspace: Workspace, changes: Change[]): Promise<ReferenceMapping[]> => {
   const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
-
+  log.debug('accountToServiceMap: %s', inspectValue(accountToService))
   const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
-
   const referenceGroups = await Promise.all(
     Object.entries(changeGroups).map(([account, changeGroup]) =>
-      adapterCreators[accountToService[account]].getAdditionalReferences?.(changeGroup),
+      adapterCreators[accountToService[account]]?.getAdditionalReferences?.(changeGroup),
     ),
   )
   return referenceGroups.flat().filter(values.isDefined)

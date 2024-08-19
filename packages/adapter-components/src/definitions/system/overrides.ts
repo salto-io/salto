@@ -77,6 +77,6 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     return obj
   }
   const afterRemoveNullObjects = removeNullObjects(merged)
-  log.debug('Merged definitions with overrides: %s', inspectValue(afterRemoveNullObjects, { depth: 7}))
+  log.debug('Merged definitions with overrides: %s', inspectValue(afterRemoveNullObjects, { depth: 7 }))
   return afterRemoveNullObjects
 }

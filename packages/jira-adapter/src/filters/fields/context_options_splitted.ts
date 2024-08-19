@@ -25,13 +25,10 @@ import { getContextParentAsync } from '../../common/fields'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const processContextOptionsPrivateApiResponse = (resp: Option[], addedOptions: Value[]): void => {
-  const idToOption = _.keyBy(addedOptions, option => option.id)
-  const optionsMap = _.keyBy(addedOptions, option => naclCase(option.value))
-  const optionIds = new Set(Object.keys(idToOption))
-  const respToProcess = resp.filter(newOption => !optionIds.has(newOption.id))
-  respToProcess.forEach(newOption => {
-    optionsMap[naclCase(newOption.value)].id = newOption.id
+const processContextOptionsPrivateApiResponse = (allUpdatedOptions: Option[], addedOptions: Value[]): void => {
+  const optionsMap = _.keyBy(allUpdatedOptions, option => naclCase(option.value))
+  addedOptions.forEach(option => {
+    option.id = optionsMap[naclCase(option.value)]?.id
   })
 }
 
@@ -70,8 +67,8 @@ const addPrivateApiOptions = async ({
       data,
     })
   })
-  const resp = await getAllOptionPaginator(paginator, baseUrl)
-  processContextOptionsPrivateApiResponse(resp, addedOptions)
+  const allUpdatedOptions = await getAllOptionPaginator(paginator, baseUrl)
+  processContextOptionsPrivateApiResponse(allUpdatedOptions, addedOptions)
 }
 
 const updateContextOptions = async ({
@@ -122,7 +119,7 @@ const updateContextOptions = async ({
         throw new Error('Received unexpected response from Jira API')
       }
       if (Array.isArray(resp.data.options)) {
-        const optionsMap = _.keyBy(addedOptions, option => naclCase(option.value))
+        const optionsMap = _.keyBy(chunk, option => naclCase(option.value))
         resp.data.options.forEach(newOption => {
           optionsMap[naclCase(newOption.value)].id = newOption.id
         })
@@ -206,8 +203,6 @@ export const setContextOptionsSplitted = async ({
 
   setCascadeOptions(modified)
   setCascadeOptions(addedCascade)
-  const bla = await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])
-  log.debug('bla %o', bla)
   const optionsCount = _.sum(
     await Promise.all(
       (await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])).map(async instance =>

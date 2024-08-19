@@ -75,9 +75,7 @@ const getOptionsInstances = async ({
         return optionInstance
       }),
     )
-  )
-    .filter(values.isDefined)
-    .sort((a, b) => a.elemID.getFullName().localeCompare(b.elemID.getFullName()))
+  ).filter(values.isDefined)
 
 const getOrderInstance = async ({
   context,

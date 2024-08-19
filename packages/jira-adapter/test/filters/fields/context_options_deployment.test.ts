@@ -548,6 +548,11 @@ describe('ContextOptionsDeployment', () => {
       expect(getChangeData(changes[14]).value.options[0].value.value.id).toEqual('20')
       expect(getChangeData(changes[14]).value.options[1].value.value.id).toEqual('22')
     })
+    it('should add id to additions', async () => {
+      await filter.deploy(changes)
+      expect(getChangeData(changes[0]).value.id).toEqual('4')
+      expect(getChangeData(changes[1]).value.id).toEqual('5')
+    })
     it('should not modify the option changes except for the id in additions', async () => {
       const optionChanges = changes.filter(
         change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME,

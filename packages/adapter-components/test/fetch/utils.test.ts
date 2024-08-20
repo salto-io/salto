@@ -27,13 +27,22 @@ describe('fetch utils', () => {
               },
             ],
           },
+          moveMe: {
+            val: 'val',
+          },
           other: 'other',
         },
       }
     })
     describe('when def combines multiple args', () => {
       it('should transform values based on the provided definitions', async () => {
-        const func = createValueTransformer({ root: 'a', nestUnderField: 'b', pick: ['x', 'y', 'z'], omit: ['z'] })
+        const func = createValueTransformer({
+          root: 'a',
+          nestUnderField: 'b',
+          pick: ['x', 'y', 'z', 'moved'],
+          omit: ['z'],
+          rename: [{ from: 'moveMe', to: 'a.moved' }],
+        })
         expect(await func(item)).toEqual([
           {
             context: {},
@@ -41,6 +50,9 @@ describe('fetch utils', () => {
             value: {
               b: {
                 x: 'X',
+                moved: {
+                  val: 'val',
+                },
               },
             },
           },
@@ -98,6 +110,9 @@ describe('fetch utils', () => {
                 ],
               },
               OTHER: 'other',
+              MOVEME: {
+                val: 'val',
+              },
             },
           },
         ])

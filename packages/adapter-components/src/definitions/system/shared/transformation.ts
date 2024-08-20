@@ -51,8 +51,15 @@ export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTarg
   | AdjustFunctionSingle<TContext, TSourceVal, TTargetVal>
   | AdjustFunctionMulti<TContext, TSourceVal, TTargetVal>
 
+export type TransformationRenameDefinition = {
+  from: string
+  to: string
+}
 /**
  * transformation steps:
+ * - if rename is specified, each "from" path is moved to the corresponding "to" path. Notes:
+ *     - renames are done in order, so the "from" values should be based on the most recent state
+ *     - existing values will be overwritten
  * - if root is specified, look at the value under that path instead of the entire object
  * - if pick is specified, pick the specified paths
  * - if omit is specified, omit the specified paths
@@ -63,7 +70,7 @@ export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTarg
  *   (and undefined will be returned if the array is empty). if single is false, the result will be returned as-is.
  */
 export type TransformDefinition<TContext = ContextParams, TTargetVal = Values | Value> = {
-  // return field name (can customize e.g. to "type => types")
+  rename?: TransformationRenameDefinition[]
   root?: string
   pick?: string[]
   omit?: string[]

@@ -41,5 +41,3 @@ packages/**/.turbo
 .turbo
 
 .eslintcache
-.turbo
-.yarn

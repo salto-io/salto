@@ -36,21 +36,12 @@ const hasNewOption = (change: ModificationChange<InstanceElement> | AdditionChan
   return !isEqualValues(optionsBefore, optionsAfter)
 }
 
-const getError = (elemID: ElemID, fieldName: string): ChangeError => {
-  const bla = {
-    elemID,
-    severity: 'Info' as SeverityLevel,
-    message: 'Slow deployment due to field with more than 10K options',
-    detailedMessage: `The deployment of custom field ${fieldName}'s options will be slower because there are more than 10K options.`,
-  }
-  return bla
-}
-// const getError = (elemID: ElemID, fieldName: string): ChangeError => ({
-//   elemID,
-//   severity: 'Info' as SeverityLevel,
-//   message: 'Slow deployment due to field with more than 10K options',
-//   detailedMessage: `The deployment of custom field ${fieldName}'s options will be slower because there are more than 10K options.`,
-// })
+const getError = (elemID: ElemID, fieldName: string): ChangeError => ({
+  elemID,
+  severity: 'Info' as SeverityLevel,
+  message: 'Slow deployment due to field with more than 10K options',
+  detailedMessage: `The deployment of custom field ${fieldName}'s options will be slower because there are more than 10K options.`,
+})
 
 export const customFieldsWith10KOptionValidator: (config: JiraConfig) => ChangeValidator = config => async changes =>
   config.fetch.splitFieldContextOptions

@@ -54,6 +54,7 @@ const addPrivateApiOptions = async ({
     log.error('Received unexpected paginator undefined')
     throw new Error('Received unexpected paginator undefined')
   }
+  // This is done one after the other. It might be ok to do it in parallel, needs some testing
   await awu(privateApiOptions).forEach(async option => {
     const commonData = {
       addValue: option.value,

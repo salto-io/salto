@@ -5,11 +5,17 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeError, ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { ChangeError, ElemID, Field, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
 import changeValidator from '../../src/change_validators/unknown_picklist_values'
-import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
+import {
+  API_NAME,
+  FIELD_ANNOTATIONS,
+  INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE,
+  VALUE_SET_FIELDS,
+} from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { createCustomObjectType } from '../utils'
 import { mockTypes } from '../mock_elements'
@@ -24,7 +30,7 @@ describe('unknownPicklistValues ChangeValidator', () => {
   describe('ValueSet', () => {
     const createDataInstanceWithValueSet = (
       allowedValues: types.NonEmptyArray<string>,
-      picklistFieldValue?: string,
+      picklistFieldValue?: string | ReferenceExpression,
     ): InstanceElement =>
       new InstanceElement(
         'testInstance',
@@ -69,6 +75,32 @@ describe('unknownPicklistValues ChangeValidator', () => {
         changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
       })
       it('should not create errors', () => {
+        expect(changeErrors).toBeEmpty()
+      })
+    })
+    describe('When field value is a Reference to a CustomField', () => {
+      const RELATIVE_FIELD_API_NAME = 'TestField__c'
+      let referencedField: Field
+      beforeEach(() => {
+        referencedField = new Field(mockTypes.Account, RELATIVE_FIELD_API_NAME, Types.primitiveDataTypes.Text, {
+          [API_NAME]: `Account.${RELATIVE_FIELD_API_NAME}`,
+        })
+      })
+      it('should create error when the referenced field is not in the allowed values', async () => {
+        const instance = createDataInstanceWithValueSet(
+          ['knownValue1'],
+          new ReferenceExpression(referencedField.elemID, referencedField),
+        )
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].detailedMessage).toInclude(`Unknown picklist value "${RELATIVE_FIELD_API_NAME}"`)
+      })
+      it('should not create error when the referenced field is in the allowed values', async () => {
+        const instance = createDataInstanceWithValueSet(
+          [RELATIVE_FIELD_API_NAME],
+          new ReferenceExpression(referencedField.elemID, referencedField),
+        )
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
         expect(changeErrors).toBeEmpty()
       })
     })

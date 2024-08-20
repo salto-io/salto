@@ -157,6 +157,7 @@ export type ChangeValidatorName =
   | 'elementApiVersion'
   | 'cpqBillingStartDate'
   | 'cpqBillingTriggers'
+  | 'managedApexComponent'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -859,6 +860,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
+    managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

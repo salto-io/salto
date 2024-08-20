@@ -9,16 +9,22 @@ import _ from 'lodash'
 import { inspect } from 'util'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { AdjustFunctionSingle } from '../../fetch/shared/types'
-import { ODATA_PREFIX, ODATA_TYPE_FIELD } from '../../../constants'
+import { AdjustFunctionSingle } from '../../definitions/fetch/shared/types'
+import { ODATA_PREFIX, ODATA_TYPE_FIELD } from '../../constants'
 
 const log = logger(module)
 
-const extractTypeFromODataTypeField = (odataTypeField: string): string | undefined => {
+const extractTypeFromODataTypeField = ({
+  typeName,
+  odataTypeField,
+}: {
+  typeName: string
+  odataTypeField: string
+}): string | undefined => {
   // The odata type field is in the format of #microsoft.graph.{type}
   const typeParts = odataTypeField.split('.')
   if (typeParts.length < 3) {
-    log.warn(`Failed to extract type from odataTypeField: ${odataTypeField}`)
+    log.warn(`Failed to extract type from odataTypeField: ${odataTypeField} for ${typeName}`)
     return undefined
   }
   return typeParts.slice(2).join('.')
@@ -54,7 +60,7 @@ export const transformOdataTypeField: (operation: 'fetch' | 'deploy') => AdjustF
       value: {
         ..._.omit(value, existingOdataTypeFieldName),
         ...(operation === 'fetch'
-          ? { [adjustedOdataTypeFieldName]: extractTypeFromODataTypeField(odataTypeField) }
+          ? { [adjustedOdataTypeFieldName]: extractTypeFromODataTypeField({ typeName, odataTypeField }) }
           : { [originalOdataTypeFieldName]: restoreOdataTypeField(odataTypeField) }),
       },
     }

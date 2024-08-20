@@ -7,7 +7,7 @@
  */
 import { collections } from '@salto-io/lowerdash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { AdjustFunctionSingle as AdjustFunctionSingleFetch } from '../types'
+import { AdjustFunctionSingle, ContextParams } from './definitions'
 
 const { awu } = collections.asynciterable
 
@@ -16,17 +16,13 @@ const { awu } = collections.asynciterable
  * The adjust functions will be applied in the order they are provided.
  */
 export const concatAdjustFunctions =
-  (...adjustFunctions: AdjustFunctionSingleFetch[]): AdjustFunctionSingleFetch =>
+  <TContext = ContextParams>(...adjustFunctions: AdjustFunctionSingle<TContext>[]): AdjustFunctionSingle<TContext> =>
   async ({ value, typeName, ...args }) => {
     validatePlainObject(value, typeName)
-    let currentValue = value
+    let currentArgs = { ...args, value, typeName }
     await awu([...adjustFunctions]).forEach(async adjustFunc => {
-      const result = await adjustFunc({
-        ...args,
-        typeName,
-        value: currentValue,
-      })
-      currentValue = result.value
+      const result = await adjustFunc(currentArgs)
+      currentArgs = { ...currentArgs, ...result }
     })
-    return { value: currentValue }
+    return currentArgs
   }

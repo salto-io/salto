@@ -5,24 +5,25 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { definitions } from '@salto-io/adapter-components'
+import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
 import { Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { intuneConstants } from '../../../constants'
-import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../shared/defaults'
-import { transformOdataTypeField } from '../../utils/shared'
-import { APPLICATION_OMITTED_FIELDS } from './constants'
-import { concatAdjustFunctions, createCustomizationsWithBasePathForFetch, toOmittedFields } from '../shared/utils'
-import { APPLICATION_NAME_PARTS, APPLICATION_TYPE_PART, omitApplicationRedundantFields } from './utils'
+import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
+import { transformOdataTypeField } from '../../../utils/shared'
+import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
+import {
+  APPLICATION_FIELDS_TO_OMIT,
+  APPLICATION_NAME_PARTS,
+  APPLICATION_TYPE_PART,
+  omitApplicationRedundantFields,
+} from './utils'
 
 const { APPLICATION_TYPE_NAME } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
   [APPLICATION_TYPE_NAME]: {
-    resource: {
-      directFetch: true,
-    },
     requests: [
       {
         endpoint: {
@@ -36,6 +37,9 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
       },
     ],
+    resource: {
+      directFetch: true,
+    },
     element: {
       topLevel: {
         isTopLevel: true,
@@ -45,10 +49,15 @@ const graphBetaCustomizations: FetchCustomizations = {
         path: {
           pathParts: [{ parts: [APPLICATION_TYPE_PART] }, { parts: APPLICATION_NAME_PARTS }],
         },
+        alias: { aliasComponents: [NAME_ID_FIELD] },
+        serviceUrl: {
+          baseUrl: 'https://intune.microsoft.com',
+          path: '/#view/Microsoft_Intune_Apps/SettingsMenu/~/2/appId/{id}',
+        },
       },
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
-        ...toOmittedFields(APPLICATION_OMITTED_FIELDS),
+        ...APPLICATION_FIELDS_TO_OMIT,
       },
     },
   },

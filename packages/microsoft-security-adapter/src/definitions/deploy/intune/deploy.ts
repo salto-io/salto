@@ -8,10 +8,10 @@
 import { getChangeData } from '@salto-io/adapter-api'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
-import { transformOdataTypeField } from '../../utils/shared'
+import { transformOdataTypeField } from '../../../utils/shared'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } from '../shared/utils'
-import { isNonSystemApp } from '../../utils/intune'
+import { isManagedGooglePlayApp } from '../../../utils/intune'
 import { transformNonSystemApp } from './utils'
 
 const { APPLICATION_TYPE_NAME } = intuneConstants
@@ -39,7 +39,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               custom:
                 () =>
                 ({ change }) =>
-                  !isNonSystemApp(getChangeData(change).value),
+                  !isManagedGooglePlayApp(getChangeData(change).value),
             },
           },
           {
@@ -56,7 +56,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               custom:
                 () =>
                 ({ change }) =>
-                  isNonSystemApp(getChangeData(change).value),
+                  isManagedGooglePlayApp(getChangeData(change).value),
             },
           },
         ],

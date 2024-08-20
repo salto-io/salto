@@ -6,9 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ODATA_PREFIX, ODATA_TYPE_FIELD } from '../../../../src/constants'
-import { getAdjustedOdataTypeFieldName, transformOdataTypeField } from '../../../../src/definitions/utils/shared'
-import { contextMock } from '../../../mocks'
+import { ODATA_PREFIX, ODATA_TYPE_FIELD } from '../../../src/constants'
+import { getAdjustedOdataTypeFieldName, transformOdataTypeField } from '../../../src/utils/shared'
+import { contextMock } from '../../mocks'
 
 describe('Odata type utils', () => {
   describe(`${getAdjustedOdataTypeFieldName.name}`, () => {

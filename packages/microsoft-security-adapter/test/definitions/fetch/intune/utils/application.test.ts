@@ -12,7 +12,7 @@ import {
   PACKAGE_ID_FIELD_NAME,
 } from '../../../../../src/constants/intune'
 import { omitApplicationRedundantFields } from '../../../../../src/definitions/fetch/intune/utils'
-import { getAdjustedOdataTypeFieldName } from '../../../../../src/definitions/utils/shared'
+import { getAdjustedOdataTypeFieldName } from '../../../../../src/utils/shared'
 import { contextMock } from '../../../../mocks'
 
 describe('Intune application fetch utils', () => {

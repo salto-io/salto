@@ -9,11 +9,30 @@
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { isApplicationOfType, isNonSystemApp } from '../../../utils/intune'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } from '../../../../constants/intune'
+import {
+  APP_IDENTIFIER_FIELD_NAME,
+  APP_STORE_URL_FIELD_NAME,
+  APPLICATION_TYPE_NAME,
+  PACKAGE_ID_FIELD_NAME,
+} from '../../../../constants/intune'
 import { NAME_ID_FIELD } from '../../shared/defaults'
-import { getAdjustedOdataTypeFieldName } from '../../../utils/shared'
+import { getAdjustedOdataTypeFieldName } from '../../../../utils/shared'
+import { isAndroidEnterpriseSystemApp } from '../../../../utils/intune'
+
+export const APPLICATION_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
+  uploadState: { omit: true },
+  publishingState: { omit: true },
+  isAssigned: { omit: true },
+  isPrivate: { omit: true },
+  supportsOemConfig: { omit: true },
+  dependentAppCount: { omit: true },
+  supersedingAppCount: { omit: true },
+  supersededAppCount: { omit: true },
+  usedLicenseCount: { omit: true },
+  totalLicenseCount: { omit: true },
+  appTracks: { omit: true },
+}
 
 /* The following parts are shared for the application elemID definition and its path definition */
 export const APPLICATION_TYPE_PART: definitions.fetch.FieldIDPart = {
@@ -22,8 +41,12 @@ export const APPLICATION_TYPE_PART: definitions.fetch.FieldIDPart = {
 export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
   // Some ManagedAndroidStoreApp instances have the same name, so instead we use the packageId field,
   // which should be consistent across environments.
-  { fieldName: NAME_ID_FIELD.fieldName, condition: value => !value[PACKAGE_ID_FIELD_NAME] },
-  { fieldName: PACKAGE_ID_FIELD_NAME },
+  { fieldName: APP_IDENTIFIER_FIELD_NAME },
+  { fieldName: PACKAGE_ID_FIELD_NAME, condition: value => !value[APP_IDENTIFIER_FIELD_NAME] },
+  {
+    fieldName: NAME_ID_FIELD.fieldName,
+    condition: value => !value[APP_IDENTIFIER_FIELD_NAME] && !value[PACKAGE_ID_FIELD_NAME],
+  },
 ]
 
 /**
@@ -32,11 +55,9 @@ export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
  */
 export const omitApplicationRedundantFields: AdjustFunctionSingle = async ({ value }) => {
   validatePlainObject(value, APPLICATION_TYPE_NAME)
-  if (isApplicationOfType(value, 'androidManagedStoreApp')) {
-    if (!isNonSystemApp(value)) {
-      return {
-        value: _.omit(value, [PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME]),
-      }
+  if (isAndroidEnterpriseSystemApp(value)) {
+    return {
+      value: _.omit(value, [PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME]),
     }
   }
   return { value }

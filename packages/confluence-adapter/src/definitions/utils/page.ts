@@ -13,12 +13,12 @@ import {
   isInstanceChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { definitions } from '@salto-io/adapter-components'
+import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../constants'
 import { AdditionalAction } from '../types'
-import { createAdjustFunctionFromMultipleFunctions, validateValue } from './generic'
+import { validateValue } from './generic'
 import { createAdjustUserReferencesReverse } from './users'
 import { increaseVersion } from './version'
 
@@ -89,8 +89,8 @@ export const adjustUserReferencesOnPageReverse = createAdjustUserReferencesRever
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
-export const adjustPageOnModification = createAdjustFunctionFromMultipleFunctions([
+export const adjustPageOnModification = concatAdjustFunctions<definitions.deploy.ChangeAndContext>(
   increaseVersion,
   updateHomepageId,
   adjustUserReferencesOnPageReverse,
-])
+)

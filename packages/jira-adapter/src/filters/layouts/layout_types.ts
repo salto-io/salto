@@ -103,9 +103,9 @@ const CONTAINER_ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
               Joi.object({
                 fieldItemId: Joi.string(),
                 panelItemId: Joi.string(),
-              }).unknown(true),
+              }).unknown(true).required(),
             ),
-          }).unknown(true),
+          }).unknown(true)
         }).unknown(true),
       )
       .required(),

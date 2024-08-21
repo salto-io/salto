@@ -142,13 +142,13 @@ const fromLayoutConfigRespToLayoutConfig = (layoutConfig: IssueLayoutConfigurati
     .filter(isLayoutConfigItem)
   const defaultContentItems = containers
     .flatMap(container =>
-      container.items.nodes?.[0]?.items?.nodes?.map(innerNode => {
+      container.items.nodes[0]?.items?.nodes?.map(innerNode => {
         const dataKey = innerNode.panelItemId ?? innerNode.fieldItemId
         if (dataKey === undefined) {
           return undefined
         }
         return {
-          type: innerNode.fieldItemId ? 'FIELD' : 'PANEL',
+          type:  innerNode.panelItemId ? 'PANEL' : 'FIELD',
           sectionType: container.containerType,
           key: dataKey,
           data: fieldItemIdToMetaData[dataKey],

@@ -69,6 +69,7 @@ import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from 
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
 import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
+import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -142,9 +143,10 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
-    fieldContextOptions: fieldContextOptionsValidator,
     assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
     projectAssigneeType: projectAssigneeTypeValidator,
+    fieldContextOptions: fieldContextOptionsValidator(config),
+    fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
   }
 
   return createChangeValidator({

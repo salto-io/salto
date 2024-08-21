@@ -6,47 +6,75 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import * as applicationUtils from '../../../../../src/utils/intune/application'
 import { APP_IDENTIFIER_FIELD_NAME } from '../../../../../src/constants/intune'
-import { transformNonSystemApp } from '../../../../../src/definitions/deploy/intune/utils'
+import { transformManagedGooglePlayApp } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
 
 describe('Intune application deploy utils', () => {
-  describe(transformNonSystemApp.name, () => {
-    describe('when the value is not an object', () => {
+  const isManagedGooglePlayAppMock = jest.spyOn(applicationUtils, 'isManagedGooglePlayApp')
+  describe(transformManagedGooglePlayApp.name, () => {
+    describe('when the app is not a managed google play app', () => {
+      beforeEach(() => {
+        isManagedGooglePlayAppMock.mockReturnValue(false)
+      })
+
       it('should throw an error', async () => {
         await expect(() =>
-          transformNonSystemApp({ value: '', context: contextMock, typeName: 'test' }),
-        ).rejects.toThrow()
+          transformManagedGooglePlayApp({
+            value: { [APP_IDENTIFIER_FIELD_NAME]: 'test' },
+            context: contextMock,
+            typeName: 'test',
+          }),
+        ).rejects.toThrow("The application is not a managed google play app, received: { appIdentifier: 'test' }")
       })
     })
 
-    describe('when the appId is missing', () => {
-      it('should throw an error', async () => {
-        await expect(() =>
-          transformNonSystemApp({ value: {}, context: contextMock, typeName: 'test' }),
-        ).rejects.toThrow('Application identifier field is missing or not a string, received: undefined')
+    describe('when the app is a managed google play app', () => {
+      beforeEach(() => {
+        isManagedGooglePlayAppMock.mockReturnValue(true)
       })
-    })
 
-    describe('when the appId is not a string', () => {
-      it('should throw an error', async () => {
-        await expect(() =>
-          transformNonSystemApp({ value: { [APP_IDENTIFIER_FIELD_NAME]: 1 }, context: contextMock, typeName: 'test' }),
-        ).rejects.toThrow('Application identifier field is missing or not a string, received: 1')
-      })
-    })
-
-    describe('when the appId is a string', () => {
-      it('should return the correct result', async () => {
-        const result = await transformNonSystemApp({
-          value: { [APP_IDENTIFIER_FIELD_NAME]: 'test' },
-          context: contextMock,
-          typeName: 'test',
+      describe('when the value is not an object', () => {
+        it('should throw an error', async () => {
+          await expect(() =>
+            transformManagedGooglePlayApp({ value: '', context: contextMock, typeName: 'test' }),
+          ).rejects.toThrow()
         })
-        expect(result).toEqual({
-          value: {
-            productIds: ['app:test'],
-          },
+      })
+
+      describe('when the appId is missing', () => {
+        it('should throw an error', async () => {
+          await expect(() =>
+            transformManagedGooglePlayApp({ value: {}, context: contextMock, typeName: 'test' }),
+          ).rejects.toThrow('Application identifier field is missing or not a string, received: undefined')
+        })
+      })
+
+      describe('when the appId is not a string', () => {
+        it('should throw an error', async () => {
+          await expect(() =>
+            transformManagedGooglePlayApp({
+              value: { [APP_IDENTIFIER_FIELD_NAME]: 1 },
+              context: contextMock,
+              typeName: 'test',
+            }),
+          ).rejects.toThrow('Application identifier field is missing or not a string, received: 1')
+        })
+      })
+
+      describe('when the appId is a string', () => {
+        it('should return the correct result', async () => {
+          const result = await transformManagedGooglePlayApp({
+            value: { [APP_IDENTIFIER_FIELD_NAME]: 'test' },
+            context: contextMock,
+            typeName: 'test',
+          })
+          expect(result).toEqual({
+            value: {
+              productIds: ['app:test'],
+            },
+          })
         })
       })
     })

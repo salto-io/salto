@@ -38,10 +38,13 @@ export const APPLICATION_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
 export const APPLICATION_TYPE_PART: definitions.fetch.FieldIDPart = {
   fieldName: getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME),
 }
+
+// Some app instances have the same name, so we use other identifiers,
+// that should be consistent between envs, whenever possible
 export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
-  // Some ManagedAndroidStoreApp instances have the same name, so instead we use the packageId field,
-  // which should be consistent across environments.
+  // Identifier for: androidManagedStoreApp, androidStoreApp, androidForWorkApp
   { fieldName: APP_IDENTIFIER_FIELD_NAME },
+  // Identifier for: androidLobApp, managedAndroidLobApp, managedAndroidStoreApp
   { fieldName: PACKAGE_ID_FIELD_NAME, condition: value => !value[APP_IDENTIFIER_FIELD_NAME] },
   {
     fieldName: NAME_ID_FIELD.fieldName,

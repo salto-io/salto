@@ -12,7 +12,7 @@ import { transformOdataTypeField } from '../../../utils/shared'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } from '../shared/utils'
 import { isManagedGooglePlayApp } from '../../../utils/intune'
-import { transformNonSystemApp } from './utils'
+import { transformManagedGooglePlayApp } from './utils'
 
 const { APPLICATION_TYPE_NAME } = intuneConstants
 
@@ -49,7 +49,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: omitReadOnlyFieldsWrapper(transformNonSystemApp),
+                adjust: omitReadOnlyFieldsWrapper(transformManagedGooglePlayApp),
               },
             },
             condition: {

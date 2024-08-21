@@ -107,7 +107,7 @@ const getErrorForChange = (
     elemID: instance.elemID,
     severity: 'Error',
     message: `The ${fieldNames.length > 1 ? 'fields' : 'field'} ${fieldNames.map(str => `'${str}'`).join(', ')} in type ${instance.elemID.typeName} must have ${fieldNames.length > 1 ? 'unique values' : 'a unique value'}`,
-    detailedMessage: `This instance cannot be deployed due to non unique values, within the ${scope} scope, in the following fields: ${nonUniqueFieldValues.map(str => `'${str}'`).join(', ')}.`,
+    detailedMessage: `This instance cannot be deployed due to non-unique values within the ${scope === SCOPE.parent ? 'children of the same parent' : 'entire environment'} in the following fields: ${nonUniqueFieldValues.map(str => `'${str}'`).join(', ')}.`,
   }
 }
 

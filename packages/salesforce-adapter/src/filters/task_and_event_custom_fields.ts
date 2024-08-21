@@ -5,14 +5,24 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  Change,
+  Element, Field,
+  getChangeData,
+  isFieldChange,
+  ObjectType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
-import { isCustomObjectSync } from './utils'
+import { apiNameSync, isCustomObjectSync } from './utils'
 
 const log = logger(module)
+
+const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
+  isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'taskAndEventCustomFields',
@@ -54,6 +64,20 @@ const filterCreator: LocalFilterCreator = () => ({
         })
       })
   },
+  preDeploy: async (changes: Change[]): Promise<void> => {
+    log.debug(`Rachum: Old changes (${changes.length}): ${inspectValue(changes)}`)
+
+    const taskOrEventChanges = changes
+      .filter(isFieldChange)
+      .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
+      .filter(change => getChangeData(change).name.endsWith('__c'))
+
+    for (const change of taskOrEventChanges) {
+      changes.splice(changes.indexOf(change), 1)
+    }
+
+    log.debug(`Rachum: New changes (${changes.length}): ${inspectValue(changes)}`)
+  }
 })
 
 export default filterCreator

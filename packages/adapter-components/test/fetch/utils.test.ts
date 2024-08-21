@@ -27,13 +27,22 @@ describe('fetch utils', () => {
               },
             ],
           },
+          moveMe: {
+            val: 'val',
+          },
           other: 'other',
         },
       }
     })
     describe('when def combines multiple args', () => {
       it('should transform values based on the provided definitions', async () => {
-        const func = createValueTransformer({ root: 'a', nestUnderField: 'b', pick: ['x', 'y', 'z'], omit: ['z'] })
+        const func = createValueTransformer({
+          root: 'a',
+          nestUnderField: 'b',
+          pick: ['x', 'y', 'z', 'moved'],
+          omit: ['z'],
+          rename: [{ from: 'moveMe', to: 'a.moved', alwaysOverride: true }],
+        })
         expect(await func(item)).toEqual([
           {
             context: {},
@@ -41,6 +50,9 @@ describe('fetch utils', () => {
             value: {
               b: {
                 x: 'X',
+                moved: {
+                  val: 'val',
+                },
               },
             },
           },
@@ -76,6 +88,50 @@ describe('fetch utils', () => {
           },
         ])
       })
+      it('should not override value on rename if onConflict = skip', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'skip' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              a: 'a',
+              b: 'b',
+            },
+          },
+        ])
+      })
+      it('should override value on rename if onConflict = override', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'override' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              b: 'a',
+            },
+          },
+        ])
+      })
+      it('should omit "from" value on rename if onConflict = omit', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'omit' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              b: 'b',
+            },
+          },
+        ])
+      })
+
       it('should give precedence to properties returned from adjust', async () => {
         const func = createValueTransformer({
           adjust: async ({ value, context, typeName }) => ({
@@ -98,6 +154,9 @@ describe('fetch utils', () => {
                 ],
               },
               OTHER: 'other',
+              MOVEME: {
+                val: 'val',
+              },
             },
           },
         ])

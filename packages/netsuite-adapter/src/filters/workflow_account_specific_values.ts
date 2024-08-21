@@ -116,14 +116,14 @@ type ResolvedAccountSpecificValuesResult = {
   missingInternalIds: MissingInternalId[]
 }
 
-const ADDITIONAL_INTERNAL_ID_TO_TYPES: Record<string, SuiteQLTableName | AdditionalQueryName> = {
-  '-192': 'shipItem',
-  '-3': 'vendor',
-  '-104': 'entityStatus',
-  '-320': 'supportCaseStatus',
-  '-166': 'employeeStatus',
-  '-253': 'accountingBook',
-  '-517': 'jobResourceRole',
+const ADDITIONAL_INTERNAL_ID_TO_TYPES: Record<string, (SuiteQLTableName | AdditionalQueryName)[]> = {
+  '-192': ['shipItem'],
+  '-3': ['vendor'],
+  '-104': ['entityStatus'],
+  '-320': ['supportCaseStatus'],
+  '-166': ['employeeStatus'],
+  '-253': ['accountingBook'],
+  '-517': ['jobResourceRole'],
 }
 
 const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, SuiteQLTableName | AdditionalQueryName> = {

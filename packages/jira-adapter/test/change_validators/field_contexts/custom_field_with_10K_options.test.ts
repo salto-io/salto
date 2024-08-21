@@ -270,5 +270,21 @@ describe('customFieldsWith10KOptionValidator', () => {
       const changeErrors = await customFieldsWith10KOptionValidator(config)(changes, undefined)
       expect(changeErrors).toHaveLength(0)
     })
+    it('should handle order instances without options field', async () => {
+      config.fetch.splitFieldContextOptions = true
+      const orderInstance = new InstanceElement(
+        'orderInstance',
+        createEmptyType(OPTIONS_ORDER_TYPE_NAME),
+        {},
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(contextInstance.elemID, contextInstance)],
+        },
+      )
+      const changes = [toChange({ after: orderInstance })]
+      const elementsSource = buildElementsSourceFromElements([orderInstance, contextInstance])
+      const changeErrors = await customFieldsWith10KOptionValidator(config)(changes, elementsSource)
+      expect(changeErrors).toHaveLength(0)
+    })
   })
 })

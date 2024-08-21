@@ -56,13 +56,17 @@ const createContextToOptionsCountRecord = async (
   const orderInstances = await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])
   await awu(orderInstances).forEach(async orderInstance => {
     const contextFullName = (await getContextParentAsync(orderInstance, elementsSource)).elemID.getFullName()
+    if (!Array.isArray(orderInstance.value.options)) {
+      log.warn(`Options order instance ${orderInstance.elemID.getFullName()} options field is not an array`)
+      return
+    }
     const alreadyCountedOptions = contextToOptionsCount[contextFullName] ?? 0
     contextToOptionsCount[contextFullName] = alreadyCountedOptions + orderInstance.value.options.length
   })
   return contextToOptionsCount
 }
 
-const withsplitFlag = async (
+const check10KOptionsWithSplitFlag = async (
   changes: readonly Change[],
   elementsSource: ReadOnlyElementsSource | undefined,
 ): Promise<ChangeError[]> => {
@@ -84,7 +88,7 @@ const withsplitFlag = async (
     .map(order => getError(order.elemID, getParentElemID(getContextParent(order)).name))
 }
 
-const withoutSplitFlag: ChangeValidator = async (changes: readonly Change[]): Promise<ChangeError[]> =>
+const check10KOptionsWithoutSplitFlag: ChangeValidator = async (changes: readonly Change[]): Promise<ChangeError[]> =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -97,4 +101,6 @@ const withoutSplitFlag: ChangeValidator = async (changes: readonly Change[]): Pr
 
 export const customFieldsWith10KOptionValidator: (config: JiraConfig) => ChangeValidator =
   config => async (changes, elementsSource: ReadOnlyElementsSource | undefined) =>
-    config.fetch.splitFieldContextOptions ? withsplitFlag(changes, elementsSource) : withoutSplitFlag(changes)
+    config.fetch.splitFieldContextOptions
+      ? check10KOptionsWithSplitFlag(changes, elementsSource)
+      : check10KOptionsWithoutSplitFlag(changes)

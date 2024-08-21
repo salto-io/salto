@@ -41,7 +41,7 @@ describe('fetch utils', () => {
           nestUnderField: 'b',
           pick: ['x', 'y', 'z', 'moved'],
           omit: ['z'],
-          rename: [{ from: 'moveMe', to: 'a.moved', alwaysOverride: true }],
+          rename: [{ from: 'moveMe', to: 'a.moved', onConflict: 'override' }],
         })
         expect(await func(item)).toEqual([
           {

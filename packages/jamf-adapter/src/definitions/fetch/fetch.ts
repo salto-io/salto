@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { definitions } from '@salto-io/adapter-components'
+import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { UserFetchConfig } from '../../config'
 import { Options } from '../types'
 import {
@@ -517,6 +517,7 @@ export const createFetchDefinitions = (
     default: {
       resource: {
         serviceIDFields: ['id'],
+        onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([401, 403]),
       },
       element: {
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,

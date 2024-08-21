@@ -6,10 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { definitions } from '@salto-io/adapter-components'
-import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
-
-const { awu } = collections.asynciterable
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 
 export const validateValue = (value: unknown): Record<string, unknown> => {
   if (!lowerdashValues.isPlainRecord(value)) {
@@ -17,17 +14,3 @@ export const validateValue = (value: unknown): Record<string, unknown> => {
   }
   return value
 }
-
-export const createAdjustFunctionFromMultipleFunctions =
-  (
-    functions: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext>[],
-  ): definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> =>
-  async args => {
-    const value = validateValue(args.value)
-    const argsWithValidatedValue = { ...args, value }
-    const res = await awu(functions)
-      .map(adjust => adjust(argsWithValidatedValue))
-      .toArray()
-    res.pop()
-    return res.pop() ?? argsWithValidatedValue
-  }

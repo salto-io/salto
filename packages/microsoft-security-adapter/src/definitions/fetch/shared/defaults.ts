@@ -9,19 +9,6 @@
 import { ElementFieldCustomization, FieldIDPart } from './types'
 
 export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomization> = {
-  // hide
-  created_at: {
-    hide: true,
-  },
-  updated_at: {
-    hide: true,
-  },
-  created_by_id: {
-    hide: true,
-  },
-  updated_by_id: {
-    hide: true,
-  },
   // This field is used to define a consistent service id (for elements that don't have unique id across the tenant)
   parent_id: {
     hide: true,
@@ -29,6 +16,18 @@ export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomizat
 
   // omit
   _links: {
+    omit: true,
+  },
+  created_at: {
+    omit: true,
+  },
+  updated_at: {
+    omit: true,
+  },
+  created_by_id: {
+    omit: true,
+  },
+  updated_by_id: {
     omit: true,
   },
   createdDateTime: {
@@ -41,6 +40,9 @@ export const DEFAULT_FIELD_CUSTOMIZATIONS: Record<string, ElementFieldCustomizat
     omit: true,
   },
   expirationDateTime: {
+    omit: true,
+  },
+  lastModifiedDateTime: {
     omit: true,
   },
   securityIdentifier: {

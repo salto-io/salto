@@ -6,8 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
 import { BLOG_POST_TYPE_NAME } from '../../constants'
-import { createAdjustFunctionFromMultipleFunctions } from './generic'
 import { createAdjustUserReferencesReverse } from './users'
 import { increaseVersion } from './version'
 
@@ -16,7 +16,7 @@ export const adjustUserReferencesOnBlogPostReverse = createAdjustUserReferencesR
 /**
  * AdjustFunction that runs all blog_post modification adjust functions.
  */
-export const adjustBlogPostOnModification = createAdjustFunctionFromMultipleFunctions([
+export const adjustBlogPostOnModification = concatAdjustFunctions<definitions.deploy.ChangeAndContext>(
   increaseVersion,
   adjustUserReferencesOnBlogPostReverse,
-])
+)

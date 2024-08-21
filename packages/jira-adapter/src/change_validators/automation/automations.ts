@@ -22,7 +22,17 @@ const log = logger(module)
 
 export const automationsValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
-    log.warn('Elements source was not passed to automationsValidator. Skipping validator')
+    log.warn('Skipping automationsValidator due to missing elements source')
+    return []
+  }
+
+  const automationChangesData = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+
+  if (automationChangesData.length === 0) {
     return []
   }
 
@@ -31,11 +41,7 @@ export const automationsValidator: ChangeValidator = async (changes, elementsSou
     .map(id => elementsSource.get(id))
     .groupBy(instance => instance.value.name)
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+  return automationChangesData
     .filter(instance => nameToAutomations[instance.value.name].length > 1)
     .map(instance => ({
       elemID: instance.elemID,

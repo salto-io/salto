@@ -75,4 +75,13 @@ describe('permissionType change validator', () => {
     elementsSource = buildElementsSourceFromElements(elements)
     expect(await permissionTypeValidator([toChange({ after: noFieldPermissionScheme })], elementsSource)).toBeEmpty()
   })
+  it('should not return an error if there are no permission scheme changes', async () => {
+    const otherInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'someType') }), {})
+    expect(
+      await permissionTypeValidator(
+        [toChange({ after: otherInstance })],
+        buildElementsSourceFromElements([otherInstance]),
+      ),
+    ).toBeEmpty()
+  })
 })

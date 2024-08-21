@@ -117,4 +117,14 @@ Check ${url} to see valid users and account IDs.`,
     const validator2 = wrongUserPermissionSchemeValidator(client, config)
     await expect(validator2(changes, buildElementsSourceFromElements([]))).resolves.not.toThrow()
   })
+  it('should not return an error when there are no permission schemes changes', async () => {
+    const otherInstance = new InstanceElement(
+      'otherInstance',
+      new ObjectType({ elemID: new ElemID(JIRA, 'otherType') }),
+      {},
+    )
+    expect(
+      await validator([toChange({ after: otherInstance })], buildElementsSourceFromElements([otherInstance])),
+    ).toBeEmpty()
+  })
 })

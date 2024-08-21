@@ -75,7 +75,7 @@ const getOrderError = (
 }
 
 /**
- * Verify that the context reference all the added/modified options.
+ * Verify that the orders reference all the added options, and that all orders removed from orders are removed
  */
 export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidator = config => async changes => {
   if (!config.fetch.splitFieldContextOptions) {

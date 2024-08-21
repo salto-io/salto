@@ -119,6 +119,7 @@ export type OptionalFeatures = {
   metaTypes?: boolean
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
+  // TODO: add
 }
 
 export type ChangeValidatorName =

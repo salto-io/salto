@@ -60,10 +60,10 @@ const getFieldConfigItemGroup: deployment.grouping.ChangeIdFunction = async chan
 const getFieldContextGroup: deployment.grouping.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
 
-  return !isInstanceElement(instance) ||
-    ![FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME].includes(instance.elemID.typeName)
-    ? undefined
-    : getContextParent(instance).elemID.getFullName()
+  return isInstanceElement(instance) &&
+    [FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME].includes(instance.elemID.typeName)
+    ? getContextParent(instance).elemID.getFullName()
+    : undefined
 }
 
 const getScriptListenersGroup: deployment.grouping.ChangeIdFunction = async change =>

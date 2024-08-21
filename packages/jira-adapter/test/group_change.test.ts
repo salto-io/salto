@@ -19,6 +19,10 @@ import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
   FIELD_CONFIGURATION_TYPE_NAME,
   JIRA,
+  OBJECT_TYPE_ATTRIBUTE_TYPE,
+  QUEUE_TYPE,
+  SCRIPT_FRAGMENT_TYPE,
+  SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE,
   SECURITY_SCHEME_TYPE,
   SLA_TYPE_NAME,
@@ -317,7 +321,151 @@ describe('group change', () => {
       'jira.CustomFieldContext.instance.parent2',
     )
   })
+  it('should group queue type additions', async () => {
+    const queueType = createEmptyType(QUEUE_TYPE)
+    const queueInstance = new InstanceElement('queue', queueType, {}, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('parentQueue'), fieldConfiguration1)],
+    })
+    const queueInstance2 = new InstanceElement('queue2', queueType, {}, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('parentQueue2'), fieldConfiguration2)],
+    })
+    const queueInstance3 = new InstanceElement('queue3', queueType, {}, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('parentQueue'), fieldConfiguration1)],
+    })
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            queueInstance.elemID.getFullName(),
+            toChange({
+              after: queueInstance,
+            }),
+          ],
+          [
+            queueInstance2.elemID.getFullName(),
+            toChange({
+              after: queueInstance2,
+            }),
+          ],
+          [
+            queueInstance3.elemID.getFullName(),
+            toChange({
+              after: queueInstance3,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
 
+    expect(changeGroupIds.get(queueInstance.elemID.getFullName())).toEqual(
+      'queue addition of jira.FieldConfiguration.instance.parent1',
+    )
+    expect(changeGroupIds.get(queueInstance2.elemID.getFullName())).toEqual(
+      'queue addition of jira.FieldConfiguration.instance.parent2',
+    )
+    expect(changeGroupIds.get(queueInstance3.elemID.getFullName())).toEqual(
+      'queue addition of jira.FieldConfiguration.instance.parent1',
+    )
+  })
+  it('should group changes of attribute type additions', async () => {
+    const objectTypeAttributeType = createEmptyType(OBJECT_TYPE_ATTRIBUTE_TYPE)
+    const objectTypeAttributeInstance = new InstanceElement('objectTypeAttribute', objectTypeAttributeType, {
+      objectType: new ReferenceExpression(new ElemID('objectType'), fieldConfiguration1),
+    })
+    const objectTypeAttributeInstance2 = new InstanceElement('objectTypeAttribute2', objectTypeAttributeType, {
+      objectType: new ReferenceExpression(new ElemID('objectType2'), fieldConfiguration2),
+    })
+    const objectTypeAttributeInstance3 = new InstanceElement('objectTypeAttribute3', objectTypeAttributeType, {
+      objectType: new ReferenceExpression(new ElemID('objectType'), fieldConfiguration1),
+    })
+
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            objectTypeAttributeInstance.elemID.getFullName(),
+            toChange({
+              after: objectTypeAttributeInstance,
+            }),
+          ],
+          [
+            objectTypeAttributeInstance2.elemID.getFullName(),
+            toChange({
+              after: objectTypeAttributeInstance2,
+            }),
+          ],
+          [
+            objectTypeAttributeInstance3.elemID.getFullName(),
+            toChange({
+              after: objectTypeAttributeInstance3,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(objectTypeAttributeInstance.elemID.getFullName())).toEqual(
+      'attribute addition of objectType',
+    )
+    expect(changeGroupIds.get(objectTypeAttributeInstance2.elemID.getFullName())).toEqual(
+      'attribute addition of objectType2',
+    )
+    expect(changeGroupIds.get(objectTypeAttributeInstance3.elemID.getFullName())).toEqual(
+      'attribute addition of objectType',
+    )
+  })
+  it('should return Script Listeners group for changes of type SCRIPT_RUNNER_LISTENER_TYPE', async () => {
+    const scriptRunnerListenerType = createEmptyType(SCRIPT_RUNNER_LISTENER_TYPE)
+    const scriptRunnerListenerInstance = new InstanceElement('scriptRunnerListener', scriptRunnerListenerType)
+    const scriptRunnerListenerInstance2 = new InstanceElement('scriptRunnerListener2', scriptRunnerListenerType)
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            scriptRunnerListenerInstance.elemID.getFullName(),
+            toChange({
+              after: scriptRunnerListenerInstance,
+            }),
+          ],
+          [
+            scriptRunnerListenerInstance2.elemID.getFullName(),
+            toChange({
+              after: scriptRunnerListenerInstance2,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(scriptRunnerListenerInstance.elemID.getFullName())).toEqual('Script Listeners')
+    expect(changeGroupIds.get(scriptRunnerListenerInstance2.elemID.getFullName())).toEqual('Script Listeners')
+  })
+  it('should return Script fragment group for changes of type Script fragments', async () => {
+    const scriptFragmentType = createEmptyType(SCRIPT_FRAGMENT_TYPE)
+    const scriptFragmentInstance = new InstanceElement('scriptFragment', scriptFragmentType)
+    const scriptFragmentInstance2 = new InstanceElement('scriptFragment2', scriptFragmentType)
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            scriptFragmentInstance.elemID.getFullName(),
+            toChange({
+              after: scriptFragmentInstance,
+            }),
+          ],
+          [
+            scriptFragmentInstance2.elemID.getFullName(),
+            toChange({
+              after: scriptFragmentInstance2,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(scriptFragmentInstance.elemID.getFullName())).toEqual('Scripted Fragments')
+    expect(changeGroupIds.get(scriptFragmentInstance2.elemID.getFullName())).toEqual('Scripted Fragments')
+  })
   it('should throw if field context option does not have parent', async () => {
     delete fieldContextOptionInstance1.annotations[CORE_ANNOTATIONS.PARENT]
     await expect(
@@ -356,5 +504,21 @@ describe('group change', () => {
     expect(changeGroupIds.get(slaInstance.elemID.getFullName())).toEqual(
       'sla addition of jira.project.instance.project1',
     )
+  })
+  it('should return undefined for changes that are not specifically handled', async () => {
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            'not-handled-change',
+            toChange({
+              after: new InstanceElement('not-handled-change', createEmptyType('not-handled-type')),
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get('not-handled-change')).toEqual('jira.not-handled-type.instance.not-handled-change')
   })
 })

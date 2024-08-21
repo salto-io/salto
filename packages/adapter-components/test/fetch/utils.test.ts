@@ -41,7 +41,7 @@ describe('fetch utils', () => {
           nestUnderField: 'b',
           pick: ['x', 'y', 'z', 'moved'],
           omit: ['z'],
-          rename: [{ from: 'moveMe', to: 'a.moved' }],
+          rename: [{ from: 'moveMe', to: 'a.moved', alwaysOverride: true }],
         })
         expect(await func(item)).toEqual([
           {
@@ -88,6 +88,50 @@ describe('fetch utils', () => {
           },
         ])
       })
+      it('should not override value on rename if onConflict = skip', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'skip' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              a: 'a',
+              b: 'b',
+            },
+          },
+        ])
+      })
+      it('should override value on rename if onConflict = override', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'override' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              b: 'a',
+            },
+          },
+        ])
+      })
+      it('should omit "from" value on rename if onConflict = omit', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'omit' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              b: 'b',
+            },
+          },
+        ])
+      })
+
       it('should give precedence to properties returned from adjust', async () => {
         const func = createValueTransformer({
           adjust: async ({ value, context, typeName }) => ({

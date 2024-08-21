@@ -51,10 +51,17 @@ export type AdjustFunction<TContext = ContextParams, TSourceVal = unknown, TTarg
   | AdjustFunctionSingle<TContext, TSourceVal, TTargetVal>
   | AdjustFunctionMulti<TContext, TSourceVal, TTargetVal>
 
+// note: "from" and "to" can contain nested paths (e.g. a.b.c)
 export type TransformationRenameDefinition = {
   from: string
   to: string
+  // behavior when the target already exists:
+  // - override: move "from" to "to" and lose the old "to" value
+  // - skip: keep the value in "from" and do not override "to"
+  // - omit: lose the value in "from" and keep the value in "to"
+  onConflict: 'override' | 'skip' | 'omit'
 }
+
 /**
  * transformation steps:
  * - if rename is specified, each "from" path is moved to the corresponding "to" path. Notes:

@@ -7,6 +7,7 @@
  */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import {
@@ -22,9 +23,25 @@ const log = logger(module)
 
 const getObjectWithRenamedFields = (value: Values, renameDefs: TransformationRenameDefinition[]): Values => {
   const newVal = _.cloneDeep(value)
-  renameDefs.forEach(({ from, to }) => {
+  renameDefs.forEach(def => {
+    const { from, to, onConflict } = def
     if (_.get(newVal, to) !== undefined) {
-      log.warn('rename transformation results in overriding value in path %s', to)
+      if (onConflict === 'skip') {
+        log.warn(
+          'rename transformation not performed due to existing value in target (definition: %s)',
+          safeJsonStringify(def),
+        )
+        return
+      }
+      if (onConflict === 'omit') {
+        log.warn(
+          'rename transformation converted to omit due to existing value in target (definition: %s)',
+          safeJsonStringify(def),
+        )
+        _.unset(newVal, from)
+        return
+      }
+      log.warn('rename transformation results in overriding value in target (definition: %s)', safeJsonStringify(def))
     }
     _.set(newVal, to, _.get(value, from))
     _.unset(newVal, from)

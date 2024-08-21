@@ -53,22 +53,25 @@ export const referencedWorkflowDeletionChangeValidator =
   (config: JiraConfig): ChangeValidator =>
   async (changes, elementsSource) => {
     if (!config.fetch.enableNewWorkflowAPI) {
-      log.info('New workflow api not enabled, skipping validator.')
+      log.warn('New workflow api not enabled, skipping validator.')
       return []
     }
     if (elementsSource === undefined) {
-      log.warn(
-        "Elements source was not passed to referencedWorkflowDeletionChangeValidator. Skipping 'referencedWorkflowDeletionChangeValidator'.",
-      )
+      log.warn('Skipping referencedWorkflowDeletionChangeValidator due to missing elements source')
       return []
     }
-    const workflowNameToReferencingWorkflowSchemes =
-      await mapWorkflowNameToReferencingWorkflowSchemesIDs(elementsSource)
-    return awu(changes)
+    const workflowChangesData = changes
       .filter(isInstanceChange)
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(isWorkflowV2Instance)
+
+    if (workflowChangesData.length === 0) {
+      return []
+    }
+    const workflowNameToReferencingWorkflowSchemes =
+      await mapWorkflowNameToReferencingWorkflowSchemesIDs(elementsSource)
+    return workflowChangesData
       .filter(workflow => !_.isEmpty(workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]))
       .map(workflow => ({
         elemID: workflow.elemID,
@@ -76,5 +79,4 @@ export const referencedWorkflowDeletionChangeValidator =
         message: "Can't delete a referenced workflow.",
         detailedMessage: `Workflow is referenced by the following workflow schemes: ${[...workflowNameToReferencingWorkflowSchemes[workflow.elemID.getFullName()]].map(elemID => elemID.name).join(', ')}.`,
       }))
-      .toArray()
   }

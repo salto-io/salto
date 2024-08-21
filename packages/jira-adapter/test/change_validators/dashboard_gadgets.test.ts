@@ -107,4 +107,13 @@ describe('dashboardGadgetsValidator', () => {
 
     expect(await dashboardGadgetsValidator([toChange({ after: instance2 })], elementsSource)).toEqual([])
   })
+  it('should not return an error when there are no gadgets', async () => {
+    const otherInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'someType') }), {})
+    expect(
+      await dashboardGadgetsValidator(
+        [toChange({ after: otherInstance })],
+        buildElementsSourceFromElements([otherInstance]),
+      ),
+    ).toBeEmpty()
+  })
 })

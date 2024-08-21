@@ -54,4 +54,13 @@ describe('automationsValidator', () => {
 
     expect(await automationsValidator([toChange({ after: instance2 })], elementsSource)).toEqual([])
   })
+  it('should not return an error when there are no automations', async () => {
+    const otherInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'someType') }), {})
+    expect(
+      await automationsValidator(
+        [toChange({ after: otherInstance })],
+        buildElementsSourceFromElements([otherInstance]),
+      ),
+    ).toBeEmpty()
+  })
 })

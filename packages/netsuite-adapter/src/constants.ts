@@ -59,6 +59,7 @@ export const BIN = 'bin'
 export const TAX_SCHEDULE = 'taxSchedule'
 export const PROJECT_EXPENSE_TYPE = 'projectExpenseType'
 export const ALLOCATION_TYPE = 'allocationType'
+export const SUPPORT_CASE_PROFILE = 'supportCaseProfile'
 
 // Type Annotations
 export const SOURCE = 'source'

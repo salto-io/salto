@@ -45,18 +45,24 @@ export const dashboardGadgetsValidator: ChangeValidator = async (changes, elemen
     return []
   }
 
+  const dashboardGadgetChangesData = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
+
+  if (dashboardGadgetChangesData.length === 0) {
+    return []
+  }
+
   const gadgetsMap = await awu(await elementsSource.list())
     .filter(id => id.typeName === DASHBOARD_GADGET_TYPE && id.idType === 'instance')
     .map(id => elementsSource.get(id))
     .groupBy(getGadgetInstanceKey)
 
-  return awu(changes)
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
+  return dashboardGadgetChangesData
     .filter(instance => gadgetsMap[getGadgetInstanceKey(instance)]?.length > 1)
-    .map(async instance => ({
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Gadget position overlaps with existing gadgets',
@@ -67,5 +73,4 @@ export const dashboardGadgetsValidator: ChangeValidator = async (changes, elemen
         .map(gadget => gadget.elemID.getFullName())
         .join(', ')}. Change its position, or other gadgets’ position, and try again.`,
     }))
-    .toArray()
 }

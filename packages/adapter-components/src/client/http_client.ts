@@ -303,7 +303,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
         {
           data: e?.response?.data ?? data,
           status: e?.response?.status ?? 'undefined',
-          headers: e?.response?.headers ?? headers,
+          headers: this.extractHeaders(e?.response?.headers ?? headers),
           requestPath: e?.response?.request?.path,
         },
         e,

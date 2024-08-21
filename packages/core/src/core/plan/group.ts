@@ -120,7 +120,7 @@ export const buildGroupedGraphFromDiffGraph = (
   diffGraph: DataNodeMap<Change>,
   customGroupKeys?: Map<ChangeId, ChangeGroupId>,
   disjointGroups?: Set<ChangeGroupId>,
-): GroupDAG<Change> => {
+): { graph: GroupDAG<Change>; removedCycles: collections.set.SetId[][] } => {
   const groupKey = (nodeId: NodeId): string => {
     const customKey = customGroupKeys?.get(nodeId)
     if (customKey !== undefined) {

@@ -191,22 +191,33 @@ const buildAcyclicGroupedGraphImpl = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
   origGroupKey: GroupKeyFunc,
-): GroupDAG<T> => {
+  removedCycles: collections.set.SetId[][] = [],
+): { graph: GroupDAG<T>; removedCycles: collections.set.SetId[][] } => {
   // Build group graph
   const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
   const possibleCycle = groupGraph.getCycle()
   if (possibleCycle === undefined) {
-    return new DAG(groupGraph.entries(), groupGraph.nodeData)
+    return { graph: new DAG(groupGraph.entries(), groupGraph.nodeData), removedCycles }
   }
-  const updatedGroupKey = modifyGroupKeyToRemoveCycle(groupGraph, groupKey, source, possibleCycle)
-  return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, origGroupKey)
+  try {
+    const updatedGroupKey = modifyGroupKeyToRemoveCycle(groupGraph, groupKey, source, possibleCycle)
+    return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, origGroupKey, removedCycles)
+  } catch (error) {
+    if (error instanceof CircularDependencyError) {
+      const { causingNodeIds } = error
+      log.debug('detected circular dependency in group graph, removing the following nodes: %s', causingNodeIds.map(toString).join(', ') )
+      causingNodeIds.forEach(nodeId => source.deleteNode(nodeId))
+      return buildAcyclicGroupedGraphImpl(source, groupKey, origGroupKey, removedCycles.concat([causingNodeIds]))
+    }
+    throw error
+  }
 }
 
 export const buildAcyclicGroupedGraph = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
   disjointGroups?: Set<NodeId>,
-): GroupDAG<T> =>
+): { graph: GroupDAG<T>; removedCycles: collections.set.SetId[][] } =>
   log.timeDebug(
     () => {
       const updatedGroupKey = breakToDisjointGroups(source, groupKey, disjointGroups)

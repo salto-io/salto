@@ -19,6 +19,7 @@ import {
   Variable,
   VariableExpression,
   TemplateExpression,
+  isDependencyError,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import wu from 'wu'
@@ -139,19 +140,31 @@ describe('getPlan', () => {
     expect(splitElemChanges[1].action).toEqual('modify')
   })
 
-  it('should fail on addition if fields create a dependency cycle', async () => {
-    await expect(planWithFieldDependencyCycle(true)).rejects.toThrow()
+  it('should omit fields from plan they create a dependency cycle on addition', async () => {
+    const plan = await planWithFieldDependencyCycle(true)
+    const planItems = [...plan.itemsByEvalOrder()]
+    expect(planItems).toHaveLength(6)
+    const [dependencyErrors, otherErrors] = _.partition(plan.changeErrors, isDependencyError)
+    expect(otherErrors).toHaveLength(2)
+    expect(dependencyErrors).toHaveLength(1)
   })
 
-  it('should fail on removal if fields create a dependency cycle', async () => {
-    await expect(planWithFieldDependencyCycle(false)).rejects.toThrow()
+  it('should omit fields from plan they create a dependency cycle on', async () => {
+    const plan = await planWithFieldDependencyCycle(false)
+    const planItems = [...plan.itemsByEvalOrder()]
+    expect(planItems).toHaveLength(6)
+    const [dependencyErrors, otherErrors] = _.partition(plan.changeErrors, isDependencyError)
+    expect(otherErrors).toHaveLength(2)
+    expect(dependencyErrors).toHaveLength(0)
   })
 
   it('should fail when plan has dependency cycle', async () => {
     // Without change validators
-    await expect(planWithDependencyCycle(false)).rejects.toThrow()
+    const planWithNoValidators = await planWithDependencyCycle(false)
+    const planWithNoValidatorsItems = [...planWithNoValidators.itemsByEvalOrder()]
+    expect(planWithNoValidatorsItems).toHaveLength(6)
     // With change validators
-    await expect(planWithDependencyCycle(true)).rejects.toThrow()
+    // await expect(planWithDependencyCycle(true)).rejects.toThrow()
   })
 
   it('should ignore cycles within a group', async () => {

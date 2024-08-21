@@ -958,6 +958,9 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               {
                 metadataType: 'Translations',
               },
+              {
+                metadataType: 'ManagedEventSubscription',
+              },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,

@@ -6,13 +6,19 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import * as applicationUtils from '../../../../../src/utils/intune/application'
 import { APP_IDENTIFIER_FIELD_NAME } from '../../../../../src/constants/intune'
 import { transformManagedGooglePlayApp } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
 
+const isManagedGooglePlayAppMock = jest.fn()
+
+jest.mock('../../../../../src/utils', () => ({
+  intuneUtils: {
+    isManagedGooglePlayApp: (...args: unknown[]) => isManagedGooglePlayAppMock(...args),
+  },
+}))
+
 describe('Intune application deploy utils', () => {
-  const isManagedGooglePlayAppMock = jest.spyOn(applicationUtils, 'isManagedGooglePlayApp')
   describe(transformManagedGooglePlayApp.name, () => {
     describe('when the app is not a managed google play app', () => {
       beforeEach(() => {

@@ -11,10 +11,11 @@ import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { transformOdataTypeField } from '../../../utils/shared'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } from '../shared/utils'
-import { isManagedGooglePlayApp } from '../../../utils/intune'
+import { intuneUtils } from '../../../utils'
 import { transformManagedGooglePlayApp } from './utils'
 
 const { APPLICATION_TYPE_NAME } = intuneConstants
+const { isManagedGooglePlayApp } = intuneUtils
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
   [APPLICATION_TYPE_NAME]: {

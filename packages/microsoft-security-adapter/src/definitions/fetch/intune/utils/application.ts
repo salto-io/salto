@@ -18,7 +18,9 @@ import {
 } from '../../../../constants/intune'
 import { NAME_ID_FIELD } from '../../shared/defaults'
 import { getAdjustedOdataTypeFieldName } from '../../../../utils/shared'
-import { isAndroidEnterpriseSystemApp } from '../../../../utils/intune'
+import { intuneUtils } from '../../../../utils'
+
+const { isAndroidEnterpriseSystemApp } = intuneUtils
 
 export const APPLICATION_FIELDS_TO_OMIT: Record<string, { omit: true }> = {
   uploadState: { omit: true },

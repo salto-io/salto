@@ -11,7 +11,9 @@ import { inspect } from 'util'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
 import { APP_IDENTIFIER_FIELD_NAME, APPLICATION_TYPE_NAME } from '../../../../constants/intune'
-import { isManagedGooglePlayApp } from '../../../../utils/intune'
+import { intuneUtils } from '../../../../utils'
+
+const { isManagedGooglePlayApp } = intuneUtils
 
 /**
  * Addition of 'Managed Google Play' apps is done by specifying the productIds field

@@ -16,8 +16,8 @@ export class AbortFetchOnFailure extends FatalError {
 }
 
 export const createGetInsufficientPermissionsErrorFunction: (
-  statuses?: number[],
-) => fetch.FetchResourceDefinition['onError'] = (statuses = [403]) => ({
+  statuses: number[],
+) => fetch.FetchResourceDefinition['onError'] = statuses => ({
   custom:
     () =>
     ({ error, typeName }) => {

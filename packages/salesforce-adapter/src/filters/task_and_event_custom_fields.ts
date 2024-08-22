@@ -16,10 +16,12 @@ import {
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
-import { EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
+import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE_CUSTOM_SUFFIX, TASK_CUSTOM_OBJECT } from '../constants'
 import { apiNameSync, isCustomObjectSync } from './utils'
 
 const log = logger(module)
+
+const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
@@ -27,16 +29,14 @@ const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
 const filterCreator: LocalFilterCreator = () => ({
   name: 'taskAndEventCustomFields',
   /**
-   * Upon fetch modify the extension of the StaticResource's static file CONTENT field
-   * from '.resource' to the correct extension based on the CONTENT_TYPE field
+   * Upon fetch modify custom fields of `Task` and `Event` to point to the corresponding field in the `Activity` object.
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    elements.forEach(e => log.debug(`Rachum: Found element: ${e.elemID.getFullName()}`))
     const activity = elements
-      .filter(co => co.elemID.name === 'Activity')
+      .filter(co => co.elemID.name === ACTIVITY_CUSTOM_OBJECT)
       .pop() as ObjectType
 
-    log.debug(`Rachum: Found ${activity?.elemID.typeName} object: ${inspectValue(activity)}`)
+    log.trace(`Rachum: Found Activity object: ${inspectValue(activity)}`)
 
     elements
       .filter(isCustomObjectSync)
@@ -45,8 +45,7 @@ const filterCreator: LocalFilterCreator = () => ({
       .forEach(co => {
         log.debug(`Rachum: Found ${co.elemID.typeName} object: ${inspectValue(co)}`)
         Object.entries(co.fields).forEach(([fieldName, field]) => {
-
-          if (!fieldName.endsWith('__c')) {
+          if (!isCustomField(field)) {
             return
           }
 
@@ -70,7 +69,7 @@ const filterCreator: LocalFilterCreator = () => ({
     const taskOrEventChanges = changes
       .filter(isFieldChange)
       .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
-      .filter(change => getChangeData(change).name.endsWith('__c'))
+      .filter(change => isCustomField(getChangeData(change)))
 
     for (const change of taskOrEventChanges) {
       changes.splice(changes.indexOf(change), 1)

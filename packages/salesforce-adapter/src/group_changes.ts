@@ -133,7 +133,7 @@ const QUOTE_TERMS_PARAMS = {
   conditionRuleFieldName: CPQ_QUOTE_TERM,
 }
 
-const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc =
+const getSbaaCustomApprovalRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc =
   changes => ({
     add: getCustomRuleAndConditionGroupChangeIds({
       action: 'add',
@@ -147,7 +147,7 @@ const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds: GetCustomRulesAndC
     }),
   })
 
-const getAddCpqCustomPriceRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc = changes => ({
+const getCpqCustomPriceRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc = changes => ({
   add: getCustomRuleAndConditionGroupChangeIds({
     action: 'add',
     changes,
@@ -160,40 +160,38 @@ const getAddCpqCustomPriceRuleAndConditionGroupChangeIds: GetCustomRulesAndCondi
   }),
 })
 
-const getAddCpqCustomProductRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc =
-  changes => ({
-    add: getCustomRuleAndConditionGroupChangeIds({
-      action: 'add',
-      changes,
-      ...PRODUCT_RULES_PARAMS,
-    }),
-    remove: getCustomRuleAndConditionGroupChangeIds({
-      action: 'remove',
-      changes,
-      ...PRODUCT_RULES_PARAMS,
-    }),
-  })
+const getCpqCustomProductRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc = changes => ({
+  add: getCustomRuleAndConditionGroupChangeIds({
+    action: 'add',
+    changes,
+    ...PRODUCT_RULES_PARAMS,
+  }),
+  remove: getCustomRuleAndConditionGroupChangeIds({
+    action: 'remove',
+    changes,
+    ...PRODUCT_RULES_PARAMS,
+  }),
+})
 
-const getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc =
-  changes => ({
-    add: getCustomRuleAndConditionGroupChangeIds({
-      action: 'add',
-      changes,
-      ...QUOTE_TERMS_PARAMS,
-    }),
-    remove: getCustomRuleAndConditionGroupChangeIds({
-      action: 'remove',
-      changes,
-      ...QUOTE_TERMS_PARAMS,
-    }),
-  })
+const getCpqCustomQuoteTermsAndConditionsGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc = changes => ({
+  add: getCustomRuleAndConditionGroupChangeIds({
+    action: 'add',
+    changes,
+    ...QUOTE_TERMS_PARAMS,
+  }),
+  remove: getCustomRuleAndConditionGroupChangeIds({
+    action: 'remove',
+    changes,
+    ...QUOTE_TERMS_PARAMS,
+  }),
+})
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const customApprovalRuleAndConditionChangeIds = getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds(changes)
-  const customPriceRuleAndConditionChangeIds = getAddCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
-  const customProductRuleAndConditionChangeIds = getAddCpqCustomProductRuleAndConditionGroupChangeIds(changes)
-  const customQuoteTermsAndConditionsChangeIds = getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds(changes)
+  const customApprovalRuleAndConditionChangeIds = getSbaaCustomApprovalRuleAndConditionGroupChangeIds(changes)
+  const customPriceRuleAndConditionChangeIds = getCpqCustomPriceRuleAndConditionGroupChangeIds(changes)
+  const customProductRuleAndConditionChangeIds = getCpqCustomProductRuleAndConditionGroupChangeIds(changes)
+  const customQuoteTermsAndConditionsChangeIds = getCpqCustomQuoteTermsAndConditionsGroupChangeIds(changes)
 
   wu(changes.entries()).forEach(([changeId, change]) => {
     let groupId: string

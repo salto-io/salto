@@ -571,10 +571,10 @@ export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: stri
 
 // Custom Rules And Conditions Groups
 
-const CUSTOM_APPROVAL_RULE_AND_CONDITION = 'Custom ApprovalRule and ApprovalCondition'
-const CUSTOM_PRICE_RULE_AND_CONDITION = 'Custom PriceRule and PriceCondition'
-const CUSTOM_PRODUCT_RULE_AND_CONDITION = 'Custom ProductRule and ErrorCondition'
-const CUSTOM_QUOTE_TERM_AND_CONDITION = 'Custom QuoteTerm and TermCondition'
+export const CUSTOM_APPROVAL_RULE_AND_CONDITION = 'Custom ApprovalRule and ApprovalCondition'
+export const CUSTOM_PRICE_RULE_AND_CONDITION = 'Custom PriceRule and PriceCondition'
+export const CUSTOM_PRODUCT_RULE_AND_CONDITION = 'Custom ProductRule and ErrorCondition'
+export const CUSTOM_QUOTE_TERM_AND_CONDITION = 'Custom QuoteTerm and TermCondition'
 
 export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',

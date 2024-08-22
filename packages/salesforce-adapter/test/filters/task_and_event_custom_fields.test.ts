@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ObjectType, toChange } from '@salto-io/adapter-api'
 import { createCustomObjectType, createField, defaultFilterContext } from '../utils'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -16,20 +16,20 @@ describe('taskAndEventCustomFieldsFilter', () => {
   const FIELD_NAME = 'TestField__c'
   let filter: FilterWith<'onFetch' | 'preDeploy'>
 
+  const activityType = createCustomObjectType(ACTIVITY_CUSTOM_OBJECT, {})
+  const taskType = createCustomObjectType(TASK_CUSTOM_OBJECT, {})
+  const eventType = createCustomObjectType(EVENT_CUSTOM_OBJECT, {})
+
+  const activityField = createField(activityType, BuiltinTypes.STRING, `Activity.${FIELD_NAME}`, {}, FIELD_NAME)
+  const taskField = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD_NAME}`, {}, FIELD_NAME)
+  const eventField = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD_NAME}`, {}, FIELD_NAME)
+
   beforeEach(() => {
     filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
   })
 
   describe('onFetch', () => {
     it('should mutate custom fields to references', async () => {
-      const activityType = createCustomObjectType(ACTIVITY_CUSTOM_OBJECT, {})
-      const taskType = createCustomObjectType(TASK_CUSTOM_OBJECT, {})
-      const eventType = createCustomObjectType(EVENT_CUSTOM_OBJECT, {})
-
-      const activityField = createField(activityType, BuiltinTypes.STRING, `Activity.${FIELD_NAME}`, {}, FIELD_NAME)
-      const taskField = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD_NAME}`, {}, FIELD_NAME)
-      const eventField = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD_NAME}`, {}, FIELD_NAME)
-
       const elements = [activityType, taskType, eventType, activityField, taskField, eventField]
       await filter.onFetch(elements)
 
@@ -37,6 +37,25 @@ describe('taskAndEventCustomFieldsFilter', () => {
         expect(Object.keys(field.annotations)).toEqual(['apiName', 'activityField'])
         expect(field.annotations.activityField.elemID).toEqual(activityField.elemID)
       })
+    })
+  })
+
+  describe('preDeploy', () => {
+    it('should drop addition and removal changes to Task and Event custom fields', async () => {
+      const changes = [
+        toChange({ after: taskField }),
+        toChange({ after: eventField }),
+        toChange({ after: activityField }),
+
+        toChange({ before: taskField }),
+        toChange({ before: eventField }),
+        toChange({ before: activityField }),
+      ]
+      await filter.preDeploy(changes)
+      expect(changes).toEqual([
+        toChange({ after: activityField }),
+        toChange({ before: activityField }),
+      ])
     })
   })
 })

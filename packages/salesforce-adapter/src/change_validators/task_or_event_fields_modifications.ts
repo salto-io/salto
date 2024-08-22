@@ -69,7 +69,7 @@ const changeValidator: ChangeValidator = async changes => {
             elemID: field.elemID,
             severity: 'Error',
             message: 'Modifying a field of Task or Event is not allowed',
-            detailedMessage: `Adding the field ${field.name} of the ${apiNameSync(field.parent)} object should reference ${getChangeData(activityFieldChange).annotations.apiName}`
+            detailedMessage: `Adding the field ${field.name} of the ${apiNameSync(field.parent)} object should reference ${getChangeData(activityFieldChange).annotations.apiName}. Got: ${inspectValue(activityFieldRef)}`,
           }
         }
       }

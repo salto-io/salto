@@ -5,6 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
+import { Value } from '@salto-io/adapter-api'
 import { ClientLoggingConfig, ResponseLogStrategy } from '../definitions/user/client_config'
 
 export type FullResponseLogFilter = (args: { responseText: string; url: string }) => ResponseLogStrategy
@@ -44,4 +46,14 @@ export const createResponseLogFilter = (
 
     return strategy ?? 'full'
   }
+}
+
+export const truncateReplacer = (_key: string, value: Value): Value => {
+  if (Array.isArray(value)) {
+    return value.slice(0, 50)
+  }
+  if (_.isString(value) && value.length > 500) {
+    return value.slice(0, 500)
+  }
+  return value
 }

@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { ResponseType } from 'axios'
-import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -29,7 +29,7 @@ import {
 } from '../definitions/user/client_config'
 import { requiresLogin, logDecorator } from './decorators'
 import { throttle } from './rate_limit'
-import { createResponseLogFilter, FullResponseLogFilter } from './logging_utils'
+import { createResponseLogFilter, FullResponseLogFilter, truncateReplacer } from './logging_utils'
 
 const log = logger(module)
 
@@ -277,7 +277,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
           responseText,
         )
       } else if (strategy === 'truncate') {
-        const truncatedResponseText = inspectValue(responseObj, { maxArrayLength: 10, maxStringLength: 100, compact: true })
+        const truncatedResponseText = safeJsonStringify(responseObj, truncateReplacer)
         log.trace(
           'Truncated HTTP response for %s on %s (original size %d, truncated dize %d): %s',
           method.toUpperCase(),

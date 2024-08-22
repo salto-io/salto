@@ -6,7 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { createResponseLogFilter } from '../../src/client/logging_utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { createResponseLogFilter, truncateReplacer } from '../../src/client/logging_utils'
 
 describe('logging_utils', () => {
   describe('createResponseLogFilter', () => {
@@ -96,6 +97,35 @@ describe('logging_utils', () => {
       expect(filter({ responseText: 'aaa', url: '/permissions' })).toEqual('truncate')
       expect(filter({ responseText: 'aaa', url: '/a/b' })).toEqual('omit')
       expect(filter({ responseText: 'aaa', url: '/permissions' })).toEqual('omit')
+    })
+  })
+
+  describe('truncateReplacer', () => {
+    it('should not truncate "small" objects', () => {
+      const obj = {
+        a: _.times(40, () => ({
+          x: 'a',
+        })),
+      }
+      expect(safeJsonStringify(obj, truncateReplacer)).toEqual(safeJsonStringify(obj))
+    })
+    it('should truncate large objects', () => {
+      expect(
+        safeJsonStringify(
+          {
+            a: _.times(151, () => ({
+              x: _.repeat('a', 550),
+            })),
+          },
+          truncateReplacer,
+        ),
+      ).toEqual(
+        safeJsonStringify({
+          a: _.times(50, () => ({
+            x: _.repeat('a', 500),
+          })),
+        }),
+      )
     })
   })
 })

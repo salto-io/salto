@@ -755,11 +755,6 @@ export const isInstanceOfTypeChangeSync =
   (change: Change): change is Change<InstanceElement> =>
     isInstanceOfTypeSync(...typeNames)(getChangeData(change))
 
-export const isInstanceOfTypeChangeSync2 =
-  (...typeNames: string[]) =>
-  (change: Change): boolean =>
-    isInstanceOfTypeSync(...typeNames)(getChangeData(change))
-
 export const isDeactivatedFlowChange = (change: Change): change is ModificationChange<InstanceElement> =>
   isModificationChange(change) &&
   isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE)(change) &&

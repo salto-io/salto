@@ -688,10 +688,15 @@ export const loadWorkspace = async (
         log.timeDebug(
           async () => {
             elemIDs.forEach(id => addedIDs.add(id.getFullName()))
-            const filesWithDependencies = _.uniq(
-              await awu(elemIDs)
-                .flatMap(id => source.getElementReferencedFiles(envName, id))
-                .toArray(),
+            const filesWithDependencies = await log.timeDebug(
+              async () =>
+                _.uniq(
+                  await awu(elemIDs)
+                    .flatMap(id => source.getElementReferencedFiles(envName, id))
+                    .toArray(),
+                ),
+              'running getElementReferencedFiles for %s elemIDs',
+              elemIDs.length,
             )
             const dependentsIDs = await log.timeDebug(
               async () =>

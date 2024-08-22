@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { createCustomizationsWithBasePathForFetch } from '../../../../../src/definitions/fetch/entra/utils'
+import { createCustomizationsWithBasePathForFetch } from '../../../../../src/definitions/fetch/shared/utils'
 import { FetchCustomizations } from '../../../../../src/definitions/fetch/shared/types'
 
 describe(`${createCustomizationsWithBasePathForFetch.name}`, () => {

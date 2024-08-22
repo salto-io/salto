@@ -29,6 +29,7 @@ import {
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
   JWK_TYPE_NAME,
+  EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -1295,6 +1296,7 @@ export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
   AUTHENTICATOR_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
 ]
 
 export const createFetchDefinitions = ({

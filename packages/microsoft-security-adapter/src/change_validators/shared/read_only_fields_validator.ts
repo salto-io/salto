@@ -15,7 +15,8 @@ import {
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { entraConstants } from '../../constants'
+import { entraConstants, intuneConstants } from '../../constants'
+import { APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, PACKAGE_ID_FIELD_NAME } from '../../constants/intune'
 
 const { isDefined } = values
 
@@ -25,6 +26,7 @@ type ReadOnlyFieldDefinition = {
 }
 
 const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> = {
+  /* Entra instances */
   [entraConstants.ROLE_DEFINITION_TYPE_NAME]: [{ fieldName: 'inheritsPermissionsFrom' }],
   [entraConstants.SERVICE_PRINCIPAL_TYPE_NAME]: [{ fieldName: 'appId' }, { fieldName: 'displayName' }],
   [entraConstants.APPLICATION_TYPE_NAME]: [
@@ -64,6 +66,13 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
     { fieldName: 'onPremisesProvisioningErrors', verifyAdditionChanges: true },
     { fieldName: 'proxyAddresses', verifyAdditionChanges: true },
     { fieldName: 'uniqueName', verifyAdditionChanges: true },
+  ],
+
+  /* Intune instances */
+  [intuneConstants.APPLICATION_TYPE_NAME]: [
+    { fieldName: PACKAGE_ID_FIELD_NAME },
+    { fieldName: APP_IDENTIFIER_FIELD_NAME },
+    { fieldName: APP_STORE_URL_FIELD_NAME },
   ],
 }
 

@@ -7,16 +7,16 @@
  */
 
 import { PARENT_ID_FIELD_NAME } from '../../../../../src/constants'
-import { adjustParentWithAppRoles } from '../../../../../src/definitions/deploy/entra/utils'
+import { adjustParentWithAppRolesWrapped } from '../../../../../src/definitions/deploy/entra/utils'
 import { contextMock } from '../../../../mocks'
 
 const PARENT_TYPE_NAME = 'parentTypeName'
 
-describe(`${adjustParentWithAppRoles.name}`, () => {
+describe(`${adjustParentWithAppRolesWrapped.name}`, () => {
   it('should throw an error if the value is not an object', async () => {
     const appRolesParent = 'not an object'
     await expect(
-      adjustParentWithAppRoles({
+      adjustParentWithAppRolesWrapped({
         value: appRolesParent,
         typeName: PARENT_TYPE_NAME,
         context: contextMock,
@@ -26,7 +26,7 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
 
   it('should not add an appRoles field if it is not defined', async () => {
     const appRolesParent = {}
-    const result = await adjustParentWithAppRoles({
+    const result = await adjustParentWithAppRolesWrapped({
       value: appRolesParent,
       typeName: PARENT_TYPE_NAME,
       context: contextMock,
@@ -48,7 +48,7 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
         },
       ],
     }
-    const result = await adjustParentWithAppRoles({
+    const result = await adjustParentWithAppRolesWrapped({
       value: appRolesParent,
       typeName: PARENT_TYPE_NAME,
       context: contextMock,

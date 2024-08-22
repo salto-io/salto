@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
@@ -47,9 +47,9 @@ describe('Microsoft Security adapter', () => {
 
   describe('fetch', () => {
     describe('full', () => {
-      it('should generate the right elements on fetch', async () => {
-        expect(adapter.configType).toBeDefined()
-        const { elements } = await adapter
+      let elements: Element[]
+      beforeEach(async () => {
+        ;({ elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', credentialsType, {
               tenantId: 'testTenantId',
@@ -60,8 +60,10 @@ describe('Microsoft Security adapter', () => {
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),
           })
-          .fetch({ progressReporter: { reportProgress: () => null } })
+          .fetch({ progressReporter: { reportProgress: () => null } }))
+      })
 
+      it('should generate the right elements on fetch', async () => {
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
           'entra_administrativeUnit',
           'entra_appRole',
@@ -84,8 +86,50 @@ describe('Microsoft Security adapter', () => {
           'entra_permissionGrantPolicy',
           'entra_roleDefinition',
           'entra_servicePrincipal',
+          'intune_application',
         ])
-        // TODO: Validate sub-types and structure of the elements
+        // TODO: Validate Entra sub-types and structure of the elements
+      })
+
+      describe('specific instances', () => {
+        describe('Intune applications', () => {
+          let intuneApplications: InstanceElement[]
+          beforeEach(async () => {
+            intuneApplications = elements
+              .filter(isInstanceElement)
+              .filter(e => e.elemID.typeName === 'intune_application')
+          })
+
+          it('should create the correct instances for Intune applications', async () => {
+            expect(intuneApplications).toHaveLength(6)
+
+            const intuneApplicationNames = intuneApplications.map(e => e.elemID.name)
+            expect(intuneApplicationNames).toEqual(
+              expect.arrayContaining([
+                'iosStoreApp_test',
+                'androidStoreApp_com_test@uv',
+                'androidManagedStoreApp_com_test@uv',
+                'managedIOSStoreApp_test',
+                'managedAndroidStoreApp_com_test2@uv',
+                'managedAndroidStoreApp_com_test@uv',
+              ]),
+            )
+          })
+
+          it('should create the Intune application instances with the correct path', async () => {
+            const intuneApplicationParts = intuneApplications.map(e => e.path)
+            expect(intuneApplicationParts).toEqual(
+              expect.arrayContaining([
+                ['microsoft_security', 'Records', 'intune_application', 'iosStoreApp', 'test'],
+                ['microsoft_security', 'Records', 'intune_application', 'androidStoreApp', 'com_test'],
+                ['microsoft_security', 'Records', 'intune_application', 'androidManagedStoreApp', 'com_test'],
+                ['microsoft_security', 'Records', 'intune_application', 'managedIOSStoreApp', 'test'],
+                ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test2'],
+                ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test'],
+              ]),
+            )
+          })
+        })
       })
     })
   })

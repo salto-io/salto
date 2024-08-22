@@ -5,10 +5,10 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { Change, getChangeData, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { getParent, getParentAsyncWithElementsSource, invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME } from '../filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, ORDER_INSTANCE_SUFFIX } from '../filters/fields/constants'
 
 const log = logger(module)
 export const isRelatedToSpecifiedTerms = (instance: InstanceElement, terms: string[]): boolean => {
@@ -29,6 +29,16 @@ export const getContextParent = (instance: InstanceElement): InstanceElement => 
   return parent
 }
 
+export const getContextParentAsync = async (
+  instance: InstanceElement,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<InstanceElement> => {
+  const parent = await getParentAsyncWithElementsSource(instance, elementsSource)
+  return parent.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME
+    ? getParentAsyncWithElementsSource(parent, elementsSource)
+    : parent
+}
+
 export const getContextAndFieldIds = (change: Change<InstanceElement>): { contextId: string; fieldId: string } => {
   const parent = getContextParent(getChangeData(change))
   return {
@@ -36,3 +46,6 @@ export const getContextAndFieldIds = (change: Change<InstanceElement>): { contex
     fieldId: getParent(parent).value.id,
   }
 }
+
+export const getOrderNameFromOption = (option: InstanceElement): string =>
+  naclCase(`${invertNaclCase(getParent(option).elemID.name)}_${ORDER_INSTANCE_SUFFIX}`)

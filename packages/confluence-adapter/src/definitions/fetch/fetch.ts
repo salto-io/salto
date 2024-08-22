@@ -117,6 +117,7 @@ const createCustomizations = (
           },
         },
         templates: {
+          conditions: [{ fromField: 'status', match: ['current'] }],
           typeName: TEMPLATE_TYPE_NAME,
           context: {
             args: {

@@ -11,9 +11,12 @@ import { UserFetchConfig } from '../../../config'
 import { Options } from '../../types'
 import { DEFAULT_FIELD_CUSTOMIZATIONS, DEFAULT_ID_PARTS } from './defaults'
 import { createEntraCustomizations } from '../entra/fetch'
+import { createIntuneCustomizations } from '../intune/fetch'
 
-const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> =>
-  createEntraCustomizations()
+const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
+  ...createEntraCustomizations(),
+  ...createIntuneCustomizations(),
+})
 
 export const createFetchDefinitions = (
   _fetchConfig: UserFetchConfig,

@@ -8,9 +8,9 @@
 
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { AdjustFunctionSingle } from '../../shared/types'
 import { omitReadOnlyFieldsWrapper } from '../../shared/utils'
 import { entraConstants, PARENT_ID_FIELD_NAME } from '../../../../constants'
+import { AdjustFunctionSingle } from '../../shared/types'
 
 const { APP_ROLES_FIELD_NAME } = entraConstants
 
@@ -19,7 +19,7 @@ const { APP_ROLES_FIELD_NAME } = entraConstants
  * 1. Add an id to each appRole that does not have one
  * 2. Remove the parent_id field from each appRole (we manually add this field during fetch and it is not deployable)
  */
-export const adjustParentWithAppRoles: AdjustFunctionSingle = omitReadOnlyFieldsWrapper(async ({ value, typeName }) => {
+const adjustParentWithAppRoles: AdjustFunctionSingle = async ({ value, typeName }) => {
   validatePlainObject(value, typeName)
   const appRoles = _.get(value, APP_ROLES_FIELD_NAME, [])
   validateArray(appRoles, `${typeName}.${APP_ROLES_FIELD_NAME}`)
@@ -33,4 +33,6 @@ export const adjustParentWithAppRoles: AdjustFunctionSingle = omitReadOnlyFields
       ...(_.isEmpty(adjustedAppRoles) ? {} : { [APP_ROLES_FIELD_NAME]: adjustedAppRoles }),
     },
   }
-})
+}
+
+export const adjustParentWithAppRolesWrapped = omitReadOnlyFieldsWrapper(adjustParentWithAppRoles)

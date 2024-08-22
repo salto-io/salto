@@ -632,7 +632,7 @@ const deployModifyChanges = async (
       severity: 'Error' as SeverityLevel,
     }))
     .toArray()
-  const errors = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
+  const errors = errorInstances.concat(diffApiNameErrors).concat(invalidFieldsWarnings)
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
@@ -995,11 +995,10 @@ const deployRemoveCustomRulesAndConditions = async ({
   )
   const { appliedChanges: appliedRuleChanges, errors: ruleErrors } =
     await deploySingleTypeAndActionCustomObjectInstancesGroup(ruleChanges, client, groupId, dataManagement)
-  const appliedConditionChanges = appliedRuleChanges
-    .map(getChangeData)
-    .flatMap(rule =>
-      conditionChanges.filter(change => isConditionOfRuleFunc(rule, ruleFieldInCondition)(getChangeData(change))),
-    )
+  const appliedConditionChanges = appliedRuleChanges.map(getChangeData).flatMap(rule => {
+    const isConditionOfCurrentRule = isConditionOfRuleFunc(rule, ruleFieldInCondition)
+    return conditionChanges.filter(change => isConditionOfCurrentRule(getChangeData(change)))
+  })
   const conditionErrors = conditionChanges
     .filter(change => !appliedConditionChanges.includes(change))
     .map<SaltoElementError>(change => ({
@@ -1020,15 +1019,19 @@ export const deployCustomObjectInstancesGroup = async (
   dataManagement?: DataManagement,
 ): Promise<SalesforceDataDeployResult> => {
   switch (groupId) {
+    // Add Approval Rules
     case ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP: {
       return deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
     }
+    // Add Price Rules
     case ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP: {
       return deployAddCustomPriceRulesAndConditions(changes, client, dataManagement)
     }
+    // Add Product Rules
     case ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP: {
       return deployAddCustomProductRulesAndConditions(changes, client, dataManagement)
     }
+    // Add Quote Terms
     case ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP: {
       return deployAddCustomQuoteTermsAndConditions(changes, client, dataManagement)
     }

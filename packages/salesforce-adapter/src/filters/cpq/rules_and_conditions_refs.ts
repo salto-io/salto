@@ -147,7 +147,10 @@ export const isConditionOfRuleFunc =
     if (_.isString(ruleRef)) {
       return apiNameSync(rule) === ruleRef
     }
-    return isReferenceExpression(ruleRef) && ruleRef.elemID.isEqual(rule.elemID)
+    if (isReferenceExpression(ruleRef)) {
+      return ruleRef.elemID.isEqual(rule.elemID)
+    }
+    return false
   }
 
 const getConditionIndex = (condition: InstanceElement, indexField: string): number | undefined => {

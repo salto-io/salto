@@ -13,7 +13,6 @@ import {
   ChangeId,
   isInstanceChange,
   isAdditionChange,
-  isReferenceExpression,
   InstanceElement,
   AdditionChange,
   ChangeDataType,
@@ -46,6 +45,7 @@ import {
   REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
   REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
 } from './constants'
+import { isConditionOfRuleFunc } from './filters/cpq/rules_and_conditions_refs'
 
 const getGroupId = (change: Change): string => {
   if (!isInstanceChange(change) || !isInstanceOfCustomObjectChangeSync(change)) {
@@ -85,19 +85,19 @@ const getCustomRuleAndConditionGroupChangeIds = ({
     .filter(([_changeId, change]) => isMatchingChange(change))
     .filter(([_changeId, change]) => isInstanceChange(change))
     .toArray() as [ChangeId, AdditionOrRemovalChange<InstanceElement>][]
-  const customRuleAdditions = instanceChanges
+  const customRuleChanges = instanceChanges
     .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(ruleTypeName)(change))
     .filter(([_changeId, change]) => getChangeData(change).value[ruleConditionFieldName] === 'Custom')
-  const customRuleElemIds = new Set(
-    customRuleAdditions.map(([_changeId, change]) => getChangeData(change).elemID.getFullName()),
+  const conditionChanges = instanceChanges.filter(([_changeId, change]) =>
+    isInstanceOfTypeChangeSync(conditionTypeName)(change),
   )
-  const customConditionAdditions = instanceChanges
-    .filter(([_changeId, change]) => isInstanceOfTypeChangeSync(conditionTypeName)(change))
-    .filter(([_changeId, change]) => {
-      const rule = getChangeData(change).value[conditionRuleFieldName]
-      return isReferenceExpression(rule) && customRuleElemIds.has(rule.elemID.getFullName())
+  const relevantConditionChanges = customRuleChanges
+    .map(([, change]) => getChangeData(change))
+    .flatMap(rule => {
+      const isConditionOfCurrentRule = isConditionOfRuleFunc(rule, conditionRuleFieldName)
+      return conditionChanges.filter(([, change]) => isConditionOfCurrentRule(getChangeData(change)))
     })
-  return new Set(customRuleAdditions.concat(customConditionAdditions).map(([changeId]) => changeId))
+  return new Set(customRuleChanges.concat(relevantConditionChanges).map(([changeId]) => changeId))
 }
 
 type GetCustomRulesAndConditionsGroupsChangeIdsFunc = (changes: Map<ChangeId, Change>) => {
@@ -105,23 +105,45 @@ type GetCustomRulesAndConditionsGroupsChangeIdsFunc = (changes: Map<ChangeId, Ch
   remove: Set<ChangeId>
 }
 
+const APPROVAL_RULES_PARAMS = {
+  ruleTypeName: SBAA_APPROVAL_RULE,
+  ruleConditionFieldName: SBAA_CONDITIONS_MET,
+  conditionTypeName: SBAA_APPROVAL_CONDITION,
+  conditionRuleFieldName: SBAA_APPROVAL_RULE,
+}
+
+const PRICE_RULES_PARAMS = {
+  ruleTypeName: CPQ_PRICE_RULE,
+  ruleConditionFieldName: CPQ_CONDITIONS_MET,
+  conditionTypeName: CPQ_PRICE_CONDITION,
+  conditionRuleFieldName: CPQ_PRICE_CONDITION_RULE_FIELD,
+}
+
+const PRODUCT_RULES_PARAMS = {
+  ruleTypeName: CPQ_PRODUCT_RULE,
+  ruleConditionFieldName: CPQ_CONDITIONS_MET,
+  conditionTypeName: CPQ_ERROR_CONDITION,
+  conditionRuleFieldName: CPQ_ERROR_CONDITION_RULE_FIELD,
+}
+
+const QUOTE_TERMS_PARAMS = {
+  ruleTypeName: CPQ_QUOTE_TERM,
+  ruleConditionFieldName: CPQ_CONDITIONS_MET,
+  conditionTypeName: CPQ_TERM_CONDITION,
+  conditionRuleFieldName: CPQ_QUOTE_TERM,
+}
+
 const getAddSbaaCustomApprovalRuleAndConditionGroupChangeIds: GetCustomRulesAndConditionsGroupsChangeIdsFunc =
   changes => ({
     add: getCustomRuleAndConditionGroupChangeIds({
       action: 'add',
       changes,
-      ruleTypeName: SBAA_APPROVAL_RULE,
-      ruleConditionFieldName: SBAA_CONDITIONS_MET,
-      conditionTypeName: SBAA_APPROVAL_CONDITION,
-      conditionRuleFieldName: SBAA_APPROVAL_RULE,
+      ...APPROVAL_RULES_PARAMS,
     }),
     remove: getCustomRuleAndConditionGroupChangeIds({
       action: 'remove',
       changes,
-      ruleTypeName: SBAA_APPROVAL_RULE,
-      ruleConditionFieldName: SBAA_CONDITIONS_MET,
-      conditionTypeName: SBAA_APPROVAL_CONDITION,
-      conditionRuleFieldName: SBAA_APPROVAL_RULE,
+      ...APPROVAL_RULES_PARAMS,
     }),
   })
 
@@ -129,18 +151,12 @@ const getAddCpqCustomPriceRuleAndConditionGroupChangeIds: GetCustomRulesAndCondi
   add: getCustomRuleAndConditionGroupChangeIds({
     action: 'add',
     changes,
-    ruleTypeName: CPQ_PRICE_RULE,
-    ruleConditionFieldName: CPQ_CONDITIONS_MET,
-    conditionTypeName: CPQ_PRICE_CONDITION,
-    conditionRuleFieldName: CPQ_PRICE_CONDITION_RULE_FIELD,
+    ...PRICE_RULES_PARAMS,
   }),
   remove: getCustomRuleAndConditionGroupChangeIds({
     action: 'remove',
     changes,
-    ruleTypeName: CPQ_PRICE_RULE,
-    ruleConditionFieldName: CPQ_CONDITIONS_MET,
-    conditionTypeName: CPQ_PRICE_CONDITION,
-    conditionRuleFieldName: CPQ_PRICE_CONDITION_RULE_FIELD,
+    ...PRICE_RULES_PARAMS,
   }),
 })
 
@@ -149,18 +165,12 @@ const getAddCpqCustomProductRuleAndConditionGroupChangeIds: GetCustomRulesAndCon
     add: getCustomRuleAndConditionGroupChangeIds({
       action: 'add',
       changes,
-      ruleTypeName: CPQ_PRODUCT_RULE,
-      ruleConditionFieldName: CPQ_CONDITIONS_MET,
-      conditionTypeName: CPQ_ERROR_CONDITION,
-      conditionRuleFieldName: CPQ_ERROR_CONDITION_RULE_FIELD,
+      ...PRODUCT_RULES_PARAMS,
     }),
     remove: getCustomRuleAndConditionGroupChangeIds({
       action: 'remove',
       changes,
-      ruleTypeName: CPQ_PRODUCT_RULE,
-      ruleConditionFieldName: CPQ_CONDITIONS_MET,
-      conditionTypeName: CPQ_ERROR_CONDITION,
-      conditionRuleFieldName: CPQ_ERROR_CONDITION_RULE_FIELD,
+      ...PRODUCT_RULES_PARAMS,
     }),
   })
 
@@ -169,18 +179,12 @@ const getAddCpqCustomQuoteTermsAndConditionsGroupChangeIds: GetCustomRulesAndCon
     add: getCustomRuleAndConditionGroupChangeIds({
       action: 'add',
       changes,
-      ruleTypeName: CPQ_QUOTE_TERM,
-      ruleConditionFieldName: CPQ_CONDITIONS_MET,
-      conditionTypeName: CPQ_TERM_CONDITION,
-      conditionRuleFieldName: CPQ_QUOTE_TERM,
+      ...QUOTE_TERMS_PARAMS,
     }),
     remove: getCustomRuleAndConditionGroupChangeIds({
       action: 'remove',
       changes,
-      ruleTypeName: CPQ_QUOTE_TERM,
-      ruleConditionFieldName: CPQ_CONDITIONS_MET,
-      conditionTypeName: CPQ_TERM_CONDITION,
-      conditionRuleFieldName: CPQ_QUOTE_TERM,
+      ...QUOTE_TERMS_PARAMS,
     }),
   })
 

@@ -568,38 +568,46 @@ export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: stri
   }
   return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
 }
+
+// Custom Rules And Conditions Groups
+
+const CUSTOM_APPROVAL_RULE_AND_CONDITION = 'Custom ApprovalRule and ApprovalCondition'
+const CUSTOM_PRICE_RULE_AND_CONDITION = 'Custom PriceRule and PriceCondition'
+const CUSTOM_PRODUCT_RULE_AND_CONDITION = 'Custom ProductRule and ErrorCondition'
+const CUSTOM_QUOTE_TERM_AND_CONDITION = 'Custom QuoteTerm and TermCondition'
+
 export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom ApprovalRule and ApprovalCondition',
+  CUSTOM_APPROVAL_RULE_AND_CONDITION,
 )
 export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom PriceRule and PriceCondition',
+  CUSTOM_PRICE_RULE_AND_CONDITION,
 )
 export const ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom ProductRule and ErrorCondition',
+  CUSTOM_PRODUCT_RULE_AND_CONDITION,
 )
 export const ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom QuoteTerm and TermCondition',
+  CUSTOM_QUOTE_TERM_AND_CONDITION,
 )
 
 export const REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'remove',
-  'Custom ApprovalRule and ApprovalCondition',
+  CUSTOM_APPROVAL_RULE_AND_CONDITION,
 )
 export const REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'remove',
-  'Custom PriceRule and PriceCondition',
+  CUSTOM_PRICE_RULE_AND_CONDITION,
 )
 export const REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'remove',
-  'Custom ProductRule and ErrorCondition',
+  CUSTOM_PRODUCT_RULE_AND_CONDITION,
 )
 export const REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'remove',
-  'Custom QuoteTerm and TermCondition',
+  CUSTOM_QUOTE_TERM_AND_CONDITION,
 )
 
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'

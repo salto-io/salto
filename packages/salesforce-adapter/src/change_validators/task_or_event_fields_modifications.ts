@@ -31,9 +31,7 @@ const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
 })
 
 const changeValidator: ChangeValidator = async changes => {
-  const activityFieldChanges = changes
-    .filter(isFieldChange)
-    .filter(change => isFieldOfActivity(getChangeData(change)))
+  const activityFieldChanges = changes.filter(isFieldChange).filter(change => isFieldOfActivity(getChangeData(change)))
 
   return changes
     .filter(isFieldChange)
@@ -49,12 +47,14 @@ const changeValidator: ChangeValidator = async changes => {
           elemID: field.elemID,
           severity: 'Error',
           message: 'Modifying a field of Task or Event is not allowed',
-          detailedMessage: `Adding / removing the field ${field.name} of the ${apiNameSync(field.parent)} object only possible when the corresponding field in the Activity Object is added / removed as well.`,
-
+          detailedMessage: `Adding or removing the field ${field.name} of the ${apiNameSync(field.parent)} object only possible when the corresponding field in the Activity Object is added or removed as well.`,
         }
       }
       if (activityFieldChange.action === 'add') {
-        const expectedFieldName = getChangeData(activityFieldChange).annotations.apiName.replace('Activity', apiNameSync(field.parent))
+        const expectedFieldName = getChangeData(activityFieldChange).annotations.apiName.replace(
+          'Activity',
+          apiNameSync(field.parent),
+        )
         if (field.annotations.apiName !== expectedFieldName) {
           return {
             elemID: field.elemID,
@@ -64,7 +64,10 @@ const changeValidator: ChangeValidator = async changes => {
           }
         }
         const activityFieldRef = field.annotations.activityField
-        if (!isReferenceExpression(activityFieldRef) || activityFieldRef.elemID.getFullName() !== getChangeData(activityFieldChange).elemID.getFullName()) {
+        if (
+          !isReferenceExpression(activityFieldRef) ||
+          activityFieldRef.elemID.getFullName() !== getChangeData(activityFieldChange).elemID.getFullName()
+        ) {
           return {
             elemID: field.elemID,
             severity: 'Error',

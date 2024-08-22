@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { BuiltinTypes, ElemID, Field, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/task_or_event_fields_modifications'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { createCustomObjectType, createField } from '../utils'
@@ -20,13 +20,37 @@ describe('Task or Event Fields Modifications Change Validator', () => {
 
   const activityField1 = createField(activityType, BuiltinTypes.STRING, `Activity.${FIELD1_NAME}`, {}, FIELD1_NAME)
   const activityField1Ref = new ReferenceExpression(activityField1.elemID, activityField1)
-  const taskField1 = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD1_NAME}`, {activityField: activityField1Ref}, FIELD1_NAME)
-  const eventField1 = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD1_NAME}`, {activityField: activityField1Ref}, FIELD1_NAME)
+  const taskField1 = createField(
+    taskType,
+    BuiltinTypes.STRING,
+    `Task.${FIELD1_NAME}`,
+    { activityField: activityField1Ref },
+    FIELD1_NAME,
+  )
+  const eventField1 = createField(
+    eventType,
+    BuiltinTypes.STRING,
+    `Event.${FIELD1_NAME}`,
+    { activityField: activityField1Ref },
+    FIELD1_NAME,
+  )
 
   const activityField2 = createField(activityType, BuiltinTypes.STRING, `Activity.${FIELD2_NAME}`, {}, FIELD2_NAME)
   const activityField2Ref = new ReferenceExpression(activityField2.elemID, activityField2)
-  const taskField2 = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD2_NAME}`, {activityField: activityField2Ref}, FIELD2_NAME)
-  const eventField2 = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD2_NAME}`, {activityField: activityField2Ref}, FIELD2_NAME)
+  const taskField2 = createField(
+    taskType,
+    BuiltinTypes.STRING,
+    `Task.${FIELD2_NAME}`,
+    { activityField: activityField2Ref },
+    FIELD2_NAME,
+  )
+  const eventField2 = createField(
+    eventType,
+    BuiltinTypes.STRING,
+    `Event.${FIELD2_NAME}`,
+    { activityField: activityField2Ref },
+    FIELD2_NAME,
+  )
 
   const taskFieldOfNonCustomObject = createField(
     new ObjectType({ elemID: new ElemID(SALESFORCE, TASK_CUSTOM_OBJECT) }),
@@ -82,7 +106,10 @@ describe('Task or Event Fields Modifications Change Validator', () => {
       elemID: taskField1WithBadRef.elemID,
       severity: 'Error',
       message: expect.stringContaining('Modifying a field of Task or Event is not allowed'),
-      detailedMessage: expect.stringContaining(FIELD1_NAME) && expect.stringContaining(EVENT_CUSTOM_OBJECT) && expect.stringContaining('object should reference'),
+      detailedMessage:
+        expect.stringContaining(FIELD1_NAME) &&
+        expect.stringContaining(EVENT_CUSTOM_OBJECT) &&
+        expect.stringContaining('object should reference'),
     })
   })
 })

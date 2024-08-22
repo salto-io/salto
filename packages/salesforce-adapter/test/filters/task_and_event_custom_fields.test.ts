@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { BuiltinTypes, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, toChange } from '@salto-io/adapter-api'
 import { createCustomObjectType, createField, defaultFilterContext } from '../utils'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -32,7 +32,6 @@ describe('taskAndEventCustomFieldsFilter', () => {
     it('should mutate custom fields to references', async () => {
       const elements = [activityType, taskType, eventType, activityField, taskField, eventField]
       await filter.onFetch(elements)
-
       ;[taskField, eventField].forEach(field => {
         expect(Object.keys(field.annotations)).toEqual(['apiName', 'activityField'])
         expect(field.annotations.activityField.elemID).toEqual(activityField.elemID)
@@ -52,10 +51,7 @@ describe('taskAndEventCustomFieldsFilter', () => {
         toChange({ before: activityField }),
       ]
       await filter.preDeploy(changes)
-      expect(changes).toEqual([
-        toChange({ after: activityField }),
-        toChange({ before: activityField }),
-      ])
+      expect(changes).toEqual([toChange({ after: activityField }), toChange({ before: activityField })])
     })
   })
 })

@@ -13,9 +13,9 @@ export type FullResponseLogFilter = (args: { responseText: string; url: string }
 
 const DEFAULT_LOGGING_CONFIG: ClientLoggingConfig = {
   responseStrategies: [
-    // by default, truncate logs larger than ~10K
+    // by default, truncate logs larger than ~80K
     {
-      size: 10 * 1000,
+      size: 80 * 1000,
       strategy: 'truncate',
     },
   ],

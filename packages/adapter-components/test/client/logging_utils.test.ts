@@ -16,7 +16,7 @@ describe('logging_utils', () => {
       expect(createResponseLogFilter({ responseStrategies: [] })({ responseText: 'aaa', url: 'aaa' })).toEqual('full')
     })
     it('should return "truncate" for large responses when no config is provided', async () => {
-      expect(createResponseLogFilter()({ responseText: _.repeat('a', 10 * 1000 + 1), url: '' })).toEqual('truncate')
+      expect(createResponseLogFilter()({ responseText: _.repeat('a', 80 * 1000 + 1), url: '' })).toEqual('truncate')
     })
 
     it('should choose matching strategy by url', async () => {

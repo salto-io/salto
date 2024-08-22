@@ -725,7 +725,7 @@ export const loadWorkspace = async (
         const elementsToValidate = elements.concat(dependents)
         return {
           errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: _.uniqBy([...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs], e =>
+          validatedElementsIDs: _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(relevantElementIDs), e =>
             e.getFullName(),
           ),
         }

@@ -23,46 +23,53 @@ const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
-const filterCreator: LocalFilterCreator = () => ({
-  name: 'taskAndEventCustomFields',
-  /**
-   * Upon fetch modify custom fields of `Task` and `Event` to point to the corresponding field in the `Activity` object.
-   */
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const activity = elements.filter(co => co.elemID.name === ACTIVITY_CUSTOM_OBJECT).pop() as ObjectType
+const filterCreator: LocalFilterCreator = () => {
+  let changesToRestore: Change[]
 
-    elements
-      .filter(isCustomObjectSync)
-      // TODO: filter with apiNameSync instead of elemID
-      .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(co.elemID.name))
-      .forEach(co => {
-        Object.entries(co.fields).forEach(([fieldName, field]) => {
-          if (!isCustomField(field)) {
-            return
-          }
+  return {
+    name: 'taskAndEventCustomFields',
+    /**
+     * Upon fetch modify custom fields of `Task` and `Event` to point to the corresponding field in the `Activity` object.
+     */
+    onFetch: async (elements: Element[]): Promise<void> => {
+      const activity = elements.filter(co => co.elemID.name === ACTIVITY_CUSTOM_OBJECT).pop() as ObjectType
 
-          const activityField = activity?.fields[fieldName.replace(co.elemID.name, 'Activity')]
-          if (!activityField) {
-            return
-          }
+      elements
+        .filter(isCustomObjectSync)
+        // TODO: filter with apiNameSync instead of elemID
+        .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(co.elemID.name))
+        .forEach(co => {
+          Object.entries(co.fields).forEach(([fieldName, field]) => {
+            if (!isCustomField(field)) {
+              return
+            }
 
-          field.annotations = {
-            apiName: field.annotations.apiName,
-            activityField: new ReferenceExpression(activityField.elemID),
-          }
+            const activityField = activity?.fields[fieldName.replace(co.elemID.name, 'Activity')]
+            if (!activityField) {
+              return
+            }
+
+            field.annotations = {
+              apiName: field.annotations.apiName,
+              activityField: new ReferenceExpression(activityField.elemID),
+            }
+          })
         })
-      })
-  },
-  preDeploy: async (changes: Change[]): Promise<void> => {
-    const taskOrEventChanges = changes
-      .filter(isFieldChange)
-      .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
-      .filter(change => isCustomField(getChangeData(change)))
+    },
+    preDeploy: async (changes: Change[]): Promise<void> => {
+      changesToRestore = changes
+        .filter(isFieldChange)
+        .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
+        .filter(change => isCustomField(getChangeData(change)))
 
-    for (const change of taskOrEventChanges) {
-      changes.splice(changes.indexOf(change), 1)
-    }
-  },
-})
+      for (const change of changesToRestore) {
+        changes.splice(changes.indexOf(change), 1)
+      }
+    },
+    onDeploy: async (changes: Change[]): Promise<void> => {
+      changes.push(...changesToRestore)
+    },
+  }
+}
 
 export default filterCreator

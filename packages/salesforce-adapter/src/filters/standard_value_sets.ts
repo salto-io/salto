@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { FileProperties } from '@salto-io/jsforce-types'
@@ -22,27 +14,25 @@ import {
   Field,
   ReferenceExpression,
   isObjectType,
-  isModificationChange,
-  isFieldChange,
-  getChangeData,
-  Change,
+  isAdditionOrModificationChange,
+  isField,
   getAllChangeData,
-  ModificationChange,
+  isObjectTypeChange,
+  isFieldChange,
+  Change,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { collections, promises, types, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
-import { metadataType, apiName, isCustomObject, Types, isCustom } from '../transformers/transformer'
-import { extractFullNamesFromValueList, isInstanceOfTypeSync } from './utils'
+import { metadataType, isCustomObject, Types, isCustom } from '../transformers/transformer'
+import { apiNameSync, extractFullNamesFromValueList, isInstanceOfTypeSync } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
-const { mapValuesAsync } = promises.object
-const { awu, keyByAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 const { makeArray } = collections.array
-const { isDefined } = lowerdashValues
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'
@@ -129,21 +119,21 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandardValueSetsLooku
       }),
   )
 
-const isStandardPickList = async (f: Field): Promise<boolean> => {
-  const apiNameResult = await apiName(f)
+const isStandardPickList = (field: Field): boolean => {
+  const apiNameResult = apiNameSync(field)
   return apiNameResult
-    ? (f.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID) ||
-        f.refType.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID)) &&
+    ? (field.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID) ||
+        field.refType.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID)) &&
         !isCustom(apiNameResult)
     : false
 }
 
-const calculatePicklistFieldsToUpdate = async (
+const calculatePicklistFieldsToUpdate = (
   customObjectFields: Record<string, Field>,
   svsValuesToName: StandardValueSetsLookup,
-): Promise<Record<string, Field>> =>
-  mapValuesAsync(customObjectFields, async field => {
-    if (!(await isStandardPickList(field)) || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
+): Record<string, Field> =>
+  _.mapValues(customObjectFields, field => {
+    if (!isStandardPickList(field) || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
       return field
     }
 
@@ -170,8 +160,8 @@ const updateSVSReferences = async (
 ): Promise<void> => {
   const svsValuesToName = svsValuesToRef(svsInstances)
 
-  await awu(objects).forEach(async customObjType => {
-    const fieldsToUpdate = await calculatePicklistFieldsToUpdate(customObjType.fields, svsValuesToName)
+  objects.forEach(customObjType => {
+    const fieldsToUpdate = calculatePicklistFieldsToUpdate(customObjType.fields, svsValuesToName)
     _.assign(customObjType, { fields: fieldsToUpdate })
   })
 }
@@ -189,18 +179,14 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
   type: STANDARD_VALUE_SET,
 })
 
-const toDeployableStandardPicklistFieldChange = (change: ModificationChange<Field>): ModificationChange<Field> => {
-  const [deployableBefore, deployableAfter] = getAllChangeData(change).map(field => field.clone())
-  delete deployableBefore.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
-  delete deployableAfter.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
-  return {
-    data: {
-      before: deployableBefore,
-      after: deployableAfter,
-    },
-    action: 'modify',
-  }
-}
+const getAllStandardPicklistFields = (changes: Change[]): Field[] =>
+  changes
+    .filter(isAdditionOrModificationChange)
+    .filter(change => isObjectTypeChange(change) || isFieldChange(change))
+    .flatMap(getAllChangeData)
+    .flatMap(elem => (isObjectType(elem) ? Object.values(elem.fields) : elem))
+    .filter(isField)
+    .filter(isStandardPickList)
 
 /**
  * Declare the StandardValueSets filter that
@@ -210,7 +196,7 @@ const toDeployableStandardPicklistFieldChange = (change: ModificationChange<Fiel
 export const makeFilter =
   (standardValueSetNames: StandardValuesSets): RemoteFilterCreator =>
   ({ client, config }) => {
-    let originalChanges: Record<string, Change>
+    const fieldToRemovedValueSetName = new Map<string, string>()
     return {
       name: 'standardValueSetFilter',
       remote: true,
@@ -256,28 +242,25 @@ export const makeFilter =
         }
       },
       preDeploy: async changes => {
-        const standardPicklistFieldChanges = await awu(changes)
-          .filter(isModificationChange)
-          .filter(isFieldChange)
-          .filter(change => isStandardPickList(getChangeData(change)))
-          .toArray()
-        originalChanges = await keyByAsync(standardPicklistFieldChanges, change => apiName(getChangeData(change)))
-        const deployableChanges = standardPicklistFieldChanges.map(toDeployableStandardPicklistFieldChange)
-        _.pullAll(changes, standardPicklistFieldChanges)
-        changes.push(...deployableChanges)
+        getAllStandardPicklistFields(changes).forEach(field => {
+          const svsName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+          if (svsName !== undefined) {
+            fieldToRemovedValueSetName.set(field.elemID.getFullName(), svsName)
+            delete field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+          }
+        })
       },
       onDeploy: async changes => {
-        const appliedStandardPicklistFieldChanges = await awu(changes)
-          .filter(isModificationChange)
-          .filter(isFieldChange)
-          .filter(change => isStandardPickList(getChangeData(change)))
-          .toArray()
-        const appliedApiNames = await awu(changes)
-          .map(change => apiName(getChangeData(change)))
-          .toArray()
-        const appliedOriginalChanges = appliedApiNames.map(name => originalChanges[name]).filter(isDefined)
-        _.pullAll(changes, appliedStandardPicklistFieldChanges)
-        appliedOriginalChanges.forEach(change => changes.push(change))
+        if (fieldToRemovedValueSetName.size === 0) {
+          return
+        }
+
+        getAllStandardPicklistFields(changes).forEach(field => {
+          const svsName = fieldToRemovedValueSetName.get(field.elemID.getFullName())
+          if (svsName !== undefined) {
+            field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = svsName
+          }
+        })
       },
     }
   }

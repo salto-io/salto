@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
@@ -167,6 +159,7 @@ export const mockRunTestResult = (params?: PartialRunTestResult): RunTestsResult
 type GetDeployResultParams = {
   id?: string
   success?: boolean
+  canceled?: boolean
   componentSuccess?: Partial<DeployMessage>[]
   componentFailure?: Partial<DeployMessage>[]
   runTestResult?: PartialRunTestResult
@@ -184,6 +177,7 @@ type MockDeployResultParams = GetDeployResultParams & Required<Pick<GetDeployRes
 export const mockDeployResultComplete = ({
   id,
   success = true,
+  canceled = false,
   errorMessage,
   componentSuccess = [],
   componentFailure = [],
@@ -194,34 +188,40 @@ export const mockDeployResultComplete = ({
   testCompleted = 0,
   testErrors = 0,
   retrieveResult,
-}: MockDeployResultParams): DeployResult => ({
-  id,
-  checkOnly,
-  completedDate: '2020-05-01T14:31:36.000Z',
-  createdDate: '2020-05-01T14:21:36.000Z',
-  done: true,
-  details: [
-    {
-      componentFailures: componentFailure.map(mockDeployMessage),
-      componentSuccesses: componentSuccess.map(mockDeployMessage),
-      runTestResult: mockRunTestResult(runTestResult),
-      retrieveResult,
-    },
-  ],
-  ignoreWarnings,
-  lastModifiedDate: '2020-05-01T14:31:36.000Z',
-  numberComponentErrors: componentFailure.length,
-  numberComponentsDeployed: componentSuccess.length,
-  numberComponentsTotal: componentFailure.length + componentSuccess.length,
-  numberTestErrors: testErrors,
-  numberTestsCompleted: testCompleted,
-  numberTestsTotal: testCompleted + testErrors,
-  rollbackOnError,
-  startDate: '2020-05-01T14:21:36.000Z',
-  status: success ? 'Succeeded' : 'Failed',
-  success,
-  errorMessage,
-})
+}: MockDeployResultParams): DeployResult => {
+  let status = success ? 'Succeeded' : 'Failed'
+  if (canceled) {
+    status = 'Canceled'
+  }
+  return {
+    id,
+    checkOnly,
+    completedDate: '2020-05-01T14:31:36.000Z',
+    createdDate: '2020-05-01T14:21:36.000Z',
+    done: true,
+    details: [
+      {
+        componentFailures: componentFailure.map(mockDeployMessage),
+        componentSuccesses: componentSuccess.map(mockDeployMessage),
+        runTestResult: mockRunTestResult(runTestResult),
+        retrieveResult,
+      },
+    ],
+    ignoreWarnings,
+    lastModifiedDate: '2020-05-01T14:31:36.000Z',
+    numberComponentErrors: componentFailure.length,
+    numberComponentsDeployed: componentSuccess.length,
+    numberComponentsTotal: componentFailure.length + componentSuccess.length,
+    numberTestErrors: testErrors,
+    numberTestsCompleted: testCompleted,
+    numberTestsTotal: testCompleted + testErrors,
+    rollbackOnError,
+    startDate: '2020-05-01T14:21:36.000Z',
+    status,
+    success,
+    errorMessage,
+  }
+}
 
 export const mockDeployResultInProgress = ({
   id,

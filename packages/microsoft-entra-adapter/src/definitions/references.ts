@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   definitions,
@@ -45,6 +37,7 @@ import {
   ODATA_TYPE_FIELD_NACL_CASE,
   PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME,
   ROLE_DEFINITION_TYPE_NAME,
+  SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   SERVICE_PRINCIPAL_TYPE_NAME,
   SUPPORTED_DIRECTORY_OBJECT_ODATA_TYPE_NAME_TO_TYPE_NAME,
 } from '../constants'
@@ -82,7 +75,14 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
 >[] = [
   ...createMicrosoftAuthenticatorReferences(),
   {
-    src: { field: 'resourceId', parentTypes: [GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME, OAUTH2_PERMISSION_GRANT_TYPE_NAME] },
+    src: {
+      field: 'resourceId',
+      parentTypes: [
+        GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+        SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+        OAUTH2_PERMISSION_GRANT_TYPE_NAME,
+      ],
+    },
     target: { type: SERVICE_PRINCIPAL_TYPE_NAME },
     serializationStrategy: 'id',
   },
@@ -134,7 +134,10 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     serializationStrategy: 'appId',
   },
   {
-    src: { field: 'appRoleId', parentTypes: [GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME] },
+    src: {
+      field: 'appRoleId',
+      parentTypes: [GROUP_APP_ROLE_ASSIGNMENT_TYPE_NAME, SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME],
+    },
     target: { type: APP_ROLE_TYPE_NAME },
     serializationStrategy: 'id',
   },

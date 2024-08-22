@@ -1,19 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils, elements as adapterElements } from '@salto-io/adapter-components'
+import { DAG } from '@salto-io/dag'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { InstanceElement, ReferenceExpression, Element } from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -30,6 +24,9 @@ describe('assetsObjectTypePathsFilter', () => {
   let sonTwoInstance: InstanceElement
   let grandsonOneInstance: InstanceElement
   let grandsonTwoInstance: InstanceElement
+  let getDataSpy: jest.SpyInstance
+  let logErrorSpy: jest.SpyInstance
+
   const assetSchemaInstance = new InstanceElement(
     'assetsSchema1',
     createEmptyType(OBJECT_SCHEMA_TYPE),
@@ -41,6 +38,9 @@ describe('assetsObjectTypePathsFilter', () => {
   )
   describe('on fetch', () => {
     beforeEach(async () => {
+      getDataSpy = jest.spyOn(DAG.prototype, 'getData')
+      const logging = logger('jira-adapter/src/filters/assets/assets_object_type_path')
+      logErrorSpy = jest.spyOn(logging, 'error')
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
       config.fetch.enableJsmExperimental = true
@@ -153,6 +153,52 @@ describe('assetsObjectTypePathsFilter', () => {
         'grandsonTwoInstance',
         'grandsonTwoInstance',
       ])
+    })
+    it('should not fail the fetch if one instance throws an error', async () => {
+      getDataSpy.mockImplementationOnce(() => {
+        getDataSpy.mockClear()
+        throw new Error('failed to get data')
+      })
+      await expect(filter.onFetch(elements)).resolves.not.toThrow()
+      expect(sonOneInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'sonOneInstance',
+      ])
+      expect(sonTwoInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonTwoInstance',
+        'sonTwoInstance',
+      ])
+      expect(grandsonOneInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'grandsonOneInstance',
+        'grandsonOneInstance',
+      ])
+      expect(grandsonTwoInstance.path).toEqual([
+        JIRA,
+        adapterElements.RECORDS_PATH,
+        'ObjectSchema',
+        'assetsSchema1',
+        'objectTypes',
+        'sonOneInstance',
+        'grandsonTwoInstance',
+        'grandsonTwoInstance',
+      ])
+      expect(logErrorSpy).toHaveBeenCalled()
     })
   })
 })

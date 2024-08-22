@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
@@ -80,14 +72,27 @@ describe('guide service_url filter', () => {
     id: 1,
     brand: 123,
   })
+  const sectionInstanceWithoutBrand = new InstanceElement('instance', sectionType, {
+    id: 1,
+    brand: null,
+  })
   const categoryInstance = new InstanceElement('instance', categoryType, {
     id: 2,
+    brand: 123,
+  })
+  const categoryInstanceWithoutId = new InstanceElement('instance', categoryType, {
+    id: null,
     brand: 123,
   })
   const articleInstance = new InstanceElement('instance', articleType, {
     id: 3,
     brand: 123,
     source_locale: 'en-us',
+  })
+  const articleInstanceWithObjectLocale = new InstanceElement('instance', articleType, {
+    id: 3,
+    brand: 123,
+    source_locale: { value: 'en-us' },
   })
   const articleTranslationInstance = new InstanceElement('instance', articleTranslationType, {
     brand: 123,
@@ -142,6 +147,13 @@ describe('guide service_url filter', () => {
         'https://free-tifder.zendesk.com/hc/admin/general_settings',
         'https://free-tifder.zendesk.com/hc/admin/language_settings',
       ])
+    })
+    it('should not create service urls when there are invalid params', async () => {
+      const elements = [sectionInstanceWithoutBrand, categoryInstanceWithoutId, articleInstanceWithObjectLocale]
+      await filter.onFetch(elements)
+      elements.forEach(elem => {
+        expect(elem.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+      })
     })
   })
 })

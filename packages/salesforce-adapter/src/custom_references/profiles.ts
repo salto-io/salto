@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import _, { Dictionary } from 'lodash'
@@ -31,7 +23,7 @@ import {
   RECORD_TYPE_METADATA_TYPE,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
+import { ENDS_WITH_CUSTOM_SUFFIX_REGEX, extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -252,6 +244,9 @@ const profileEntriesTargets = (profile: InstanceElement): Dictionary<ElemID> =>
     .fromPairs()
     .value()
 
+const isStandardFieldPermissionsPath = (path: string): boolean =>
+  path.startsWith(section.FIELD_PERMISSIONS) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements => {
@@ -265,7 +260,8 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
     )
     const brokenReferenceFields = Object.keys(
       await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())),
-    )
+      // fieldPermissions may contain standard values that are not referring to any field, we shouldn't omit these
+    ).filter(path => !isStandardFieldPermissionsPath(path))
     const profilesWithBrokenReferences = profiles.filter(profile =>
       brokenReferenceFields.some(field => _(profile.value).has(field)),
     )

@@ -34,7 +34,7 @@ In the future we're planning support for storing credentials in a secured shared
 
 ## What is Salto's License?
 
-Salto is available under the Apache License, version 2.0.
+See [LICENSE file in the repository](https://github.com/salto-io/salto/blob/main/LICENSE)
 
 ## How can I contact you?
 

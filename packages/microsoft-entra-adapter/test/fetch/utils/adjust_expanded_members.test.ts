@@ -1,38 +1,35 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { ODATA_TYPE_FIELD } from '../../../src/constants'
 import { adjustEntitiesWithExpandedMembers } from '../../../src/definitions/fetch/utils'
+import { contextMock } from '../../mocks'
 
 describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
   it('should throw an error when value is not an object', async () => {
     await expect(
-      adjustEntitiesWithExpandedMembers({ value: 'not an object', typeName: 'typeName', context: {} }),
+      adjustEntitiesWithExpandedMembers({ value: 'not an object', typeName: 'typeName', context: contextMock }),
     ).rejects.toThrow()
   })
 
   it('should throw an error when members is not an array', async () => {
     await expect(
-      adjustEntitiesWithExpandedMembers({ value: { members: 'not an array' }, typeName: 'typeName', context: {} }),
+      adjustEntitiesWithExpandedMembers({
+        value: { members: 'not an array' },
+        typeName: 'typeName',
+        context: contextMock,
+      }),
     ).rejects.toThrow()
   })
 
   it('should not throw an error when members field is missing', async () => {
     await expect(
-      adjustEntitiesWithExpandedMembers({ value: {}, typeName: 'typeName', context: {} }),
+      adjustEntitiesWithExpandedMembers({ value: {}, typeName: 'typeName', context: contextMock }),
     ).resolves.not.toThrow()
   })
 
@@ -41,7 +38,7 @@ describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
       adjustEntitiesWithExpandedMembers({
         value: { members: ['not an object'] },
         typeName: 'typeName',
-        context: {},
+        context: contextMock,
       }),
     ).rejects.toThrow()
   })
@@ -54,7 +51,7 @@ describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
     const { value } = await adjustEntitiesWithExpandedMembers({
       value: { members },
       typeName: 'typeName',
-      context: {},
+      context: contextMock,
     })
     expect(value.members).toEqual([
       { id: 'id1', [ODATA_TYPE_FIELD]: '#microsoft.graph.group' },
@@ -71,7 +68,7 @@ describe(`${adjustEntitiesWithExpandedMembers.name}`, () => {
     const { value } = await adjustEntitiesWithExpandedMembers({
       value: { members },
       typeName: 'typeName',
-      context: {},
+      context: contextMock,
     })
     expect(value.members).toEqual([
       { id: 'id1', [ODATA_TYPE_FIELD]: '#microsoft.graph.group' },

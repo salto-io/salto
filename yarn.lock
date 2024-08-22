@@ -4232,6 +4232,7 @@ __metadata:
     "@salto-io/logging": 0.3.61
     "@salto-io/lowerdash": 0.3.61
     "@salto-io/microsoft-entra-adapter": 0.3.61
+    "@salto-io/microsoft-security-adapter": 0.3.61
     "@salto-io/netsuite-adapter": 0.3.61
     "@salto-io/node-diff3": 3.1.0-salto.1
     "@salto-io/okta-adapter": 0.3.61
@@ -4818,6 +4819,50 @@ __metadata:
 "@salto-io/microsoft-entra-adapter@0.3.61, @salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter"
+  dependencies:
+    "@eslint/compat": ^1.1.0
+    "@eslint/eslintrc": ^3.1.0
+    "@eslint/js": ^9.6.0
+    "@salto-io/adapter-api": 0.3.61
+    "@salto-io/adapter-components": 0.3.61
+    "@salto-io/adapter-utils": 0.3.61
+    "@salto-io/logging": 0.3.61
+    "@salto-io/lowerdash": 0.3.61
+    "@salto-io/test-utils": 0.3.61
+    "@tony.ganchev/eslint-plugin-header": ^3.1.2
+    "@types/jest": ^29.5.12
+    "@types/lodash": ^4.14.168
+    "@typescript-eslint/eslint-plugin": ^7.16.0
+    "@typescript-eslint/parser": ^7.16.0
+    axios: ^1.7.2
+    axios-mock-adapter: ^1.19.0
+    eslint: ^9.6.0
+    eslint-config-airbnb: 18.0.1
+    eslint-config-prettier: 9.1.0
+    eslint-plugin-import: ^2.29.1
+    eslint-plugin-jest: ^22.6.4
+    eslint-plugin-jsx-a11y: ^6.2.1
+    eslint-plugin-react: ^7.14.3
+    eslint-plugin-react-hooks: ^1.7.0
+    form-data: ^4.0.0
+    globals: ^15.8.0
+    jest: ^29.7.0
+    jest-circus: ^29.7.0
+    jest-junit: ^16.0.0
+    lodash: ^4.17.21
+    node-html-parser: ^6.1.5
+    prettier: 3.2.5
+    ts-jest: ^29.2.0
+    tsc-watch: ^2.2.1
+    turbo: ^2.0.6
+    typescript: 4.8.4
+    uuid: ^10.0.0
+  languageName: unknown
+  linkType: soft
+
+"@salto-io/microsoft-security-adapter@0.3.61, @salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter":
+  version: 0.0.0-use.local
+  resolution: "@salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0

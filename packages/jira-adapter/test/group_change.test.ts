@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ElemID,
@@ -29,9 +21,11 @@ import {
   JIRA,
   SECURITY_LEVEL_TYPE,
   SECURITY_SCHEME_TYPE,
+  SLA_TYPE_NAME,
   WORKFLOW_TYPE_NAME,
 } from '../src/constants'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../src/filters/fields/constants'
+import { createEmptyType } from './utils'
 
 describe('group change', () => {
   let workflowType: ObjectType
@@ -338,5 +332,29 @@ describe('group change', () => {
         ]),
       ),
     ).rejects.toThrow()
+  })
+  it('should group addition of slas by project', async () => {
+    const projectInstance = new InstanceElement('project1', createEmptyType('project'), { id: 1 })
+    const slaInstance = new InstanceElement('sla1', createEmptyType(SLA_TYPE_NAME), { id: 11 }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+    })
+    const sla2Instance = new InstanceElement('sla2', createEmptyType(SLA_TYPE_NAME), { id: 12 }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(projectInstance.elemID, projectInstance)],
+    })
+    const slaAdditionChange = toChange({ after: slaInstance })
+    const slaAdditionChange2 = toChange({ after: sla2Instance })
+
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [slaInstance.elemID.getFullName(), slaAdditionChange],
+          [sla2Instance.elemID.getFullName(), slaAdditionChange2],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(slaInstance.elemID.getFullName())).toEqual(
+      'sla addition of jira.project.instance.project1',
+    )
   })
 })

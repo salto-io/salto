@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -197,6 +189,7 @@ import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_ord
 import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import asyncApiCallsFilter from './filters/async_api_calls'
+import slaAdditionFilter from './filters/sla_addition_deployment'
 import addImportantValuesFilter from './filters/add_important_values'
 import ScriptRunnerClient from './client/script_runner_client'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
@@ -208,6 +201,7 @@ import fieldContextOptionsSplitFilter from './filters/fields/field_context_optio
 import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
 import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
 import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
+import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -278,6 +272,8 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,
+  // must run before workflowTransitionIdsFilter
+  statusPropertiesReferencesFilter,
   // must run after scriptRunnerWorkflowReferencesFilter
   workflowTransitionIdsFilter,
   transitionIdsFilter,
@@ -387,6 +383,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
   queueDeploymentFilter,
+  slaAdditionFilter,
   portalGroupsFilter,
   requestTypeFilter,
   fieldContextOptionsDeploymentFilter,

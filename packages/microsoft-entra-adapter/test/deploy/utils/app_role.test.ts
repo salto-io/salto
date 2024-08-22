@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { PARENT_ID_FIELD_NAME } from '../../../src/constants'
@@ -40,27 +32,6 @@ describe(`${adjustParentWithAppRoles.name}`, () => {
       context: contextMock,
     })
     expect(result.value).toEqual(appRolesParent)
-  })
-
-  it('should add a uuid to each appRole that does not have an id', async () => {
-    const appRolesParent = {
-      appRoles: [
-        {
-          id: 'id1',
-          name: 'name1',
-        },
-        {
-          name: 'name2',
-        },
-      ],
-    }
-    const result = await adjustParentWithAppRoles({
-      value: appRolesParent,
-      typeName: PARENT_TYPE_NAME,
-      context: contextMock,
-    })
-    expect(result.value.appRoles[1].id).toBeDefined()
-    expect(result.value.appRoles[0].id).toBe('id1')
   })
 
   it('should remove the parent_id field from each appRole', async () => {

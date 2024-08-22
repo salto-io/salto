@@ -119,7 +119,7 @@ export type OptionalFeatures = {
   metaTypes?: boolean
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
-  // TODO: add
+  replaceTaskEventCustomFieldsToReferences?: boolean
 }
 
 export type ChangeValidatorName =
@@ -815,6 +815,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
     flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
+    replaceTaskEventCustomFieldsToReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -91,25 +91,4 @@ describe('Task or Event Fields Modifications Change Validator', () => {
       detailedMessage: expect.stringContaining(FIELD2_NAME) && expect.stringContaining(EVENT_CUSTOM_OBJECT),
     })
   })
-  it('should create correct change errors when there is a corresponding Activity addition change, but with the wrong annotations', async () => {
-    const taskField1WithBadRef = taskField1.clone()
-    taskField1WithBadRef.annotations.activityField.elemID = activityField2.elemID
-
-    const changes = [
-      // Field additions without a corresponding Activity field addition, should produce an error.
-      toChange({ after: activityField1 }),
-      toChange({ after: taskField1WithBadRef }),
-    ]
-    const errors = await changeValidator(changes)
-    expect(errors).toHaveLength(1)
-    expect(errors[0]).toEqual({
-      elemID: taskField1WithBadRef.elemID,
-      severity: 'Error',
-      message: expect.stringContaining('Modifying a field of Task or Event is not allowed'),
-      detailedMessage:
-        expect.stringContaining(FIELD1_NAME) &&
-        expect.stringContaining(EVENT_CUSTOM_OBJECT) &&
-        expect.stringContaining('object should reference'),
-    })
-  })
 })

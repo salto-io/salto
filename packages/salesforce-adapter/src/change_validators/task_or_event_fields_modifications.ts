@@ -38,43 +38,14 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
     .map((fieldChange): ChangeError | undefined => {
       const field: Field = getChangeData(fieldChange)
-      const activityFieldChange = activityFieldChanges.filter(change => getChangeData(change).name === field.name).pop()
-      if (fieldChange.action === 'modify') {
+      const refApiName = apiNameSync(field.annotations.activityField.value, true)
+      const matchingChanges = activityFieldChanges.filter(change => apiNameSync(getChangeData(change), true) === refApiName)
+      if (matchingChanges.length !== 1) {
         return createFieldOfTaskOrEventChangeError(field)
       }
-      if (activityFieldChange === undefined || activityFieldChange.action !== fieldChange.action) {
-        return {
-          elemID: field.elemID,
-          severity: 'Error',
-          message: 'Modifying a field of Task or Event is not allowed',
-          detailedMessage: `Adding or removing the field ${field.name} of the ${apiNameSync(field.parent)} object only possible when the corresponding field in the Activity Object is added or removed as well.`,
-        }
-      }
-      if (activityFieldChange.action === 'add') {
-        const expectedFieldName = getChangeData(activityFieldChange).annotations.apiName.replace(
-          'Activity',
-          apiNameSync(field.parent),
-        )
-        if (field.annotations.apiName !== expectedFieldName) {
-          return {
-            elemID: field.elemID,
-            severity: 'Error',
-            message: 'Modifying a field of Task or Event is not allowed',
-            detailedMessage: `Adding the field ${field.name} of the ${apiNameSync(field.parent)} object doesn't match the expected field name ${expectedFieldName} in the Activity Object.`,
-          }
-        }
-        const activityFieldRef = field.annotations.activityField
-        if (
-          !isReferenceExpression(activityFieldRef) ||
-          activityFieldRef.elemID.getFullName() !== getChangeData(activityFieldChange).elemID.getFullName()
-        ) {
-          return {
-            elemID: field.elemID,
-            severity: 'Error',
-            message: 'Modifying a field of Task or Event is not allowed',
-            detailedMessage: `Adding the field ${field.name} of the ${apiNameSync(field.parent)} object should reference ${getChangeData(activityFieldChange).annotations.apiName}. Got: ${inspectValue(activityFieldRef)}`,
-          }
-        }
+      const activityFieldChange = matchingChanges.pop()
+      if (fieldChange.action === 'modify' || activityFieldChange?.action !== fieldChange.action) {
+        return createFieldOfTaskOrEventChangeError(field)
       }
       return undefined
     })

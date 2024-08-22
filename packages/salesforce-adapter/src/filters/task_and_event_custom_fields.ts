@@ -23,7 +23,12 @@ const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
+  if (!config.fetchProfile.isFeatureEnabled('replaceTaskEventCustomFieldsToReferences')) {
+    return {
+      name: 'taskAndEventCustomFields',
+    }
+  }
   let changesToRestore: Change[]
 
   return {

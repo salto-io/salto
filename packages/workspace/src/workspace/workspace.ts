@@ -684,25 +684,33 @@ export const loadWorkspace = async (
 
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = naclFilesSource
-      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> => {
-        elemIDs.forEach(id => addedIDs.add(id.getFullName()))
-        const filesWithDependencies = _.uniq(
-          await awu(elemIDs)
-            .flatMap(id => source.getElementReferencedFiles(envName, id))
-            .toArray(),
+      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> =>
+        log.timeDebug(
+          async () => {
+            elemIDs.forEach(id => addedIDs.add(id.getFullName()))
+            const filesWithDependencies = _.uniq(
+              await awu(elemIDs)
+                .flatMap(id => source.getElementReferencedFiles(envName, id))
+                .toArray(),
+            )
+            const dependentsIDs = await log.timeDebug(
+              async () =>
+                awu(filesWithDependencies)
+                  .map(filename => source.getParsedNaclFile(filename))
+                  .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
+                  .filter(id => !addedIDs.has(id.getFullName()))
+                  .toArray(),
+              'get dependentsIDs from %s files',
+              filesWithDependencies.length,
+            )
+            const uniqDependentsIDs = _.uniqBy(dependentsIDs, id => id.getFullName())
+            return _.isEmpty(uniqDependentsIDs)
+              ? uniqDependentsIDs
+              : uniqDependentsIDs.concat(await getElementsDependents(uniqDependentsIDs, addedIDs))
+          },
+          'getElementsDependents for %s elemIDs',
+          elemIDs.length,
         )
-        const dependentsIDs = _.uniqBy(
-          await awu(filesWithDependencies)
-            .map(filename => source.getParsedNaclFile(filename))
-            .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
-            .filter(id => !addedIDs.has(id.getFullName()))
-            .toArray(),
-          id => id.getFullName(),
-        )
-        return _.isEmpty(dependentsIDs)
-          ? dependentsIDs
-          : dependentsIDs.concat(await getElementsDependents(dependentsIDs, addedIDs))
-      }
       const validateElementsAndDependents = async (
         elements: ReadonlyArray<Element>,
         elementSource: ReadOnlyElementsSource,
@@ -712,8 +720,9 @@ export const loadWorkspace = async (
         validatedElementsIDs: ElemID[]
       }> => {
         const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
+        log.debug('found %d dependents for %d elements', dependentsID.length, relevantElementIDs.length)
         const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
-        const elementsToValidate = [...elements, ...dependents]
+        const elementsToValidate = elements.concat(dependents)
         return {
           errors: await validateElements(elementsToValidate, elementSource),
           validatedElementsIDs: _.uniqBy([...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs], e =>

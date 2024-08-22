@@ -5,20 +5,25 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { definitions } from '@salto-io/adapter-components'
+import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
 import { Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { intuneConstants } from '../../../constants'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
-import { transformOdataTypeField } from '../../../utils/shared'
+import { odataType, parser } from '../../../utils'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
-import { APPLICATION_FIELDS_TO_OMIT, APPLICATION_NAME_PARTS, APPLICATION_TYPE_PART } from './utils'
+import { application } from './utils'
 
 const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+
+  ENCODED_SETTING_XML_FIELD_NAME,
+  PAYLOAD_JSON_FIELD_NAME,
+
   SERVICE_BASE_URL,
 } = intuneConstants
 
@@ -33,7 +38,7 @@ const graphBetaCustomizations: FetchCustomizations = {
           ...DEFAULT_TRANSFORMATION,
           // TODO SALTO-6483: We need to store the largeIcon as a static file, for now we omit it
           omit: ['largeIcon'],
-          adjust: transformOdataTypeField('fetch'),
+          adjust: odataType.transformOdataTypeField('fetch'),
         },
       },
     ],
@@ -44,10 +49,10 @@ const graphBetaCustomizations: FetchCustomizations = {
       topLevel: {
         isTopLevel: true,
         elemID: {
-          parts: [APPLICATION_TYPE_PART, ...APPLICATION_NAME_PARTS],
+          parts: [application.APPLICATION_TYPE_PART, ...application.APPLICATION_NAME_PARTS],
         },
         path: {
-          pathParts: [{ parts: [APPLICATION_TYPE_PART] }, { parts: APPLICATION_NAME_PARTS }],
+          pathParts: [{ parts: [application.APPLICATION_TYPE_PART] }, { parts: application.APPLICATION_NAME_PARTS }],
         },
         alias: { aliasComponents: [NAME_ID_FIELD] },
         serviceUrl: {
@@ -57,7 +62,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       },
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
-        ...APPLICATION_FIELDS_TO_OMIT,
+        ...application.APPLICATION_FIELDS_TO_OMIT,
       },
     },
   },
@@ -100,6 +105,36 @@ const graphBetaCustomizations: FetchCustomizations = {
           omit: true,
         },
       },
+    },
+  },
+  [APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME]: {
+    resource: {
+      directFetch: true,
+    },
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceAppManagement/mobileAppConfigurations',
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version'],
+          adjust: concatAdjustFunctions(
+            parser.decodeBase64JsonFields(PAYLOAD_JSON_FIELD_NAME),
+            parser.parseBase64XmlFields(ENCODED_SETTING_XML_FIELD_NAME),
+          ),
+        },
+      },
+    ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune_Apps/AppConfigPolicySettingsMenu/~/2/appConfigPolicyId/{id}',
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
 }

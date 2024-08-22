@@ -9,14 +9,20 @@ import { getChangeData } from '@salto-io/adapter-api'
 import { concatAdjustFunctions } from '@salto-io/adapter-components'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
-import { transformOdataTypeField } from '../../../utils/shared'
+import { odataType, parser } from '../../../utils'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } from '../shared/utils'
-import { intuneUtils } from '../../../utils'
-import { applications, appsConfiguration } from './utils'
+import { application as applicationDeployUtils, appsConfiguration } from './utils'
+import { application } from '../../../utils/intune'
 
-const { APPLICATION_TYPE_NAME, APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } = intuneConstants
-const { isManagedGooglePlayApp } = intuneUtils
+const {
+  APPLICATION_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+
+  ENCODED_SETTING_XML_FIELD_NAME,
+  PAYLOAD_JSON_FIELD_NAME,
+} = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
   [APPLICATION_TYPE_NAME]: {
@@ -25,7 +31,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
         request: {
           transformation: {
             adjust: omitReadOnlyFieldsWrapper(
-              concatAdjustFunctions(transformOdataTypeField('deploy'), applications.omitApplicationRedundantFields),
+              concatAdjustFunctions(
+                odataType.transformOdataTypeField('deploy'),
+                applicationDeployUtils.omitApplicationRedundantFields,
+              ),
             ),
           },
         },
@@ -43,7 +52,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               custom:
                 () =>
                 ({ change }) =>
-                  !isManagedGooglePlayApp(getChangeData(change).value),
+                  !application.isManagedGooglePlayApp(getChangeData(change).value),
             },
           },
           {
@@ -53,14 +62,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: omitReadOnlyFieldsWrapper(applications.transformManagedGooglePlayApp),
+                adjust: omitReadOnlyFieldsWrapper(applicationDeployUtils.transformManagedGooglePlayApp),
               },
             },
             condition: {
               custom:
                 () =>
                 ({ change }) =>
-                  isManagedGooglePlayApp(getChangeData(change).value),
+                  application.isManagedGooglePlayApp(getChangeData(change).value),
             },
           },
         ],
@@ -122,6 +131,54 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/deviceAppManagement/targetedManagedAppConfigurations/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME]: {
+    requestsByAction: {
+      default: {
+        request: {
+          transformation: {
+            adjust: omitReadOnlyFieldsWrapper(
+              concatAdjustFunctions(
+                parser.buildBase64XmlFields(ENCODED_SETTING_XML_FIELD_NAME),
+                parser.encodeBase64JsonFields(PAYLOAD_JSON_FIELD_NAME),
+              ),
+            ),
+          },
+        },
+      },
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceAppManagement/mobileAppConfigurations',
+                method: 'post',
+              },
+            },
+          },
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceAppManagement/mobileAppConfigurations/{id}',
+                method: 'patch',
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceAppManagement/mobileAppConfigurations/{id}',
                 method: 'delete',
               },
             },

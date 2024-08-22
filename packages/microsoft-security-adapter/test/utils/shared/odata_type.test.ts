@@ -7,8 +7,10 @@
  */
 
 import { ODATA_PREFIX, ODATA_TYPE_FIELD } from '../../../src/constants'
-import { getAdjustedOdataTypeFieldName, transformOdataTypeField } from '../../../src/utils'
+import { odataType } from '../../../src/utils'
 import { contextMock } from '../../mocks'
+
+const { getAdjustedOdataTypeFieldName, transformOdataTypeField } = odataType
 
 describe('Odata type utils', () => {
   describe(`${getAdjustedOdataTypeFieldName.name}`, () => {

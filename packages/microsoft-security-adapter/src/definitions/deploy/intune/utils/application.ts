@@ -12,12 +12,11 @@ import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
 import { intuneConstants } from '../../../../constants'
 import { intuneUtils } from '../../../../utils'
-import { isAndroidEnterpriseSystemApp } from '../../../../utils/intune'
 
 const { APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } =
   intuneConstants
 
-const { isManagedGooglePlayApp } = intuneUtils
+const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application
 
 /**
  * Omit redundant fields from application based on its type.

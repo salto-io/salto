@@ -15,7 +15,7 @@ import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } 
 import { intuneUtils } from '../../../utils'
 import { applications, appsConfiguration } from './utils'
 
-const { APPLICATION_TYPE_NAME, APPLICATION_CONFIGURATION_MANAGED_APP } = intuneConstants
+const { APPLICATION_TYPE_NAME, APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } = intuneConstants
 const { isManagedGooglePlayApp } = intuneUtils
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
@@ -87,7 +87,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       },
     },
   },
-  [APPLICATION_CONFIGURATION_MANAGED_APP]: {
+  [APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME]: {
     requestsByAction: {
       customizations: {
         add: [

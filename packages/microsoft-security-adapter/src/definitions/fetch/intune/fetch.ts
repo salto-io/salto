@@ -15,8 +15,11 @@ import { transformOdataTypeField } from '../../../utils/shared'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 import { APPLICATION_FIELDS_TO_OMIT, APPLICATION_NAME_PARTS, APPLICATION_TYPE_PART } from './utils'
 
-const { APPLICATION_TYPE_NAME, APPLICATION_CONFIGURATION_MANAGED_APP, APPLICATION_CONFIGURATION_MANAGED_APP_APPS } =
-  intuneConstants
+const {
+  APPLICATION_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+} = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
   [APPLICATION_TYPE_NAME]: {
@@ -57,7 +60,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       },
     },
   },
-  [APPLICATION_CONFIGURATION_MANAGED_APP]: {
+  [APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
@@ -86,7 +89,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
-  [APPLICATION_CONFIGURATION_MANAGED_APP_APPS]: {
+  [APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME]: {
     element: {
       fieldCustomizations: {
         id: {

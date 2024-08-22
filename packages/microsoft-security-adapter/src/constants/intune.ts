@@ -25,10 +25,10 @@ export const APPS_FIELD_NAME = 'apps'
 /* Type names */
 // Top level
 export const APPLICATION_TYPE_NAME = toIntuneTypeName('application')
-export const APPLICATION_CONFIGURATION_MANAGED_APP = toIntuneTypeName('applicationConfigurationManagedApp')
+export const APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME = toIntuneTypeName('applicationConfigurationManagedApp')
 
 // Nested types
-export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS = recursiveNestedTypeName(
-  APPLICATION_CONFIGURATION_MANAGED_APP,
+export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
+  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPS_FIELD_NAME,
 )

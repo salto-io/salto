@@ -9,11 +9,11 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { appsConfiguration } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
-import { APPLICATION_CONFIGURATION_MANAGED_APP } from '../../../../../src/constants/intune'
+import { APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } from '../../../../../src/constants/intune'
 
 describe('apps configuration definition utils', () => {
   const applicationConfigurationType = new ObjectType({
-    elemID: new ElemID(APPLICATION_CONFIGURATION_MANAGED_APP),
+    elemID: new ElemID(APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME),
   })
   const appConfigurationWithAllApps = new InstanceElement('test', applicationConfigurationType, {
     targetedManagedAppGroupType: 'allApps',

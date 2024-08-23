@@ -146,6 +146,7 @@ describe('guide arrange paths', () => {
     brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     content: new StaticFile({ filepath: 'something', content }),
     file_name: 'attachment',
+    inline: 'true',
   })
   articleAttachmentInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
     new ReferenceExpression(articleInstance.elemID, articleInstance),
@@ -414,7 +415,7 @@ describe('guide arrange paths', () => {
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
           'article_name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_ATTACHMENT_TYPE_NAME],
-          'attachment',
+          'attachment_true',
           `${staticFile.hash.slice(0, 10)}_attachment`,
         ].join('/'),
       )

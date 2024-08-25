@@ -461,6 +461,7 @@ export interface ZendeskAdapterParams {
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   configInstance?: InstanceElement
+  accountName?: string
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
@@ -478,6 +479,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
   private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
+  private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -496,6 +498,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     config,
     configInstance,
     elementsSource,
+    accountName,
   }: ZendeskAdapterParams) {
     const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
@@ -510,6 +513,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
+    this.accountName = accountName
 
     this.createClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       const clientConfig = { ...this.userConfig[CLIENT_CONFIG] }
@@ -526,17 +530,20 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     const typesToOmit = this.getNonSupportedTypesToOmit()
 
-    this.adapterDefinitions = {
-      // we can't add guide client at this point
-      clients: createClientDefinitions({ main: this.client, guide: this.client }),
-      pagination: PAGINATION,
-      fetch: definitions.mergeWithUserElemIDDefinitions({
-        userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(this.userConfig, {
-          typesToOmit,
+    this.adapterDefinitions = definitions.mergeDefinitionsWithOverrides(
+      {
+        // we can't add guide client at this point
+        clients: createClientDefinitions({ main: this.client, guide: this.client }),
+        pagination: PAGINATION,
+        fetch: definitions.mergeWithUserElemIDDefinitions({
+          userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
+          fetchConfig: createFetchDefinitions(this.userConfig, {
+            typesToOmit,
+          }),
         }),
-      }),
-    }
+      },
+      this.accountName,
+    )
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {

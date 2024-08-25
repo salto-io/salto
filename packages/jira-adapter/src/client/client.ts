@@ -35,6 +35,10 @@ const RATE_LIMIT_HEADER_PREFIX = 'x-ratelimit-'
 
 export const USE_BOTTLENECK = true
 export const DELAY_PER_REQUEST_MS = 0
+export const PAUSE_DURING_RETRY_DELAY = false
+export const RETRY_IN_RATE_LIMITER = false
+export const DEFAULT_RETRY_DELAY_MS = 1000
+export const DEFAULT_JIRA_RETRY_OPTIONS = { ...DEFAULT_RETRY_OPTS, retryDelay: DEFAULT_RETRY_DELAY_MS }
 
 export const GET_CLOUD_ID_URL = '/_edge/tenant_info'
 export const GQL_BASE_URL_GIRA = '/rest/gira/1'
@@ -84,7 +88,9 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<Credential
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       delayPerRequestMS: DELAY_PER_REQUEST_MS,
       useBottleneck: USE_BOTTLENECK,
-      retry: DEFAULT_RETRY_OPTS,
+      pauseDuringRetryDelay: PAUSE_DURING_RETRY_DELAY,
+      retry: DEFAULT_JIRA_RETRY_OPTIONS,
+      retryInRateLimiter: RETRY_IN_RATE_LIMITER,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
     this.isDataCenter = clientOpts.isDataCenter

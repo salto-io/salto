@@ -32,6 +32,7 @@ export type ClientRetryConfig = Partial<{
   retryDelay: number
   // This is not included in clientRetryConfigType because currently we don't want to allow the user to change it
   additionalStatusCodesToRetry: number[]
+  enabledRetry: boolean
 }>
 
 export type ClientTimeoutConfig = Partial<{
@@ -43,9 +44,11 @@ export type ClientTimeoutConfig = Partial<{
 export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Partial<{
   retry: ClientRetryConfig
   rateLimit: RateLimitConfig
+  retryInRateLimiter: boolean
   maxRequestsPerMinute: number
   delayPerRequestMS: number
   useBottleneck: boolean
+  pauseDuringRetryDelay: boolean
   pageSize: ClientPageSizeConfig
   timeout: ClientTimeoutConfig
 }>
@@ -125,6 +128,8 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       maxRequestsPerMinute: createFieldDefWithMin(-1),
       delayPerRequestMS: createFieldDefWithMin(0),
       useBottleneck: { refType: BuiltinTypes.BOOLEAN },
+      pauseDuringRetryDelay: { refType: BuiltinTypes.BOOLEAN },
+      retryInRateLimiter: { refType: BuiltinTypes.BOOLEAN },
       pageSize: { refType: clientPageSizeConfigType },
       timeout: { refType: clientTimeoutConfigType },
       ...additionalClientFields,

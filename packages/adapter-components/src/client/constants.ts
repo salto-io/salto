@@ -12,6 +12,7 @@ export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   additionalStatusCodesToRetry: [],
+  enabledRetry: true,
 }
 
 export const DEFAULT_TIMEOUT_OPTS: Required<ClientTimeoutConfig> = {
@@ -38,3 +39,5 @@ export const RATE_LIMIT_DEFAULT_OPTIONS: RateLimiterOptions = {
   useBottleneck: true,
   ...RATE_LIMIT_DEFAULT_RETRY_OPTIONS,
 }
+
+export const DEFAULT_RETRY_IN_RATE_LIMITER = !DEFAULT_RETRY_OPTS.enabledRetry

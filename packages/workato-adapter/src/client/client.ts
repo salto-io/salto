@@ -16,6 +16,7 @@ const {
   DEFAULT_TIMEOUT_OPTS,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   RATE_LIMIT_DEFAULT_OPTIONS,
+  DEFAULT_RETRY_IN_RATE_LIMITER,
 } = clientUtils
 const log = logger(module)
 
@@ -41,6 +42,8 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
       useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
+      pauseDuringRetryDelay: RATE_LIMIT_DEFAULT_OPTIONS.pauseDuringRetryDelay,
+      retryInRateLimiter: DEFAULT_RETRY_IN_RATE_LIMITER,
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })

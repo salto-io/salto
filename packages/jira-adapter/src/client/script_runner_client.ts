@@ -10,14 +10,20 @@ import { logger } from '@salto-io/logging'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
 import { createScriptRunnerConnection } from './script_runner_connection'
-import JiraClient, { DELAY_PER_REQUEST_MS, USE_BOTTLENECK } from './client'
+import JiraClient, {
+  DEFAULT_JIRA_RETRY_OPTIONS,
+  DELAY_PER_REQUEST_MS,
+  PAUSE_DURING_RETRY_DELAY,
+  RETRY_IN_RATE_LIMITER,
+  USE_BOTTLENECK,
+} from './client'
 import { ScriptRunnerCredentials } from '../auth'
 
 const log = logger(module)
 
 const NO_LICENSE_ERROR_CODE = 402
 
-const { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const { DEFAULT_TIMEOUT_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
 // The below default values are taken from Jira and were not verified for ScriptRunner
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<definitions.ClientRateLimitConfig> = {
@@ -46,7 +52,9 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       delayPerRequestMS: DELAY_PER_REQUEST_MS,
       useBottleneck: USE_BOTTLENECK,
-      retry: DEFAULT_RETRY_OPTS,
+      pauseDuringRetryDelay: PAUSE_DURING_RETRY_DELAY,
+      retry: DEFAULT_JIRA_RETRY_OPTIONS,
+      retryInRateLimiter: RETRY_IN_RATE_LIMITER,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
   }

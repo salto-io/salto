@@ -16,6 +16,7 @@ const log = logger(module)
 const {
   DEFAULT_RETRY_OPTS,
   DEFAULT_TIMEOUT_OPTS,
+  DEFAULT_RETRY_IN_RATE_LIMITER,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   RATE_LIMIT_DEFAULT_OPTIONS,
 } = clientUtils
@@ -39,6 +40,8 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<Credentia
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
       useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
+      pauseDuringRetryDelay: RATE_LIMIT_DEFAULT_OPTIONS.pauseDuringRetryDelay,
+      retryInRateLimiter: DEFAULT_RETRY_IN_RATE_LIMITER,
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })

@@ -21,6 +21,7 @@ import { OktaClientRateLimitConfig } from '../user_config'
 const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  DEFAULT_RETRY_IN_RATE_LIMITER,
   DEFAULT_RETRY_OPTS,
   DEFAULT_TIMEOUT_OPTS,
   RATE_LIMIT_DEFAULT_OPTIONS,
@@ -152,6 +153,9 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       delayPerRequestMS: clientOpts.config?.delayPerRequestMS ?? RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
       useBottleneck: clientOpts.config?.useBottleneck ?? RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
+      pauseDuringRetryDelay:
+        clientOpts.config?.pauseDuringRetryDelay ?? RATE_LIMIT_DEFAULT_OPTIONS.pauseDuringRetryDelay,
+      retryInRateLimiter: clientOpts.config?.retryInRateLimiter ?? DEFAULT_RETRY_IN_RATE_LIMITER,
       maxRequestsPerMinute:
         clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default

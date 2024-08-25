@@ -2,7 +2,7 @@
   "name": "salto-vscode",
   "displayName": "Salto NACL Configuration Editor",
   "description": "Provides rich support for NACL Configuration files, including syntax highlighting, auto-complete, code navigation and more.",
-  "version": "0.3.61",
+  "version": "0.3.62",
   "publishConfig": {
     "access": "public"
   },
@@ -94,12 +94,12 @@
     "package": "bash ./scripts/package.sh"
   },
   "dependencies": {
-    "@salto-io/core": "0.3.61",
-    "@salto-io/file": "0.3.61",
-    "@salto-io/lang-server": "0.3.61",
-    "@salto-io/lowerdash": "0.3.61",
-    "@salto-io/parser": "0.3.61",
-    "@salto-io/workspace": "0.3.61",
+    "@salto-io/core": "0.3.62",
+    "@salto-io/file": "0.3.62",
+    "@salto-io/lang-server": "0.3.62",
+    "@salto-io/lowerdash": "0.3.62",
+    "@salto-io/parser": "0.3.62",
+    "@salto-io/workspace": "0.3.62",
     "clipboardy": "^2.3.0",
     "lodash": "^4.17.21",
     "open": "^7.2.0",

@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import {
   Change,
   Element,
@@ -16,19 +17,17 @@ import {
 } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE_CUSTOM_SUFFIX, TASK_CUSTOM_OBJECT } from '../constants'
-import { apiNameSync, isCustomObjectSync } from './utils'
+import { apiNameSync, ensureSafeFilterFetch, isCustomObjectSync } from './utils'
 
 const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
+
+const ANNOTATIONS_TO_KEEP = ['apiName', 'updateable', 'creatable', 'deletable']
+
 const filterCreator: LocalFilterCreator = ({ config }) => {
-  if (!config.fetchProfile.isFeatureEnabled('replaceTaskEventCustomFieldsToReferences')) {
-    return {
-      name: 'taskAndEventCustomFields',
-    }
-  }
   let changesToRestore: Change[]
 
   return {
@@ -36,31 +35,36 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
     /**
      * Upon fetch modify custom fields of `Task` and `Event` to point to the corresponding field in the `Activity` object.
      */
-    onFetch: async (elements: Element[]): Promise<void> => {
-      const activity = elements.filter(co => co.elemID.name === ACTIVITY_CUSTOM_OBJECT).pop() as ObjectType
+    onFetch: ensureSafeFilterFetch({
+      warningMessage: 'Error occurred when attempting to modify custom fields of Task and Event objects',
+      filterName: 'taskAndEventCustomFields',
+      config,
+      fetchFilterFunc: async (elements: Element[]) => {
+        const activity = elements.filter(co => co.elemID.name === ACTIVITY_CUSTOM_OBJECT).pop() as ObjectType
 
-      elements
-        .filter(isCustomObjectSync)
-        // TODO: filter with apiNameSync instead of elemID
-        .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(co.elemID.name))
-        .forEach(co => {
-          Object.entries(co.fields).forEach(([fieldName, field]) => {
-            if (!isCustomField(field)) {
-              return
-            }
+        elements
+          .filter(isCustomObjectSync)
+          // TODO: filter with apiNameSync instead of elemID
+          .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(co.elemID.name))
+          .forEach(co => {
+            Object.entries(co.fields).forEach(([fieldName, field]) => {
+              if (!isCustomField(field)) {
+                return
+              }
 
-            const activityField = activity?.fields[fieldName.replace(co.elemID.name, 'Activity')]
-            if (!activityField) {
-              return
-            }
+              const activityField = activity?.fields[fieldName.replace(co.elemID.name, 'Activity')]
+              if (!activityField) {
+                return
+              }
 
-            field.annotations = {
-              apiName: field.annotations.apiName,
-              activityField: new ReferenceExpression(activityField.elemID),
-            }
+              field.annotations = {
+                ..._.pick(field.annotations, ANNOTATIONS_TO_KEEP),
+                activityField: new ReferenceExpression(activityField.elemID),
+              }
+            })
           })
-        })
-    },
+      },
+    }),
     preDeploy: async (changes: Change[]): Promise<void> => {
       changesToRestore = changes
         .filter(isFieldChange)

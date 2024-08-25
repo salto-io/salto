@@ -18,6 +18,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import filterCreator from '../../src/filters/element_references'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
@@ -26,6 +27,8 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '..
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 import { LocalFilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
+
+const logging = logger('netsuite-adapter/src/filters/element_references')
 
 describe('instance_references filter', () => {
   describe('onFetch', () => {
@@ -43,6 +46,7 @@ describe('instance_references filter', () => {
     }
 
     beforeEach(async () => {
+      jest.clearAllMocks()
       getIndexesMock.mockReset()
       getIndexesMock.mockResolvedValue({
         serviceIdRecordsIndex: {},
@@ -493,6 +497,7 @@ describe('instance_references filter', () => {
     })
 
     it('should add extracted element to generated dependencies', async () => {
+      const mockLogInfo = jest.spyOn(logging, 'info')
       const fileContent = `
       define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
@@ -508,6 +513,11 @@ describe('instance_references filter', () => {
             id: requestBody.salesRep,
             isDynamic: true
           });
+          /* 'custom_field' in a \n multiline comment */ 
+          var values = {
+            cseg_1: notAnId,
+            someValue: top_level
+          }
           return JSON.stringify(salesRep);
           }
         }
@@ -523,13 +533,38 @@ describe('instance_references filter', () => {
       const innerFileInstance = new InstanceElement('innferRefFile', fileType(), {
         [PATH]: '/Templates/innerFileRef.name',
       })
+      // references from non js file should not be added to the generated dependencies as they are not parsed
+      const nonJsFileContent = `
+      This is some free text which contains the word 'top_level' in it
+      `
+      innerFileInstance.value.content = new StaticFile({
+        filepath: 'Templates/innerFileRef.name',
+        content: Buffer.from(nonJsFileContent),
+      })
       await filterCreator({
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
-      }).onFetch?.([fileInstance, syntacticFileInstance, syntacticFileInstance2, innerFileInstance, customRecordType])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
+      }).onFetch?.([
+        fileInstance,
+        syntacticFileInstance,
+        syntacticFileInstance2,
+        innerFileInstance,
+        customRecordType,
+        customSegmentInstance,
+        workflowInstance,
+      ])
+      expect(mockLogInfo).toHaveBeenCalledTimes(1)
+      expect(mockLogInfo).toHaveBeenCalledWith(
+        'Found %d new references: %o and removed %d references: %o in file %s.',
+        1,
+        [customSegmentInstance.elemID.createNestedID(SCRIPT_ID)],
+        1,
+        [customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)],
+        fileInstance.value[PATH],
+      )
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([
           {
@@ -546,6 +581,10 @@ describe('instance_references filter', () => {
           },
           {
             reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)),
             occurrences: undefined,
           },
         ]),
@@ -601,6 +640,7 @@ describe('instance_references filter', () => {
       * @NModuleScope SameAccount
       */
      `
+      fileInstance.value[PATH] = '/Templates/file.js'
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       const commentRefFileInstance = new InstanceElement('commentFileInstance', fileType(), {
         [PATH]: '/Templates/utils/ToastDalConfig.json',
@@ -628,6 +668,7 @@ describe('instance_references filter', () => {
           // Load employee record
         }
       });`
+      fileInstance.value[PATH] = '/Templates/file.js'
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       await filterCreator({
         elementsSourceIndex,
@@ -659,6 +700,7 @@ describe('instance_references filter', () => {
           // Load employee record
         }
       });`
+      fileInstance.value[PATH] = '/Templates/file.js'
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       await filterCreator({
         elementsSourceIndex,

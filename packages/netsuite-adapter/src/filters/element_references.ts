@@ -57,11 +57,29 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
+// matches key strings in format of 'key': value or key: value
+const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*.+`, 'gm')
+// matches comments in js files
+// \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
+// ^\\s*\\/\\/.* - matches single line comments that start with '//'
+// (?<=[^:])\\/\\/.* - This prevents matching URLs that contain // by checking they are not preceded by a colon.
+const jsCommentsRegex = new RegExp('\\/\\*[\\s\\S]*?\\*\\/|^\\s*\\/\\/.*|(?<=[^:])\\/\\/.*', 'gm')
 
 const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo): boolean =>
   serviceIdInfoRecord.appid !== undefined ||
   serviceIdInfoRecord.bundleid !== undefined ||
   !serviceIdInfoRecord.isFullMatch
+
+const getReferencesWithRegex = (content: string): string[] => {
+  const contentWithoutComments = content.replace(jsCommentsRegex, '')
+  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(
+    contentWithoutComments,
+    semanticReferenceRegex,
+    OPTIONAL_REFS,
+  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+  return semanticReferences.concat(objectKeyReferences)
+}
 
 export const getElementServiceIdRecords = async (
   element: Element,
@@ -136,6 +154,50 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
+const hasValidJSExtension = (path: string): boolean => {
+  const extensions = ['.js', '.cjs', '.mjs', '.json']
+  return extensions.some(ext => path.endsWith(ext))
+}
+
+const getAndLogReferencesDiff = ({
+  newReferences,
+  existingReferences,
+  element,
+  serviceIdToElemID,
+  customRecordFieldsToServiceIds,
+}: {
+  newReferences: string[]
+  existingReferences: string[]
+  element: InstanceElement
+  serviceIdToElemID: ServiceIdRecords
+  customRecordFieldsToServiceIds: ServiceIdRecords
+}): void => {
+  const newFoundReferences = _.difference(newReferences, existingReferences)
+  const removedReferences = _.difference(existingReferences, newReferences)
+  const newReferencesElemIDs = getServiceElemIDsFromPaths(
+    newFoundReferences,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
+  const removedReferencesElemIDs = getServiceElemIDsFromPaths(
+    removedReferences,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
+  if (newReferencesElemIDs.length > 0 || removedReferencesElemIDs.length > 0) {
+    log.info(
+      'Found %d new references: %o and removed %d references: %o in file %s.',
+      newReferencesElemIDs.length,
+      newReferencesElemIDs,
+      removedReferencesElemIDs.length,
+      removedReferencesElemIDs,
+      element.value[PATH],
+    )
+  }
+}
+
 const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
@@ -154,11 +216,24 @@ const getSuiteScriptReferences = async (
   const content = fileContent.toString()
 
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-    .concat(nsConfigReferences)
+  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
+    path => !path.startsWith(NETSUITE_MODULE_PREFIX),
+  )
+  const foundReferences = getReferencesWithRegex(content)
+  getAndLogReferencesDiff({
+    newReferences: foundReferences,
+    existingReferences: semanticReferences,
+    element,
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+  })
 
-  return getServiceElemIDsFromPaths(semanticReferences, serviceIdToElemID, customRecordFieldsToServiceIds, element)
+  return getServiceElemIDsFromPaths(
+    semanticReferences.concat(nsConfigReferences),
+    serviceIdToElemID,
+    customRecordFieldsToServiceIds,
+    element,
+  )
 }
 
 const replaceReferenceValues = async (
@@ -212,7 +287,7 @@ const replaceReferenceValues = async (
   })
 
   const suiteScriptReferences =
-    isFileCabinetInstance(element) && isFileInstance(element)
+    isFileCabinetInstance(element) && isFileInstance(element) && hasValidJSExtension(element.value[PATH])
       ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
       : []
 

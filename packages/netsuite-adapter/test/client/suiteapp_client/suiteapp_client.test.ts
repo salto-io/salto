@@ -203,6 +203,12 @@ describe('SuiteAppClient', () => {
 
           expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(3)
+          const uniqAuthHeaders = _.uniq(
+            mockAxiosAdapter.history.post
+              .map(request => request.headers?.['Authorization'])
+              .filter(header => header !== undefined),
+          )
+          expect(uniqAuthHeaders.length).toBe(3)
         })
         it('with server error retry', async () => {
           jest
@@ -226,6 +232,12 @@ describe('SuiteAppClient', () => {
 
           expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(4)
+          const uniqAuthHeaders = _.uniq(
+            mockAxiosAdapter.history.post
+              .map(request => request.headers?.['Authorization'])
+              .filter(header => header !== undefined),
+          )
+          expect(uniqAuthHeaders.length).toBe(4)
         })
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, {})

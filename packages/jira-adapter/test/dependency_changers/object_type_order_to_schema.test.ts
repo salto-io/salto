@@ -87,5 +87,22 @@ describe('objectTypeOrderToSchemaDependencyChanger', () => {
       dependencyChanges = [...(await objectTypeOrderToSchemaDependencyChanger(inputChanges, inputDeps))]
       expect(dependencyChanges).toHaveLength(0)
     })
+    it('should not remove dependencies from objectTypeOrderInstance to objectSchema when objectSchema is not the parent', async () => {
+      const otherObjectSchemaInstance = new InstanceElement(
+        'otherObjectSchemaInstance',
+        createEmptyType(OBJECT_SCHEMA_TYPE),
+        {
+          id: '2',
+          name: 'objectSchemaInstanceName2',
+        },
+      )
+      const inputChanges = new Map([
+        [0, toChange({ before: objectTypeOrderInstance })],
+        [1, toChange({ before: otherObjectSchemaInstance })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+      dependencyChanges = [...(await objectTypeOrderToSchemaDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges).toHaveLength(0)
+    })
   })
 })

@@ -18,17 +18,17 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
+import { SetId } from '@salto-io/lowerdash/src/collections/set'
+import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ORDER_TYPE } from '../constants'
 
-const createDependencyChange = (
-  objectTypeChange: deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>,
-  objectSchemaChange: deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>,
-): DependencyChange[] => [dependencyChange('remove', objectTypeChange.key, objectSchemaChange.key)]
+const createDependencyChange = (objectTypeOrderKey: SetId, objectSchemaKey: SetId): DependencyChange[] => [
+  dependencyChange('remove', objectTypeOrderKey, objectSchemaKey),
+]
 
 /*
- * This dependency changer is used to remove a dependency from root object type to it's schema
- * upon removal because we added the reference for Salto's internal use. but no real dependency exists
- * In this direction. We also have parent annotation that is used for the real dependency.
+ * This dependency changer is used to remove a dependency from objectTypeOrder to its schema
+ * upon removal because the deletion is being pseudo-deleted, with no actual call to the service.
  */
 export const objectTypeOrderToSchemaDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
@@ -50,10 +50,18 @@ export const objectTypeOrderToSchemaDependencyChanger: DependencyChanger = async
   if (_.isEmpty(objectTypeOrderChanges) || _.isEmpty(objectSchemaChanges)) {
     return []
   }
-  return objectTypeOrderChanges.flatMap(change => {
-    const objectTypeChange = change as deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>
-    return objectSchemaChanges
-      .map(objectSchemaChange => createDependencyChange(objectTypeChange, objectSchemaChange))
-      .flat()
-  })
+  const fullNameToChangeKey = Object.fromEntries(
+    objectSchemaChanges.map(({ key, change }) => [getChangeData(change).elemID.getFullName(), key]),
+  )
+  return objectTypeOrderChanges
+    .filter(change => hasValidParent(getChangeData(change.change)))
+    .flatMap(change => {
+      const objectTypeOrderChange = change as deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>
+      const parentObjectSchemaKey = fullNameToChangeKey[
+        getParent(getChangeData(change.change)).elemID.getFullName()
+      ] as SetId
+      return parentObjectSchemaKey === undefined
+        ? []
+        : createDependencyChange(objectTypeOrderChange.key, parentObjectSchemaKey)
+    })
 }

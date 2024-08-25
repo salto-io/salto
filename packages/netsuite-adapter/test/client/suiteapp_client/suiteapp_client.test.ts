@@ -205,7 +205,7 @@ describe('SuiteAppClient', () => {
           expect(mockAxiosAdapter.history.post.length).toBe(3)
           const uniqAuthHeaders = _.uniq(
             mockAxiosAdapter.history.post
-              .map(request => request.headers?.['Authorization'])
+              .map(request => request.headers?.Authorization)
               .filter(header => header !== undefined),
           )
           expect(uniqAuthHeaders.length).toBe(3)
@@ -234,7 +234,7 @@ describe('SuiteAppClient', () => {
           expect(mockAxiosAdapter.history.post.length).toBe(4)
           const uniqAuthHeaders = _.uniq(
             mockAxiosAdapter.history.post
-              .map(request => request.headers?.['Authorization'])
+              .map(request => request.headers?.Authorization)
               .filter(header => header !== undefined),
           )
           expect(uniqAuthHeaders.length).toBe(4)

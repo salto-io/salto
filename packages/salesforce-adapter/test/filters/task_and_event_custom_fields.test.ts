@@ -40,7 +40,7 @@ describe('taskAndEventCustomFieldsFilter', () => {
   )
 
   beforeEach(() => {
-    filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
+    filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })
 
   describe('onFetch', () => {
@@ -60,9 +60,9 @@ describe('taskAndEventCustomFieldsFilter', () => {
     })
   })
 
-  describe('preDeploy', () => {
-    it('should drop addition and removal changes to Task and Event custom fields', async () => {
-      const changes = [
+  describe('deploy', () => {
+    it('should drop addition and removal changes to Task and Event custom fields and re-add them after deploying', async () => {
+      const originalChanges = [
         toChange({ after: taskField }),
         toChange({ after: eventField }),
         toChange({ after: activityField }),
@@ -71,8 +71,11 @@ describe('taskAndEventCustomFieldsFilter', () => {
         toChange({ before: eventField }),
         toChange({ before: activityField }),
       ]
+      const changes = [...originalChanges]
       await filter.preDeploy(changes)
       expect(changes).toEqual([toChange({ after: activityField }), toChange({ before: activityField })])
+      await filter.onDeploy(changes)
+      expect(changes).toContainAllValues(originalChanges)
     })
   })
 })

@@ -46,12 +46,12 @@ export type ResponseLogStrategy = 'truncate' | 'omit' | 'full'
 // if an endpoint matching the pattern (or any endpoint if pattern is not provided) matches (all of) the following:
 // - logged more than "numItems" times (default: 0)
 // - the current response size is over "size" (default: 0)
-// then the strategy is used - if `omit`, the "Full http response" log is omitted completely, and if `truncate` the response is truncateed.
+// then the strategy is used - if `omit`, the "Full http response" log is omitted completely, and if `truncate` the response is truncated.
 // note: strategies are calculated in order and the first match wins.
 type ClientLoggingStrategyByEndpointConfig = {
   // when pattern is omitted, all endpoints match
   pattern?: string
-  // note: there is an OR between maxItems and maxSize
+  // note: there is an OR between numItems and size
   numItems?: number
   size?: number
   strategy: ResponseLogStrategy

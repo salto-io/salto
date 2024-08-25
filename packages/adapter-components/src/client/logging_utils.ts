@@ -24,25 +24,24 @@ const DEFAULT_LOGGING_CONFIG: ClientLoggingConfig = {
 export const createResponseLogFilter = (
   clientLoggingConfig: ClientLoggingConfig = DEFAULT_LOGGING_CONFIG,
 ): FullResponseLogFilter => {
-  if (clientLoggingConfig === undefined) {
+  const { responseStrategies } = clientLoggingConfig ?? {}
+  if (responseStrategies === undefined) {
     return () => 'full'
   }
   let allRequests = 0
-  const counters = Object.fromEntries(
-    (clientLoggingConfig.responseStrategies ?? []).map(def => def.pattern ?? '').map(p => [p, 0]),
-  )
+  const counters = Object.fromEntries(responseStrategies.map(def => def.pattern ?? '').map(p => [p, 0]))
   return ({ responseText, url }) => {
     allRequests += 1
-    clientLoggingConfig.responseStrategies?.forEach(({ pattern }) => {
+    responseStrategies.forEach(({ pattern }) => {
       if (pattern !== undefined && new RegExp(pattern).test(url)) {
         counters[pattern] += 1
       }
     })
 
-    const strategy = clientLoggingConfig.responseStrategies
-      ?.filter(({ pattern }) => pattern === undefined || new RegExp(pattern).test(url))
-      ?.filter(({ pattern, numItems }) => (pattern === undefined ? allRequests : counters[pattern]) > (numItems ?? 0))
-      ?.find(({ size }) => responseText.length >= (size ?? 0))?.strategy
+    const strategy = responseStrategies
+      .filter(({ pattern }) => pattern === undefined || new RegExp(pattern).test(url))
+      .filter(({ pattern, numItems }) => (pattern === undefined ? allRequests : counters[pattern]) > (numItems ?? 0))
+      .find(({ size }) => responseText.length >= (size ?? 0))?.strategy
 
     return strategy ?? 'full'
   }

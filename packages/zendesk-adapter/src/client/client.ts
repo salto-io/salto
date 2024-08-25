@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
@@ -211,17 +211,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
             responseType,
           }
         : undefined
-      const { data, status } = await this.resourceClient.get(url, requestConfig)
-      log.trace(
-        'Full HTTP response for GET on %s: %s',
-        url,
-        safeJsonStringify({
-          url,
-          status,
-          requestConfig,
-          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-        }),
-      )
+      const response = await this.resourceClient.get(url, requestConfig)
+      const { data, status } = response
+      this.logResponse({ method: 'get', params: args, response })
       return {
         data,
         status,

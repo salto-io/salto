@@ -924,7 +924,7 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) =>
     : value
 
 // WARNING: using safeJsonStringify with a customizer is inefficient and should not be done at a large scale.
-// prefer inspect / safeStringifyWithInspect (which allow limiting depth / max array length / max string length)
+// prefer inspect / inspectValue (which allows limiting depth / max array length / max string length)
 // where applicable
 export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: string | number): string =>
   safeStringify(value, replacer, space)

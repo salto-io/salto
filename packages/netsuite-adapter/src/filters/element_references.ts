@@ -40,6 +40,7 @@ import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
 import { getGroupItemFromRegex } from '../client/utils'
 import { getContent } from '../client/suiteapp_client/suiteapp_file_cabinet'
+import { NetsuiteConfig } from '../config/types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -202,6 +203,7 @@ const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
+  config: NetsuiteConfig,
 ): Promise<ElemID[]> => {
   const fileContent = await getContent(element.value.content)
 
@@ -219,14 +221,16 @@ const getSuiteScriptReferences = async (
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )
-  const foundReferences = getReferencesWithRegex(content)
-  getAndLogReferencesDiff({
-    newReferences: foundReferences,
-    existingReferences: semanticReferences,
-    element,
-    serviceIdToElemID,
-    customRecordFieldsToServiceIds,
-  })
+  if (config.fetch.parseSuiteScripts) {
+    const foundReferences = getReferencesWithRegex(content)
+    getAndLogReferencesDiff({
+      newReferences: foundReferences,
+      existingReferences: semanticReferences,
+      element,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+    })
+  }
 
   return getServiceElemIDsFromPaths(
     semanticReferences.concat(nsConfigReferences),
@@ -240,6 +244,7 @@ const replaceReferenceValues = async (
   element: Element,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
+  config: NetsuiteConfig,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -288,7 +293,7 @@ const replaceReferenceValues = async (
 
   const suiteScriptReferences =
     isFileCabinetInstance(element) && isFileInstance(element) && hasValidJSExtension(element.value[PATH])
-      ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
+      ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds, config)
       : []
 
   extendGeneratedDependencies(
@@ -341,7 +346,7 @@ const createElementsSourceCustomRecordFieldsToElemID = async (
 ): Promise<ServiceIdRecords> =>
   isPartial ? (await elementsSourceIndex.getIndexes()).customRecordFieldsServiceIdRecordsIndex : {}
 
-const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, changesGroupId }) => ({
+const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, changesGroupId, config }) => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
     const serviceIdToElemID = Object.assign(
@@ -355,7 +360,12 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, cha
     await awu(elements)
       .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
       .forEach(async element => {
-        const newElement = await replaceReferenceValues(element, serviceIdToElemID, customRecordFieldsToServiceIds)
+        const newElement = await replaceReferenceValues(
+          element,
+          serviceIdToElemID,
+          customRecordFieldsToServiceIds,
+          config,
+        )
         applyValuesAndAnnotationsToElement(element, newElement)
       })
   },

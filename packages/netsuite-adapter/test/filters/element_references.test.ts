@@ -27,6 +27,7 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '..
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 import { LocalFilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
+import { fullFetchConfig } from '../../src/config/config_creator'
 
 const logging = logger('netsuite-adapter/src/filters/element_references')
 
@@ -545,7 +546,7 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
-        config: await getDefaultAdapterConfig(),
+        config: { ...(await getDefaultAdapterConfig()), fetch: { ...fullFetchConfig(), parseSuiteScripts: true } },
       }).onFetch?.([
         fileInstance,
         syntacticFileInstance,

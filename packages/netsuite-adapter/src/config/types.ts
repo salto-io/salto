@@ -111,6 +111,7 @@ export type FetchParams = {
   resolveAccountSpecificValues?: boolean
   // SALTO-6145: should be removed
   forceFileCabinetExclude?: boolean
+  parseSuiteScripts?: boolean
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -126,6 +127,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
   forceFileCabinetExclude: 'forceFileCabinetExclude',
+  parseSuiteScripts: 'parseSuiteScripts',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -568,6 +570,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
     forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
+    parseSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

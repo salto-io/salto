@@ -364,6 +364,7 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     ])
     const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseReferencesMap)
     const invalidInstances = new Set([...illegalRefSources, ...illegalRefTargets])
+    log.trace('invalidInstances: %s', inspectValue(invalidInstances, { maxArrayLength: null }))
     await removeAsync(
       elements,
       async element =>

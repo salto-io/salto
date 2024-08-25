@@ -105,7 +105,11 @@ const parseUserResponse = (response: UserResponse): UserInfo => ({
   displayName: response.displayName,
 })
 
-export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCenter: boolean): GetUserMapFunc => {
+export const getUserMapFuncCreator = (
+  paginator: clientUtils.Paginator,
+  isDataCenter: boolean,
+  allowUserCallFailure: boolean,
+): GetUserMapFunc => {
   let idMap: UserMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
   return async (): Promise<UserMap | undefined> => {
@@ -124,6 +128,10 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
       } catch (e) {
         if (isMissingUserPermissionError(e)) {
           log.error('Failed to get users map due to missing permissions.')
+          return undefined
+        }
+        if (allowUserCallFailure) {
+          log.error('Failed to get users map, error is %o', e)
           return undefined
         }
         throw e

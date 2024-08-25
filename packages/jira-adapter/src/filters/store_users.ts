@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -46,10 +47,14 @@ const filter: FilterCreator = ({ config, getUserMapFunc }) => ({
 
     try {
       const usersMap = await getUserMapFunc()
-      const usersInstance = new InstanceElement(USERS_INSTANCE_NAME, usersType, { users: usersMap }, undefined, {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
-      })
-      elements.push(userInfoType, usersType, usersInstance)
+      const usersInstance =
+        usersMap !== undefined
+          ? new InstanceElement(USERS_INSTANCE_NAME, usersType, { users: usersMap }, undefined, {
+              [CORE_ANNOTATIONS.HIDDEN]: true,
+            })
+          : undefined
+      log.warn('failed to create users instance because of missing users map')
+      elements.push(...[userInfoType, usersType, usersInstance].filter(values.isDefined))
     } catch (e) {
       log.error('failed to fetch users', e)
     }

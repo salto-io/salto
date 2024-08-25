@@ -74,6 +74,23 @@ describe('storeUsersFilter', () => {
       await filter.onFetch?.(elements)
       expect(elements.length).toEqual(0)
     })
+
+    it('should not fail when allowUserCallFailure is true', async () => {
+      const { connection, getUserMapFunc } = mockClient(false, null, true)
+      mockConnection = connection
+      filter = storeUsersFilter(
+        getFilterParams({
+          getUserMapFunc,
+        }),
+      ) as typeof filter
+      elements = []
+      mockConnection.get.mockRejectedValueOnce({
+        status: 400,
+        error: 'some error',
+      })
+      await expect(filter.onFetch?.(elements)).resolves.not.toThrow()
+      expect(elements.length).toEqual(2)
+    })
   })
   describe('dc', () => {
     beforeEach(async () => {
@@ -126,6 +143,23 @@ describe('storeUsersFilter', () => {
           },
         },
       })
+    })
+
+    it('should not fail when allowUserCallFailure is true', async () => {
+      const { connection, getUserMapFunc } = mockClient(true, null, true)
+      mockConnection = connection
+      filter = storeUsersFilter(
+        getFilterParams({
+          getUserMapFunc,
+        }),
+      ) as typeof filter
+      elements = []
+      mockConnection.get.mockRejectedValueOnce({
+        status: 400,
+        error: 'some error',
+      })
+      await expect(filter.onFetch?.(elements)).resolves.not.toThrow()
+      expect(elements.length).toEqual(2)
     })
   })
 })

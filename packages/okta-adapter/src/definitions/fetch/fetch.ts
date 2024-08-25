@@ -1319,7 +1319,7 @@ export const createFetchDefinitions = ({
       default: {
         resource: {
           serviceIDFields: ['id'],
-          onError: fetchUtils.errors.getInsufficientPermissionsError,
+          onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
           topLevel: {

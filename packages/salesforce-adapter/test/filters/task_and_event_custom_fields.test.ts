@@ -31,7 +31,13 @@ describe('taskAndEventCustomFieldsFilter', () => {
     someOtherAnnotation: 'some',
   }
   const taskField = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD_NAME}`, additionalAnnotations, FIELD_NAME)
-  const eventField = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD_NAME}`, additionalAnnotations, FIELD_NAME)
+  const eventField = createField(
+    eventType,
+    BuiltinTypes.STRING,
+    `Event.${FIELD_NAME}`,
+    additionalAnnotations,
+    FIELD_NAME,
+  )
 
   beforeEach(() => {
     filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
@@ -42,7 +48,13 @@ describe('taskAndEventCustomFieldsFilter', () => {
       const elements = [activityType, taskType, eventType, activityField, taskField, eventField]
       await filter.onFetch(elements)
       ;[taskField, eventField].forEach(field => {
-        expect(Object.keys(field.annotations)).toEqual(['apiName', 'updateable', 'creatable', 'deletable', 'activityField'])
+        expect(Object.keys(field.annotations)).toEqual([
+          'apiName',
+          'updateable',
+          'creatable',
+          'deletable',
+          'activityField',
+        ])
         expect(field.annotations.activityField.elemID).toEqual(activityField.elemID)
       })
     })

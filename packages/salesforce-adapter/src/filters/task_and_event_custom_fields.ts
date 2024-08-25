@@ -24,7 +24,6 @@ const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
-
 const ANNOTATIONS_TO_KEEP = ['apiName', 'updateable', 'creatable', 'deletable']
 
 const filterCreator: LocalFilterCreator = ({ config }) => {

@@ -10,7 +10,8 @@ import {
   isFieldChange,
   Field,
   getChangeData,
-  ChangeError, isModificationChange,
+  ChangeError,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
@@ -18,8 +19,7 @@ import { apiNameSync, isCustomObjectSync } from '../filters/utils'
 const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
-const isFieldOfActivity = ({ parent }: Field): boolean =>
-  apiNameSync(parent) === ACTIVITY_CUSTOM_OBJECT
+const isFieldOfActivity = ({ parent }: Field): boolean => apiNameSync(parent) === ACTIVITY_CUSTOM_OBJECT
 
 const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
@@ -37,7 +37,9 @@ const changeValidator: ChangeValidator = async changes => {
     .map((fieldChange): ChangeError | undefined => {
       const field: Field = getChangeData(fieldChange)
       const refApiName = apiNameSync(field.annotations.activityField.value, true)
-      const activityFieldChange = activityFieldChanges.find(change => apiNameSync(getChangeData(change), true) === refApiName)
+      const activityFieldChange = activityFieldChanges.find(
+        change => apiNameSync(getChangeData(change), true) === refApiName,
+      )
       if (activityFieldChange === undefined) {
         return createFieldOfTaskOrEventChangeError(field)
       }

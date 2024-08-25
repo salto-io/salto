@@ -99,6 +99,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
+          appsConfiguration.TARGET_APP_DEPLOY_DEFINITION,
         ],
         modify: [
           {
@@ -108,8 +109,13 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
             },
-            condition: appsConfiguration.modificationCondition,
+            condition: {
+              transformForCheck: {
+                omit: ['apps'],
+              },
+            },
           },
+          appsConfiguration.TARGET_APP_DEPLOY_DEFINITION,
         ],
         remove: [
           {
@@ -121,24 +127,8 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             },
           },
         ],
-        targetApps: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceAppManagement/targetedManagedAppConfigurations/{id}/targetApps',
-                method: 'post',
-              },
-              transformation: {
-                pick: ['apps'],
-              },
-            },
-            condition: appsConfiguration.targetAppsChangeCondition,
-          },
-        ],
       },
     },
-    toActionNames: appsConfiguration.toActionNames,
-    actionDependencies: appsConfiguration.actionDependencies,
   },
 }
 

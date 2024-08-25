@@ -8,23 +8,11 @@
 import { definitions, filterUtils } from '@salto-io/adapter-components'
 import { UserConfig } from '../config'
 
-// Entra Types
-type EntraSerializationStrategies = 'appId'
-type EntraAdditionalAction = never
-type EntraReferenceContextStrategies = 'ODataType'
-
-// Intune Types
-type IntuneMobileAppIdentifierSerializationStrategies = 'bundleId' | 'packageId'
-type IntuneSerializationStrategies = IntuneMobileAppIdentifierSerializationStrategies
-type IntuneAdditionalAction = 'targetApps'
-type IntuneReferenceContextStrategies = never
-
-// Global Types
-export type AdditionalAction = EntraAdditionalAction | IntuneAdditionalAction
+export type AdditionalAction = 'targetApps'
 export type ClientOptions = 'main'
 type PaginationOptions = 'cursor'
-export type ReferenceContextStrategies = EntraReferenceContextStrategies | IntuneReferenceContextStrategies
-export type CustomReferenceSerializationStrategyName = EntraSerializationStrategies | IntuneSerializationStrategies
+export type ReferenceContextStrategies = 'ODataType'
+export type CustomReferenceSerializationStrategyName = 'appId' | 'bundleId' | 'packageId'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {

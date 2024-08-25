@@ -114,42 +114,4 @@ describe('apps configuration definition utils', () => {
       })
     })
   })
-
-  describe(`${appsConfiguration.toActionNames.name}`, () => {
-    describe('when the change is addition change', () => {
-      it('should return the action name and targetApps', () => {
-        expect(
-          appsConfiguration.toActionNames({
-            ...contextMock,
-            change: toChange({ after: appConfigurationWithSelectedApps }),
-          }),
-        ).toEqual(['add', 'targetApps'])
-      })
-    })
-
-    describe('when the change is modification change', () => {
-      it('should return the action name and targetApps', () => {
-        expect(
-          appsConfiguration.toActionNames({
-            ...contextMock,
-            change: toChange({
-              before: appConfigurationWithSelectedApps,
-              after: appConfigurationWithSelectedAppsAndNoApps,
-            }),
-          }),
-        ).toEqual(['modify', 'targetApps'])
-      })
-    })
-
-    describe('when the change is not addition or modification change', () => {
-      it('should return the action name', () => {
-        expect(
-          appsConfiguration.toActionNames({
-            ...contextMock,
-            change: toChange({ before: appConfigurationWithSelectedApps }),
-          }),
-        ).toEqual(['remove'])
-      })
-    })
-  })
 })

@@ -32,3 +32,6 @@ export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNes
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPS_FIELD_NAME,
 )
+
+// Urls
+export const SERVICE_BASE_URL = 'https://intune.microsoft.com'

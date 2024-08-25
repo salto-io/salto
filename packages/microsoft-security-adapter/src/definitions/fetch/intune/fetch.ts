@@ -19,6 +19,7 @@ const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+  SERVICE_BASE_URL,
 } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -50,7 +51,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         alias: { aliasComponents: [NAME_ID_FIELD] },
         serviceUrl: {
-          baseUrl: 'https://intune.microsoft.com',
+          baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Apps/SettingsMenu/~/2/appId/{id}',
         },
       },
@@ -82,7 +83,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       topLevel: {
         isTopLevel: true,
         serviceUrl: {
-          baseUrl: 'https://intune.microsoft.com',
+          baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune/TargetedAppConfigInstanceBlade/~/fullscreensummary/id/{id}/odataType/undefined',
         },
       },

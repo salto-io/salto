@@ -30,7 +30,7 @@ export type Opts = {
 export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts, config = DEFAULT_CONFIG): Reals => {
   config[FETCH_CONFIG].useNewInfra = true
   const client = (adapterParams && adapterParams.client) || new ZendeskClient({ credentials, config: config.client })
-  const adapter = new ZendeskAdapter({ client, credentials, config, elementsSource })
+  const adapter = new ZendeskAdapter({ client, credentials, config, elementsSource, accountName: 'zendesk' })
   return { client, adapter }
 }
 

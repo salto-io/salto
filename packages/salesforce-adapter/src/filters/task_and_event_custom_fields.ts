@@ -44,15 +44,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
 
         elements
           .filter(isCustomObjectSync)
-          // TODO: filter with apiNameSync instead of elemID
-          .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(co.elemID.name))
+          .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(co, true) ?? ''))
           .forEach(co => {
-            Object.entries(co.fields).forEach(([fieldName, field]) => {
+            Object.entries(co.fields).forEach(([, field]) => {
               if (!isCustomField(field)) {
                 return
               }
 
-              const activityField = activity?.fields[fieldName.replace(co.elemID.name, 'Activity')]
+              const activityField = activity?.fields[field.name]
               if (!activityField) {
                 return
               }

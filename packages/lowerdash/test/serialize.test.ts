@@ -5,29 +5,87 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { getSerializedStream } from '../src/serialize'
+import { EOL } from 'os'
+import { createStreamSerializer, getSerializedStream, StreamSerializer } from '../src/serialize'
 import { awu } from '../src/collections/asynciterable'
 
 describe('serialize', () => {
+  let streamSerialized: StreamSerializer
+
+  const inputs = [
+    [],
+    [[]],
+    [[''], ['']],
+    [['abc'], ['def']],
+    [[], ['def']],
+    [[{}], [{}, {}]],
+    [[{ a: { b: { c: 'd' } } }, [{ y: 'z' }]], [{}]],
+    [[{}], [{}, {}], ['a', 'b', 3, undefined, null]],
+    [['a', 'b'], { c: 'd' }, { e: 'f' }],
+  ]
+
+  const getSerializedStreamRes = async (items: (unknown[] | Record<string, unknown>)[]): Promise<string> =>
+    (await awu(streamSerialized(items)).toArray()).join('')
+
   describe('getSerializedStream', () => {
-    const getSerializedStreamRes = async (items: (unknown[] | Record<string, unknown>)[]): Promise<string> =>
-      (await awu(getSerializedStream(items)).toArray()).join('')
+    beforeEach(() => {
+      streamSerialized = getSerializedStream
+    })
     it('should match serialized strings', async () => {
-      await awu([
-        [],
-        [[]],
-        [[''], ['']],
-        [['abc'], ['def']],
-        [[], ['def']],
-        [[''], ['']],
-        [['abc'], ['def']],
-        [[], ['def']],
-        [[{}], [{}, {}]],
-        [[{ a: { b: { c: 'd' } } }, [{ y: 'z' }]], [{}]],
-        [[{}], [{}, {}], ['a', 'b', 3, undefined, null]],
-        [['a', 'b'], { c: 'd' }, { e: 'f' }],
-        // eslint-disable-next-line no-restricted-syntax
-      ]).forEach(async items => expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify(items)))
+      await awu(inputs).forEach(async items =>
+        expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify(items)),
+      )
+    })
+  })
+
+  describe('createStreamSerializer', () => {
+    const chunkedLines = [
+      [[]],
+      [[[]]],
+      [[[''], ['']]],
+      [[['abc']], [['def']]],
+      [[[], ['def']]],
+      [[[{}], [{}, {}]]],
+      [[], [[{ a: { b: { c: 'd' } } }, [{ y: 'z' }]]], [[{}]]],
+      [[[{}], [{}, {}]], [['a', 'b', 3, undefined, null]]],
+      [[['a', 'b']], [{ c: 'd' }], [{ e: 'f' }]],
+    ]
+
+    describe('with max line length', () => {
+      beforeEach(() => {
+        streamSerialized = createStreamSerializer({ maxLineLength: 15 })
+      })
+      it('should match serialized strings', async () => {
+        await awu(inputs).forEach(async (items, index) =>
+          expect(await getSerializedStreamRes(items)).toEqual(
+            chunkedLines[index].map(line => JSON.stringify(line)).join(EOL),
+          ),
+        )
+      })
+    })
+
+    describe('wrap with key', () => {
+      beforeEach(() => {
+        streamSerialized = createStreamSerializer({ wrapWithKey: 'elements' })
+      })
+      it('should match serialized strings', async () => {
+        await awu(inputs).forEach(async items =>
+          expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify({ elements: items })),
+        )
+      })
+    })
+
+    describe('mixed', () => {
+      beforeEach(() => {
+        streamSerialized = createStreamSerializer({ maxLineLength: 28, wrapWithKey: 'elements' })
+      })
+      it('should match serialized strings', async () => {
+        await awu(inputs).forEach(async (items, index) =>
+          expect(await getSerializedStreamRes(items)).toEqual(
+            chunkedLines[index].map(line => JSON.stringify({ elements: line })).join(EOL),
+          ),
+        )
+      })
     })
   })
 })

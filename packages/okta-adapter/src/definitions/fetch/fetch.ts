@@ -241,8 +241,7 @@ const createCustomizations = ({
           adjust: async ({ value }) => ({
             value: {
               ...(_.isObject(value) ? { ..._.omit(value, '_embedded') } : {}),
-              // we set hasUsersAssigned to true when usersCount is undefined, cause in this case we don't know if there are users assigned
-              hasUsersAssigned: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
+              recurseIntoGroupMembers: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
             },
           }),
         },
@@ -266,7 +265,7 @@ const createCustomizations = ({
                   {
                     // only recurse into groups with assigned users
                     match: ['true'],
-                    fromField: 'hasUsersAssigned',
+                    fromField: 'recurseIntoGroupMembers',
                   },
                 ],
               },
@@ -285,7 +284,7 @@ const createCustomizations = ({
         source: { fieldType: 'Group__source' },
         _links: { omit: true },
         lastMembershipUpdated: { omit: true },
-        hasUsersAssigned: { omit: true },
+        recurseIntoGroupMembers: { omit: true },
         [GROUP_MEMBERSHIP_TYPE_NAME]: {
           standalone: {
             typeName: GROUP_MEMBERSHIP_TYPE_NAME,

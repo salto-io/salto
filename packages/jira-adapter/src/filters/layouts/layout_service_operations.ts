@@ -148,7 +148,7 @@ const fromLayoutConfigRespToLayoutConfig = (layoutConfig: IssueLayoutConfigurati
           return undefined
         }
         return {
-          type:  innerNode.panelItemId ? 'PANEL' : 'FIELD',
+          type: innerNode.panelItemId ? 'PANEL' : 'FIELD',
           sectionType: container.containerType,
           key: dataKey,
           data: fieldItemIdToMetaData[dataKey],

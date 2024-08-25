@@ -235,12 +235,13 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/groups',
-          queryArgs: { expand: 'stats' },
+          queryArgs: includeGroupMemberships ? { expand: 'stats' } : {},
         },
         transformation: {
           adjust: async ({ value }) => ({
             value: {
               ...(_.isObject(value) ? { ..._.omit(value, '_embedded') } : {}),
+              // we set hasUsersAssigned to true when usersCount is undefined, cause in this case we don't know if there are users assigned
               hasUsersAssigned: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
             },
           }),

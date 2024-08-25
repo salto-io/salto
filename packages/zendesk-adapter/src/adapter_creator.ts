@@ -169,6 +169,7 @@ export const adapter: Adapter = {
       getElemIdFunc: context.getElemIdFunc,
       configInstance: context.config,
       elementsSource: context.elementsSource,
+      accountName: context.accountName,
     })
 
     return {

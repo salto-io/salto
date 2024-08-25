@@ -15,6 +15,7 @@ import {
   createWarningFromMsg,
   getInstancesWithCollidingElemID,
   safeJsonStringify,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { references } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -87,6 +88,10 @@ const createWarnings = async (
   dataManagement: DataManagement,
   baseUrl?: string,
 ): Promise<SaltoError[]> => {
+  log.trace('instancesWithCollidingElemID: %s', inspectValue(instancesWithCollidingElemID, { maxArrayLength: null }))
+  log.trace('instancesWithEmptyIds: %s', inspectValue(instancesWithEmptyIds, { maxArrayLength: null }))
+  log.trace('missingRefs: %s', inspectValue(missingRefs, { maxArrayLength: null }))
+  log.debug('illegalRefSources: %s', inspectValue(illegalRefSources))
   const createOmittedInstancesWarning = async (
     originTypeName: string,
     missingRefsFromOriginType: MissingRef[],
@@ -359,6 +364,7 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     ])
     const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseReferencesMap)
     const invalidInstances = new Set([...illegalRefSources, ...illegalRefTargets])
+    log.trace('invalidInstances: %s', inspectValue(invalidInstances, { maxArrayLength: null }))
     await removeAsync(
       elements,
       async element =>

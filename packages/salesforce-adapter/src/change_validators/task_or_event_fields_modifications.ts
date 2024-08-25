@@ -12,6 +12,7 @@ import {
   getChangeData,
   ChangeError,
   isModificationChange,
+  Change,
 } from '@salto-io/adapter-api'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
 import { apiNameSync, isCustomObjectSync } from '../filters/utils'
@@ -28,27 +29,33 @@ const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
   detailedMessage: `Modifying the field ${field.name} of the ${apiNameSync(field.parent)} object directly is forbidden. Instead, modify the corresponding field in the Activity Object.`,
 })
 
-const changeValidator: ChangeValidator = async changes => {
-  const activityFieldChanges = changes.filter(isFieldChange).filter(change => isFieldOfActivity(getChangeData(change)))
+export const findMatchingActivityChange = (
+  taskOrEventChange: Change,
+  changes: readonly Change[],
+): Change | undefined => {
+  const activityChange = changes.find(
+    change =>
+      isFieldChange(change) &&
+      isFieldOfActivity(getChangeData(change)) &&
+      apiNameSync(getChangeData(change), true) === apiNameSync(getChangeData(taskOrEventChange), true) &&
+      change.action === taskOrEventChange.action,
+  )
+  if (activityChange === undefined || isModificationChange(taskOrEventChange)) {
+    return undefined
+  }
+  return activityChange
+}
 
-  return changes
+const changeValidator: ChangeValidator = async changes =>
+  changes
     .filter(isFieldChange)
     .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
     .map((fieldChange): ChangeError | undefined => {
-      const field: Field = getChangeData(fieldChange)
-      const refApiName = apiNameSync(field.annotations.activityField.value, true)
-      const activityFieldChange = activityFieldChanges.find(
-        change => apiNameSync(getChangeData(change), true) === refApiName,
-      )
-      if (activityFieldChange === undefined) {
-        return createFieldOfTaskOrEventChangeError(field)
-      }
-      if (isModificationChange(fieldChange) || activityFieldChange?.action !== fieldChange.action) {
-        return createFieldOfTaskOrEventChangeError(field)
+      if (!findMatchingActivityChange(fieldChange, changes)) {
+        return createFieldOfTaskOrEventChangeError(getChangeData(fieldChange))
       }
       return undefined
     })
     .filter(change => change !== undefined) as ChangeError[]
-}
 
 export default changeValidator

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { BuiltinTypes, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, toChange } from '@salto-io/adapter-api'
 import { createCustomObjectType, createField, defaultFilterContext } from '../utils'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -14,7 +14,7 @@ import filterCreator from '../../src/filters/task_and_event_custom_fields'
 
 describe('taskAndEventCustomFieldsFilter', () => {
   const FIELD_NAME = 'TestField__c'
-  let filter: FilterWith<'onFetch' | 'preDeploy'>
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   const activityType = createCustomObjectType(ACTIVITY_CUSTOM_OBJECT, {})
   const taskType = createCustomObjectType(TASK_CUSTOM_OBJECT, {})
@@ -76,6 +76,13 @@ describe('taskAndEventCustomFieldsFilter', () => {
       expect(changes).toEqual([toChange({ after: activityField }), toChange({ before: activityField })])
       await filter.onDeploy(changes)
       expect(changes).toContainAllValues(originalChanges)
+    })
+    it('should not re-add a change if its corresponding Activity change failed', async () => {
+      // Feed the filter with a change to Task field so it'll store it for `onDeploy`.
+      await filter.preDeploy([toChange({ after: taskField })])
+      const changes: Change[] = []
+      await filter.onDeploy(changes)
+      expect(changes).toBeEmpty()
     })
   })
 })

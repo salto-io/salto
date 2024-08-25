@@ -18,6 +18,7 @@ import {
 import { LocalFilterCreator } from '../filter'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE_CUSTOM_SUFFIX, TASK_CUSTOM_OBJECT } from '../constants'
 import { apiNameSync, ensureSafeFilterFetch, isCustomObjectSync } from './utils'
+import { findMatchingActivityChange } from '../change_validators/task_or_event_fields_modifications'
 
 const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 
@@ -75,7 +76,11 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       }
     },
     onDeploy: async (changes: Change[]): Promise<void> => {
-      changes.push(...changesToRestore)
+      for (const change of changesToRestore) {
+        if (findMatchingActivityChange(change, changes) !== undefined) {
+          changes.push(change)
+        }
+      }
     },
   }
 }

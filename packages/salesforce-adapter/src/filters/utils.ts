@@ -89,7 +89,7 @@ import {
   VALUE_SET_DEFINITION_FIELDS,
   DEFAULT_VALUE_FORMULA,
   FORMULA,
-  FIELD_DEPENDENCY_FIELDS,
+  FIELD_DEPENDENCY_FIELDS, SALESFORCE_CUSTOM_SUFFIX, TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT,
 } from '../constants'
 import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -945,3 +945,10 @@ export const toCustomProperties = async (
     ..._.pickBy(element.annotations, (_val, name) => isAllowed(name)),
   }
 }
+
+export const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+
+export const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
+  isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+
+

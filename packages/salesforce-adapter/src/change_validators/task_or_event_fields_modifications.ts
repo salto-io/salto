@@ -14,11 +14,8 @@ import {
   isModificationChange,
   Change,
 } from '@salto-io/adapter-api'
-import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
-import { apiNameSync, isCustomObjectSync } from '../filters/utils'
-
-const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
-  isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+import { ACTIVITY_CUSTOM_OBJECT } from '../constants'
+import { apiNameSync, isFieldOfTaskOrEvent } from '../filters/utils'
 
 const isFieldOfActivity = ({ parent }: Field): boolean => apiNameSync(parent) === ACTIVITY_CUSTOM_OBJECT
 

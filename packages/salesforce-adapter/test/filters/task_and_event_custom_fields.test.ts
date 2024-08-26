@@ -11,6 +11,7 @@ import { createCustomObjectType, createField, defaultFilterContext } from '../ut
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
 import filterCreator from '../../src/filters/task_and_event_custom_fields'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('taskAndEventCustomFieldsFilter', () => {
   const FIELD_NAME = 'TestField__c'
@@ -40,7 +41,18 @@ describe('taskAndEventCustomFieldsFilter', () => {
   )
 
   beforeEach(() => {
-    filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = filterCreator({
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          fetchParams: {
+            optionalFeatures: {
+              taskAndEventCustomFields: true,
+            },
+          },
+        }),
+      },
+    }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })
 
   describe('onFetch', () => {

@@ -6,24 +6,28 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   Change,
   Element,
   Field,
   getChangeData,
   isFieldChange,
-  ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
-import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE_CUSTOM_SUFFIX, TASK_CUSTOM_OBJECT } from '../constants'
-import { apiNameSync, ensureSafeFilterFetch, isCustomObjectSync } from './utils'
+import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
+import {
+  apiNameSync,
+  buildElementsSourceForFetch,
+  ensureSafeFilterFetch,
+  isCustomField,
+  isCustomObjectSync, isFieldOfTaskOrEvent,
+} from './utils'
 import { findMatchingActivityChange } from '../change_validators/task_or_event_fields_modifications'
 
-const isCustomField = (field: Field): boolean => field.name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-
-const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
-  isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+const { isDefined } = values
+const { awu } = collections.asynciterable
 
 const ANNOTATIONS_TO_KEEP = ['apiName', 'updateable', 'creatable', 'deletable']
 
@@ -40,27 +44,32 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       filterName: 'taskAndEventCustomFields',
       config,
       fetchFilterFunc: async (elements: Element[]) => {
-        const activity = elements.filter(co => co.elemID.name === ACTIVITY_CUSTOM_OBJECT).pop() as ObjectType
-
-        elements
+        const elementsSource = buildElementsSourceForFetch(elements, config)
+        const elementSourceByApiName = await awu(await elementsSource.getAll())
+          .filter(isDefined)
           .filter(isCustomObjectSync)
-          .filter(co => [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(co, true) ?? ''))
-          .forEach(co => {
-            Object.entries(co.fields).forEach(([, field]) => {
-              if (!isCustomField(field)) {
-                return
-              }
+          .keyBy(co => apiNameSync(co) ?? '')
+        const activity = elementSourceByApiName[ACTIVITY_CUSTOM_OBJECT]
+        if (activity === undefined) {
+          return
+        }
 
-              const activityField = activity?.fields[field.name]
-              if (!activityField) {
-                return
-              }
+        const elementsByApiName = _.keyBy(elements, elem => apiNameSync(elem) ?? '')
 
-              field.annotations = {
-                ..._.pick(field.annotations, ANNOTATIONS_TO_KEEP),
-                activityField: new ReferenceExpression(activityField.elemID),
-              }
-            })
+        Object.entries(activity.fields)
+          .filter(([, activityField]) => isCustomField(activityField))
+          .flatMap(([activityFieldName]) => {
+            const ret = [
+              elementsByApiName[TASK_CUSTOM_OBJECT].fields[activityFieldName],
+              elementsByApiName[EVENT_CUSTOM_OBJECT].fields[activityFieldName],
+            ]
+            return ret
+          })
+          .forEach(taskOrEventField => {
+            taskOrEventField.annotations = {
+              ..._.pick(taskOrEventField.annotations, ANNOTATIONS_TO_KEEP),
+              activityField: new ReferenceExpression(elementSourceByApiName[ACTIVITY_CUSTOM_OBJECT].fields[taskOrEventField.name].elemID),
+            }
           })
       },
     }),

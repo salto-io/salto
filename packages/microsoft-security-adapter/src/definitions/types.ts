@@ -8,6 +8,7 @@
 import { definitions, filterUtils } from '@salto-io/adapter-components'
 import { UserConfig } from '../config'
 
+export type AdditionalAction = never
 export type ClientOptions = 'main'
 type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = 'ODataType'

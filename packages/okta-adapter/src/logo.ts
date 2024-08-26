@@ -158,8 +158,7 @@ export const getLogo = async ({
     return logoContent
   }
   const pathName = pathNaclCase(logoName)
-  const camelCaseName = pathName.replace(/_/g, '')
-  const resourcePathName = `${normalizeFilePathPart(camelCaseName)}.${contentType}`
+  const resourcePathName = `${normalizeFilePathPart(pathName)}.${contentType}`
   const logoId = extractIdFromUrl(link)
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(
@@ -167,7 +166,7 @@ export const getLogo = async ({
     logoType,
     {
       id: logoId,
-      fileName: `${camelCaseName}.${contentType}`,
+      fileName: resourcePathName,
       contentType,
       content: new StaticFile({
         filepath: `${OKTA}/${logoType.elemID.name}/${resourcePathName}`,

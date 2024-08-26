@@ -317,7 +317,8 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporter = deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter)
+        deployProgressReporter =
+          deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl())
         return salesforceAdapter.deploy({
           ...opts,
           progressReporter: deployProgressReporter,

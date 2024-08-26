@@ -89,7 +89,10 @@ import {
   VALUE_SET_DEFINITION_FIELDS,
   DEFAULT_VALUE_FORMULA,
   FORMULA,
-  FIELD_DEPENDENCY_FIELDS, SALESFORCE_CUSTOM_SUFFIX, TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT,
+  FIELD_DEPENDENCY_FIELDS,
+  SALESFORCE_CUSTOM_SUFFIX,
+  TASK_CUSTOM_OBJECT,
+  EVENT_CUSTOM_OBJECT,
 } from '../constants'
 import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -950,5 +953,3 @@ export const isCustomField = (field: Field): boolean => field.name.endsWith(SALE
 
 export const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
-
-

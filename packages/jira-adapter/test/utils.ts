@@ -76,7 +76,7 @@ export const mockClient = (
     client.getCloudId = async () => mockedCloudId
   }
 
-  const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
+  const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client, asyncRun: true })
   const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter, allowUserCallFailure)
   const scriptRunnerClient = new ScriptRunnerClient({
     credentials: {},

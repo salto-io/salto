@@ -5,12 +5,21 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../utils'
 import storeUsersFilter from '../../src/filters/store_users'
 import { Filter } from '../../src/filter'
+
+const createUsersData = (num: number): Record<string, string>[] =>
+  _.range(num).map(i => ({
+    key: `${i}`,
+    name: `name${i}`,
+    locale: 'en_US',
+    displayName: `name${i}`,
+  }))
 
 describe('storeUsersFilter', () => {
   let filter: Filter
@@ -84,12 +93,30 @@ describe('storeUsersFilter', () => {
         }),
       ) as typeof filter
       elements = []
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: createUsersData(1000),
+      })
       mockConnection.get.mockRejectedValueOnce({
         status: 400,
         error: 'some error',
       })
       await expect(filter.onFetch?.(elements)).resolves.not.toThrow()
-      expect(elements.length).toEqual(2)
+      expect(elements.length).toEqual(3)
+      expect(elements[2].value.users[1]).toEqual({
+        locale: 'en_US',
+        displayName: 'name1',
+        email: undefined,
+        username: 'name1',
+        userId: '1',
+      })
+      expect(elements[2].value.users[999]).toEqual({
+        locale: 'en_US',
+        displayName: 'name999',
+        email: undefined,
+        username: 'name999',
+        userId: '999',
+      })
     })
   })
   describe('dc', () => {
@@ -154,12 +181,31 @@ describe('storeUsersFilter', () => {
         }),
       ) as typeof filter
       elements = []
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: createUsersData(1000),
+      })
       mockConnection.get.mockRejectedValueOnce({
         status: 400,
         error: 'some error',
       })
       await expect(filter.onFetch?.(elements)).resolves.not.toThrow()
-      expect(elements.length).toEqual(2)
+
+      expect(elements.length).toEqual(3)
+      expect(elements[2].value.users[1]).toEqual({
+        locale: 'en_US',
+        displayName: 'name1',
+        email: undefined,
+        username: 'name1',
+        userId: '1',
+      })
+      expect(elements[2].value.users[999]).toEqual({
+        locale: 'en_US',
+        displayName: 'name999',
+        email: undefined,
+        username: 'name999',
+        userId: '999',
+      })
     })
   })
 })

@@ -35,6 +35,7 @@ const isMissingUserPermissionError = (err: Error): boolean =>
 const paginateUsers = async (
   paginator: clientUtils.Paginator,
   isDataCenter: boolean,
+  allowUserCallFailure: boolean,
 ): Promise<clientUtils.ResponseValue[][]> => {
   const paginationArgs: clientUtils.ClientGetWithPaginationParams = isDataCenter
     ? {
@@ -45,6 +46,7 @@ const paginateUsers = async (
           username: '.',
         },
         pageSizeArgName: 'maxResults',
+        allowFailure: allowUserCallFailure,
       }
     : {
         url: '/rest/api/3/users/search',
@@ -53,6 +55,7 @@ const paginateUsers = async (
           maxResults: '1000',
         },
         pageSizeArgName: 'maxResults',
+        allowFailure: allowUserCallFailure,
       }
 
   const usersCallPromise = toArrayAsync(
@@ -115,7 +118,10 @@ export const getUserMapFuncCreator = (
   return async (): Promise<UserMap | undefined> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
-        usersCallPromise = log.timeDebug(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
+        usersCallPromise = log.timeDebug(
+          async () => paginateUsers(paginator, isDataCenter, allowUserCallFailure),
+          'users pagination',
+        )
       }
       try {
         idMap = Object.fromEntries(
@@ -128,10 +134,6 @@ export const getUserMapFuncCreator = (
       } catch (e) {
         if (isMissingUserPermissionError(e)) {
           log.error('Failed to get users map due to missing permissions.')
-          return undefined
-        }
-        if (allowUserCallFailure) {
-          log.error('Failed to get users map, error is %o', e)
           return undefined
         }
         throw e

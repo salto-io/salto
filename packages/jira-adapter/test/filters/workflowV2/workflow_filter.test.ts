@@ -388,7 +388,7 @@ describe('workflow filter', () => {
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual(
-        'Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: Error: code 400.',
+        'Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: code 400.',
       )
       expect(errors[0].severity).toEqual('Error')
     })

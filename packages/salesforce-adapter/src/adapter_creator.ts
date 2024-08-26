@@ -327,10 +327,11 @@ export const adapter: Adapter = {
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
+        deployProgressReporter =
+          deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl())
         return salesforceAdapter.validate({
           ...opts,
-          progressReporter:
-            deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl()),
+          progressReporter: deployProgressReporter,
         })
       },
 

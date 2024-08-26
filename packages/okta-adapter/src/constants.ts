@@ -48,6 +48,7 @@ export const PASSWORD_POLICY_PRIORITY_TYPE_NAME = 'PasswordPolicyPriority'
 export const AUTOMATION_TYPE_NAME = 'Automation'
 export const AUTOMATION_RULE_TYPE_NAME = 'AutomationRule'
 export const JWK_TYPE_NAME = 'JsonWebKey'
+export const EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME = 'EmbeddedSignInSuppport'
 export const ACTIVE_STATUS = 'ACTIVE'
 export const INACTIVE_STATUS = 'INACTIVE'
 export const POLICY_TYPE_NAMES = [

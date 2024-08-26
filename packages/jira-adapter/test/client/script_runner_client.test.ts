@@ -65,9 +65,7 @@ describe('scriptRunnerClient', () => {
       it('should throw correct error when cannot get JWT address', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(400, { response: 'asd', errorMessages: ['error message'] })
         await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(
-          new Error(
-            `Failed to get ${JWT_ACCESS_URL} with error: Error: Request failed with status code 400. error message`,
-          ),
+          new Error(`Failed to get ${JWT_ACCESS_URL} with error: Request failed with status code 400. error message`),
         )
       })
       it('should fail when JWT address object is not in the right format', async () => {
@@ -155,7 +153,7 @@ describe('scriptRunnerClient', () => {
           .onGet('https://my.scriptrunner.net/myPath')
           .replyOnce(400, { response: 'asd', errorMessages: ['error message'] })
         await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(
-          new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'),
+          new Error('Failed to get /myPath with error: Request failed with status code 400. error message'),
         )
       })
       it('should fail without throwing when received page not found error', async () => {

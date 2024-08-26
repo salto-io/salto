@@ -251,5 +251,48 @@ describe('client validation', () => {
       await clientValidation([fileChange], client, {} as unknown as AdditionalDependencies, mockFiltersRunner)
       expect(mockValidate).not.toHaveBeenCalled()
     })
+    it('should not return change error on file cabinet instance that is in another real change group', async () => {
+      mockValidate.mockResolvedValue([
+        {
+          elemID: getChangeData(fileChange).elemID,
+          message: 'File Error',
+          severity: 'Error',
+        },
+        {
+          elemID: getChangeData(changes[0]).elemID,
+          message: 'SDF Change Error',
+          severity: 'Error',
+        },
+        {
+          message: 'General Error',
+          severity: 'Error',
+        },
+      ])
+      const changesToValidate = changes.concat(fileChange)
+      const changeErrors = await clientValidation(
+        changesToValidate,
+        client,
+        {} as unknown as AdditionalDependencies,
+        mockFiltersRunner,
+      )
+      expect(changeErrors).toHaveLength(changes.length + 1)
+      expect(changeErrors).toEqual(
+        expect.arrayContaining(
+          changes
+            .map(change => ({
+              elemID: getChangeData(change).elemID,
+              message: 'SDF validation error',
+              detailedMessage: 'General Error',
+              severity: 'Error',
+            }))
+            .concat({
+              elemID: getChangeData(changes[0]).elemID,
+              message: 'SDF validation error',
+              detailedMessage: 'SDF Change Error',
+              severity: 'Error',
+            }),
+        ),
+      )
+    })
   })
 })

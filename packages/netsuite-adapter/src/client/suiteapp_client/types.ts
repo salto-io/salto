@@ -102,8 +102,6 @@ export type RestletResults = RestletSuccessResults | RestletErrorResults
 
 export const isError = (results: RestletResults): results is RestletErrorResults => results.status === 'error'
 
-export type HttpMethod = 'POST' | 'GET'
-
 export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials
   config?: SuiteAppClientConfig

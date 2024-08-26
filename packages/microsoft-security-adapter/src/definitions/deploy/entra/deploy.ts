@@ -14,7 +14,7 @@ import {
   createDefinitionForAppRoleAssignment,
   createDefinitionForGroupLifecyclePolicyGroupModification,
   getGroupLifecyclePolicyGroupModificationRequest,
-  adjustParentWithAppRoles,
+  adjustParentWithAppRolesWrapped,
 } from './utils'
 import {
   createCustomConditionCheckChangesInFields,
@@ -58,7 +58,7 @@ const SERVICE_PRINCIPAL_MODIFICATION_REQUEST: DeployRequestDefinition = {
     method: 'patch',
   },
   transformation: {
-    adjust: adjustParentWithAppRoles,
+    adjust: adjustParentWithAppRolesWrapped,
   },
 }
 
@@ -71,7 +71,7 @@ const APPLICATION_MODIFICATION_REQUEST: DeployRequestDefinition = {
   },
   transformation: {
     omit: APPLICATION_FIELDS_TO_DEPLOY_IN_SECOND_ITERATION,
-    adjust: adjustParentWithAppRoles,
+    adjust: adjustParentWithAppRolesWrapped,
   },
 }
 

@@ -56,7 +56,7 @@ export const doesProjectHaveIssues = async (instance: InstanceElement, client: J
 export const projectDeletionValidator: (client: JiraClient, config: JiraConfig) => ChangeValidator =
   (client, config) => async changes => {
     if (config.deploy.forceDelete) {
-      log.info('Force delete is enabled, skipping project deletion validator')
+      log.warn('Force delete is enabled, skipping project deletion validator')
       return []
     }
 

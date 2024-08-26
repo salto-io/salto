@@ -117,7 +117,7 @@ export interface LookupFilter {
 export class CustomField implements MetadataInfo {
   // Common field annotations
   readonly label?: string
-  readonly type: string
+  readonly type?: string
   readonly required?: boolean
   readonly defaultValue?: string
   // For formula fields
@@ -173,7 +173,7 @@ export class CustomField implements MetadataInfo {
 
   constructor(
     public fullName: string,
-    type: string,
+    type: string | undefined,
     required = false,
     defaultVal?: string,
     defaultValFormula?: string,
@@ -244,7 +244,7 @@ export class CustomField implements MetadataInfo {
     } else if (type === FIELD_TYPE_NAMES.CHECKBOX && !formula) {
       // For Checkbox the default value comes from defaultVal and not defaultValFormula
       this.defaultValue = defaultVal
-    } else if (isRelationshipFieldName(type)) {
+    } else if (type !== undefined && isRelationshipFieldName(type)) {
       this.relationshipName = relationshipName
       // "Can not specify 'referenceTo' for a CustomField of type Hierarchy" Error will be thrown
       // if we try sending the `referenceTo` value to Salesforce.
@@ -267,7 +267,7 @@ export class CustomField implements MetadataInfo {
           FIELD_TYPE_NAMES.AUTONUMBER,
           FIELD_TYPE_NAMES.LONGTEXTAREA,
           FIELD_TYPE_NAMES.RICHTEXTAREA,
-        ] as string[]
+        ] as (string | undefined)[]
       ).includes(this.type) &&
       !formula
     ) {

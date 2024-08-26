@@ -924,7 +924,7 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) =>
     : value
 
 // WARNING: using safeJsonStringify with a customizer is inefficient and should not be done at a large scale.
-// prefer inspect / safeStringifyWithInspect (which allow limiting depth / max array length / max string length)
+// prefer inspect / inspectValue (which allows limiting depth / max array length / max string length)
 // where applicable
 export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: string | number): string =>
   safeStringify(value, replacer, space)
@@ -946,6 +946,19 @@ export const getParent = (instance: Element): InstanceElement => {
   }
 
   return parents[0].value
+}
+
+// This method is used to get the parent's elemID when the references are not neccessarily resolved
+export const getParentElemID = (instance: Element): ElemID => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parent = parents[0]
+  if (!isReferenceExpression(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
+  }
+  return parent.elemID
 }
 
 export const hasValidParent = (element: Element): boolean => {
@@ -1099,6 +1112,24 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
  */
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression =>
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
+
+export const getParentAsyncWithElementsSource = async (
+  instance: Element,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<InstanceElement> => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parentReference = parents[0]
+  const parent = isResolvedReferenceExpression(parentReference)
+    ? parentReference.value
+    : await elementsSource.get(parentReference.elemID)
+  if (!isInstanceElement(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+  return parent
+}
 
 export const getInstancesFromElementSource = async (
   elementSource: ReadOnlyElementsSource,

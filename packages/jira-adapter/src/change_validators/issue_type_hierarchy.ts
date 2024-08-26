@@ -19,11 +19,11 @@ import {
   isAdditionChange,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ISSUE_TYPE_NAME } from '../constants'
 import { isJiraSoftwareFreeLicense } from '../utils'
 
-const { awu } = collections.asynciterable
+const log = logger(module)
 
 const isSubTaskStoryChange = (change: Change<InstanceElement>): boolean =>
   isModificationChange(change) &&
@@ -79,19 +79,21 @@ const getIsuueTypeHierearchyWarningMessage = (instance: InstanceElement): Change
 
 export const issueTypeHierarchyValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
+    log.error('Skipping issueTypeHierarchyValidator as element source is undefined')
     return []
   }
   const relevantChanges = getIssueTypeWithHierachyChanges(changes)
+  if (relevantChanges.length === 0) {
+    return []
+  }
   const isLicenseFree = await isJiraSoftwareFreeLicense(elementSource)
-  return awu(relevantChanges)
-    .map(change => {
-      const instance = getChangeData(change)
-      if (isSubTaskStoryChange(change)) {
-        return getIsuueTypeUnsupportedHierarchyErrorMessage(instance)
-      }
-      return isLicenseFree === false
-        ? getIsuueTypeHierearchyWarningMessage(instance)
-        : getIsuueTypeHierarchyErrorMessage(instance)
-    })
-    .toArray()
+  return relevantChanges.map(change => {
+    const instance = getChangeData(change)
+    if (isSubTaskStoryChange(change)) {
+      return getIsuueTypeUnsupportedHierarchyErrorMessage(instance)
+    }
+    return isLicenseFree === false
+      ? getIsuueTypeHierearchyWarningMessage(instance)
+      : getIsuueTypeHierarchyErrorMessage(instance)
+  })
 }

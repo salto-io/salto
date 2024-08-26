@@ -15,12 +15,12 @@ import { FetchCustomizations } from '../shared/types'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
 import {
   adjustEntitiesWithExpandedMembers,
-  createCustomizationsWithBasePathForFetch,
   createDefinitionForAppRoleAssignment,
   addParentIdToAppRoles,
   adjustApplication,
 } from './utils'
 import { CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES } from '../../../constants/entra'
+import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 
 const {
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,

@@ -28,14 +28,10 @@ import NetsuiteClient from '../client/client'
 import { RemoteFilterCreator } from '../filter'
 import {
   ACCOUNT_SPECIFIC_VALUE,
-  ALLOCATION_TYPE,
-  EMPLOYEE,
   INIT_CONDITION,
   NAME_FIELD,
-  PROJECT_EXPENSE_TYPE,
   SCRIPT_ID,
   SELECT_RECORD_TYPE,
-  TAX_SCHEDULE,
   WORKFLOW,
 } from '../constants'
 import {
@@ -45,12 +41,13 @@ import {
   QueryRecordSchema,
 } from '../client/suiteapp_client/types'
 import {
+  AdditionalQueryName,
   MissingInternalId,
   SUITEQL_TABLE,
   getSuiteQLTableInternalIdsMap,
   updateSuiteQLTableInstances,
 } from '../data_elements/suiteql_table_elements'
-import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
+import { INTERNAL_ID_TO_TYPES, SuiteQLTableName } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { assignToCustomFieldsSelectRecordTypeIndex } from '../elements_source_index/elements_source_index'
@@ -63,6 +60,8 @@ const RECORDS_PER_QUERY = 10
 
 const FORMULA = 'formula'
 const FORMULA_PARAMS = 'formulaParams'
+
+const MULTISELECT_FIELD = 'valuemultiselect'
 
 const RESOLVED_ACCOUNT_SPECIFIC_VALUE_PREFIX = `${ACCOUNT_SPECIFIC_VALUE} (`
 const RESOLVED_ACCOUNT_SPECIFIC_VALUE_SUFFIX = ')'
@@ -117,12 +116,62 @@ type ResolvedAccountSpecificValuesResult = {
   missingInternalIds: MissingInternalId[]
 }
 
-const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, string> = {
-  STDITEMTAXSCHEDULE: TAX_SCHEDULE,
+const ADDITIONAL_INTERNAL_ID_TO_TYPES: Record<string, (SuiteQLTableName | AdditionalQueryName)[]> = {
+  '-192': ['shipItem'],
+  '-3': ['vendor'],
+  '-104': ['entityStatus'],
+  '-320': ['supportCaseStatus'],
+  '-166': ['employeeStatus'],
+  '-253': ['accountingBook'],
+  '-517': ['jobResourceRole'],
+}
+
+const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, SuiteQLTableName | AdditionalQueryName> = {
+  // STDBODY fields
   STDBODYACCOUNT: 'account',
-  STDEVENTALLOCATIONTYPE: ALLOCATION_TYPE,
-  STDENTITYPROJECTEXPENSETYPE: PROJECT_EXPENSE_TYPE,
+  STDBODYCLASS: 'classification',
+  STDBODYDEPARTMENT: 'department',
+  STDBODYTOSUBSIDIARY: 'subsidiary',
+  STDBODYLOCATION: 'location',
+  STDBODYNEXTAPPROVER: 'employee',
+  STDBODYINCOTERM: 'incoterm',
+  STDBODYENTITYEMPLOYEE: 'employee',
+  STDBODYENTITYSTATUS: 'entityStatus',
+  STDBODYPAYMENTMETHOD: 'paymentMethod',
+
+  // STDEVENT fields
+  STDEVENTALLOCATIONTYPE: 'allocationType',
+  STDEVENTCASESTATUS: 'supportCaseStatus',
+  STDEVENTCASEPRIORITY: 'supportCasePriority',
+
+  // STDENTITY fields
+  STDENTITYPROJECTEXPENSETYPE: 'projectExpenseType',
   STDENTITYSTATUS: 'entityStatus',
+  STDENTITYPURCHASEORDERAPPROVER: 'employee',
+  STDENTITYTIMEAPPROVER: 'employee',
+  STDENTITYDEPARTMENT: 'department',
+  STDENTITYTERMS: 'term',
+  STDENTITYSUBSIDIARY: 'subsidiary',
+  STDENTITYRECEIVABLESACCOUNT: 'account',
+  STDENTITYPAYABLESACCOUNT: 'account',
+
+  // STDTIME fields
+  STDTIMEDEPARTMENT: 'department',
+  STDTIMECLASS: 'classification',
+  STDTIMELOCATION: 'location',
+  STDTIMEEMPLOYEE: 'employee',
+  STDTIMEAPPROVALSTATUS: 'approvalStatus',
+  STDTIMEITEM: 'item',
+  STDTIMEVENDOR: 'vendor',
+  STDTIMENEXTAPPROVER: 'employee',
+
+  // STDITEM fields
+  STDITEMTAXSCHEDULE: 'taxSchedule',
+  STDITEMSUBSIDIARY: 'subsidiary',
+  STDITEMCLASS: 'classification',
+  STDITEMDEPARTMENT: 'department',
+  STDITEMREVENUERECOGNITIONRULE: 'revenueRecognitionRule',
+  STDITEMLOCATION: 'location',
 }
 
 const getSelectRecordTypeFromReference = (
@@ -165,12 +214,13 @@ const getSelectRecordType: GetFieldTypeIDFunc = params => {
 }
 
 const GET_FIELD_TYPE_FUNCTIONS: Record<string, GetFieldTypeIDFunc> = {
-  sender: ({ isFieldWithAccountSpecificValue }) => (isFieldWithAccountSpecificValue ? EMPLOYEE : undefined),
-  recipient: ({ isFieldWithAccountSpecificValue }) =>
+  sender: ({ isFieldWithAccountSpecificValue }): SuiteQLTableName | undefined =>
+    isFieldWithAccountSpecificValue ? 'employee' : undefined,
+  recipient: ({ isFieldWithAccountSpecificValue }): SuiteQLTableName[] | undefined =>
     // there is no intersection between the internal ids of those types,
     // and no indication in the element which type should be used.
-    isFieldWithAccountSpecificValue ? [EMPLOYEE, 'contact', 'customer', 'partner', 'vendor'] : undefined,
-  campaignevent: ({ isFieldWithAccountSpecificValue }) =>
+    isFieldWithAccountSpecificValue ? ['employee', 'contact', 'customer', 'partner', 'vendor'] : undefined,
+  campaignevent: ({ isFieldWithAccountSpecificValue }): SuiteQLTableName | undefined =>
     isFieldWithAccountSpecificValue ? 'campaignEvent' : undefined,
   selectrecordtype: getSelectRecordType,
   resultfield: params => {
@@ -325,6 +375,9 @@ const getQueryRecordType = (path: ElemID): QueryRecordType | undefined => {
   return QUERY_RECORD_TYPES[path.createParentID().name as QueryRecordType]
 }
 
+const getTypesFromInternalId = (typeInternalId: string): string[] =>
+  INTERNAL_ID_TO_TYPES[typeInternalId] ?? ADDITIONAL_INTERNAL_ID_TO_TYPES[typeInternalId] ?? []
+
 const getQueryRecordFieldType = (
   instance: InstanceElement,
   value: Values,
@@ -365,7 +418,7 @@ const getQueryRecordFieldType = (
   const suiteQLTableName =
     suiteQLTablesMap[fieldType] !== undefined
       ? fieldType
-      : (INTERNAL_ID_TO_TYPES[fieldType] ?? []).find(typeName => suiteQLTablesMap[typeName] !== undefined)
+      : getTypesFromInternalId(fieldType).find(typeName => suiteQLTablesMap[typeName] !== undefined)
 
   if (suiteQLTableName === undefined) {
     log.warn('could not find SuiteQL table instance %s', fieldType)
@@ -534,6 +587,26 @@ const getNameByInternalId = (
     .map(typeName => getSuiteQLTableInternalIdsMap(suiteQLTablesMap[typeName])[internalId])
     .find(res => res !== undefined)?.name
 
+const getParamLocations = ({
+  conditionFormula,
+  param,
+  startAtIndex = 0,
+  isFirstAppearance = true,
+}: {
+  conditionFormula: string
+  param: Values
+  startAtIndex?: number
+  isFirstAppearance?: boolean
+}): { param: Values; location: number; isFirstAppearance: boolean }[] => {
+  const location = conditionFormula.indexOf(`"${param.name}"`, startAtIndex)
+  if (location === -1) {
+    return []
+  }
+  return [{ param, location, isFirstAppearance }].concat(
+    getParamLocations({ conditionFormula, param, startAtIndex: location + 1, isFirstAppearance: false }),
+  )
+}
+
 const getParametersAccountSpecificValueToTransform = (
   instance: InstanceElement,
   value: Values,
@@ -544,13 +617,27 @@ const getParametersAccountSpecificValueToTransform = (
   const conditionFormula = value[INIT_CONDITION][FORMULA]
   const allParams = getConditionParameters(value[INIT_CONDITION])
   const params = allParams
-    // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles)
-    // but only params that have selectrecordtype are represented with internalid in the formula
+    // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles),
+    // but only params that have selectrecordtype are represented with internalid in the formula.
     .filter(param => param?.[SELECT_RECORD_TYPE] !== undefined)
-  const internalIds = Array.from(matchAll(formulaWithInternalIds, /-?\d+/g))
+    // params that have a constant string `value` (e.g "INVOICE") aren't represented with internalid in the formula.
+    .filter(param => typeof param.value === 'string' && !/^[A-Z]+$/.test(param.value))
+    // each param can appear more than once in the condition formula.
+    // in that case we're expecting to see it multiple times in formulaWithInternalIds.
+    .flatMap(param => getParamLocations({ conditionFormula, param }))
+  const internalIds = Array.from(matchAll(formulaWithInternalIds, /['"]?-?\d+(\.\d*)?['"]?/g))
     .map(res => res[0])
-    // 0 (zero) can be used in a formula (e.g 'arrayIndexOf(...) < 0'), but it's not an internalid
-    .filter(internalId => internalId !== '0')
+    .filter(
+      internalId =>
+        // ignore string numbers (e.g '1', "2")
+        isNumberStr(internalId) &&
+        // ignore non integers (e.g 1.5, 2.0)
+        !internalId.includes('.') &&
+        // ignore zero and invalid numbers
+        !internalId.startsWith('0') &&
+        !internalId.startsWith('-0'),
+    )
+
   if (params.length !== internalIds.length) {
     log.warn('params length %d do not match the internal ids extracted from the formula: %o', params.length, {
       formula: {
@@ -561,9 +648,9 @@ const getParametersAccountSpecificValueToTransform = (
     })
     return []
   }
-  const sortedParams = _.sortBy(params, param => conditionFormula.indexOf(`"${param.name}"`))
-  return sortedParams.flatMap((param, index) => {
-    if (param.value !== ACCOUNT_SPECIFIC_VALUE) {
+  const sortedParams = _.sortBy(params, param => param.location)
+  return sortedParams.flatMap(({ param, isFirstAppearance }, index) => {
+    if (param.value !== ACCOUNT_SPECIFIC_VALUE || !isFirstAppearance) {
       return []
     }
     const internalId = internalIds[index]
@@ -593,6 +680,14 @@ const getAccountSpecificValueToTransform = (
     if (internalId === undefined || internalId === '') {
       log.warn('missing field %s in record %s: %o', field.name, record.serviceId, innerResult.body)
       return []
+    }
+    if (
+      field.name === MULTISELECT_FIELD &&
+      Array.isArray(internalId) &&
+      internalId.length === 1 &&
+      typeof internalId[0] === 'string'
+    ) {
+      return { field, value: innerValue, internalId: internalId[0] }
     }
     if (typeof internalId !== 'string') {
       log.warn('field %s in record %s is not a string: %o', field.name, record.serviceId, internalId)

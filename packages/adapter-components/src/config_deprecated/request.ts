@@ -45,6 +45,8 @@ export type RecurseIntoConfig = {
   type: string
   isSingle?: boolean
   context: RecurseIntoContext[]
+  // Conditions have AND semantics - all conditions are required to be met. To express OR semantics, use multiple
+  // matches within the same condition.
   conditions?: RecurseIntoCondition[]
   skipOnError?: boolean
 }

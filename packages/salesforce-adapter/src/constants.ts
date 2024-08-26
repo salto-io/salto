@@ -91,11 +91,19 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES: Record<string, COMPOUND_FIELD_TYPE
   // name is handled differently with nameField
 }
 
-// target types for creating / updating custom fields:
-export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
+// target types for creating / updating custom fields
+// we can create fields of these types or update the types of existing fields to these types
+export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: (string | undefined)[] = [
   ...Object.values(FIELD_TYPE_NAMES),
   COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
+]
+
+export const CUSTOM_FIELD_DEPLOYABLE_TYPES: (string | undefined)[] = [
+  ...CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
+  // We cannot create new fields with an unknown type or modify a field to have an unknown type
+  // but if a field is already of an unknown type, we can deploy it as long as we do not specify the type explicitly
+  undefined,
 ]
 
 export const FIELD_SOAP_TYPE_NAMES: Record<string, ALL_FIELD_TYPE_NAMES> = {

@@ -13,6 +13,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
@@ -20,6 +21,7 @@ import { JiraConfig } from '../config/config'
 import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_user_permission_scheme_filter'
 import { getUsersMap, getUsersMapByVisibleId } from '../users'
 
+const log = logger(module)
 const createChangeError = (element: InstanceElement, permission: PermissionHolder, url: string): ChangeError => ({
   elemID: element.elemID,
   severity: 'Warning',
@@ -40,9 +42,26 @@ Check ${new URL(JIRA_USERS_PAGE, url).href} to see valid users and account IDs.`
 export const wrongUserPermissionSchemeValidator: (client: JiraClient, config: JiraConfig) => ChangeValidator =
   (client, config) => async (changes, elementsSource) => {
     if (!(config.fetch.convertUsersIds ?? true)) {
+      log.warn('Skipping wrongUserPermissionSchemeValidator due to missing config or elements source')
+      return []
+    }
+    if (elementsSource === undefined) {
+      log.warn('Skipping wrongUserPermissionSchemeValidator due to missing elements source')
       return []
     }
     const { baseUrl } = client
+
+    const permissionsSchemeChangesData = changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(
+        element => element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME && element.value.permissions !== undefined,
+      )
+
+    if (permissionsSchemeChangesData.length === 0) {
+      return []
+    }
     const rawUserMap = await getUsersMap(elementsSource)
     if (rawUserMap === undefined) {
       return []
@@ -50,18 +69,11 @@ export const wrongUserPermissionSchemeValidator: (client: JiraClient, config: Ji
     const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
     const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(userMap)
-    return changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(
-        element => element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME && element.value.permissions !== undefined,
-      )
-      .flatMap(element =>
-        element.value.permissions.flatMap((permission: PermissionHolder) =>
-          isPermissionSchemeStructure(permission) && wrongUserPermissionSchemePredicate(permission)
-            ? createChangeError(element, permission, baseUrl)
-            : [],
-        ),
-      )
+    return permissionsSchemeChangesData.flatMap(element =>
+      element.value.permissions.flatMap((permission: PermissionHolder) =>
+        isPermissionSchemeStructure(permission) && wrongUserPermissionSchemePredicate(permission)
+          ? createChangeError(element, permission, baseUrl)
+          : [],
+      ),
+    )
   }

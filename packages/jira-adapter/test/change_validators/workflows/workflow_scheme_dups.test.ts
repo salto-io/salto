@@ -107,4 +107,13 @@ describe('workflowSchemeDupsValidator', () => {
       ),
     ).toEqual([])
   })
+  it('should not return an error if there are no workflow scheme changes', async () => {
+    const otherInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(JIRA, 'someType') }), {})
+    expect(
+      await workflowSchemeDupsValidator(
+        [toChange({ after: otherInstance })],
+        buildElementsSourceFromElements([otherInstance]),
+      ),
+    ).toBeEmpty()
+  })
 })

@@ -13,7 +13,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isInstanceChange,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { walkOnElement } from '@salto-io/adapter-utils'
@@ -253,6 +253,17 @@ export const accountIdValidator: (client: JiraClient, config: JiraConfig) => Cha
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
+
+    const accountIdChangesData = changes
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(isDeployableAccountIdType)
+
+    if (accountIdChangesData.length === 0) {
+      return []
+    }
+
     const { baseUrl, isDataCenter } = client
     const rawUserMap = await getUsersMap(elementsSource)
     if (rawUserMap === undefined) {
@@ -261,11 +272,7 @@ export const accountIdValidator: (client: JiraClient, config: JiraConfig) => Cha
     const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
     const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
-    return changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(change => getChangeData(change))
-      .filter(isDeployableAccountIdType)
+    return accountIdChangesData
       .map(element =>
         createChangeErrorsForAccountIdIssues(element, userMap, baseUrl, isDataCenter, config, defaultUserExist),
       )

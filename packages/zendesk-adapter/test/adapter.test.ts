@@ -547,7 +547,7 @@ describe('adapter', () => {
           'zendesk.trigger_order_entry',
           'zendesk.triggers',
           'zendesk.user_field',
-          'zendesk.user_field.instance.another_text_3425',
+          'zendesk.user_field.instance.another_Text_3425',
           'zendesk.user_field.instance.date6436',
           'zendesk.user_field.instance.decimal_765_field',
           'zendesk.user_field.instance.description_123',

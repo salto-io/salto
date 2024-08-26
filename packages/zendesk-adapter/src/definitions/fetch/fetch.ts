@@ -507,8 +507,8 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/agent/admin/user_fields/{id}' },
-        elemID: { parts: [{ fieldName: 'key' }] },
-        path: { pathParts: [{ parts: [{ fieldName: 'key' }] }] },
+        elemID: { parts: [{ fieldName: 'key', mapping: 'lowercase' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'key', mapping: 'lowercase' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },

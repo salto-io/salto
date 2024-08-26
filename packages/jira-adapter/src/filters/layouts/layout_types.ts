@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import Joi from 'joi'
@@ -86,8 +78,14 @@ export type ContainerIssueLayoutResponse = {
   containerType: string
   items: {
     nodes: {
-      fieldItemId: string
+      fieldItemId?: string
       panelItemId?: string
+      items?: {
+        nodes: {
+          fieldItemId?: string
+          panelItemId?: string
+        }[]
+      }
     }[]
   }
 }
@@ -100,6 +98,16 @@ const CONTAINER_ISSUE_LAYOUT_RESPONSE_SCHEME = Joi.object({
         Joi.object({
           fieldItemId: Joi.string(),
           panelItemId: Joi.string(),
+          items: Joi.object({
+            nodes: Joi.array().items(
+              Joi.object({
+                fieldItemId: Joi.string(),
+                panelItemId: Joi.string(),
+              })
+                .unknown(true)
+                .required(),
+            ),
+          }).unknown(true),
         }).unknown(true),
       )
       .required(),
@@ -118,7 +126,8 @@ export type IssueLayoutConfiguration = {
     configuration: {
       items: {
         nodes: {
-          fieldItemId: string
+          fieldItemId?: string
+          panelItemId?: string
         }[]
       }
     }
@@ -130,7 +139,7 @@ export type IssueLayoutResponse = {
 }
 
 export type LayoutConfigItem = {
-  type: string
+  type: 'FIELD' | 'PANEL'
   sectionType: 'PRIMARY' | 'SECONDARY' | 'CONTENT' | 'REQUEST'
   key: string
   data:
@@ -141,7 +150,7 @@ export type LayoutConfigItem = {
 }
 
 export const ISSUE_LAYOUT_CONFIG_ITEM_SCHEME = Joi.object({
-  type: Joi.string().required(),
+  type: Joi.string().valid('FIELD', 'PANEL').required(),
   sectionType: Joi.string().valid('PRIMARY', 'SECONDARY', 'CONTENT', 'REQUEST').required(),
   key: Joi.string().required(),
   data: Joi.object({

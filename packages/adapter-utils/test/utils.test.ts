@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -49,6 +41,7 @@ import {
   VariableExpression,
   PlaceholderObjectType,
   UnresolvedReference,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -90,6 +83,8 @@ import {
   getInstancesFromElementSource,
   validatePlainObject,
   validateArray,
+  getParentElemID,
+  getParentAsyncWithElementsSource,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2790,6 +2785,78 @@ describe('Test utils.ts', () => {
     it('should throw when having a non instance parent', () => {
       child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, 'a')]
       expect(() => getParent(child)).toThrow()
+    })
+  })
+  describe('getParentElemID', () => {
+    let parent: InstanceElement
+    let child: InstanceElement
+
+    beforeEach(() => {
+      const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
+      parent = new InstanceElement('parent', obj, {})
+      child = new InstanceElement('child', obj, {}, [], {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)],
+      })
+    })
+
+    it('should return the parent elemID when there is a single reference parent', () => {
+      expect(getParentElemID(child)).toEqual(parent.elemID)
+    })
+
+    it('should throw when having more than one parent', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, parent),
+        new ReferenceExpression(parent.elemID, parent),
+      ]
+      expect(() => getParentElemID(child)).toThrow(
+        'Expected test.test.instance.child to have exactly one parent, found 2',
+      )
+    })
+
+    it('should throw when having a non reference parent', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = ['some string']
+      expect(() => getParentElemID(child)).toThrow(
+        'Expected test.test.instance.child parent to be a reference expression',
+      )
+    })
+  })
+  describe('getParentAsyncWithElementsSource', () => {
+    let parent: InstanceElement
+    let child: InstanceElement
+    let elementsSource: ReadOnlyElementsSource
+
+    beforeEach(() => {
+      const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
+      parent = new InstanceElement('parent', obj, {})
+      child = new InstanceElement('child', obj, {}, [], {})
+      elementsSource = buildElementsSourceFromElements([])
+    })
+
+    it('should return the parent when there is a single instance parent with resolved value', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, parent)]
+      expect(await getParentAsyncWithElementsSource(child, elementsSource)).toBe(parent)
+    })
+
+    it('should throw when having more than one parent', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parent.elemID, parent),
+        new ReferenceExpression(parent.elemID),
+      ]
+      await expect(() => getParentAsyncWithElementsSource(child, elementsSource)).rejects.toThrow()
+    })
+
+    it('should throw when having a non instance parent', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID, 'a')]
+      await expect(() => getParentAsyncWithElementsSource(child, elementsSource)).rejects.toThrow()
+    })
+    it('should return the parent when there is a single instance parent with unresolved value', async () => {
+      elementsSource = buildElementsSourceFromElements([parent])
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID)]
+      expect(await getParentAsyncWithElementsSource(child, elementsSource)).toBe(parent)
+    })
+    it('should throw when the parent is unresolved and not in the elementsSource', async () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parent.elemID)]
+      await expect(getParentAsyncWithElementsSource(child, elementsSource)).rejects.toThrow()
     })
   })
 

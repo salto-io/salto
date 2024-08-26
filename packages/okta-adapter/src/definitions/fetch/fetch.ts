@@ -1,21 +1,18 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { naclCase } from '@salto-io/adapter-utils'
-import { definitions, fetch as fetchUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import {
+  definitions,
+  fetch as fetchUtils,
+  elements as elementUtils,
+  client as clientUtils,
+} from '@salto-io/adapter-components'
 import { POLICY_TYPE_NAME_TO_PARAMS } from '../../config'
 import { OktaOptions } from '../types'
 import { OktaUserConfig } from '../../user_config'
@@ -31,12 +28,15 @@ import {
   AUTHENTICATOR_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
+  JWK_TYPE_NAME,
+  EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
+import { isNotDeletedEmailDomain } from './types/email_domain'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -235,13 +235,13 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/groups',
-          queryArgs: { expand: 'stats' },
+          queryArgs: includeGroupMemberships ? { expand: 'stats' } : {},
         },
         transformation: {
           adjust: async ({ value }) => ({
             value: {
               ...(_.isObject(value) ? { ..._.omit(value, '_embedded') } : {}),
-              hasUsersAssigned: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
+              recurseIntoGroupMembers: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
             },
           }),
         },
@@ -265,7 +265,7 @@ const createCustomizations = ({
                   {
                     // only recurse into groups with assigned users
                     match: ['true'],
-                    fromField: 'hasUsersAssigned',
+                    fromField: 'recurseIntoGroupMembers',
                   },
                 ],
               },
@@ -284,7 +284,7 @@ const createCustomizations = ({
         source: { fieldType: 'Group__source' },
         _links: { omit: true },
         lastMembershipUpdated: { omit: true },
-        hasUsersAssigned: { omit: true },
+        recurseIntoGroupMembers: { omit: true },
         [GROUP_MEMBERSHIP_TYPE_NAME]: {
           standalone: {
             typeName: GROUP_MEMBERSHIP_TYPE_NAME,
@@ -411,6 +411,11 @@ const createCustomizations = ({
                     // Only apps with GROUP_PUSH feature should have GroupPushRule
                     match: ['GROUP_PUSH'],
                     fromField: 'features',
+                  },
+                  {
+                    // Okta returns 404 for '/api/internal/instance/{appId}/grouppushrules' if the app is in status inactive
+                    match: ['^ACTIVE$'],
+                    fromField: 'status',
                   },
                 ],
               },
@@ -596,6 +601,26 @@ const createCustomizations = ({
     requests: [{ endpoint: { path: '/api/v1/mappings' } }],
     resource: {
       directFetch: true,
+      onError: {
+        custom:
+          () =>
+          ({ error, typeName }) => {
+            // /api/v1/mappings returns 401 when the feature is not enabled in the account
+            if (error instanceof clientUtils.HTTPError && error.response.status === 401) {
+              return {
+                action: 'configSuggestion',
+                value: {
+                  type: 'typeToExclude',
+                  value: typeName,
+                  reason: `Salto could not access the ${typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
+                },
+              }
+            }
+            return { action: 'failEntireFetch', value: false }
+          },
+        action: 'failEntireFetch',
+        value: false,
+      },
       recurseInto: {
         ...(includeProfileMappingProperties
           ? {
@@ -915,6 +940,7 @@ const createCustomizations = ({
         isTopLevel: true,
         serviceUrl: { path: '/admin/email/domains' },
         elemID: { parts: [{ fieldName: 'displayName' }] },
+        valueGuard: isNotDeletedEmailDomain,
       },
       fieldCustomizations: { id: { hide: true } },
     },
@@ -1102,6 +1128,21 @@ const createCustomizations = ({
       },
     },
   },
+  [JWK_TYPE_NAME]: {
+    requests: [{ endpoint: { path: '/api/v1/idps/credentials/keys' } }],
+    resource: { directFetch: true, serviceIDFields: ['kid'] },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        // hashed representation of the key
+        elemID: { parts: [{ fieldName: naclCase('x5t#S256') }] },
+      },
+      fieldCustomizations: {
+        kid: { hide: true },
+        expiresAt: { omit: true },
+      },
+    },
+  },
   // singleton types
   OrgSetting: {
     requests: [{ endpoint: { path: '/api/v1/org' }, transformation: { root: '.' } }],
@@ -1193,9 +1234,18 @@ const createCustomizations = ({
       },
     },
   },
-  Protocol: {
+  IdentityProviderCredentialsClient: {
     element: {
-      fieldCustomizations: { credentials: { omit: true } },
+      fieldCustomizations: {
+        client_secret: { omit: true },
+      },
+    },
+  },
+  IdentityProviderCredentialsSigning: {
+    element: {
+      fieldCustomizations: {
+        kid: { omit: true },
+      },
     },
   },
   AuthenticatorProviderConfiguration: {
@@ -1246,6 +1296,7 @@ export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
   AUTHENTICATOR_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
 ]
 
 export const createFetchDefinitions = ({
@@ -1268,7 +1319,7 @@ export const createFetchDefinitions = ({
       default: {
         resource: {
           serviceIDFields: ['id'],
-          onError: fetchUtils.errors.getInsufficientPermissionsError,
+          onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
           topLevel: {

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { references } from '@salto-io/adapter-components'
@@ -26,6 +18,7 @@ import {
   ReferenceExpression,
   isInstanceElement,
   SaltoError,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -54,6 +47,7 @@ import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { FetchProfile, OutgoingReferenceBehavior } from '../../src/types'
 import { buildMetadataQueryForFetchWithChangesDetection } from '../../src/fetch_profile/metadata_query'
+import { apiNameSync, isInstanceOfCustomObjectSync } from '../../src/filters/utils'
 
 const { MISSING_REF_PREFIX } = references
 
@@ -451,15 +445,18 @@ describe('Custom Object Instances References filter', () => {
       })
     })
   })
-
   describe('Broken refs behavior', () => {
     const testElements = [...objects, ...legalInstances, refFromEmptyRefsInstance]
     const buildTestFetchProfile = (
       defaultBehavior: OutgoingReferenceBehavior,
       overrides: Record<string, OutgoingReferenceBehavior>,
+      improvedDataBrokenReferences = false,
     ): FetchProfile =>
       buildFetchProfile({
         fetchParams: {
+          optionalFeatures: {
+            improvedDataBrokenReferences,
+          },
           data: {
             includeObjects: ['*'],
             saltoIDSettings: {
@@ -472,17 +469,76 @@ describe('Custom Object Instances References filter', () => {
           },
         },
       })
+    beforeEach(() => {
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildTestFetchProfile('BrokenReference', {
+            User: 'InternalId',
+          }),
+        },
+      }) as FilterType
+    })
+    describe('ref lookups to illegal instances', () => {
+      beforeEach(() => {
+        elements = [...objects, firstDupInst, secondDupInst, refFromToDupInst].map(e => e.clone())
+      })
+      describe('when improvedDataBrokenReferences feature is disabled', () => {
+        beforeEach(() => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile('BrokenReference', {
+                User: 'InternalId',
+              }),
+            },
+          }) as FilterType
+        })
+        it('should drop the illegal instances and instances that reference them', async () => {
+          await filter.onFetch(elements)
+          const remainingCustomObjectInstances = elements.filter(isInstanceOfCustomObjectSync)
+          expect(remainingCustomObjectInstances).toBeEmpty()
+        })
+      })
+      describe('when improvedDataBrokenReferences feature is enabled', () => {
+        beforeEach(() => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildTestFetchProfile(
+                'BrokenReference',
+                {
+                  User: 'InternalId',
+                },
+                true,
+              ),
+            },
+          }) as FilterType
+        })
+        it('should drop the illegal instances and keep the instance that reference them with broken reference', async () => {
+          await filter.onFetch(elements)
+          const remainingCustomObjectInstances = elements.filter(isInstanceOfCustomObjectSync)
+          expect(remainingCustomObjectInstances).toHaveLength(1)
+          const [instanceWithBrokenRef] = remainingCustomObjectInstances
+          expect(apiNameSync(instanceWithBrokenRef)).toEqual(refFromToDupInst.value.Id)
+          expect(instanceWithBrokenRef.value.LookupExample).toSatisfy(
+            ref =>
+              isReferenceExpression(ref) &&
+              ref.elemID.getFullName() === 'salesforce.refToName.instance.missing_duplicateId_1@ub',
+          )
+          expect(instanceWithBrokenRef.value.MasterDetailExample).toSatisfy(
+            ref =>
+              isReferenceExpression(ref) &&
+              ref.elemID.getFullName() === 'salesforce.masterName.instance.missing_duplicateId_2@ub',
+          )
+        })
+      })
+    })
     describe('When default is BrokenReference and override is InternalId', () => {
       beforeEach(async () => {
-        filter = filterCreator({
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildTestFetchProfile('BrokenReference', {
-              User: 'InternalId',
-            }),
-          },
-        }) as FilterType
         elements = testElements.map(e => e.clone())
         const fetchResult = await filter.onFetch(elements)
         if (fetchResult) {

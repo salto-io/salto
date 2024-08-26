@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -32,6 +24,7 @@ import {
   getChangeData,
   isServiceId,
   ListType,
+  Field,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
@@ -85,6 +78,7 @@ import {
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
+import { CustomField } from '../../src/client/types'
 
 export const generateCustomObjectType = (): ObjectType => {
   const generateInnerMetadataTypeFields = (name: string): Record<string, FieldDefinition> => {
@@ -1113,6 +1107,53 @@ describe('Custom Objects to Object Type filter', () => {
         })
         it('should restore the custom object change', () => {
           expect(changes).toEqual([toChange({ before: testObject, after: afterObj })])
+        })
+      })
+    })
+    describe('with addition and modification of fields', () => {
+      let changes: Change[]
+      let before: ObjectType
+      let after: ObjectType
+      beforeAll(() => {
+        filter = filterCreator({
+          config: defaultFilterContext,
+        }) as typeof filter
+        before = testObject.clone()
+        before.fields.Unknown__c = new Field(before, 'Unknown__c', Types.primitiveDataTypes.Unknown, {
+          [API_NAME]: 'Test.Unknown__c',
+          description: 'before',
+        })
+        after = before.clone()
+        after.fields.Invalid__c = new Field(after, 'Invalid__c', Types.primitiveDataTypes.AnyType, {
+          [API_NAME]: 'Test.Invalid__c',
+        })
+        after.fields.Unknown__c.annotations.description = 'after'
+        changes = [
+          toChange({ after: after.fields.Invalid__c }),
+          toChange({ before: before.fields.Unknown__c, after: after.fields.Unknown__c }),
+        ]
+      })
+      describe('preDeploy', () => {
+        beforeAll(async () => {
+          await filter.preDeploy(changes)
+        })
+        it('should remove additions of invalid fields', () => {
+          expect(changes).toHaveLength(1)
+          const customObjectInstance = getChangeData(changes[0]) as InstanceElement
+          expect(customObjectInstance).toBeInstanceOf(InstanceElement)
+          expect(customObjectInstance.value.fields).not.toContainEqual(
+            expect.objectContaining({ fullName: 'Invalid__c' }),
+          )
+        })
+        it('should keep modifications of fields with unknown type', () => {
+          expect(changes).toHaveLength(1)
+          const customObjectInstance = getChangeData(changes[0]) as InstanceElement
+          expect(customObjectInstance).toBeInstanceOf(InstanceElement)
+          expect(customObjectInstance.value.fields).toContainEqual(expect.objectContaining({ fullName: 'Unknown__c' }))
+          const unknownFieldDef = customObjectInstance.value.fields.find(
+            (fieldDef: CustomField) => fieldDef.fullName === 'Unknown__c',
+          )
+          expect(unknownFieldDef.type).toBeUndefined()
         })
       })
     })

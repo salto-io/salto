@@ -1,7 +1,7 @@
 {
   "name": "@salto-io/file",
-  "version": "0.3.61",
-  "license": "Apache-2.0",
+  "version": "0.4.0",
+  "license": "SEE LICENSE IN LICENSE",
   "description": "File System Utils",
   "repository": {
     "type": "git",
@@ -29,8 +29,8 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/logging": "0.3.61",
-    "@salto-io/lowerdash": "0.3.61",
+    "@salto-io/logging": "0.4.0",
+    "@salto-io/lowerdash": "0.4.0",
     "mkdirp": "^0.5.1",
     "rimraf": "^3.0.2",
     "stream-chain": "^2.2.5"

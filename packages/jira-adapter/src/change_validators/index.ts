@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
@@ -75,15 +67,18 @@ import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/m
 import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
 import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from '../constants'
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
+import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
+import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 
-const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator } =
+const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
 
-const TYPE_TO_UNIQUE_FIELD = {
-  [ISSUE_TYPE_NAME]: ['name'],
-  [PORTAL_GROUP_TYPE]: ['name'],
-  [SLA_TYPE_NAME]: ['name'],
-  [PROJECT_TYPE]: ['name', 'key'],
+const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndUniqueFields> = {
+  [ISSUE_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [PORTAL_GROUP_TYPE]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [SLA_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
+  [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
+  [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
 }
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {
@@ -136,7 +131,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
-    customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
+    customFieldsWith10KOptions: customFieldsWith10KOptionValidator(config),
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,
@@ -149,6 +144,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     jsmPermissions: jsmPermissionsValidator(config, client),
     fieldContextOptions: fieldContextOptionsValidator,
     assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
+    projectAssigneeType: projectAssigneeTypeValidator,
   }
 
   return createChangeValidator({

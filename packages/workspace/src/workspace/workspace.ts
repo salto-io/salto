@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import path from 'path'
@@ -692,25 +684,38 @@ export const loadWorkspace = async (
 
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = naclFilesSource
-      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> => {
-        elemIDs.forEach(id => addedIDs.add(id.getFullName()))
-        const filesWithDependencies = _.uniq(
-          await awu(elemIDs)
-            .flatMap(id => source.getElementReferencedFiles(envName, id))
-            .toArray(),
+      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> =>
+        log.timeDebug(
+          async () => {
+            elemIDs.forEach(id => addedIDs.add(id.getFullName()))
+            const filesWithDependencies = await log.timeDebug(
+              async () =>
+                _.uniq(
+                  await awu(elemIDs)
+                    .flatMap(id => source.getElementReferencedFiles(envName, id))
+                    .toArray(),
+                ),
+              'running getElementReferencedFiles for %s elemIDs',
+              elemIDs.length,
+            )
+            const dependentsIDs = await log.timeDebug(
+              async () =>
+                awu(filesWithDependencies)
+                  .map(filename => source.getParsedNaclFile(filename))
+                  .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
+                  .filter(id => !addedIDs.has(id.getFullName()))
+                  .toArray(),
+              'get dependentsIDs from %s files',
+              filesWithDependencies.length,
+            )
+            const uniqDependentsIDs = _.uniqBy(dependentsIDs, id => id.getFullName())
+            return _.isEmpty(uniqDependentsIDs)
+              ? uniqDependentsIDs
+              : uniqDependentsIDs.concat(await getElementsDependents(uniqDependentsIDs, addedIDs))
+          },
+          'getElementsDependents for %s elemIDs',
+          elemIDs.length,
         )
-        const dependentsIDs = _.uniqBy(
-          await awu(filesWithDependencies)
-            .map(filename => source.getParsedNaclFile(filename))
-            .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
-            .filter(id => !addedIDs.has(id.getFullName()))
-            .toArray(),
-          id => id.getFullName(),
-        )
-        return _.isEmpty(dependentsIDs)
-          ? dependentsIDs
-          : dependentsIDs.concat(await getElementsDependents(dependentsIDs, addedIDs))
-      }
       const validateElementsAndDependents = async (
         elements: ReadonlyArray<Element>,
         elementSource: ReadOnlyElementsSource,
@@ -720,11 +725,12 @@ export const loadWorkspace = async (
         validatedElementsIDs: ElemID[]
       }> => {
         const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
+        log.debug('found %d dependents for %d elements', dependentsID.length, relevantElementIDs.length)
         const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
-        const elementsToValidate = [...elements, ...dependents]
+        const elementsToValidate = elements.concat(dependents)
         return {
           errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: _.uniqBy([...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs], e =>
+          validatedElementsIDs: _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(relevantElementIDs), e =>
             e.getFullName(),
           ),
         }

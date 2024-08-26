@@ -37,8 +37,7 @@
     },
     "body": {
       "id": "networkzone-fakeid1",
-      "name": "your_zone",
-      "status": "ACTIVE"
+      "name": "your_zone"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "100",

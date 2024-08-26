@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Adapter } from '@salto-io/adapter-api'
 import { adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
@@ -31,6 +23,7 @@ import { adapter as confluenceAdapter } from '@salto-io/confluence-adapter'
 import { adapter as microsoftEntra } from '@salto-io/microsoft-entra-adapter'
 import { adapter as pagerDutyAdapter } from '@salto-io/pagerduty-adapter'
 import { adapter as jamfAdapter } from '@salto-io/jamf-adapter'
+import { adapter as microsoftSecurityAdapter } from '@salto-io/microsoft-security-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
@@ -50,6 +43,7 @@ const adapterCreators: Record<string, Adapter> = {
   microsoft_entra: microsoftEntra,
   pagerduty: pagerDutyAdapter,
   jamf: jamfAdapter,
+  microsoft_security: microsoftSecurityAdapter,
 }
 
 export default adapterCreators

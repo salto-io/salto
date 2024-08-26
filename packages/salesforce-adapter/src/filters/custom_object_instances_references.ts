@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { collections, values as lowerdashValues, promises } from '@salto-io/lowerdash'
@@ -23,6 +15,7 @@ import {
   createWarningFromMsg,
   getInstancesWithCollidingElemID,
   safeJsonStringify,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { references } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -43,6 +36,7 @@ import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
 import {
+  apiNameSync,
   buildElementsSourceForFetch,
   instanceInternalId,
   isInstanceOfCustomObjectSync,
@@ -293,6 +287,119 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
   return { reverseReferencesMap, missingRefs }
 }
 
+const replaceLookupsWithRefsAndCreateRefMapV2 = async ({
+  referenceSources,
+  internalIdToReferenceTarget,
+  internalToTypeName,
+  dataManagement,
+  instancesWithCollidingElemID,
+  instancesWithEmptyId,
+}: {
+  referenceSources: InstanceElement[]
+  internalIdToReferenceTarget: Record<string, InstanceElement>
+  internalToTypeName: (internalId: string) => string
+  dataManagement: DataManagement
+  instancesWithCollidingElemID: InstanceElement[]
+  instancesWithEmptyId: InstanceElement[]
+}): Promise<{
+  reverseReferencesMap: collections.map.DefaultMap<string, Set<string>>
+  missingRefs: MissingRef[]
+}> => {
+  const invalidInstancesIds = new Set(
+    instancesWithCollidingElemID.concat(instancesWithEmptyId).map(instance => apiNameSync(instance)),
+  )
+  const reverseReferencesMap = new DefaultMap<string, Set<string>>(() => new Set())
+  const missingRefs: MissingRef[] = []
+  const fieldsWithUnknownTargetType = new DefaultMap<string, Set<string>>(() => new Set())
+  const replaceLookups = async (instance: InstanceElement): Promise<Values> => {
+    const transformFunc: TransformFunc = async ({ value, field }) => {
+      if (!isReferenceField(field)) {
+        return value
+      }
+      const refTo = referenceFieldTargetTypes(field)
+
+      const refTarget = refTo
+        .map(targetTypeName => internalIdToReferenceTarget[serializeInternalID(targetTypeName, value)])
+        .filter(isDefined)
+        .pop()
+
+      const targetTypeName = refTo.length === 1 ? refTo[0] : internalToTypeName(value)
+      const brokenRefBehavior = dataManagement.brokenReferenceBehaviorForTargetType(targetTypeName)
+      if (refTarget === undefined || invalidInstancesIds.has(apiNameSync(refTarget))) {
+        if (_.isEmpty(value)) {
+          return value
+        }
+        if (isReadOnlyField(field) || field?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true) {
+          return value
+        }
+        if (targetTypeName === undefined) {
+          fieldsWithUnknownTargetType.get(field.elemID.getFullName()).add(value)
+        }
+
+        switch (brokenRefBehavior) {
+          case 'InternalId': {
+            return value
+          }
+          case 'BrokenReference': {
+            return createMissingValueReference(new ElemID(SALESFORCE, targetTypeName, 'instance'), value)
+          }
+          case 'ExcludeInstance': {
+            missingRefs.push({
+              origin: {
+                type: await apiName(await instance.getType(), true),
+                id: await apiName(instance),
+                field,
+              },
+              targetId: instance.value[field.name],
+            })
+            return value
+          }
+          default: {
+            throw new Error('Unrecognized broken refs behavior. Is the configuration valid?')
+          }
+        }
+      }
+
+      if (brokenRefBehavior === 'ExcludeInstance') {
+        reverseReferencesMap
+          .get(await serializeInstanceInternalID(refTarget))
+          .add(await serializeInstanceInternalID(instance))
+      }
+      return new ReferenceExpression(refTarget.elemID)
+    }
+
+    return (
+      (await transformValues({
+        values: instance.value,
+        type: await instance.getType(),
+        transformFunc,
+        strict: false,
+        allowEmptyArrays: true,
+        allowEmptyObjects: true,
+      })) ?? instance.value
+    )
+  }
+
+  if (fieldsWithUnknownTargetType.size > 0) {
+    log.warn(
+      'The following fields have multiple %s annotations and contained internal IDs with an unknown key prefix. The default broken references behavior was used for them.',
+      FIELD_ANNOTATIONS.REFERENCE_TO,
+    )
+    fieldsWithUnknownTargetType.forEach((internalIds, fieldElemId) => {
+      log.warn('Field %s: %o', fieldElemId, internalIds)
+    })
+  }
+
+  await awu(referenceSources).forEach(async (instance, index) => {
+    instance.value = await replaceLookups(instance)
+    if (index > 0 && index % 500 === 0) {
+      log.debug(`Replaced lookup with references for ${index} instances`)
+    }
+  })
+
+  return { reverseReferencesMap, missingRefs }
+}
+
 const getIllegalRefSources = (
   initialIllegalRefTargets: Set<string>,
   reverseRefsMap: collections.map.DefaultMap<string, Set<string>>,
@@ -334,23 +441,33 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
       return {}
     }
     const fetchedInstances = elements.filter(isInstanceElement)
-    // In the partial fetch case, a fetched element may reference an element that was not fetched but exists in the workspace
-    const elementsSource = buildElementsSourceForFetch(elements, config)
-    const allElements = await awu(await elementsSource.getAll()).toArray()
     const fetchedCustomObjectInstances = fetchedInstances.filter(isInstanceOfCustomObjectSync)
-    const allInstances = allElements.filter(isInstanceElement)
-    const internalToInstance = await keyByAsync(allInstances, serializeInstanceInternalID)
-    const internalIdPrefixToType = await buildCustomObjectPrefixKeyMap(allElements)
-    const { reverseReferencesMap, missingRefs } = await replaceLookupsWithRefsAndCreateRefMap(
-      fetchedCustomObjectInstances,
-      internalToInstance,
-      (internalId: string): string => internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
-      dataManagement,
-    )
     const instancesWithCollidingElemID = getInstancesWithCollidingElemID(fetchedInstances)
     const instancesWithEmptyId = fetchedCustomObjectInstances.filter(
       instance => instance.elemID.name === ElemID.CONFIG_NAME,
     )
+    // In the partial fetch case, a fetched element may reference an element that was not fetched but exists in the workspace
+    const elementsSource = buildElementsSourceForFetch(elements, config)
+    const allElements = await awu(await elementsSource.getAll()).toArray()
+    const allInstances = allElements.filter(isInstanceElement)
+    const internalToInstance = await keyByAsync(allInstances, serializeInstanceInternalID)
+    const internalIdPrefixToType = await buildCustomObjectPrefixKeyMap(allElements)
+    const { reverseReferencesMap, missingRefs } = config.fetchProfile.isFeatureEnabled('improvedDataBrokenReferences')
+      ? await replaceLookupsWithRefsAndCreateRefMapV2({
+          referenceSources: fetchedCustomObjectInstances,
+          internalIdToReferenceTarget: internalToInstance,
+          internalToTypeName: (internalId: string): string =>
+            internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
+          dataManagement,
+          instancesWithCollidingElemID,
+          instancesWithEmptyId,
+        })
+      : await replaceLookupsWithRefsAndCreateRefMap(
+          fetchedCustomObjectInstances,
+          internalToInstance,
+          internalId => internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
+          dataManagement,
+        )
     const missingRefOriginInternalIDs = new Set(
       missingRefs.map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id)),
     )
@@ -367,6 +484,12 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     ])
     const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseReferencesMap)
     const invalidInstances = new Set([...illegalRefSources, ...illegalRefTargets])
+    log.trace('invalidInstances: %s', inspectValue(invalidInstances))
+    log.trace('missingRefs: %s', inspectValue(missingRefOriginInternalIDs))
+    log.trace('instancesWithCollidingElemID: %s', inspectValue(instWithDupElemIDInterIDs))
+    log.trace('instancesWithEmptyId: %s', inspectValue(instancesWithEmptyIdInternalIDs))
+    log.trace('reverseReferencesMap: %s', inspectValue(reverseReferencesMap))
+
     await removeAsync(
       elements,
       async element =>

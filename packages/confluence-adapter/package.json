@@ -1,7 +1,7 @@
 {
   "name": "@salto-io/confluence-adapter",
-  "version": "0.3.61",
-  "license": "Apache-2.0",
+  "version": "0.4.0",
+  "license": "SEE LICENSE IN LICENSE",
   "description": "Salto confluence adapter",
   "repository": {
     "type": "git",
@@ -30,11 +30,11 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.61",
-    "@salto-io/adapter-components": "0.3.61",
-    "@salto-io/adapter-utils": "0.3.61",
-    "@salto-io/logging": "0.3.61",
-    "@salto-io/lowerdash": "0.3.61",
+    "@salto-io/adapter-api": "0.4.0",
+    "@salto-io/adapter-components": "0.4.0",
+    "@salto-io/adapter-utils": "0.4.0",
+    "@salto-io/logging": "0.4.0",
+    "@salto-io/lowerdash": "0.4.0",
     "axios": "^1.7.2",
     "form-data": "^4.0.0",
     "joi": "^17.4.0",
@@ -45,8 +45,8 @@
     "@eslint/compat": "^1.1.0",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.6.0",
-    "@salto-io/e2e-credentials-store": "0.3.61",
-    "@salto-io/test-utils": "0.3.61",
+    "@salto-io/e2e-credentials-store": "0.4.0",
+    "@salto-io/test-utils": "0.4.0",
     "@tony.ganchev/eslint-plugin-header": "^3.1.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",

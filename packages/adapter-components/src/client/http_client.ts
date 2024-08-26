@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ResponseType } from 'axios'
@@ -37,6 +29,7 @@ import {
 } from '../definitions/user/client_config'
 import { requiresLogin, logDecorator } from './decorators'
 import { throttle } from './rate_limit'
+import { createResponseLogFilter, FullResponseLogFilter, truncateReplacer } from './logging_utils'
 
 const log = logger(module)
 
@@ -129,6 +122,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
 {
   protected readonly conn: Connection<TCredentials>
   protected readonly credentials: TCredentials
+  protected responseLogFilter: FullResponseLogFilter
 
   constructor(
     clientName: string,
@@ -147,6 +141,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       createConnection,
     })
     this.credentials = credentials
+    this.responseLogFilter = createResponseLogFilter(config?.logging)
   }
 
   protected async ensureLoggedIn(): Promise<void> {
@@ -236,6 +231,67 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
     return this.sendRequest('options', params)
   }
 
+  protected logResponse<T extends keyof HttpMethodToClientParams>({
+    response,
+    error,
+    method,
+    params,
+  }: {
+    response: Response<ResponseValue | ResponseValue[]>
+    error?: Error
+    method: T
+    params: HttpMethodToClientParams[T]
+  }): void {
+    const { url, queryParams, responseType } = params
+    const data = isMethodWithData(params) ? params.data : undefined
+    log.debug(
+      'Received response for %s on %s (%s) with status %d',
+      method.toUpperCase(),
+      url,
+      safeJsonStringify({ url, queryParams }),
+      response.status,
+    )
+
+    const responseObj = {
+      url,
+      method: method.toUpperCase(),
+      status: response.status,
+      queryParams,
+      response: Buffer.isBuffer(response.data)
+        ? `<omitted buffer of length ${response.data.length}>`
+        : this.clearValuesFromResponseData(response.data, url),
+      responseType,
+      headers: this.extractHeaders(response.headers),
+      data: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
+    }
+    const responseText = safeJsonStringify(responseObj)
+
+    if (error === undefined) {
+      const strategy = this.responseLogFilter({ responseText, url })
+      if (strategy === 'full') {
+        log.trace(
+          'Full HTTP response for %s on %s (size %d): %s',
+          method.toUpperCase(),
+          url,
+          responseText.length,
+          responseText,
+        )
+      } else if (strategy === 'truncate') {
+        const truncatedResponseText = safeJsonStringify(responseObj, truncateReplacer)
+        log.trace(
+          'Truncated HTTP response for %s on %s (original size %d, truncated size %d): %s',
+          method.toUpperCase(),
+          url,
+          responseText.length,
+          truncatedResponseText.length,
+          truncatedResponseText,
+        )
+      }
+    } else {
+      log.warn(`failed to ${method} ${url} with error: ${error}, stack: ${error.stack}, ${responseText}`)
+    }
+  }
+
   protected async sendRequest<T extends keyof HttpMethodToClientParams>(
     method: T,
     params: HttpMethodToClientParams[T],
@@ -247,41 +303,6 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
 
     const { url, queryParams, headers, responseType, queryParamsSerializer: paramsSerializer } = params
     const data = isMethodWithData(params) ? params.data : undefined
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const logResponse = (res: Response<any>, error?: any): void => {
-      log.debug(
-        'Received response for %s on %s (%s) with status %d',
-        method.toUpperCase(),
-        url,
-        safeJsonStringify({ url, queryParams }),
-        res.status,
-      )
-
-      const responseText = safeJsonStringify({
-        url,
-        method: method.toUpperCase(),
-        status: res.status,
-        queryParams,
-        response: Buffer.isBuffer(res.data)
-          ? `<omitted buffer of length ${res.data.length}>`
-          : this.clearValuesFromResponseData(res.data, url),
-        headers: this.extractHeaders(res.headers),
-        data: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-      })
-
-      if (error === undefined) {
-        log.trace(
-          'Full HTTP response for %s on %s (size %d): %s',
-          method.toUpperCase(),
-          url,
-          responseText.length,
-          responseText,
-        )
-      } else {
-        log.warn(`failed to ${method} ${url} with error: ${error}, stack: ${error.stack}, ${responseText}`)
-      }
-    }
 
     try {
       const requestConfig = [queryParams, headers, responseType, paramsSerializer].some(values.isDefined)
@@ -300,34 +321,36 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
             isMethodWithData(params) ? { ...requestConfig, data: params.data } : requestConfig,
           )
 
-      logResponse(res)
+      this.logResponse({ response: res, method, params })
       return {
         data: res.data,
         status: res.status,
         headers: this.extractHeaders(res.headers),
       }
     } catch (e) {
-      logResponse(
-        {
+      this.logResponse({
+        response: {
           data: e?.response?.data ?? data,
           status: e?.response?.status ?? 'undefined',
-          headers: e?.response?.headers ?? headers,
+          headers: this.extractHeaders(e?.response?.headers ?? headers),
           requestPath: e?.response?.request?.path,
         },
-        e,
-      )
+        error: e,
+        method,
+        params,
+      })
       if (e.code === 'ETIMEDOUT') {
-        throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
+        throw new TimeoutError(`Failed to ${method} ${url} with error: ${e.message ?? e}`)
       }
       if (e.response !== undefined) {
-        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, {
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e.message ?? e}`, {
           status: e.response.status,
           data: e.response.data,
           headers: this.extractHeaders(e.response.headers),
           requestPath: e.response.request?.path,
         })
       }
-      throw new Error(`Failed to ${method} ${url} with error: ${e}`)
+      throw new Error(`Failed to ${method} ${url} with error: ${e.message ?? e}`)
     }
   }
 }

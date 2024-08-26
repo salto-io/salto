@@ -36,7 +36,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
      * Upon fetch modify custom fields of `Task` and `Event` to point to the corresponding field in the `Activity` object.
      */
     onFetch: ensureSafeFilterFetch({
-      warningMessage: 'Error occurred when attempting to modify custom fields of Task and Event objects',
+      warningMessage: 'Error occurred when attempting to remodel CustomFields of Task and Event to reference their respective Activity fields.',
       filterName: 'taskAndEventCustomFields',
       config,
       fetchFilterFunc: async (elements: Element[]) => {

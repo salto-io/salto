@@ -406,5 +406,88 @@ describe('requestTypeLayoutsFilter', () => {
       const requestTypeInstanceFound = instances.find(e => e.elemID.typeName === REQUEST_TYPE_NAME)
       expect(requestTypeInstanceFound).toBeDefined()
     })
+    it('should fetch layout with inner default tab fields and not inner general tab fields', async () => {
+      mockGet.mockImplementation(params => {
+        if (params.url === GQL_BASE_URL_GIRA) {
+          return {
+            data: {
+              issueLayoutConfiguration: {
+                issueLayoutResult: {
+                  id: '2',
+                  name: 'Default Request Form',
+                  containers: [
+                    {
+                      containerType: 'PRIMARY',
+                      items: {
+                        nodes: [
+                          {
+                            fieldItemId: 'testField1',
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      containerType: 'CONTENT',
+                      items: {
+                        nodes: [
+                          {
+                            name: 'Default',
+                            items: {
+                              nodes: [
+                                {
+                                  fieldItemId: 'innerContentDefaultFieldItemId',
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            name: 'General',
+                            items: {
+                              nodes: [
+                                {
+                                  fieldItemId: 'innerContentGeneralFieldItemId',
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+                metadata: {
+                  configuration: {
+                    items: {
+                      nodes: [
+                        {
+                          fieldItemId: 'testField1',
+                          required: true,
+                        },
+                        {
+                          fieldItemId: 'innerContentDefaultFieldItemId',
+                          required: false,
+                        },
+                        {
+                          fieldItemId: 'innerContentGeneralFieldItemId',
+                          required: false,
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          }
+        }
+        throw new Error('Err')
+      })
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const issueLayoutInstance = instances.find(e => e.elemID.typeName === REQUEST_FORM_TYPE)
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[0].key).toEqual('testField1')
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[1].sectionType).toEqual('CONTENT')
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items[1].key).toEqual('innerContentDefaultFieldItemId')
+      expect(issueLayoutInstance?.value.issueLayoutConfig.items).toHaveLength(2)
+    })
   })
 })

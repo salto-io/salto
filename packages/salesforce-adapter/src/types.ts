@@ -119,6 +119,7 @@ export type OptionalFeatures = {
   metaTypes?: boolean
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
+  improvedDataBrokenReferences?: boolean
 }
 
 export type ChangeValidatorName =
@@ -157,6 +158,7 @@ export type ChangeValidatorName =
   | 'elementApiVersion'
   | 'cpqBillingStartDate'
   | 'cpqBillingTriggers'
+  | 'managedApexComponent'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -813,6 +815,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
     flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
+    improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -859,6 +862,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
+    managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

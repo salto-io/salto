@@ -8,17 +8,42 @@
 import { definitions, references as referenceUtils, createChangeElementResolver } from '@salto-io/adapter-components'
 import { Change, InstanceElement } from '@salto-io/adapter-api'
 import { ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../constants'
-import { Options } from '../types'
-import { REFERENCE_RULES } from './entra_reference_rules'
+import { CustomReferenceSerializationStrategyName, Options } from '../types'
+import { REFERENCE_RULES as EntraReferenceRules } from './entra_reference_rules'
+import { REFERENCE_RULES as IntuneReferenceRules } from './intune_reference_rules'
+
+const REFERENCE_RULES = [...EntraReferenceRules, ...IntuneReferenceRules]
+
+// We only use this record as a TS 'hack' to fail the build if we add a custom serialization strategy
+// and forget to add it to the fieldsToGroupBy.
+const fieldsToGroupBy: Record<referenceUtils.ReferenceIndexField | CustomReferenceSerializationStrategyName, null> = {
+  id: null,
+  name: null,
+  appId: null,
+  bundleId: null,
+  packageId: null,
+}
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
-  fieldsToGroupBy: ['id', 'name', 'appId'],
+  fieldsToGroupBy: Object.keys(fieldsToGroupBy) as Array<keyof typeof fieldsToGroupBy>,
   serializationStrategyLookup: {
+    // Entra serialization strategies lookup
     appId: {
       serialize: ({ ref }) => ref.value.value.appId,
       lookup: referenceUtils.basicLookUp,
       lookupIndexName: 'appId',
+    },
+    // Intune serialization strategies lookup
+    bundleId: {
+      serialize: ({ ref }) => ref.value.value.bundleId,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'bundleId',
+    },
+    packageId: {
+      serialize: ({ ref }) => ref.value.value.packageId,
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'packageId',
     },
   },
   contextStrategyLookup: {

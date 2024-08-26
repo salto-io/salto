@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { Element, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
@@ -87,47 +87,90 @@ describe('Microsoft Security adapter', () => {
           'entra_roleDefinition',
           'entra_servicePrincipal',
           'intune_application',
+          'intune_applicationConfigurationManagedApp',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
 
       describe('specific instances', () => {
-        describe('Intune applications', () => {
-          let intuneApplications: InstanceElement[]
-          beforeEach(async () => {
-            intuneApplications = elements
-              .filter(isInstanceElement)
-              .filter(e => e.elemID.typeName === 'intune_application')
+        describe('Intune', () => {
+          describe('applications', () => {
+            let intuneApplications: InstanceElement[]
+            beforeEach(async () => {
+              intuneApplications = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'intune_application')
+            })
+
+            it('should create the correct instances for Intune applications', async () => {
+              expect(intuneApplications).toHaveLength(6)
+
+              const intuneApplicationNames = intuneApplications.map(e => e.elemID.name)
+              expect(intuneApplicationNames).toEqual(
+                expect.arrayContaining([
+                  'iosStoreApp_test',
+                  'androidStoreApp_com_test@uv',
+                  'androidManagedStoreApp_com_test@uv',
+                  'managedIOSStoreApp_test',
+                  'managedAndroidStoreApp_com_test2@uv',
+                  'managedAndroidStoreApp_com_test@uv',
+                ]),
+              )
+            })
+
+            it('should create the Intune application instances with the correct path', async () => {
+              const intuneApplicationParts = intuneApplications.map(e => e.path)
+              expect(intuneApplicationParts).toEqual(
+                expect.arrayContaining([
+                  ['microsoft_security', 'Records', 'intune_application', 'iosStoreApp', 'test'],
+                  ['microsoft_security', 'Records', 'intune_application', 'androidStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'intune_application', 'androidManagedStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'intune_application', 'managedIOSStoreApp', 'test'],
+                  ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test2'],
+                  ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test'],
+                ]),
+              )
+            })
           })
 
-          it('should create the correct instances for Intune applications', async () => {
-            expect(intuneApplications).toHaveLength(6)
+          describe('application configurations - managed apps', () => {
+            let intuneApplicationConfigurations: InstanceElement[]
+            beforeEach(async () => {
+              intuneApplicationConfigurations = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'intune_applicationConfigurationManagedApp')
+            })
 
-            const intuneApplicationNames = intuneApplications.map(e => e.elemID.name)
-            expect(intuneApplicationNames).toEqual(
-              expect.arrayContaining([
-                'iosStoreApp_test',
-                'androidStoreApp_com_test@uv',
-                'androidManagedStoreApp_com_test@uv',
-                'managedIOSStoreApp_test',
-                'managedAndroidStoreApp_com_test2@uv',
-                'managedAndroidStoreApp_com_test@uv',
-              ]),
-            )
-          })
+            it('should create the correct instances for Intune application configurations', async () => {
+              expect(intuneApplicationConfigurations).toHaveLength(1)
 
-          it('should create the Intune application instances with the correct path', async () => {
-            const intuneApplicationParts = intuneApplications.map(e => e.path)
-            expect(intuneApplicationParts).toEqual(
-              expect.arrayContaining([
-                ['microsoft_security', 'Records', 'intune_application', 'iosStoreApp', 'test'],
-                ['microsoft_security', 'Records', 'intune_application', 'androidStoreApp', 'com_test'],
-                ['microsoft_security', 'Records', 'intune_application', 'androidManagedStoreApp', 'com_test'],
-                ['microsoft_security', 'Records', 'intune_application', 'managedIOSStoreApp', 'test'],
-                ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test2'],
-                ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test'],
-              ]),
-            )
+              const intuneApplicationConfigurationNames = intuneApplicationConfigurations.map(e => e.elemID.name)
+              expect(intuneApplicationConfigurationNames).toEqual(expect.arrayContaining(['test_configuration@s']))
+            })
+
+            it('should create the Intune application configuration instances with the correct path', async () => {
+              const intuneApplicationConfigurationParts = intuneApplicationConfigurations.map(e => e.path)
+              expect(intuneApplicationConfigurationParts).toEqual(
+                expect.arrayContaining([
+                  ['microsoft_security', 'Records', 'intune_applicationConfigurationManagedApp', 'test_configuration'],
+                ]),
+              )
+            })
+
+            it('should reference the correct target application', async () => {
+              const intuneApplicationConfiguration = intuneApplicationConfigurations[0]
+              const targetApps = intuneApplicationConfiguration.value.apps
+              expect(targetApps).toHaveLength(1)
+              expect(targetApps[0]).toEqual({
+                mobileAppIdentifier: {
+                  '_odata_type@mv': '#microsoft.graph.androidMobileAppIdentifier',
+                  packageId: expect.any(ReferenceExpression),
+                },
+              })
+              expect(targetApps[0].mobileAppIdentifier.packageId.elemID.getFullName()).toEqual(
+                'microsoft_security.intune_application.instance.managedAndroidStoreApp_com_test2@uv',
+              )
+            })
           })
         })
       })

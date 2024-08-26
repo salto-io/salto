@@ -43,7 +43,7 @@ describe('client', () => {
     })
     it('should call send request decorator', async () => {
       await expect(async () => client.get({ url: '/myPath' })).rejects.toThrow(
-        new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'),
+        new Error('Failed to get /myPath with error: Request failed with status code 400. error message'),
       )
     })
   })

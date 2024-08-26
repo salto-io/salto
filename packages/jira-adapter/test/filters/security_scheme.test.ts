@@ -740,7 +740,7 @@ describe('securitySchemeFilter', () => {
       } = await filter.deploy([toChange({ after: securitySchemeInstance }), toChange({ after: securityLevelInstance })])
       expect(errors.length).toEqual(1)
       expect(errors[0].message).toEqual(
-        'Error: Failed to post /rest/api/3/issuesecurityschemes with error: Error: Name already exists',
+        'Error: Failed to post /rest/api/3/issuesecurityschemes with error: Name already exists',
       )
       expect(appliedChanges.length).toEqual(0)
       expect(leftoverChanges.length).toEqual(0)

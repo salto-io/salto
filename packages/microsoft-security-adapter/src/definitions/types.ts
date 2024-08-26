@@ -8,7 +8,6 @@
 import { definitions, filterUtils } from '@salto-io/adapter-components'
 import { UserConfig } from '../config'
 
-export type AdditionalAction = 'targetApps'
 export type ClientOptions = 'main'
 type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = 'ODataType'
@@ -18,7 +17,7 @@ export type CustomIndexField = CustomReferenceSerializationStrategyName
 export type Options = definitions.APIDefinitionsOptions & {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions
-  additionalAction: AdditionalAction
+  additionalAction: never
   referenceContextStrategies: ReferenceContextStrategies
   referenceSerializationStrategies: CustomReferenceSerializationStrategyName
   referenceIndexNames: CustomIndexField

@@ -12,11 +12,10 @@ import _ from 'lodash'
 import { DeployableRequestDefinition } from '../../shared/types'
 
 /**
- * Definition utils for application configuration deployment
+ * Utilities for deploying application configurations [managed apps].
  *
- * The application configuration definition includes targeted apps, which are deployed separately from the main configuration.
- * This module provides utils for handling the targeted apps field by utilizing a custom 'targetApps' action.
- *
+ * This module handles the targeted apps field, which is deployed separately from the main configuration,
+ * by defining the deploy request and condition.
  */
 
 export const targetAppsChangeCondition: definitionUtils.deploy.DeployRequestCondition = {
@@ -25,11 +24,9 @@ export const targetAppsChangeCondition: definitionUtils.deploy.DeployRequestCond
     ({ change }) => {
       const changeData = getChangeData(change)
       const targetedAppType = changeData.value.targetedManagedAppGroupType
-      // The field targetedManagedAppGroupType is an enum indicating the type of targeting being used for the apps.
-      // The only scenario where the user manually selects the apps is when targetedManagedAppGroupType is set to selectedPublicApps.
-      // Turns out (not documented AFAICT) that changing the apps list when targetedManagedAppGroupType
-      // value is different than 'selectedPublicApps' will silently set it to 'selectedPublicApps'.
-      // TODO SALTO-6528: Warn the user when this happens.
+      // If targetedManagedAppGroupType is set to anything other than `selectedPublicApps`,
+      // modifying the apps list will silently change it to `selectedPublicApps`.
+      // TODO SALTO-6528: Warn the user when this occurs.
       if (isRemovalChange(change) || targetedAppType !== 'selectedPublicApps') {
         return false
       }

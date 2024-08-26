@@ -16,8 +16,9 @@ const REFERENCE_RULES = [...EntraReferenceRules, ...IntuneReferenceRules]
 
 // We only use this record as a TS 'hack' to fail the build if we add a custom serialization strategy
 // and forget to add it to the fieldsToGroupBy.
-const fieldsToGroupBy: Record<'id' | CustomReferenceSerializationStrategyName, null> = {
+const fieldsToGroupBy: Record<referenceUtils.ReferenceIndexField | CustomReferenceSerializationStrategyName, null> = {
   id: null,
+  name: null,
   appId: null,
   bundleId: null,
   packageId: null,

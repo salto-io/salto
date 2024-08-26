@@ -114,7 +114,7 @@ describe('logging_utils', () => {
         safeJsonStringify(
           {
             a: _.times(13, () => ({
-              x: _.repeat('a', 78),
+              x: _.repeat('a', 212),
             })),
           },
           truncateReplacer,
@@ -122,7 +122,7 @@ describe('logging_utils', () => {
       ).toEqual(
         safeJsonStringify({
           a: _.times(10, () => ({
-            x: _.repeat('a', 50),
+            x: _.repeat('a', 150),
           })),
         }),
       )

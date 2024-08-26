@@ -95,7 +95,7 @@ export const deployContextChange = async ({
     await setContextOptions(change, client, elementsSource, paginator)
     await updateDefaultValues(change, client, config, elementsSource)
   }
-  await deployAssetObjectContext(change, client, config)
+  await deployAssetObjectContext(change, client, config, elementsSource)
 }
 
 export const getContexts = async (

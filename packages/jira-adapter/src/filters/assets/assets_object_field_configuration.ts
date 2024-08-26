@@ -25,6 +25,7 @@ import {
   ReferenceExpression,
   isRemovalChange,
   isAdditionChange,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
@@ -103,6 +104,7 @@ export const deployAssetObjectContext = async (
   change: Change<InstanceElement>,
   client: JiraClient,
   config: JiraConfig,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   if (!config.fetch.enableAssetsObjectFieldConfiguration) {
     return
@@ -120,7 +122,9 @@ export const deployAssetObjectContext = async (
     )
   }
 
-  const resolvedInstance = await resolveValues(instance, getLookUpName)
+  // we need the elementsSource when the change was added from contexts_projects_filter because the change can not be resolved without it
+  // we can remove the elementsSource when SALTO-6322 is done
+  const resolvedInstance = await resolveValues(instance, getLookUpName, elementsSource)
   try {
     const configId = await getFieldConfigId(client, change)
     await client.putPrivate({

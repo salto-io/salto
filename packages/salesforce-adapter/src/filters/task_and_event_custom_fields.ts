@@ -24,7 +24,7 @@ const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const filterCreator: LocalFilterCreator = ({ config }) => {
-  let changesToRestore: Change[]
+  let taskOrEventFieldChanges: Change[]
 
   return {
     name: 'taskAndEventCustomFields',

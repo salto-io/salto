@@ -21,22 +21,37 @@ describe('taskAndEventCustomFieldsFilter', () => {
   const taskType = createCustomObjectType(TASK_CUSTOM_OBJECT, {})
   const eventType = createCustomObjectType(EVENT_CUSTOM_OBJECT, {})
 
-  const activityField = createField(activityType, BuiltinTypes.STRING, `Activity.${FIELD_NAME}`, {}, FIELD_NAME)
-  const additionalAnnotations = {
-    creatable: true,
-    deletable: true,
-    updateable: true,
-    // Arbitrary annotations to verify they are removed.
+  // Arbitrary field annotations to verify they are removed.
+  const activityAnnotations = {
     label: 'Test',
     length: 18,
     someOtherAnnotation: 'some',
   }
-  const taskField = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD_NAME}`, additionalAnnotations, FIELD_NAME)
+  const activityField = createField(
+    activityType,
+    BuiltinTypes.STRING,
+    `Activity.${FIELD_NAME}`,
+    activityAnnotations,
+    FIELD_NAME,
+  )
+  const derivedFieldAnnotations = {
+    ...activityAnnotations,
+    creatable: true,
+    deletable: true,
+    updateable: true,
+  }
+  const taskField = createField(
+    taskType,
+    BuiltinTypes.STRING,
+    `Task.${FIELD_NAME}`,
+    derivedFieldAnnotations,
+    FIELD_NAME,
+  )
   const eventField = createField(
     eventType,
     BuiltinTypes.STRING,
     `Event.${FIELD_NAME}`,
-    additionalAnnotations,
+    derivedFieldAnnotations,
     FIELD_NAME,
   )
 
@@ -60,13 +75,9 @@ describe('taskAndEventCustomFieldsFilter', () => {
       const elements = [activityType, taskType, eventType, activityField, taskField, eventField]
       await filter.onFetch(elements)
       ;[taskField, eventField].forEach(field => {
-        expect(Object.keys(field.annotations)).toEqual([
-          'apiName',
-          'updateable',
-          'creatable',
-          'deletable',
-          'activityField',
-        ])
+        expect(Object.keys(field.annotations).sort()).toEqual(
+          ['apiName', 'updateable', 'creatable', 'deletable', 'activityField'].sort(),
+        )
         expect(field.annotations.activityField.elemID).toEqual(activityField.elemID)
       })
     })

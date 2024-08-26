@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
-import { Change, Element, Field, getChangeData, isFieldChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, isFieldChange, ReferenceExpression } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
 import {
@@ -22,8 +22,6 @@ import { findMatchingActivityChange } from '../change_validators/task_or_event_f
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
-
-const ANNOTATIONS_TO_KEEP = ['apiName', 'updateable', 'creatable', 'deletable']
 
 const filterCreator: LocalFilterCreator = ({ config }) => {
   let changesToRestore: Change[]
@@ -61,8 +59,10 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
             return ret
           })
           .forEach(taskOrEventField => {
+            const annotationsToOmit = new Set(Object.keys(activity.fields[taskOrEventField.name].annotations))
+            annotationsToOmit.delete('apiName')
             taskOrEventField.annotations = {
-              ..._.pick(taskOrEventField.annotations, ANNOTATIONS_TO_KEEP),
+              ..._.omit(taskOrEventField.annotations, Array.from(annotationsToOmit)),
               activityField: new ReferenceExpression(
                 elementSourceByApiName[ACTIVITY_CUSTOM_OBJECT].fields[taskOrEventField.name].elemID,
               ),

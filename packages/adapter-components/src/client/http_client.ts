@@ -279,7 +279,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       } else if (strategy === 'truncate') {
         const truncatedResponseText = safeJsonStringify(responseObj, truncateReplacer)
         log.trace(
-          'Truncated HTTP response for %s on %s (original size %d, truncated dize %d): %s',
+          'Truncated HTTP response for %s on %s (original size %d, truncated size %d): %s',
           method.toUpperCase(),
           url,
           responseText.length,

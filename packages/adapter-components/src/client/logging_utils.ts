@@ -49,10 +49,10 @@ export const createResponseLogFilter = (
 
 export const truncateReplacer = (_key: string, value: Value): Value => {
   if (Array.isArray(value)) {
-    return value.slice(0, 50)
+    return value.slice(0, 10)
   }
-  if (_.isString(value) && value.length > 500) {
-    return value.slice(0, 500)
+  if (_.isString(value) && value.length > 50) {
+    return value.slice(0, 50)
   }
   return value
 }

@@ -18,7 +18,7 @@ def read_http_data_from_salto_log(logpath: str) -> list[dict[str, Any]]:
         return [
             json.loads(l[l.find(": ") + 2 :].strip())
             for l in logfile.readlines()
-            if "Full HTTP response" in l
+            if "Full HTTP response" in l or "Truncated HTTP response" in l
         ]
 
 

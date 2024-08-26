@@ -103,7 +103,7 @@ describe('logging_utils', () => {
   describe('truncateReplacer', () => {
     it('should not truncate "small" objects', () => {
       const obj = {
-        a: _.times(40, () => ({
+        a: _.times(9, () => ({
           x: 'a',
         })),
       }
@@ -113,16 +113,16 @@ describe('logging_utils', () => {
       expect(
         safeJsonStringify(
           {
-            a: _.times(151, () => ({
-              x: _.repeat('a', 550),
+            a: _.times(13, () => ({
+              x: _.repeat('a', 78),
             })),
           },
           truncateReplacer,
         ),
       ).toEqual(
         safeJsonStringify({
-          a: _.times(50, () => ({
-            x: _.repeat('a', 500),
+          a: _.times(10, () => ({
+            x: _.repeat('a', 50),
           })),
         }),
       )

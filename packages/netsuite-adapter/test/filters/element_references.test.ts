@@ -534,19 +534,18 @@ describe('instance_references filter', () => {
       const innerFileInstance = new InstanceElement('innferRefFile', fileType(), {
         [PATH]: '/Templates/innerFileRef.name',
       })
-      // references from non js file should not be added to the generated dependencies as they are not parsed
-      const nonJsFileContent = `
-      This is some free text which contains the word 'top_level' in it
-      `
-      innerFileInstance.value.content = new StaticFile({
-        filepath: 'Templates/innerFileRef.name',
-        content: Buffer.from(nonJsFileContent),
-      })
       await filterCreator({
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
-        config: { ...(await getDefaultAdapterConfig()), fetch: { ...fullFetchConfig(), parseSuiteScripts: true } },
+        config: {
+          ...(await getDefaultAdapterConfig()),
+          fetch: {
+            ...fullFetchConfig(),
+            calculateNewReferencesInSuiteScripts: true,
+            findReferencesInFilesWithExtension: ['.name'],
+          },
+        },
       }).onFetch?.([
         fileInstance,
         syntacticFileInstance,
@@ -557,14 +556,6 @@ describe('instance_references filter', () => {
         workflowInstance,
       ])
       expect(mockLogInfo).toHaveBeenCalledTimes(1)
-      expect(mockLogInfo).toHaveBeenCalledWith(
-        'Found %d new references: %o and removed %d references: %o in file %s.',
-        1,
-        [customSegmentInstance.elemID.createNestedID(SCRIPT_ID)],
-        1,
-        [customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)],
-        fileInstance.value[PATH],
-      )
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([
@@ -586,6 +577,49 @@ describe('instance_references filter', () => {
           },
           {
             reference: new ReferenceExpression(customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)),
+            occurrences: undefined,
+          },
+        ]),
+      )
+    })
+
+    it('should not add generated dependency for files with invalid extension', async () => {
+      const mockLogInfo = jest.spyOn(logging, 'info')
+      const innerFileInstance = new InstanceElement('innerRefFile', fileType(), {
+        [PATH]: '/Templates/innerFileRef.name',
+      })
+      // references from non js file should not be added to the generated dependencies as they are not parsed
+      const nonJsFileContent = `
+      This is some free text which contains the word 'top_level' in it
+      `
+      innerFileInstance.value.content = new StaticFile({
+        filepath: 'Templates/innerFileRef.name',
+        content: Buffer.from(nonJsFileContent),
+      })
+
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: {
+          ...(await getDefaultAdapterConfig()),
+          fetch: { ...fullFetchConfig(), calculateNewReferencesInSuiteScripts: true },
+        },
+      }).onFetch?.([innerFileInstance, workflowInstance])
+      expect(mockLogInfo).toHaveBeenCalledTimes(2)
+      expect(mockLogInfo).toHaveBeenNthCalledWith(
+        1,
+        'Ignoring file with unsupported extension %s and %d references will be removed: %o',
+        '/Templates/innerFileRef.name',
+        1,
+        [workflowInstance.elemID.createNestedID(SCRIPT_ID)],
+      )
+      expect(mockLogInfo).toHaveBeenNthCalledWith(2, 'Ignored files with unsupported extensions: %o', ['.name'])
+      expect(innerFileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
+      expect(innerFileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        expect.arrayContaining([
+          {
+            reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
             occurrences: undefined,
           },
         ]),

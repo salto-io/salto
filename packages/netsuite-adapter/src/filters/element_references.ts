@@ -47,6 +47,7 @@ const { isDefined } = values
 const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
+const JS_FILE_EXTENSIONS = ['.js', '.cjs', '.mjs', '.json']
 
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
@@ -155,9 +156,9 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
-const hasValidJSExtension = (path: string): boolean => {
-  const extensions = ['.js', '.cjs', '.mjs', '.json']
-  return extensions.some(ext => path.endsWith(ext))
+const hasValidExtension = (path: string, config: NetsuiteConfig): boolean => {
+  const validExtensions = JS_FILE_EXTENSIONS.concat(config.fetch?.findReferencesInFilesWithExtension ?? [])
+  return validExtensions.some(ext => path.toLowerCase().endsWith(ext))
 }
 
 const getAndLogReferencesDiff = ({
@@ -204,6 +205,7 @@ const getSuiteScriptReferences = async (
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
   config: NetsuiteConfig,
+  skippedFileExtensions: Set<string>,
 ): Promise<ElemID[]> => {
   const fileContent = await getContent(element.value.content)
 
@@ -221,8 +223,25 @@ const getSuiteScriptReferences = async (
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )
-  if (config.fetch.parseSuiteScripts) {
+  if (config.fetch.calculateNewReferencesInSuiteScripts) {
     const foundReferences = getReferencesWithRegex(content)
+    if (!hasValidExtension(element.value[PATH], config)) {
+      const referencesToBeRemoved = getServiceElemIDsFromPaths(
+        foundReferences,
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+        element,
+      )
+      if (referencesToBeRemoved.length > 0) {
+        log.info(
+          'Ignoring file with unsupported extension %s and %d references will be removed: %o',
+          element.value[PATH],
+          referencesToBeRemoved.length,
+          referencesToBeRemoved,
+        )
+      }
+      skippedFileExtensions.add(osPath.extname(element.value[PATH]))
+    }
     getAndLogReferencesDiff({
       newReferences: foundReferences,
       existingReferences: semanticReferences,
@@ -245,6 +264,7 @@ const replaceReferenceValues = async (
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
   config: NetsuiteConfig,
+  skippedFileExtensions: Set<string>,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -292,8 +312,14 @@ const replaceReferenceValues = async (
   })
 
   const suiteScriptReferences =
-    isFileCabinetInstance(element) && isFileInstance(element) && hasValidJSExtension(element.value[PATH])
-      ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds, config)
+    isFileCabinetInstance(element) && isFileInstance(element)
+      ? await getSuiteScriptReferences(
+          element,
+          serviceIdToElemID,
+          customRecordFieldsToServiceIds,
+          config,
+          skippedFileExtensions,
+        )
       : []
 
   extendGeneratedDependencies(
@@ -357,6 +383,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, cha
       createCustomRecordFieldsToElemID(elements),
       await createElementsSourceCustomRecordFieldsToElemID(elementsSourceIndex, isPartial),
     )
+    const skippedFileExtensions = new Set<string>()
     await awu(elements)
       .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
       .forEach(async element => {
@@ -365,9 +392,13 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, cha
           serviceIdToElemID,
           customRecordFieldsToServiceIds,
           config,
+          skippedFileExtensions,
         )
         applyValuesAndAnnotationsToElement(element, newElement)
       })
+    if (skippedFileExtensions.size > 0) {
+      log.info('Ignored files with unsupported extensions: %o', Array.from(skippedFileExtensions))
+    }
   },
   preDeploy: async changes => {
     if (!changesGroupId || !isSdfCreateOrUpdateGroupId(changesGroupId)) {

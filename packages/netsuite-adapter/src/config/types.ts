@@ -111,7 +111,8 @@ export type FetchParams = {
   resolveAccountSpecificValues?: boolean
   // SALTO-6145: should be removed
   forceFileCabinetExclude?: boolean
-  parseSuiteScripts?: boolean
+  calculateNewReferencesInSuiteScripts?: boolean
+  findReferencesInFilesWithExtension?: string[]
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -127,7 +128,8 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
   forceFileCabinetExclude: 'forceFileCabinetExclude',
-  parseSuiteScripts: 'parseSuiteScripts',
+  calculateNewReferencesInSuiteScripts: 'calculateNewReferencesInSuiteScripts',
+  findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -570,7 +572,8 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
     forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
-    parseSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
+    calculateNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
+    findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

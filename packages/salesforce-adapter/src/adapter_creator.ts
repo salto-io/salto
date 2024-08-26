@@ -230,13 +230,14 @@ export type SalesforceAdapterDeployOptions = DeployOptions & {
   progressReporter: DeployProgressReporter
 }
 
-export const createDeployProgressReporter = (
+export const createDeployProgressReporter = async (
   progressReporter: ProgressReporter,
-  baseUrl?: URL,
-): DeployProgressReporter => {
+  client: SalesforceClient,
+): Promise<DeployProgressReporter> => {
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
+  const baseUrl = await client.getUrl()
 
   const linkToSalesforce = ({ id, checkOnly }: DeployResult): string => {
     if (!baseUrl) {
@@ -289,7 +290,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
-    let deployProgressReporter: DeployProgressReporter | undefined
+    let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -317,21 +318,21 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporter =
-          deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl())
+        deployProgressReporterPromise =
+          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.deploy({
           ...opts,
-          progressReporter: deployProgressReporter,
+          progressReporter: await deployProgressReporterPromise,
         })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporter =
-          deployProgressReporter ?? createDeployProgressReporter(opts.progressReporter, await client.getUrl())
+        deployProgressReporterPromise =
+          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.validate({
           ...opts,
-          progressReporter: deployProgressReporter,
+          progressReporter: await deployProgressReporterPromise,
         })
       },
 

@@ -175,6 +175,7 @@ export const traverseRequestsAsync: (
   customEntryExtractor?: PageEntriesExtractor,
 ) => GetAllItemsFunc = (paginationFunc, extractPageEntries, customEntryExtractor) =>
   async function* getPages({ client, pageSize, getParams }) {
+    const isAllowedFailure = getParams.allowFailure ?? false
     const usedParams = new Set<string>()
     const promisesQueue: PromisesQueue = new PromisesQueue()
     let numResults = 0
@@ -201,6 +202,12 @@ export const traverseRequestsAsync: (
         // avoid leaking promises
         // eslint-disable-next-line no-await-in-loop
         await promisesQueue.clear()
+        if (isAllowedFailure) {
+          log.error(
+            `Failed to get the page starting at ${numResults} for endpoint ${getParams.url} with error: ${e.message}`,
+          )
+          return
+        }
         throw e
       }
     }

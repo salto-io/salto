@@ -10,7 +10,7 @@ import { definitions, deployment } from '@salto-io/adapter-components'
 import { AdditionalAction, ClientOptions } from '../../types'
 import { DeployCustomDefinitions } from './types'
 import { createEntraCustomizations } from '../entra/deploy'
-import { omitReadOnlyFields } from './utils'
+import { defaultAdjust, omitReadOnlyFields } from './utils'
 import { createIntuneCustomizations } from '../intune/deploy'
 
 const createCustomizations = (): DeployCustomDefinitions => {
@@ -36,7 +36,7 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
           request: {
             context: deployment.helpers.DEFAULT_CONTEXT,
             transformation: {
-              adjust: omitReadOnlyFields,
+              adjust: defaultAdjust,
             },
           },
           condition: {

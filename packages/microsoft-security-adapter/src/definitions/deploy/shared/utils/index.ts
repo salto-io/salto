@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export { omitReadOnlyFields, omitReadOnlyFieldsWrapper } from './read_only_fields'
+export { omitReadOnlyFields } from './read_only_fields'
 export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForDeploy } from './path_adjustment'
 export { createCustomConditionCheckChangesInFields } from './condition_changes_in_fields'
+export { defaultAdjust, adjustWrapper } from './adjust_wrapper'

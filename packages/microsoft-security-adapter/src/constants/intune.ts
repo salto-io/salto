@@ -31,6 +31,7 @@ export const APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME = toIntuneTypeName(
 export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeName(
   'applicationConfigurationManagedDevice',
 )
+export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('deviceConfiguration')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(

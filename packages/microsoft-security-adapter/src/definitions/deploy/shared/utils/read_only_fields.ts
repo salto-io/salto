@@ -14,7 +14,6 @@ import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
 } from '../../../../change_validators'
 import { AdjustFunctionSingle as AdjustFunctionSingleWithContext } from '../types'
-import { AdjustFunctionSingle } from '../../../fetch/shared/types'
 
 /*
  * Omit read-only fields from the value, to avoid errors when trying to deploy them.
@@ -32,26 +31,4 @@ export const omitReadOnlyFields: AdjustFunctionSingleWithContext = async ({ type
     return { value }
   }
   return { value: _.omit(value, readOnlyFieldsToOmit) }
-}
-
-/*
- * Adjust the value of the object using the provided adjust function, and then omit read-only fields from the result.
- */
-export const omitReadOnlyFieldsWrapper: (
-  adjust: AdjustFunctionSingle | AdjustFunctionSingleWithContext,
-) => AdjustFunctionSingleWithContext = adjust => async args => {
-  const result = await adjust(args)
-  return {
-    ...args,
-    value: (
-      await omitReadOnlyFields({
-        ...args,
-        ...result,
-        context: {
-          ...args.context,
-          ...result.context,
-        },
-      })
-    ).value,
-  }
 }

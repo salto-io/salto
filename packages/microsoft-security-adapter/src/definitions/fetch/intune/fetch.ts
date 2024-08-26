@@ -21,6 +21,7 @@ const {
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  DEVICE_CONFIGURATION_TYPE_NAME,
 
   SERVICE_BASE_URL,
 } = intuneConstants
@@ -127,6 +128,33 @@ const graphBetaCustomizations: FetchCustomizations = {
         serviceUrl: {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Apps/AppConfigPolicySettingsMenu/~/2/appConfigPolicyId/{id}',
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [DEVICE_CONFIGURATION_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/deviceConfigurations',
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version', 'supportsScopeTags'],
+          adjust: odataType.transformOdataTypeField('fetch'),
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: `https://intune.microsoft.com/#view/Microsoft_Intune_DeviceSettings/PolicySummaryReportBlade/policyId/{id}/policyName/${NAME_ID_FIELD.fieldName}/policyJourneyState~/0/policyType~/90/isAssigned~/{isAssigned}`,
         },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,

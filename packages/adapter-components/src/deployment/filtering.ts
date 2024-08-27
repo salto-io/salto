@@ -79,7 +79,8 @@ export const transformRemovedValuesToNull = ({
   applyToPath?: string[]
   skipSubFields?: boolean
 }): ModificationChange<InstanceElement> => {
-  const { before, after } = change.data
+  const { before, after: afterOriginal } = change.data
+  const after = afterOriginal.clone()
   const elemId = applyToPath
     ? getChangeData(change).elemID.createNestedID(...applyToPath)
     : getChangeData(change).elemID
@@ -103,5 +104,11 @@ export const transformRemovedValuesToNull = ({
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return change
+  return {
+    ...change,
+    data: {
+      before,
+      after,
+    },
+  }
 }

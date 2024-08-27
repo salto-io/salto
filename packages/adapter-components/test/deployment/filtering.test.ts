@@ -128,6 +128,15 @@ describe('transformRemovedValuesToNull', () => {
     })
   })
 
+  it('should not modify the original change', () => {
+    const change = toChange({ before, after }) as ModificationChange<InstanceElement>
+    const result = transformRemovedValuesToNull({ change })
+    expect(change.data.before.value).toEqual(before.value)
+    expect(change.data.after.value).toEqual(after.value)
+    expect(result.data.before.value).toEqual(before.value)
+    expect(result.data.after.value).not.toEqual(after.value)
+  })
+
   it('should only transform the values in relevant path', () => {
     const change = toChange({ before, after }) as ModificationChange<InstanceElement>
     const result = transformRemovedValuesToNull({ change, applyToPath: ['nested1', 'nested2'] })

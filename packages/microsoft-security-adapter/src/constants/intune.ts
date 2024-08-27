@@ -24,6 +24,9 @@ export const APPS_FIELD_NAME = 'apps'
 export const ENCODED_SETTING_XML_FIELD_NAME = 'encodedSettingXml'
 export const PAYLOAD_JSON_FIELD_NAME = 'payloadJson'
 
+// DeviceConfigurationSettingCatalog fields
+export const SETTINGS_FIELD_NAME = 'settings'
+
 /* Type names */
 // Top level
 export const APPLICATION_TYPE_NAME = toIntuneTypeName('application')
@@ -32,11 +35,16 @@ export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeNa
   'applicationConfigurationManagedDevice',
 )
 export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('deviceConfiguration')
+export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('deviceConfigurationSettingCatalog')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPS_FIELD_NAME,
+)
+export const DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME = recursiveNestedTypeName(
+  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+  SETTINGS_FIELD_NAME,
 )
 
 // Urls

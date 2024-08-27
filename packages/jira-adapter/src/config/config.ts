@@ -149,7 +149,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     boardColumnRetry: 5,
     logging: {
       responseStrategies: [
-        { pattern: '^\\/rest\\/greenhopper\\/1.0\\/rapidviewconfig\\/estimation', numItems: 10, strategy: 'omit' },
+        { pattern: '^\\/rest\\/greenhopper\\/1.0\\/rapidviewconfig\\/estimation', numItems: 1, strategy: 'omit' },
         { pattern: '^\\/rest\\/agile\\/1.0\\/board/.*\\/configuration', numItems: 50, strategy: 'omit' },
         { pattern: '^\\/rest\\/api\\/2\\/user\\/search', numItems: 10, strategy: 'truncate' },
         { size: 100000, strategy: 'truncate' },

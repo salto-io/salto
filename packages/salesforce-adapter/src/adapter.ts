@@ -18,12 +18,10 @@ import {
   AdapterOperations,
   DeployResult,
   FetchOptions,
-  DeployOptions,
   ReadOnlyElementsSource,
   ElemID,
   PartialFetchData,
   Element,
-  ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -164,6 +162,7 @@ import {
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef } from './client/custom_list_funcs'
+import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -430,7 +429,12 @@ type CreateFiltersRunnerParams = {
   contextOverrides?: Partial<FilterContext>
 }
 
-export default class SalesforceAdapter implements AdapterOperations {
+type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
+  deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
+  validate: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
+}
+
+export default class SalesforceAdapter implements SalesforceAdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
@@ -624,7 +628,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async deployOrValidate(
-    { changeGroup, progressReporter }: DeployOptions,
+    { changeGroup, progressReporter }: SalesforceAdapterDeployOptions,
     checkOnly: boolean,
   ): Promise<DeployResult> {
     const fetchParams = this.userConfig.fetch ?? {}
@@ -670,15 +674,13 @@ export default class SalesforceAdapter implements AdapterOperations {
         changeGroup.groupID,
         fetchProfile.dataManagement,
       )
+      progressReporter.reportDataProgress(deployResult.appliedChanges.length)
     } else {
-      const nullProgressReporter: ProgressReporter = {
-        reportProgress: () => {},
-      }
       deployResult = await deployMetadata(
         resolvedChanges,
         this.client,
         this.nestedMetadataTypes,
-        progressReporter ?? nullProgressReporter,
+        progressReporter,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,
@@ -702,7 +704,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  async deploy(deployOptions: DeployOptions): Promise<DeployResult> {
+  async deploy(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     // Check old configuration flag for backwards compatibility (SALTO-2700)
     const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
     const result = await this.deployOrValidate(deployOptions, checkOnly)
@@ -717,7 +719,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     return result
   }
 
-  async validate(deployOptions: DeployOptions): Promise<DeployResult> {
+  async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
   }
 

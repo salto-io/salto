@@ -16,7 +16,6 @@ import {
   ChangeGroup,
   getChangeData,
   DeployResult,
-  ProgressReporter,
 } from '@salto-io/adapter-api'
 import { filter, findElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
@@ -35,6 +34,7 @@ import {
 } from '../src/transformers/transformer'
 import { fetchMetadataType } from '../src/fetch'
 import { defaultFilterContext } from '../test/utils'
+import { DeployProgressReporter } from '../src/adapter_creator'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -183,8 +183,10 @@ export const removeElementIfAlreadyExists = async (
   }
 }
 
-export const nullProgressReporter: ProgressReporter = {
+export const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => {},
+  reportMetadataProgress: () => {},
+  reportDataProgress: () => {},
 }
 
 export const createElement = async <T extends InstanceElement | ObjectType>(

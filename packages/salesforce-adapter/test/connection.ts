@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import {
   IdentityInfo,
@@ -32,6 +32,8 @@ import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailu
 import { createEncodedZipContent, ZipFile } from './utils'
 
 export const MOCK_INSTANCE_URL = 'https://url.com/'
+
+const { sleep } = promises.timeout
 
 export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> & Partial<MetadataObject>
 export const mockDescribeResult = (
@@ -259,16 +261,21 @@ export const mockDeployResultInProgress = ({
   errorMessage: undefined,
 })
 
-export const mockDeployResult = (params: GetDeployResultParams): DeployResultLocator<DeployResult> => {
+export const mockDeployResult = (
+  params: GetDeployResultParams,
+  completionDelayMs?: number,
+): DeployResultLocator<DeployResult> => {
   const mockParams: MockDeployResultParams = _.defaults(params, {
     id: _.uniqueId(),
   })
   return {
-    complete: jest.fn().mockResolvedValue(mockDeployResultComplete(mockParams)),
-    check: jest
-      .fn()
-      .mockResolvedValue(mockDeployResultComplete(mockParams))
-      .mockResolvedValueOnce(mockDeployResultInProgress(mockParams)),
+    complete: jest.fn().mockImplementation(async () => {
+      if (completionDelayMs !== undefined) {
+        await sleep(completionDelayMs)
+      }
+      return mockDeployResultComplete(mockParams)
+    }),
+    check: jest.fn().mockResolvedValue(mockDeployResultInProgress(mockParams)),
   } as unknown as DeployResultLocator<DeployResult>
 }
 
@@ -450,7 +457,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     url: '',
   })),
   metadata: {
-    pollInterval: 1000,
+    pollInterval: 100,
     pollTimeout: 10000,
     checkDeployStatus: mockFunction<Metadata['checkDeployStatus']>().mockResolvedValue(
       mockDeployResultInProgress({ id: _.uniqueId() }),

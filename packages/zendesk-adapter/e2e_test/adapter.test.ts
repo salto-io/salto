@@ -42,7 +42,7 @@ import {
   naclCase,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as fs from 'fs'
@@ -147,14 +147,20 @@ const createInstanceElement = ({
     ...mockDefaultValues[type],
     ...valuesOverride,
   }
-  const transformationConfig = configUtils.getConfigWithDefault(
+  const { idFields, nameMapping } = configUtils.getConfigWithDefault(
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[type].transformation ?? {},
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
   )
 
-  const nameParts = transformationConfig.idFields.map(field => _.get(instValues, field))
+  const nameWithMapping = fetchUtils.element.getNameMapping({
+    name: idFields
+      .map(field => _.get(instValues, field))
+      .map(String)
+      .join('_'),
+    nameMapping,
+  })
   return new InstanceElement(
-    name ?? naclCase(nameParts.map(String).join('_')),
+    name ?? naclCase(nameWithMapping),
     new ObjectType({ elemID: new ElemID(ZENDESK, type), fields }),
     instValues,
     undefined,

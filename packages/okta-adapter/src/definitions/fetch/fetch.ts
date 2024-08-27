@@ -235,13 +235,13 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/groups',
-          queryArgs: { expand: 'stats' },
+          queryArgs: includeGroupMemberships ? { expand: 'stats' } : {},
         },
         transformation: {
           adjust: async ({ value }) => ({
             value: {
               ...(_.isObject(value) ? { ..._.omit(value, '_embedded') } : {}),
-              hasUsersAssigned: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
+              recurseIntoGroupMembers: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
             },
           }),
         },
@@ -265,7 +265,7 @@ const createCustomizations = ({
                   {
                     // only recurse into groups with assigned users
                     match: ['true'],
-                    fromField: 'hasUsersAssigned',
+                    fromField: 'recurseIntoGroupMembers',
                   },
                 ],
               },
@@ -284,7 +284,7 @@ const createCustomizations = ({
         source: { fieldType: 'Group__source' },
         _links: { omit: true },
         lastMembershipUpdated: { omit: true },
-        hasUsersAssigned: { omit: true },
+        recurseIntoGroupMembers: { omit: true },
         [GROUP_MEMBERSHIP_TYPE_NAME]: {
           standalone: {
             typeName: GROUP_MEMBERSHIP_TYPE_NAME,
@@ -1319,7 +1319,7 @@ export const createFetchDefinitions = ({
       default: {
         resource: {
           serviceIDFields: ['id'],
-          onError: fetchUtils.errors.getInsufficientPermissionsError,
+          onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
           topLevel: {

@@ -41,7 +41,7 @@ fi
 BUMP=${1:-patch}
 
 yarn lerna-version -y $BUMP
-yarn --immutable
+yarn
 
 DIRTY_FILES=$(git diff-index --name-only HEAD)
 

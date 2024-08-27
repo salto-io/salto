@@ -25,7 +25,10 @@ const createCustomizations = (): DeployCustomDefinitions => {
   })
 }
 
-export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<never, ClientOptions> => ({
+export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<
+  AdditionalAction,
+  ClientOptions
+> => ({
   instances: {
     default: {
       requestsByAction: {

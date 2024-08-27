@@ -18,13 +18,13 @@ import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } fr
 const { isDefined } = values
 const log = logger(module)
 
-const typesWithFieldsWithFormulaReferences = ['Flow']
-
-const referenceFieldsWithFormulaIdentifiers: Record<string, string> = {
-  FlowCondition: 'leftValueReference',
-  FlowTestCondition: 'leftValueReference',
-  FlowTestParameter: 'leftValueReference',
-  FlowAssignmentItem: 'assignToReference',
+const referenceFieldsWithFormulaIdentifiers: Record<string, Record<string, string>> = {
+  Flow: {
+    FlowCondition: 'leftValueReference',
+    FlowTestCondition: 'leftValueReference',
+    FlowTestParameter: 'leftValueReference',
+    FlowAssignmentItem: 'assignToReference',
+  },
 }
 
 const referenceInfoFromFieldValue = (
@@ -72,8 +72,9 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
       if (!field || !path) {
         return value
       }
+      const topLevelTypeName = apiNameSync(instance.getTypeSync()) ?? ''
       const typeName = apiNameSync(field.parent) ?? ''
-      const expectedFieldName = referenceFieldsWithFormulaIdentifiers[typeName]
+      const expectedFieldName = referenceFieldsWithFormulaIdentifiers[topLevelTypeName]?.[typeName]
       if (field.name !== expectedFieldName) {
         return value
       }
@@ -85,7 +86,7 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
       return value
     }
 
-  const fetchedInstances = elements.filter(isInstanceOfTypeSync(...typesWithFieldsWithFormulaReferences))
+  const fetchedInstances = elements.filter(isInstanceOfTypeSync(...Object.keys(referenceFieldsWithFormulaIdentifiers)))
   fetchedInstances.forEach(instance => {
     instance.value =
       transformValuesSync({

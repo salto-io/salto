@@ -35,6 +35,7 @@ const isMissingUserPermissionError = (err: Error): boolean =>
 const paginateUsers = async (
   paginator: clientUtils.Paginator,
   isDataCenter: boolean,
+  allowUserCallFailure: boolean,
 ): Promise<clientUtils.ResponseValue[][]> => {
   const paginationArgs: clientUtils.ClientGetWithPaginationParams = isDataCenter
     ? {
@@ -45,6 +46,7 @@ const paginateUsers = async (
           username: '.',
         },
         pageSizeArgName: 'maxResults',
+        allowFailure: allowUserCallFailure,
       }
     : {
         url: '/rest/api/3/users/search',
@@ -53,6 +55,7 @@ const paginateUsers = async (
           maxResults: '1000',
         },
         pageSizeArgName: 'maxResults',
+        allowFailure: allowUserCallFailure,
       }
 
   const usersCallPromise = toArrayAsync(
@@ -105,13 +108,20 @@ const parseUserResponse = (response: UserResponse): UserInfo => ({
   displayName: response.displayName,
 })
 
-export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCenter: boolean): GetUserMapFunc => {
+export const getUserMapFuncCreator = (
+  paginator: clientUtils.Paginator,
+  isDataCenter: boolean,
+  allowUserCallFailure: boolean,
+): GetUserMapFunc => {
   let idMap: UserMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
   return async (): Promise<UserMap | undefined> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
-        usersCallPromise = log.timeDebug(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
+        usersCallPromise = log.timeDebug(
+          async () => paginateUsers(paginator, isDataCenter, allowUserCallFailure),
+          'users pagination',
+        )
       }
       try {
         idMap = Object.fromEntries(

@@ -120,6 +120,7 @@ export type OptionalFeatures = {
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
   improvedDataBrokenReferences?: boolean
+  sharingRulesMaps?: boolean
 }
 
 export type ChangeValidatorName =
@@ -195,7 +196,7 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profiles', 'managedElements', 'permisisonSets'] as const
+const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements'] as const
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>
@@ -816,6 +817,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
     flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
     improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
+    sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

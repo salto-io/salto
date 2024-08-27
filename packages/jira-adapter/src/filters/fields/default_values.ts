@@ -14,7 +14,6 @@ import {
   isAdditionOrModificationChange,
   isEqualValues,
   isObjectType,
-  isReferenceExpression,
   isRemovalChange,
   isRemovalOrModificationChange,
   ObjectType,
@@ -28,6 +27,7 @@ import {
   isResolvedReferenceExpression,
   resolvePath,
 } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
 import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
@@ -53,11 +53,11 @@ const resolveDefaultOption = (
     const optionIds = clonedInstance.value.defaultValue?.optionIds
     if (Array.isArray(optionIds)) {
       clonedInstance.value.defaultValue.optionIds = optionIds
-        .filter(isReferenceExpression)
         .filter(isResolvedReferenceExpression)
         .map(ref =>
           config.fetch.splitFieldContextOptions ? ref.value.value.id : resolvePath(clonedInstance, ref.elemID).id,
         )
+        .filter(values.isDefined)
     }
     return clonedInstance
   })

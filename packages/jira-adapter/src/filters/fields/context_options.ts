@@ -255,7 +255,7 @@ const updateContextOptions = async ({
   }
 }
 
-export const reorderContextOptions = async (options: Value[], client: JiraClient, baseUrl: string): Promise<void> => {
+export const deployOptionsOrder = async (options: Value[], client: JiraClient, baseUrl: string): Promise<void> => {
   const optionsGroups = _(options)
     .groupBy(option => option.optionId)
     .values()
@@ -285,7 +285,7 @@ export const reorderContextOptions = async (options: Value[], client: JiraClient
     .forEach(async body => client.put(body))
 }
 
-const reorderContextOptionsChange = async (
+const checkAndDeployOptionsOrderChanges = async (
   contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
   baseUrl: string,
@@ -302,7 +302,7 @@ const reorderContextOptionsChange = async (
   if (isEqualValues(beforeOptions, afterOptions)) {
     return
   }
-  await reorderContextOptions(afterOptions, client, baseUrl)
+  await deployOptionsOrder(afterOptions, client, baseUrl)
 }
 
 export const setContextOptions = async (
@@ -358,7 +358,7 @@ export const setContextOptions = async (
     numberOfAlreadyAddedOptions: addedWithoutParentId.length,
   })
 
-  await reorderContextOptionsChange(contextChange, client, url, elementsSource)
+  await checkAndDeployOptionsOrderChanges(contextChange, client, url, elementsSource)
 }
 
 export const setOptionTypeDeploymentAnnotations = async (fieldContextType: ObjectType): Promise<void> => {

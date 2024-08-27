@@ -14,12 +14,12 @@ import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
 import { application as applicationDeployUtils, appsConfiguration } from './utils'
 import { application, applicationConfiguration } from '../../../utils/intune'
-import { DEVICE_CONFIGURATION_TYPE_NAME } from '../../../constants/intune'
 
 const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  DEVICE_CONFIGURATION_TYPE_NAME,
 } = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {

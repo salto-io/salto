@@ -153,7 +153,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         isTopLevel: true,
         serviceUrl: {
           baseUrl: SERVICE_BASE_URL,
-          path: `https://intune.microsoft.com/#view/Microsoft_Intune_DeviceSettings/PolicySummaryReportBlade/policyId/{id}/policyName/${NAME_ID_FIELD.fieldName}/policyJourneyState~/0/policyType~/90/isAssigned~/{isAssigned}`,
+          path: `/#view/Microsoft_Intune_DeviceSettings/PolicySummaryReportBlade/policyId/{id}/policyName/${NAME_ID_FIELD.fieldName}/policyJourneyState~/0/policyType~/90/isAssigned~/{isAssigned}`,
         },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,

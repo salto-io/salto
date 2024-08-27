@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, ElemIDType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element, ElemID, ElemIDType, isObjectType } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { FormulaIdentifierInfo, IdentifierType } from '@salto-io/salesforce-formula-parser'
 import { logger } from '@salto-io/logging'
@@ -57,28 +57,36 @@ export const referencesFromIdentifiers = (typeInfos: FormulaIdentifierInfo[]): E
       ),
   )
 
-const isValidReference = async (elemId: ElemID, allElements: ReadOnlyElementsSource): Promise<boolean> => {
+const isValidReference = (elemId: ElemID, potentialReferenceTargets: Map<string, Element>): boolean => {
   if (elemId.idType === 'type' || elemId.idType === 'instance') {
-    return (await allElements.get(elemId)) !== undefined
+    return potentialReferenceTargets.has(elemId.getFullName())
   }
 
   // field
   const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
-  const typeElement = await allElements.get(typeElemId)
-  return typeElement !== undefined && typeElement.fields[elemId.name] !== undefined
+  const typeElement = potentialReferenceTargets.get(typeElemId.getFullName())
+  if (typeElement === undefined) {
+    // the reference is to a type that does not exist in the workspace, probably because we didn't fetch it
+    return false
+  }
+  if (!isObjectType(typeElement)) {
+    log.warn('ElemID typeName does not refer to a type: %s', elemId.getFullName())
+    return false
+  }
+  return typeElement.fields[elemId.name] !== undefined
 }
 
-export const referenceValidity = async (
+export const referenceValidity = (
   refElemId: ElemID,
   selfElemId: ElemID,
-  allElements: ReadOnlyElementsSource,
-): Promise<'valid' | 'omitted' | 'invalid'> => {
+  potentialReferenceTargets: Map<string, Element>,
+): 'valid' | 'omitted' | 'invalid' => {
   const isSelfReference = (elemId: ElemID): boolean => elemId.isEqual(selfElemId)
 
   if (isSelfReference(refElemId)) {
     return 'omitted'
   }
-  return (await isValidReference(refElemId, allElements)) ? 'valid' : 'invalid'
+  return isValidReference(refElemId, potentialReferenceTargets) ? 'valid' : 'invalid'
 }
 
 export const logInvalidReferences = (

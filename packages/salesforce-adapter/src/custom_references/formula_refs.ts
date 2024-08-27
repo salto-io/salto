@@ -5,16 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { Element, ElemID, Field, InstanceElement, ReferenceInfo, Value } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { WeakReferencesHandler } from '../types'
 import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
 import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } from '../filters/formula_utils'
 
-const { awu, groupByAsync } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 
@@ -27,19 +27,18 @@ const referenceFieldsWithFormulaIdentifiers: Record<string, string> = {
   FlowAssignmentItem: 'assignToReference',
 }
 
-const referenceInfoFromFieldValue = async (
+const referenceInfoFromFieldValue = (
   instance: InstanceElement,
   path: ElemID,
   field: Field,
   value: Value,
-  allElements: Element[],
-): Promise<ReferenceInfo | undefined> => {
-  const elmentsSource = buildElementsSourceFromElements(allElements)
+  potentialReferenceTargets: Map<string, Element>,
+): ReferenceInfo | undefined => {
   const topLevelParentInstanceElemId = field.elemID.createTopLevelParentID().parent
   const identifierInfo = parseFormulaIdentifier(value, topLevelParentInstanceElemId.typeName)
   const referenceElemIds = referencesFromIdentifiers(identifierInfo)
-  const referencesWithValidity = await groupByAsync(referenceElemIds, refElemId =>
-    referenceValidity(refElemId, topLevelParentInstanceElemId, elmentsSource),
+  const referencesWithValidity = _.groupBy(referenceElemIds, refElemId =>
+    referenceValidity(refElemId, topLevelParentInstanceElemId, potentialReferenceTargets),
   )
 
   logInvalidReferences(topLevelParentInstanceElemId, referencesWithValidity.invalid ?? [], value, [identifierInfo])
@@ -65,10 +64,11 @@ const referenceInfoFromFieldValue = async (
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
+  const potentialReferenceTargets = new Map<string, Element>(elements.map(e => [e.elemID.getFullName(), e]))
   const references: (ReferenceInfo | undefined)[] = []
   const transformInstanceFieldsToReference =
-    (instance: InstanceElement): TransformFunc =>
-    async ({ value, field, path }) => {
+    (instance: InstanceElement): TransformFuncSync =>
+    ({ value, field, path }) => {
       if (!field || !path) {
         return value
       }
@@ -78,7 +78,7 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
         return value
       }
       try {
-        references.push(await referenceInfoFromFieldValue(instance, path, field, value, elements))
+        references.push(referenceInfoFromFieldValue(instance, path, field, value, potentialReferenceTargets))
       } catch (e) {
         log.warn('Error when extracting references from `%s`: %s', value, e)
       }
@@ -86,14 +86,14 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
     }
 
   const fetchedInstances = elements.filter(isInstanceOfTypeSync(...typesWithFieldsWithFormulaReferences))
-  await awu(fetchedInstances).forEach(async instance => {
+  fetchedInstances.forEach(instance => {
     instance.value =
-      (await transformValues({
+      transformValuesSync({
         values: instance.value,
         type: instance.getTypeSync(),
         pathID: instance.elemID,
         transformFunc: transformInstanceFieldsToReference(instance),
-      })) ?? {}
+      }) ?? {}
   })
 
   return references.filter(isDefined)

@@ -8,7 +8,7 @@
 
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { parseFormulaIdentifier, extractFormulaIdentifiers } from '@salto-io/salesforce-formula-parser'
 import { LocalFilterCreator } from '../filter'
@@ -20,7 +20,10 @@ import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } fr
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
 
-const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
+const addDependenciesAnnotation = async (
+  field: Field,
+  potentialReferenceTargets: Map<string, Element>,
+): Promise<void> => {
   const formula = field.annotations[FORMULA]
   if (formula === undefined) {
     log.error(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
@@ -59,7 +62,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     }
 
     const referencesWithValidity = await groupByAsync(references, refElemId =>
-      referenceValidity(refElemId, field.parent.elemID, allElements),
+      referenceValidity(refElemId, field.parent.elemID, potentialReferenceTargets),
     )
 
     logInvalidReferences(field.elemID, referencesWithValidity.invalid ?? [], formula, identifiersInfo)
@@ -94,8 +97,12 @@ const filter: LocalFilterCreator = ({ config }) => ({
         .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
         .filter(isFormulaField)
         .toArray()
-      const allElements = buildElementsSourceForFetch(fetchedElements, config)
-      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
+      const allElements = await buildElementsSourceForFetch(fetchedElements, config).getAll()
+      const elemIdToElement = await awu(allElements)
+        .map(e => [e.elemID.getFullName(), e] as [string, Element])
+        .toArray()
+      const potentialReferenceTargets = new Map<string, Element>(elemIdToElement)
+      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, potentialReferenceTargets)))
     },
   }),
 })

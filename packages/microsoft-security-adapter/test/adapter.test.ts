@@ -274,18 +274,6 @@ describe('Microsoft Security adapter', () => {
                 ]),
               )
             })
-
-            it('should parse the odata type field correctly', async () => {
-              const odataTypes = intuneDeviceConfigurations.map(e => e.value.intune_deviceConfiguration_type)
-              expect(odataTypes).toEqual(
-                expect.arrayContaining([
-                  'iosEasEmailProfileConfiguration',
-                  'windowsWifiEnterpriseEAPConfiguration',
-                  'windows10EasEmailProfileConfiguration',
-                  'windowsHealthMonitoringConfiguration',
-                ]),
-              )
-            })
           })
         })
       })

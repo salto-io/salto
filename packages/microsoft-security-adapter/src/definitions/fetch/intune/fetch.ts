@@ -142,7 +142,6 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           omit: ['version', 'supportsScopeTags'],
-          adjust: odataType.transformOdataTypeField('fetch'),
         },
       },
     ],

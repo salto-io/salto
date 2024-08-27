@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { concatAdjustFunctions, deployment } from '@salto-io/adapter-components'
+import { concatAdjustFunctions, deployment, fetch } from '@salto-io/adapter-components'
 import { getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../types'
@@ -26,7 +26,7 @@ const adjustRemovedValuesToNull: AdjustFunctionSingle = async ({ typeName, value
       ...context,
       change: adjustedChange,
     },
-    value: getChangeData(adjustedChange).value,
+    value: fetch.element.recursiveNaclCase(getChangeData(adjustedChange).value, true),
   }
 }
 

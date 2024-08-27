@@ -182,13 +182,6 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
   },
   [DEVICE_CONFIGURATION_TYPE_NAME]: {
     requestsByAction: {
-      default: {
-        request: {
-          transformation: {
-            adjust: adjustWrapper(odataType.transformOdataTypeField('deploy')),
-          },
-        },
-      },
       customizations: {
         add: [
           {

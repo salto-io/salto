@@ -7,6 +7,7 @@
  */
 
 import { Change, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { fetch } from '@salto-io/adapter-components'
 import { adjustWrapper, defaultAdjust } from '../../../../../src/definitions/deploy/shared/utils'
 import * as AdjustWrapperModule from '../../../../../src/definitions/deploy/shared/utils/adjust_wrapper'
 import { contextMock, objectTypeMock } from '../../../../mocks'
@@ -24,19 +25,30 @@ describe('adjust wrapper utils', () => {
 
     it('should set removed fields as null and remove read-only fields', async () => {
       const changeWithRemovedFields = toChange({
-        before: new InstanceElement('test', objectTypeMock, { a: 1, b: 2 }),
-        after: new InstanceElement('test', objectTypeMock, { a: 1 }),
+        before: new InstanceElement('test', objectTypeMock, {
+          a: 1,
+          b: 2,
+          'nacl_cased@v': 'This is different in the change vs in the value',
+        }),
+        after: new InstanceElement('test', objectTypeMock, {
+          a: 1,
+          'nacl_cased@v': 'This is different in the change vs in the value',
+        }),
       })
 
       const result = await defaultAdjust({
-        value: getChangeData(changeWithRemovedFields).value,
+        value: fetch.element.recursiveNaclCase(getChangeData(changeWithRemovedFields).value, true),
         typeName: objectTypeMock.elemID.typeName,
         context: { ...contextMock, change: changeWithRemovedFields },
       })
 
-      expect(result.value).toEqual({ a: 1, b: null })
+      expect(result.value).toEqual({ a: 1, b: null, 'nacl.cased': 'This is different in the change vs in the value' })
       expect(result.context?.change).toBeDefined()
-      expect(getChangeData(result.context?.change as Change<InstanceElement>).value).toEqual({ a: 1, b: null })
+      expect(getChangeData(result.context?.change as Change<InstanceElement>).value).toEqual({
+        a: 1,
+        b: null,
+        'nacl_cased@v': 'This is different in the change vs in the value',
+      })
       expect(omitReadOnlyFieldsMock).toHaveBeenCalled()
     })
   })

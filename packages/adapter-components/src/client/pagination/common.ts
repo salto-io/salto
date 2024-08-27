@@ -18,6 +18,7 @@ export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
   pageSizeArgName?: string
+  allowFailure?: boolean
 }
 
 export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]

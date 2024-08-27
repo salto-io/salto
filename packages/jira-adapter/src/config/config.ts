@@ -70,6 +70,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
+  allowUserCallFailure?: boolean
   enableAssetsObjectFieldConfiguration?: boolean
   automationPageSize?: number
   splitFieldContextOptions?: boolean
@@ -156,6 +157,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: true,
+    allowUserCallFailure: false,
     enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {
@@ -362,6 +364,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableJsmExperimental: { refType: BuiltinTypes.BOOLEAN },
     enableJSMPremium: { refType: BuiltinTypes.BOOLEAN },
     removeDuplicateProjectRoles: { refType: BuiltinTypes.BOOLEAN },
+    allowUserCallFailure: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
@@ -423,6 +426,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
       'fetch.enableNewWorkflowAPI',
+      'fetch.allowUserCallFailure',
       'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
       'deploy.taskMaxRetries',

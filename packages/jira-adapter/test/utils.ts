@@ -53,6 +53,7 @@ type ClientWithMockConnection = {
 export const mockClient = (
   isDataCenter = false,
   mockedCloudId: string | null = DEFAULT_CLOUD_ID,
+  allowUserCallFailure = false,
 ): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
@@ -75,8 +76,8 @@ export const mockClient = (
     client.getCloudId = async () => mockedCloudId
   }
 
-  const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client })
-  const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
+  const paginator = clientUtils.createPaginator({ paginationFuncCreator: paginate, client, asyncRun: true })
+  const getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter, allowUserCallFailure)
   const scriptRunnerClient = new ScriptRunnerClient({
     credentials: {},
     isDataCenter,

@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
 import {
   BuiltinTypes,
   ElemID,
@@ -42,6 +41,7 @@ const customObjectTypeWithFields = (name: string, fields: Record<string, Primiti
 
 describe('Formula dependencies', () => {
   let filter: FilterWith<'onFetch'>
+
   let typeWithFormula: ObjectType
   let referredTypes: ObjectType[]
   let referredInstances: InstanceElement[]
@@ -49,7 +49,9 @@ describe('Formula dependencies', () => {
   beforeAll(() => {
     const config = { ...defaultFilterContext }
     filter = formulaDepsFilter({ config }) as FilterWith<'onFetch'>
+  })
 
+  beforeAll(() => {
     typeWithFormula = createCustomObjectType('Account', {
       fields: {
         someField__c: {
@@ -92,6 +94,7 @@ describe('Formula dependencies', () => {
       Enable_After_Insert__c: BuiltinTypes.BOOLEAN,
       DeveloperName: BuiltinTypes.STRING,
     })
+
     referredTypes = [
       customObjectTypeWithFields('Contact', {
         AccountId: BuiltinTypes.SERVICE_ID_NUMBER,
@@ -138,6 +141,7 @@ describe('Formula dependencies', () => {
     referredInstances = [
       createInstanceElement({ fullName: 'Details' }, mockTypes.CustomLabel),
       createInstanceElement({ fullName: 'Trigger_Context_Status.by_class' }, someCustomMetadataType),
+
       createInstanceElement({ fullName: 'Trigger_Context_Status.by_handler' }, someCustomMetadataType),
     ]
   })
@@ -213,8 +217,8 @@ describe('Formula dependencies', () => {
       const elements = [typeUnderTest, ...referredTypes, ...referredInstances]
       typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] =
         `IF( RecordType.Name = 'New Sale', 'Onboarding - New',
-        IF( RecordType.Name = 'Upgrade', 'Onboarding - Upgrade',
-          IF( RecordType.Name = 'Add-On', 'Onboarding - Add-On', "")))`
+          IF( RecordType.Name = 'Upgrade', 'Onboarding - Upgrade',
+            IF( RecordType.Name = 'Add-On', 'Onboarding - Add-On', "")))`
       await filter.onFetch(elements)
       const deps =
         // eslint-disable-next-line no-underscore-dangle
@@ -228,18 +232,18 @@ describe('Formula dependencies', () => {
 
   describe('Complex formulas', () => {
     const standardFormula = `IF(Owner.Contact.CreatedBy.Manager.Profile.Id = "03d3h000000khEQ",TRUE,false)
-    && IF(($CustomMetadata.Trigger_Context_Status__mdt.by_handler.Enable_After_Insert__c ||
-      $CustomMetadata.Trigger_Context_Status__mdt.by_class.DeveloperName = "Default"),true,FALSE)
-    && IF( ($Label.Details = "Value" || Opportunity.Account.Parent.Parent.Parent.LastModifiedBy.Contact.AssistantName = "Marie"), true ,false)
-    && IF( (Opportunity__r.Related_Asset__r.Name), true ,false)    
-    && IF ( ( $ObjectType.Center__c.Fields.My_text_field__c = "My_Text_Field__c") ,true,false)    
-    && IF ( ( $ObjectType.SRM_API_Metadata_Client_Setting__mdt.Fields.CreatedDate  = "My_Text_Field__c") ,true,false)    
-    && IF ( ( TEXT($Organization.UiSkin) = "lex" ) ,true,false)    
-    && IF ( ( $Setup.Customer_Support_Setting__c.Email_Address__c = "test@gmail.com" ) ,true,false)    
-    && IF ( (  $User.CompanyName = "acme" ) ,true,false)`
+      && IF(($CustomMetadata.Trigger_Context_Status__mdt.by_handler.Enable_After_Insert__c ||
+        $CustomMetadata.Trigger_Context_Status__mdt.by_class.DeveloperName = "Default"),true,FALSE)
+      && IF( ($Label.Details = "Value" || Opportunity.Account.Parent.Parent.Parent.LastModifiedBy.Contact.AssistantName = "Marie"), true ,false)
+      && IF( (Opportunity__r.Related_Asset__r.Name), true ,false)    
+      && IF ( ( $ObjectType.Center__c.Fields.My_text_field__c = "My_Text_Field__c") ,true,false)    
+      && IF ( ( $ObjectType.SRM_API_Metadata_Client_Setting__mdt.Fields.CreatedDate  = "My_Text_Field__c") ,true,false)    
+      && IF ( ( TEXT($Organization.UiSkin) = "lex" ) ,true,false)    
+      && IF ( ( $Setup.Customer_Support_Setting__c.Email_Address__c = "test@gmail.com" ) ,true,false)    
+      && IF ( (  $User.CompanyName = "acme" ) ,true,false)`
     const processBuilderFormula = `IF([Account].Owner.Manager.Contact.Account.AccountNumber  = "text" ,TRUE,FALSE)
-        || IF([Account].original_lead__r.ConvertedAccountId != "",TRUE,FALSE)
-        || IF($CustomMetadata.Trigger_Context_Status__mdt.by_class.Enable_After_Delete__c , TRUE,FALse)`
+          || IF([Account].original_lead__r.ConvertedAccountId != "",TRUE,FALSE)
+          || IF($CustomMetadata.Trigger_Context_Status__mdt.by_class.Enable_After_Delete__c , TRUE,FALse)`
     const standardFormulaExpectedRefs = [
       'salesforce.Account.field.LastModifiedById',
       'salesforce.Account.field.OpportunityId',
@@ -392,17 +396,17 @@ describe('Formula dependencies', () => {
   })
   describe('Deeply nested formulas', () => {
     const deeplyNestedFormula = `
-    IF(INCLUDES( COVID19_Status__c  ,'Fraud evaluation on hold'),'Negative',
-      IF(INCLUDES(COVID19_Status__c,'Volume increase'),'Positive',
-        IF(INCLUDES(COVID19_Status__c,'Volume decrease'),'Negative',
-          IF(INCLUDES(COVID19_Status__c,'Not affected'),'Neutral',
-            IF(INCLUDES(COVID19_Status__c,'Staff changes/challenges'),'Negative',
-              IF(INCLUDES(COVID19_Status__c,'Have manual review'),'Neutral',
-                IF(INCLUDES(COVID19_Status__c,'Have Manual Review;Potential increase in chargebacks'),'Neutral',
-                  IF(INCLUDES(COVID19_Status__c,'Potential increase in Chargebacks'),'Positive',
-                    IF(INCLUDES(COVID19_Status__c,'Paused eCommerce operations'),'Negative',
-                      IF(INCLUDES(COVID19_Status__c,'Started ecomm operations'),'Positive',""))))))))))
-    `
+      IF(INCLUDES( COVID19_Status__c  ,'Fraud evaluation on hold'),'Negative',
+        IF(INCLUDES(COVID19_Status__c,'Volume increase'),'Positive',
+          IF(INCLUDES(COVID19_Status__c,'Volume decrease'),'Negative',
+            IF(INCLUDES(COVID19_Status__c,'Not affected'),'Neutral',
+              IF(INCLUDES(COVID19_Status__c,'Staff changes/challenges'),'Negative',
+                IF(INCLUDES(COVID19_Status__c,'Have manual review'),'Neutral',
+                  IF(INCLUDES(COVID19_Status__c,'Have Manual Review;Potential increase in chargebacks'),'Neutral',
+                    IF(INCLUDES(COVID19_Status__c,'Potential increase in Chargebacks'),'Positive',
+                      IF(INCLUDES(COVID19_Status__c,'Paused eCommerce operations'),'Negative',
+                        IF(INCLUDES(COVID19_Status__c,'Started ecomm operations'),'Positive',""))))))))))
+      `
     const typeWithDeeplyNestedFormula = createCustomObjectType('Account', {
       fields: {
         COVID19_Status__c: {

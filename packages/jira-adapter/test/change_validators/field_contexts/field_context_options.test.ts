@@ -54,7 +54,7 @@ describe('fieldContextOptionsValidator', () => {
     validator = fieldContextOptionsValidator(config)
     changes = []
   })
-  it('should return no errors when fiture flag is false', async () => {
+  it('should return no errors when feature flag is false', async () => {
     config.fetch.splitFieldContextOptions = false
     changes = [optionInstance, orderInstance].map(instance => toChange({ after: instance }))
     validator = fieldContextOptionsValidator(config)
@@ -97,7 +97,7 @@ describe('fieldContextOptionsValidator', () => {
         },
       ])
     })
-    it('should return an error for cascading changes', async () => {
+    it('should return an error for order of cascading options with wrong deletion', async () => {
       const cascadeOption = new InstanceElement('cascadeOption', optionType, {}, undefined, {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(optionInstance.elemID, optionInstance)],
       })

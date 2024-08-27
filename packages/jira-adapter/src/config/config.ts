@@ -270,6 +270,7 @@ export type ChangeValidatorName =
   | 'assetsObjectFieldConfigurationAql'
   | 'projectAssigneeType'
   | 'fieldContextDefaultValue'
+  | 'fieldContextOrderRemoval'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -337,6 +338,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
     projectAssigneeType: { refType: BuiltinTypes.BOOLEAN },
     fieldContextDefaultValue: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextOrderRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -14,7 +14,7 @@ import {
   isInstanceChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { JiraConfig } from '../../config/config'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -39,7 +39,7 @@ export const fieldContextDefaultValueValidator: (config: JiraConfig) => ChangeVa
     .map(getChangeData)
     .map(contextInstance => {
       const defaultCascadingOptionIdRef = contextInstance.value.defaultValue?.cascadingOptionId
-      if (!isReferenceExpression(defaultCascadingOptionIdRef)) {
+      if (!isResolvedReferenceExpression(defaultCascadingOptionIdRef)) {
         return undefined
       }
       const cascadingParent = getParent(defaultCascadingOptionIdRef.value)

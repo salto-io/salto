@@ -20,7 +20,7 @@ import {
   ModificationChange,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { JiraConfig } from '../../config/config'
 import { getOrderNameFromOption } from '../../common/fields'
@@ -47,35 +47,34 @@ const getDeletedOptionsFromOrderModificationChange = (change: ModificationChange
   )
   return beforeOptions.filter(option => !afterOptions.has(option))
 }
-
 const getOrderError = (
   orderChange: ModificationChange<InstanceElement>,
+  deletedOptionsNotInRemovalChanges: string[],
+): ChangeError => ({
+  elemID: orderChange.data.after.elemID,
+  severity: 'Error',
+  message: "This order is not referencing all it's options",
+  detailedMessage:
+    deletedOptionsNotInRemovalChanges.length === 1
+      ? `The option ${deletedOptionsNotInRemovalChanges[0]} was deleted from the order but was not removed`
+      : `The options ${deletedOptionsNotInRemovalChanges.join(',')} were deleted from the order but were not removed`,
+})
+
+const getDeletedOptionsNotInRemovalChanges = (
+  orderChange: ModificationChange<InstanceElement>,
   removedOptionsByParent: Record<string, InstanceElement[]>,
-): ChangeError | undefined => {
+): string[] => {
   const deletedOptionsFromOrder = getDeletedOptionsFromOrderModificationChange(orderChange)
   const removedOptions = new Set<string>(
     (removedOptionsByParent[getParent(orderChange.data.after).elemID.getFullName()] ?? []).map(instance =>
       instance.elemID.getFullName(),
     ),
   )
-  const deletedOptionsFromOrderNotInRemoved = deletedOptionsFromOrder.filter(option => !removedOptions.has(option))
-  if (deletedOptionsFromOrderNotInRemoved.length === 0) {
-    return undefined
-  }
-  const detailedMessage =
-    deletedOptionsFromOrderNotInRemoved.length === 1
-      ? `The option ${deletedOptionsFromOrderNotInRemoved[0]} was deleted from the order but was not removed`
-      : `The options ${deletedOptionsFromOrderNotInRemoved.join(',')} were deleted from the order but were not removed`
-  return {
-    elemID: orderChange.data.after.elemID,
-    severity: 'Error',
-    message: "This order is not referencing all it's options",
-    detailedMessage,
-  }
+  return deletedOptionsFromOrder.filter(option => !removedOptions.has(option))
 }
 
 /**
- * Verify that the orders reference all the added options, and that all orders removed from orders are removed
+ * Verify that the orders reference all the added options, and that all options removed from orders are removed
  */
 export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidator = config => async changes => {
   if (!config.fetch.splitFieldContextOptions) {
@@ -96,22 +95,31 @@ export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidat
   const addedOptionsByParent = _.groupBy(optionChanges.filter(isAdditionChange).map(getChangeData), instance =>
     getParent(instance).elemID.getFullName(),
   )
+
+  // We group the added options by their parent and check they are referenced by the corresponding order
   const addedOptionsErrors = _.flatMap(addedOptionsByParent, (options, parentFullName) => {
     const order = orderByParent[parentFullName]
-    if (order === undefined) {
+    if (!Array.isArray(order?.value.options)) {
       return options.map(getNotInOrderError)
     }
-    const orderOptionsHash = _.keyBy(order.value.options, option => option.elemID.getFullName())
-    return options.filter(option => orderOptionsHash[option.elemID.getFullName()] === undefined).map(getNotInOrderError)
+    const orderOptionsSet = new Set<string>(
+      order.value.options.filter(isReferenceExpression).map(option => option.elemID.getFullName()),
+    )
+    return options.filter(option => !orderOptionsSet.has(option.elemID.getFullName())).map(getNotInOrderError)
   })
 
   const removedOptionsByParent = _.groupBy(optionChanges.filter(isRemovalChange).map(getChangeData), instance =>
     getParent(instance).elemID.getFullName(),
   )
-
   const orderErrors = orderChanges
     .filter(isModificationChange)
-    .map(orderChange => getOrderError(orderChange, removedOptionsByParent))
-    .filter(values.isDefined)
+    .map(orderChange => ({
+      orderChange,
+      deletedOptionsNotInRemovalChanges: getDeletedOptionsNotInRemovalChanges(orderChange, removedOptionsByParent),
+    }))
+    .filter(({ deletedOptionsNotInRemovalChanges }) => deletedOptionsNotInRemovalChanges.length > 0)
+    .map(({ orderChange, deletedOptionsNotInRemovalChanges }) =>
+      getOrderError(orderChange, deletedOptionsNotInRemovalChanges),
+    )
   return [...addedOptionsErrors, ...orderErrors]
 }

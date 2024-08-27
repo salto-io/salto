@@ -70,6 +70,7 @@ import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/ass
 import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
+import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -147,6 +148,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     projectAssigneeType: projectAssigneeTypeValidator,
     fieldContextOptions: fieldContextOptionsValidator(config),
     fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
+    fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
   }
 
   return createChangeValidator({

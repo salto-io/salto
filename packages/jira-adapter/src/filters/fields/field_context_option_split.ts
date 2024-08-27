@@ -133,6 +133,33 @@ const editDefaultValue = (context: InstanceElement, idToOptionRecord: Record<str
   }
 }
 
+/**
+ * This filter splits the field context options into separate instances and organizes them into a structured hierarchy.
+ * We define two new types:
+ *
+ * 1. `FieldContextOptionType` - Represents individual options within the context.
+ * 2. `FieldContextOptionsOrderType` - Represents the order of the options, including a list of references to these options.
+ *
+ * The new structure is as follows:
+ *
+ * 1. Context
+ *    - **Parent**: Field
+ *    - **Description**: References only the default options.
+ *
+ * 2. Option
+ *    - Parent: Context
+ *    - Description: Represents an individual option within the context.
+ *
+ * 3. CascadingOption (same type as a regular `Option`)
+ *    - Parent: Option
+ *    - Description: Represents a cascading option, inheriting properties from its parent `Option`.
+ *
+ * 4. Order
+ *    - Parent: Depends on the type of options it organizes
+ *      - If the order is for regular Options, the parent is their Context.
+ *      - If the order is for CascadingOptions within an Option, the parent is that Option.
+ *    - Description: Contains references to all Options / CascadingOptions under its parent.
+ */
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   name: 'fieldContextOptionsSplitFilter',
   onFetch: async elements => {

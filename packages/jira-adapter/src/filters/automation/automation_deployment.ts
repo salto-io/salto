@@ -27,7 +27,7 @@ import { resolveValues } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
 import { getDiffIds } from '../../diff'
-import { AUTOMATION_TYPE } from '../../constants'
+import { AUTOMATION_TYPE, CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE } from '../../constants'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployChanges } from '../../deployment/standard_deployment'
@@ -299,7 +299,7 @@ const removeAutomation = async (
 ): Promise<void> => {
   await client.deletePrivate({
     url: `${getUrlPrefix(cloudId)}/GLOBAL/rule/${instance.value.id}`,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
   })
 }
 
@@ -319,7 +319,7 @@ const addAutomationLabels = async (
       client.put({
         url: getLabelsUrl(cloudId, instance, labelID),
         data: null,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
       }),
     ),
   )
@@ -335,6 +335,7 @@ const removeAutomationLabels = async (
     labelsID.map(async labelID =>
       client.delete({
         url: getLabelsUrl(cloudId, instance, labelID),
+        headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
       }),
     ),
   )

@@ -13,7 +13,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getDefaultConfig } from '../../src/config/config'
 import portalSettingsFilter from '../../src/filters/portal_settings'
 import { createEmptyType, getFilterParams, mockClient } from '../utils'
-import { PORTAL_SETTINGS_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
+import { CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE, PORTAL_SETTINGS_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
 import JiraClient from '../../src/client/client'
 
 describe('portalSettings filter', () => {
@@ -79,7 +79,7 @@ describe('portalSettings filter', () => {
         null,
         {
           headers: {
-            'Content-Type': 'application/json',
+            [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
           },
         },
       )
@@ -138,7 +138,7 @@ describe('portalSettings filter', () => {
         null,
         {
           headers: {
-            'Content-Type': 'application/json',
+            [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
           },
         },
       )
@@ -160,7 +160,7 @@ describe('portalSettings filter', () => {
         null,
         {
           headers: {
-            'Content-Type': 'application/json',
+            [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
           },
         },
       )

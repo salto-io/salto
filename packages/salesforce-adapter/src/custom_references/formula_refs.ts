@@ -7,6 +7,7 @@
  */
 import { Element, ElemID, Field, InstanceElement, ReferenceInfo, Value } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { WeakReferencesHandler } from '../types'
@@ -15,6 +16,7 @@ import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } fr
 
 const { awu, groupByAsync } = collections.asynciterable
 const { isDefined } = values
+const log = logger(module)
 
 const typesWithFieldsWithFormulaReferences = ['Flow']
 
@@ -75,7 +77,11 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
       if (field.name !== expectedFieldName) {
         return value
       }
-      references.push(await referenceInfoFromFieldValue(instance, path, field, value, elements))
+      try {
+        references.push(await referenceInfoFromFieldValue(instance, path, field, value, elements))
+      } catch (e) {
+        log.warn('Error when extracting references from `%s`: %s', value, e)
+      }
       return value
     }
 

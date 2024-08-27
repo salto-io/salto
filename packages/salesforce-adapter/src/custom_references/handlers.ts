@@ -30,7 +30,7 @@ const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
-  formulaRefs: false,
+  formulaRefs: true,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {

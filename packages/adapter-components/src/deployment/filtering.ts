@@ -70,10 +70,15 @@ export const filterIgnoredValues = async (
 /**
  * Transform removed change values to null, for APIs that require explicit null values
  */
-export const transformRemovedValuesToNull = (
-  change: ModificationChange<InstanceElement>,
-  applyToPath?: string[],
-): ModificationChange<InstanceElement> => {
+export const transformRemovedValuesToNull = ({
+  change,
+  applyToPath,
+  skipSubFields = false,
+}: {
+  change: ModificationChange<InstanceElement>
+  applyToPath?: string[]
+  skipSubFields?: boolean
+}): ModificationChange<InstanceElement> => {
   const { before, after } = change.data
   const elemId = applyToPath
     ? getChangeData(change).elemID.createNestedID(...applyToPath)
@@ -84,7 +89,7 @@ export const transformRemovedValuesToNull = (
     func: ({ value, path }) => {
       const valueInAfter = resolvePath(after, path)
       if (valueInAfter === undefined) {
-        if (!_.isPlainObject(value)) {
+        if (!_.isPlainObject(value) || skipSubFields) {
           setPath(after, path, null)
           return WALK_NEXT_STEP.SKIP
         }

@@ -18,7 +18,7 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { ODATA_PREFIX, ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../constants'
+import { ODATA_PREFIX, ODATA_TYPE_FIELD_NACL_CASE, entraConstants, intuneConstants } from '../../constants'
 
 const { isDefined } = lowerDashValues
 
@@ -97,6 +97,7 @@ const TYPE_TO_VALIDATION_RULES_ON_ADDITION: RequiredFieldsMap = {
   [entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME]: { fieldNames: ['allowedCombinations'] },
   [entraConstants.DIRECTORY_ROLE_TYPE_NAME]: { fieldNames: ['roleTemplateId'] },
   [entraConstants.ROLE_DEFINITION_TYPE_NAME]: { fieldNames: ['displayName', 'rolePermissions', 'isBuiltIn'] },
+  [intuneConstants.DEVICE_COMPLIANCE_TYPE_NAME]: { fieldNames: [intuneConstants.SCHEDULED_ACTIONS_FIELD_NAME] },
 }
 
 const TYPE_TO_VALIDATION_RULES_ON_MODIFICATION: RequiredFieldsMap = {

@@ -89,6 +89,7 @@ describe('Microsoft Security adapter', () => {
           'intune_application',
           'intune_applicationConfigurationManagedApp',
           'intune_applicationConfigurationManagedDevice',
+          'intune_deviceCompliance',
           'intune_deviceConfiguration',
           'intune_deviceConfigurationSettingCatalog',
         ])
@@ -301,6 +302,47 @@ describe('Microsoft Security adapter', () => {
               expect(intuneDeviceConfigurationSettingCatalog.value.settings).toHaveLength(10)
               expect(Object.keys(intuneDeviceConfigurationSettingCatalog.value.settings[0])).toEqual([
                 'settingInstance',
+              ])
+            })
+          })
+
+          describe('device compliances', () => {
+            let intuneDeviceCompliances: InstanceElement[]
+            beforeEach(async () => {
+              intuneDeviceCompliances = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'intune_deviceCompliance')
+            })
+
+            it('should create the correct instances for Intune device compliances', async () => {
+              expect(intuneDeviceCompliances).toHaveLength(1)
+
+              const intuneDeviceComplianceNames = intuneDeviceCompliances.map(e => e.elemID.name)
+              expect(intuneDeviceComplianceNames).toEqual(expect.arrayContaining(['test_IOS@s']))
+            })
+
+            it('should add a reference to the correct intune application', async () => {
+              const intuneDeviceCompliance = intuneDeviceCompliances[0]
+              const groupRef = intuneDeviceCompliance.value.restrictedApps[0]?.appId
+              expect(groupRef).toBeInstanceOf(ReferenceExpression)
+              expect(groupRef.elemID.getFullName()).toEqual(
+                'microsoft_security.intune_application.instance.managedIOSStoreApp_test',
+              )
+            })
+
+            it('should include scheduledActionsForRule field with the correct values', async () => {
+              const intuneDeviceCompliance = intuneDeviceCompliances[0]
+
+              const { scheduledActionsForRule } = intuneDeviceCompliance.value
+              expect(scheduledActionsForRule).toHaveLength(1)
+              expect(Object.keys(scheduledActionsForRule[0])).toEqual(['scheduledActionConfigurations'])
+
+              const { scheduledActionConfigurations } = scheduledActionsForRule[0]
+              expect(scheduledActionConfigurations).toHaveLength(1)
+              expect(Object.keys(scheduledActionConfigurations[0])).toEqual([
+                'gracePeriodHours',
+                'actionType',
+                'notificationTemplateId',
               ])
             })
           })

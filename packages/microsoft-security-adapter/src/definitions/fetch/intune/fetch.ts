@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions } from '@salto-io/adapter-components'
+import { naclCase } from '@salto-io/adapter-utils'
 import { Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
@@ -23,10 +24,13 @@ const {
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+  DEVICE_COMPLIANCE_TYPE_NAME,
 
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
+  DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
+  DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
 
   // Field names
   SETTINGS_FIELD_NAME,
@@ -218,6 +222,62 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: DEFAULT_TRANSFORMATION,
       },
     ],
+    element: {
+      fieldCustomizations: {
+        id: {
+          omit: true,
+        },
+      },
+    },
+  },
+  [DEVICE_COMPLIANCE_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/deviceCompliancePolicies',
+          queryArgs: {
+            $expand: 'scheduledActionsForRule($expand=scheduledActionConfigurations)',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version', 'scheduledActionsForRule@odata.context'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: `/#view/Microsoft_Intune_DeviceSettings/CompliancePolicyOverview.ReactView/policyId/{id}/policyName/{${NAME_ID_FIELD.fieldName}}/platform~/0/policyType~/0`,
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        id: {
+          omit: true,
+        },
+        [naclCase('scheduledActionConfigurations@odata.context')]: {
+          omit: true,
+        },
+      },
+    },
+  },
+  [DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
     element: {
       fieldCustomizations: {
         id: {

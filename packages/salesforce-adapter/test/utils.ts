@@ -32,6 +32,7 @@ import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
 import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
+import { SalesforceClient } from '../index'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =
@@ -402,9 +403,9 @@ export const nullProgressReporter: DeployProgressReporter = {
   reportMetadataProgress: () => {},
 }
 
-export type MockDeployProgressReporter = ProgressReporter & { getReportedMessages: () => string[] }
+export type MockDeployProgressReporter = DeployProgressReporter & { getReportedMessages: () => string[] }
 
-export const createMockProgressReporter = (): MockDeployProgressReporter => {
+export const createMockProgressReporter = async (client: SalesforceClient): Promise<MockDeployProgressReporter> => {
   const reportedMessages: string[] = []
   const mockProgressReporter: ProgressReporter = {
     reportProgress: args => {
@@ -412,7 +413,7 @@ export const createMockProgressReporter = (): MockDeployProgressReporter => {
     },
   }
   return {
-    ...createDeployProgressReporter(mockProgressReporter, new URL('https://test.salesforce.org')),
+    ...(await createDeployProgressReporter(mockProgressReporter, client)),
     getReportedMessages: () => reportedMessages,
   }
 }

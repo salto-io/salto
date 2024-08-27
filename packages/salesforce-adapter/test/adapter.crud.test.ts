@@ -58,6 +58,7 @@ import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } 
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
 import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
+import { SalesforceClient } from '../index'
 
 const { makeArray } = collections.array
 
@@ -65,6 +66,7 @@ describe('SalesforceAdapter CRUD', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let progressReporter: MockDeployProgressReporter
+  let client: SalesforceClient
 
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
@@ -95,9 +97,8 @@ describe('SalesforceAdapter CRUD', () => {
     }
   }
 
-  beforeEach(() => {
-    progressReporter = createMockProgressReporter()
-    ;({ connection, adapter } = mockAdapter({
+  beforeEach(async () => {
+    ;({ connection, adapter, client } = mockAdapter({
       adapterParams: {
         config: {
           fetch: {
@@ -111,6 +112,7 @@ describe('SalesforceAdapter CRUD', () => {
         },
       },
     }))
+    progressReporter = await createMockProgressReporter(client)
 
     connection.metadata.upsert.mockImplementation(async (_type, objects) =>
       makeArray(objects).map(({ fullName }) => ({

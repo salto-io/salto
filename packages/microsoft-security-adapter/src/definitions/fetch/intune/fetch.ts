@@ -11,7 +11,8 @@ import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { intuneConstants } from '../../../constants'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
-import { odataType, parser } from '../../../utils'
+import { odataType } from '../../../utils'
+import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 import { application } from './utils'
 
@@ -20,9 +21,6 @@ const {
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
-
-  ENCODED_SETTING_XML_FIELD_NAME,
-  PAYLOAD_JSON_FIELD_NAME,
 
   SERVICE_BASE_URL,
 } = intuneConstants
@@ -120,8 +118,8 @@ const graphBetaCustomizations: FetchCustomizations = {
           ...DEFAULT_TRANSFORMATION,
           omit: ['version'],
           adjust: concatAdjustFunctions(
-            parser.decodeBase64JsonFields(PAYLOAD_JSON_FIELD_NAME),
-            parser.parseBase64XmlFields(ENCODED_SETTING_XML_FIELD_NAME),
+            applicationConfiguration.decodePayloadJsonField,
+            applicationConfiguration.parseSettingXmlField,
           ),
         },
       },

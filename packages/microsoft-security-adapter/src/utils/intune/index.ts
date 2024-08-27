@@ -7,3 +7,4 @@
  */
 
 export * as application from './application'
+export * as applicationConfiguration from './application_configuration'

@@ -9,19 +9,16 @@ import { getChangeData } from '@salto-io/adapter-api'
 import { concatAdjustFunctions } from '@salto-io/adapter-components'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
-import { odataType, parser } from '../../../utils'
+import { odataType } from '../../../utils'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } from '../shared/utils'
 import { application as applicationDeployUtils, appsConfiguration } from './utils'
-import { application } from '../../../utils/intune'
+import { application, applicationConfiguration } from '../../../utils/intune'
 
 const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
-
-  ENCODED_SETTING_XML_FIELD_NAME,
-  PAYLOAD_JSON_FIELD_NAME,
 } = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
@@ -146,8 +143,8 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
           transformation: {
             adjust: omitReadOnlyFieldsWrapper(
               concatAdjustFunctions(
-                parser.buildBase64XmlFields(ENCODED_SETTING_XML_FIELD_NAME),
-                parser.encodeBase64JsonFields(PAYLOAD_JSON_FIELD_NAME),
+                applicationConfiguration.buildSettingXmlField,
+                applicationConfiguration.encodePayloadJsonField,
               ),
             ),
           },

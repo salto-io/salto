@@ -7,4 +7,3 @@
  */
 
 export * as odataType from './odata_type'
-export * as parser from './parser'

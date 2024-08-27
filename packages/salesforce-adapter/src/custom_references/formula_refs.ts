@@ -35,7 +35,7 @@ const referenceInfoFromFieldValue = async (
   const elmentsSource = buildElementsSourceFromElements(allElements)
   const topLevelParentInstanceElemId = field.elemID.createTopLevelParentID().parent
   const identifierInfo = parseFormulaIdentifier(value, topLevelParentInstanceElemId.typeName)
-  const referenceElemIds = await referencesFromIdentifiers(identifierInfo)
+  const referenceElemIds = referencesFromIdentifiers(identifierInfo)
   const referencesWithValidity = await groupByAsync(referenceElemIds, refElemId =>
     referenceValidity(refElemId, topLevelParentInstanceElemId, elmentsSource),
   )

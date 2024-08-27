@@ -45,7 +45,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
 
     // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
     // filtering.
-    const references = await referencesFromIdentifiers(identifiersInfo.flat())
+    const references = referencesFromIdentifiers(identifiersInfo.flat())
 
     if (references.length < identifiersInfo.length) {
       log.warn(`Some formula identifiers were not converted to references.

@@ -46,7 +46,7 @@ const identifierTypeToElemIdType = (identifierInfo: FormulaIdentifierInfo): Elem
     }) as Record<IdentifierType, ElemIDType>
   )[identifierInfo.type]
 
-export const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> =>
+export const referencesFromIdentifiers = (typeInfos: FormulaIdentifierInfo[]): ElemID[] =>
   typeInfos.map(
     identifierInfo =>
       new ElemID(

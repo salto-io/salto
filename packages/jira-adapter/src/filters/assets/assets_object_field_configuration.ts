@@ -170,9 +170,11 @@ export const deployAssetObjectContext = async (
       data: _.omit(resolvedInstance.value.assetsObjectFieldConfiguration, 'id'),
     })
   } catch (e) {
-    const errorMessages = isCMBDErrorResponse(e) && e.response.data.errors.map(error => error.errorMessage)
+    const errorMessages = isCMBDErrorResponse(e)
+      ? e.response.data.errors.map(error => error.errorMessage).join(', ')
+      : e.message
     throw new Error(
-      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()} with error: ${errorMessages ? errorMessages.join(', ') : e.message}. The context might be deployed partially.`,
+      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()} with error: ${errorMessages}. The context might be deployed partially.`,
     )
   }
 }

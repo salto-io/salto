@@ -80,15 +80,17 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       },
     }),
     preDeploy: async (changes: Change[]): Promise<void> => {
-      changesToRestore = changes
+      taskOrEventFieldChanges = changes
         .filter(isFieldChange)
         .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
         .filter(change => isCustomField(getChangeData(change)))
 
-      _.pullAll(changes, changesToRestore)
+      _.pullAll(changes, taskOrEventFieldChanges)
     },
     onDeploy: async (changes: Change[]): Promise<void> => {
-      changes.push(...changesToRestore.filter(change => findMatchingActivityChange(change, changes) === undefined))
+      changes.push(
+        ...taskOrEventFieldChanges.filter(change => findMatchingActivityChange(change, changes) === undefined),
+      )
     },
   }
 }

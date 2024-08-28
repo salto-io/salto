@@ -74,7 +74,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
             annotationsToOmit.delete('apiName')
             taskOrEventField.annotations = {
               ..._.omit(taskOrEventField.annotations, Array.from(annotationsToOmit)),
-              activityField: new ReferenceExpression(activityField.elemID),
+              activityField: new ReferenceExpression(activityField.elemID, activityField),
             }
           })
       },
@@ -88,9 +88,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       _.pullAll(changes, taskOrEventFieldChanges)
     },
     onDeploy: async (changes: Change[]): Promise<void> => {
-      changes.push(
-        ...taskOrEventFieldChanges.filter(change => findMatchingActivityChange(change, changes) !== undefined),
-      )
+      taskOrEventFieldChanges
+        .filter(change => findMatchingActivityChange(change, changes) !== undefined)
+        .forEach(change => changes.push(change))
     },
   }
 }

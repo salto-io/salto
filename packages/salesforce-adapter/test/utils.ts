@@ -45,14 +45,14 @@ export const createField = (
   fieldType: TypeElement,
   fieldApiName: string,
   additionalAnnotations?: Values,
-  fieldName?: string,
+  fieldName = 'field',
 ): Field => {
-  const newField = new Field(parent, fieldName ?? 'field', fieldType, {
+  const newField = new Field(parent, fieldName, fieldType, {
     [constants.API_NAME]: fieldApiName,
     modifyMe: 'modifyMe',
     ...additionalAnnotations,
   })
-  _.set(parent.fields, fieldName ?? 'field', newField)
+  parent.fields[fieldName] = newField
   return newField
 }
 

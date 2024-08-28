@@ -1410,25 +1410,25 @@ describe('filter utils', () => {
 
   describe('isCustomField', () => {
     it('should return true for custom fields', () => {
-      expect(isCustomField(mockTypes.User.fields.Manager__c)).toBeTrue()
+      expect(mockTypes.User.fields.Manager__c).toSatisfy(isCustomField)
     })
     it('should return false for non custom fields', () => {
-      expect(isCustomField(mockTypes.AssignmentRules.fields.assignmentRule)).toBeFalse()
+      expect(mockTypes.AssignmentRules.fields.assignmentRule).not.toSatisfy(isCustomField)
     })
   })
 
   describe('isFieldOfTaskOrEvent', () => {
-    const activity = createCustomObjectType('event', {})
+    const activity = createCustomObjectType('Activity', {})
     const task = createCustomObjectType('Task', {})
     const event = createCustomObjectType('Event', {})
 
     it('should return true for fields of Task or Event', () => {
-      expect(isFieldOfTaskOrEvent(task.fields.Name)).toBeTrue()
-      expect(isFieldOfTaskOrEvent(event.fields.Name)).toBeTrue()
+      expect(task.fields.Name).toSatisfy(isFieldOfTaskOrEvent)
+      expect(event.fields.Name).toSatisfy(isFieldOfTaskOrEvent)
     })
     it('should return false for fields of other types', () => {
-      expect(isFieldOfTaskOrEvent(activity.fields.Name)).toBeFalse()
-      expect(isFieldOfTaskOrEvent(mockTypes.User.fields.Manager__c)).toBeFalse()
+      expect(activity.fields.Name).not.toSatisfy(isFieldOfTaskOrEvent)
+      expect(mockTypes.User.fields.Manager__c).not.toSatisfy(isFieldOfTaskOrEvent)
     })
   })
 })

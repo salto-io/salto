@@ -230,7 +230,6 @@ const importAutomation = async (
       },
     ],
   }
-  log.trace('Importing automation %o', data)
   const importResponse = (
     await client.postPrivate({
       url: `${getUrlPrefix(cloudId)}/GLOBAL/rule/import`,

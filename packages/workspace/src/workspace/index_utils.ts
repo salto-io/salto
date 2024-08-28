@@ -28,11 +28,15 @@ const { awu } = collections.asynciterable
 export const getAllElementsChanges = async (
   currentChanges: Change<Element>[],
   elementsSource: ReadOnlyElementsSource,
-): Promise<Change<Element>[]> =>
-  awu(await elementsSource.getAll())
+): Promise<Change<Element>[]> => {
+  const elementsInCurrentChanges = new Set(currentChanges.map(getChangeData).map(elem => elem.elemID.getFullName()))
+  return awu(await elementsSource.list())
+    .filter(id => !elementsInCurrentChanges.has(id.getFullName()))
+    .map(id => elementsSource.get(id))
     .map(element => toChange({ after: element }))
     .concat(currentChanges)
     .toArray()
+}
 
 const getFieldChangesFromTypeChange = (change: Change<ObjectType>): Change<Field>[] => {
   if (isAdditionOrRemovalChange(change)) {

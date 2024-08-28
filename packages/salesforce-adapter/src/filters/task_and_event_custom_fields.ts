@@ -89,7 +89,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
     },
     onDeploy: async (changes: Change[]): Promise<void> => {
       changes.push(
-        ...taskOrEventFieldChanges.filter(change => findMatchingActivityChange(change, changes) === undefined),
+        ...taskOrEventFieldChanges.filter(change => findMatchingActivityChange(change, changes) !== undefined),
       )
     },
   }

@@ -47,6 +47,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         const elementsSource = buildElementsSourceForFetch(elements, config)
         const activity = await elementsSource.get(new ElemID(SALESFORCE, ACTIVITY_CUSTOM_OBJECT))
         if (!isCustomObjectSync(activity)) {
+          log.debug('Activity Object not found')
           return
         }
 

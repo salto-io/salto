@@ -6,10 +6,18 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
-import { Change, Element, getChangeData, isFieldChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
+import {
+  Change,
+  Element,
+  ElemID,
+  Field,
+  getChangeData,
+  isFieldChange,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
-import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
+import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE, TASK_CUSTOM_OBJECT } from '../constants'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
@@ -21,7 +29,6 @@ import {
 import { findMatchingActivityChange } from '../change_validators/task_or_event_fields_modifications'
 
 const { isDefined } = values
-const { awu } = collections.asynciterable
 
 const filterCreator: LocalFilterCreator = ({ config }) => {
   let changesToRestore: Change[]
@@ -38,34 +45,36 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       config,
       fetchFilterFunc: async (elements: Element[]) => {
         const elementsSource = buildElementsSourceForFetch(elements, config)
-        const elementSourceByApiName = await awu(await elementsSource.getAll())
-          .filter(isDefined)
-          .filter(isCustomObjectSync)
-          .keyBy(customObject => apiNameSync(customObject) ?? '')
-        const activity = elementSourceByApiName[ACTIVITY_CUSTOM_OBJECT]
-        if (activity === undefined) {
+        const activity = await elementsSource.get(new ElemID(SALESFORCE, ACTIVITY_CUSTOM_OBJECT))
+        if (!isCustomObjectSync(activity)) {
           return
         }
 
         const elementsByApiName = _.keyBy(elements.filter(isCustomObjectSync), elem => apiNameSync(elem) ?? '')
 
-        Object.entries(activity.fields)
-          .filter(([, activityField]) => isCustomField(activityField))
-          .flatMap(([activityFieldName]) => {
-            const ret = [
-              elementsByApiName[TASK_CUSTOM_OBJECT].fields[activityFieldName],
-              elementsByApiName[EVENT_CUSTOM_OBJECT].fields[activityFieldName],
+        Object.values(activity.fields)
+          .filter(isCustomField)
+          .flatMap(activityField => {
+            const activityFieldName = apiNameSync(activityField, true)
+            if (activityFieldName === undefined) {
+              return []
+            }
+            const getMatchingField = (objectName: string): Field | undefined =>
+              Object.values(elementsByApiName[objectName]?.fields).find(
+                field => apiNameSync(field, true) === activityFieldName,
+              )
+            return [
+              [activityField, getMatchingField(TASK_CUSTOM_OBJECT)],
+              [activityField, getMatchingField(EVENT_CUSTOM_OBJECT)],
             ]
-            return ret
           })
-          .forEach(taskOrEventField => {
+          .filter((fields): fields is Field[] => fields.every(isDefined))
+          .forEach(([activityField, taskOrEventField]: Field[]) => {
             const annotationsToOmit = new Set(Object.keys(activity.fields[taskOrEventField.name].annotations))
             annotationsToOmit.delete('apiName')
             taskOrEventField.annotations = {
               ..._.omit(taskOrEventField.annotations, Array.from(annotationsToOmit)),
-              activityField: new ReferenceExpression(
-                elementSourceByApiName[ACTIVITY_CUSTOM_OBJECT].fields[taskOrEventField.name].elemID,
-              ),
+              activityField: new ReferenceExpression(activityField.elemID),
             }
           })
       },
@@ -76,16 +85,10 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
         .filter(change => isCustomField(getChangeData(change)))
 
-      changesToRestore.forEach(change => {
-        changes.splice(changes.indexOf(change), 1)
-      })
+      _.pullAll(changes, changesToRestore)
     },
     onDeploy: async (changes: Change[]): Promise<void> => {
-      changesToRestore.forEach(change => {
-        if (findMatchingActivityChange(change, changes) !== undefined) {
-          changes.push(change)
-        }
-      })
+      changes.push(...changesToRestore.filter(change => findMatchingActivityChange(change, changes) === undefined))
     },
   }
 }

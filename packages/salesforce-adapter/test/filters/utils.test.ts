@@ -55,6 +55,8 @@ import {
   toCustomField,
   toCustomProperties,
   isCustomMetadataRecordTypeSync,
+  isCustomField,
+  isFieldOfTaskOrEvent,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -1403,6 +1405,30 @@ describe('filter utils', () => {
         expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })
+    })
+  })
+
+  describe('isCustomField', () => {
+    it('should return true for custom fields', () => {
+      expect(isCustomField(mockTypes.User.fields.Manager__c)).toBeTrue()
+    })
+    it('should return false for non custom fields', () => {
+      expect(isCustomField(mockTypes.AssignmentRules.fields.assignmentRule)).toBeFalse()
+    })
+  })
+
+  describe('isFieldOfTaskOrEvent', () => {
+    const activity = createCustomObjectType('event', {})
+    const task = createCustomObjectType('Task', {})
+    const event = createCustomObjectType('Event', {})
+
+    it('should return true for fields of Task or Event', () => {
+      expect(isFieldOfTaskOrEvent(task.fields.Name)).toBeTrue()
+      expect(isFieldOfTaskOrEvent(event.fields.Name)).toBeTrue()
+    })
+    it('should return false for fields of other types', () => {
+      expect(isFieldOfTaskOrEvent(activity.fields.Name)).toBeFalse()
+      expect(isFieldOfTaskOrEvent(mockTypes.User.fields.Manager__c)).toBeFalse()
     })
   })
 })

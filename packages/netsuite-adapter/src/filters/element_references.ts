@@ -24,8 +24,6 @@ import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
 import { constants as bufferConstants } from 'buffer'
 import { logger } from '@salto-io/logging'
-import { parseScript, Program } from 'esprima'
-import { traverse } from 'estraverse'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -42,12 +40,14 @@ import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
 import { getGroupItemFromRegex } from '../client/utils'
 import { getContent } from '../client/suiteapp_client/suiteapp_file_cabinet'
+import { NetsuiteConfig } from '../config/types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
+const JS_FILE_EXTENSIONS = ['.js', '.cjs', '.mjs', '.json']
 
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
@@ -59,7 +59,7 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
-// matches key strings in the format of 'key: value'
+// matches key strings in format of 'key': value or key: value
 const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*.+`, 'gm')
 // matches comments in js files
 // \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
@@ -71,6 +71,17 @@ const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo):
   serviceIdInfoRecord.appid !== undefined ||
   serviceIdInfoRecord.bundleid !== undefined ||
   !serviceIdInfoRecord.isFullMatch
+
+const getReferencesWithRegex = (content: string): string[] => {
+  const contentWithoutComments = content.replace(jsCommentsRegex, '')
+  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(
+    contentWithoutComments,
+    semanticReferenceRegex,
+    OPTIONAL_REFS,
+  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+  return semanticReferences.concat(objectKeyReferences)
+}
 
 export const getElementServiceIdRecords = async (
   element: Element,
@@ -145,34 +156,9 @@ const getServiceElemIDsFromPaths = (
     })
     .filter(isDefined)
 
-const parseAST = (ast: Program): string[] => {
-  const foundReferences = new Set<string>()
-
-  traverse(ast, {
-    enter(node) {
-      if (node.type === 'Literal' && typeof node.value === 'string' && !node.value.startsWith(NETSUITE_MODULE_PREFIX)) {
-        foundReferences.add(node.value)
-      } else if (node.type === 'Property') {
-        if (node.key.type === 'Identifier') {
-          foundReferences.add(node.key.name)
-        } else if (node.key.type === 'Literal' && typeof node.key.value === 'string') {
-          foundReferences.add(node.key.value)
-        }
-      }
-    },
-  })
-  return Array.from(foundReferences)
-}
-
-const getReferencesWithRegex = (content: string): string[] => {
-  const contentWithoutComments = content.replace(jsCommentsRegex, '')
-  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(
-    contentWithoutComments,
-    semanticReferenceRegex,
-    OPTIONAL_REFS,
-  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-  return semanticReferences.concat(objectKeyReferences)
+const hasValidExtension = (path: string, config: NetsuiteConfig): boolean => {
+  const validExtensions = JS_FILE_EXTENSIONS.concat(config.fetch?.findReferencesInFilesWithExtension ?? [])
+  return validExtensions.some(ext => path.toLowerCase().endsWith(ext))
 }
 
 const getAndLogReferencesDiff = ({
@@ -218,8 +204,11 @@ const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
+  config: NetsuiteConfig,
+  skippedFileExtensions: Set<string>,
 ): Promise<ElemID[]> => {
   const fileContent = await getContent(element.value.content)
+
   if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
     log.warn('skip parsing file with size larger than MAX_STRING_LENGTH: %o', {
       fileSize: fileContent.length,
@@ -229,36 +218,39 @@ const getSuiteScriptReferences = async (
   }
 
   const content = fileContent.toString()
+
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )
-
-  log.timeDebug(() => {
-    try {
-      const ast = parseScript(content)
-      const foundReferences = parseAST(ast)
-      // TODO: remove once SALTO-6026 is communicated
-      getAndLogReferencesDiff({
-        newReferences: foundReferences,
-        existingReferences: semanticReferences,
-        element,
+  if (config.fetch.calculateNewReferencesInSuiteScripts) {
+    const foundReferences = getReferencesWithRegex(content)
+    if (!hasValidExtension(element.value[PATH], config)) {
+      const referencesToBeRemoved = getServiceElemIDsFromPaths(
+        foundReferences,
         serviceIdToElemID,
         customRecordFieldsToServiceIds,
-      })
-    } catch (e) {
-      log.warn('Failed to parse file %s content with error %o', element.value[PATH], e)
-      const foundReferences = getReferencesWithRegex(content)
-      // TODO: remove once SALTO-6026 is communicated
-      getAndLogReferencesDiff({
-        newReferences: foundReferences,
-        existingReferences: semanticReferences,
         element,
-        serviceIdToElemID,
-        customRecordFieldsToServiceIds,
-      })
+      )
+      if (referencesToBeRemoved.length > 0) {
+        log.info(
+          'Ignoring file with unsupported extension %s and %d references will be removed: %o',
+          element.value[PATH],
+          referencesToBeRemoved.length,
+          referencesToBeRemoved,
+        )
+      }
+      skippedFileExtensions.add(osPath.extname(element.value[PATH]))
     }
-  }, 'getSuiteScriptReferences')
+    getAndLogReferencesDiff({
+      newReferences: foundReferences,
+      existingReferences: semanticReferences,
+      element,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+    })
+  }
+
   return getServiceElemIDsFromPaths(
     semanticReferences.concat(nsConfigReferences),
     serviceIdToElemID,
@@ -271,6 +263,8 @@ const replaceReferenceValues = async (
   element: Element,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
+  config: NetsuiteConfig,
+  skippedFileExtensions: Set<string>,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -319,8 +313,15 @@ const replaceReferenceValues = async (
 
   const suiteScriptReferences =
     isFileCabinetInstance(element) && isFileInstance(element)
-      ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
+      ? await getSuiteScriptReferences(
+          element,
+          serviceIdToElemID,
+          customRecordFieldsToServiceIds,
+          config,
+          skippedFileExtensions,
+        )
       : []
+
   extendGeneratedDependencies(
     newElement,
     dependenciesToAdd.concat(suiteScriptReferences).map(elemID => ({ reference: new ReferenceExpression(elemID) })),
@@ -371,7 +372,7 @@ const createElementsSourceCustomRecordFieldsToElemID = async (
 ): Promise<ServiceIdRecords> =>
   isPartial ? (await elementsSourceIndex.getIndexes()).customRecordFieldsServiceIdRecordsIndex : {}
 
-const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, changesGroupId }) => ({
+const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, changesGroupId, config }) => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
     const serviceIdToElemID = Object.assign(
@@ -382,12 +383,22 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, cha
       createCustomRecordFieldsToElemID(elements),
       await createElementsSourceCustomRecordFieldsToElemID(elementsSourceIndex, isPartial),
     )
+    const skippedFileExtensions = new Set<string>()
     await awu(elements)
       .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
       .forEach(async element => {
-        const newElement = await replaceReferenceValues(element, serviceIdToElemID, customRecordFieldsToServiceIds)
+        const newElement = await replaceReferenceValues(
+          element,
+          serviceIdToElemID,
+          customRecordFieldsToServiceIds,
+          config,
+          skippedFileExtensions,
+        )
         applyValuesAndAnnotationsToElement(element, newElement)
       })
+    if (skippedFileExtensions.size > 0) {
+      log.info('Ignored files with unsupported extensions: %o', Array.from(skippedFileExtensions))
+    }
   },
   preDeploy: async changes => {
     if (!changesGroupId || !isSdfCreateOrUpdateGroupId(changesGroupId)) {

@@ -1056,6 +1056,18 @@ describe('filter utils', () => {
         expect(customField[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]).toEqual(CONTROLLING_FIELD)
       })
     })
+    describe('with unknown field type', () => {
+      it('should keep the type attribute undefined', async () => {
+        const unknownField = new Field(
+          new ObjectType({ elemID: new ElemID('salesforce', 'test__c') }),
+          'unknwon__c',
+          Types.primitiveDataTypes.Unknown,
+          { [API_NAME]: 'test__c.unknown__c' },
+        )
+        const customField = await toCustomField(unknownField)
+        expect(customField.type).toBeUndefined()
+      })
+    })
   })
 
   describe('await toCustomProperties', () => {

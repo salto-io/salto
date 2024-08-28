@@ -29,6 +29,7 @@ import {
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
   JWK_TYPE_NAME,
+  EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -234,13 +235,13 @@ const createCustomizations = ({
       {
         endpoint: {
           path: '/api/v1/groups',
-          queryArgs: { expand: 'stats' },
+          queryArgs: includeGroupMemberships ? { expand: 'stats' } : {},
         },
         transformation: {
           adjust: async ({ value }) => ({
             value: {
               ...(_.isObject(value) ? { ..._.omit(value, '_embedded') } : {}),
-              hasUsersAssigned: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
+              recurseIntoGroupMembers: _.get(value, ['_embedded', 'stats', 'usersCount']) === 0 ? 'false' : 'true',
             },
           }),
         },
@@ -264,7 +265,7 @@ const createCustomizations = ({
                   {
                     // only recurse into groups with assigned users
                     match: ['true'],
-                    fromField: 'hasUsersAssigned',
+                    fromField: 'recurseIntoGroupMembers',
                   },
                 ],
               },
@@ -283,7 +284,7 @@ const createCustomizations = ({
         source: { fieldType: 'Group__source' },
         _links: { omit: true },
         lastMembershipUpdated: { omit: true },
-        hasUsersAssigned: { omit: true },
+        recurseIntoGroupMembers: { omit: true },
         [GROUP_MEMBERSHIP_TYPE_NAME]: {
           standalone: {
             typeName: GROUP_MEMBERSHIP_TYPE_NAME,
@@ -1295,6 +1296,7 @@ export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [
   AUTHENTICATOR_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+  EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
 ]
 
 export const createFetchDefinitions = ({
@@ -1317,7 +1319,7 @@ export const createFetchDefinitions = ({
       default: {
         resource: {
           serviceIDFields: ['id'],
-          onError: fetchUtils.errors.getInsufficientPermissionsError,
+          onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
           topLevel: {

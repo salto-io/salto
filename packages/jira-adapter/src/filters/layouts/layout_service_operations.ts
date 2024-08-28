@@ -124,7 +124,7 @@ const fromLayoutConfigRespToLayoutConfig = (layoutConfig: IssueLayoutConfigurati
         return [node.panelItemId, _.omit(node, 'panelItemId')]
       }),
   )
-  const items = containers
+  const topItems = containers
     .flatMap(container =>
       container.items.nodes.map(node => {
         const dataKey = node.panelItemId ?? node.fieldItemId
@@ -140,8 +140,23 @@ const fromLayoutConfigRespToLayoutConfig = (layoutConfig: IssueLayoutConfigurati
       }),
     )
     .filter(isLayoutConfigItem)
-
-  return { items }
+  const defaultContentItems = containers
+    .flatMap(container =>
+      container.items.nodes[0]?.items?.nodes?.map(innerNode => {
+        const dataKey = innerNode.panelItemId ?? innerNode.fieldItemId
+        if (dataKey === undefined) {
+          return undefined
+        }
+        return {
+          type: innerNode.panelItemId ? 'PANEL' : 'FIELD',
+          sectionType: container.containerType,
+          key: dataKey,
+          data: fieldItemIdToMetaData[dataKey],
+        }
+      }),
+    )
+    .filter(isLayoutConfigItem)
+  return { items: topItems.concat(defaultContentItems) }
 }
 
 interface LayoutIdParts {

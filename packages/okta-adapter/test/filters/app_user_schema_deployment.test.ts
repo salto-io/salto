@@ -243,7 +243,7 @@ describe('appUserSchemaDeployment', () => {
       const { appliedChanges, errors } = result.deployResult
 
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to get /api/v1/apps/1 with error: Error: message')
+      expect(errors[0].message).toEqual('Failed to get /api/v1/apps/1 with error: message')
       expect(appliedChanges).toHaveLength(0)
     })
     it('should handle multiple changes', async () => {

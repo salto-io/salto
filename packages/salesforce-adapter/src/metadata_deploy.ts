@@ -22,7 +22,6 @@ import {
   SaltoElementError,
   SeverityLevel,
   Artifact,
-  ProgressReporter,
   ElemID,
   TypeElement,
   Value,
@@ -45,6 +44,7 @@ import {
   API_NAME_SEPARATOR,
   CUSTOM_FIELD,
   CUSTOM_OBJECT_TYPE_NAME,
+  ProgressReporterSuffix,
   GLOBAL_VALUE_SET_SUFFIX,
   INSTANCE_FULL_NAME_FIELD,
   SalesforceArtifacts,
@@ -53,6 +53,7 @@ import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
 import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
+import { DeployProgressReporter } from './adapter_creator'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -419,39 +420,38 @@ const getDeployStatusUrl = async ({ id }: SFDeployResult, client: SalesforceClie
   return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
 }
 
-const deployProgressMessage = async (client: SalesforceClient, deployResult: SFDeployResult): Promise<string> => {
-  const url = await getDeployStatusUrl(deployResult, client)
-  const testStatus = `${deployResult.numberTestsCompleted}/${deployResult.numberComponentsTotal} (${deployResult.numberTestErrors} errors)`
-  const componentStatus = `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} (${deployResult.numberComponentErrors} errors)`
-  const progressMessage = `Tests: ${testStatus} Components: ${componentStatus} URL: ${url}`
-  log.debug(progressMessage)
-  return progressMessage
-}
-
 const quickDeployOrDeploy = async (
   client: SalesforceClient,
   pkgData: Buffer,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
-  progressReporter?: ProgressReporter,
+  progressReporter?: DeployProgressReporter,
 ): Promise<SFDeployResult> => {
-  const progressReportCallback = async (deployResult: SFDeployResult): Promise<void> => {
-    if (!progressReporter) {
-      return
+  const createProgressReporterCallback =
+    (suffix?: string) =>
+    async (deployResult: SFDeployResult): Promise<void> => {
+      if (!progressReporter) {
+        return
+      }
+      progressReporter.reportMetadataProgress({ result: deployResult, suffix })
     }
-    progressReporter.reportProgress({
-      message: await deployProgressMessage(client, deployResult),
-    })
-  }
 
   if (quickDeployParams !== undefined) {
     try {
-      return await client.quickDeploy(quickDeployParams.requestId)
+      return await client.quickDeploy(
+        quickDeployParams.requestId,
+        createProgressReporterCallback(ProgressReporterSuffix.QuickDeploy),
+      )
     } catch (e) {
       log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+      return client.deploy(
+        pkgData,
+        { checkOnly },
+        createProgressReporterCallback(ProgressReporterSuffix.QuickDeployFailed),
+      )
     }
   }
-  return client.deploy(pkgData, { checkOnly }, progressReportCallback)
+  return client.deploy(pkgData, { checkOnly }, createProgressReporterCallback())
 }
 
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
@@ -480,7 +480,7 @@ export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
-  progressReporter: ProgressReporter,
+  progressReporter: DeployProgressReporter,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,

@@ -77,6 +77,11 @@ export const mergeDefinitionsWithOverrides = <Options extends APIDefinitionsOpti
     return obj
   }
   const afterRemoveNullObjects = removeNullObjects(merged)
-  log.debug('Merged definitions with overrides: %s', safeJsonStringify(afterRemoveNullObjects))
+  log.debug(
+    'Merged definitions with overrides: %s',
+    safeJsonStringify(afterRemoveNullObjects, (_key, value) =>
+      _.isObject(value) && !(_.isPlainObject(value) || _.isArray(value)) ? '<OMITTED>' : value,
+    ),
+  )
   return afterRemoveNullObjects
 }

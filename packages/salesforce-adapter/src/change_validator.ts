@@ -12,7 +12,6 @@ import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
-import unknownFieldValidator from './change_validators/unknown_field'
 import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
 import mapKeysValidator from './change_validators/map_keys'
@@ -45,6 +44,7 @@ import metadataTypes from './change_validators/metadata_types'
 import elementApiVersionValidator from './change_validators/element_api_version'
 import cpqBillingStartDate from './change_validators/cpq_billing_start_date'
 import cpqBillingTriggers from './change_validators/cpq_billing_triggers'
+import managedApexComponent from './change_validators/managed_apex_component'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
@@ -67,7 +67,6 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
   customObjectInstances: () => customObjectInstancesValidator,
-  unknownField: () => unknownFieldValidator,
   customFieldType: () => customFieldTypeValidator,
   standardFieldLabel: () => standardFieldLabelValidator,
   mapKeys: () => mapKeysValidator,
@@ -100,6 +99,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   elementApiVersion: () => elementApiVersionValidator,
   cpqBillingStartDate: () => cpqBillingStartDate,
   cpqBillingTriggers: () => cpqBillingTriggers,
+  managedApexComponent: () => managedApexComponent,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

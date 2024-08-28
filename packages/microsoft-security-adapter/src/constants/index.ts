@@ -7,4 +7,5 @@
  */
 
 export * as entraConstants from './entra'
+export * as intuneConstants from './intune'
 export * from './shared'

@@ -85,7 +85,7 @@ import {
   UNIX_TIME_ZERO_STRING,
   VALUE_SET_FIELDS,
   LAST_MODIFIED_DATE,
-  CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
+  CUSTOM_FIELD_DEPLOYABLE_TYPES,
   VALUE_SET_DEFINITION_FIELDS,
   DEFAULT_VALUE_FORMULA,
   FORMULA,
@@ -923,7 +923,7 @@ const getCustomFields = (element: ObjectType, skipFields: string[]): Promise<Cus
     .filter(field => !transformer.isLocalOnly(field))
     .map(field => toCustomField(field))
     .filter(field => !skipFields.includes(field.fullName))
-    .filter(field => CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(field.type))
+    .filter(field => CUSTOM_FIELD_DEPLOYABLE_TYPES.includes(field.type))
     .toArray()
 
 export const toCustomProperties = async (

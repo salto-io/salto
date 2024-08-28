@@ -28,12 +28,11 @@ export const deleteLabelAtttributeValidator: (config: JiraConfig) => ChangeValid
     if (elementsSource === undefined || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
       return []
     }
-    const objectTypeAttributeRemovalChanges = await awu(changes)
+    const objectTypeAttributeRemovalChanges = changes
       .filter(isInstanceChange)
       .filter(isRemovalChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === OBJECT_TYPE_ATTRIBUTE_TYPE)
-      .toArray()
 
     if (objectTypeAttributeRemovalChanges.length === 0) {
       return []

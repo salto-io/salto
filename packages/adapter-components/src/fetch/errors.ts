@@ -15,11 +15,13 @@ export class AbortFetchOnFailure extends FatalError {
   }
 }
 
-export const getInsufficientPermissionsError: fetch.FetchResourceDefinition['onError'] = {
+export const createGetInsufficientPermissionsErrorFunction: (
+  statuses: number[],
+) => fetch.FetchResourceDefinition['onError'] = statuses => ({
   custom:
     () =>
     ({ error, typeName }) => {
-      if (error instanceof HTTPError && error.response.status === 403) {
+      if (error instanceof HTTPError && statuses.includes(error.response.status)) {
         return {
           action: 'customSaltoError',
           value: {
@@ -34,4 +36,4 @@ export const getInsufficientPermissionsError: fetch.FetchResourceDefinition['onE
   // this is a workaround to overcome types checker, the "custom" function is applied any other values are ignored
   action: 'failEntireFetch',
   value: false,
-}
+})

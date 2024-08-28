@@ -9,29 +9,37 @@ import {
   ChangeValidator,
   getChangeData,
   isAdditionOrModificationChange,
-  isInstanceChange,
+  isInstanceElement,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
 export const workflowSchemeDupsValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
+    log.warn('Skipping workflowSchemeDupsValidator due to missing elements source')
     return []
   }
 
+  const workflowSchemeNameChangesData = changes
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+
+  if (workflowSchemeNameChangesData.length === 0) {
+    return []
+  }
   const nameToInstance = await awu(await elementSource.list())
     .filter(id => id.idType === 'instance' && id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
     .map(id => elementSource.get(id))
     .groupBy(instance => instance.value.name?.toLowerCase())
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+  return workflowSchemeNameChangesData
     .filter(
       instance =>
         Object.prototype.hasOwnProperty.call(nameToInstance, instance.value.name?.toLowerCase()) &&

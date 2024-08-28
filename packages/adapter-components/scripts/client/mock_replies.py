@@ -8,7 +8,7 @@ import sys
 
 def to_mock_details(logpath):
   with open(logpath) as logfile:
-    return [l[l.find(': ') + 2:].strip() for l in logfile.readlines() if 'Full HTTP response' in l]
+    return [l[l.find(': ') + 2:].strip() for l in logfile.readlines() if 'Full HTTP response' in l or 'Truncated HTTP response' in l]
 
 def main():
   if (len(sys.argv) != 3):

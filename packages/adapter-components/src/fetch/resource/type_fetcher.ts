@@ -10,7 +10,6 @@ import objectHash from 'object-hash'
 import { ElemID, isPrimitiveValue, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ElementQuery } from '../query'
 import { Requester } from '../request/requester'
 import { TypeResourceFetcher, ValueGeneratedItem } from '../types'
@@ -192,13 +191,7 @@ export const createTypeResourceFetcher = <ClientOptions extends string>({
         success: true,
       }
     } catch (e) {
-      log.error(
-        '[%s] Error caught while fetching %s: %s. stack: %s',
-        adapterName,
-        typeName,
-        safeJsonStringify(e),
-        (e as Error).stack,
-      )
+      log.error('[%s] Error caught while fetching %s: %s. stack: %s', adapterName, typeName, e, (e as Error).stack)
       done = true
       return {
         success: false,

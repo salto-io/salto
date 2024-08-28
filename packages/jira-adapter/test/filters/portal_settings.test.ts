@@ -171,7 +171,7 @@ describe('portalSettings filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0].message).toEqual(
-        'Error: Failed to put /rest/servicedesk/1/servicedesk-data/project1Key/name with error: Error: error',
+        'Error: Failed to put /rest/servicedesk/1/servicedesk-data/project1Key/name with error: error',
       )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
     })

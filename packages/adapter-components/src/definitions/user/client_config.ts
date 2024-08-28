@@ -12,6 +12,7 @@ import {
   FieldDefinition,
   createRestriction,
   CORE_ANNOTATIONS,
+  ListType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
@@ -40,6 +41,26 @@ export type ClientTimeoutConfig = Partial<{
   lastRetryNoTimeout: boolean
 }>
 
+export type ResponseLogStrategy = 'truncate' | 'omit' | 'full'
+// configuration for controlling logging of full http responses.
+// if an endpoint matching the pattern (or any endpoint if pattern is not provided) matches (all of) the following:
+// - logged more than "numItems" times (default: 0)
+// - the current response size is over "size" (default: 0)
+// then the strategy is used - if `omit`, the "Full http response" log is omitted completely, and if `truncate` the response is truncated.
+// note: strategies are calculated in order and the first match wins.
+type ClientLoggingStrategyByEndpointConfig = {
+  // when pattern is omitted, all endpoints match
+  pattern?: string
+  // note: there is an OR between numItems and size
+  numItems?: number
+  size?: number
+  strategy: ResponseLogStrategy
+}
+
+export type ClientLoggingConfig = Partial<{
+  responseStrategies: ClientLoggingStrategyByEndpointConfig[]
+}>
+
 export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Partial<{
   retry: ClientRetryConfig
   rateLimit: RateLimitConfig
@@ -48,6 +69,7 @@ export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Pa
   useBottleneck: boolean
   pageSize: ClientPageSizeConfig
   timeout: ClientTimeoutConfig
+  logging: ClientLoggingConfig
 }>
 
 export const createClientConfigType = <RateLimitConfig extends ClientRateLimitConfig>({
@@ -117,6 +139,40 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     },
   })
 
+  const clientLoggingStrategyByEndpointConfigType = createMatchingObjectType<ClientLoggingStrategyByEndpointConfig>({
+    elemID: new ElemID(adapter, 'clientLoggingResponseConfig'),
+    fields: {
+      pattern: {
+        refType: BuiltinTypes.STRING,
+      },
+      numItems: {
+        refType: BuiltinTypes.NUMBER,
+      },
+      size: {
+        refType: BuiltinTypes.NUMBER,
+      },
+      strategy: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
+      },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+
+  const clientLoggingConfigType = createMatchingObjectType<ClientLoggingConfig>({
+    elemID: new ElemID(adapter, 'clientLoggingConfig'),
+    fields: {
+      responseStrategies: { refType: new ListType(clientLoggingStrategyByEndpointConfigType) },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+
   const clientConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'clientConfig'),
     fields: {
@@ -127,6 +183,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
       useBottleneck: { refType: BuiltinTypes.BOOLEAN },
       pageSize: { refType: clientPageSizeConfigType },
       timeout: { refType: clientTimeoutConfigType },
+      logging: { refType: clientLoggingConfigType },
       ...additionalClientFields,
     },
     annotations: {

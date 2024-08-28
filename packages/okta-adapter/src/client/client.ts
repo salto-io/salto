@@ -10,7 +10,6 @@ import { client as clientUtils, definitions } from '@salto-io/adapter-components
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
@@ -256,7 +255,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       : undefined
   }
 
-  // eslint-disable-next-line class-methods-use-this
   @throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
   @logDecorator(['url'])
   // We use this function without client instance because we don't need it
@@ -269,17 +267,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       const httpClient = axios.create({ url })
       const response = await httpClient.get(url, { responseType })
       const { data, status } = response
-      log.trace(
-        'Full HTTP response for GET on %s: %s',
-        url,
-        safeJsonStringify({
-          url,
-          method: 'GET',
-          status,
-          responseType,
-          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-        }),
-      )
+      this.logResponse({ method: 'get', params: args, response })
       return {
         data,
         status,

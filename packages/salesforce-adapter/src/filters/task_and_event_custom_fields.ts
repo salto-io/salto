@@ -31,7 +31,7 @@ import { findMatchingActivityChange } from '../change_validators/task_or_event_f
 const { isDefined } = values
 
 const filterCreator: LocalFilterCreator = ({ config }) => {
-  let changesToRestore: Change[]
+  let taskOrEventFieldChanges: Change[]
 
   return {
     name: 'taskAndEventCustomFields',

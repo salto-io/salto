@@ -172,7 +172,7 @@ describe('Google Workspace adapter E2E', () => {
       deployResults = await deployChanges(adapterAttr, changes)
       // Google workspace API takes time to reflect the changes from the deploy.
       // So, we need to wait for some time before fetching in order to get the new elements.
-      await sleep(15000)
+      await sleep(30000)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })

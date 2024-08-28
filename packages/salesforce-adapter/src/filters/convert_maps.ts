@@ -41,6 +41,8 @@ import {
   EMAIL_TEMPLATE_METADATA_TYPE,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   MUTING_PERMISSION_SET_METADATA_TYPE,
+  SHARING_RULES_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
@@ -129,6 +131,11 @@ const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
   },
 }
 
+const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
+  sharingCriteriaRules: { key: INSTANCE_FULL_NAME_FIELD },
+  sharingOwnerRules: { key: INSTANCE_FULL_NAME_FIELD },
+}
+
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
@@ -136,6 +143,7 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
+  [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
 }
 
 /**
@@ -394,10 +402,13 @@ export const findTypeToConvert = async (
  * Convert certain instances' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
  */
-const filter: LocalFilterCreator = () => ({
+const filter: LocalFilterCreator = ({ config }) => ({
   name: 'convertMapsFilter',
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
+      if (targetMetadataType === SHARING_RULES_TYPE && !config.fetchProfile.isFeatureEnabled('sharingRulesMaps')) {
+        return
+      }
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
       const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]

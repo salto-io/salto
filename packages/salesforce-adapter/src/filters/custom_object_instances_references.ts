@@ -200,7 +200,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
   const fieldsWithUnknownTargetType = new DefaultMap<string, Set<string>>(() => new Set())
   const replaceLookups = async (instance: InstanceElement): Promise<Values> => {
     const transformFunc: TransformFunc = async ({ value, field }) => {
-      if (!isReferenceField(field)) {
+      if (!isReferenceField(field) || !_.isString(value)) {
         return value
       }
       const refTo = referenceFieldTargetTypes(field)
@@ -313,7 +313,7 @@ const replaceLookupsWithRefsAndCreateRefMapV2 = async ({
   const fieldsWithUnknownTargetType = new DefaultMap<string, Set<string>>(() => new Set())
   const replaceLookups = async (instance: InstanceElement): Promise<Values> => {
     const transformFunc: TransformFunc = async ({ value, field }) => {
-      if (!isReferenceField(field)) {
+      if (!isReferenceField(field) || !_.isString(value)) {
         return value
       }
       const refTo = referenceFieldTargetTypes(field)

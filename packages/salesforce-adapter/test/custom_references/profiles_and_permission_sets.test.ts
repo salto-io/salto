@@ -25,19 +25,28 @@ import {
   INSTANCE_FULL_NAME_FIELD,
   LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
   RECORD_TYPE_METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from '../utils'
-import { profilesHandler } from '../../src/custom_references/profiles'
+import { profilesAndPermissionSetsHandler } from '../../src/custom_references/profiles_and_permission_sets'
 
-describe('profiles', () => {
-  describe('weak references handler', () => {
+const HANDLED_TYPES = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+] as const
+
+describe('Profiles And Permission Sets Custom References', () => {
+  describe.each(HANDLED_TYPES)('%s weak references handler', typeName => {
     let refs: ReferenceInfo[]
     let profileInstance: InstanceElement
     const createTestInstance = (fields: Values): InstanceElement =>
-      new InstanceElement('test', mockTypes.Profile, fields)
+      new InstanceElement('test', new ObjectType({ elemID: new ElemID(SALESFORCE, typeName) }), fields)
 
     describe('fields', () => {
       describe('when the fields are inaccessible', () => {
@@ -49,7 +58,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create references', async () => {
@@ -66,7 +75,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create references', async () => {
@@ -101,7 +110,7 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -121,7 +130,7 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -148,7 +157,7 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -176,7 +185,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create references', async () => {
@@ -200,7 +209,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -218,7 +227,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -245,7 +254,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create references', async () => {
@@ -269,7 +278,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -287,7 +296,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -312,7 +321,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create references', async () => {
@@ -337,7 +346,7 @@ describe('profiles', () => {
               ],
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -377,7 +386,7 @@ describe('profiles', () => {
               ],
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -416,7 +425,7 @@ describe('profiles', () => {
                 ],
               },
             })
-            refs = await profilesHandler.findWeakReferences([profileInstance], undefined)
+            refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance], undefined)
           })
 
           it('should not create references', async () => {
@@ -444,7 +453,7 @@ describe('profiles', () => {
                 ],
               },
             })
-            refs = await profilesHandler.findWeakReferences([profileInstance], undefined)
+            refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance], undefined)
           })
 
           it('should only create references to layout', () => {
@@ -480,7 +489,7 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create references', () => {
@@ -504,7 +513,7 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -535,7 +544,7 @@ describe('profiles', () => {
             },
           })
 
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -559,7 +568,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -577,7 +586,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -604,7 +613,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -631,7 +640,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -652,7 +661,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -680,7 +689,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should create a reference', () => {
@@ -710,7 +719,7 @@ describe('profiles', () => {
               },
             },
           })
-          refs = await profilesHandler.findWeakReferences([profileInstance])
+          refs = await profilesAndPermissionSetsHandler.findWeakReferences([profileInstance])
         })
 
         it('should not create a reference', () => {
@@ -720,8 +729,9 @@ describe('profiles', () => {
     })
   })
 
-  describe('fix elements', () => {
-    const profileInstance = new InstanceElement('test', mockTypes.Profile, {
+  describe.each(HANDLED_TYPES)('%s fix elements', typeName => {
+    const metadataType = new ObjectType({ elemID: new ElemID(SALESFORCE, typeName) })
+    const instance = new InstanceElement('test', metadataType, {
       fieldPermissions: {
         Account: {
           testField__c: 'ReadWrite',
@@ -787,15 +797,15 @@ describe('profiles', () => {
     describe('when references are missing', () => {
       beforeEach(() => {
         const elementsSource = buildElementsSourceFromElements([])
-        fixElementsFunc = profilesHandler.removeWeakReferences({
+        fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
         })
       })
 
       it('should drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([instance])
         expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+          new InstanceElement('test', metadataType, {
             fieldPermissions: {
               Account: {
                 testField: 'ReadWrite',
@@ -814,11 +824,10 @@ describe('profiles', () => {
         ])
         expect(errors).toEqual([
           {
-            elemID: profileInstance.elemID,
+            elemID: instance.elemID,
             severity: 'Info',
-            message: 'Omitting profile entries which reference unavailable types',
-            detailedMessage:
-              'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
+            message: 'Omitting entries which reference unavailable types',
+            detailedMessage: `The ${typeName} has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types`,
           },
         ])
       })
@@ -844,13 +853,13 @@ describe('profiles', () => {
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
           new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {}),
         ])
-        fixElementsFunc = profilesHandler.removeWeakReferences({
+        fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
         })
       })
 
       it('should not drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([instance])
         expect(fixedElements).toBeEmpty()
         expect(errors).toBeEmpty()
       })
@@ -864,15 +873,15 @@ describe('profiles', () => {
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
           new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {}),
         ])
-        fixElementsFunc = profilesHandler.removeWeakReferences({
+        fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
         })
       })
 
       it('should drop fields', async () => {
-        const { fixedElements, errors } = await fixElementsFunc([profileInstance])
+        const { fixedElements, errors } = await fixElementsFunc([instance])
         expect(fixedElements).toEqual([
-          new InstanceElement('test', mockTypes.Profile, {
+          new InstanceElement('test', metadataType, {
             fieldPermissions: {
               Account: {
                 testField: 'ReadWrite',
@@ -918,11 +927,10 @@ describe('profiles', () => {
         ])
         expect(errors).toEqual([
           {
-            elemID: profileInstance.elemID,
+            elemID: instance.elemID,
             severity: 'Info',
-            message: 'Omitting profile entries which reference unavailable types',
-            detailedMessage:
-              'The profile has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types',
+            message: 'Omitting entries which reference unavailable types',
+            detailedMessage: `The ${typeName} has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types`,
           },
         ])
       })

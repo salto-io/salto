@@ -462,7 +462,11 @@ export default class JiraAdapter implements AdapterOperations {
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
-    this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
+    this.getUserMapFunc = getUserMapFuncCreator(
+      paginator,
+      client.isDataCenter,
+      config.fetch.allowUserCallFailure ?? false,
+    )
 
     const filterContext = {}
     this.createFiltersRunner = () =>

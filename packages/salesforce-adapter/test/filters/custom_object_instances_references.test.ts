@@ -164,6 +164,16 @@ describe('Custom Object Instances References filter', () => {
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
+      LookupNoRefTo: {
+        refType: Types.primitiveDataTypes.Lookup,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [LABEL]: 'lookupNoRefTo',
+          [API_NAME]: 'LookupNoRefTo',
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        },
+      },
       HiddenValueField: {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
@@ -236,6 +246,7 @@ describe('Custom Object Instances References filter', () => {
     Id: 'toDuplicate',
     LookupExample: 'duplicateId-1',
     MasterDetailExample: 'duplicateId-2',
+    LookupNoRefTo: null,
   })
   const refFromToRefToDupName = 'refFromToRefToDupInstance'
   const refFromToRefToDupInst = new InstanceElement(refFromToRefToDupName, refFromObj, {

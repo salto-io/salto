@@ -10,6 +10,7 @@ import { FileProperties } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { SHARING_RULES_TYPE } from '../../constants'
 import { getAuthorAnnotations } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
@@ -29,7 +30,7 @@ const getSharingRulesFileProperties = async (client: SalesforceClient): Promise<
     SHARING_RULES_API_NAMES.map(ruleType => ({ type: ruleType })),
   )
   if (errors && errors.length > 0) {
-    log.warn(`Encountered errors while listing file properties for SharingRules: ${errors}`)
+    log.warn('Encountered errors while listing file properties for SharingRules: %s', inspectValue(errors))
   }
   return result
 }

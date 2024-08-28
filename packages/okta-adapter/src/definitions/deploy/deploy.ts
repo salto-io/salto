@@ -373,7 +373,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                       throw new Error('Change is not a modification change')
                     }
                     const transformed = getChangeData(
-                      deployment.transformRemovedValuesToNull(context.change, ['settings']),
+                      deployment.transformRemovedValuesToNull({ change: context.change, applyToPath: ['settings'] }),
                     ).value
                     return {
                       value: {

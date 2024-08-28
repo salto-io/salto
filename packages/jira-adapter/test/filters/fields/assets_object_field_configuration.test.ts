@@ -8,6 +8,7 @@
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import {
+  BuiltinTypes,
   Change,
   CORE_ANNOTATIONS,
   Element,
@@ -26,7 +27,7 @@ import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
-import { JIRA } from '../../../src/constants'
+import { ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE } from '../../../src/constants'
 
 const VALID_HTML = `<!DOCTYPE html><html><head>
   <a id="customfield_10000-edit-cmdbObjectFieldConfig" class="actionLinks subText" title="Edit Assets object/s field configuration" href="CmdbObjectFieldConfiguration;fieldConfigSchemeId=11111&amp;fieldConfigId=55555&amp;customFieldId=10000&amp;returnUrl=ConfigureCustomField%21default.jspa%3FcustomFieldId%3D14156">Edit Assets object/s field configuration</a>
@@ -347,17 +348,50 @@ describe('assetsObjectFieldConfiguration', () => {
   })
 
   describe('deployAssetObjectContext', () => {
+    let objectSchemaInstance: InstanceElement
+    let assetsObjectFieldConfigurationType: ObjectType
+
     beforeEach(() => {
+      assetsObjectFieldConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, ASSETS_OBJECT_FIELD_CONFIGURATION_TYPE),
+        fields: {
+          objectSchemaId: { refType: BuiltinTypes.STRING },
+        },
+      })
+      fieldContextType = new ObjectType({
+        elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
+        fields: {
+          assetsObjectFieldConfiguration: { refType: assetsObjectFieldConfigurationType },
+        },
+      })
+      objectSchemaInstance = new InstanceElement('objectSchemaInstance', createEmptyType(OBJECT_SCHEMA_TYPE), {
+        id: '23',
+        name: 'objectSchemaInstanceName',
+      })
+      contextInstance1 = new InstanceElement(
+        'context1',
+        fieldContextType,
+        {
+          name: 'context',
+          id: '11111',
+          assetsObjectFieldConfiguration: {
+            id: '55555',
+            objectSchemaId: new ReferenceExpression(objectSchemaInstance.elemID, objectSchemaInstance),
+            workspaceId: 'workspaceId',
+            attributesDisplayedOnIssue: [],
+          },
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)],
+        },
+      )
       const { client: cli, connection: conn } = mockClient()
       client = cli
       connection = conn
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableAssetsObjectFieldConfiguration = true
-      contextInstance1.value.assetsObjectFieldConfiguration = {
-        id: '55555',
-        workspaceId: 'workspaceId',
-        attributesDisplayedOnIssue: [],
-      }
+      connection.get.mockReset()
       connection.get.mockResolvedValueOnce({
         status: 200,
         data: VALID_HTML,
@@ -366,6 +400,12 @@ describe('assetsObjectFieldConfiguration', () => {
 
     it('should do nothing when the context does not have assetsObjectFieldConfiguration', async () => {
       contextInstance1.value.assetsObjectFieldConfiguration = undefined
+      await deployAssetObjectContext(toChange({ after: contextInstance1 }), client, config)
+      expect(connection.put).not.toHaveBeenCalled()
+    })
+
+    it('should do nothing when the context does not have objectSchemaId', async () => {
+      contextInstance1.value.assetsObjectFieldConfiguration.objectSchemaId = undefined
       await deployAssetObjectContext(toChange({ after: contextInstance1 }), client, config)
       expect(connection.put).not.toHaveBeenCalled()
     })
@@ -389,6 +429,7 @@ describe('assetsObjectFieldConfiguration', () => {
         'rest/servicedesk/cmdb/latest/fieldconfig/55555',
         {
           workspaceId: 'workspaceId',
+          objectSchemaId: '23',
           attributesDisplayedOnIssue: [],
         },
         { headers: { 'X-Atlassian-Token': 'no-check' } },
@@ -403,6 +444,7 @@ describe('assetsObjectFieldConfiguration', () => {
         'rest/servicedesk/cmdb/latest/fieldconfig/55555',
         {
           workspaceId: 'workspaceId',
+          objectSchemaId: '23',
           attributesDisplayedOnIssue: [],
         },
         { headers: { 'X-Atlassian-Token': 'no-check' } },
@@ -416,6 +458,40 @@ describe('assetsObjectFieldConfiguration', () => {
         data: { invalid: 'invalid' },
       })
       await expect(deployAssetObjectContext(toChange({ after: contextInstance1 }), client, config)).rejects.toThrow()
+    })
+
+    it('should throw the correct error when it is CMBD error', async () => {
+      connection.put.mockRejectedValueOnce({
+        response: {
+          status: 400,
+          data: {
+            errors: [
+              {
+                errorMessage: 'first error',
+              },
+              {
+                errorMessage: 'second error',
+              },
+            ],
+          },
+        },
+      })
+      await expect(
+        deployAssetObjectContext(toChange({ after: contextInstance1 }), client, config),
+      ).rejects.toThrowWithMessage(
+        Error,
+        'Failed to deploy asset object field configuration for instance jira.CustomFieldContext.instance.context1 with error: first error, second error. The context might be deployed partially.',
+      )
+    })
+
+    it('should throw the correct error when it is not CMBD error', async () => {
+      connection.put.mockRejectedValueOnce(new Error('error'))
+      await expect(
+        deployAssetObjectContext(toChange({ after: contextInstance1 }), client, config),
+      ).rejects.toThrowWithMessage(
+        Error,
+        'Failed to deploy asset object field configuration for instance jira.CustomFieldContext.instance.context1 with error: Failed to put rest/servicedesk/cmdb/latest/fieldconfig/55555 with error: Error: error. The context might be deployed partially.',
+      )
     })
   })
 })

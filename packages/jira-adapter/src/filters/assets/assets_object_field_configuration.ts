@@ -7,7 +7,7 @@
  */
 
 import _ from 'lodash'
-import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { elements as elementUtils, config as configUtils, resolveValues } from '@salto-io/adapter-components'
 import { parse } from 'node-html-parser'
 import {
@@ -28,6 +28,7 @@ import {
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import Joi from 'joi'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../fields/constants'
@@ -46,6 +47,43 @@ const log = logger(module)
 const CMDB_OBJECT_FIELD_CONFIGURATION = 'com.atlassian.jira.plugins.cmdb:cmdb-object-cftype'
 const FIELD_CONFIG_ID_REGEX = /fieldConfigId=(\d+)/
 const FIELD_CONTEXT_ID_REGEX = /fieldConfigSchemeId=(\d+)/
+
+type CMBD_ERROR = {
+  errorMessage: string
+}
+
+type CMBD_ERROR_RESPONSE = {
+  response: {
+    data: {
+      errors: CMBD_ERROR[]
+    }
+  }
+}
+
+const CMBD_ERROR_RESPONSE_SCHEME = Joi.object({
+  response: Joi.object({
+    data: Joi.object({
+      errors: Joi.array()
+        .items(
+          Joi.object({
+            errorMessage: Joi.string().required(),
+          })
+            .required()
+            .unknown(true),
+        )
+        .required(),
+    })
+      .required()
+      .unknown(true),
+  })
+    .required()
+    .unknown(true),
+}).unknown(true)
+
+const isCMBDErrorResponse = createSchemeGuard<CMBD_ERROR_RESPONSE>(
+  CMBD_ERROR_RESPONSE_SCHEME,
+  'Received an invalid CMBD error response',
+)
 
 const extractFirstMatch = (input: string, pattern: RegExp): string => {
   const match = input.match(pattern)
@@ -110,7 +148,7 @@ export const deployAssetObjectContext = async (
     return
   }
   const instance = getChangeData(change)
-  if (isRemovalChange(change) || instance.value.assetsObjectFieldConfiguration === undefined) {
+  if (isRemovalChange(change) || instance.value.assetsObjectFieldConfiguration?.objectSchemaId === undefined) {
     return
   }
   const { workspaceId } = instance.value.assetsObjectFieldConfiguration
@@ -132,9 +170,9 @@ export const deployAssetObjectContext = async (
       data: _.omit(resolvedInstance.value.assetsObjectFieldConfiguration, 'id'),
     })
   } catch (e) {
-    log.error(`Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}: ${e}`)
+    const errorMessages = isCMBDErrorResponse(e) && e.response.data.errors.map(error => error.errorMessage)
     throw new Error(
-      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()}. The context might be deployed partially.`,
+      `Failed to deploy asset object field configuration for instance ${instance.elemID.getFullName()} with error: ${errorMessages ? errorMessages.join(', ') : e.message}. The context might be deployed partially.`,
     )
   }
 }

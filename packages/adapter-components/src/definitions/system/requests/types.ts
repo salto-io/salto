@@ -30,6 +30,8 @@ export type RequestArgs = {
     // true: &arg[0]=val1&arg[1]=val2
     // null: &arg=val1&arg=val2
     indexes?: boolean | null
+    // when true, empty strings will be omitted from the query params
+    omitEmpty?: boolean
   }
   // TODO support x-www-form-urlencoded + URLSearchParams
   body?: unknown

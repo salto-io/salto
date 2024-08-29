@@ -5,9 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import {
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import { getParentElemID } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { JiraConfig } from '../../config/config'
 import {
   FIELD_CONTEXT_OPTION_TYPE_NAME,
@@ -15,7 +20,11 @@ import {
   OPTIONS_ORDER_TYPE_NAME,
 } from '../../filters/fields/constants'
 
-const log = logger(module)
+const isParentRemoved = (removedOptionsAndContexts: Set<string>, order: InstanceElement): boolean => {
+  const parentName = getParentElemID(order).getFullName()
+  return removedOptionsAndContexts.has(parentName)
+}
+
 /**
  * Verify that orders are removed with their parent
  */
@@ -33,12 +42,9 @@ export const fieldContextOrderRemovalValidator: (config: JiraConfig) => ChangeVa
       )
       .map(instance => instance.elemID.getFullName()),
   )
-  const removedOrders = removedInstances.filter(instance => instance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
-  const bla = removedOrders.filter(order => !removedOptionsAndContexts.has(getParentElemID(order).getFullName()))
-  const parentName = getParentElemID(removedOrders[0]).getFullName()
-  log.error(`bla: ${bla.length}, parentName: ${parentName}`)
-  return removedOrders
-    .filter(order => !removedOptionsAndContexts.has(getParentElemID(order).getFullName()))
+  return removedInstances
+    .filter(instance => instance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
+    .filter(order => !isParentRemoved(removedOptionsAndContexts, order))
     .map(order => ({
       elemID: order.elemID,
       severity: 'Error',

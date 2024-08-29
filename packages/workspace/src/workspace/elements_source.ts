@@ -158,3 +158,41 @@ export const mapReadOnlyElementsSource = (
   has: id => source.has(id),
   list: () => source.list(),
 })
+
+export const createOverrideReadOnlyElementsSource = (
+  source: ReadOnlyElementsSource,
+  overrideElements: Record<string, Element | undefined>,
+): ReadOnlyElementsSource => {
+  const compareStrings = (id1: string, id2: string): number => {
+    if (id1 === id2) {
+      return 0
+    }
+    return id1 > id2 ? 1 : -1
+  }
+  const isOmittedByOverride = (id: string | undefined): boolean =>
+    id !== undefined && id in overrideElements && overrideElements[id] === undefined
+
+  const list: ReadOnlyElementsSource['list'] = async () =>
+    awu(
+      collections.asynciterable.iterateTogether(
+        awu(await source.list()).map(id => id.getFullName()),
+        awu(Object.keys(overrideElements).sort()),
+        compareStrings,
+      ),
+    )
+      .filter(({ after: idFromOverride }) => !isOmittedByOverride(idFromOverride))
+      .map(({ before: idFromSource, after: idFromOverride }) => idFromOverride ?? idFromSource)
+      .filter(values.isDefined)
+      .map(ElemID.fromFullName)
+
+  const get: ReadOnlyElementsSource['get'] = async id =>
+    id.getFullName() in overrideElements ? overrideElements[id.getFullName()] : source.get(id)
+
+  return {
+    get,
+    getAll: async () => awu(await list()).map(get),
+    has: async id =>
+      (id.getFullName() in overrideElements && overrideElements[id.getFullName()] !== undefined) || source.has(id),
+    list,
+  }
+}

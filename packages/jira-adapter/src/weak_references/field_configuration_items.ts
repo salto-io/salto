@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import {
   ElemID,
   GetCustomReferencesFunc,
@@ -14,9 +15,7 @@ import {
   ReferenceInfo,
 } from '@salto-io/adapter-api'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
@@ -26,31 +25,9 @@ const { pickAsync } = promises.object
 
 const log = logger(module)
 
-export type FieldItem = {
-  description?: string
-  isHidden?: boolean
-  isRequired?: boolean
-  renderer?: string
-}
-
-type FieldConfigurationItems = {
-  [key: string]: FieldItem
-}
-
-const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
-  description: Joi.optional(),
-  isHidden: Joi.boolean().optional(),
-  isRequired: Joi.boolean().optional(),
-  renderer: Joi.optional(),
-})
-
-const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
-
-export const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME)
-
 const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
-  if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+  if (!_.isPlainObject(fieldConfigurationItems)) {
     log.warn(
       `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`,
     )
@@ -98,7 +75,7 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
         .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
         .map(async instance => {
           const fieldConfigurationItems = instance.value.fields
-          if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+          if (!_.isPlainObject(fieldConfigurationItems)) {
             log.warn(
               `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not omitting missing fields`,
             )

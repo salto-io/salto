@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import Joi from 'joi'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -18,20 +19,41 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
-import { FieldItem, isFieldConfigurationItems } from '../../weak_references/field_configuration_items'
 
 const log = logger(module)
 
 const { awu } = collections.asynciterable
 
+type FieldItem = {
+  description?: string
+  isHidden?: boolean
+  isRequired?: boolean
+  renderer?: string
+}
+
 type EnrichedFieldItem = FieldItem & { id: ReferenceExpression }
+
+type FieldConfigurationItems = {
+  [key: string]: FieldItem
+}
+
+const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
+  description: Joi.optional(),
+  isHidden: Joi.boolean().optional(),
+  isRequired: Joi.boolean().optional(),
+  renderer: Joi.optional(),
+})
+
+const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
+
+const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME)
 
 const enrichFieldItem = async (
   fieldName: string,

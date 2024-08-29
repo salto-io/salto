@@ -16,11 +16,14 @@ export const transform: definitions.AdjustFunctionSingle = async ({ value }) => 
     throw new Error('unexpected value for guide item, not transforming')
   }
 
+  const primaryGroupIds = _.map(_.get(value, 'primary_groups.groups'), 'id')
+  const secondaryGroupIds = _.map(_.get(value, 'secondary_groups.groups'), 'id')
+
   return {
     value: {
       ..._.omit(value, ['primary_groups', 'secondary_groups']),
-      primary_groups_id: _.map(_.get(value, 'primary_groups.groups'), 'id'),
-      secondary_groups_id: _.map(_.get(value, 'secondary_groups.groups'), 'id'),
+      ...(primaryGroupIds.length > 0 && { primary_groups_id: primaryGroupIds }),
+      ...(secondaryGroupIds.length > 0 && { secondary_groups_id: secondaryGroupIds }),
     },
   }
 }

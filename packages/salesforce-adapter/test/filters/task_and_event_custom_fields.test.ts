@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { BuiltinTypes, Change, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, Field, toChange } from '@salto-io/adapter-api'
 import { createCustomObjectType, createField, defaultFilterContext } from '../utils'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -40,22 +40,25 @@ describe('taskAndEventCustomFieldsFilter', () => {
     deletable: true,
     updateable: true,
   }
-  const taskField = createField(
-    taskType,
-    BuiltinTypes.STRING,
-    `Task.${FIELD_NAME}`,
-    derivedFieldAnnotations,
-    FIELD_NAME,
-  )
-  const eventField = createField(
-    eventType,
-    BuiltinTypes.STRING,
-    `Event.${FIELD_NAME}`,
-    derivedFieldAnnotations,
-    FIELD_NAME,
-  )
+  let taskField: Field
+  let eventField: Field
 
   beforeEach(() => {
+    taskField = createField(
+      taskType,
+      BuiltinTypes.STRING,
+      `Task.${FIELD_NAME}`,
+      derivedFieldAnnotations,
+      FIELD_NAME,
+    )
+    eventField = createField(
+      eventType,
+      BuiltinTypes.STRING,
+      `Event.${FIELD_NAME}`,
+      derivedFieldAnnotations,
+      FIELD_NAME,
+    )
+
     filter = filterCreator({
       config: {
         ...defaultFilterContext,

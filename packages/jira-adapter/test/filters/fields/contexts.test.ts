@@ -23,6 +23,8 @@ import JiraClient from '../../../src/client/client'
 import { deployContextChange } from '../../../src/filters/fields/contexts'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 import { getLookUpName } from '../../../src/reference_mapping'
+import * as contextOptions from '../../../src/filters/fields/context_options'
+import * as defaultValues from '../../../src/filters/fields/default_values'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -114,7 +116,33 @@ describe('deployContextChange', () => {
       ],
     })
   })
+  it('should not call setOptions and setDefaultValue if splitFieldContextOptions is false', async () => {
+    const setOptionsMock = jest.spyOn(contextOptions, 'setContextOptions')
+    const updateDefaultValuesMock = jest.spyOn(defaultValues, 'updateDefaultValues')
 
+    const afterInstance = new InstanceElement(
+      'instance',
+      contextType,
+      {
+        id: '1',
+        name: 'context1',
+        description: 'desc',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      },
+    )
+
+    const change = toChange({
+      after: afterInstance,
+    })
+    const config = getDefaultConfig({ isDataCenter: false })
+    config.fetch.splitFieldContextOptions = true
+    await deployContextChange({ change, client, config })
+    expect(setOptionsMock).not.toHaveBeenCalled()
+    expect(updateDefaultValuesMock).not.toHaveBeenCalled()
+  })
   it('should not throw if deploy failed because the field was deleted', async () => {
     const beforeInstance = new InstanceElement(
       'instance',
@@ -141,7 +169,6 @@ describe('deployContextChange', () => {
     })
     await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
   })
-
   it('should throw for other error messages', async () => {
     const beforeInstance = new InstanceElement(
       'instance',
@@ -170,7 +197,6 @@ describe('deployContextChange', () => {
       deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
-
   it('should throw if not removal', async () => {
     const instance = new InstanceElement(
       'instance',

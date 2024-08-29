@@ -13,6 +13,9 @@ import { invertNaclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../types'
 import { omitReadOnlyFields } from './read_only_fields'
 
+/**
+ * Recursively merge null fields from source to target. Returns a new object.
+ */
 const mergeNullFields = (target: Values, source: Values): Values => {
   const result = { ...target }
   _.forEach(source, (srcField, naclCaseFieldName) => {
@@ -38,6 +41,8 @@ const adjustRemovedValuesToNull: AdjustFunctionSingle = async ({ typeName, value
   }
   const adjustedChange = deployment.transformRemovedValuesToNull({ change, skipSubFields: true })
   return {
+    // We can't return the value from the adjusted change directly,
+    // as the original value might have already been adjusted and differs from it.
     value: mergeNullFields(value, getChangeData(adjustedChange).value),
   }
 }

@@ -171,6 +171,9 @@ export const fallbackUsersHandler: FixElementsHandler =
       .filter(isRelevantElement)
       .map(replaceMissingUsers(userEmails, fallbackValue))
       .filter(values.isDefined)
+    if (fixedElementsWithUserCount.length !== 0) {
+      log.info('Setting the user for %d elements: %o', fixedElementsWithUserCount.length, fixedElementsWithUserCount)
+    }
     const errors = fixedElementsWithUserCount.map(({ fixedInstance, missingUsers }) =>
       missingUsersChangeWarning(fixedInstance, missingUsers, fallbackValue),
     )

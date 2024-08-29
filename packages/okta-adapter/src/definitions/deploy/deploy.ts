@@ -811,11 +811,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: '/api/v1/authorizationServers/{authServerId}/scopes',
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes',
                   method: 'post',
-                },
-                context: {
-                  authServerId: '{_parent.0.id}',
                 },
               },
             },
@@ -824,11 +821,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: '/api/v1/authorizationServers/{authServerId}/scopes/{id}',
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
                   method: 'put',
-                },
-                context: {
-                  authServerId: '{_parent.0.id}',
                 },
               },
             },
@@ -837,11 +831,8 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: {
-                  path: '/api/v1/authorizationServers/{authServerId}/scopes/{id}',
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
                   method: 'delete',
-                },
-                context: {
-                  authServerId: '{_parent.0.id}',
                 },
               },
             },

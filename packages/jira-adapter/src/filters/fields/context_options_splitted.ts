@@ -26,9 +26,9 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const processContextOptionsPrivateApiResponse = (allUpdatedOptions: Option[], addedOptions: Value[]): void => {
-  const optionsMap = _.keyBy(allUpdatedOptions, option => naclCase(option.value))
+  const optionsMap = _.keyBy(allUpdatedOptions, option => option.value)
   addedOptions.forEach(option => {
-    option.id = optionsMap[naclCase(option.value)]?.id
+    option.id = optionsMap[option.value]?.id
   })
 }
 
@@ -168,18 +168,35 @@ const updateParentIds = (options: InstanceElement[], parentOptions: InstanceElem
       option.value.parentValue = elemIdToOption[getParent(option).elemID.getFullName()]?.value.value
     })
 }
-const setCascadeOptions = (options: InstanceElement[]): void => {
-  options.filter(isCascadeOption).forEach(option => {
+const setCascadeOptions = (cascadeOptions: InstanceElement[]): void =>
+  cascadeOptions.forEach(option => {
     option.value.optionId = getParent(option).value.id
     option.value.parentValue = getParent(option).value.value
   })
-}
 
 const unsetOptions = (options: InstanceElement[]): void =>
   options.forEach(option => {
     delete option.value.optionId
     delete option.value.parentValue
   })
+
+// count all the options under a context by counting all the options under all the order instances under the context
+const countOptionsInContext = async (contextId: string, elementsSource: ReadOnlyElementsSource): Promise<number> => {
+  const allOrderInstancesFromElementsSource = await getInstancesFromElementSource(elementsSource, [
+    OPTIONS_ORDER_TYPE_NAME,
+  ])
+  return _.sum(
+    await Promise.all(
+      allOrderInstancesFromElementsSource.map(async orderInstance => {
+        const parent = await getContextParentAsync(orderInstance, elementsSource)
+        if (parent.value.id === contextId && Array.isArray(orderInstance.value.options)) {
+          return orderInstance.value.options.length
+        }
+        return 0
+      }),
+    ),
+  )
+}
 
 export const setContextOptionsSplitted = async ({
   contextId,
@@ -202,17 +219,9 @@ export const setContextOptionsSplitted = async ({
 }): Promise<void> => {
   const [addedCascade, addedSimple] = _.partition(added, isCascadeOption)
 
-  setCascadeOptions(modified)
+  setCascadeOptions(modified.filter(isCascadeOption))
   setCascadeOptions(addedCascade)
-  const optionsCount = _.sum(
-    await Promise.all(
-      (await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])).map(async instance =>
-        (await getContextParentAsync(instance, elementsSource)).value.id === contextId
-          ? instance.value.options.length
-          : 0,
-      ),
-    ),
-  )
+  const optionsCount = await countOptionsInContext(contextId, elementsSource)
 
   const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
   await updateContextOptions({

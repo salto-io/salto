@@ -164,7 +164,7 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors).toHaveLength(6)
     expect(result.deployResult.errors[1]).toEqual({
       elemID: differentOptionInstance.elemID,
-      message: 'All field context options must be of the same context and field',
+      message: 'Inner problem occurred during deployment of custom field context options, please contact support',
       severity: 'Error',
     })
     expect(result.deployResult.appliedChanges).toHaveLength(0)
@@ -195,7 +195,7 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors).toHaveLength(6)
     expect(result.deployResult.errors[0]).toEqual({
       elemID: differentOptionInstance.elemID,
-      message: 'All field context options must be of the same context and field',
+      message: 'Inner problem occurred during deployment of custom field context options, please contact support',
       severity: 'Error',
     })
     expect(result.deployResult.appliedChanges).toHaveLength(0)

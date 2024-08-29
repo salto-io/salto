@@ -41,8 +41,13 @@ const log = logger(module)
 const { getTransformationConfigByType } = configUtils
 const { toBasicInstance } = adapterElements
 
-const adjustPath = (instance: InstanceElement, fileName: string): string[] | undefined =>
-  instance.path && [...instance.path, pathNaclCase(naclCase(`${invertNaclCase(instance.elemID.name)}_${fileName}`))]
+const adjustPath = (context: InstanceElement, fileName: string): string[] | undefined => {
+  if (context.path === undefined) {
+    log.error('Context path is undefined, creating options without path')
+    return undefined
+  }
+  return [...context.path, pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${fileName}`))]
+}
 
 const getOptionsInstances = async ({
   context,
@@ -71,7 +76,7 @@ const getOptionsInstances = async ({
           parent,
         })
         delete optionInstance.value[PARENT_NAME_FIELD] // It was added to create the name properly
-        optionInstance.path = adjustPath(context, FIELD_CONTEXT_OPTIONS_FILE_NAME)
+        optionInstance.path = adjustPath(context, FIELD_CONTEXT_OPTIONS_FILE_NAME) ?? optionInstance.path
         return optionInstance
       }),
     )
@@ -101,7 +106,7 @@ const getOrderInstance = async ({
     getElemIdFunc,
     parent,
   })
-  instance.path = adjustPath(context, FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME)
+  instance.path = adjustPath(context, FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME) ?? instance.path
   return instance
 }
 

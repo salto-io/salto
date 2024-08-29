@@ -27,6 +27,17 @@ import { getContextAndFieldIds } from '../../common/fields'
 
 const log = logger(module)
 
+const allOptionsWithSameContextAndField = (
+  relevantChanges: Change<InstanceElement>[],
+  contextId: string,
+  fieldId: string,
+): boolean =>
+  relevantChanges
+    .map(getContextAndFieldIds)
+    .find(
+      ({ contextId: currContextId, fieldId: currFieldId }) => currContextId !== contextId || currFieldId !== fieldId,
+    ) === undefined
+
 const filter: FilterCreator = ({ config, client, paginator, elementsSource }) => ({
   name: 'fieldContextOptionsDeploymentFilter',
   deploy: async changes => {
@@ -40,22 +51,17 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
     const errors: SaltoElementError[] = []
     let appliedChanges = relevantChanges
 
+    // Validate that all changes are of the same context and field
+    // It should be impossible to have changes of different contexts and fields in the same deploy, if there are such changes, it is a bug in the grouping logic
     const { contextId, fieldId } = getContextAndFieldIds(relevantChanges[0])
-    if (
-      relevantChanges
-        .map(getContextAndFieldIds)
-        .find(
-          ({ contextId: currContextId, fieldId: currFieldId }) =>
-            currContextId !== contextId || currFieldId !== fieldId,
-        ) !== undefined
-    ) {
+    if (!allOptionsWithSameContextAndField(relevantChanges, contextId, fieldId)) {
       log.error('All field context options must be of the same context and field')
       return {
         leftoverChanges,
         deployResult: {
           errors: relevantChanges.map(change => ({
-            message: 'All field context options must be of the same context and field',
-            severity: 'Error' as SeverityLevel,
+            message: 'Inner problem occurred during deployment of custom field context options, please contact support',
+            severity: 'Error',
             elemID: getChangeData(change).elemID,
           })),
           appliedChanges: [],
@@ -77,21 +83,20 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
         paginator,
       })
       // update the ids of added options
-      addChanges.map(getChangeData).forEach(instance => {
-        leftoverChanges
-          .map(getChangeData)
-          .filter(isInstanceElement)
-          .filter(relevantInstance => relevantInstance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
-          .forEach(orderInstance =>
-            collections.array
-              .makeArray(orderInstance.value.options)
-              .filter(isResolvedReferenceExpression)
-              .filter(optionRef => optionRef.elemID.isEqual(instance.elemID))
-              .forEach(relevantOptionRef => {
-                relevantOptionRef.value.value.id = instance.value.id
-              }),
-          )
-      })
+      const addedOptionFullNameToId = _.fromPairs(
+        addChanges.map(getChangeData).map(option => [option.elemID.getFullName(), option.value.id]),
+      )
+      leftoverChanges
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .filter(relevantInstance => relevantInstance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
+        .flatMap(orderInstance => collections.array.makeArray(orderInstance.value.options))
+        .filter(isResolvedReferenceExpression)
+        .forEach(optionRef => {
+          if (addedOptionFullNameToId[optionRef.elemID.getFullName()] !== undefined) {
+            optionRef.value.value.id = addedOptionFullNameToId[optionRef.elemID.getFullName()]
+          }
+        })
     } catch (err) {
       log.error('An error occurred during deployment of custom field context options: %o', err)
       errors.push(

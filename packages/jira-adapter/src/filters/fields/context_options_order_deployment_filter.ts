@@ -13,7 +13,7 @@ import { FilterCreator } from '../../filter'
 import { OPTIONS_ORDER_TYPE_NAME } from './constants'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { getContextAndFieldIds } from '../../common/fields'
-import { reorderContextOptions } from './context_options'
+import { deployOptionsOrder } from './context_options'
 
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'fieldContextOptionsOrderDeploymentFilter',
@@ -38,7 +38,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         .filter(isResolvedReferenceExpression)
         .map(optionRef => optionRef.value.value)
 
-      await reorderContextOptions(optionsValues, client, baseUrl)
+      await deployOptionsOrder(optionsValues, client, baseUrl)
     })
 
     return {

@@ -30,7 +30,7 @@ describe('fieldContextOptionsOrderDeploymentFilter', () => {
   let config: JiraConfig
   let client: JiraClient
   let paginator: clientUtils.Paginator
-  const reorderMock = jest.spyOn(contextsOptions, 'reorderContextOptions')
+  const reorderMock = jest.spyOn(contextsOptions, 'deployOptionsOrder')
 
   beforeEach(() => {
     reorderMock.mockClear()

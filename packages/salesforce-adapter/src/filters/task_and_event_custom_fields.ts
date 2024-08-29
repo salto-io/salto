@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import {
   Change,
@@ -28,6 +29,7 @@ import {
 } from './utils'
 import { findMatchingActivityChange } from '../change_validators/task_or_event_fields_modifications'
 
+const log = logger(module)
 const { isDefined } = values
 
 const filterCreator: LocalFilterCreator = ({ config }) => {

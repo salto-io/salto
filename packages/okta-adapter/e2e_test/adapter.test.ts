@@ -50,6 +50,7 @@ import {
   AUTHENTICATOR_TYPE_NAME,
   BRAND_THEME_TYPE_NAME,
   BRAND_TYPE_NAME,
+  CUSTOM_NAME_FIELD,
   DOMAIN_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   GROUP_TYPE_NAME,
@@ -388,7 +389,8 @@ const getHiddenFieldsToOmit = (
   return Object.entries(customizations ?? {})
     .filter(([, customization]) => customization.hide === true)
     .map(([fieldName]) => fieldName)
-    .filter(fieldName => fieldName !== 'id')
+    // ignore fields that are written to nacl after deployment
+    .filter(fieldName => !['id', CUSTOM_NAME_FIELD].includes(fieldName))
 }
 
 describe('Okta adapter E2E', () => {

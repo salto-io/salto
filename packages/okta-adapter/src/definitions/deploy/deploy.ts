@@ -804,6 +804,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    OAuth2Scope: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
   }
 
   return _.merge(standardRequestDefinitions, customDefinitions)

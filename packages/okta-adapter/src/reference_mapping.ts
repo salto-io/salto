@@ -284,6 +284,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'kid',
     target: { type: JWK_TYPE_NAME },
   },
+  {
+    src: { field: 'include', parentTypes: ['OAuth2ScopesMediationPolicyRuleCondition'] },
+    serializationStrategy: 'name',
+    target: { type: 'OAuth2Scope' },
+  },
 ]
 
 const userReferenceRules: OktaFieldReferenceDefinition[] = [

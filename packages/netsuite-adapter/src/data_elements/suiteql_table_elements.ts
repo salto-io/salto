@@ -497,14 +497,19 @@ const getSavedSearchInternalIdsMapFromColumn =
   async (client: NetsuiteClient, queryBy: QueryBy, items: string[]): Promise<InternalIdsMap> => {
     const ajv = new Ajv({ allErrors: true, strict: false })
     const getColumnValues = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
-      const anyOfFilter = [[searchColumn, 'anyof', ..._.difference(items, exclude)]]
+      const include = _.difference(items, exclude)
+      const anyOfFilter = include.length > 0 ? [[searchColumn, 'anyof', ...include]] : undefined
       const noneOfFilter = exclude.length > 0 ? [[searchColumn, 'noneof', ...exclude]] : []
+      // we can't filter by name, so we query all column values when queryBy='name'
+      const queryFilters = queryBy === 'internalId' ? anyOfFilter : noneOfFilter
+      if (queryFilters === undefined) {
+        return {}
+      }
       const result = await client.runSavedSearchQuery(
         {
           type: searchType,
           columns: [searchColumn],
-          // we can't filter by name, so we query all column values when queryBy='name'
-          filters: queryBy === 'internalId' ? anyOfFilter : noneOfFilter,
+          filters: queryFilters,
         },
         COLUMN_QUERY_LIMIT,
       )

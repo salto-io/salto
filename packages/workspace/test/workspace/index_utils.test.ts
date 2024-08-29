@@ -5,7 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, getChangeData, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  getChangeData,
+  toChange,
+  Element,
+  Change,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import { getAllElementsChanges, getBaseChanges, updateIndex } from '../../src/workspace/index_utils'
@@ -31,6 +40,17 @@ describe('index utils', () => {
         toChange({ after: secondObject }),
         toChange({ after: thirdObject }),
       ])
+    })
+    describe('when an element exists in the change list and also in the element source', () => {
+      let result: Change<Element>[]
+      beforeEach(async () => {
+        result = await getAllElementsChanges([toChange({ before: firstObject, after: firstObject })], elementsSource)
+      })
+      it('should return only the original change for the element', () => {
+        const objChanges = result.filter(change => getChangeData(change).elemID.isEqual(firstObject.elemID))
+        expect(objChanges).toHaveLength(1)
+        expect(objChanges[0].action).toEqual('modify')
+      })
     })
   })
   describe('getBaseChanges', () => {

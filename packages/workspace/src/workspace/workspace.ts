@@ -824,12 +824,12 @@ export const loadWorkspace = async (
           .toArray(),
       )
 
-      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements) => {
+      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements, src2) => {
         const src1ElementsToMerge = await awu(src1RecElements).toArray()
-        const src1IDSet = new Set(src1ElementsToMerge.map(elem => elem.elemID.getFullName()))
+        const src1IDSet = new Set(src1ElementsToMerge.map(elemID => elemID.getFullName()))
 
-        const shouldIncludeStateElement = async (elem: Element): Promise<boolean> =>
-          src1IDSet.has(elem.elemID.getFullName()) || isHidden(elem, state(envName))
+        const shouldIncludeStateElement = async (elemID: ElemID): Promise<boolean> =>
+          src1IDSet.has(elemID.getFullName()) || isHidden(await src2.get(elemID), state(envName))
 
         const src2ElementsToMerge = awu(src2RecElements).filter(shouldIncludeStateElement)
 

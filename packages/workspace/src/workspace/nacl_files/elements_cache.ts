@@ -61,11 +61,12 @@ export type CacheUpdate = {
 }
 
 export type RecoveryOverrideFunc = (
-  src1RecElements: AsyncIterable<Element>,
-  src2RecElements: AsyncIterable<Element>,
+  src1RecElements: AsyncIterable<ElemID>,
+  src2RecElements: AsyncIterable<ElemID>,
+  src2: ReadOnlyElementsSource,
 ) => Promise<{
-  src1ElementsToMerge: AsyncIterable<Element>
-  src2ElementsToMerge: AsyncIterable<Element>
+  src1ElementsToMerge: AsyncIterable<ElemID>
+  src2ElementsToMerge: AsyncIterable<ElemID>
 }>
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
@@ -163,11 +164,8 @@ const createFreshChangeSet = async (
   noErrorMergeIds: [],
 })
 
-export const getContainerTypeChanges = async (changes: Change<Element>[]): Promise<Element[]> =>
-  awu(changes)
-    .map(change => getChangeData(change))
-    .filter(element => isContainerType(element))
-    .toArray()
+const getContainerTypeChanges = (changes: Change<Element>[]): Element[] =>
+  changes.map(change => getChangeData(change)).filter(element => isContainerType(element))
 
 export interface Flushable {
   flush: () => Promise<boolean | void>
@@ -274,18 +272,20 @@ export const createMergeManager = async (
         return { changeIds, potentialDeletedIds }
       }
 
-      const getRecoveryElements = async (
+      const isRemovedByOverride = (elemID: ElemID, overrides: Record<string, Element>): boolean =>
+        // A removal is marked in overrides by having the key explicitly set with a value of "undefined"
+        // we need the check with the 'in' notation to avoid false positives on keys that are not overridden
+        elemID.getFullName() in overrides && overrides[elemID.getFullName()] === undefined
+
+      const getRecoveryElementIDs = async (
         src: ReadOnlyElementsSource,
         srcOverrides: Record<string, Element>,
         srcChanges: Change<Element>[],
-      ): Promise<AsyncIterable<Element>> =>
+      ): Promise<AsyncIterable<ElemID>> =>
         src && recoveryOperation === REBUILD_ON_RECOVERY
-          ? awu(await src.getAll())
-              // using the 'in' notation here since undefined for an existing key is different
-              // then an undefined key (overriding a key with undefined value)
-              .map(elem => (elem.elemID.getFullName() in srcOverrides ? srcOverrides[elem.elemID.getFullName()] : elem))
-              .filter(values.isDefined)
-              .concat(await getContainerTypeChanges(srcChanges))
+          ? awu(await src.list())
+              .filter(elemID => !isRemovedByOverride(elemID, srcOverrides))
+              .concat(getContainerTypeChanges(srcChanges).map(elem => elem.elemID))
           : awu([])
 
       const potentialDeletedIds = new Set<string>()
@@ -301,15 +301,16 @@ export const createMergeManager = async (
       log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)
       const src1Overrides = cacheUpdate.src1Overrides ?? {}
       const src2Overrides = cacheUpdate.src2Overrides ?? {}
-      const src1ElementsToMerge = await getRecoveryElements(src1, src1Overrides, src1Changes.changes)
-      const src2ElementsToMerge = await getRecoveryElements(src2, src2Overrides, src2Changes.changes)
+      const src1ElementsToMerge = await getRecoveryElementIDs(src1, src1Overrides, src1Changes.changes)
+      const src2ElementsToMerge = await getRecoveryElementIDs(src2, src2Overrides, src2Changes.changes)
 
       const elementsToMerge = cacheUpdate.recoveryOverride
-        ? await cacheUpdate.recoveryOverride(src1ElementsToMerge, src2ElementsToMerge)
+        ? await cacheUpdate.recoveryOverride(src1ElementsToMerge, src2ElementsToMerge, src2)
         : { src1ElementsToMerge, src2ElementsToMerge }
 
       return {
-        ...elementsToMerge,
+        src1ElementsToMerge: awu(elementsToMerge.src1ElementsToMerge).map(elemID => src1.get(elemID)),
+        src2ElementsToMerge: awu(elementsToMerge.src2ElementsToMerge).map(elemID => src2.get(elemID)),
         potentialDeletedIds,
       }
     }

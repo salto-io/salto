@@ -232,6 +232,21 @@ export const mockDefaultValues: Record<string, Values> = {
       ],
     },
   },
+  queue: {
+    name: 'Test',
+    description: 'Test',
+    priority: 1,
+    definition: {
+      all: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: 'open',
+        },
+      ],
+    },
+    primary_groups_id: [],
+  },
   layout: {
     state: 'draft',
     type: 'ticket',

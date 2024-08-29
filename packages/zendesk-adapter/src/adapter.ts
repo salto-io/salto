@@ -87,6 +87,7 @@ import slaPolicyOrderFilter from './filters/reorder/sla_policy'
 import automationOrderFilter from './filters/reorder/automation'
 import triggerOrderFilter from './filters/reorder/trigger'
 import viewOrderFilter from './filters/reorder/view'
+import queueOrderFilter from './filters/reorder/queue'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import omitCollisionFilter from './filters/omit_collision'
 import accountSettingsFilter from './filters/account_settings'
@@ -196,6 +197,7 @@ export const DEFAULT_FILTERS = [
   automationOrderFilter,
   triggerOrderFilter,
   viewOrderFilter,
+  queueOrderFilter,
   businessHoursScheduleFilter,
   accountSettingsFilter,
   dynamicContentFilter,

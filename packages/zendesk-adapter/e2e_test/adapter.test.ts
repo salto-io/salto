@@ -86,6 +86,7 @@ import {
   USER_FIELD_CUSTOM_FIELD_OPTIONS,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
+  GROUP_TYPE_NAME,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -387,7 +388,11 @@ describe('Zendesk adapter E2E', () => {
         .filter(isInstanceElement)
         .find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
       expect(brandInstanceE2eHelpCenter).toBeDefined()
-      if (brandInstanceE2eHelpCenter === undefined) {
+      const defaultGroup = firstFetchResult.elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === GROUP_TYPE_NAME && e.value.default === true)
+      expect(defaultGroup).toBeDefined()
+      if (brandInstanceE2eHelpCenter === undefined || defaultGroup === undefined) {
         return
       }
       adapterAttr = realAdapter(
@@ -431,6 +436,13 @@ describe('Zendesk adapter E2E', () => {
       const groupInstance = createInstanceElement({
         type: 'group',
         valuesOverride: { name: createName('group') },
+      })
+      const queueInstance = createInstanceElement({
+        type: 'queue',
+        valuesOverride: {
+          name: createName('queue'),
+          primary_groups_id: [new ReferenceExpression(defaultGroup.elemID, defaultGroup)],
+        },
       })
       const macroInstance = createInstanceElement({
         type: 'macro',
@@ -1152,6 +1164,7 @@ describe('Zendesk adapter E2E', () => {
         scheduleInstance,
         customRoleInstance,
         groupInstance,
+        queueInstance,
         macroInstance,
         slaPolicyInstance,
         viewInstance,
@@ -1218,6 +1231,7 @@ describe('Zendesk adapter E2E', () => {
         'oauth_global_client',
         'organization',
         'organization_field',
+        'queue',
         'routing_attribute',
         'sharing_agreement',
         'sla_policy',
@@ -1248,6 +1262,7 @@ describe('Zendesk adapter E2E', () => {
         'organization_field_order',
         'ticket_form_order',
         'sla_policy_order',
+        'queue_order',
       ]
       const orderElementsElemIDs = orderElements.map(name => ({
         type: new ElemID(ZENDESK, name),

@@ -1193,6 +1193,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  queue_order: {
+    deployRequests: {
+      modify: {
+        url: 'api/v2/queues/order',
+        method: 'patch',
+      },
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',

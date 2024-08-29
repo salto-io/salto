@@ -910,6 +910,8 @@ const createCustomizations = (): Record<
       },
     },
   },
+  // placeholder for order nacls
+  queue_order: {},
 
   monitored_twitter_handle: {
     requests: [

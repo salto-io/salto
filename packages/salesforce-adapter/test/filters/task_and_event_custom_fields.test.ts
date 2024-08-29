@@ -44,20 +44,8 @@ describe('taskAndEventCustomFieldsFilter', () => {
   let eventField: Field
 
   beforeEach(() => {
-    taskField = createField(
-      taskType,
-      BuiltinTypes.STRING,
-      `Task.${FIELD_NAME}`,
-      derivedFieldAnnotations,
-      FIELD_NAME,
-    )
-    eventField = createField(
-      eventType,
-      BuiltinTypes.STRING,
-      `Event.${FIELD_NAME}`,
-      derivedFieldAnnotations,
-      FIELD_NAME,
-    )
+    taskField = createField(taskType, BuiltinTypes.STRING, `Task.${FIELD_NAME}`, derivedFieldAnnotations, FIELD_NAME)
+    eventField = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD_NAME}`, derivedFieldAnnotations, FIELD_NAME)
 
     filter = filterCreator({
       config: {

@@ -88,6 +88,7 @@ describe('Microsoft Security adapter', () => {
           'entra_servicePrincipal',
           'intune_application',
           'intune_applicationConfigurationManagedApp',
+          'intune_applicationConfigurationManagedDevice',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -170,6 +171,84 @@ describe('Microsoft Security adapter', () => {
               expect(targetApps[0].mobileAppIdentifier.packageId.elemID.getFullName()).toEqual(
                 'microsoft_security.intune_application.instance.managedAndroidStoreApp_com_test2@uv',
               )
+            })
+          })
+
+          describe('application configurations - managed devices', () => {
+            let intuneApplicationConfigurations: InstanceElement[]
+            beforeEach(async () => {
+              intuneApplicationConfigurations = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'intune_applicationConfigurationManagedDevice')
+            })
+
+            it('should create the correct instances for Intune application configurations', async () => {
+              expect(intuneApplicationConfigurations).toHaveLength(2)
+
+              const intuneApplicationConfigurationNames = intuneApplicationConfigurations.map(e => e.elemID.name)
+              expect(intuneApplicationConfigurationNames).toEqual(
+                expect.arrayContaining(['test_android@s', 'test_ios@s']),
+              )
+            })
+
+            it('should create the Intune application configuration instances with the correct path', async () => {
+              const intuneApplicationConfigurationParts = intuneApplicationConfigurations.map(e => e.path)
+              expect(intuneApplicationConfigurationParts).toEqual(
+                expect.arrayContaining([
+                  ['microsoft_security', 'Records', 'intune_applicationConfigurationManagedDevice', 'test_android'],
+                  ['microsoft_security', 'Records', 'intune_applicationConfigurationManagedDevice', 'test_ios'],
+                ]),
+              )
+            })
+
+            it('should reference the correct target mobile apps', async () => {
+              const iosIdx = intuneApplicationConfigurations.findIndex(e => e.elemID.name === 'test_ios@s')
+              const intuneApplicationConfigurationIos = intuneApplicationConfigurations[iosIdx]
+              const targetMobileAppsIos = intuneApplicationConfigurationIos.value.targetedMobileApps
+              expect(targetMobileAppsIos).toHaveLength(1)
+              expect(targetMobileAppsIos[0]).toBeInstanceOf(ReferenceExpression)
+              expect(targetMobileAppsIos[0].elemID.getFullName()).toEqual(
+                'microsoft_security.intune_application.instance.managedIOSStoreApp_test',
+              )
+
+              const androidIdx = intuneApplicationConfigurations.findIndex(e => e.elemID.name === 'test_android@s')
+              const intuneApplicationConfigurationAndroid = intuneApplicationConfigurations[androidIdx]
+              const targetMobileAppsAndroid = intuneApplicationConfigurationAndroid.value.targetedMobileApps
+              expect(targetMobileAppsAndroid).toHaveLength(1)
+              expect(targetMobileAppsAndroid[0]).toBeInstanceOf(ReferenceExpression)
+              expect(targetMobileAppsAndroid[0].elemID.getFullName()).toEqual(
+                'microsoft_security.intune_application.instance.managedAndroidStoreApp_com_test@uv',
+              )
+            })
+
+            it('should parse the payloadJson field correctly', async () => {
+              const androidIdx = intuneApplicationConfigurations.findIndex(e => e.elemID.name === 'test_android@s')
+              const intuneApplicationConfigurationAndroid = intuneApplicationConfigurations[androidIdx]
+              expect(intuneApplicationConfigurationAndroid.value.payloadJson).toEqual({
+                kind: 'androidenterprise#managedConfiguration',
+                productId: 'app:com.microsoft.launcher.enterprise',
+                managedProperty: [
+                  {
+                    key: 'show_volume_setting',
+                    valueBool: false,
+                  },
+                  {
+                    key: 'screen_saver_image',
+                    valueString: 'hehe',
+                  },
+                ],
+              })
+            })
+
+            it('should parse the encodedSettingXml field correctly', async () => {
+              const iosIdx = intuneApplicationConfigurations.findIndex(e => e.elemID.name === 'test_ios@s')
+              const intuneApplicationConfigurationIos = intuneApplicationConfigurations[iosIdx]
+              expect(intuneApplicationConfigurationIos.value.encodedSettingXml).toEqual({
+                dict: {
+                  key: 'hi',
+                  string: 'bye',
+                },
+              })
             })
           })
         })

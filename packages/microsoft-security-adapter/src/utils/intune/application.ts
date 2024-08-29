@@ -8,11 +8,11 @@
 
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
-import { getAdjustedOdataTypeFieldName } from '../shared'
+import { odataType } from '../shared'
 import { APPLICATION_TYPE_NAME } from '../../constants/intune'
 
 const isAndroidManagedStoreApp = (value: Values): boolean =>
-  _.get(value, getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)) === 'androidManagedStoreApp'
+  _.get(value, odataType.getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)) === 'androidManagedStoreApp'
 
 const isSystemApp = (value: Values): boolean => Boolean(value.isSystemApp)
 

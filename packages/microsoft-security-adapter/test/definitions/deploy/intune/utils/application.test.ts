@@ -11,8 +11,10 @@ import {
   omitApplicationRedundantFields,
   transformManagedGooglePlayApp,
 } from '../../../../../src/definitions/deploy/intune/utils/application'
-import { getAdjustedOdataTypeFieldName } from '../../../../../src/utils/shared'
+import { odataType } from '../../../../../src/utils'
 import { contextMock } from '../../../../mocks'
+
+const { getAdjustedOdataTypeFieldName } = odataType
 
 const { APP_IDENTIFIER_FIELD_NAME, PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME } =
   intuneConstants
@@ -20,8 +22,12 @@ const { APP_IDENTIFIER_FIELD_NAME, PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NA
 const isManagedGooglePlayAppMock = jest.fn()
 
 jest.mock('../../../../../src/utils', () => ({
+  ...jest.requireActual<{}>('../../../../../src/utils'),
   intuneUtils: {
-    isManagedGooglePlayApp: (...args: unknown[]) => isManagedGooglePlayAppMock(...args),
+    application: {
+      ...jest.requireActual<{}>('../../../../../src/utils/intune/application'),
+      isManagedGooglePlayApp: (...args: unknown[]) => isManagedGooglePlayAppMock(...args),
+    },
   },
 }))
 

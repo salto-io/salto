@@ -7,10 +7,10 @@
  */
 
 import { APPLICATION_TYPE_NAME } from '../../../src/constants/intune'
-import { intuneUtils } from '../../../src/utils'
-import { getAdjustedOdataTypeFieldName } from '../../../src/utils/shared'
+import { odataType, intuneUtils } from '../../../src/utils'
 
-const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils
+const { getAdjustedOdataTypeFieldName } = odataType
+const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application
 
 describe('Intune application fetch & deploy utils', () => {
   describe(`${isManagedGooglePlayApp.name}`, () => {

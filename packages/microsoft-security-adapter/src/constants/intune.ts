@@ -21,11 +21,16 @@ export const APP_STORE_URL_FIELD_NAME = 'appStoreUrl'
 
 // ApplicationConfigurationManagedApp fields
 export const APPS_FIELD_NAME = 'apps'
+export const ENCODED_SETTING_XML_FIELD_NAME = 'encodedSettingXml'
+export const PAYLOAD_JSON_FIELD_NAME = 'payloadJson'
 
 /* Type names */
 // Top level
 export const APPLICATION_TYPE_NAME = toIntuneTypeName('application')
 export const APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME = toIntuneTypeName('applicationConfigurationManagedApp')
+export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeName(
+  'applicationConfigurationManagedDevice',
+)
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(

@@ -9,7 +9,11 @@ import { references as referenceUtils, fetch as fetchUtils } from '@salto-io/ada
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from '../types'
 import { intuneConstants } from '../../constants'
 
-const { APPLICATION_TYPE_NAME, APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME } = intuneConstants
+const {
+  APPLICATION_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+} = intuneConstants
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
@@ -39,5 +43,13 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     target: { type: APPLICATION_TYPE_NAME },
     serializationStrategy: 'packageId',
     sourceTransformation: 'asCaseInsensitiveString',
+  },
+  {
+    src: {
+      field: 'targetedMobileApps',
+      parentTypes: [APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME],
+    },
+    target: { type: APPLICATION_TYPE_NAME },
+    serializationStrategy: 'id',
   },
 ]

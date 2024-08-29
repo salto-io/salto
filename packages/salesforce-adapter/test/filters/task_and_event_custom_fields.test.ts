@@ -81,6 +81,16 @@ describe('taskAndEventCustomFieldsFilter', () => {
         expect(field.annotations.activityField.elemID).toEqual(activityField.elemID)
       })
     })
+    it('should not mutate custom fields to references if Activity is not found', async () => {
+      const elements = [taskType, eventType, taskField, eventField]
+      await filter.onFetch(elements)
+      ;[taskField, eventField].forEach(field => {
+        expect(Object.keys(field.annotations).sort()).toEqual(
+          ['apiName', 'modifyMe', 'label', 'length', 'someOtherAnnotation', 'updateable', 'creatable', 'deletable'].sort(),
+        )
+        expect(field.annotations.activityField).toBeUndefined()
+      })
+    })
   })
 
   describe('deploy', () => {

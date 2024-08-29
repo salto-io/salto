@@ -13,11 +13,55 @@ import { contextMock } from '../../mocks'
 const { PAYLOAD_JSON_FIELD_NAME, ENCODED_SETTING_XML_FIELD_NAME } = intuneConstants
 
 describe('Application configuration utils', () => {
-  describe(`${applicationConfiguration.decodePayloadJsonField.name}`, () => {
-    describe('when the value is a valid base64 encoded json', () => {
-      it('should return an adjust function that decodes the requested binary fields', async () => {
+  describe(`${applicationConfiguration.parseApplicationConfigurationBinaryFields.name}`, () => {
+    describe('when the operation is fetch', () => {
+      it('should return an adjust function that decodes the binary fields', async () => {
         expect(
-          await applicationConfiguration.decodePayloadJsonField({
+          await applicationConfiguration.parseApplicationConfigurationBinaryFields('fetch')({
+            value: {
+              [PAYLOAD_JSON_FIELD_NAME]: 'eyJhIjoiYSIsImIiOiJiIn0=',
+              [ENCODED_SETTING_XML_FIELD_NAME]: 'PHJvb3Q+PGNoaWxkPmNvbnRlbnRBPC9jaGlsZD48L3Jvb3Q+',
+              someOtherField: 'not encoded',
+            },
+            typeName: 'test',
+            context: {},
+          }),
+        ).toEqual({
+          value: {
+            [PAYLOAD_JSON_FIELD_NAME]: { a: 'a', b: 'b' },
+            [ENCODED_SETTING_XML_FIELD_NAME]: {
+              root: {
+                child: 'contentA',
+              },
+            },
+            someOtherField: 'not encoded',
+          },
+        })
+      })
+
+      it('should return the original value if the binary fields are not valid', async () => {
+        expect(
+          await applicationConfiguration.parseApplicationConfigurationBinaryFields('fetch')({
+            value: {
+              [PAYLOAD_JSON_FIELD_NAME]: 1,
+              [ENCODED_SETTING_XML_FIELD_NAME]: 'PGhlYWQ/',
+              someOtherField: 'not encoded',
+            },
+            typeName: 'test',
+            context: {},
+          }),
+        ).toEqual({
+          value: {
+            [PAYLOAD_JSON_FIELD_NAME]: 1,
+            [ENCODED_SETTING_XML_FIELD_NAME]: 'PGhlYWQ/',
+            someOtherField: 'not encoded',
+          },
+        })
+      })
+
+      it('should ignore missing binary fields', async () => {
+        expect(
+          await applicationConfiguration.parseApplicationConfigurationBinaryFields('fetch')({
             value: {
               [PAYLOAD_JSON_FIELD_NAME]: 'eyJhIjoiYSIsImIiOiJiIn0=',
               someOtherField: 'not encoded',
@@ -34,49 +78,18 @@ describe('Application configuration utils', () => {
       })
     })
 
-    describe('when the value is not a string', () => {
-      it('should return the original value', async () => {
+    describe('when the operation is deploy', () => {
+      it('should return an adjust function that encodes the binary fields', async () => {
         expect(
-          await applicationConfiguration.decodePayloadJsonField({
-            value: {
-              [PAYLOAD_JSON_FIELD_NAME]: 1,
-              someOtherField: 'not encoded',
-            },
-            typeName: 'test',
-            context: {},
-          }),
-        ).toEqual({
-          value: { [PAYLOAD_JSON_FIELD_NAME]: 1, someOtherField: 'not encoded' },
-        })
-      })
-    })
-
-    describe('when the value is not a valid base64 encoded json', () => {
-      it('should return the original value', async () => {
-        expect(
-          await applicationConfiguration.decodePayloadJsonField({
-            value: {
-              [PAYLOAD_JSON_FIELD_NAME]: 'a',
-              someOtherField: 'b',
-            },
-            typeName: 'test',
-            context: {},
-          }),
-        ).toEqual({
-          value: { [PAYLOAD_JSON_FIELD_NAME]: 'a', someOtherField: 'b' },
-        })
-      })
-    })
-  })
-
-  describe(`${applicationConfiguration.encodePayloadJsonField.name}`, () => {
-    describe('when the value is a valid json', () => {
-      it('should return an adjust function that encodes the requested binary fields', async () => {
-        expect(
-          await applicationConfiguration.encodePayloadJsonField({
+          await applicationConfiguration.parseApplicationConfigurationBinaryFields('deploy')({
             value: {
               [PAYLOAD_JSON_FIELD_NAME]: { a: 'a', b: 'b' },
-              someOtherField: { c: 'd', e: 'f' },
+              [ENCODED_SETTING_XML_FIELD_NAME]: {
+                root: {
+                  child: 'contentA',
+                },
+              },
+              someOtherField: 'not encoded',
             },
             typeName: 'test',
             context: contextMock,
@@ -84,88 +97,42 @@ describe('Application configuration utils', () => {
         ).toEqual({
           value: {
             [PAYLOAD_JSON_FIELD_NAME]: 'eyJhIjoiYSIsImIiOiJiIn0=',
-            someOtherField: { c: 'd', e: 'f' },
+            [ENCODED_SETTING_XML_FIELD_NAME]: 'PHJvb3Q+PGNoaWxkPmNvbnRlbnRBPC9jaGlsZD48L3Jvb3Q+',
+            someOtherField: 'not encoded',
           },
         })
       })
-    })
 
-    describe('when the value is not a valid json', () => {
-      it('should return the original value', async () => {
+      it('should return the original value if the fields are not objects', async () => {
         expect(
-          await applicationConfiguration.encodePayloadJsonField({
+          await applicationConfiguration.parseApplicationConfigurationBinaryFields('deploy')({
             value: {
-              [PAYLOAD_JSON_FIELD_NAME]: 'a',
-              someOtherField: 'b',
+              [PAYLOAD_JSON_FIELD_NAME]: 1,
+              [ENCODED_SETTING_XML_FIELD_NAME]: 'not an object',
+              someOtherField: 'not encoded',
             },
             typeName: 'test',
             context: contextMock,
           }),
         ).toEqual({
-          value: { [PAYLOAD_JSON_FIELD_NAME]: 'a', someOtherField: 'b' },
-        })
-      })
-    })
-  })
-
-  describe(`${applicationConfiguration.parseSettingXmlField.name}`, () => {
-    describe('when the value is a valid base64 encoded xml', () => {
-      it('should return an adjust function that decodes the requested binary xml fields', async () => {
-        expect(
-          await applicationConfiguration.parseSettingXmlField({
-            value: {
-              [ENCODED_SETTING_XML_FIELD_NAME]: 'PHJvb3Q+PGNoaWxkPmNvbnRlbnRBPC9jaGlsZD48L3Jvb3Q+',
-              someOtherField: 'not encoded',
-            },
-            typeName: 'test',
-            context: {},
-          }),
-        ).toEqual({
           value: {
-            [ENCODED_SETTING_XML_FIELD_NAME]: {
-              root: {
-                child: 'contentA',
-              },
-            },
+            [PAYLOAD_JSON_FIELD_NAME]: 1,
+            [ENCODED_SETTING_XML_FIELD_NAME]: 'not an object',
             someOtherField: 'not encoded',
           },
         })
       })
-    })
 
-    describe('when the value is not a valid base64 encoded xml', () => {
-      it('should return the original value', async () => {
+      it('should ignore missing fields', async () => {
         expect(
-          await applicationConfiguration.parseSettingXmlField({
-            value: {
-              [ENCODED_SETTING_XML_FIELD_NAME]: 'PGhlYWQ/',
-            },
-            typeName: 'test',
-            context: {},
-          }),
-        ).toEqual({
-          value: { [ENCODED_SETTING_XML_FIELD_NAME]: 'PGhlYWQ/' },
-        })
-      })
-    })
-  })
-
-  describe(`${applicationConfiguration.buildSettingXmlField.name}`, () => {
-    describe('when the value is a valid xml', () => {
-      it('should return an adjust function that encodes the requested binary xml fields', async () => {
-        expect(
-          await applicationConfiguration.buildSettingXmlField({
+          await applicationConfiguration.parseApplicationConfigurationBinaryFields('deploy')({
             value: {
               [ENCODED_SETTING_XML_FIELD_NAME]: {
                 root: {
                   child: 'contentA',
                 },
               },
-              someOtherValue: {
-                root: {
-                  child: 'contentB',
-                },
-              },
+              someOtherField: 'not encoded',
             },
             typeName: 'test',
             context: contextMock,
@@ -173,29 +140,8 @@ describe('Application configuration utils', () => {
         ).toEqual({
           value: {
             [ENCODED_SETTING_XML_FIELD_NAME]: 'PHJvb3Q+PGNoaWxkPmNvbnRlbnRBPC9jaGlsZD48L3Jvb3Q+',
-            someOtherValue: {
-              root: {
-                child: 'contentB',
-              },
-            },
+            someOtherField: 'not encoded',
           },
-        })
-      })
-    })
-
-    describe('when the value is not a valid xml', () => {
-      it('should return the original value', async () => {
-        expect(
-          await applicationConfiguration.buildSettingXmlField({
-            value: {
-              [ENCODED_SETTING_XML_FIELD_NAME]: 'a',
-              someOtherValue: 'b',
-            },
-            typeName: 'test',
-            context: contextMock,
-          }),
-        ).toEqual({
-          value: { [ENCODED_SETTING_XML_FIELD_NAME]: 'a', someOtherValue: 'b' },
         })
       })
     })

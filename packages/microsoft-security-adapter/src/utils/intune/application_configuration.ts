@@ -12,8 +12,6 @@ import { safeJsonStringify, validatePlainObject } from '@salto-io/adapter-utils'
 import { definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { intuneConstants } from '../../constants'
-import { AdjustFunctionSingle as AdjustFunctionSingleFetch } from '../../definitions/fetch/shared/types'
-import { AdjustFunctionSingle as AdjustFunctionSingleDeploy } from '../../definitions/deploy/shared/types'
 
 const { APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME, PAYLOAD_JSON_FIELD_NAME, ENCODED_SETTING_XML_FIELD_NAME } =
   intuneConstants
@@ -23,49 +21,47 @@ const log = logger(module)
 const xmlParser = new XMLParser()
 const xmlBuilder = new XMLBuilder()
 
-const transformFieldWithFunction: <TContext = definitions.ContextParams>(
-  fieldName: string,
-  transformFunction: (value: unknown) => unknown,
-) => definitions.AdjustFunctionSingle<TContext> =
-  (fieldName, transformFunction) =>
-  async ({ value, typeName }) => {
-    validatePlainObject(value, typeName)
-    try {
-      return { value: { ...value, [fieldName]: transformFunction(value[fieldName]) } }
-    } catch (e) {
-      log.error('Failed to parse field: %s for type: %s', fieldName, typeName)
-      return { value }
-    }
+const decodeSingleBase64Field = (fieldValue: unknown, fieldType: 'xml' | 'json'): unknown => {
+  const wrapper = fieldType === 'xml' ? xmlParser.parse.bind(xmlParser) : JSON.parse
+  if (fieldValue === undefined) {
+    return undefined
   }
-
-const decodeSingleBase64Field = (fieldValue: unknown, wrapper: (value: string) => object): unknown => {
   if (typeof fieldValue === 'string') {
     return wrapper(Buffer.from(fieldValue, 'base64').toString('utf8'))
   }
   throw new Error(`Field value is not a string, cannot decode base64 field. Received: ${inspect(fieldValue)}`)
 }
 
-const encodeSingleBase64Field = (fieldValue: unknown, wrapper: (value: object | null) => string): unknown => {
+const encodeSingleBase64Field = (fieldValue: unknown, fieldType: 'xml' | 'json'): string | undefined => {
+  if (fieldValue === undefined) {
+    return undefined
+  }
   validatePlainObject(fieldValue, APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME)
+  const wrapper = fieldType === 'xml' ? xmlBuilder.build.bind(xmlBuilder) : safeJsonStringify
   return Buffer.from(wrapper(fieldValue)).toString('base64')
 }
 
-export const decodePayloadJsonField: AdjustFunctionSingleFetch = transformFieldWithFunction(
-  PAYLOAD_JSON_FIELD_NAME,
-  requestValue => decodeSingleBase64Field(requestValue, JSON.parse),
-)
-
-export const encodePayloadJsonField: AdjustFunctionSingleDeploy = transformFieldWithFunction(
-  PAYLOAD_JSON_FIELD_NAME,
-  requestValue => encodeSingleBase64Field(requestValue, safeJsonStringify),
-)
-
-export const parseSettingXmlField: AdjustFunctionSingleFetch = transformFieldWithFunction(
-  ENCODED_SETTING_XML_FIELD_NAME,
-  requestValue => decodeSingleBase64Field(requestValue, xmlParser.parse.bind(xmlParser)),
-)
-
-export const buildSettingXmlField: AdjustFunctionSingleDeploy = transformFieldWithFunction(
-  ENCODED_SETTING_XML_FIELD_NAME,
-  requestValue => encodeSingleBase64Field(requestValue, xmlBuilder.build.bind(xmlBuilder)),
-)
+export const parseApplicationConfigurationBinaryFields: <TContext = definitions.ContextParams>(
+  operation: 'fetch' | 'deploy',
+) => definitions.AdjustFunctionSingle<TContext> =
+  operation =>
+  async ({ value }) => {
+    validatePlainObject(value, APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME)
+    const parseField = operation === 'fetch' ? decodeSingleBase64Field : encodeSingleBase64Field
+    try {
+      return {
+        value: {
+          ...value,
+          [PAYLOAD_JSON_FIELD_NAME]: parseField(value[PAYLOAD_JSON_FIELD_NAME], 'json'),
+          [ENCODED_SETTING_XML_FIELD_NAME]: parseField(value[ENCODED_SETTING_XML_FIELD_NAME], 'xml'),
+        },
+      }
+    } catch (e) {
+      log.error(
+        'Failed to %s binary fields for type: %s',
+        operation === 'fetch' ? 'decode' : 'encode',
+        APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+      )
+      return { value }
+    }
+  }

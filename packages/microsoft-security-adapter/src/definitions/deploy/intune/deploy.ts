@@ -142,10 +142,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
         request: {
           transformation: {
             adjust: omitReadOnlyFieldsWrapper(
-              concatAdjustFunctions(
-                applicationConfiguration.buildSettingXmlField,
-                applicationConfiguration.encodePayloadJsonField,
-              ),
+              applicationConfiguration.parseApplicationConfigurationBinaryFields('deploy'),
             ),
           },
         },

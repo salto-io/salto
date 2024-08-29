@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
+import { definitions } from '@salto-io/adapter-components'
 import { Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
@@ -117,10 +117,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           omit: ['version'],
-          adjust: concatAdjustFunctions(
-            applicationConfiguration.decodePayloadJsonField,
-            applicationConfiguration.parseSettingXmlField,
-          ),
+          adjust: applicationConfiguration.parseApplicationConfigurationBinaryFields('fetch'),
         },
       },
     ],

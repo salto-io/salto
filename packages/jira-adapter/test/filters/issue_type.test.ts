@@ -7,7 +7,7 @@
  */
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, StaticFile, toChange } from '@salto-io/adapter-api'
-import { CONTENT_TYPE_HEADER, ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
 import issueTypeFilter from '../../src/filters/issue_type'
 import JiraClient from '../../src/client/client'
@@ -360,7 +360,7 @@ describe('issueTypeFilter', () => {
         url: '/rest/api/3/universal_avatar/type/issuetype/owner/3',
         data: content,
         headers: {
-          [CONTENT_TYPE_HEADER]: 'image/png',
+          'Content-Type': 'image/png',
           'X-Atlassian-Token': 'no-check',
         },
       })

@@ -26,13 +26,7 @@ import gadgetFilter, {
   InstantToPropertiesResponse,
 } from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import {
-  CONTENT_TYPE_HEADER,
-  DASHBOARD_GADGET_TYPE,
-  DASHBOARD_TYPE,
-  JIRA,
-  JSON_CONTENT_TYPE,
-} from '../../../src/constants'
+import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
 
@@ -381,13 +375,13 @@ describe('gadgetFilter', () => {
       await filter.deploy([change])
       expect(connection.put).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', '"value1"', {
         headers: {
-          [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
+          'Content-Type': 'application/json',
         },
       })
 
       expect(connection.put).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', '"value2"', {
         headers: {
-          [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
+          'Content-Type': 'application/json',
         },
       })
     })

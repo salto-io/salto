@@ -22,15 +22,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import {
-  AUTOMATION_TYPE,
-  CONTENT_TYPE_HEADER,
-  JIRA,
-  JSON_CONTENT_TYPE,
-  OBJECT_SCHEMA_TYPE,
-  OBJECT_TYPE_TYPE,
-  REQUEST_TYPE_NAME,
-} from '../../../src/constants'
+import { AUTOMATION_TYPE, JIRA, OBJECT_SCHEMA_TYPE, OBJECT_TYPE_TYPE, REQUEST_TYPE_NAME } from '../../../src/constants'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
 
@@ -616,7 +608,7 @@ describe('automationDeploymentFilter', () => {
         {
           headers: {
             ...PRIVATE_API_HEADERS,
-            [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
+            'Content-Type': 'application/json',
           },
         },
       )
@@ -639,7 +631,7 @@ describe('automationDeploymentFilter', () => {
       expect(connection.delete).toHaveBeenCalledWith('/rest/cb-automation/latest/project/GLOBAL/rule/3', {
         headers: {
           ...PRIVATE_API_HEADERS,
-          [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
+          'Content-Type': 'application/json',
         },
       })
     })
@@ -697,7 +689,7 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           null,
-          { headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE } },
+          { headers: { 'Content-Type': 'application/json' } },
         )
       })
 
@@ -721,7 +713,7 @@ describe('automationDeploymentFilter', () => {
           null,
           {
             headers: {
-              [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
+              'Content-Type': 'application/json',
             },
           },
         )
@@ -734,7 +726,7 @@ describe('automationDeploymentFilter', () => {
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           {
-            headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
+            headers: { 'Content-Type': 'application/json' },
           },
         )
       })
@@ -754,7 +746,7 @@ describe('automationDeploymentFilter', () => {
         instance.value.labels = ['1']
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
         expect(connection.delete).toHaveBeenCalledWith('/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1', {
-          headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
+          headers: { 'Content-Type': 'application/json' },
         })
       })
 
@@ -768,14 +760,14 @@ describe('automationDeploymentFilter', () => {
           null,
           {
             headers: {
-              [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
+              'Content-Type': 'application/json',
             },
           },
         )
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           {
-            headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
+            headers: { 'Content-Type': 'application/json' },
           },
         )
       })

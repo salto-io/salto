@@ -157,9 +157,9 @@ export const getLogo = async ({
   if (logoContent instanceof Error) {
     return logoContent
   }
-  const pathName = pathNaclCase(logoName)
-  const camelCaseName = pathName.replace(/_/g, '')
-  const resourcePathName = `${normalizeFilePathPart(camelCaseName)}.${contentType}`
+  // Use the full NaCL name (including suffix) to avoid naming collisions, but replace '@' with '.' to ensure file
+  // names are valid across all operating systems.
+  const resourcePathName = `${normalizeFilePathPart(logoName.replace('@', '.'))}.${contentType}`
   const logoId = extractIdFromUrl(link)
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(
@@ -167,14 +167,14 @@ export const getLogo = async ({
     logoType,
     {
       id: logoId,
-      fileName: `${camelCaseName}.${contentType}`,
+      fileName: resourcePathName,
       contentType,
       content: new StaticFile({
         filepath: `${OKTA}/${logoType.elemID.name}/${resourcePathName}`,
         content: logoContent,
       }),
     },
-    [OKTA, RECORDS_PATH, ...nestedPath, logoType.elemID.typeName, pathName],
+    [OKTA, RECORDS_PATH, ...nestedPath, logoType.elemID.typeName, pathNaclCase(logoName)],
     {
       [CORE_ANNOTATIONS.PARENT]: refParents,
     },

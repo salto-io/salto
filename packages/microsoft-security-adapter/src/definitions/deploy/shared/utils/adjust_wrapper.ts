@@ -6,11 +6,27 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { concatAdjustFunctions, deployment, fetch } from '@salto-io/adapter-components'
-import { getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { validatePlainObject } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { concatAdjustFunctions, deployment } from '@salto-io/adapter-components'
+import { getChangeData, isInstanceChange, isModificationChange, Values } from '@salto-io/adapter-api'
+import { invertNaclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../types'
 import { omitReadOnlyFields } from './read_only_fields'
+
+const mergeNullFields = (target: Values, source: Values): Values => {
+  const result = { ...target }
+  _.forEach(source, (srcField, naclCaseFieldName) => {
+    const fieldName = invertNaclCase(naclCaseFieldName)
+    if (srcField === null) {
+      _.set(target, fieldName, null)
+      return
+    }
+    if (_.isPlainObject(target[fieldName]) && _.isPlainObject(srcField)) {
+      result[fieldName] = mergeNullFields(target[fieldName], srcField)
+    }
+  })
+  return result
+}
 
 const adjustRemovedValuesToNull: AdjustFunctionSingle = async ({ typeName, value, context }) => {
   const { change } = context
@@ -22,11 +38,7 @@ const adjustRemovedValuesToNull: AdjustFunctionSingle = async ({ typeName, value
   }
   const adjustedChange = deployment.transformRemovedValuesToNull({ change, skipSubFields: true })
   return {
-    context: {
-      ...context,
-      change: adjustedChange,
-    },
-    value: fetch.element.recursiveNaclCase(getChangeData(adjustedChange).value, true),
+    value: mergeNullFields(value, getChangeData(adjustedChange).value),
   }
 }
 

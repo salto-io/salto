@@ -18,7 +18,7 @@ const mergeNullFields = (target: Values, source: Values): Values => {
   _.forEach(source, (srcField, naclCaseFieldName) => {
     const fieldName = invertNaclCase(naclCaseFieldName)
     if (srcField === null) {
-      _.set(target, fieldName, null)
+      _.set(result, fieldName, null)
       return
     }
     if (_.isPlainObject(target[fieldName]) && _.isPlainObject(srcField)) {

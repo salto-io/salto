@@ -16,4 +16,4 @@ export {
 } from './type_utils'
 export { generateInstancesWithInitialTypes } from './instance_element'
 export { generateType } from './type_element'
-export { getFieldsToOmit, recursiveNaclCase } from './instance_utils'
+export { getFieldsToOmit } from './instance_utils'

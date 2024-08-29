@@ -6,8 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { Change, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
-import { fetch } from '@salto-io/adapter-components'
+import _ from 'lodash'
+import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { invertNaclCase } from '@salto-io/adapter-utils'
 import { adjustWrapper, defaultAdjust } from '../../../../../src/definitions/deploy/shared/utils'
 import * as AdjustWrapperModule from '../../../../../src/definitions/deploy/shared/utils/adjust_wrapper'
 import { contextMock, objectTypeMock } from '../../../../mocks'
@@ -28,28 +29,58 @@ describe('adjust wrapper utils', () => {
         before: new InstanceElement('test', objectTypeMock, {
           a: 1,
           b: 2,
-          'nacl_cased@v': 'This is different in the change vs in the value',
+          c: {
+            d: 3,
+            e: 4,
+          },
         }),
         after: new InstanceElement('test', objectTypeMock, {
           a: 1,
-          'nacl_cased@v': 'This is different in the change vs in the value',
+          c: {
+            d: 3,
+          },
         }),
       })
 
       const result = await defaultAdjust({
-        value: fetch.element.recursiveNaclCase(getChangeData(changeWithRemovedFields).value, true),
+        value: getChangeData(changeWithRemovedFields).value,
         typeName: objectTypeMock.elemID.typeName,
         context: { ...contextMock, change: changeWithRemovedFields },
       })
 
-      expect(result.value).toEqual({ a: 1, b: null, 'nacl.cased': 'This is different in the change vs in the value' })
-      expect(result.context?.change).toBeDefined()
-      expect(getChangeData(result.context?.change as Change<InstanceElement>).value).toEqual({
+      expect(result.value).toEqual({ a: 1, b: null, c: { d: 3, e: null } })
+      expect(omitReadOnlyFieldsMock).toHaveBeenCalled()
+    })
+
+    it('should not modify fields that are different in the change vs in the value', async () => {
+      const changeWithDifferentFields = toChange({
+        before: new InstanceElement('test', objectTypeMock, {
+          a: 1,
+          b: 2,
+          'nacl_cased@v': 'This field name is different in the change vs in the value',
+          'another_field@v': 'This field is not in the value',
+        }),
+        after: new InstanceElement('test', objectTypeMock, {
+          a: 1,
+          'nacl_cased@v': 'This field name is different in the change vs in the value',
+          'another_field@v': 'This field is not in the value',
+        }),
+      })
+
+      const result = await defaultAdjust({
+        value: _.omit(
+          _.mapKeys(getChangeData(changeWithDifferentFields).value, (_val, key) => invertNaclCase(key)),
+          ['another.field'],
+        ),
+        typeName: objectTypeMock.elemID.typeName,
+        context: { ...contextMock, change: changeWithDifferentFields },
+      })
+
+      expect(result.value).toEqual({
         a: 1,
         b: null,
-        'nacl_cased@v': 'This is different in the change vs in the value',
+        'nacl.cased': 'This field name is different in the change vs in the value',
       })
-      expect(omitReadOnlyFieldsMock).toHaveBeenCalled()
     })
   })
 

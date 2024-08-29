@@ -149,3 +149,5 @@ export const WORKFLOW_RETRY_PERIODS = [0, 1000 * 3, 1000 * 9, 1000 * 27, 1000 * 
 // almost constant functions
 export const fetchFailedWarnings = (name: string): string =>
   `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`
+export const CONTENT_TYPE_HEADER = 'Content-Type'
+export const JSON_CONTENT_TYPE = 'application/json'

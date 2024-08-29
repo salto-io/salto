@@ -5,6 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { CONTENT_TYPE_HEADER } from '../constants'
+
 export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
   'Accept-Language': 'en-US',
   'X-Force-Accept-Language': 'true',
@@ -20,5 +22,5 @@ export const PRIVATE_API_HEADERS = {
 
 export const JSP_API_HEADERS = {
   ...PRIVATE_API_HEADERS,
-  'Content-Type': 'application/x-www-form-urlencoded',
+  [CONTENT_TYPE_HEADER]: 'application/x-www-form-urlencoded',
 }

@@ -725,7 +725,9 @@ describe('automationDeploymentFilter', () => {
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
-          undefined,
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
         )
       })
 
@@ -743,10 +745,9 @@ describe('automationDeploymentFilter', () => {
         const modifyInstance = instance.clone()
         instance.value.labels = ['1']
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
-        expect(connection.delete).toHaveBeenCalledWith(
-          '/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1',
-          undefined,
-        )
+        expect(connection.delete).toHaveBeenCalledWith('/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1', {
+          headers: { 'Content-Type': 'application/json' },
+        })
       })
 
       it('should modify an automation label', async () => {
@@ -765,7 +766,9 @@ describe('automationDeploymentFilter', () => {
         )
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
-          undefined,
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
         )
       })
     })

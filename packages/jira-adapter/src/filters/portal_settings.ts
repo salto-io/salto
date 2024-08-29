@@ -20,7 +20,7 @@ import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { PORTAL_SETTINGS_TYPE_NAME } from '../constants'
+import { CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE, PORTAL_SETTINGS_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 
 const deployPortalSettings = async (
@@ -51,13 +51,13 @@ const deployPortalSettings = async (
       await client.put({
         url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/enable`,
         data: null,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
       })
     } else {
       await client.put({
         url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/disable`,
         data: null,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
       })
     }
   }

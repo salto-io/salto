@@ -86,7 +86,16 @@ describe('taskAndEventCustomFieldsFilter', () => {
       await filter.onFetch(elements)
       ;[taskField, eventField].forEach(field => {
         expect(Object.keys(field.annotations).sort()).toEqual(
-          ['apiName', 'modifyMe', 'label', 'length', 'someOtherAnnotation', 'updateable', 'creatable', 'deletable'].sort(),
+          [
+            'apiName',
+            'modifyMe',
+            'label',
+            'length',
+            'someOtherAnnotation',
+            'updateable',
+            'creatable',
+            'deletable',
+          ].sort(),
         )
         expect(field.annotations.activityField).toBeUndefined()
       })

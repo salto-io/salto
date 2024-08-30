@@ -36,9 +36,9 @@ const enrichFieldItem = async (
   fieldItem: Value,
   elementSource: ReadOnlyElementsSource,
   instanceName: string,
-): Promise<Exclude<Value, undefined> | undefined> => {
+): Promise<Value> => {
   if (!_.isPlainObject(fieldItem)) {
-    log.warn('field item is not plain object - ignoring it')
+    log.warn('ignoring field item %s in instance %s that is not plain object: %o', fieldName, instanceName, fieldItem)
     return undefined
   }
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
@@ -66,8 +66,15 @@ const replaceToMap = (instance: InstanceElement): void => {
 
 const replaceFromMap = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource): Promise<void> => {
   const fieldConfigurationItems = instance.value.fields
+  if (fieldConfigurationItems === undefined) {
+    return
+  }
   if (!_.isPlainObject(fieldConfigurationItems)) {
-    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not changing fields format`)
+    log.warn(
+      'fields value is corrupted in instance %s, hence not changing fields format: %o',
+      instance.elemID.getFullName(),
+      fieldConfigurationItems,
+    )
     return
   }
   instance.value.fields = await awu(Object.entries(fieldConfigurationItems))

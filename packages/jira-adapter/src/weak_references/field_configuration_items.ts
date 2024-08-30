@@ -35,7 +35,9 @@ const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: FieldEle
   }
   if (!_.isPlainObject(fieldConfigurationItems)) {
     log.warn(
-      `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`,
+      'fields value is corrupted in instance %s, hence not calculating fields weak references: %o',
+      instance.elemID.getFullName(),
+      fieldConfigurationItems,
     )
     return []
   }
@@ -87,9 +89,14 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
         .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
         .map(async instance => {
           const fieldConfigurationItems = instance.value.fields
+          if (fieldConfigurationItems === undefined) {
+            return undefined
+          }
           if (!_.isPlainObject(fieldConfigurationItems)) {
             log.warn(
-              `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not omitting missing fields`,
+              'fields value is corrupted in instance %s, hence not omitting missing fields: %o',
+              instance.elemID.getFullName(),
+              fieldConfigurationItems,
             )
             return undefined
           }

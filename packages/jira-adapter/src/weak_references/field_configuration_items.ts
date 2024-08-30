@@ -20,12 +20,15 @@ import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
+type FieldElemIDsMap = collections.map.DefaultMap<string, ElemID>
+
 const { awu } = collections.asynciterable
+const { DefaultMap } = collections.map
 const { pickAsync } = promises.object
 
 const log = logger(module)
 
-const getFieldReferences = (instance: InstanceElement, fieldToElemId: Record<string, ElemID>): ReferenceInfo[] => {
+const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: FieldElemIDsMap): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined) {
     return []
@@ -37,31 +40,35 @@ const getFieldReferences = (instance: InstanceElement, fieldToElemId: Record<str
     return []
   }
   return Object.keys(fieldConfigurationItems)
-    .map(fieldName => {
-      fieldToElemId[fieldName] = fieldToElemId[fieldName] ?? new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
-      return {
-        source: instance.elemID.createNestedID('fields', fieldName),
-        target: fieldToElemId[fieldName],
-        type: 'weak' as const,
-      }
-    })
+    .map(fieldName => ({
+      source: instance.elemID.createNestedID('fields', fieldName),
+      target: fieldElemIdsMap.get(fieldName),
+      type: 'weak' as const,
+    }))
     .filter(values.isDefined)
 }
 
 /**
  * Marks each field reference in field configuration as a weak reference.
  */
-const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements => {
-  const fieldConfigurationInstances = elements
-    .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-  const fieldToElemId: Record<string, ElemID> = {}
-  return log.timeDebug(
-    () => fieldConfigurationInstances.flatMap(instance => getFieldReferences(instance, fieldToElemId)),
-    'getFieldConfigurationItemsReferences for %d FieldConfiguration instances',
-    fieldConfigurationInstances.length,
-  )
-}
+const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
+  log.timeDebug(() => {
+    const fieldConfigurationInstances = elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+    log.debug('going to create references from %d FieldConfiguration instances', fieldConfigurationInstances.length)
+    const fieldElemIdsMap = new DefaultMap<string, ElemID>(
+      fieldName => new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName),
+    )
+    const references = fieldConfigurationInstances.flatMap(instance => getFieldReferences(instance, fieldElemIdsMap))
+    log.debug(
+      'created %d references to %d Field instances from %d FieldConfiguration instances',
+      references.length,
+      fieldElemIdsMap.size,
+      fieldConfigurationInstances.length,
+    )
+    return references
+  }, 'getFieldConfigurationItemsReferences')
 
 const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSource): Promise<boolean> => {
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)

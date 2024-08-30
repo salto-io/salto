@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import Joi from 'joi'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -18,8 +17,9 @@ import {
   Values,
   ReadOnlyElementsSource,
   ReferenceExpression,
+  Value,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { findObject } from '../../utils'
@@ -31,36 +31,16 @@ const log = logger(module)
 
 const { awu } = collections.asynciterable
 
-type FieldItem = {
-  description?: string
-  isHidden?: boolean
-  isRequired?: boolean
-  renderer?: string
-}
-
-type EnrichedFieldItem = FieldItem & { id: ReferenceExpression }
-
-type FieldConfigurationItems = {
-  [key: string]: FieldItem
-}
-
-const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
-  description: Joi.optional(),
-  isHidden: Joi.boolean().optional(),
-  isRequired: Joi.boolean().optional(),
-  renderer: Joi.optional(),
-})
-
-const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
-
-const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME)
-
 const enrichFieldItem = async (
   fieldName: string,
-  fieldItem: FieldItem,
+  fieldItem: Value,
   elementSource: ReadOnlyElementsSource,
   instanceName: string,
-): Promise<EnrichedFieldItem | undefined> => {
+): Promise<Exclude<Value, undefined> | undefined> => {
+  if (!_.isPlainObject(fieldItem)) {
+    log.warn('field item is not plain object - ignoring it')
+    return undefined
+  }
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
   const fieldInstance = await elementSource.get(elemId)
   if (fieldInstance === undefined) {
@@ -86,7 +66,7 @@ const replaceToMap = (instance: InstanceElement): void => {
 
 const replaceFromMap = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource): Promise<void> => {
   const fieldConfigurationItems = instance.value.fields
-  if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+  if (!_.isPlainObject(fieldConfigurationItems)) {
     log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not changing fields format`)
     return
   }

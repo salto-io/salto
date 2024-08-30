@@ -25,8 +25,11 @@ const { pickAsync } = promises.object
 
 const log = logger(module)
 
-const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
+const getFieldReferences = (instance: InstanceElement, fieldToElemId: Record<string, ElemID>): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
+  if (fieldConfigurationItems === undefined) {
+    return []
+  }
   if (!_.isPlainObject(fieldConfigurationItems)) {
     log.warn(
       `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`,
@@ -35,10 +38,10 @@ const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
   }
   return Object.keys(fieldConfigurationItems)
     .map(fieldName => {
-      const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
+      fieldToElemId[fieldName] = fieldToElemId[fieldName] ?? new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
       return {
         source: instance.elemID.createNestedID('fields', fieldName),
-        target: elemId,
+        target: fieldToElemId[fieldName],
         type: 'weak' as const,
       }
     })
@@ -50,12 +53,15 @@ const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
  */
 const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
   log.timeDebug(
-    () =>
-      elements
+    () => {
+      const fieldToElemId: Record<string, ElemID> = {}
+      return elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .flatMap(getFieldReferences),
-    'getFieldConfigurationItemsReferences',
+        .flatMap(instance => getFieldReferences(instance, fieldToElemId))
+    },
+    'getFieldConfigurationItemsReferences for %d elements',
+    elements.length,
   )
 
 const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSource): Promise<boolean> => {

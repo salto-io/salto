@@ -51,18 +51,17 @@ const getFieldReferences = (instance: InstanceElement, fieldToElemId: Record<str
 /**
  * Marks each field reference in field configuration as a weak reference.
  */
-const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
-  log.timeDebug(
-    () => {
-      const fieldToElemId: Record<string, ElemID> = {}
-      return elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .flatMap(instance => getFieldReferences(instance, fieldToElemId))
-    },
-    'getFieldConfigurationItemsReferences for %d elements',
-    elements.length,
+const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements => {
+  const fieldConfigurationInstances = elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+  const fieldToElemId: Record<string, ElemID> = {}
+  return log.timeDebug(
+    () => fieldConfigurationInstances.flatMap(instance => getFieldReferences(instance, fieldToElemId)),
+    'getFieldConfigurationItemsReferences for %d FieldConfiguration instances',
+    fieldConfigurationInstances.length,
   )
+}
 
 const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSource): Promise<boolean> => {
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)

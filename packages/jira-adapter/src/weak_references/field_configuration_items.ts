@@ -20,15 +20,12 @@ import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
-type FieldElemIDsMap = collections.map.DefaultMap<string, ElemID>
-
 const { awu } = collections.asynciterable
-const { DefaultMap } = collections.map
 const { pickAsync } = promises.object
 
 const log = logger(module)
 
-const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: FieldElemIDsMap): ReferenceInfo[] => {
+const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: Record<string, ElemID>): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined) {
     return []
@@ -41,13 +38,14 @@ const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: FieldEle
     )
     return []
   }
-  return Object.keys(fieldConfigurationItems)
-    .map(fieldName => ({
+  return Object.keys(fieldConfigurationItems).map(fieldName => {
+    fieldElemIdsMap[fieldName] = fieldElemIdsMap[fieldName] ?? new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
+    return {
       source: instance.elemID.createNestedID('fields', fieldName),
-      target: fieldElemIdsMap.get(fieldName),
+      target: fieldElemIdsMap[fieldName],
       type: 'weak' as const,
-    }))
-    .filter(values.isDefined)
+    }
+  })
 }
 
 /**
@@ -59,14 +57,12 @@ const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elem
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
     log.debug('going to create references from %d FieldConfiguration instances', fieldConfigurationInstances.length)
-    const fieldElemIdsMap = new DefaultMap<string, ElemID>(
-      fieldName => new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName),
-    )
+    const fieldElemIdsMap: Record<string, ElemID> = {}
     const references = fieldConfigurationInstances.flatMap(instance => getFieldReferences(instance, fieldElemIdsMap))
     log.debug(
       'created %d references to %d Field instances from %d FieldConfiguration instances',
       references.length,
-      fieldElemIdsMap.size,
+      Object.keys(fieldElemIdsMap).length,
       fieldConfigurationInstances.length,
     )
     return references

@@ -335,7 +335,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 additional: {
                   adjust: async ({ value, context }) => {
                     const subdomain = await getSubdomainFromElementsSource(context.elementSource)
-                    if (subdomain !== undefined && isCustomApp(value as Values, subdomain)) {
+                    if (isCustomApp(value as Values, subdomain)) {
                       const createdAppName = _.get(value, NAME_FIELD)
                       return {
                         value: {

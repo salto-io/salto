@@ -57,34 +57,38 @@ export const assignPolicyIdsToApplication = (value: unknown): Value => {
   }
 }
 
-const endsWithNumberRegex = new RegExp(/_\d+$/)
+// custom app name pattern is: subdomain_appName_number
+const customAppNamePattern = new RegExp(/^[\w-]+_[\w-]+_\d+$/)
 
-export const isCustomApp = (value: Values, subdomain: string): boolean => {
+export const isCustomApp = (value: Values, subdomain?: string): boolean => {
   const subdomainMatch =
+    _.isString(subdomain) &&
     value.name !== undefined &&
     // custom app names starts with subdomain and '_'
     _.startsWith(value.name, `${subdomain}_`)
 
-  const endsWithNumberMatch =
+  const customAppNamePatternMatch =
     value.name !== undefined &&
     // custom app names ends with a number
-    endsWithNumberRegex.test(value.name)
+    customAppNamePattern.test(value.name)
 
-  if (subdomainMatch !== endsWithNumberMatch) {
-    log.warn(
-      'isCustomApp matching methods disagree for %s: subdomainMatch=%s, endsWithNumberMatch=%s',
+  if (subdomainMatch !== customAppNamePatternMatch) {
+    log.debug(
+      'isCustomApp matching methods disagree for %s: subdomainMatch=%s, customAppNamePatternMatch=%s',
       value.name,
       subdomainMatch,
-      endsWithNumberMatch,
+      customAppNamePatternMatch,
     )
   } else {
-    log.info(
-      'isCustomApp matching methods agree for %s: subdomainMatch=%s, endsWithNumberMatch=%s',
+    log.trace(
+      'isCustomApp matching methods agree for %s: subdomainMatch=%s, customAppNamePatternMatch=%s',
       value.name,
       subdomainMatch,
-      endsWithNumberMatch,
+      customAppNamePatternMatch,
     )
   }
 
-  return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && subdomainMatch
+  // when subdomain was replaced in the tenant, existing apps will include the previous subdomain in their name, so we rely on the regex as a fallback
+  const isCustomAppName = subdomainMatch || customAppNamePatternMatch
+  return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && isCustomAppName
 }

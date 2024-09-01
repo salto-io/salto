@@ -65,33 +65,33 @@ describe('Microsoft Security adapter', () => {
 
       it('should generate the right elements on fetch', async () => {
         expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
-          'entra_administrativeUnit',
-          'entra_appRole',
-          'entra_application',
-          'entra_authenticationMethodPolicy',
-          'entra_authenticationMethodPolicy__authenticationMethodConfigurations',
-          'entra_authenticationStrengthPolicy',
-          'entra_conditionalAccessPolicy',
-          'entra_conditionalAccessPolicyNamedLocation',
-          'entra_crossTenantAccessPolicy',
-          'entra_customSecurityAttributeDefinition',
-          'entra_customSecurityAttributeDefinition__allowedValues',
-          'entra_customSecurityAttributeSet',
-          'entra_directoryRoleTemplate',
-          'entra_domain',
-          'entra_group',
-          'entra_groupLifeCyclePolicy',
-          'entra_group__appRoleAssignments',
-          'entra_oauth2PermissionGrant',
-          'entra_permissionGrantPolicy',
-          'entra_roleDefinition',
-          'entra_servicePrincipal',
-          'intune_application',
-          'intune_applicationConfigurationManagedApp',
-          'intune_applicationConfigurationManagedDevice',
-          'intune_deviceCompliance',
-          'intune_deviceConfiguration',
-          'intune_deviceConfigurationSettingCatalog',
+          'EntraAdministrativeUnit',
+          'EntraAppRole',
+          'EntraApplication',
+          'EntraAuthenticationMethodPolicy',
+          'EntraAuthenticationMethodPolicy__authenticationMethodConfigurations',
+          'EntraAuthenticationStrengthPolicy',
+          'EntraConditionalAccessPolicy',
+          'EntraConditionalAccessPolicyNamedLocation',
+          'EntraCrossTenantAccessPolicy',
+          'EntraCustomSecurityAttributeDefinition',
+          'EntraCustomSecurityAttributeDefinition__allowedValues',
+          'EntraCustomSecurityAttributeSet',
+          'EntraDirectoryRoleTemplate',
+          'EntraDomain',
+          'EntraGroup',
+          'EntraGroupLifeCyclePolicy',
+          'EntraGroup__appRoleAssignments',
+          'EntraOauth2PermissionGrant',
+          'EntraPermissionGrantPolicy',
+          'EntraRoleDefinition',
+          'EntraServicePrincipal',
+          'IntuneApplication',
+          'IntuneApplicationConfigurationManagedApp',
+          'IntuneApplicationConfigurationManagedDevice',
+          'IntuneDeviceCompliance',
+          'IntuneDeviceConfiguration',
+          'IntuneDeviceConfigurationSettingCatalog',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -103,7 +103,7 @@ describe('Microsoft Security adapter', () => {
             beforeEach(async () => {
               intuneApplications = elements
                 .filter(isInstanceElement)
-                .filter(e => e.elemID.typeName === 'intune_application')
+                .filter(e => e.elemID.typeName === 'IntuneApplication')
             })
 
             it('should create the correct instances for Intune applications', async () => {
@@ -126,12 +126,12 @@ describe('Microsoft Security adapter', () => {
               const intuneApplicationParts = intuneApplications.map(e => e.path)
               expect(intuneApplicationParts).toEqual(
                 expect.arrayContaining([
-                  ['microsoft_security', 'Records', 'intune_application', 'iosStoreApp', 'test'],
-                  ['microsoft_security', 'Records', 'intune_application', 'androidStoreApp', 'com_test'],
-                  ['microsoft_security', 'Records', 'intune_application', 'androidManagedStoreApp', 'com_test'],
-                  ['microsoft_security', 'Records', 'intune_application', 'managedIOSStoreApp', 'test'],
-                  ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test2'],
-                  ['microsoft_security', 'Records', 'intune_application', 'managedAndroidStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'iosStoreApp', 'test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'androidStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'androidManagedStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'managedIOSStoreApp', 'test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'managedAndroidStoreApp', 'com_test2'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'managedAndroidStoreApp', 'com_test'],
                 ]),
               )
             })
@@ -142,7 +142,7 @@ describe('Microsoft Security adapter', () => {
             beforeEach(async () => {
               intuneApplicationConfigurations = elements
                 .filter(isInstanceElement)
-                .filter(e => e.elemID.typeName === 'intune_applicationConfigurationManagedApp')
+                .filter(e => e.elemID.typeName === 'IntuneApplicationConfigurationManagedApp')
             })
 
             it('should create the correct instances for Intune application configurations', async () => {
@@ -156,7 +156,7 @@ describe('Microsoft Security adapter', () => {
               const intuneApplicationConfigurationParts = intuneApplicationConfigurations.map(e => e.path)
               expect(intuneApplicationConfigurationParts).toEqual(
                 expect.arrayContaining([
-                  ['microsoft_security', 'Records', 'intune_applicationConfigurationManagedApp', 'test_configuration'],
+                  ['microsoft_security', 'Records', 'IntuneApplicationConfigurationManagedApp', 'test_configuration'],
                 ]),
               )
             })
@@ -172,7 +172,7 @@ describe('Microsoft Security adapter', () => {
                 },
               })
               expect(targetApps[0].mobileAppIdentifier.packageId.elemID.getFullName()).toEqual(
-                'microsoft_security.intune_application.instance.managedAndroidStoreApp_com_test2@uv',
+                'microsoft_security.IntuneApplication.instance.managedAndroidStoreApp_com_test2@uv',
               )
             })
           })
@@ -182,7 +182,7 @@ describe('Microsoft Security adapter', () => {
             beforeEach(async () => {
               intuneApplicationConfigurations = elements
                 .filter(isInstanceElement)
-                .filter(e => e.elemID.typeName === 'intune_applicationConfigurationManagedDevice')
+                .filter(e => e.elemID.typeName === 'IntuneApplicationConfigurationManagedDevice')
             })
 
             it('should create the correct instances for Intune application configurations', async () => {
@@ -198,8 +198,8 @@ describe('Microsoft Security adapter', () => {
               const intuneApplicationConfigurationParts = intuneApplicationConfigurations.map(e => e.path)
               expect(intuneApplicationConfigurationParts).toEqual(
                 expect.arrayContaining([
-                  ['microsoft_security', 'Records', 'intune_applicationConfigurationManagedDevice', 'test_android'],
-                  ['microsoft_security', 'Records', 'intune_applicationConfigurationManagedDevice', 'test_ios'],
+                  ['microsoft_security', 'Records', 'IntuneApplicationConfigurationManagedDevice', 'test_android'],
+                  ['microsoft_security', 'Records', 'IntuneApplicationConfigurationManagedDevice', 'test_ios'],
                 ]),
               )
             })
@@ -211,7 +211,7 @@ describe('Microsoft Security adapter', () => {
               expect(targetMobileAppsIos).toHaveLength(1)
               expect(targetMobileAppsIos[0]).toBeInstanceOf(ReferenceExpression)
               expect(targetMobileAppsIos[0].elemID.getFullName()).toEqual(
-                'microsoft_security.intune_application.instance.managedIOSStoreApp_test',
+                'microsoft_security.IntuneApplication.instance.managedIOSStoreApp_test',
               )
 
               const androidIdx = intuneApplicationConfigurations.findIndex(e => e.elemID.name === 'test_android@s')
@@ -220,7 +220,7 @@ describe('Microsoft Security adapter', () => {
               expect(targetMobileAppsAndroid).toHaveLength(1)
               expect(targetMobileAppsAndroid[0]).toBeInstanceOf(ReferenceExpression)
               expect(targetMobileAppsAndroid[0].elemID.getFullName()).toEqual(
-                'microsoft_security.intune_application.instance.managedAndroidStoreApp_com_test@uv',
+                'microsoft_security.IntuneApplication.instance.managedAndroidStoreApp_com_test@uv',
               )
             })
 
@@ -260,7 +260,7 @@ describe('Microsoft Security adapter', () => {
             beforeEach(async () => {
               intuneDeviceConfigurations = elements
                 .filter(isInstanceElement)
-                .filter(e => e.elemID.typeName === 'intune_deviceConfiguration')
+                .filter(e => e.elemID.typeName === 'IntuneDeviceConfiguration')
             })
 
             it('should create the correct instances for Intune device configurations', async () => {
@@ -283,7 +283,7 @@ describe('Microsoft Security adapter', () => {
             beforeEach(async () => {
               intuneDeviceConfigurationSettingCatalogs = elements
                 .filter(isInstanceElement)
-                .filter(e => e.elemID.typeName === 'intune_deviceConfigurationSettingCatalog')
+                .filter(e => e.elemID.typeName === 'IntuneDeviceConfigurationSettingCatalog')
             })
 
             it('should create the correct instances for Intune device configuration setting catalogs', async () => {
@@ -311,7 +311,7 @@ describe('Microsoft Security adapter', () => {
             beforeEach(async () => {
               intuneDeviceCompliances = elements
                 .filter(isInstanceElement)
-                .filter(e => e.elemID.typeName === 'intune_deviceCompliance')
+                .filter(e => e.elemID.typeName === 'IntuneDeviceCompliance')
             })
 
             it('should create the correct instances for Intune device compliances', async () => {
@@ -326,7 +326,7 @@ describe('Microsoft Security adapter', () => {
               const groupRef = intuneDeviceCompliance.value.restrictedApps[0]?.appId
               expect(groupRef).toBeInstanceOf(ReferenceExpression)
               expect(groupRef.elemID.getFullName()).toEqual(
-                'microsoft_security.intune_application.instance.managedIOSStoreApp_test',
+                'microsoft_security.IntuneApplication.instance.managedIOSStoreApp_test',
               )
             })
 

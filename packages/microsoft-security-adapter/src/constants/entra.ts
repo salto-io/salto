@@ -6,11 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
+import { types } from '@salto-io/lowerdash'
 import { ODATA_PREFIX } from './shared'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
-const toEntraTypeName = (typeName: string): string => `entra_${typeName}`
+const toEntraTypeName = (typeName: `${types.UPPER_CASE_LETTERS}${string}`): string => `Entra${typeName}`
 
 /* Fields */
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
@@ -27,30 +28,30 @@ export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications
 
 /* Type names */
 // Top level
-export const ADMINISTRATIVE_UNIT_TYPE_NAME = toEntraTypeName('administrativeUnit')
-export const APPLICATION_TYPE_NAME = toEntraTypeName('application')
-export const APP_ROLE_TYPE_NAME = toEntraTypeName('appRole')
-export const AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME = toEntraTypeName('authenticationStrengthPolicy')
-export const AUTHENTICATION_METHOD_POLICY_TYPE_NAME = toEntraTypeName('authenticationMethodPolicy')
-export const CLAIM_MAPPING_POLICY_TYPE_NAME = toEntraTypeName('claimMappingPolicy')
-export const CONDITIONAL_ACCESS_POLICY_TYPE_NAME = toEntraTypeName('conditionalAccessPolicy')
+export const ADMINISTRATIVE_UNIT_TYPE_NAME = toEntraTypeName('AdministrativeUnit')
+export const APPLICATION_TYPE_NAME = toEntraTypeName('Application')
+export const APP_ROLE_TYPE_NAME = toEntraTypeName('AppRole')
+export const AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME = toEntraTypeName('AuthenticationStrengthPolicy')
+export const AUTHENTICATION_METHOD_POLICY_TYPE_NAME = toEntraTypeName('AuthenticationMethodPolicy')
+export const CLAIM_MAPPING_POLICY_TYPE_NAME = toEntraTypeName('ClaimMappingPolicy')
+export const CONDITIONAL_ACCESS_POLICY_TYPE_NAME = toEntraTypeName('ConditionalAccessPolicy')
 export const CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME = toEntraTypeName(
-  'conditionalAccessPolicyNamedLocation',
+  'ConditionalAccessPolicyNamedLocation',
 )
-export const CROSS_TENANT_ACCESS_POLICY_TYPE_NAME = toEntraTypeName('crossTenantAccessPolicy')
-export const CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME = toEntraTypeName('customSecurityAttributeDefinition')
-export const CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME = toEntraTypeName('customSecurityAttributeSet')
-export const DOMAIN_TYPE_NAME = toEntraTypeName('domain')
-export const DIRECTORY_ROLE_TYPE_NAME = toEntraTypeName('directoryRole')
-export const DIRECTORY_ROLE_TEMPLATE_TYPE_NAME = toEntraTypeName('directoryRoleTemplate')
-export const GROUP_TYPE_NAME = toEntraTypeName('group')
-export const HOME_REALM_DISCOVERY_POLICY_TYPE_NAME = toEntraTypeName('homeRealmDiscoveryPolicy')
-export const LIFE_CYCLE_POLICY_TYPE_NAME = toEntraTypeName('groupLifeCyclePolicy')
-export const OAUTH2_PERMISSION_GRANT_TYPE_NAME = toEntraTypeName('oauth2PermissionGrant')
-export const PERMISSION_GRANT_POLICY_TYPE_NAME = toEntraTypeName('permissionGrantPolicy')
-export const ROLE_DEFINITION_TYPE_NAME = toEntraTypeName('roleDefinition')
-export const SERVICE_PRINCIPAL_TYPE_NAME = toEntraTypeName('servicePrincipal')
-export const TOKEN_LIFETIME_POLICY_TYPE_NAME = toEntraTypeName('tokenLifetimePolicy')
+export const CROSS_TENANT_ACCESS_POLICY_TYPE_NAME = toEntraTypeName('CrossTenantAccessPolicy')
+export const CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME = toEntraTypeName('CustomSecurityAttributeDefinition')
+export const CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME = toEntraTypeName('CustomSecurityAttributeSet')
+export const DOMAIN_TYPE_NAME = toEntraTypeName('Domain')
+export const DIRECTORY_ROLE_TYPE_NAME = toEntraTypeName('DirectoryRole')
+export const DIRECTORY_ROLE_TEMPLATE_TYPE_NAME = toEntraTypeName('DirectoryRoleTemplate')
+export const GROUP_TYPE_NAME = toEntraTypeName('Group')
+export const HOME_REALM_DISCOVERY_POLICY_TYPE_NAME = toEntraTypeName('HomeRealmDiscoveryPolicy')
+export const LIFE_CYCLE_POLICY_TYPE_NAME = toEntraTypeName('GroupLifeCyclePolicy')
+export const OAUTH2_PERMISSION_GRANT_TYPE_NAME = toEntraTypeName('Oauth2PermissionGrant')
+export const PERMISSION_GRANT_POLICY_TYPE_NAME = toEntraTypeName('PermissionGrantPolicy')
+export const ROLE_DEFINITION_TYPE_NAME = toEntraTypeName('RoleDefinition')
+export const SERVICE_PRINCIPAL_TYPE_NAME = toEntraTypeName('ServicePrincipal')
+export const TOKEN_LIFETIME_POLICY_TYPE_NAME = toEntraTypeName('TokenLifetimePolicy')
 
 // Nested types
 export const ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME = recursiveNestedTypeName(

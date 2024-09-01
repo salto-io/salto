@@ -6,11 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import { types } from '@salto-io/lowerdash'
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
-const toIntuneTypeName = (typeName: string): string => `intune_${typeName}`
+const toIntuneTypeName = (typeName: `${types.UPPER_CASE_LETTERS}${string}`): string => `Intune${typeName}`
 
 /* Field names */
 // Application fields
@@ -34,14 +35,14 @@ export const SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME = 'scheduledActionConfig
 
 /* Type names */
 // Top level
-export const APPLICATION_TYPE_NAME = toIntuneTypeName('application')
-export const APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME = toIntuneTypeName('applicationConfigurationManagedApp')
+export const APPLICATION_TYPE_NAME = toIntuneTypeName('Application')
+export const APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME = toIntuneTypeName('ApplicationConfigurationManagedApp')
 export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeName(
-  'applicationConfigurationManagedDevice',
+  'ApplicationConfigurationManagedDevice',
 )
-export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('deviceConfiguration')
-export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('deviceConfigurationSettingCatalog')
-export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('deviceCompliance')
+export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('DeviceConfiguration')
+export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('DeviceConfigurationSettingCatalog')
+export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(

@@ -144,7 +144,11 @@ const separateChangeByFiles = async (change: DetailedChange, source: NaclFilesSo
     // The hacky bug fix here - assuming there is no case where we actually split the field to multiple files (a wrong assumption)
     // we will get here with either 1 change that potentially is missing some values, or 0 changes (which is missing everything)
     // either way, since there is no need to split anything, we can return the original change that contains all the values for sure
-    return [{ ...change, path: sortedChanges[0]?.path ?? change.path }]
+    if (sortedChanges.length === 0) {
+      log.warn('separateChangeByFiles resulted in 0 sorted changes for change id %s', change.id.getFullName())
+      return [change]
+    }
+    return [{ ...change, path: sortedChanges[0].path }]
   }
 
   return sortedChanges

@@ -7,121 +7,40 @@
  */
 import axios from 'axios'
 import {
-  BuiltinTypes,
-  ElemID,
   InstanceElement,
   OAuthMethod,
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME } from '../constants'
+import { AvailableMicrosoftSecurityServices, Credentials } from './types'
+import { BASIC_OAUTH_REQUIRED_SCOPES, SCOPE_MAPPING } from './constants'
 
-// While it’s true that at the moment we can maintain a single list of scopes for both adapters,
-// we do plan on enabling the user to choose to manage only Entra or Intune.
-// Therefore, it would be easier not to combine them for now.
-const ENTRA_OAUTH_REQUIRED_SCOPES = [
-  'AdministrativeUnit.ReadWrite.All',
-  'Application.ReadWrite.All',
-  'CustomSecAttributeDefinition.ReadWrite.All',
-  'Directory.ReadWrite.All',
-  'Domain.ReadWrite.All',
-  'Group.ReadWrite.All',
-  'Policy.Read.All',
-  'Policy.ReadWrite.AuthenticationMethod',
-  'Policy.ReadWrite.ConditionalAccess',
-  'Policy.ReadWrite.CrossTenantAccess',
-  'Policy.ReadWrite.PermissionGrant',
-  'RoleManagement.ReadWrite.Directory',
-  'UserAuthenticationMethod.ReadWrite.All',
-]
-
-export const INTUNE_OAUTH_REQUIRED_SCOPES = [
-  'DeviceManagementApps.ReadWrite.All',
-  'DeviceManagementConfiguration.ReadWrite.All',
-  'User.Read',
-]
-
-export const OAUTH_REQUIRED_SCOPES = [...new Set([...ENTRA_OAUTH_REQUIRED_SCOPES, ...INTUNE_OAUTH_REQUIRED_SCOPES])]
-
-export type OauthRequestParameters = {
-  tenantId: string
-  clientId: string
-  clientSecret: string
-  port: number
+export const getOAuthRequiredScopes = (servicesToManage: AvailableMicrosoftSecurityServices[]): string => {
+  const scopes = servicesToManage.flatMap(service => SCOPE_MAPPING[service])
+  return [...new Set([...BASIC_OAUTH_REQUIRED_SCOPES, ...scopes])].join(' ')
 }
-
-export const oauthRequestParameters = createMatchingObjectType<OauthRequestParameters>({
-  elemID: new ElemID(ADAPTER_NAME),
-  fields: {
-    tenantId: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        message: 'Tenant ID',
-        _required: true,
-      },
-    },
-    clientId: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        message: 'Client ID',
-        _required: true,
-      },
-    },
-    clientSecret: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        message: 'Client Secret',
-        _required: true,
-      },
-    },
-    port: {
-      refType: BuiltinTypes.NUMBER,
-      annotations: {
-        message: 'Port',
-        _required: true,
-      },
-    },
-  },
-})
-
-export type Credentials = Omit<OauthRequestParameters, 'port'> & {
-  refreshToken: string
-}
-
-export const credentialsType = createMatchingObjectType<Credentials>({
-  elemID: new ElemID(ADAPTER_NAME),
-  fields: {
-    tenantId: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true, message: 'Tenant ID' },
-    },
-    clientId: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true, message: 'Client ID' },
-    },
-    clientSecret: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true, message: 'Client Secret' },
-    },
-    refreshToken: {
-      refType: BuiltinTypes.STRING,
-      annotations: { _required: true, message: 'Refresh Token' },
-    },
-  },
-})
 
 export const getAuthenticationBaseUrl = (tenantId: string): string =>
   `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0`
 
 const getRedirectUri = (port: number): string => `http://localhost:${port}/extract`
 
+const getServicesToManageFromResponse = (response: Values): AvailableMicrosoftSecurityServices[] =>
+  Object.entries(response)
+    .filter(([, shouldManage]) => shouldManage)
+    .map(([serviceName]) => serviceName as AvailableMicrosoftSecurityServices)
+
 export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
-  const { tenantId, clientId, port } = userInput.value
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { tenantId, clientId, clientSecret: _clientSecret, port, ...servicesToManageResponse } = userInput.value
   const baseUrl = getAuthenticationBaseUrl(tenantId)
   const redirectUri = getRedirectUri(port)
-  const scope = ['offline_access', ...OAUTH_REQUIRED_SCOPES].join(' ')
+  const servicesToManage = getServicesToManageFromResponse(servicesToManageResponse)
+  if (servicesToManage.length === 0) {
+    throw new Error('At least one service should be selected to be managed by Salto')
+  }
+  const scope = `offline_access ${getOAuthRequiredScopes(servicesToManage)}`
   const url = `${baseUrl}/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`
 
   return {
@@ -134,18 +53,19 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
   input: Values,
   response: OauthAccessTokenResponse,
 ): Promise<Credentials> => {
-  const { tenantId, clientId, clientSecret, port } = input
+  const { tenantId, clientId, clientSecret, port, ...servicesToManageResponse } = input
   const { code } = response.fields
   const httpClient = axios.create({
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
   })
+  const servicesToManage = getServicesToManageFromResponse(servicesToManageResponse)
   const data = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
     redirect_uri: getRedirectUri(port),
-    scope: OAUTH_REQUIRED_SCOPES.join(' '),
+    scope: getOAuthRequiredScopes(servicesToManage),
     grant_type: 'authorization_code',
     code,
   })
@@ -156,5 +76,6 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
     clientId,
     clientSecret,
     refreshToken,
+    servicesToManage,
   }
 }

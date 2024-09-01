@@ -835,10 +835,20 @@ const graphBetaCustomizations: FetchCustomizations = {
   },
 }
 
-export const createEntraCustomizations = (): Record<
-  string,
-  definitions.fetch.InstanceFetchApiDefinitions<Options>
-> => ({
-  ...createCustomizationsWithBasePathForFetch(graphV1Customizations, GRAPH_V1_PATH),
-  ...createCustomizationsWithBasePathForFetch(graphBetaCustomizations, GRAPH_BETA_PATH),
-})
+// These types are always included in the fetch, regardless of the chosen services to manage
+const BASIC_ENTRA_TYPES = [GROUP_TYPE_NAME, GROUP_ADDITIONAL_DATA_TYPE_NAME]
+export const basicEntraCustomizations = Object.fromEntries(
+  Object.entries(graphV1Customizations).filter(([typeName, _customization]) => BASIC_ENTRA_TYPES.includes(typeName)),
+)
+
+export const createEntraCustomizations = ({
+  entraExtended,
+}: {
+  entraExtended: boolean
+}): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> =>
+  entraExtended
+    ? {
+        ...createCustomizationsWithBasePathForFetch(graphV1Customizations, GRAPH_V1_PATH),
+        ...createCustomizationsWithBasePathForFetch(graphBetaCustomizations, GRAPH_BETA_PATH),
+      }
+    : createCustomizationsWithBasePathForFetch(basicEntraCustomizations, GRAPH_V1_PATH)

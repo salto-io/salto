@@ -20,9 +20,9 @@ import {
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import { credentialsType } from '../src/client/oauth'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
+import { credentialsType } from '../src/client'
 
 type MockReply = {
   url: string
@@ -64,6 +64,7 @@ describe('Microsoft Security adapter', () => {
               clientId: 'testClientId',
               clientSecret: 'testClient',
               refreshToken: 'testRefreshToken',
+              servicesToManage: ['Entra', 'Intune'],
             }),
             config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
             elementsSource: buildElementsSourceFromElements([]),

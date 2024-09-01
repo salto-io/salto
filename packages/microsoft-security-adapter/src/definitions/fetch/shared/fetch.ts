@@ -7,19 +7,21 @@
  */
 
 import { definitions } from '@salto-io/adapter-components'
-import { UserFetchConfig } from '../../../config'
 import { Options } from '../../types'
 import { DEFAULT_FIELD_CUSTOMIZATIONS, DEFAULT_ID_PARTS } from './defaults'
 import { createEntraCustomizations } from '../entra/fetch'
 import { createIntuneCustomizations } from '../intune/fetch'
+import { AvailableMicrosoftSecurityServices } from '../../../client'
 
-const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  ...createEntraCustomizations(),
-  ...createIntuneCustomizations(),
+const createCustomizations = (
+  servicesToManage: AvailableMicrosoftSecurityServices[],
+): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
+  ...createEntraCustomizations({ entraExtended: servicesToManage.includes('Entra') }),
+  ...(servicesToManage.includes('Intune') ? createIntuneCustomizations() : {}),
 })
 
 export const createFetchDefinitions = (
-  _fetchConfig: UserFetchConfig,
+  servicesToManage: AvailableMicrosoftSecurityServices[],
 ): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {
@@ -33,6 +35,6 @@ export const createFetchDefinitions = (
         fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
       },
     },
-    customizations: createCustomizations(),
+    customizations: createCustomizations(servicesToManage),
   },
 })

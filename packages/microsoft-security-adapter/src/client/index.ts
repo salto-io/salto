@@ -6,6 +6,5 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export { adapter } from './src/adapter_creator'
-export { OAUTH_REQUIRED_SCOPES } from './src/client/constants'
-export { getOAuthRequiredScopes } from './src/client/oauth'
+export { Credentials, AvailableMicrosoftSecurityServices } from './types'
+export { credentialsType, oauthRequestParameters } from './constants'

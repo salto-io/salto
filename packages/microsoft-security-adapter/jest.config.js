@@ -14,10 +14,10 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   testEnvironment: undefined,
   coverageThreshold: {
     global: {
-      statements: 97.26,
-      branches: 94.71,
-      functions: 92.37,
-      lines: 97.18,
+      statements: 98.26,
+      branches: 92.65,
+      functions: 92.27,
+      lines: 98.19,
     },
   },
 })

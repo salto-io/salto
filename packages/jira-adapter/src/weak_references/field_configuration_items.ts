@@ -28,6 +28,10 @@ const log = logger(module)
 const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: Record<string, ElemID>): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined) {
+    log.warn(
+      'fields value is missing in instance %s, hence not calculating fields weak references',
+      instance.elemID.getFullName(),
+    )
     return []
   }
   if (!_.isPlainObject(fieldConfigurationItems)) {
@@ -86,6 +90,10 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
         .map(async instance => {
           const fieldConfigurationItems = instance.value.fields
           if (fieldConfigurationItems === undefined) {
+            log.warn(
+              'fields value is missing in instance %s, hence not omitting missing fields',
+              instance.elemID.getFullName(),
+            )
             return undefined
           }
           if (!_.isPlainObject(fieldConfigurationItems)) {

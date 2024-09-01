@@ -67,6 +67,7 @@ const replaceToMap = (instance: InstanceElement): void => {
 const replaceFromMap = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource): Promise<void> => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined) {
+    log.warn('fields value is missing in instance %s, hence not changing fields format', instance.elemID.getFullName())
     return
   }
   if (!_.isPlainObject(fieldConfigurationItems)) {

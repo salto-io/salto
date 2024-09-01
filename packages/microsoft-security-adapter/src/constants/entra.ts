@@ -6,12 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
-import { types } from '@salto-io/lowerdash'
 import { ODATA_PREFIX } from './shared'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
-const toEntraTypeName = (typeName: `${types.UPPER_CASE_LETTERS}${string}`): string => `Entra${typeName}`
+const toEntraTypeName = (typeName: string): string => `Entra${typeName}`
 
 /* Fields */
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'

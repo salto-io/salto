@@ -6,12 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { types } from '@salto-io/lowerdash'
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
-const toIntuneTypeName = (typeName: `${types.UPPER_CASE_LETTERS}${string}`): string => `Intune${typeName}`
+const toIntuneTypeName = (typeName: string): string => `Intune${typeName}`
 
 /* Field names */
 // Application fields

@@ -19,6 +19,7 @@ const filterCreators: Record<string, FilterCreator> = {
       'automation_order',
       'organization_field_order',
       'sla_policy_order',
+      'queue_order',
       'ticket_form_order',
       'trigger_order',
       'user_field_order',

@@ -70,6 +70,7 @@ export const TRANSLATIONS_FIELD = 'translations'
 export const ARTICLE_ATTACHMENTS_FIELD = 'article_attachments'
 export const ARTICLE_ATTACHMENT_TYPE_NAME = 'article_attachment'
 export const SLA_POLICY_TYPE_NAME = 'sla_policy'
+export const QUEUE_TYPE_NAME = 'queue'
 export const TRIGGER_TYPE_NAME = 'trigger'
 export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
 export const LOCALE_TYPE_NAME = 'locale'
@@ -88,6 +89,7 @@ export const ORDER_FIELD = `${CUSTOM_OBJECT_FIELD_TYPE_NAME}s`
 export const AUTOMATION_ORDER_TYPE_NAME = 'automation_order'
 export const ORGANIZATION_FIELD_ORDER_TYPE_NAME = 'organization_field_order'
 export const SLA_POLICY_ORDER_TYPE_NAME = 'sla_policy_order'
+export const QUEUE_ORDER_TYPE_NAME = 'queue_order'
 export const TRIGGER_ORDER_TYPE_NAME = 'trigger_order'
 export const USER_FIELD_ORDER_TYPE_NAME = 'user_field_order'
 export const VIEW_ORDER_TYPE_NAME = 'view_order'
@@ -103,6 +105,7 @@ export const ORDER_TYPE_NAMES = [
   AUTOMATION_ORDER_TYPE_NAME,
   ORGANIZATION_FIELD_ORDER_TYPE_NAME,
   SLA_POLICY_ORDER_TYPE_NAME,
+  QUEUE_ORDER_TYPE_NAME,
   TRIGGER_ORDER_TYPE_NAME,
   USER_FIELD_ORDER_TYPE_NAME,
   VIEW_ORDER_TYPE_NAME,

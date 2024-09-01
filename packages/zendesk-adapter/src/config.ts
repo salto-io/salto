@@ -1168,6 +1168,39 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  queue: {
+    deployRequests: {
+      add: {
+        url: '/api/v2/queues',
+        deployAsField: 'queue',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v2/queues/{queueId}',
+        deployAsField: 'queue',
+        method: 'put',
+        urlParamsToFields: {
+          queueId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v2/queues/{queueId}',
+        method: 'delete',
+        urlParamsToFields: {
+          queueId: 'id',
+        },
+        omitRequestBody: true,
+      },
+    },
+  },
+  queue_order: {
+    deployRequests: {
+      modify: {
+        url: 'api/v2/queues/order',
+        method: 'patch',
+      },
+    },
+  },
   app_installation: {
     transformation: {
       sourceTypeName: 'app_installations__installations',

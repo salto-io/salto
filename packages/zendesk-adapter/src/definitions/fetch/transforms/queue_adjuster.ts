@@ -13,7 +13,7 @@ import _ from 'lodash'
 // this transformer updates the group objects for queues into the correct format
 export const transform: definitions.AdjustFunctionSingle = async ({ value }) => {
   if (!lowerdashValues.isPlainObject(value)) {
-    throw new Error('unexpected value for guide item, not transforming')
+    throw new Error('unexpected value for queue item, not transforming')
   }
 
   const primaryGroupIds = _.map(_.get(value, 'primary_groups.groups'), 'id')

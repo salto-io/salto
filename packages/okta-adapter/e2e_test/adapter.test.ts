@@ -386,11 +386,13 @@ const getHiddenFieldsToOmit = (
 ): string[] => {
   const customizations = definitionsUtils.queryWithDefault(fetchDefinitions.instances).query(typeName)
     ?.element?.fieldCustomizations
-  return Object.entries(customizations ?? {})
-    .filter(([, customization]) => customization.hide === true)
-    .map(([fieldName]) => fieldName)
-    // ignore fields that are written to nacl after deployment
-    .filter(fieldName => !['id', CUSTOM_NAME_FIELD].includes(fieldName))
+  return (
+    Object.entries(customizations ?? {})
+      .filter(([, customization]) => customization.hide === true)
+      .map(([fieldName]) => fieldName)
+      // ignore fields that are written to nacl after deployment
+      .filter(fieldName => !['id', CUSTOM_NAME_FIELD].includes(fieldName))
+  )
 }
 
 describe('Okta adapter E2E', () => {

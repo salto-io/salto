@@ -88,7 +88,7 @@ export const isCustomApp = (value: Values, subdomain?: string): boolean => {
     )
   }
 
-  // when subdomain was replaced in the tenant, existing apps will include the prevoius subdomain in their name, so we rely on the regex as a fallback
+  // when subdomain was replaced in the tenant, existing apps will include the previous subdomain in their name, so we rely on the regex as a fallback
   const isCustomAppName = subdomainMatch || customAppNamePatternMatch
   return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && isCustomAppName
 }

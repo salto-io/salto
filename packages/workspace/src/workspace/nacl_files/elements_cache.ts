@@ -292,9 +292,22 @@ export const createMergeManager = async (
         ? await cacheUpdate.recoveryOverride(src1ElementsToMerge, src2ElementsToMerge, src2)
         : { src1ElementsToMerge, src2ElementsToMerge }
 
+      const src1AfterElements = _.keyBy(
+        src1Changes.changes.filter(isAdditionOrModificationChange).map(getChangeData),
+        elem => elem.elemID.getFullName(),
+      )
+      const src2AfterElements = _.keyBy(
+        src2Changes.changes.filter(isAdditionOrModificationChange).map(getChangeData),
+        elem => elem.elemID.getFullName(),
+      )
+
       return {
-        src1ElementsToMerge: awu(elementsToMerge.src1ElementsToMerge).map(elemID => src1.get(elemID)),
-        src2ElementsToMerge: awu(elementsToMerge.src2ElementsToMerge).map(elemID => src2.get(elemID)),
+        src1ElementsToMerge: awu(elementsToMerge.src1ElementsToMerge).map(
+          elemID => src1AfterElements[elemID.getFullName()] ?? src1.get(elemID),
+        ),
+        src2ElementsToMerge: awu(elementsToMerge.src2ElementsToMerge).map(
+          elemID => src2AfterElements[elemID.getFullName()] ?? src2.get(elemID),
+        ),
         potentialDeletedIds,
       }
     }

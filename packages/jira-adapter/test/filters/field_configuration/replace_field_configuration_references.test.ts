@@ -109,6 +109,18 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       })
     })
 
+    it('should do nothing if fields is corrupted', async () => {
+      instance.value.fields = 'invalid'
+      await filter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.fields).toEqual('invalid')
+    })
+
+    it('should omit corrupted fields', async () => {
+      instance.value.fields.anotherField = 'invalid'
+      await filter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.fields).toBeArrayOfSize(1)
+    })
+
     it('should do nothing if splitFieldConfiguration is true', async () => {
       config.fetch.splitFieldConfiguration = true
       await filter.preDeploy?.([toChange({ after: instance })])

@@ -490,7 +490,7 @@ describe('assetsObjectFieldConfiguration', () => {
         deployAssetObjectContext(toChange({ after: contextInstance1 }), client, config),
       ).rejects.toThrowWithMessage(
         Error,
-        'Failed to deploy asset object field configuration for instance jira.CustomFieldContext.instance.context1 with error: Failed to put rest/servicedesk/cmdb/latest/fieldconfig/55555 with error: Error: error. The context might be deployed partially.',
+        'Failed to deploy asset object field configuration for instance jira.CustomFieldContext.instance.context1 with error: Failed to put rest/servicedesk/cmdb/latest/fieldconfig/55555 with error: error. The context might be deployed partially.',
       )
     })
   })

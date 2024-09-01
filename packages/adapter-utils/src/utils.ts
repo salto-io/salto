@@ -580,7 +580,7 @@ export const findInstances = (elements: Iterable<Element>, typeID: ElemID): Iter
   return instances.filter(e => e.refType.elemID.isEqual(typeID))
 }
 
-export const getPath = (rootElement: Element, fullElemID: ElemID): string[] | undefined => {
+export const getPath = (rootElement: Readonly<Element>, fullElemID: ElemID): string[] | undefined => {
   // If rootElement is an objectType or an instance (i.e., a top level element),
   // we want to compare the top level id of fullElemID.
   // If it is a field we want to compare the base id.
@@ -632,7 +632,7 @@ export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value):
   }
 }
 
-export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+export const resolvePath = (rootElement: Readonly<Element>, fullElemID: ElemID): Value => {
   const path = getPath(rootElement, fullElemID)
   if (path === undefined) return undefined
   if (_.isEmpty(path)) return rootElement

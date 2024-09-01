@@ -71,7 +71,7 @@ export const buildElementsSourceFromElements = (
     const { parent } = id.createTopLevelParentID()
     const topLevelElement = elementsMap[parent.getFullName()]
     const element = elementsMap[id.getFullName()] ?? (topLevelElement && resolvePath(topLevelElement, id))
-    if (element) {
+    if (element !== undefined) {
       return element
     }
 

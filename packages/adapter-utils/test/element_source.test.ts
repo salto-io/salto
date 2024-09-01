@@ -111,7 +111,7 @@ describe('elementSource', () => {
         it('should return true for nested field when the field is in the source but the parent is not', async () => {
           const field = objectType.fields.key
           const source = buildElementsSourceFromElements([field])
-          expect(await source.get(field.elemID)).toBeTruthy()
+          expect(await source.has(field.elemID)).toBeTruthy()
         })
       })
     })

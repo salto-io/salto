@@ -19,7 +19,7 @@ import {
 import {
   createCustomConditionCheckChangesInFields,
   createCustomizationsWithBasePathForDeploy,
-  omitReadOnlyFieldsWrapper,
+  adjustWrapper,
 } from '../shared/utils'
 
 const {
@@ -671,7 +671,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: omitReadOnlyFieldsWrapper(adjustRoleDefinitionForDeployment),
+                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },
@@ -684,7 +684,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
               transformation: {
-                adjust: omitReadOnlyFieldsWrapper(adjustRoleDefinitionForDeployment),
+                adjust: adjustWrapper(adjustRoleDefinitionForDeployment),
               },
             },
           },

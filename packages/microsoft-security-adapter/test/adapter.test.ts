@@ -89,6 +89,7 @@ describe('Microsoft Security adapter', () => {
           'intune_application',
           'intune_applicationConfigurationManagedApp',
           'intune_applicationConfigurationManagedDevice',
+          'intune_deviceConfiguration',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -249,6 +250,29 @@ describe('Microsoft Security adapter', () => {
                   string: 'bye',
                 },
               })
+            })
+          })
+
+          describe('device configurations', () => {
+            let intuneDeviceConfigurations: InstanceElement[]
+            beforeEach(async () => {
+              intuneDeviceConfigurations = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'intune_deviceConfiguration')
+            })
+
+            it('should create the correct instances for Intune device configurations', async () => {
+              expect(intuneDeviceConfigurations).toHaveLength(4)
+
+              const intuneDeviceConfigurationNames = intuneDeviceConfigurations.map(e => e.elemID.name)
+              expect(intuneDeviceConfigurationNames).toEqual(
+                expect.arrayContaining([
+                  'test_ios_email_configuration@s',
+                  'test_wifi_configuration@s',
+                  'test_windows_10_email_configuration@s',
+                  'test_windows_health_monitoring@s',
+                ]),
+              )
             })
           })
         })

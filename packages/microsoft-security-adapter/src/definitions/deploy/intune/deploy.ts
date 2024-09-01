@@ -6,12 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { getChangeData } from '@salto-io/adapter-api'
-import { concatAdjustFunctions } from '@salto-io/adapter-components'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
 import { DeployCustomDefinitions } from '../shared/types'
-import { createCustomizationsWithBasePathForDeploy, omitReadOnlyFieldsWrapper } from '../shared/utils'
+import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
 import { application as applicationDeployUtils, appsConfiguration } from './utils'
 import { application, applicationConfiguration } from '../../../utils/intune'
 
@@ -19,6 +18,7 @@ const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  DEVICE_CONFIGURATION_TYPE_NAME,
 } = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
@@ -27,11 +27,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       default: {
         request: {
           transformation: {
-            adjust: omitReadOnlyFieldsWrapper(
-              concatAdjustFunctions(
-                odataType.transformOdataTypeField('deploy'),
-                applicationDeployUtils.omitApplicationRedundantFields,
-              ),
+            adjust: adjustWrapper(
+              odataType.transformOdataTypeField('deploy'),
+              applicationDeployUtils.omitApplicationRedundantFields,
             ),
           },
         },
@@ -59,7 +57,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: omitReadOnlyFieldsWrapper(applicationDeployUtils.transformManagedGooglePlayApp),
+                adjust: adjustWrapper(applicationDeployUtils.transformManagedGooglePlayApp),
               },
             },
             condition: {
@@ -141,9 +139,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       default: {
         request: {
           transformation: {
-            adjust: omitReadOnlyFieldsWrapper(
-              applicationConfiguration.parseApplicationConfigurationBinaryFields('deploy'),
-            ),
+            adjust: adjustWrapper(applicationConfiguration.parseApplicationConfigurationBinaryFields('deploy')),
           },
         },
       },
@@ -173,6 +169,42 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/deviceAppManagement/mobileAppConfigurations/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [DEVICE_CONFIGURATION_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceConfigurations',
+                method: 'post',
+              },
+            },
+          },
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceConfigurations/{id}',
+                method: 'patch',
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceConfigurations/{id}',
                 method: 'delete',
               },
             },

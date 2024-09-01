@@ -90,6 +90,7 @@ describe('Microsoft Security adapter', () => {
           'intune_applicationConfigurationManagedApp',
           'intune_applicationConfigurationManagedDevice',
           'intune_deviceConfiguration',
+          'intune_deviceConfigurationSettingCatalog',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -273,6 +274,34 @@ describe('Microsoft Security adapter', () => {
                   'test_windows_health_monitoring@s',
                 ]),
               )
+            })
+          })
+
+          describe('device configurations - setting catalog', () => {
+            let intuneDeviceConfigurationSettingCatalogs: InstanceElement[]
+            beforeEach(async () => {
+              intuneDeviceConfigurationSettingCatalogs = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'intune_deviceConfigurationSettingCatalog')
+            })
+
+            it('should create the correct instances for Intune device configuration setting catalogs', async () => {
+              expect(intuneDeviceConfigurationSettingCatalogs).toHaveLength(1)
+
+              const intuneDeviceConfigurationSettingCatalogNames = intuneDeviceConfigurationSettingCatalogs.map(
+                e => e.elemID.name,
+              )
+              expect(intuneDeviceConfigurationSettingCatalogNames).toEqual(
+                expect.arrayContaining(['test_setting_catalog_policy@s']),
+              )
+            })
+
+            it('should include the settings field with the correct values', async () => {
+              const intuneDeviceConfigurationSettingCatalog = intuneDeviceConfigurationSettingCatalogs[0]
+              expect(intuneDeviceConfigurationSettingCatalog.value.settings).toHaveLength(10)
+              expect(Object.keys(intuneDeviceConfigurationSettingCatalog.value.settings[0])).toEqual([
+                'settingInstance',
+              ])
             })
           })
         })

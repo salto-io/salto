@@ -19,6 +19,7 @@ const {
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
+  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
 } = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
@@ -205,6 +206,42 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/deviceManagement/deviceConfigurations/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/configurationPolicies',
+                method: 'post',
+              },
+            },
+          },
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/configurationPolicies/{id}',
+                method: 'put',
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/configurationPolicies/{id}',
                 method: 'delete',
               },
             },

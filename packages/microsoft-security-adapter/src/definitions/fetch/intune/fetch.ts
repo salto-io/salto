@@ -17,12 +17,21 @@ import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 import { application } from './utils'
 
 const {
+  // Top level types
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
-  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
+  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
 
+  // Nested types
+  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+  DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
+
+  // Field names
+  SETTINGS_FIELD_NAME,
+
+  // Urls
   SERVICE_BASE_URL,
 } = intuneConstants
 
@@ -157,6 +166,64 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/configurationPolicies',
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['settingCount'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        [SETTINGS_FIELD_NAME]: {
+          typeName: DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/policyId/{id}/isAssigned~/{isAssigned}/technology/mdm/templateId//platformName/{platforms}',
+        },
+        elemID: {
+          parts: [{ fieldName: 'name' }],
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/configurationPolicies/{id}/settings',
+        },
+        transformation: DEFAULT_TRANSFORMATION,
+      },
+    ],
+    element: {
+      fieldCustomizations: {
+        id: {
+          omit: true,
+        },
+      },
     },
   },
 }

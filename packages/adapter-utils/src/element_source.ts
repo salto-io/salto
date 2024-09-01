@@ -9,7 +9,7 @@ import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salt
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
-import { resolveTypeShallow } from './utils'
+import { resolvePath, resolveTypeShallow } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -68,7 +68,9 @@ export const buildElementsSourceFromElements = (
   }
 
   const get = async (id: ElemID): Promise<Value> => {
-    const element = elementsMap[id.getFullName()]
+    const { parent } = id.createTopLevelParentID()
+    const topLevelElement = elementsMap[parent.getFullName()]
+    const element = elementsMap[id.getFullName()] ?? (topLevelElement && resolvePath(topLevelElement, id))
     if (element !== undefined) {
       return element
     }
@@ -78,8 +80,7 @@ export const buildElementsSourceFromElements = (
       .find(values.isDefined)
   }
 
-  const has = async (id: ElemID): Promise<boolean> =>
-    elementsMap[id.getFullName()] !== undefined || awu(fallbackSources).some(async source => source.has(id))
+  const has = async (id: ElemID): Promise<boolean> => (await get(id)) !== undefined
 
   self = {
     getAll: async () => getElements(),

@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { getChangeData } from '@salto-io/adapter-api'
-import { concatAdjustFunctions } from '@salto-io/adapter-components'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
@@ -29,10 +28,8 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
         request: {
           transformation: {
             adjust: adjustWrapper(
-              concatAdjustFunctions(
-                odataType.transformOdataTypeField('deploy'),
-                applicationDeployUtils.omitApplicationRedundantFields,
-              ),
+              odataType.transformOdataTypeField('deploy'),
+              applicationDeployUtils.omitApplicationRedundantFields,
             ),
           },
         },

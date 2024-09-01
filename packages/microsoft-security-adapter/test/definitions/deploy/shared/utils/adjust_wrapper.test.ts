@@ -33,12 +33,15 @@ describe('adjust wrapper utils', () => {
             d: 3,
             e: 4,
           },
+          f: [5, 6],
+          g: [{ h: 7 }, { i: 8 }],
         }),
         after: new InstanceElement('test', objectTypeMock, {
           a: 1,
           c: {
             d: 3,
           },
+          g: [{ h: 7 }],
         }),
       })
 
@@ -48,7 +51,7 @@ describe('adjust wrapper utils', () => {
         context: { ...contextMock, change: changeWithRemovedFields },
       })
 
-      expect(result.value).toEqual({ a: 1, b: null, c: { d: 3, e: null } })
+      expect(result.value).toEqual({ a: 1, b: null, c: { d: 3, e: null }, f: null, g: [{ h: 7 }] })
       expect(omitReadOnlyFieldsMock).toHaveBeenCalled()
     })
 

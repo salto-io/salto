@@ -57,5 +57,5 @@ export const defaultAdjust = concatAdjustFunctions(adjustRemovedValuesToNull, om
 /*
  * Adjust the value of the object using default adjust function, and then apply the provided adjust function
  */
-export const adjustWrapper: (adjust: AdjustFunctionSingle) => AdjustFunctionSingle = adjust =>
+export const adjustWrapper: (...adjust: AdjustFunctionSingle[]) => AdjustFunctionSingle = adjust =>
   concatAdjustFunctions(defaultAdjust, adjust)

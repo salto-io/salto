@@ -133,6 +133,8 @@ const STANDARD_FIELDS_TO_RECORD_TYPE: Record<string, SuiteQLTableName | Addition
   STDBODYDEPARTMENT: 'department',
   STDBODYTOSUBSIDIARY: 'subsidiary',
   STDBODYLOCATION: 'location',
+  STDBODYDECISIONMAKER: 'contact',
+  STDBODYEMPLOYEE: 'employee',
   STDBODYNEXTAPPROVER: 'employee',
   STDBODYINCOTERM: 'incoterm',
   STDBODYENTITYEMPLOYEE: 'employee',
@@ -375,8 +377,10 @@ const getQueryRecordType = (path: ElemID): QueryRecordType | undefined => {
   return QUERY_RECORD_TYPES[path.createParentID().name as QueryRecordType]
 }
 
-const getTypesFromInternalId = (typeInternalId: string): string[] =>
-  INTERNAL_ID_TO_TYPES[typeInternalId] ?? ADDITIONAL_INTERNAL_ID_TO_TYPES[typeInternalId] ?? []
+const getTypesFromInternalId = (typeInternalId: string): string[] => [
+  ...(INTERNAL_ID_TO_TYPES[typeInternalId] ?? []),
+  ...(ADDITIONAL_INTERNAL_ID_TO_TYPES[typeInternalId] ?? []),
+]
 
 const getQueryRecordFieldType = (
   instance: InstanceElement,
@@ -621,7 +625,7 @@ const getParametersAccountSpecificValueToTransform = (
     // but only params that have selectrecordtype are represented with internalid in the formula.
     .filter(param => param?.[SELECT_RECORD_TYPE] !== undefined)
     // params that have a constant string `value` (e.g "INVOICE") aren't represented with internalid in the formula.
-    .filter(param => typeof param.value === 'string' && !/^[A-Z]+$/.test(param.value))
+    .filter(param => typeof param.value !== 'string' || !/^[A-Z]+$/.test(param.value))
     // each param can appear more than once in the condition formula.
     // in that case we're expecting to see it multiple times in formulaWithInternalIds.
     .flatMap(param => getParamLocations({ conditionFormula, param }))

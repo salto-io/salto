@@ -1,23 +1,22 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ElemID, isRemovalChange, toChange, Element, DetailedChangeWithBaseChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
+import {
+  pathIndex,
+  filterByPathHint,
+  ElementSelector,
+  elementSource,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 import { ChangeWithDetails } from './plan/plan_item'
 
@@ -56,7 +55,7 @@ export function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors: ElementSelector[] | undefined,
   accounts: readonly string[] | undefined,
   resultType: 'changes',
@@ -65,7 +64,7 @@ export function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors?: ElementSelector[],
   accounts?: readonly string[],
   resultType?: 'detailedChanges',
@@ -74,20 +73,20 @@ export async function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors: ElementSelector[] = [],
   accounts?: readonly string[],
   resultType: 'changes' | 'detailedChanges' = 'detailedChanges',
 ): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
   if (resultType === 'changes') {
-    const changes = await createDiffChanges(
-      workspaceElements,
-      state,
+    const changes = await createDiffChanges({
+      toElementsSrc: workspaceElements,
+      fromElementsSrc: state,
       referenceSourcesIndex,
       elementSelectors,
-      [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
-      'changes',
-    )
+      topLevelFilters: [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+      resultType: 'changes',
+    })
     return awu(changes)
       .map(async change => {
         const detailedChangesByPath = (
@@ -100,14 +99,14 @@ export async function createRestoreChanges(
       .toArray()
   }
 
-  const detailedChanges = await createDiffChanges(
-    workspaceElements,
-    state,
+  const detailedChanges = await createDiffChanges({
+    toElementsSrc: workspaceElements,
+    fromElementsSrc: state,
     referenceSourcesIndex,
     elementSelectors,
-    [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
-    'detailedChanges',
-  )
+    topLevelFilters: [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+    resultType: 'detailedChanges',
+  })
   return awu(detailedChanges)
     .flatMap(change => splitDetailedChangeByPath(change, index))
     .toArray()

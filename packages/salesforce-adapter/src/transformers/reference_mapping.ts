@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Field,
@@ -24,10 +16,7 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import {
-  GetLookupNameFunc,
-  GetLookupNameFuncArgs,
-} from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -98,11 +87,7 @@ const safeApiName = ({
 }): Promise<string | Value> => {
   const { value } = ref
   if (!isElement(value)) {
-    log.warn(
-      'Unexpected non-element value for ref id %s in path %s',
-      ref.elemID.getFullName(),
-      path?.getFullName(),
-    )
+    log.warn('Unexpected non-element value for ref id %s in path %s', ref.elemID.getFullName(), path?.getFullName())
     return value
   }
   return apiName(value, relative)
@@ -117,71 +102,57 @@ type ReferenceSerializationStrategyName =
   | 'mapKey'
   | 'customLabel'
   | 'fromDataInstance'
-const ReferenceSerializationStrategyLookup: Record<
-  ReferenceSerializationStrategyName,
-  ReferenceSerializationStrategy
-> = {
-  absoluteApiName: {
-    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
-    lookup: (val) => val,
-  },
-  relativeApiName: {
-    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
-    lookup: (val, context) =>
-      context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val,
-  },
-  configurationAttributeMapping: {
-    serialize: async ({ ref, path }) =>
-      _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[
-        await safeApiName({ ref, path })
-      ] ?? safeApiName({ ref, path }),
-    lookup: (val) =>
-      _.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val,
-  },
-  lookupQueryMapping: {
-    serialize: async ({ ref, path }) =>
-      _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ??
-      safeApiName({ ref, path }),
-    lookup: (val) =>
-      _.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val,
-  },
-  scheduleConstraintFieldMapping: {
-    serialize: async ({ ref, path }) => {
-      const relativeApiName = await safeApiName({ ref, path, relative: true })
-      return (
-        _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ??
-        relativeApiName
-      )
+const ReferenceSerializationStrategyLookup: Record<ReferenceSerializationStrategyName, ReferenceSerializationStrategy> =
+  {
+    absoluteApiName: {
+      serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
+      lookup: val => val,
     },
-    lookup: (val, context) => {
-      const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
-      return context !== undefined
-        ? [context, mappedValue].join(API_NAME_SEPARATOR)
-        : mappedValue
+    relativeApiName: {
+      serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
+      lookup: (val, context) => (context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val),
     },
-  },
-  mapKey: {
-    serialize: async ({ ref }) => ref.elemID.name,
-    lookup: (val) => val,
-  },
-  customLabel: {
-    serialize: async ({ ref, path }) =>
-      `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
-    lookup: (val) => {
-      if (val.includes('$Label')) {
-        return val.split(API_NAME_SEPARATOR)[1]
-      }
-      return val
+    configurationAttributeMapping: {
+      serialize: async ({ ref, path }) =>
+        _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
+      lookup: val => (_.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val),
     },
-  },
-  fromDataInstance: {
-    serialize: async (args) =>
-      (await isMetadataInstanceElement(args.ref.value))
-        ? instanceInternalId(args.ref.value)
-        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
-    lookup: (val) => val,
-  },
-}
+    lookupQueryMapping: {
+      serialize: async ({ ref, path }) =>
+        _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
+      lookup: val => (_.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val),
+    },
+    scheduleConstraintFieldMapping: {
+      serialize: async ({ ref, path }) => {
+        const relativeApiName = await safeApiName({ ref, path, relative: true })
+        return _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ?? relativeApiName
+      },
+      lookup: (val, context) => {
+        const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
+        return context !== undefined ? [context, mappedValue].join(API_NAME_SEPARATOR) : mappedValue
+      },
+    },
+    mapKey: {
+      serialize: async ({ ref }) => ref.elemID.name,
+      lookup: val => val,
+    },
+    customLabel: {
+      serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
+      lookup: val => {
+        if (val.includes('$Label')) {
+          return val.split(API_NAME_SEPARATOR)[1]
+        }
+        return val
+      },
+    },
+    fromDataInstance: {
+      serialize: async args =>
+        (await isMetadataInstanceElement(args.ref.value))
+          ? instanceInternalId(args.ref.value)
+          : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
+      lookup: val => val,
+    },
+  }
 
 export type ReferenceContextStrategyName =
   | 'instanceParent'
@@ -224,7 +195,18 @@ export type FieldReferenceDefinition = {
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
-export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+/**
+ * The rules for finding and resolving values into (and back from) reference expressions.
+ * Overlaps between rules are allowed, and the first successful conversion wins.
+ * Current order (defined by generateReferenceResolverFinder):
+ *  1. Exact field names take precedence over regexp
+ *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
+ *
+ * A value will be converted into a reference expression if:
+ * 1. An element matching the rule is found.
+ * 2. Resolving the resulting reference expression back returns the original value.
+ */
+export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
@@ -302,10 +284,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'customLink',
-      parentTypes: [
-        LAYOUT_ITEM_METADATA_TYPE,
-        SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
-      ],
+      parentTypes: [LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE],
     },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: WEBLINK_METADATA_TYPE },
@@ -365,11 +344,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'apexClass',
-      parentTypes: [
-        'FlowApexPluginCall',
-        'FlowVariable',
-        'TransactionSecurityPolicy',
-      ],
+      parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'],
     },
     target: { type: 'ApexClass' },
   },
@@ -466,6 +441,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: 'targetObject', parentTypes: ['WorkflowFieldUpdate'] },
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'field', parentTypes: ['FieldOverride'] },
+    serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
@@ -603,11 +583,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
-      parentTypes: [
-        'FlowRecordFilter',
-        'FlowInputFieldAssignment',
-        'FlowOutputFieldAssignment',
-      ],
+      parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'],
     },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
@@ -753,11 +729,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'column',
-      parentTypes: [
-        'ReportFilterItem',
-        'DashboardFilterColumn',
-        'DashboardTableColumn',
-      ],
+      parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'],
     },
     target: { type: CUSTOM_FIELD },
   },
@@ -883,18 +855,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
     target: { type: CUSTOM_OBJECT },
   },
-]
-
-// Optional reference that should not be used if enumFieldPermissions config is on
-export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] =
-  [
-    {
-      src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
-      target: { type: CUSTOM_FIELD },
-    },
-  ]
-
-export const referencesFromProfile: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
+    target: { type: CUSTOM_FIELD },
+  },
   {
     src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
@@ -931,9 +895,6 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: { type: CUSTOM_FIELD, parentContext: 'instanceParent' },
   },
-]
-
-export const referencesFromPermissionSets: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['PermissionSetFieldPermissions'] },
     target: { type: CUSTOM_FIELD },
@@ -944,54 +905,14 @@ export const referencesFromPermissionSets: FieldReferenceDefinition[] = [
   },
 ]
 
-/**
- * The rules for finding and resolving values into (and back from) reference expressions.
- * Overlaps between rules are allowed, and the first successful conversion wins.
- * Current order (defined by generateReferenceResolverFinder):
- *  1. Exact field names take precedence over regexp
- *  2. Order within each group is currently *not* guaranteed (groupBy is not stable)
- *
- * A value will be converted into a reference expression if:
- * 1. An element matching the rule is found.
- * 2. Resolving the resulting reference expression back returns the original value.
- */
-const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
-  ...defaultFieldNameToTypeMappingDefs,
-  ...fieldPermissionEnumDisabledExtraMappingDefs,
-  ...referencesFromProfile,
-  ...referencesFromPermissionSets,
-]
-
-export const getReferenceMappingDefs = (args: {
-  enumFieldPermissions: boolean
-  otherProfileRefs: boolean
-  permissionsSetRefs: boolean
-}): FieldReferenceDefinition[] => {
-  let refDefs = defaultFieldNameToTypeMappingDefs
-  if (args.enumFieldPermissions) {
-    refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
-  }
-  if (args.otherProfileRefs) {
-    refDefs = refDefs.concat(referencesFromProfile)
-  }
-  if (args.permissionsSetRefs) {
-    refDefs = refDefs.concat(referencesFromPermissionSets)
-  }
-  return refDefs
-}
-
 const matchName = (name: string, matcher: string | RegExp): boolean =>
   _.isString(matcher) ? matcher === name : matcher.test(name)
 
-const matchApiName = async (elem: Element, types: string[]): Promise<boolean> =>
-  types.includes(await apiName(elem))
+const matchApiName = async (elem: Element, types: string[]): Promise<boolean> => types.includes(await apiName(elem))
 
-const matchInstanceType = async (
-  inst: InstanceElement,
-  matchers: (string | RegExp)[],
-): Promise<boolean> => {
+const matchInstanceType = async (inst: InstanceElement, matchers: (string | RegExp)[]): Promise<boolean> => {
   const typeName = await apiName(await inst.getType())
-  return matchers.some((matcher) => matchName(typeName, matcher))
+  return matchers.some(matcher => matchName(typeName, matcher))
 }
 
 export class FieldReferenceResolver {
@@ -1002,17 +923,10 @@ export class FieldReferenceResolver {
 
   constructor(def: FieldReferenceDefinition) {
     this.src = def.src
-    this.serializationStrategy =
-      ReferenceSerializationStrategyLookup[
-        def.serializationStrategy ?? 'absoluteApiName'
-      ]
+    this.serializationStrategy = ReferenceSerializationStrategyLookup[def.serializationStrategy ?? 'absoluteApiName']
     this.sourceTransformation =
-      referenceUtils.ReferenceSourceTransformationLookup[
-        def.sourceTransformation ?? 'asString'
-      ]
-    this.target = def.target
-      ? { ...def.target, lookup: this.serializationStrategy.lookup }
-      : undefined
+      referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
+    this.target = def.target ? { ...def.target, lookup: this.serializationStrategy.lookup } : undefined
   }
 
   static create(def: FieldReferenceDefinition): FieldReferenceResolver {
@@ -1024,38 +938,28 @@ export class FieldReferenceResolver {
       matchName(field.name, this.src.field) &&
       (await matchApiName(field.parent, this.src.parentTypes)) &&
       (this.src.instanceTypes === undefined ||
-        (isInstanceElement(element) &&
-          matchInstanceType(element, this.src.instanceTypes)))
+        (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
     )
   }
 }
 
-export type ReferenceResolverFinder = (
-  field: Field,
-  element: Element,
-) => Promise<FieldReferenceResolver[]>
+export type ReferenceResolverFinder = (field: Field, element: Element) => Promise<FieldReferenceResolver[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
  */
-export const generateReferenceResolverFinder = (
-  defs: FieldReferenceDefinition[],
-): ReferenceResolverFinder => {
-  const referenceDefinitions = defs.map((def) =>
-    FieldReferenceResolver.create(def),
-  )
+export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]): ReferenceResolverFinder => {
+  const referenceDefinitions = defs.map(def => FieldReferenceResolver.create(def))
 
   const matchersByFieldName = _(referenceDefinitions)
-    .filter((def) => _.isString(def.src.field))
-    .groupBy((def) => def.src.field)
+    .filter(def => _.isString(def.src.field))
+    .groupBy(def => def.src.field)
     .value()
   const regexFieldMatchersByParent = _(referenceDefinitions)
-    .filter((def) => _.isRegExp(def.src.field))
-    .flatMap((def) =>
-      def.src.parentTypes.map((parentType) => ({ parentType, def })),
-    )
+    .filter(def => _.isRegExp(def.src.field))
+    .flatMap(def => def.src.parentTypes.map(parentType => ({ parentType, def })))
     .groupBy(({ parentType }) => parentType)
-    .mapValues((items) => items.map((item) => item.def))
+    .mapValues(items => items.map(item => item.def))
     .value()
 
   return async (field, element) =>
@@ -1063,7 +967,7 @@ export const generateReferenceResolverFinder = (
       ...(matchersByFieldName[field.name] ?? []),
       ...(regexFieldMatchersByParent[await apiName(field.parent)] || []),
     ])
-      .filter((resolver) => resolver.match(field, element))
+      .filter(resolver => resolver.match(field, element))
       .toArray()
 }
 
@@ -1082,21 +986,13 @@ const getLookUpNameImpl = ({
     args: GetLookupNameFuncArgs,
   ): Promise<ReferenceSerializationStrategy | undefined> => {
     if (args.field === undefined) {
-      log.debug(
-        'could not determine field for path %s',
-        args.path?.getFullName(),
-      )
+      log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
-    const strategies = (await resolverFinder(args.field, args.element)).map(
-      (def) => def.serializationStrategy,
-    )
+    const strategies = (await resolverFinder(args.field, args.element)).map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {
-      log.debug(
-        'could not find matching strategy for field %s',
-        args.field.elemID.getFullName(),
-      )
+      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
       return undefined
     }
 
@@ -1127,8 +1023,7 @@ const getLookUpNameImpl = ({
         return strategy.serialize({ ref, field, element })
       }
       if (isElement(ref.value)) {
-        const defaultStrategy =
-          ReferenceSerializationStrategyLookup[defaultStrategyName]
+        const defaultStrategy = ReferenceSerializationStrategyLookup[defaultStrategyName]
         const resolvedValue = await defaultStrategy.serialize({ ref, element })
         if (resolvedValue !== undefined) {
           return resolvedValue

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -70,21 +62,21 @@ describe('priorityFilter', () => {
   })
   describe('preDeploy', () => {
     const iconUrlTruncatePath = '/folder/image.png'
-    it('should concat the client base url to the instance icon url', () => {
+    it('should concat the client base url to the instance icon url', async () => {
       const instance = new InstanceElement('instance', type, { iconUrl: iconUrlTruncatePath })
       const changes = [toChange({ after: instance })]
-      filter.preDeploy?.(changes)
+      await filter.preDeploy?.(changes)
       expect(getChangeData(changes[0]).value.iconUrl).toEqual(new URL(iconUrlTruncatePath, client.baseUrl).href)
     })
   })
   describe('onDeploy', () => {
-    it('should remove the domain prefix from the iconUrl field', () => {
+    it('should remove the domain prefix from the iconUrl field', async () => {
       const iconUrlTruncatePath = '/folder/image.png'
       const instance = new InstanceElement('instance', type, {
         iconUrl: new URL(iconUrlTruncatePath, client.baseUrl).href,
       })
       const changes = [toChange({ after: instance })]
-      filter.onDeploy?.(changes)
+      await filter.onDeploy?.(changes)
       expect(getChangeData(changes[0]).value.iconUrl).toEqual(iconUrlTruncatePath)
     })
   })

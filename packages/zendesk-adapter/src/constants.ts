@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 export const ZENDESK = 'zendesk'
 export const GUIDE = 'guide'
@@ -78,6 +70,7 @@ export const TRANSLATIONS_FIELD = 'translations'
 export const ARTICLE_ATTACHMENTS_FIELD = 'article_attachments'
 export const ARTICLE_ATTACHMENT_TYPE_NAME = 'article_attachment'
 export const SLA_POLICY_TYPE_NAME = 'sla_policy'
+export const QUEUE_TYPE_NAME = 'queue'
 export const TRIGGER_TYPE_NAME = 'trigger'
 export const TRIGGER_CATEGORY_TYPE_NAME = 'trigger_category'
 export const LOCALE_TYPE_NAME = 'locale'
@@ -87,6 +80,7 @@ export const CUSTOM_TICKET_STATUS_ACTION = 'custom_status_id'
 export const VIEW_TYPE_NAME = 'view'
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DYNAMIC_CONTENT_ITEM_TYPE_NAME = 'dynamic_content_item'
+export const LAYOUT_TYPE_NAME = 'layout'
 export const CUSTOM_OBJECT_TYPE_NAME = 'custom_object'
 export const CUSTOM_OBJECT_FIELD_TYPE_NAME = 'custom_object_field'
 export const CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME = 'custom_object_field_order'
@@ -95,6 +89,7 @@ export const ORDER_FIELD = `${CUSTOM_OBJECT_FIELD_TYPE_NAME}s`
 export const AUTOMATION_ORDER_TYPE_NAME = 'automation_order'
 export const ORGANIZATION_FIELD_ORDER_TYPE_NAME = 'organization_field_order'
 export const SLA_POLICY_ORDER_TYPE_NAME = 'sla_policy_order'
+export const QUEUE_ORDER_TYPE_NAME = 'queue_order'
 export const TRIGGER_ORDER_TYPE_NAME = 'trigger_order'
 export const USER_FIELD_ORDER_TYPE_NAME = 'user_field_order'
 export const VIEW_ORDER_TYPE_NAME = 'view_order'
@@ -110,6 +105,7 @@ export const ORDER_TYPE_NAMES = [
   AUTOMATION_ORDER_TYPE_NAME,
   ORGANIZATION_FIELD_ORDER_TYPE_NAME,
   SLA_POLICY_ORDER_TYPE_NAME,
+  QUEUE_ORDER_TYPE_NAME,
   TRIGGER_ORDER_TYPE_NAME,
   USER_FIELD_ORDER_TYPE_NAME,
   VIEW_ORDER_TYPE_NAME,

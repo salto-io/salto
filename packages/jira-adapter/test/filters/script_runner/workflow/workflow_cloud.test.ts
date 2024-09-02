@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value, Values } from '@salto-io/adapter-api'
@@ -66,17 +58,19 @@ describe('ScriptRunner cloud Workflow', () => {
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    const configWithNewWorkflowAPI = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    configWithNewWorkflowAPI.fetch.enableNewWorkflowAPI = true
-    configWithNewWorkflowAPI.fetch.enableScriptRunnerAddon = true
+    const configWithOutNewWorkflowAPI = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    configWithOutNewWorkflowAPI.fetch.enableNewWorkflowAPI = false
+    configWithOutNewWorkflowAPI.fetch.enableScriptRunnerAddon = true
     config.fetch.enableScriptRunnerAddon = true
-    filter = workflowFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = workflowFilter(getFilterParams({ config: configWithOutNewWorkflowAPI })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
     filterOff = workflowFilter(getFilterParams({ config: configOff })) as filterUtils.FilterWith<
       'onFetch' | 'preDeploy' | 'onDeploy'
     >
-    filterWithNewWorkflowAPI = workflowFilter(
-      getFilterParams({ config: configWithNewWorkflowAPI }),
-    ) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterWithNewWorkflowAPI = workflowFilter(getFilterParams({ config })) as filterUtils.FilterWith<
+      'onFetch' | 'preDeploy' | 'onDeploy'
+    >
   })
   describe('post functions', () => {
     let accountAndGroupArrayed: Values

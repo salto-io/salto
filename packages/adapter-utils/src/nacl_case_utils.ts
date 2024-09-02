@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import path from 'path'
 import truncate from 'truncate-utf8-bytes'
@@ -49,8 +41,6 @@ export const normalizeFilePathPart = (name: string): string => {
   const suffix = `_${nameHash}${extension}`
   return truncate(name, MAX_PATH_LENGTH - suffix.length).concat(suffix)
 }
-
-/* eslint-disable quote-props */
 // Current values in this mapping should not be changed
 // Values in the map should be unique
 // Adding more values should be with a leading z as an indication the value has more than one letter
@@ -167,7 +157,6 @@ const prettifyWord = (str: string): string[] => {
     result = str.replace(camelCaseRegex, ([lower, upper]) => [lower, upper].join(' '))
   }
   if (allCapsCamelCaseRegex.test(result)) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     result = result.replace(allCapsCamelCaseRegex, (match, subMatch) => `${match[0]} ${subMatch}`)
   }
 

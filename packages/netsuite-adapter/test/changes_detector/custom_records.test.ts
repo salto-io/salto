@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import { getChangedCustomRecords, getCustomRecords } from '../../src/changes_detector/changes_detectors/custom_records'
@@ -51,11 +43,17 @@ describe('custom records', () => {
     })
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid FROM customrecordtype  ORDER BY scriptid ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        2,
-        "SELECT scriptid FROM customrecord1 WHERE lastmodified BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') ORDER BY scriptid ASC",
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, {
+        select: 'internalid, scriptid',
+        from: 'customrecordtype',
+        orderBy: 'internalid',
+      })
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+        select: 'id, scriptid',
+        from: 'customrecord1',
+        where: "lastmodified BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')",
+        orderBy: 'id',
+      })
     })
   })
   it('return nothing when custom record types query fails', async () => {

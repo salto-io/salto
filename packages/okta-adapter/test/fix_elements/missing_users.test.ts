@@ -1,25 +1,19 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import OktaClient from '../../src/client/client'
 import * as userUtilsModule from '../../src/user_utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_PUSH_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
-import { DEPLOY_CONFIG, FETCH_CONFIG, OktaConfig } from '../../src/config'
+import { DEPLOY_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { omitMissingUsersHandler } from '../../src/fix_elements/missing_users'
+import { DEFAULT_CONFIG, OktaUserConfig } from '../../src/user_config'
+import { createFetchQuery } from '../utils'
 
 const createUsersValue = (includeUsers: string[] | undefined, excludeUsers: string[] | undefined): Values => ({
   conditions: {
@@ -40,6 +34,7 @@ const createMockUser = (login: string): userUtilsModule.User => ({
 })
 
 describe('missing_users', () => {
+  const fetchQuery = createFetchQuery()
   const EXIST_USER = 'exist.user@salto.io'
   const EXIST_USER2 = 'exist.user+2@salto.io'
   const NOT_EXIST_USER = 'not.exist.user@salto.io'
@@ -74,11 +69,14 @@ describe('missing_users', () => {
     const mockConfig = {
       [DEPLOY_CONFIG]: {},
       [FETCH_CONFIG]: {},
-    } as OktaConfig
+    } as OktaUserConfig
     it('should return empty fixElements list and empty errors list', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
-        missingUsersHandlerInput,
-      )
+      const result = await omitMissingUsersHandler({
+        config: mockConfig,
+        client: mockClient,
+        elementsSource,
+        fetchQuery,
+      })(missingUsersHandlerInput)
       expect(result.errors).toHaveLength(0)
       expect(result.fixedElements).toHaveLength(0)
       expect(mockGetUsers).not.toHaveBeenCalled()
@@ -90,11 +88,14 @@ describe('missing_users', () => {
         omitMissingUsers: false,
       },
       [FETCH_CONFIG]: {},
-    } as OktaConfig
+    } as OktaUserConfig
     it('should return empty fixElements list and empty errors list', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
-        missingUsersHandlerInput,
-      )
+      const result = await omitMissingUsersHandler({
+        config: mockConfig,
+        client: mockClient,
+        elementsSource,
+        fetchQuery,
+      })(missingUsersHandlerInput)
       expect(result.errors).toHaveLength(0)
       expect(result.fixedElements).toHaveLength(0)
       expect(mockGetUsers).not.toHaveBeenCalled()
@@ -106,11 +107,14 @@ describe('missing_users', () => {
         omitMissingUsers: true,
       },
       [FETCH_CONFIG]: {},
-    } as OktaConfig
+    } as OktaUserConfig
     it('should return fixElements list and errors list correctly', async () => {
-      const result = await omitMissingUsersHandler({ config: mockConfig, client: mockClient, elementsSource })(
-        missingUsersHandlerInput,
-      )
+      const result = await omitMissingUsersHandler({
+        config: mockConfig,
+        client: mockClient,
+        elementsSource,
+        fetchQuery,
+      })(missingUsersHandlerInput)
       expect(result.errors).toHaveLength(2)
       expect(result.errors).toEqual([
         expect.objectContaining({
@@ -147,15 +151,35 @@ If you continue, they will be omitted. Learn more: ${userUtilsModule.OMIT_MISSIN
             [FETCH_CONFIG]: {
               convertUsersIds: false,
             },
-          } as OktaConfig,
+          } as OktaUserConfig,
           client: mockClient,
           elementsSource,
+          fetchQuery,
         })(missingUsersHandlerInput)
         expect(mockGetUsers.mock.calls[0][1]).toEqual({
           userIds: expect.arrayContaining(ALL_MOCK_USERS),
           property: 'id',
         })
       })
+    })
+  })
+  describe('When User type is included', () => {
+    it('should do nothing if User type is included', async () => {
+      const config = {
+        ...DEFAULT_CONFIG,
+        fetch: {
+          ...DEFAULT_CONFIG.fetch,
+          exclude: [],
+        },
+      }
+      const usersExcludedFetchQuery = createFetchQuery(config)
+      const result = await omitMissingUsersHandler({
+        config,
+        client: mockClient,
+        elementsSource,
+        fetchQuery: usersExcludedFetchQuery,
+      })(missingUsersHandlerInput)
+      expect(result.errors).toHaveLength(0)
     })
   })
 })

@@ -1,31 +1,24 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
 import { ZENDESK, ARTICLE_TYPE_NAME } from '../../src/constants'
 import { usersValidator } from '../../src/change_validators'
 import ZendeskClient from '../../src/client/client'
-import { ZendeskFetchConfig } from '../../src/config'
+import { ZendeskFetchConfig } from '../../src/user_config'
 
 const { createInMemoryElementSource } = elementSource
 
 describe('usersValidator', () => {
   let client: ZendeskClient
   let mockGet: jest.SpyInstance
-  const config = { resolveUserIDs: true } as ZendeskFetchConfig
+  let config: ZendeskFetchConfig
+
   const articleType = new ObjectType({
     elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
   })
@@ -69,7 +62,9 @@ describe('usersValidator', () => {
   })
 
   const testsElementSource = createInMemoryElementSource([permissionsCustomRole, noPermissionsCustomRole])
-
+  beforeEach(async () => {
+    config = { resolveUserIDs: true } as ZendeskFetchConfig
+  })
   beforeAll(async () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -112,6 +107,13 @@ describe('usersValidator', () => {
           "The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk",
       },
     ])
+  })
+  it('should not return errors if resolveUserIDs is false', async () => {
+    config = { resolveUserIDs: false } as ZendeskFetchConfig
+    const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
+    const changeValidator = usersValidator(client, config)
+    const errors = await changeValidator(changes, testsElementSource)
+    expect(errors).toHaveLength(0)
   })
   it('should not return an error if user exists', async () => {
     const articleWithValidUser = new InstanceElement('article', articleType, { author_id: '1@salto.io', draft: false })

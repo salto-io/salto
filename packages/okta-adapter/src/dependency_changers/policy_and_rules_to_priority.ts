@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -30,7 +22,7 @@ import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
-import { ALL_SUPPORTED_POLICY_NAMES, ALL_SUPPORTED_POLICY_RULE_NAMES } from '../filters/policy_priority'
+import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../filters/policy_priority'
 
 const { isDefined } = values
 
@@ -55,13 +47,13 @@ export const changeDependenciesFromPoliciesAndRulesToPriority: DependencyChanger
     modificationInstanceChanges.filter(change =>
       [
         ...ALL_SUPPORTED_POLICY_NAMES,
-        ...ALL_SUPPORTED_POLICY_RULE_NAMES,
+        ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
         ...POLICY_PRIORITY_TYPE_NAMES,
         ...POLICY_RULE_PRIORITY_TYPE_NAMES,
       ].includes(getChangeData(change.change).elemID.typeName),
     ),
     change =>
-      [...ALL_SUPPORTED_POLICY_NAMES, ...ALL_SUPPORTED_POLICY_RULE_NAMES].includes(
+      [...ALL_SUPPORTED_POLICY_NAMES, ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE].includes(
         getChangeData(change.change).elemID.typeName,
       ),
   )

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import {
@@ -36,6 +28,7 @@ import {
   SAVED_SEARCH,
   WORKFLOW,
 } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 const DUPLICATED_FIELD = 'test uniqueness'
 const UNIQUE_FIELD = 'test uniqueness 2'
@@ -48,6 +41,8 @@ describe('unique fields validator', () => {
     sameField: ChangeDataType
     diffField: ChangeDataType
   }
+
+  const baseParams = mockChangeValidatorParams()
 
   const getTestElements = (
     typeName: string,
@@ -185,19 +180,17 @@ describe('unique fields validator', () => {
 
     describe('Saved Search with a unique title', () => {
       it('Should not have a change error when adding a new Saved Search with a unique title', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElements.basic })],
-          undefined,
-          buildElementsSource([testElements.diffField, testElements.basic]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElements.basic })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElements.diffField, testElements.basic]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
 
       it('Should not have a change error when modifying a Saved Search with a unique title', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElements.basic, after: testElements.sameField })],
-          undefined,
-          buildElementsSource([testElements.diffField, testElements.sameField]),
+          { ...baseParams, elementsSource: buildElementsSource([testElements.diffField, testElements.sameField]) },
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -205,11 +198,10 @@ describe('unique fields validator', () => {
 
     describe('Saved Search with an existing title', () => {
       it('Should have a change error when adding a new Saved Search with an existing title', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElements.sameField })],
-          undefined,
-          buildElementsSource([testElements.basic, testElements.sameField]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElements.sameField })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElements.basic, testElements.sameField]),
+        })
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toBe(testElements.sameField.elemID)
@@ -219,8 +211,7 @@ describe('unique fields validator', () => {
       it('Should have a change error when modifying a Saved Search`s title to an existing one', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElements.diffField, after: testElements.sameField })],
-          undefined,
-          buildElementsSource([testElements.basic, testElements.sameField]),
+          { ...baseParams, elementsSource: buildElementsSource([testElements.basic, testElements.sameField]) },
         )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -238,19 +229,17 @@ describe('unique fields validator', () => {
 
     describe('Financial Layout with a unique name', () => {
       it('Should not have a change error when adding a new Financial Layout with a unique name', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElements.basic })],
-          undefined,
-          buildElementsSource([testElements.diffField, testElements.basic]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElements.basic })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElements.diffField, testElements.basic]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
 
       it('Should not have a change error when modifying a Financial Layout with a unique name', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElements.basic, after: testElements.sameField })],
-          undefined,
-          buildElementsSource([testElements.diffField, testElements.sameField]),
+          { ...baseParams, elementsSource: buildElementsSource([testElements.diffField, testElements.sameField]) },
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -258,11 +247,10 @@ describe('unique fields validator', () => {
 
     describe('Financial Layout with an existing name', () => {
       it('Should have a change error when adding a new Financial Layout with an existing name', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElements.sameField })],
-          undefined,
-          buildElementsSource([testElements.basic, testElements.sameField]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElements.sameField })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElements.basic, testElements.sameField]),
+        })
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toBe(testElements.sameField.elemID)
@@ -272,8 +260,7 @@ describe('unique fields validator', () => {
       it('Should have a change error when modifying a Financial Layout`s name to an existing one', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElements.diffField, after: testElements.sameField })],
-          undefined,
-          buildElementsSource([testElements.basic, testElements.sameField]),
+          { ...baseParams, elementsSource: buildElementsSource([testElements.basic, testElements.sameField]) },
         )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -289,19 +276,20 @@ describe('unique fields validator', () => {
 
     describe('Custom Record Type Field with a unique scriptid', () => {
       it('Should not have a change error when adding a new Custom Record Type Field with a unique scriptid', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testChanges.basic })],
-          undefined,
-          buildElementsSourceFromElements([testElements.diffField, testElements.basic]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testChanges.basic })], {
+          ...baseParams,
+          elementsSource: buildElementsSourceFromElements([testElements.diffField, testElements.basic]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
 
       it('Should not have a change error when modifying a Custom Record Type Field with a unique scriptid', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testChanges.basic, after: testChanges.sameField })],
-          undefined,
-          buildElementsSourceFromElements([testElements.diffField, testElements.sameField]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSourceFromElements([testElements.diffField, testElements.sameField]),
+          },
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -309,11 +297,10 @@ describe('unique fields validator', () => {
 
     describe('Custom Record Type Field with an existing scriptid', () => {
       it('Should have a change error when adding a new Custom Record Type Field with an existing scriptid', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testChanges.sameField })],
-          undefined,
-          buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testChanges.sameField })], {
+          ...baseParams,
+          elementsSource: buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
+        })
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toBe(testChanges.sameField.elemID)
@@ -323,8 +310,10 @@ describe('unique fields validator', () => {
       it('Should have a change error when modifying a Custom Record Type Field`s scriptid to an existing one', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testChanges.diffField, after: testChanges.sameField })],
-          undefined,
-          buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
+          },
         )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -339,27 +328,27 @@ describe('unique fields validator', () => {
     describe('Workflow custom field with a unique scriptid', () => {
       it('Should not have a change error when adding a new Workflow without a custom field/state', async () => {
         const emptyElement = new InstanceElement('empty', new ObjectType({ elemID: new ElemID(NETSUITE, WORKFLOW) }))
-        const changeErrors = await uniqueFields(
-          [toChange({ after: emptyElement })],
-          undefined,
-          buildElementsSourceFromElements([testElements.diffField, testElements.basic, emptyElement]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: emptyElement })], {
+          ...baseParams,
+          elementsSource: buildElementsSourceFromElements([testElements.diffField, testElements.basic, emptyElement]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
       it('Should not have a change error when adding a new Workflow with a custom-field / state-custom-field that has unique scriptid', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElements.basic })],
-          undefined,
-          buildElementsSourceFromElements([testElements.diffField, testElements.basic]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElements.basic })], {
+          ...baseParams,
+          elementsSource: buildElementsSourceFromElements([testElements.diffField, testElements.basic]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
 
       it('Should not have a change error when modifying a Workflow with unique custom-fields / state-custom-fields', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElements.basic, after: testElements.sameField })],
-          undefined,
-          buildElementsSourceFromElements([testElements.diffField, testElements.sameField]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSourceFromElements([testElements.diffField, testElements.sameField]),
+          },
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -367,11 +356,10 @@ describe('unique fields validator', () => {
 
     describe('Workflow with a custom field that has a not-unique scriptid', () => {
       it('Should have a change error when adding a new Workflow with a custom-field / state-custom-field that has a not-unique scriptid', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElements.sameField })],
-          undefined,
-          buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElements.sameField })], {
+          ...baseParams,
+          elementsSource: buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
+        })
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toBe(testElements.sameField.elemID)
@@ -381,8 +369,10 @@ describe('unique fields validator', () => {
       it('Should have a change error when modifying a custom field scriptid to an existing one', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElements.diffField, after: testElements.sameField })],
-          undefined,
-          buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSourceFromElements([testElements.basic, testElements.sameField]),
+          },
         )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -404,58 +394,55 @@ describe('unique fields validator', () => {
     describe('Script custom field with a unique scriptid', () => {
       it('Should not have a change error when adding a new Script without a custom field', async () => {
         const emptyElement = new InstanceElement('empty', new ObjectType({ elemID: new ElemID(NETSUITE, 'suitelet') }))
-        const changeErrors = await uniqueFields(
-          [toChange({ after: emptyElement })],
-          undefined,
-          buildElementsSource([testElementsRestlet.diffField, testElementsRestlet.basic, emptyElement]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: emptyElement })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElementsRestlet.diffField, testElementsRestlet.basic, emptyElement]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
       it('Should not have a change error when adding a new Script with a custom field that has unique scriptid', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElementsRestlet.basic })],
-          undefined,
-          buildElementsSource([testElementsRestlet.diffField, testElementsRestlet.basic]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElementsRestlet.basic })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElementsRestlet.diffField, testElementsRestlet.basic]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
 
       it('Should not have a change error when modifying a Script with unique custom fields', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElementsRestlet.basic, after: testElementsRestlet.sameField })],
-          undefined,
-          buildElementsSource([testElementsRestlet.diffField, testElementsRestlet.sameField]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSource([testElementsRestlet.diffField, testElementsRestlet.sameField]),
+          },
         )
         expect(changeErrors).toHaveLength(0)
       })
       it('Should not have a change error when adding a new Script with a custom field that has unique scriptid with 2 different script types', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElementsRestlet.basic })],
-          undefined,
-          buildElementsSource([testElementsRestlet.diffField, testElementsSuitelet.basic]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElementsRestlet.basic })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElementsRestlet.diffField, testElementsSuitelet.basic]),
+        })
         expect(changeErrors).toHaveLength(0)
       })
     })
 
     describe('Script with a custom field that has a not-unique scriptid', () => {
       it('Should have a change error when adding a new Script with a custom field that has a not-unique scriptid', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElementsRestlet.sameField })],
-          undefined,
-          buildElementsSource([testElementsRestlet.basic, testElementsRestlet.sameField]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElementsRestlet.sameField })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElementsRestlet.basic, testElementsRestlet.sameField]),
+        })
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toBe(testElementsRestlet.sameField.elemID)
         expect(changeErrors[0].detailedMessage).toContain(DUPLICATED_FIELD)
       })
       it('Should have a change error when adding a new Script with a custom field that has the same scriptid as another custom field in different script type', async () => {
-        const changeErrors = await uniqueFields(
-          [toChange({ after: testElementsRestlet.sameField })],
-          undefined,
-          buildElementsSource([testElementsRestlet.basic, testElementsSuitelet.sameField]),
-        )
+        const changeErrors = await uniqueFields([toChange({ after: testElementsRestlet.sameField })], {
+          ...baseParams,
+          elementsSource: buildElementsSource([testElementsRestlet.basic, testElementsSuitelet.sameField]),
+        })
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toBe(testElementsRestlet.sameField.elemID)
@@ -464,8 +451,10 @@ describe('unique fields validator', () => {
       it('Should have a change error when modifying a custom field scriptid to an existing one', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ before: testElementsRestlet.diffField, after: testElementsRestlet.sameField })],
-          undefined,
-          buildElementsSource([testElementsRestlet.basic, testElementsRestlet.sameField]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSource([testElementsRestlet.basic, testElementsRestlet.sameField]),
+          },
         )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -507,19 +496,21 @@ describe('unique fields validator', () => {
             toChange({ after: workflowTestInstances.basic }),
             toChange({ after: scriptTestInstances.basic }),
           ],
-          undefined,
-          buildElementsSource([
-            savedSearchTestInstances.diffField,
-            savedSearchTestInstances.basic,
-            financialLayoutTestInstances.diffField,
-            financialLayoutTestInstances.basic,
-            customRecordTestObjects.diffField,
-            customRecordTestObjects.basic,
-            workflowTestInstances.diffField,
-            workflowTestInstances.basic,
-            scriptTestInstances.diffField,
-            scriptTestInstances.basic,
-          ]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSource([
+              savedSearchTestInstances.diffField,
+              savedSearchTestInstances.basic,
+              financialLayoutTestInstances.diffField,
+              financialLayoutTestInstances.basic,
+              customRecordTestObjects.diffField,
+              customRecordTestObjects.basic,
+              workflowTestInstances.diffField,
+              workflowTestInstances.basic,
+              scriptTestInstances.diffField,
+              scriptTestInstances.basic,
+            ]),
+          },
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -533,19 +524,21 @@ describe('unique fields validator', () => {
             toChange({ before: workflowTestInstances.basic, after: workflowTestInstances.sameField }),
             toChange({ before: scriptTestInstances.basic, after: scriptTestInstances.sameField }),
           ],
-          undefined,
-          buildElementsSource([
-            savedSearchTestInstances.diffField,
-            savedSearchTestInstances.sameField,
-            financialLayoutTestInstances.diffField,
-            financialLayoutTestInstances.sameField,
-            customRecordTestObjects.diffField,
-            customRecordTestObjects.sameField,
-            workflowTestInstances.diffField,
-            workflowTestInstances.sameField,
-            scriptTestInstances.diffField,
-            scriptTestInstances.sameField,
-          ]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSource([
+              savedSearchTestInstances.diffField,
+              savedSearchTestInstances.sameField,
+              financialLayoutTestInstances.diffField,
+              financialLayoutTestInstances.sameField,
+              customRecordTestObjects.diffField,
+              customRecordTestObjects.sameField,
+              workflowTestInstances.diffField,
+              workflowTestInstances.sameField,
+              scriptTestInstances.diffField,
+              scriptTestInstances.sameField,
+            ]),
+          },
         )
         expect(changeErrors).toHaveLength(0)
       })
@@ -561,19 +554,21 @@ describe('unique fields validator', () => {
             toChange({ after: workflowTestInstances.sameField }),
             toChange({ after: scriptTestInstances.sameField }),
           ],
-          undefined,
-          buildElementsSource([
-            savedSearchTestInstances.basic,
-            savedSearchTestInstances.sameField,
-            financialLayoutTestInstances.basic,
-            financialLayoutTestInstances.sameField,
-            customRecordTestObjects.basic,
-            customRecordTestObjects.sameField,
-            workflowTestInstances.basic,
-            workflowTestInstances.sameField,
-            scriptTestInstances.basic,
-            scriptTestInstances.sameField,
-          ]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSource([
+              savedSearchTestInstances.basic,
+              savedSearchTestInstances.sameField,
+              financialLayoutTestInstances.basic,
+              financialLayoutTestInstances.sameField,
+              customRecordTestObjects.basic,
+              customRecordTestObjects.sameField,
+              workflowTestInstances.basic,
+              workflowTestInstances.sameField,
+              scriptTestInstances.basic,
+              scriptTestInstances.sameField,
+            ]),
+          },
         )
         expect(changeErrors).toHaveLength(5)
         expect(changeErrors.map(changeError => changeError.severity)).toEqual([
@@ -603,19 +598,21 @@ describe('unique fields validator', () => {
             toChange({ before: workflowTestInstances.diffField, after: workflowTestInstances.sameField }),
             toChange({ before: scriptTestInstances.diffField, after: scriptTestInstances.sameField }),
           ],
-          undefined,
-          buildElementsSource([
-            savedSearchTestInstances.basic,
-            savedSearchTestInstances.sameField,
-            financialLayoutTestInstances.basic,
-            financialLayoutTestInstances.sameField,
-            customRecordTestObjects.basic,
-            customRecordTestObjects.sameField,
-            workflowTestInstances.basic,
-            workflowTestInstances.sameField,
-            scriptTestInstances.basic,
-            scriptTestInstances.sameField,
-          ]),
+          {
+            ...baseParams,
+            elementsSource: buildElementsSource([
+              savedSearchTestInstances.basic,
+              savedSearchTestInstances.sameField,
+              financialLayoutTestInstances.basic,
+              financialLayoutTestInstances.sameField,
+              customRecordTestObjects.basic,
+              customRecordTestObjects.sameField,
+              workflowTestInstances.basic,
+              workflowTestInstances.sameField,
+              scriptTestInstances.basic,
+              scriptTestInstances.sameField,
+            ]),
+          },
         )
         expect(changeErrors).toHaveLength(5)
         expect(changeErrors.map(changeError => changeError.severity)).toEqual([

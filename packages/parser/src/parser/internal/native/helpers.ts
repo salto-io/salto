@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ReferenceExpression,
@@ -27,7 +19,7 @@ import isPromise from 'is-promise'
 import { LexerToken, WILDCARD } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
 import { ParseContext, ValuePromiseWatcher } from './types'
-import { Keywords } from '../../language'
+import { Keywords, keywordToPrimitiveType } from '../../language'
 import { invalidElemIDType } from './errors'
 
 export const INVALID_ELEM_ID = new ElemID(WILDCARD)
@@ -44,10 +36,10 @@ export const positionAtEnd = (token: LexerToken): SourcePos => ({
   col: token.lineBreaks > 0 ? token.text.slice(token.text.lastIndexOf('\n')).length : token.col + token.text.length,
 })
 
-export const parseTopLevelID = (context: ParseContext, fullname: string, range: SourceRange): ElemID => {
-  const parts = fullname.split(Keywords.NAMESPACE_SEPARATOR)
+export const parseTopLevelID = (context: ParseContext, fullName: string, range: SourceRange): ElemID => {
+  const parts = fullName.split(Keywords.NAMESPACE_SEPARATOR)
   if (parts.length > 2) {
-    context.errors.push(invalidElemIDType(fullname, range))
+    context.errors.push(invalidElemIDType(fullName, range))
     return INVALID_ELEM_ID
   }
   const adapter = parts.length > 1 ? parts[0] : ''
@@ -121,18 +113,4 @@ export const createFieldRefType = (context: ParseContext, blockType: string, ran
   return new TypeReference(parseTopLevelID(context, blockType, range))
 }
 
-export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {
-  if (typeName === Keywords.TYPE_STRING) {
-    return PrimitiveTypes.STRING
-  }
-  if (typeName === Keywords.TYPE_NUMBER) {
-    return PrimitiveTypes.NUMBER
-  }
-  if (typeName === Keywords.TYPE_UNKNOWN) {
-    return PrimitiveTypes.UNKNOWN
-  }
-  if (typeName === Keywords.TYPE_BOOL) {
-    return PrimitiveTypes.BOOLEAN
-  }
-  return undefined
-}
+export const primitiveType = (typeName: string): PrimitiveTypes | undefined => keywordToPrimitiveType[typeName]

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -24,6 +16,8 @@ import {
   isInstanceElement,
   isRemovalChange,
   ObjectType,
+  Element,
+  Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -32,16 +26,23 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
+  CONTENT_TYPE_HEADER,
   DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE,
   DASHBOARD_GADGET_PROPERTIES_TYPE,
   DASHBOARD_GADGET_TYPE,
   JIRA,
+  JSON_CONTENT_TYPE,
 } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
+
+export type InstantToPropertiesResponse = {
+  instance: InstanceElement
+  promisePropertyValues: Promise<Record<string, Promise<Value>>>
+}
 
 const getSubTypes = (): {
   configType: ObjectType
@@ -79,7 +80,7 @@ const deployGadgetProperties = async (instance: InstanceElement, client: JiraCli
         headers: {
           // value can be a string and in that case axios won't send
           // this header so we need to add it
-          'Content-Type': 'application/json',
+          [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
         },
       }),
     ),
@@ -107,7 +108,7 @@ const getPropertiesKeys = async (instance: InstanceElement, client: JiraClient):
   }
 }
 
-const getPropertyValue = async (instance: InstanceElement, key: string, client: JiraClient): Promise<unknown> => {
+const getPropertyValue = async (instance: InstanceElement, key: string, client: JiraClient): Promise<Value> => {
   const dashboardId = getParents(instance)[0].value.value.id
 
   try {
@@ -129,22 +130,37 @@ const getPropertyValue = async (instance: InstanceElement, key: string, client: 
   }
 }
 
-const filter: FilterCreator = ({ client, config }) => ({
+const getAPIResponse = async (
+  client: JiraClient,
+  instance: InstanceElement,
+): Promise<Record<string, Promise<Value>>> => {
+  const keys = await getPropertiesKeys(instance, client)
+  return Object.fromEntries(keys.map(key => [key, getPropertyValue(instance, key, client)]))
+}
+
+export const getDashboardPropertiesAsync = (client: JiraClient, elements: Element[]): InstantToPropertiesResponse[] =>
+  elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
+    .map(instance => ({
+      instance,
+      promisePropertyValues: getAPIResponse(client, instance),
+    }))
+
+const filter: FilterCreator = ({ client, config, adapterContext }) => ({
   name: 'gadgetFilter',
   onFetch: async elements => {
+    const instantsToPropertiesResponse: InstantToPropertiesResponse[] = adapterContext.dashboardPropertiesPromise
+
     await Promise.all(
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
-        .map(async instance => {
-          const keys = await getPropertiesKeys(instance, client)
-          instance.value.properties = _.pickBy(
-            Object.fromEntries(
-              await Promise.all(keys.map(async key => [key, await getPropertyValue(instance, key, client)])),
-            ),
-            values.isDefined,
-          )
-        }),
+      instantsToPropertiesResponse.map(async ({ instance, promisePropertyValues: PromisePromisePropertyValues }) => {
+        const propertyValues = Object.fromEntries(
+          await Promise.all(
+            Object.entries(await PromisePromisePropertyValues).map(async ([key, promise]) => [key, await promise]),
+          ),
+        )
+        instance.value.properties = _.pickBy(propertyValues, values.isDefined)
+      }),
     )
 
     const gadgetType = findObject(elements, DASHBOARD_GADGET_TYPE)

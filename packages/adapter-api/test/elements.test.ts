@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS } from '../src/builtins'
@@ -35,6 +27,7 @@ import {
   isContainerType,
   createRefToElmWithValue,
   PlaceholderObjectType,
+  placeholderReadonlyElementsSource,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -59,21 +52,34 @@ describe('Test elements.ts', () => {
   })
 
   /**   object types   * */
+  const metaTypeID = new ElemID('test', 'meta')
+  const metaType = new ObjectType({
+    elemID: metaTypeID,
+    annotationRefsOrTypes: {
+      numAnno: primNum,
+    },
+  })
+
   const otID = new ElemID('test', 'obj')
   const ot = new ObjectType({
     elemID: otID,
     fields: {
-      // eslint-disable-next-line camelcase
       num_field: { refType: primNum },
-      // eslint-disable-next-line camelcase
       str_field: { refType: primStr },
+      ref_field: { refType: new TypeReference(primNum.elemID) },
     },
-    annotationRefsOrTypes: {},
+    annotationRefsOrTypes: {
+      str_anno: new TypeReference(primID, primStr),
+    },
     annotations: {},
+    metaType,
   })
 
   const lt = new ListType(primStr)
   const mt = new MapType(primStr)
+
+  const rlt = new ListType(new TypeReference(primID))
+  const rmt = new MapType(new TypeReference(primID))
 
   it('should create a basic primitive type with all params passed to the constructor', () => {
     expect(primStr.elemID).toEqual(primID)
@@ -94,10 +100,83 @@ describe('Test elements.ts', () => {
     expect(primToClone.clone().path).toEqual(['testPath'])
   })
 
-  it('should create a basic object type with all params passed to the constructor', async () => {
-    expect(ot.elemID).toEqual(otID)
-    expect(await ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
-    expect(await ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
+  it('should set all values when assigning a primitive type', () => {
+    const primToReplace = new PrimitiveType<PrimitiveTypes>({
+      elemID: primID,
+      primitive: PrimitiveTypes.NUMBER,
+      annotationRefsOrTypes: {
+        anno: primNum,
+      },
+      annotations: {
+        anno: 3,
+      },
+      path: ['some', 'path'],
+    })
+    primToReplace.assign(primStr)
+    expect(primToReplace).toEqual(primStr)
+  })
+
+  describe('when creating an Object Type', () => {
+    it('should have the passed element ID', () => {
+      expect(ot.elemID).toEqual(otID)
+    })
+
+    it('should return the field types asynchronously', async () => {
+      expect(await ot.fields.num_field.getType()).toBeInstanceOf(PrimitiveType)
+      expect(await ot.fields.str_field.getType()).toBeInstanceOf(PrimitiveType)
+    })
+
+    it('should return the field types synchronously', () => {
+      expect(ot.fields.num_field.getTypeSync()).toBeInstanceOf(PrimitiveType)
+      expect(ot.fields.str_field.getTypeSync()).toBeInstanceOf(PrimitiveType)
+    })
+
+    it('should resolve a field reference type', async () => {
+      const fieldType = await ot.fields.ref_field.getType(placeholderReadonlyElementsSource)
+      expect(fieldType.elemID).toEqual(primID)
+    })
+
+    it('should return the meta type asynchronously', async () => {
+      expect(await ot.getMetaType()).toEqual(metaType)
+    })
+
+    it('should return the meta type synchronously', () => {
+      expect(ot.getMetaTypeSync()).toEqual(metaType)
+    })
+
+    describe('when meta type is undefined', () => {
+      let objectTypeNoMeta: ObjectType
+
+      beforeEach(() => {
+        objectTypeNoMeta = new ObjectType({ elemID: otID })
+      })
+
+      it('should return undefined meta type asynchronously', async () => {
+        expect(await objectTypeNoMeta.getMetaType()).toBeUndefined()
+      })
+
+      it('should return undefined meta type synchronously', () => {
+        expect(objectTypeNoMeta.getMetaTypeSync()).toBeUndefined()
+      })
+    })
+
+    describe('when meta type is invalid', () => {
+      it('should return undefined when meta type is primitive', () => {
+        const objectTypeInvalidMeta = new ObjectType({
+          elemID: otID,
+          metaType: primNum as unknown as ObjectType,
+        })
+        expect(objectTypeInvalidMeta.getMetaTypeSync()).toBeUndefined()
+      })
+
+      it('should return placeholder when meta type is placeholder', () => {
+        const objectTypeInvalidMeta = new ObjectType({
+          elemID: otID,
+          metaType: new PlaceholderObjectType({ elemID: metaTypeID }),
+        })
+        expect(objectTypeInvalidMeta.getMetaTypeSync()).toBeInstanceOf(PlaceholderObjectType)
+      })
+    })
   })
 
   describe('isEqualElements and type guards', () => {
@@ -132,13 +211,23 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(ot, otDiff)).toBeFalsy()
     })
 
+    it('should identify object types with different meta types', () => {
+      const otDiff1 = ot.clone()
+      const otDiff2 = ot.clone()
+
+      otDiff1.metaType = new TypeReference(new ElemID('test', 'meta1'))
+      otDiff2.metaType = undefined
+
+      expect(isEqualElements(ot, otDiff1)).toBeFalsy()
+      expect(isEqualElements(ot, otDiff2)).toBeFalsy()
+      expect(isEqualElements(otDiff2, otDiff2)).toBeTruthy()
+    })
+
     it('should use the same path when cloning object types', () => {
       const obj = new ObjectType({
         elemID: otID,
         fields: {
-          // eslint-disable-next-line camelcase
           num_field: { refType: primNum },
-          // eslint-disable-next-line camelcase
           str_field: { refType: primStr },
         },
         annotationRefsOrTypes: {},
@@ -147,6 +236,20 @@ describe('Test elements.ts', () => {
       })
       const newObj = obj.clone()
       expect(newObj.path).toEqual(['a', 'b', 'c', 'd'])
+    })
+
+    it('should set all values when assigning', () => {
+      const objToReplace = new ObjectType({
+        elemID: otID,
+        annotationRefsOrTypes: {
+          num_anno: primNum,
+        },
+        annotations: {
+          num_anno: 3,
+        },
+      })
+      objToReplace.assign(ot)
+      expect(objToReplace).toEqual(ot)
     })
 
     it('should identify equal fields', () => {
@@ -210,6 +313,7 @@ describe('Test elements.ts', () => {
       const instClone = new InstanceElement('different_name', inst.refType, inst.value)
       expect(isEqualElements(inst, instClone)).toBeFalsy()
     })
+
     it('should identify different instances with value change', () => {
       const instClone = inst.clone()
       instClone.value.newVal = 1
@@ -230,6 +334,16 @@ describe('Test elements.ts', () => {
       const otVariable = variable.clone()
       otVariable.value = 8
       expect(isEqualElements(variable, otVariable)).toBeFalsy()
+    })
+
+    it('should set all values when assigning variables', () => {
+      const variableToReplace = new Variable(variable.elemID, 'str val', ['some', 'path'])
+      variableToReplace.assign(variable)
+      expect(variableToReplace).toEqual(variable)
+    })
+
+    it('should identify undefined elements as equal', () => {
+      expect(isEqualElements(undefined, undefined)).toBeTruthy()
     })
 
     it('should identify primitive type', () => {
@@ -335,7 +449,11 @@ describe('Test elements.ts', () => {
 
     describe('getFieldsElemIDsFullName', () => {
       it('should get full name of fields in objectType', () => {
-        expect(ot.getFieldsElemIDsFullName()).toEqual(['test.obj.field.num_field', 'test.obj.field.str_field'])
+        expect(ot.getFieldsElemIDsFullName()).toEqual([
+          'test.obj.field.num_field',
+          'test.obj.field.str_field',
+          'test.obj.field.ref_field',
+        ])
       })
     })
 
@@ -343,21 +461,27 @@ describe('Test elements.ts', () => {
       it('should return true for type ID', () => {
         expect(typeId.isBaseID()).toBeTruthy()
       })
+
       it('should return true for field ID', () => {
         expect(fieldId.isBaseID()).toBeTruthy()
       })
+
       it('should return false for annotation ID', () => {
         expect(annotationTypeId.isBaseID()).toBeFalsy()
       })
+
       it('should return true for instance ID', () => {
         expect(typeInstId.isBaseID()).toBeTruthy()
       })
+
       it('should return false for value ID', () => {
         expect(valueId.isBaseID()).toBeFalsy()
       })
+
       it('should return true for config type ID', () => {
         expect(configTypeId.isBaseID()).toBeTruthy()
       })
+
       it('should return true for config instance ID', () => {
         expect(configInstId.isBaseID()).toBeTruthy()
       })
@@ -419,6 +543,7 @@ describe('Test elements.ts', () => {
         const id = new ElemID('salto', 'typeId')
         expect(id.getContainerPrefixAndInnerType()).toBeUndefined()
       })
+
       describe('with container ID', () => {
         const mapOfString = new MapType(BuiltinTypes.STRING)
         const listOfMapType = new ListType(mapOfString)
@@ -430,6 +555,7 @@ describe('Test elements.ts', () => {
             expect(containerInfo?.innerTypeName).toEqual(listOfMapType.refInnerType.elemID.getFullName())
           })
         })
+
         describe('with map type', () => {
           it('should return container type and inner type name', () => {
             const containerInfo = mapOfString.elemID.getContainerPrefixAndInnerType()
@@ -440,6 +566,7 @@ describe('Test elements.ts', () => {
         })
       })
     })
+
     describe('getRelativePath', () => {
       it('should return the correct relative path - top level and nested', () => {
         const nested = ['a', 'b']
@@ -447,38 +574,45 @@ describe('Test elements.ts', () => {
         const nestedID = elemID.createNestedID(...nested)
         expect(elemID.getRelativePath(nestedID)).toEqual(nested)
       })
+
       it('should return the correct relative path - both nested', () => {
         const nested = ['b', 'c']
         const elemID = new ElemID('adapter', 'typeName', 'instance', 'test', 'a')
         const nestedID = elemID.createNestedID(...nested)
         expect(elemID.getRelativePath(nestedID)).toEqual(nested)
       })
+
       it('should return the correct relative path - both nested in field', () => {
         const nested = ['b', 'c']
         const elemID = new ElemID('adapter', 'typeName', 'field', 'test', 'a')
         const nestedID = elemID.createNestedID(...nested)
         expect(elemID.getRelativePath(nestedID)).toEqual(nested)
       })
+
       it('should return the correct relative path - field', () => {
         const elemID = new ElemID('adapter', 'typeName')
         const nestedID = new ElemID('adapter', 'typeName', 'field', 'f1')
         expect(elemID.getRelativePath(nestedID)).toEqual(['field', 'f1'])
       })
+
       it('should return the correct relative path - annotation', () => {
         const elemID = new ElemID('adapter', 'typeName')
         const nestedID = new ElemID('adapter', 'typeName', 'annotation', 'f1')
         expect(elemID.getRelativePath(nestedID)).toEqual(['annotation', 'f1'])
       })
+
       it('should return the correct relative path - attr', () => {
         const elemID = new ElemID('adapter', 'typeName')
         const nestedID = new ElemID('adapter', 'typeName', 'attr', 'f1')
         expect(elemID.getRelativePath(nestedID)).toEqual(['attr', 'f1'])
       })
+
       it('should return the empty result if they are the same elemIDs', () => {
         const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
         const nestedID = new ElemID('adapter', 'typeName', 'instance', 'test')
         expect(elemID.getRelativePath(nestedID)).toEqual([])
       })
+
       it('should throw exception if the other elemID is not a child of the elemID', () => {
         const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
         const nestedID = new ElemID('adapter', 'typeName', 'instance', 'tes1')
@@ -496,6 +630,7 @@ describe('Test elements.ts', () => {
           expect(variableId.nestingLevel).toEqual(0)
         })
       })
+
       describe('for nested ids', () => {
         it('should match the number of name parts', () => {
           expect(fieldId.nestingLevel).toEqual(1)
@@ -503,6 +638,7 @@ describe('Test elements.ts', () => {
           expect(annotationTypesId.nestingLevel).toEqual(1)
           expect(annotationTypeId.nestingLevel).toEqual(2)
         })
+
         it('should match path length in instance values', () => {
           expect(valueId.nestingLevel).toEqual(2)
         })
@@ -527,9 +663,11 @@ describe('Test elements.ts', () => {
       it('should return true for config instance ID', () => {
         expect(configInstId.isConfigInstance()).toBeTruthy()
       })
+
       it('should return true for config instance ID when type is not config', () => {
         expect(configInstIdNormalType.isConfigInstance()).toBeTruthy()
       })
+
       it('should return false for other IDs', () => {
         expect(instId.isConfigInstance()).toBeFalsy()
       })
@@ -539,6 +677,7 @@ describe('Test elements.ts', () => {
       it('should return true for equal IDs', () => {
         expect(configTypeId.isEqual(configTypeId)).toBeTruthy()
       })
+
       it('should return false for different IDs', () => {
         expect(typeId.isEqual(fieldId)).toBeFalsy()
       })
@@ -556,6 +695,7 @@ describe('Test elements.ts', () => {
         expect(typeInstId.isParentOf(valueId.createNestedID('super', 'duper', 'nested'))).toBeTruthy()
         expect(valueId.isParentOf(valueId.createNestedID('nested', 'value'))).toBeTruthy()
       })
+
       it('should return false if the checked ID is not nested under the current ID', () => {
         expect(typeId.isParentOf(typeInstId)).toBeFalsy()
         expect(typeId.isParentOf(typeId)).toBeFalsy()
@@ -575,6 +715,7 @@ describe('Test elements.ts', () => {
           expect(fieldID).toEqual(new ElemID('adapter', 'example', 'field', 'name'))
           expect(fieldID.idType).toEqual('field')
         })
+
         it('should fail if given an invalid id type', () => {
           expect(() => typeId.createNestedID('bla')).toThrow()
         })
@@ -584,9 +725,11 @@ describe('Test elements.ts', () => {
         beforeEach(() => {
           nestedId = fieldId.createNestedID('nested')
         })
+
         it('should keep the original id type', () => {
           expect(nestedId.idType).toEqual(fieldId.idType)
         })
+
         it('should have the new name', () => {
           expect(nestedId.name).toEqual('nested')
         })
@@ -596,13 +739,16 @@ describe('Test elements.ts', () => {
         beforeEach(() => {
           nestedId = annotationTypeId.createNestedID('nested')
         })
+
         it('should keep the original id type', () => {
           expect(nestedId.idType).toEqual(annotationTypeId.idType)
         })
+
         it('should have the new name', () => {
           expect(nestedId.name).toEqual('nested')
         })
       })
+
       describe('from variable ID', () => {
         // We don't support object variables for now
         it('should always fail', () => {
@@ -617,36 +763,43 @@ describe('Test elements.ts', () => {
           expect(typeId.createParentID()).toEqual(new ElemID(typeId.adapter))
         })
       })
+
       describe('from instance ID', () => {
         it('should return the adapter ID', () => {
           expect(typeInstId.createParentID()).toEqual(new ElemID(typeInstId.adapter))
         })
       })
+
       describe('from config instance ID', () => {
         it('should return the adapter ID', () => {
           expect(configInstId.createParentID()).toEqual(new ElemID(typeInstId.adapter))
         })
       })
+
       describe('from field ID', () => {
         it('should return the type ID', () => {
           expect(fieldId.createParentID()).toEqual(new ElemID(fieldId.adapter, fieldId.typeName))
         })
       })
+
       describe('from annotation types ID', () => {
         it('should return the type ID', () => {
           expect(annotationTypesId.createParentID()).toEqual(typeId)
         })
       })
+
       describe('from annotation type ID', () => {
         it('should return the type ID', () => {
           expect(annotationTypeId.createParentID()).toEqual(annotationTypesId)
         })
       })
+
       describe('from variable ID', () => {
         it('should return the namespace ID', () => {
           expect(variableId.createParentID()).toEqual(new ElemID(variableId.adapter))
         })
       })
+
       describe('from nested ID', () => {
         it('should return one nesting level less deep', () => {
           ;[fieldId, typeInstId, configInstId].forEach(parent =>
@@ -654,11 +807,13 @@ describe('Test elements.ts', () => {
           )
         })
       })
+
       describe('numLevels argument', () => {
         it('should fail when passed as non positive', () => {
           expect(() => fieldId.createParentID(0)).toThrow()
           expect(() => fieldId.createParentID(-1)).toThrow()
         })
+
         it('should go up the correct number of levels', () => {
           ;[fieldId, typeInstId, configInstId].forEach(parent =>
             expect(parent.createNestedID('test', 'foo').createParentID(2)).toEqual(parent),
@@ -680,6 +835,7 @@ describe('Test elements.ts', () => {
           })
         })
       })
+
       describe('from field id', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
@@ -690,10 +846,12 @@ describe('Test elements.ts', () => {
         it('should return the type', () => {
           expect(parent).toEqual(new ElemID(fieldId.adapter, fieldId.typeName))
         })
+
         it('should return the field name as the path', () => {
           expect(path).toEqual([fieldId.name])
         })
       })
+
       describe('from annotation types id', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
@@ -704,10 +862,12 @@ describe('Test elements.ts', () => {
         it('should return the type', () => {
           expect(parent).toEqual(new ElemID(annotationTypesId.adapter, annotationTypesId.typeName))
         })
+
         it('should return empty path', () => {
           expect(path).toEqual([])
         })
       })
+
       describe('from annotation type id', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
@@ -718,10 +878,12 @@ describe('Test elements.ts', () => {
         it('should return the type', () => {
           expect(parent).toEqual(new ElemID(annotationTypeId.adapter, annotationTypeId.typeName))
         })
+
         it('should return the annotation name as the path', () => {
           expect(path).toEqual([annotationTypeId.name])
         })
       })
+
       describe('from value id', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
@@ -732,11 +894,13 @@ describe('Test elements.ts', () => {
         it('should return the instance', () => {
           expect(parent).toEqual(typeInstId)
         })
+
         it('should return the nesting path in the instance', () => {
           expect(path).toEqual(['nested', 'value'])
         })
       })
     })
+
     describe('createBaseID', () => {
       describe('from field id', () => {
         describe('without annotations', () => {
@@ -749,10 +913,12 @@ describe('Test elements.ts', () => {
           it('should return the field', () => {
             expect(parent).toEqual(fieldId)
           })
+
           it('should return the field name as the path', () => {
             expect(path).toEqual([])
           })
         })
+
         describe('with nested annotations', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
@@ -768,6 +934,7 @@ describe('Test elements.ts', () => {
           })
         })
       })
+
       describe('from annotation types id', () => {
         describe('without path', () => {
           let parent: ElemID
@@ -779,11 +946,13 @@ describe('Test elements.ts', () => {
           it('should return the type', () => {
             expect(parent).toEqual(new ElemID(annotationTypesId.adapter, annotationTypesId.typeName))
           })
+
           it('should return empty path', () => {
             expect(path).toEqual([])
           })
         })
       })
+
       describe('from annotation type id', () => {
         let parent: ElemID
         let path: ReadonlyArray<string>
@@ -794,10 +963,12 @@ describe('Test elements.ts', () => {
         it('should return the type', () => {
           expect(parent).toEqual(new ElemID(annotationTypeId.adapter, annotationTypeId.typeName))
         })
+
         it('should return the annotation name as the path', () => {
           expect(path).toEqual([annotationTypeId.name])
         })
       })
+
       describe('from instance id', () => {
         describe('without path', () => {
           let parent: ElemID
@@ -809,10 +980,12 @@ describe('Test elements.ts', () => {
           it('should return the instance', () => {
             expect(parent).toEqual(typeInstId)
           })
+
           it('should return the nesting path in the instance', () => {
             expect(path).toEqual([])
           })
         })
+
         describe('with path', () => {
           let parent: ElemID
           let path: ReadonlyArray<string>
@@ -823,74 +996,91 @@ describe('Test elements.ts', () => {
           it('should return the instance', () => {
             expect(parent).toEqual(typeInstId)
           })
+
           it('should return the nesting path in the instance', () => {
             expect(path).toEqual(['nested', 'value'])
           })
         })
       })
     })
+
     describe('createSiblingID', () => {
       describe('from type ID', () => {
         it('should fail', () => {
           expect(() => typeId.createSiblingID('sibling')).toThrow()
         })
       })
+
       describe('from field ID', () => {
         let sibling: ElemID
         beforeEach(() => {
           sibling = fieldId.createSiblingID('sibling')
         })
+
         it('should keep the original id type', () => {
           expect(sibling.idType).toEqual(fieldId.idType)
         })
+
         it('should have the new name', () => {
           expect(sibling.name).toEqual('sibling')
         })
+
         it('should have the same non-terminal name parts', () => {
           expect(sibling.getFullNameParts().slice(0, -1)).toEqual(fieldId.getFullNameParts().slice(0, -1))
         })
       })
+
       describe('from annotation ID', () => {
         let sibling: ElemID
         beforeEach(() => {
           sibling = annotationTypeId.createSiblingID('sibling')
         })
+
         it('should keep the original id type', () => {
           expect(sibling.idType).toEqual(annotationTypeId.idType)
         })
+
         it('should have the new name', () => {
           expect(sibling.name).toEqual('sibling')
         })
+
         it('should have the same non-terminal name parts', () => {
           expect(sibling.getFullNameParts().slice(0, -1)).toEqual(annotationTypeId.getFullNameParts().slice(0, -1))
         })
       })
+
       describe('from instance ID', () => {
         it('should fail', () => {
           expect(() => typeInstId.createSiblingID('sibling')).toThrow()
         })
       })
+
       describe('from value ID', () => {
         let sibling: ElemID
         beforeEach(() => {
           sibling = valueId.createSiblingID('sibling')
         })
+
         it('should keep the original id type', () => {
           expect(sibling.idType).toEqual(valueId.idType)
         })
+
         it('should have the new name', () => {
           expect(sibling.name).toEqual('sibling')
         })
+
         it('should have the same non-terminal name parts', () => {
           expect(sibling.getFullNameParts().slice(0, -1)).toEqual(valueId.getFullNameParts().slice(0, -1))
         })
       })
+
       describe('from variable ID', () => {
         it('should fail', () => {
           expect(() => variableId.createSiblingID('sibling')).toThrow()
         })
       })
     })
+
     describe('isAttrID', () => {
       it('should identify non-instance element annotation IDs', () => {
         const objectAnno = new ElemID('salto', 'obj', 'attr', 'something')
@@ -898,6 +1088,7 @@ describe('Test elements.ts', () => {
         expect(objectAnno.isAttrID()).toBeTruthy()
         expect(nonAnno.isAttrID()).toBeFalsy()
       })
+
       it('should identify instance annotation IDs', () => {
         const instAnno = new ElemID('salto', 'obj', 'instance', 'inst', CORE_ANNOTATIONS.GENERATED_DEPENDENCIES)
 
@@ -907,6 +1098,7 @@ describe('Test elements.ts', () => {
         expect(nonAnno.isAttrID()).toBeFalsy()
       })
     })
+
     describe('isAnnotationTypeID', () => {
       it('should identify annotation type IDs', () => {
         const objectAnnoType = new ElemID('salto', 'obj', 'annotation', 'something')
@@ -968,17 +1160,20 @@ describe('Test elements.ts', () => {
   })
 
   describe('ListType', () => {
-    let lstType: ListType
-    beforeEach(() => {
-      lstType = lt.clone()
-    })
-    describe('test setInnerType', () => {
+    describe('setInnerType', () => {
+      let lstType: ListType
+
+      beforeEach(() => {
+        lstType = lt.clone()
+      })
+
       it('should set new innerType with correct elemID', () => {
         const newInnerType = primStr.clone()
         newInnerType.annotate({ testAnnotation: 'value' })
         lstType.setRefInnerType(newInnerType)
         expect(lstType.annotations).toEqual({ testAnnotation: 'value' })
       })
+
       // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
         expect(() => {
@@ -986,26 +1181,81 @@ describe('Test elements.ts', () => {
         }).toThrow()
       })
     })
+
+    describe('getInnerType', () => {
+      it('should return the inner type when resolved', async () => {
+        expect(await lt.getInnerType()).toEqual(primStr)
+      })
+
+      it('should synchronously return the inner type when resolved', () => {
+        expect(lt.getInnerTypeSync()).toEqual(primStr)
+      })
+
+      it('should resolve the inner type when available in the source', async () => {
+        const innerType = await rlt.getInnerType(placeholderReadonlyElementsSource)
+        expect(innerType).toBeDefined()
+        expect(innerType.elemID).toEqual(primID)
+      })
+    })
+
+    it('should set all values when assigning', () => {
+      const typeToReplace = new ListType(primNum)
+      typeToReplace.annotations = {
+        anno: 3,
+      }
+      typeToReplace.path = ['some', 'path']
+      typeToReplace.assign(lt)
+      expect(typeToReplace).toEqual(lt)
+    })
   })
 
   describe('MapType', () => {
-    let mapType: MapType
-    beforeEach(() => {
-      mapType = mt.clone()
-    })
-    describe('test setInnerType', () => {
+    describe('setInnerType', () => {
+      let mapType: MapType
+
+      beforeEach(() => {
+        mapType = mt.clone()
+      })
+
       it('should set new innerType with correct elemID', () => {
         const newInnerType = primStr.clone()
         newInnerType.annotate({ testAnnotation: 'value' })
         mapType.setRefInnerType(newInnerType)
         expect(mapType.annotations).toEqual({ testAnnotation: 'value' })
       })
+
       // TODO: Add tests for references
       it('should throw error if new innerType has wrong elemID', () => {
         expect(() => {
           mapType.setRefInnerType(ot)
         }).toThrow()
       })
+    })
+
+    describe('getInnerType', () => {
+      it('should return the inner type when resolved', async () => {
+        expect(await mt.getInnerType()).toEqual(primStr)
+      })
+
+      it('should synchronously return the inner type when resolved', () => {
+        expect(mt.getInnerTypeSync()).toEqual(primStr)
+      })
+
+      it('should resolve the inner type when available in the source', async () => {
+        const innerType = await rmt.getInnerType(placeholderReadonlyElementsSource)
+        expect(innerType).toBeDefined()
+        expect(innerType.elemID).toEqual(primID)
+      })
+    })
+
+    it('should set all values when assigning', () => {
+      const typeToReplace = new MapType(primNum)
+      typeToReplace.annotations = {
+        anno: 3,
+      }
+      typeToReplace.path = ['some', 'path']
+      typeToReplace.assign(mt)
+      expect(typeToReplace).toEqual(mt)
     })
   })
 
@@ -1018,10 +1268,44 @@ describe('Test elements.ts', () => {
     })
   })
 
-  describe('getType', () => {
-    it('Should return placeholder type if type is not ObjectType', async () => {
-      const instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
+  describe('when creating an instance', () => {
+    let instance: InstanceElement
+
+    beforeEach(() => {
+      instance = new InstanceElement('inst', ot)
+    })
+
+    it('should return the type asynchronously', async () => {
+      expect(await instance.getType()).toEqual(ot)
+    })
+
+    it('should return the type synchronously', () => {
+      expect(instance.getTypeSync()).toEqual(ot)
+    })
+
+    it('should return placeholder type if type is not ObjectType', async () => {
+      instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
       expect(await instance.getType()).toBeInstanceOf(PlaceholderObjectType)
+    })
+
+    it('should set all values when assigning', () => {
+      const instanceToReplace = new InstanceElement(
+        instance.elemID.name,
+        instance.refType,
+        { field: 'value' },
+        ['some', 'path'],
+        { anno: 3 },
+      )
+      instanceToReplace.assign(instance)
+      expect(instanceToReplace.isEqual(instance)).toBeTruthy()
+    })
+
+    it('should throw when assigning with a different type', () => {
+      const instanceToReplace = new InstanceElement(
+        instance.elemID.name,
+        new ObjectType({ elemID: new ElemID('test', 'tmpType') }),
+      )
+      expect(() => instanceToReplace.assign(instance)).toThrow()
     })
   })
 })

@@ -4122,6 +4122,66 @@
     }
   },
   {
+    "url": "/api/v2/layouts",
+    "method": "GET",
+    "status": 200,
+    "response": [
+      {
+        "id": "c18f1ffd-dc84-44cb-b6d2-069024df0d4d",
+        "state": "draft",
+        "type": "ticket",
+        "is_default": false,
+        "title": "Test Layout",
+        "created_at": "2024-04-18T07:17:26Z",
+        "updated_at": "2024-07-23T17:45:25Z",
+        "created_by_user_id": 1529421230621,
+        "updated_by_user_id": 1529421230621,
+        "sections": [
+          {
+            "name": "ticket-workspace",
+            "columns": [
+              {
+                "width": 0.925,
+                "components": [{ "type": "MainConversationPane", "height": 1 }],
+                "isCollapsed": false,
+                "isSplitterHidden": false
+              },
+              {
+                "components": [{ "type": "AppPane", "config": { "installation_id": 1900000132965 }, "height": 1 }],
+                "isCollapsed": false,
+                "isSplitterHidden": false,
+                "width": 0.672
+              },
+              {
+                "width": 1.403,
+                "components": [
+                  {
+                    "type": "ContextPanel",
+                    "config": {
+                      "open": { "type": "SideConversationsPane" },
+                      "components": [
+                        { "type": "RelatedObjectsPane" },
+                        { "type": "IntelligencePane" },
+                        { "type": "SideConversationsPane" },
+                        { "type": "AppsPane", "height": 1 },
+                        { "type": "CustomerContextPane", "height": 1 },
+                        { "type": "TicketFieldsPane", "height": 1 },
+                        { "type": "KnowledgePane", "height": 1 }
+                      ]
+                    },
+                    "height": 1
+                  }
+                ],
+                "isCollapsed": false,
+                "isSplitterHidden": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "url": "/api/v2/slas/policies",
     "response": {
       "sla_policies": [
@@ -26452,6 +26512,49 @@
         "errors": null,
         "data": null
       }
+    }
+  },
+  {
+    "url": "/api/v2/queues",
+    "response": {
+      "queues": [
+        {
+          "url": "https://d3v-salto2.zendesk.com/api/v2/queues/01J4PBVGN6W0D0RP2V3EB0DZ9C.json",
+          "id": "01J4PBVGN6W0D",
+          "name": "test queue",
+          "description": null,
+          "created_at": "2024-08-07T12:08:39Z",
+          "updated_at": "2024-08-29T09:22:15Z",
+          "order": 1,
+          "priority": 100,
+          "definition": {
+            "all": [
+              {
+                "field": "custom_fields_1900004086785",
+                "operator": "is_not",
+                "value": ""
+              }
+            ],
+            "any": []
+          },
+          "primary_groups": {
+            "count": 1,
+            "groups": [
+              {
+                "id": 1500002894482,
+                "name": "Support"
+              }
+            ]
+          },
+          "secondary_groups": {
+            "count": 0,
+            "groups": []
+          }
+        }
+      ],
+      "next_page": null,
+      "previous_page": null,
+      "count": 2
     }
   }
 ]

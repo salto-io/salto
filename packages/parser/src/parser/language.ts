@@ -1,19 +1,17 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { LIST_ID_PREFIX, MAP_ID_PREFIX, GENERIC_ID_SUFFIX, GENERIC_ID_PREFIX } from '@salto-io/adapter-api'
+import {
+  LIST_ID_PREFIX,
+  MAP_ID_PREFIX,
+  GENERIC_ID_SUFFIX,
+  GENERIC_ID_PREFIX,
+  PrimitiveTypes,
+} from '@salto-io/adapter-api'
 
 export const Keywords = {
   TYPE_DEFINITION: 'type',
@@ -35,3 +33,12 @@ export const Keywords = {
   LIST_PREFIX: `${LIST_ID_PREFIX}${GENERIC_ID_PREFIX}`,
   MAP_PREFIX: `${MAP_ID_PREFIX}${GENERIC_ID_PREFIX}`,
 }
+
+export const keywordToPrimitiveType: Record<string, PrimitiveTypes> = {
+  [Keywords.TYPE_STRING]: PrimitiveTypes.STRING,
+  [Keywords.TYPE_NUMBER]: PrimitiveTypes.NUMBER,
+  [Keywords.TYPE_BOOL]: PrimitiveTypes.BOOLEAN,
+  [Keywords.TYPE_UNKNOWN]: PrimitiveTypes.UNKNOWN,
+}
+
+export const primitiveTypeToKeyword = Object.fromEntries(Object.entries(keywordToPrimitiveType).map(([k, v]) => [v, k]))

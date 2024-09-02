@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import Bottleneck from 'bottleneck'
@@ -76,7 +68,7 @@ describe('SuiteAppClient', () => {
           ],
         })
 
-        const results = await client.runSuiteQL('query')
+        const results = await client.runSuiteQL({ select: 'field', from: 'table' })
 
         expect(results).toEqual([{ a: 1 }, { a: 2 }])
         expect(mockAxiosAdapter.history.post.length).toBe(1)
@@ -84,8 +76,8 @@ describe('SuiteAppClient', () => {
         expect(req.url).toEqual(
           'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
         )
-        expect(JSON.parse(req.data)).toEqual({ q: 'query' })
-        expect(req.headers).toEqual({
+        expect(JSON.parse(req.data)).toEqual({ q: 'SELECT field FROM table' })
+        expect({ ...req.headers }).toEqual({
           Authorization: expect.any(String),
           'Content-Type': 'application/json',
           Accept: 'application/json, text/plain, */*',
@@ -106,7 +98,7 @@ describe('SuiteAppClient', () => {
           })
         })
 
-        const results = await client.runSuiteQL('query')
+        const results = await client.runSuiteQL({ select: 'field', from: 'table' })
 
         expect(results).toEqual(items)
         expect(mockAxiosAdapter.history.post.length).toBe(2)
@@ -147,7 +139,7 @@ describe('SuiteAppClient', () => {
           })
         })
 
-        const results = await client.runSuiteQL('query')
+        const results = await client.runSuiteQL({ select: 'field', from: 'table' })
 
         expect(results).toEqual(items)
         expect(mockAxiosAdapter.history.post.length).toBe(2)
@@ -163,13 +155,15 @@ describe('SuiteAppClient', () => {
 
       it('should throw InvalidSuiteAppCredentialsError', async () => {
         mockAxiosAdapter.onPost().reply(401, 'Invalid SuiteApp credentials')
-        await expect(client.runSuiteQL('query')).rejects.toThrow(InvalidSuiteAppCredentialsError)
+        await expect(client.runSuiteQL({ select: 'field', from: 'table' })).rejects.toThrow(
+          InvalidSuiteAppCredentialsError,
+        )
       })
 
       describe('query failure', () => {
         it('exception thrown', async () => {
           mockAxiosAdapter.onPost().reply(() => [])
-          expect(await client.runSuiteQL('')).toBeUndefined()
+          expect(await client.runSuiteQL({ select: '', from: '' })).toBeUndefined()
         })
         it('should throw customize error', async () => {
           mockAxiosAdapter.onPost().reply(400, {
@@ -180,8 +174,12 @@ describe('SuiteAppClient', () => {
               },
             ],
           })
-          await expect(client.runSuiteQL('query', { 'some err': 'custom error1' })).rejects.toThrow('custom error1')
-          await expect(client.runSuiteQL('query', { 'other error': 'custom error2' })).resolves.not.toThrow()
+          await expect(
+            client.runSuiteQL({ select: 'field', from: 'table' }, { 'some err': 'custom error1' }),
+          ).rejects.toThrow('custom error1')
+          await expect(
+            client.runSuiteQL({ select: 'field', from: 'table' }, { 'other error': 'custom error2' }),
+          ).resolves.not.toThrow()
         })
         it('with concurrency error retry', async () => {
           jest
@@ -203,8 +201,14 @@ describe('SuiteAppClient', () => {
               ],
             })
 
-          expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
+          expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(3)
+          const uniqAuthHeaders = _.uniq(
+            mockAxiosAdapter.history.post
+              .map(request => request.headers?.Authorization)
+              .filter(header => header !== undefined),
+          )
+          expect(uniqAuthHeaders.length).toBe(3)
         })
         it('with server error retry', async () => {
           jest
@@ -226,12 +230,18 @@ describe('SuiteAppClient', () => {
               ],
             })
 
-          expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
+          expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toEqual([{ a: 1 }, { a: 2 }])
           expect(mockAxiosAdapter.history.post.length).toBe(4)
+          const uniqAuthHeaders = _.uniq(
+            mockAxiosAdapter.history.post
+              .map(request => request.headers?.Authorization)
+              .filter(header => header !== undefined),
+          )
+          expect(uniqAuthHeaders.length).toBe(4)
         })
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, {})
-          expect(await client.runSuiteQL('')).toBeUndefined()
+          expect(await client.runSuiteQL({ select: 'field', from: 'table' })).toBeUndefined()
           expect(mockAxiosAdapter.history.post.length).toBe(6)
         })
       })

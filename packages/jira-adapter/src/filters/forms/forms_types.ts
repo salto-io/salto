@@ -1,36 +1,26 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { elements as adapterElements } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { JIRA, FORM_TYPE } from '../../constants'
 
 type DetailedFormDataResponse = {
-  uuid: string
+  id: string
   design: {
     settings: {
-      templateId: string
       name: string
       submit: {
         lock: boolean
         pdf: boolean
       }
-      templateFormUuid: string
     }
     questions: {}
     sections: {}
@@ -39,7 +29,7 @@ type DetailedFormDataResponse = {
 }
 
 type FormResponse = {
-  id: number
+  id: string
   name?: string
 }
 
@@ -50,7 +40,7 @@ type FormsResponse = {
 export const FORMS_RESPONSE_SCHEME = Joi.object({
   data: Joi.array().items(
     Joi.object({
-      id: Joi.number().required(),
+      id: Joi.string().required(),
       name: Joi.string().allow(''),
     })
       .unknown(true)
@@ -61,10 +51,9 @@ export const FORMS_RESPONSE_SCHEME = Joi.object({
   .required()
 
 export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
-  uuid: Joi.string().required(),
+  id: Joi.string().required(),
   design: Joi.object({
     settings: Joi.object({
-      templateId: Joi.number().required(),
       name: Joi.string().required(),
       submit: Joi.object({
         lock: Joi.boolean().required(),
@@ -72,7 +61,6 @@ export const DETAILED_FORM_RESPONSE_SCHEME = Joi.object({
       })
         .unknown(true)
         .required(),
-      templateFormUuid: Joi.string(),
     })
       .unknown(true)
       .required(),
@@ -105,19 +93,11 @@ export const createFormType = (): {
   const formSettingsType = new ObjectType({
     elemID: new ElemID(JIRA, 'FormSettings'),
     fields: {
-      templateId: {
-        refType: BuiltinTypes.NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
       name: {
         refType: BuiltinTypes.STRING,
       },
       submit: {
         refType: formSubmitType,
-      },
-      templateFormUuid: {
-        refType: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
   })
@@ -193,7 +173,7 @@ export const createFormType = (): {
         refType: BuiltinTypes.UNKNOWN,
       },
       questions: {
-        refType: new ListType(questionType),
+        refType: new MapType(questionType),
       },
     },
   })
@@ -219,10 +199,6 @@ export const createFormType = (): {
     elemID: new ElemID(JIRA, FORM_TYPE),
     fields: {
       id: {
-        refType: BuiltinTypes.NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
-      uuid: {
         refType: BuiltinTypes.SERVICE_ID,
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
@@ -262,7 +238,7 @@ type createFormResponse = {
 }
 
 const CREATE_FORM_RESPONSE_SCHEME = Joi.object({
-  id: Joi.number().required(),
+  id: Joi.string().required(),
 })
   .unknown(true)
   .required()

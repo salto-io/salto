@@ -1,20 +1,14 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
+  BuiltinTypes,
+  Element,
   ElemID,
   InstanceElement,
   ObjectType,
@@ -29,13 +23,28 @@ import * as utilsModule from '../src/utils'
 const { toArrayAsync } = collections.asynciterable
 
 describe('elementSource', () => {
+  let instanceElement: InstanceElement
+  let objectType: ObjectType
+  let elements: Element[]
+  let elementsSource: ReadOnlyElementsSource
   describe('buildElementsSourceFromElements', () => {
     describe('when built from elements', () => {
-      const elements = [
-        new ObjectType({ elemID: new ElemID('adapter', 'type1') }),
-        new ObjectType({ elemID: new ElemID('adapter', 'type2') }),
-      ]
-      const elementsSource = buildElementsSourceFromElements(elements)
+      beforeEach(() => {
+        objectType = new ObjectType({
+          elemID: new ElemID('adapter', 'type3'),
+          fields: { key: { refType: BuiltinTypes.STRING } },
+        })
+        instanceElement = new InstanceElement('instance', objectType, {
+          key: 'value',
+        })
+        elements = [
+          new ObjectType({ elemID: new ElemID('adapter', 'type1') }),
+          new ObjectType({ elemID: new ElemID('adapter', 'type2') }),
+          objectType,
+          instanceElement,
+        ]
+        elementsSource = buildElementsSourceFromElements(elements)
+      })
 
       describe('getAll', () => {
         it('should return all the elements', async () => {
@@ -63,8 +72,19 @@ describe('elementSource', () => {
         })
 
         it('should return undefined if not exists', async () => {
-          expect(await elementsSource.get(new ElemID('adapter', 'type3'))).toBeUndefined()
+          expect(await elementsSource.get(new ElemID('adapter', 'type4'))).toBeUndefined()
         })
+      })
+
+      it('should return a non top level element if exists', async () => {
+        const nestedElemId = instanceElement.elemID.createNestedID('key')
+        expect(await elementsSource.get(nestedElemId)).toBe('value')
+      })
+
+      it('should return nested field when the field is in the source but the parent is not', async () => {
+        const field = objectType.fields.key
+        const source = buildElementsSourceFromElements([field])
+        expect(await source.get(field.elemID)).toEqual(field)
       })
 
       describe('list', () => {
@@ -80,7 +100,18 @@ describe('elementSource', () => {
         })
 
         it('should return false if element id does not exist', async () => {
-          expect(await elementsSource.has(new ElemID('adapter', 'type3'))).toBeFalsy()
+          expect(await elementsSource.has(new ElemID('adapter', 'type4'))).toBeFalsy()
+        })
+
+        it('should return true for a non top level element if exists', async () => {
+          const nestedElemId = instanceElement.elemID.createNestedID('key')
+          expect(await elementsSource.has(nestedElemId)).toBeTruthy()
+        })
+
+        it('should return true for nested field when the field is in the source but the parent is not', async () => {
+          const field = objectType.fields.key
+          const source = buildElementsSourceFromElements([field])
+          expect(await source.has(field.elemID)).toBeTruthy()
         })
       })
     })
@@ -150,7 +181,7 @@ describe('elementSource', () => {
         expect(elem).toBeDefined()
       })
       it('should return elements from element by fallback orders in getAll', async () => {
-        const elements = await toArrayAsync(await elementSource.getAll())
+        elements = await toArrayAsync(await elementSource.getAll())
         expect(elements).toHaveLength(4)
         const elementsByName = _.keyBy(elements, elem => elem.elemID.typeName)
         expect(elementsByName).toHaveProperty('type1')
@@ -180,8 +211,6 @@ describe('elementSource', () => {
     const UNRESOLVED_FIELD_NAME = 'unresolvedField'
     let resolveTypeShallowSpy: jest.SpyInstance
     let unresolvedType: ObjectType
-    let objectType: ObjectType
-    let elementsSource: ReadOnlyElementsSource
     beforeEach(() => {
       unresolvedType = new ObjectType({
         elemID: new ElemID('adapter', 'unresolvedType'),

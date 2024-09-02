@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -19,7 +11,7 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, resolvePath } from '@salto-io/adapter-utils'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   AUTHORIZATION_POLICY_RULE,
@@ -28,14 +20,14 @@ import {
   MFA_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
+  USER_TYPE_NAME,
 } from './constants'
+import { DEFAULT_CONVERT_USERS_IDS_VALUE, OktaUserConfig } from './user_config'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-export const DEFAULT_CONVERT_USERS_IDS_VALUE = true
-export const DEFAULT_GET_USERS_STRATEGY = 'searchQuery'
 export const OMIT_MISSING_USERS_CONFIGURATION_LINK =
   'https://help.salto.io/en/articles/8817969-element-references-users-which-don-t-exist-in-target-environment-okta'
 const USER_CHUNK_SIZE = 200
@@ -64,6 +56,12 @@ const USER_SCHEMA = Joi.object({
 const USERS_RESPONSE_SCHEMA = Joi.array().items(USER_SCHEMA).required()
 
 export const areUsers = createSchemeGuard<User[]>(USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users')
+
+export const shouldConvertUserIds = (
+  fetchQuery: elementsUtils.query.ElementQuery,
+  userConfig: OktaUserConfig,
+): boolean =>
+  !fetchQuery.isTypeMatch(USER_TYPE_NAME) && (userConfig.fetch.convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)
 
 const EXCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'exclude']
 const INCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'include']
@@ -95,6 +93,11 @@ export const getUsersFromInstances = (instances: InstanceElement[]): string[] =>
 const getUsersQuery = (userIds: string[], property: SearchProperty): string =>
   userIds.map(userId => `${property} eq "${userId}"`).join(' or ')
 
+// the header omits credentials and other unnecessary fields from the response
+export const OMIT_CREDS_HEADER = {
+  'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks',
+}
+
 export const getUsers = async (
   paginator: clientUtils.Paginator,
   searchUsersParams?: SearchUsersParams,
@@ -103,8 +106,7 @@ export const getUsers = async (
     const paginationArgs = {
       url: '/api/v1/users',
       paginationField: 'after',
-      // omit credentials and other unnecessary fields from the response
-      headers: { 'Content-Type': 'application/json; okta-response=omitCredentials,omitCredentialsLinks' },
+      headers: OMIT_CREDS_HEADER,
     }
 
     if (searchUsersParams) {

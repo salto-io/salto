@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -38,11 +30,9 @@ const getUpdateErrorsForNonUpdateableFields = async (
   const beforeResolved = await resolveValues(before, getLookUpName)
   const afterResolved = await resolveValues(after, getLookUpName)
   return Object.values((await afterResolved.getType()).fields)
-    .filter((field) => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
-    .map((field) => {
-      if (
-        afterResolved.value[field.name] !== beforeResolved.value[field.name]
-      ) {
+    .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
+    .map(field => {
+      if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
         return {
           elemID: beforeResolved.elemID,
           severity: 'Warning',
@@ -55,13 +45,11 @@ const getUpdateErrorsForNonUpdateableFields = async (
     .filter(values.isDefined)
 }
 
-const getCreateErrorsForNonCreatableFields = async (
-  after: InstanceElement,
-): Promise<ReadonlyArray<ChangeError>> => {
+const getCreateErrorsForNonCreatableFields = async (after: InstanceElement): Promise<ReadonlyArray<ChangeError>> => {
   const afterResolved = await resolveValues(after, getLookUpName)
   return awu(Object.values((await afterResolved.getType()).fields))
-    .filter((field) => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
-    .map((field) => {
+    .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
+    .map(field => {
       if (!_.isUndefined(afterResolved.value[field.name])) {
         return {
           elemID: afterResolved.elemID,
@@ -76,11 +64,11 @@ const getCreateErrorsForNonCreatableFields = async (
     .toArray()
 }
 
-const changeValidator: ChangeValidator = async (changes) => {
+const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isModificationChange)
-    .flatMap((change) =>
+    .flatMap(change =>
       getUpdateErrorsForNonUpdateableFields(
         change.data.before as InstanceElement,
         change.data.after as InstanceElement,
@@ -91,11 +79,7 @@ const changeValidator: ChangeValidator = async (changes) => {
   const createChangeErrors = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
     .filter(isAdditionChange)
-    .flatMap((change) =>
-      getCreateErrorsForNonCreatableFields(
-        getChangeData(change) as InstanceElement,
-      ),
-    )
+    .flatMap(change => getCreateErrorsForNonCreatableFields(getChangeData(change) as InstanceElement))
     .toArray()
 
   return [...updateChangeErrors, ...createChangeErrors]

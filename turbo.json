@@ -1,0 +1,37 @@
+{
+  "$schema": "https://turborepo.org/schema.json",
+  "tasks": {
+    "build-ts": {
+      "outputLogs": "new-only",
+      "outputs": [
+        "dist/**"
+      ],
+      "dependsOn": [
+        "^build-ts"
+      ]
+    },
+    "lint": {
+      "outputLogs": "new-only",
+      "outputs": []
+    },
+    "check-format": {
+      "outputLogs": "new-only",
+      "outputs": [
+        ".check-format.cache"
+      ]
+    },
+    "test": {
+      "dependsOn": [ "^build-ts"],
+      "outputLogs": "new-only",
+      "env": [
+        "SALTO_DEPENDENCIES_HASH"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -55,6 +47,11 @@ export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestPara
   const url = oAuth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: REQUIRED_OAUTH_SCOPES,
+    // A refresh token is only returned the first time the user consents to providing access.
+    // Setting the prompt to 'consent' will force this consent every time, forcing a refresh_token to be returned.
+    // We should also set the prompt to 'select_account' to ensure that the user is prompted to select an account,
+    // and is not blocked to using the current account that is logged in.
+    prompt: 'consent select_account',
   })
 
   return {

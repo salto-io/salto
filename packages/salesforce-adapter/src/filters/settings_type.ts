@@ -1,33 +1,22 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Element,
-  isObjectType,
-  ObjectType,
-  TypeElement,
-} from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import {
   createMetadataTypeElements,
   apiName,
+  createMetaType,
+  metadataAnnotationTypes,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { SETTINGS_METADATA_TYPE } from '../constants'
+import { SETTINGS_METADATA_TYPE, STANDARD_SETTINGS_META_TYPE } from '../constants'
 import { fetchMetadataInstances } from '../fetch'
 import { listMetadataObjects } from './utils'
 
@@ -40,6 +29,7 @@ const createSettingsType = async (
   client: SalesforceClient,
   settingsTypesName: string,
   knownTypes: Map<string, TypeElement>,
+  metaType?: ObjectType,
 ): Promise<ObjectType[]> => {
   const typeFields = await client.describeMetadataType(settingsTypesName)
   const baseTypeNames = new Set([settingsTypesName])
@@ -56,19 +46,15 @@ const createSettingsType = async (
         suffix: 'settings',
         dirName: 'settings',
       },
+      metaType,
     })
   } catch (e) {
-    log.error(
-      'failed to fetch settings type %s reason: %o',
-      settingsTypesName,
-      e,
-    )
+    log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)
     return []
   }
 }
 
-const getSettingsTypeName = (typeName: string): string =>
-  typeName.concat(SETTINGS_METADATA_TYPE)
+const getSettingsTypeName = (typeName: string): string => typeName.concat(SETTINGS_METADATA_TYPE)
 
 /**
  * Add settings type
@@ -83,38 +69,38 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     // Fetch list of all settings types
-    const { elements: settingsList, configChanges: listObjectsConfigChanges } =
-      await listMetadataObjects(client, SETTINGS_METADATA_TYPE, () => true)
+    const { elements: settingsList, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
+      client,
+      SETTINGS_METADATA_TYPE,
+      () => true,
+    )
 
-    const settingsTypeInfos = settingsList.filter((info) =>
-      config.fetchProfile.metadataQuery.isTypeMatch(
-        getSettingsTypeName(info.fullName),
-      ),
+    const settingsTypeInfos = settingsList.filter(info =>
+      config.fetchProfile.metadataQuery.isTypeMatch(getSettingsTypeName(info.fullName)),
     )
 
     // Create settings types
     const knownTypes: Map<string, TypeElement> = new Map()
     const objectTypes = elements.filter(isObjectType)
-    await awu(objectTypes).forEach(async (e) =>
-      knownTypes.set(await apiName(e), e),
-    )
+    await awu(objectTypes).forEach(async e => knownTypes.set(await apiName(e), e))
 
+    const metaType = config.fetchProfile.isFeatureEnabled('metaTypes')
+      ? createMetaType(STANDARD_SETTINGS_META_TYPE, metadataAnnotationTypes, 'Standard Settings')
+      : undefined
     const settingsTypes = (
       await Promise.all(
         settingsTypeInfos
-          .map((info) => getSettingsTypeName(info.fullName))
-          .map((typeName) => createSettingsType(client, typeName, knownTypes)),
+          .map(info => getSettingsTypeName(info.fullName))
+          .map(typeName => createSettingsType(client, typeName, knownTypes, metaType)),
       )
     ).flat()
     elements.push(...settingsTypes)
 
     // Create settings instances
-    const settingsTypeByName = await awu(settingsTypes).keyBy((type) =>
-      apiName(type),
-    )
+    const settingsTypeByName = await awu(settingsTypes).keyBy(type => apiName(type))
     const settingsInstanceCreateResults = await Promise.all(
       settingsTypeInfos
-        .map((info) => ({
+        .map(info => ({
           info,
           type: settingsTypeByName[getSettingsTypeName(info.fullName)],
         }))
@@ -129,19 +115,12 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           }),
         ),
     )
-    const settingsInstances = settingsInstanceCreateResults.flatMap(
-      (res) => res.elements,
-    )
-    const instancesConfigChanges = settingsInstanceCreateResults.flatMap(
-      (res) => res.configChanges,
-    )
+    const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)
+    const instancesConfigChanges = settingsInstanceCreateResults.flatMap(res => res.configChanges)
     elements.push(...settingsInstances)
 
     return {
-      configSuggestions: [
-        ...instancesConfigChanges,
-        ...listObjectsConfigChanges,
-      ],
+      configSuggestions: [...instancesConfigChanges, ...listObjectsConfigChanges],
     }
   },
 

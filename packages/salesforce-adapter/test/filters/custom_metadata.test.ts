@@ -1,34 +1,17 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Change,
-  Element,
-  ElemID,
-  getChangeData,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { Change, Element, ElemID, getChangeData, ObjectType, toChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockTypes, mockInstances } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
-import makeFilter, {
-  ServiceMDTRecordValue,
-} from '../../src/filters/custom_metadata'
+import makeFilter, { ServiceMDTRecordValue, XSI_NIL_TRUE } from '../../src/filters/custom_metadata'
 import {
   MetadataInstanceElement,
   createInstanceElement,
@@ -86,13 +69,8 @@ describe('CustomMetadata filter', () => {
       mockTypes.CustomMetadata,
     )
 
-  const getInstanceByApiName = (
-    elements: Element[],
-    instanceApiName: string,
-  ): Promise<MetadataInstanceElement> =>
-    awu(elements).find(
-      async (e) => (await apiName(e)) === instanceApiName,
-    ) as Promise<MetadataInstanceElement>
+  const getInstanceByApiName = (elements: Element[], instanceApiName: string): Promise<MetadataInstanceElement> =>
+    awu(elements).find(async e => (await apiName(e)) === instanceApiName) as Promise<MetadataInstanceElement>
 
   describe('onFetch', () => {
     let filter: FilterType
@@ -102,17 +80,11 @@ describe('CustomMetadata filter', () => {
     describe('with no custom metadata records', () => {
       let elements: Element[]
       beforeEach(async () => {
-        elements = [
-          ...Object.values(mockInstances()),
-          ...Object.values(mockTypes),
-        ]
+        elements = [...Object.values(mockInstances()), ...Object.values(mockTypes)]
         await filter.onFetch(elements)
       })
       it('should not change any elements', () => {
-        expect(elements).toEqual([
-          ...Object.values(mockInstances()),
-          ...Object.values(mockTypes),
-        ])
+        expect(elements).toEqual([...Object.values(mockInstances()), ...Object.values(mockTypes)])
       })
     })
     describe('with custom metadata records', () => {
@@ -140,21 +112,10 @@ describe('CustomMetadata filter', () => {
             { field: 'number__c', value: { 'attr_xsi:nil': 'true' } },
           ],
         })
-        const elements = [
-          mockTypes.CustomMetadata,
-          singleValueInstance,
-          nullValueInstance,
-          customMetadataRecordType,
-        ]
+        const elements = [mockTypes.CustomMetadata, singleValueInstance, nullValueInstance, customMetadataRecordType]
         await filter.onFetch(elements)
-        singleValueInstance = await getInstanceByApiName(
-          elements,
-          SINGLE_VALUE_INSTANCE_NAME,
-        )
-        nullValueInstance = await getInstanceByApiName(
-          elements,
-          NULL_VALUE_INSTANCE_NAME,
-        )
+        singleValueInstance = await getInstanceByApiName(elements, SINGLE_VALUE_INSTANCE_NAME)
+        nullValueInstance = await getInstanceByApiName(elements, NULL_VALUE_INSTANCE_NAME)
       })
       it('should create fields from "values"', () => {
         expect(singleValueInstance.value.values).toBeUndefined()
@@ -200,31 +161,19 @@ describe('CustomMetadata filter', () => {
             { field: 'number__c', value: { 'attr_xsi:nil': 'true' } },
           ],
         })
-        const elements = [
-          mockTypes.CustomMetadata,
-          singleValueInstance,
-          nullValueInstance,
-        ]
+        const elements = [mockTypes.CustomMetadata, singleValueInstance, nullValueInstance]
         filter = makeFilter({
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: { target: [CUSTOM_METADATA] },
             }),
-            elementsSource: buildElementsSourceFromElements([
-              customMetadataRecordType,
-            ]),
+            elementsSource: buildElementsSourceFromElements([customMetadataRecordType]),
           },
         }) as FilterType
         await filter.onFetch(elements)
-        singleValueInstance = await getInstanceByApiName(
-          elements,
-          SINGLE_VALUE_INSTANCE_NAME,
-        )
-        nullValueInstance = await getInstanceByApiName(
-          elements,
-          NULL_VALUE_INSTANCE_NAME,
-        )
+        singleValueInstance = await getInstanceByApiName(elements, SINGLE_VALUE_INSTANCE_NAME)
+        nullValueInstance = await getInstanceByApiName(elements, NULL_VALUE_INSTANCE_NAME)
       })
       it('should create fields from "values"', () => {
         expect(singleValueInstance.value.values).toBeUndefined()
@@ -275,16 +224,11 @@ describe('CustomMetadata filter', () => {
       let afterPreDeployInstance: MetadataInstanceElement
       let afterOnDeployChange: Change
       beforeAll(async () => {
-        const initialInstance = createInstanceElement(
-          naclValues,
-          customMetadataRecordType,
-        )
+        const initialInstance = createInstanceElement(naclValues, customMetadataRecordType)
         initialChange = toChange({ after: initialInstance })
         const changes = [initialChange]
         await filter.preDeploy(changes)
-        afterPreDeployInstance = getChangeData(
-          changes[0],
-        ) as MetadataInstanceElement
+        afterPreDeployInstance = getChangeData(changes[0]) as MetadataInstanceElement
         const onDeployChanges = [toChange({ after: afterPreDeployInstance })]
         await filter.onDeploy(onDeployChanges)
         // eslint-disable-next-line prefer-destructuring
@@ -319,7 +263,7 @@ describe('CustomMetadata filter', () => {
             field: 'email__c',
             value: { 'attr_xsi:type': 'xsd:string', '#text': 'test@user.com' },
           },
-          { field: 'number__c', value: { 'attr_xsi:nil': 'true' } }, // null value handling
+          { field: 'number__c', value: XSI_NIL_TRUE }, // null value handling
           {
             field: 'percent__c',
             value: { 'attr_xsi:type': 'xsd:double', '#text': 23 },
@@ -351,7 +295,7 @@ describe('CustomMetadata filter', () => {
       })
       it('should convert deployed instance type to CustomMetadata', async () => {
         const instanceType = await afterPreDeployInstance.getType()
-        expect(instanceType.elemID).toEqual(mockTypes.CustomMetadata.elemID)
+        expect(instanceType.elemID).toEqual(new ElemID(SALESFORCE, CUSTOM_METADATA))
       })
       it('should add XML namespace attributes', () => {
         expect(afterPreDeployInstance.value).toHaveProperty(

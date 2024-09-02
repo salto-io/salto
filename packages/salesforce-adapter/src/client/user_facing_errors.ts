@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { DeployMessage } from '@salto-io/jsforce'
@@ -43,8 +35,7 @@ export const ERROR_HTTP_502_MESSAGE =
   'We are unable to connect to your Salesforce account right now. ' +
   'This might be an issue in Salesforce side. please check https://status.salesforce.com/current/incidents'
 
-export const INVALID_GRANT_MESSAGE =
-  'Salesforce user is inactive, please re-authenticate'
+export const INVALID_GRANT_MESSAGE = 'Salesforce user is inactive, please re-authenticate'
 
 type DNSException = Error & {
   [ERROR_PROPERTIES.CODE]: string
@@ -52,8 +43,7 @@ type DNSException = Error & {
 }
 
 const isDNSException = (error: Error): error is DNSException =>
-  _.isString(_.get(error, ERROR_PROPERTIES.CODE)) &&
-  _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
+  _.isString(_.get(error, ERROR_PROPERTIES.CODE)) && _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
 
 const CONNECTION_ERROR_HTML_PAGE_REGEX =
   /<html[^>]+>.*<head>.*<title>Error Page<\/title>.*<\/head>.*<body[^>]*>.*An unexpected connection error occurred.*<\/body>.*<\/html>/gs
@@ -70,24 +60,18 @@ export type ErrorMappers = {
   [ENOTFOUND]: ErrorMapper<DNSException>
 }
 
-const withSalesforceError = (
-  salesforceError: string,
-  saltoErrorMessage: string,
-): string => `${saltoErrorMessage}\n\nUnderlying Error: ${salesforceError}`
+const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
+  `${saltoErrorMessage}\n\nUnderlying Error: ${salesforceError}`
 
 export const ERROR_MAPPERS: ErrorMappers = {
   [ERROR_HTTP_502]: {
     test: (error: Error): error is Error =>
-      error.message === ERROR_HTTP_502 ||
-      CONNECTION_ERROR_HTML_PAGE_REGEX.test(error.message),
-    map: (error: Error): string =>
-      withSalesforceError(error.message, ERROR_HTTP_502_MESSAGE),
+      error.message === ERROR_HTTP_502 || CONNECTION_ERROR_HTML_PAGE_REGEX.test(error.message),
+    map: (error: Error): string => withSalesforceError(error.message, ERROR_HTTP_502_MESSAGE),
   },
   [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: {
     test: (error: Error): error is SalesforceError =>
-      isSalesforceError(error) &&
-      error[ERROR_PROPERTIES.ERROR_CODE] ===
-        SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
+      isSalesforceError(error) && error[ERROR_PROPERTIES.ERROR_CODE] === SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
     map: (error: SalesforceError): string =>
       error.message.includes('TotalRequests Limit exceeded')
         ? withSalesforceError(error.message, REQUEST_LIMIT_EXCEEDED_MESSAGE)
@@ -95,12 +79,10 @@ export const ERROR_MAPPERS: ErrorMappers = {
   },
   [INVALID_GRANT]: {
     test: (error: Error): error is Error => error.name === INVALID_GRANT,
-    map: (error: Error): string =>
-      withSalesforceError(error.message, INVALID_GRANT_MESSAGE),
+    map: (error: Error): string => withSalesforceError(error.message, INVALID_GRANT_MESSAGE),
   },
   [ENOTFOUND]: {
-    test: (error: Error): error is DNSException =>
-      isDNSException(error) && error.code === ENOTFOUND,
+    test: (error: Error): error is DNSException => isDNSException(error) && error.code === ENOTFOUND,
     map: (error: DNSException) =>
       withSalesforceError(
         error.message,
@@ -112,28 +94,17 @@ export const ERROR_MAPPERS: ErrorMappers = {
 
 // Deploy Errors Mapping
 
-const SCHEDULABLE_CLASS =
-  'This schedulable class has jobs pending or in progress'
-const MAX_METADATA_DEPLOY_LIMIT =
-  'Maximum size of request reached. Maximum size of request is 52428800 bytes.'
+const SCHEDULABLE_CLASS = 'This schedulable class has jobs pending or in progress'
+const MAX_METADATA_DEPLOY_LIMIT = 'Maximum size of request reached. Maximum size of request is 52428800 bytes.'
 
-const MAPPABLE_SALESFORCE_PROBLEMS = [
-  SCHEDULABLE_CLASS,
-  MAX_METADATA_DEPLOY_LIMIT,
-] as const
+const MAPPABLE_SALESFORCE_PROBLEMS = [SCHEDULABLE_CLASS, MAX_METADATA_DEPLOY_LIMIT] as const
 
-export type MappableSalesforceProblem =
-  (typeof MAPPABLE_SALESFORCE_PROBLEMS)[number]
+export type MappableSalesforceProblem = (typeof MAPPABLE_SALESFORCE_PROBLEMS)[number]
 
-const isMappableSalesforceProblem = (
-  problem: string,
-): problem is MappableSalesforceProblem =>
+const isMappableSalesforceProblem = (problem: string): problem is MappableSalesforceProblem =>
   (MAPPABLE_SALESFORCE_PROBLEMS as ReadonlyArray<string>).includes(problem)
 
-export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<
-  MappableSalesforceProblem,
-  string
-> = {
+export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<MappableSalesforceProblem, string> = {
   [SCHEDULABLE_CLASS]: withSalesforceError(
     SCHEDULABLE_CLASS,
     'This deployment contains a scheduled Apex class (or a class related to one).' +
@@ -148,50 +119,35 @@ export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<
   ),
 }
 
-export const getUserFriendlyDeployMessage = (
-  deployMessage: DeployMessage,
-): DeployMessage => ({
+export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => ({
   ...deployMessage,
   problem: isMappableSalesforceProblem(deployMessage.problem)
     ? MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[deployMessage.problem]
     : deployMessage.problem,
 })
 
-export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
-  async (original) => {
-    try {
-      return await Promise.resolve(original.call())
-    } catch (e) {
-      if (!_.isError(e)) {
-        throw e
-      }
-      const userFriendlyMessageByMapperName = _.mapValues(
-        _.pickBy(ERROR_MAPPERS, (mapper) => mapper.test(e)),
-        (mapper) => mapper.map(e),
-      )
-
-      const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
-      if (_.isEmpty(matchedMapperNames)) {
-        throw e
-      } else if (matchedMapperNames.length > 1) {
-        log.error(
-          'The error %o matched on more than one mapper. Matcher mappers: %o',
-          e,
-          matchedMapperNames,
-        )
-        throw e
-      }
-      const [mapperName, userFriendlyMessage] = Object.entries(
-        userFriendlyMessageByMapperName,
-      )[0]
-      log.debug(
-        'Replacing error %s message to %s. Original error: %o',
-        mapperName,
-        userFriendlyMessage,
-        e,
-      )
-      e.message = userFriendlyMessage
+export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async original => {
+  try {
+    return await Promise.resolve(original.call())
+  } catch (e) {
+    if (!_.isError(e)) {
       throw e
     }
-  },
-)
+    const userFriendlyMessageByMapperName = _.mapValues(
+      _.pickBy(ERROR_MAPPERS, mapper => mapper.test(e)),
+      mapper => mapper.map(e),
+    )
+
+    const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
+    if (_.isEmpty(matchedMapperNames)) {
+      throw e
+    } else if (matchedMapperNames.length > 1) {
+      log.error('The error %o matched on more than one mapper. Matcher mappers: %o', e, matchedMapperNames)
+      throw e
+    }
+    const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
+    log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, e)
+    e.message = userFriendlyMessage
+    throw e
+  }
+})

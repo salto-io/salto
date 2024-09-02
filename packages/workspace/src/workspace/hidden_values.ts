@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
@@ -83,14 +75,8 @@ export const getElementHiddenParts = async <T extends Element>(
   }
   const hiddenPaths = new Set<string>()
   const ancestorsOfHiddenPaths = new Set<string>()
-  // There are two "hidden" annotations - _hidden, and _hidden_value.
-  // If this is an instance, the field belongs to the type so we want to check if
-  // the field is marked as _hidden_value.
-  // Otherwise, we're looking for either a _hidden annotation on the element,
-  // or a _hidden_value annotation on its type definition.
-  const hiddenFunc = isInstanceElement(stateElement) ? isHiddenValue : isHidden
   const storeHiddenPaths: TransformFunc = async ({ value, field, path }) => {
-    if (await hiddenFunc(field, elementsSource)) {
+    if (isHiddenValue(field)) {
       if (path !== undefined) {
         const parentPath = path.createParentID()
         if (!parentPath.isBaseID() && workspaceElement !== undefined) {
@@ -146,7 +132,8 @@ export const getElementHiddenParts = async <T extends Element>(
       // no overlap between ancestorsOfHiddenPaths and hiddenPaths
       path !== undefined && (isAncestorOfHiddenPath(path) || isNestedHiddenPath(path)) ? value : undefined,
     strict: true,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
     elementsSource,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts
@@ -195,11 +182,6 @@ export const mergeWithHidden = async (
   return mergeElements(awu(hiddenStateElements).concat(workspaceElementsWithHiddenParts))
 }
 
-const removeHidden =
-  (elementsSource: ReadOnlyElementsSource): TransformFunc =>
-  async ({ value, field }) =>
-    (await isHidden(field, elementsSource)) ? undefined : value
-
 const removeHiddenValue =
   (): TransformFunc =>
   ({ value, field }) =>
@@ -211,10 +193,11 @@ export const removeHiddenFromElement = <T extends Element>(
 ): Promise<T> =>
   transformElement({
     element,
-    transformFunc: isInstanceElement(element) ? removeHiddenValue() : removeHidden(elementsSource),
+    transformFunc: removeHiddenValue(),
     strict: false,
     elementsSource,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
 
 const removeHiddenFromValues = (
@@ -230,7 +213,8 @@ const removeHiddenFromValues = (
     pathID,
     elementsSource,
     strict: false,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
 
 const isChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>
@@ -512,7 +496,8 @@ const getHiddenFieldAndAnnotationValueChanges = async (
         strict: true,
         elementsSource: state,
         runOnFields: true,
-        allowEmpty: true,
+        allowEmptyArrays: true,
+        allowEmptyObjects: true,
       })
     })
 
@@ -671,6 +656,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
           annotations: diffAnno,
           fields: diffFields,
           path: fullElem.path,
+          metaType: fullElem.metaType,
           isSettings: fullElem.isSettings,
         }) as unknown as T)
   }

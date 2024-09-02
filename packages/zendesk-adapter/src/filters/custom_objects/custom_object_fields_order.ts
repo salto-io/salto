@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -34,6 +26,7 @@ import { getParent, getParents, inspectValue, isResolvedReferenceExpression } fr
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { FETCH_CONFIG } from '../../config'
 import { FilterCreator } from '../../filter'
 import {
   CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME,
@@ -60,7 +53,7 @@ export const customObjectFieldsOrderType = new ObjectType({
  The fields are returned from the api by order, so we save it to be able to properly reorder them on deploy
  This is needed because two fields can have the same positions, and then be sorted by non multi-env fields
  */
-const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
+const customObjectFieldsOrderFilter: FilterCreator = ({ client, config }) => ({
   name: 'customObjectFieldsOrderFilter',
   onFetch: async (elements: Element[]) => {
     const customObjectFields = elements
@@ -79,7 +72,7 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
     if (!_.isEmpty(customObjectFieldsByParentName)) {
       elements.push(customObjectFieldsOrderType)
     }
-
+    const usingNewInfra = config[FETCH_CONFIG].useNewInfra
     Object.entries(customObjectFieldsByParentName).forEach(([parentName, fields]) => {
       const parent = customObjectsByFullName[parentName]
       if (parent === undefined) {
@@ -91,7 +84,10 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client }) => ({
         instanceName,
         customObjectFieldsOrderType,
         {
-          [ORDER_FIELD]: fields.map(field => new ReferenceExpression(field.elemID, field)),
+          // in the new infra, the order of the fields is reversed in the element map
+          [ORDER_FIELD]: (usingNewInfra === true ? fields.reverse() : fields).map(
+            field => new ReferenceExpression(field.elemID, field),
+          ),
         },
         [ZENDESK, RECORDS_PATH, CUSTOM_OBJECT_FIELD_ORDER_TYPE_NAME, instanceName],
         {

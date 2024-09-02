@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -24,12 +16,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { apiNameSync, metadataTypeSync } from '../filters/utils'
-import {
-  API_NAME,
-  CUSTOM_METADATA,
-  CUSTOM_OBJECT,
-  METADATA_TYPE,
-} from '../constants'
+import { API_NAME, CUSTOM_METADATA, CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME, METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
 
@@ -58,23 +45,20 @@ const isMetadataType = (objectType: ObjectType): boolean => {
   }
   // CustomObject Metadata Type
   if (metadataTypeSync(objectType) === CUSTOM_OBJECT) {
-    return (
-      objectType.elemID.typeName === CUSTOM_OBJECT &&
-      objectType.annotations[API_NAME] === undefined
-    )
+    return objectType.elemID.typeName === CUSTOM_OBJECT_TYPE_NAME && objectType.annotations[API_NAME] === undefined
   }
   // CustomMetadata Metadata Type
   if (metadataTypeSync(objectType) === CUSTOM_METADATA) {
     return (
-      objectType.elemID.typeName === CUSTOM_METADATA &&
       objectType.annotations[API_NAME] === undefined // this would be the 'CustomObject' metadata type
     )
   }
   return true
 }
-const changeValidator: ChangeValidator = async (changes) =>
+
+const changeValidator: ChangeValidator = async changes =>
   changes
-    .map((change) => getAffectedType(change))
+    .map(change => getAffectedType(change))
     .filter(isDefined)
     .filter(isMetadataType)
     .map(createNonDeployableTypeError)

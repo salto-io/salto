@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
@@ -145,13 +137,17 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
 
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
 
-const sortLists = async (instance: InstanceElement): Promise<void> => {
+const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Promise<void> => {
+  if (isDataCenter) {
+    delete VALUES_TO_SORT[WORKFLOW_RULES_TYPE_NAME].postFunctions
+  }
   instance.value =
     (await transformValues({
       values: instance.value,
       type: await instance.getType(),
       strict: false,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
       transformFunc: async ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value
@@ -173,10 +169,12 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
     })) ?? {}
 }
 
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ client }) => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    await awu(elements).filter(isInstanceElement).forEach(sortLists)
+    await awu(elements)
+      .filter(isInstanceElement)
+      .forEach(instance => sortLists(instance, client.isDataCenter))
   },
 })
 

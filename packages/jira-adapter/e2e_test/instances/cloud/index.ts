@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   InstanceElement,
@@ -37,6 +29,7 @@ import {
   ISSUE_TYPE_SCHEMA_NAME,
   JIRA,
   NOTIFICATION_SCHEME_TYPE_NAME,
+  OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_SCHEMA_TYPE,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
@@ -51,7 +44,7 @@ import {
   SECURITY_LEVEL_TYPE,
   SECURITY_SCHEME_TYPE,
   SLA_TYPE_NAME,
-  WORKFLOW_TYPE_NAME,
+  WORKFLOW_CONFIGURATION_TYPE,
 } from '../../../src/constants'
 import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
 import { createIssueTypeSchemeValues } from './issueTypeScheme'
@@ -79,8 +72,10 @@ import { createrequestTypeValues } from './jsm/request_type'
 import { createFormValues } from './jsm/form'
 import { createObjectSchmaValues } from './jsm/objectSchema'
 import { createObjectSchemaStatusValues } from './jsm/objectSchemaStatus'
+import { createObjectSchemaGlobalStatusValues } from './jsm/objectSchemaGlobalStatus'
 import { createObjectTypeValues } from './jsm/objectType'
 import { createObjectTypeAttributeValues } from './jsm/objectTypeAttribute'
+import { createWorkflowSchemeValues } from './workflowScheme'
 
 const ISSUE_LAYOUT_NAME = 'Test_Project_TP__Kanban_Default_Issue_Screen@sufssss'
 
@@ -129,8 +124,14 @@ export const createInstances = (
 
   const workflow = new InstanceElement(
     randomString,
-    findType(WORKFLOW_TYPE_NAME, fetchedElements),
+    findType(WORKFLOW_CONFIGURATION_TYPE, fetchedElements),
     createWorkflowValues(randomString, fetchedElements),
+  )
+
+  const workflowScheme = new InstanceElement(
+    randomString,
+    findType('WorkflowScheme', fetchedElements),
+    createWorkflowSchemeValues(randomString, fetchedElements),
   )
 
   const fieldConfiguration = new InstanceElement(
@@ -289,6 +290,11 @@ export const createInstances = (
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [objectSchemaRef] },
   )
+  const objectSchemaGlobalStatus = new InstanceElement(
+    `OSGS${randomString}`,
+    findType(OBJECT_SCHEMA_GLOBAL_STATUS_TYPE, fetchedElements),
+    createObjectSchemaGlobalStatusValues(`OSGS${randomString}`),
+  )
 
   const objectType = new InstanceElement(
     `testSchema_Hardware_Assets_us_${randomString}@uumu`,
@@ -312,6 +318,7 @@ export const createInstances = (
     [dashboardGadget2],
     [issueTypeScheme],
     [workflow],
+    [workflowScheme],
     [fieldConfiguration],
     [securityScheme, securityLevel],
     [notificationScheme],
@@ -334,6 +341,7 @@ export const createInstances = (
     [form],
     [objectSchema],
     [objectSchemaStatus],
+    [objectSchemaGlobalStatus],
     [objectType],
     [objectTypeAttribute],
   ]

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -25,6 +17,7 @@ import {
   Values,
   ReadOnlyElementsSource,
   ReferenceExpression,
+  Value,
 } from '@salto-io/adapter-api'
 import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
@@ -33,20 +26,21 @@ import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
-import { FieldItem, isFieldConfigurationItems } from '../../weak_references/field_configuration_items'
 
 const log = logger(module)
 
 const { awu } = collections.asynciterable
 
-type EnrichedFieldItem = FieldItem & { id: ReferenceExpression }
-
 const enrichFieldItem = async (
   fieldName: string,
-  fieldItem: FieldItem,
+  fieldItem: Value,
   elementSource: ReadOnlyElementsSource,
   instanceName: string,
-): Promise<EnrichedFieldItem | undefined> => {
+): Promise<Value> => {
+  if (!_.isPlainObject(fieldItem)) {
+    log.warn('ignoring field item %s in instance %s that is not plain object: %o', fieldName, instanceName, fieldItem)
+    return undefined
+  }
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
   const fieldInstance = await elementSource.get(elemId)
   if (fieldInstance === undefined) {
@@ -72,8 +66,16 @@ const replaceToMap = (instance: InstanceElement): void => {
 
 const replaceFromMap = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource): Promise<void> => {
   const fieldConfigurationItems = instance.value.fields
-  if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
-    log.warn(`fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not changing fields format`)
+  if (fieldConfigurationItems === undefined) {
+    log.warn('fields value is missing in instance %s, hence not changing fields format', instance.elemID.getFullName())
+    return
+  }
+  if (!_.isPlainObject(fieldConfigurationItems)) {
+    log.warn(
+      'fields value is corrupted in instance %s, hence not changing fields format: %o',
+      instance.elemID.getFullName(),
+      fieldConfigurationItems,
+    )
     return
   }
   instance.value.fields = await awu(Object.entries(fieldConfigurationItems))

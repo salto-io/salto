@@ -1,19 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, toChange, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { InstanceElement, toChange, ReferenceExpression, CORE_ANNOTATIONS, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
   ISSUE_LAYOUT_TYPE,
@@ -613,6 +605,20 @@ describe('issueLayoutDependencyChanger', () => {
         action: 'add',
         dependency: { source: 'issueLayoutInstance1', target: 'issueTypeSchemeInstance1' },
       })
+    })
+    it('should not crash if the parent is a missing dependency', async () => {
+      issueLayoutInstance1.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(new ElemID('jira', 'Project', 'instance', 'missing_9'), {}),
+      ]
+      const inputChanges = new Map([
+        ['issueLayoutInstance1', toChange({ after: issueLayoutInstance1 })],
+        ['issueTypeScreenSchemeInstance1', toChange({ after: issueTypeScreenSchemeInstance1 })],
+        ['issueTypeSchemeInstance1', toChange({ after: issueTypeSchemeInstance1 })],
+        ['screenSchemeInstance1', toChange({ after: screenSchemeInstance1 })],
+        ['projectInstance1', toChange({ after: projectInstance1 })],
+      ])
+      const dependencyChanges = [...(await issueLayoutDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges).toHaveLength(0)
     })
   })
 })

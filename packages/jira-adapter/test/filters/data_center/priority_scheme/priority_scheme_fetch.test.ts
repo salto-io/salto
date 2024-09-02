@@ -1,22 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Element, Value, InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { getFilterParams, mockClient } from '../../../utils'
 import prioritySchemeFetchFilter from '../../../../src/filters/data_center/priority_scheme/priority_scheme_fetch'
 import JiraClient from '../../../../src/client/client'
@@ -180,7 +171,7 @@ describe('prioritySchemeFetchFilter', () => {
     it('should warn if response is 403', async () => {
       connection.get.mockImplementation(async url => {
         if (url === '/rest/api/2/priorityschemes') {
-          throw new HTTPError('failed', { data: {}, status: 403 })
+          throw new clientUtils.HTTPError('failed', { data: {}, status: 403 })
         }
 
         throw new Error(`Unexpected url ${url}`)
@@ -200,7 +191,7 @@ describe('prioritySchemeFetchFilter', () => {
     it('should warn if response is 405', async () => {
       connection.get.mockImplementation(async url => {
         if (url === '/rest/api/2/priorityschemes') {
-          throw new HTTPError('failed', { data: {}, status: 405 })
+          throw new clientUtils.HTTPError('failed', { data: {}, status: 405 })
         }
 
         throw new Error(`Unexpected url ${url}`)

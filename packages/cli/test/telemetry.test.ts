@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { buildEventName, getCliTelemetry } from '../src/telemetry'
 import { CliTelemetry } from '../src/types'
@@ -30,8 +22,12 @@ describe('telemetry event names', () => {
     cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.success()
 
-    expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledTimes(1)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledWith(
+      buildEventName(command, 'success'),
+      1,
+      expect.objectContaining({}),
+    )
   })
 
   it('should send success events with tags', () => {
@@ -41,11 +37,12 @@ describe('telemetry event names', () => {
     cliTelemetry.setTags(tags)
     cliTelemetry.success()
 
-    expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')]).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')][0].tags).toHaveProperty('someTag')
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')][0].tags.someTag).toEqual(tags.someTag)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledTimes(1)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledWith(
+      buildEventName(command, 'success'),
+      1,
+      expect.objectContaining(tags),
+    )
   })
 
   it('should send mergeErrors events with some value > 1', () => {
@@ -54,9 +51,12 @@ describe('telemetry event names', () => {
     cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.mergeErrors(42)
 
-    expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'mergeErrors')])
-    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'mergeErrors')][0].value).toEqual(value)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledTimes(1)
+    expect(mockTelemetry.sendCountEvent).toHaveBeenCalledWith(
+      buildEventName(command, 'mergeErrors'),
+      value,
+      expect.objectContaining({}),
+    )
   })
 
   it('should build event name for a some command', () => {

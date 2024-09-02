@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -364,13 +356,10 @@ describe('workflow filter', () => {
       await filter.onFetch(elements)
       expect(elements).toHaveLength(2)
     })
-    it('should fail when WorkflowConfiguration type is not found', async () => {
+    it('should not fail when WorkflowConfiguration type is not found', async () => {
       const filterResult = (await filter.onFetch([])) as FilterResult
       const errors = filterResult.errors ?? []
-      expect(errors).toBeDefined()
-      expect(errors).toHaveLength(1)
-      expect(errors[0].message).toEqual('Failed to fetch Workflows.')
-      expect(errors[0].severity).toEqual('Error')
+      expect(errors).toEqual([])
     })
     it('should fail when id response data is not valid', async () => {
       mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
@@ -399,7 +388,7 @@ describe('workflow filter', () => {
       expect(errors).toBeDefined()
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toEqual(
-        'Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: Error: code 400.',
+        'Failed to fetch Workflows: Failed to post /rest/api/3/workflows with error: code 400.',
       )
       expect(errors[0].severity).toEqual('Error')
     })
@@ -480,6 +469,104 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       )
     })
 
+    describe('resolution properties', () => {
+      beforeEach(() => {
+        mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function* get() {
+          yield [
+            {
+              id: { entityId: '1' },
+              statuses: [
+                { id: '11', name: 'Create' },
+                { id: '2', name: 'another one' },
+              ],
+            },
+            { id: { entityId: '2' }, statuses: [{ id: '22', name: 'Quack Quack' }] },
+          ]
+        })
+        connection.post.mockResolvedValue({
+          status: 200,
+          data: {
+            workflows: [
+              {
+                id: '1',
+                name: 'firstWorkflow',
+                version: {
+                  versionNumber: 1,
+                  id: '1',
+                },
+                scope: {
+                  type: 'global',
+                },
+                transitions: [
+                  {
+                    type: 'INITIAL',
+                    name: 'Create',
+                    properties: {
+                      'jira.issue.editable': 'true',
+                    },
+                    to: {
+                      statusReference: '11',
+                    },
+                  },
+                  {
+                    type: 'DIRECTED',
+                    name: 'ToStatus2',
+                    from: [
+                      {
+                        statusReference: '11',
+                      },
+                    ],
+                    to: {
+                      statusReference: '2',
+                    },
+                    properties: {
+                      'jira.field.resolution.exclude': '10000,10001',
+                      'jira.field.resolution.include': '10002',
+                    },
+                  },
+                ],
+                statuses: [
+                  {
+                    properties: {
+                      'jira.issue.editable': 'true',
+                    },
+                    statusReference: '11',
+                  },
+                  {
+                    statusReference: '2',
+                  },
+                ],
+              },
+            ],
+            statuses: [
+              {
+                id: '11',
+                name: 'Create',
+                statusReference: '11',
+              },
+              {
+                id: '2',
+                name: 'another one',
+                statusReference: '2',
+              },
+            ],
+          },
+        })
+      })
+      it('should spilt properties to list', async () => {
+        await filter.onFetch(elements)
+        expect(elements).toHaveLength(3)
+        const workflow = elements[2] as unknown as InstanceElement
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.Create].properties).toEqual([
+          { key: 'jira.issue.editable', value: 'true' },
+        ])
+        expect(workflow.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2].properties).toEqual([
+          { key: 'jira.field.resolution.exclude', value: ['10000', '10001'] },
+          { key: 'jira.field.resolution.include', value: ['10002'] },
+        ])
+      })
+    })
+
     describe('transition parameters', () => {
       beforeEach(() => {
         connection.post.mockResolvedValue({
@@ -505,6 +592,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                     type: 'INITIAL',
                     conditions: {
+                      operation: 'ALL',
                       conditionGroups: [
                         {
                           operation: 'ALL',
@@ -513,6 +601,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                               operation: 'ALL',
                               conditions: [
                                 {
+                                  ruleKey: 'ruleKey',
                                   parameters: {
                                     groupIds: '1,2',
                                   },
@@ -522,11 +611,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                           ],
                           conditions: [
                             {
+                              ruleKey: 'ruleKey',
                               parameters: {
                                 groupIds: '1,2',
                               },
                             },
                             {
+                              ruleKey: 'ruleKey',
                               parameters: {
                                 fromStatusId: '1',
                               },
@@ -536,6 +627,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                               ruleKey: 'ruleKey',
                             },
                             {
+                              ruleKey: 'ruleKey',
                               parameters: {
                                 accountIds: 'quack quack',
                                 groupIds: '',
@@ -546,11 +638,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                       ],
                       conditions: [
                         {
+                          ruleKey: 'ruleKey',
                           parameters: {
                             groupIds: '1,2',
                           },
                         },
                         {
+                          ruleKey: 'ruleKey',
                           parameters: {
                             fromStatusId: '1',
                           },
@@ -560,6 +654,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                           ruleKey: 'ruleKey',
                         },
                         {
+                          ruleKey: 'ruleKey',
                           parameters: {
                             accountIds: 'quack quack',
                             groupIds: '',
@@ -569,11 +664,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                     validators: [
                       {
+                        ruleKey: 'ruleKey',
                         parameters: {
                           statusIds: '1,2',
                         },
                       },
                       {
+                        ruleKey: 'ruleKey',
                         parameters: {
                           fieldKey: 'fieldKey',
                         },
@@ -583,6 +680,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                         ruleKey: 'ruleKey',
                       },
                       {
+                        ruleKey: 'ruleKey',
                         parameters: {
                           fieldsRequired: '',
                           accountIds: 'quack quack',
@@ -745,6 +843,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               conditions: {
                 operation: 'ALL',
                 conditionGroups: [],
+                conditions: [],
               },
               properties: {
                 'jira.issue.editable': 'true',
@@ -766,10 +865,12 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               type: 'DIRECTED',
               conditions: {
                 operation: 'ALL',
+                conditions: [],
                 conditionGroups: [
                   {
                     operation: 'ALL',
                     conditionGroups: [],
+                    conditions: [],
                   },
                 ],
               },
@@ -993,6 +1094,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             },
             conditions: {
               operation: 'ALL',
+              conditions: [],
             },
             properties: [
               {
@@ -1020,8 +1122,10 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               conditionGroups: [
                 {
                   operation: 'ALL',
+                  conditions: [],
                 },
               ],
+              conditions: [],
             },
           },
         },
@@ -1092,6 +1196,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 conditions: {
                   operation: 'ALL',
                   conditionGroups: [],
+                  conditions: [],
                 },
                 properties: [
                   {
@@ -1116,9 +1221,11 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 type: 'DIRECTED',
                 conditions: {
                   operation: 'ALL',
+                  conditions: [],
                   conditionGroups: [
                     {
                       operation: 'ALL',
+                      conditions: [],
                     },
                   ],
                 },
@@ -1144,6 +1251,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       })
       config.deploy.taskMaxRetries = 3
       elementsSource = buildElementsSourceFromElements([projectInstance, workflowSchemeInstance])
+      jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
       filter = workflowFilter(
         getFilterParams({
           client,
@@ -1184,6 +1292,29 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             statuses: [],
           })
         })
+
+        describe('resolution properties', () => {
+          beforeEach(() => {
+            workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.Create].properties = [
+              { key: 'jira.issue.editable', value: 'true' },
+            ]
+            workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2].properties = [
+              { key: 'jira.field.resolution.exclude', value: ['10000', '10001'] },
+              { key: 'jira.field.resolution.include', value: ['10002'] },
+            ]
+          })
+          it('should convert properties to string', async () => {
+            await filter.preDeploy([toChange({ after: workflowInstance })])
+            expect(workflowInstance.value.workflows[0].transitions[0].properties).toEqual({
+              'jira.issue.editable': 'true',
+            })
+            expect(workflowInstance.value.workflows[0].transitions[1].properties).toEqual({
+              'jira.field.resolution.exclude': '10000,10001',
+              'jira.field.resolution.include': '10002',
+            })
+          })
+        })
+
         describe('transition parameters', () => {
           beforeEach(() => {
             const conditions = {
@@ -1607,6 +1738,20 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           })
         })
 
+        it('should fail gracefully when the version does not match the service', async () => {
+          deployChangeMock.mockRejectedValueOnce(
+            new clientUtils.HTTPError('Workflow version and version token must match', {
+              status: 409,
+              data: {},
+            }),
+          )
+          const result = await filter.deploy([toChange({ before: workflowInstanceBefore, after: workflowInstance })])
+          expect(result.deployResult.errors).toHaveLength(1)
+          expect(result.deployResult.errors[0].message).toEqual(
+            'Error: The workflow version does not match the version in Jira; please fetch and try again',
+          )
+        })
+
         it('should not fail the deployment if the migration fails', async () => {
           connection.get.mockResolvedValueOnce({
             status: 200,
@@ -1691,6 +1836,48 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           // two calls are for steps deployment
           expect(connection.get).toHaveBeenCalledTimes(3)
           expect(connection.get).toHaveBeenCalledWith('/rest/api/3/task/1', expect.anything())
+        })
+        describe('retry on failed to acquire lock', () => {
+          describe('success', () => {
+            beforeEach(() => {
+              deployChangeMock.mockRejectedValueOnce(
+                new clientUtils.HTTPError('message', {
+                  status: 409,
+                  data: {
+                    errorMessages: ['Failed to acquire lock'],
+                  },
+                }),
+              )
+            })
+            it('should retry the deployment when failed to acquire lock', async () => {
+              const result = await filter.deploy([
+                toChange({ before: workflowInstanceBefore, after: workflowInstance }),
+              ])
+              expect(result.deployResult.errors).toHaveLength(0)
+              expect(deployChangeMock).toHaveBeenCalledTimes(2)
+            })
+          })
+          describe('failure', () => {
+            beforeEach(() => {
+              deployChangeMock.mockRejectedValue(
+                new clientUtils.HTTPError('message', {
+                  status: 409,
+                  data: {
+                    errorMessages: ['Failed to acquire lock'],
+                  },
+                }),
+              )
+            })
+            it('should fail the deployment when failed to acquire lock 3 times', async () => {
+              const result = await filter.deploy([
+                toChange({ before: workflowInstanceBefore, after: workflowInstance }),
+              ])
+              expect(result.deployResult.errors).toHaveLength(1)
+              expect(result.deployResult.errors[0].message).toEqual('Error: message')
+              expect(result.deployResult.errors[0].severity).toEqual('Error')
+              expect(deployChangeMock).toHaveBeenCalledTimes(5)
+            })
+          })
         })
       })
     })

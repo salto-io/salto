@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -83,15 +75,32 @@ export type WorkflowStatusAndPort = {
   port?: number
 }
 
-export type WorkflowTransitionV2 = {
+export type WorkflowV2TransitionRuleParameters = {
+  appKey?: string
+  key?: string
+} & Record<string, unknown>
+
+export type WorkflowV2TransitionRule = {
+  ruleKey: string
+  parameters?: WorkflowV2TransitionRuleParameters
+}
+
+export type WorkflowV2TransitionConditionGroup = {
+  operation: string
+  conditionGroups?: WorkflowV2TransitionConditionGroup[]
+  conditions?: WorkflowV2TransitionRule[]
+}
+
+export type WorkflowV2Transition = {
   id?: string
   type: string
   name: string
   from?: WorkflowStatusAndPort[]
   to?: WorkflowStatusAndPort
-  actions?: Values[]
-  conditions?: Values
-  validators?: Values[]
+  actions?: WorkflowV2TransitionRule[]
+  conditions?: WorkflowV2TransitionConditionGroup
+  validators?: WorkflowV2TransitionRule[]
+  properties?: Values
 }
 
 type WorkflowDataResponse = {
@@ -116,18 +125,29 @@ export type Workflow = {
   version?: WorkflowVersion
   scope: WorkflowScope
   id?: string
-  transitions: WorkflowTransitionV2[]
+  transitions: WorkflowV2Transition[]
   statuses: Values[]
 }
 
 export type WorkflowV2Instance = InstanceElement & {
   value: InstanceElement['value'] &
-    Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowTransitionV2> }
+    Omit<Workflow, 'transitions'> & { transitions: Record<string, WorkflowV2Transition> }
 }
+
+const TRANSITION_RULE_SCHEME = Joi.object({
+  ruleKey: Joi.string().required(),
+  parameters: Joi.object({ appKey: Joi.string().optional(), key: Joi.string().optional() }).unknown(true).optional(),
+}).unknown(true)
+
+const TRANSITION_CONDITION_GROUP_SCHEME = Joi.object({
+  operation: Joi.string().required(),
+  conditions: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
+  conditionGroups: Joi.array().items(Joi.link('#conditionGroup')).optional(),
+}).id('conditionGroup')
 
 const TRANSITION_SCHEME = Joi.object({
   id: Joi.string(),
-  actions: Joi.array().items(Joi.object()),
+  actions: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
   type: Joi.string().required(),
   name: Joi.string().required(),
   from: Joi.array().items(
@@ -140,8 +160,9 @@ const TRANSITION_SCHEME = Joi.object({
     statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
     port: Joi.number(),
   }),
-  conditions: Joi.object(),
-  validators: Joi.array().items(Joi.object()),
+  conditions: TRANSITION_CONDITION_GROUP_SCHEME.optional(),
+  validators: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
+  properties: Joi.alternatives(Joi.array().items(Joi.object()), Joi.object()).optional(),
 })
   .unknown(true)
   .required()
@@ -165,7 +186,7 @@ const WORKFLOW_SCHEMA = Joi.object({
   .unknown(true)
   .required()
 
-const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowTransitionV2> }>(
+const isWorkflowValues = createSchemeGuard<Workflow & { transitions: Record<string, WorkflowV2Transition> }>(
   WORKFLOW_SCHEMA,
   'Received an invalid workflow values',
 )

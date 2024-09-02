@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -125,17 +117,25 @@ describe('State/cache serialization', () => {
         refType: strMapType,
       },
     },
+    annotations: {
+      LeadConvertSettings: {
+        account: [
+          {
+            input: 'bla',
+            output: 'foo',
+          },
+        ],
+      },
+    },
   })
 
-  model.annotate({
-    LeadConvertSettings: {
-      account: [
-        {
-          input: 'bla',
-          output: 'foo',
-        },
-      ],
-    },
+  const metaType = new ObjectType({
+    elemID: new ElemID('salto', 'meta'),
+  })
+
+  const simpleObject = new ObjectType({
+    elemID: new ElemID('salto', 'simple_object'),
+    metaType,
   })
 
   const instance = new InstanceElement('me', model, { name: 'me', num: 7 }, ['path', 'test'], { test: 'annotation' })
@@ -211,6 +211,7 @@ describe('State/cache serialization', () => {
     numType,
     boolType,
     model,
+    simpleObject,
     strListType,
     strMapType,
     variable,
@@ -232,7 +233,7 @@ describe('State/cache serialization', () => {
     expect(serialized).not.toMatch(subInstance.constructor.name)
   })
 
-  it('should serialize and deserialize elem id correctly without saving the fullname', async () => {
+  it('should serialize and deserialize elem id correctly without saving the full name', async () => {
     const serialized = await serialize([subInstance])
     expect(serialized).not.toContain(subInstance.elemID.getFullName())
     const deserialized = await deserialize(serialized)
@@ -360,15 +361,20 @@ describe('State/cache serialization', () => {
     beforeAll(async () => {
       deserializedElements = await deserialize(await serialize(elements))
     })
-    it('should deserialize type correctly', async () => {
+    it('should deserialize type correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model)).toBeTruthy()
     })
-    it('should deserialize field correctly', async () => {
+    it('should deserialize type with meta type correctly', () => {
+      expect(
+        deserializedElements.find(elem => elem.elemID.isEqual(simpleObject.elemID))?.isEqual(simpleObject),
+      ).toBeTruthy()
+    })
+    it('should deserialize field correctly', () => {
       expect(
         deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField),
       ).toBeTruthy()
     })
-    it('should deserialize instance correctly', async () => {
+    it('should deserialize instance correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance)).toBeTruthy()
     })
   })
@@ -377,15 +383,20 @@ describe('State/cache serialization', () => {
     beforeAll(async () => {
       deserializedElements = await deserializeParsed(JSON.parse(await serialize(elements)))
     })
-    it('should deserialize type correctly', async () => {
+    it('should deserialize type correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model)).toBeTruthy()
     })
-    it('should deserialize field correctly', async () => {
+    it('should deserialize type with meta type correctly', () => {
+      expect(
+        deserializedElements.find(elem => elem.elemID.isEqual(simpleObject.elemID))?.isEqual(simpleObject),
+      ).toBeTruthy()
+    })
+    it('should deserialize field correctly', () => {
       expect(
         deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField),
       ).toBeTruthy()
     })
-    it('should deserialize instance correctly', async () => {
+    it('should deserialize instance correctly', () => {
       expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance)).toBeTruthy()
     })
   })
@@ -415,7 +426,6 @@ describe('State/cache serialization', () => {
   })
 
   describe('functions', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let funcElement: InstanceElement
     beforeAll(async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')

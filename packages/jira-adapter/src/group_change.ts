@@ -1,19 +1,17 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { getChangeData, isModificationChange, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import {
+  getChangeData,
+  isModificationChange,
+  isAdditionChange,
+  isInstanceChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import {
@@ -23,8 +21,11 @@ import {
   SCRIPT_FRAGMENT_TYPE,
   SCRIPT_RUNNER_LISTENER_TYPE,
   SECURITY_LEVEL_TYPE,
+  SLA_TYPE_NAME,
   WORKFLOW_TYPE_NAME,
 } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './filters/fields/constants'
+import { getContextParent } from './common/fields'
 
 export const getWorkflowGroup: deployment.grouping.ChangeIdFunction = async change =>
   isModificationChange(change) && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
@@ -56,6 +57,15 @@ const getFieldConfigItemGroup: deployment.grouping.ChangeIdFunction = async chan
   return `${parent.elemID.getFullName()} items`
 }
 
+const getFieldContextGroup: deployment.grouping.ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+
+  return isInstanceElement(instance) &&
+    [FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME].includes(instance.elemID.typeName)
+    ? getContextParent(instance).elemID.getFullName()
+    : undefined
+}
+
 const getScriptListenersGroup: deployment.grouping.ChangeIdFunction = async change =>
   getChangeData(change).elemID.typeName === SCRIPT_RUNNER_LISTENER_TYPE ? 'Script Listeners' : undefined
 
@@ -81,6 +91,14 @@ const getAttributeAdditionByObjectTypeGroup: deployment.grouping.ChangeIdFunctio
   }
   return undefined
 }
+const getSlaAdditionByProjectGroup: deployment.grouping.ChangeIdFunction = async change => {
+  const instance = getChangeData(change)
+  if (!isAdditionChange(change) || instance.elemID.typeName !== SLA_TYPE_NAME) {
+    return undefined
+  }
+  const parent = getParent(instance)
+  return `sla addition of ${parent.elemID.getFullName()}`
+}
 
 export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getWorkflowGroup,
@@ -90,4 +108,6 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getScriptedFragmentsGroup,
   getQueuesAdditionByProjectGroup,
   getAttributeAdditionByObjectTypeGroup,
+  getFieldContextGroup,
+  getSlaAdditionByProjectGroup,
 ])

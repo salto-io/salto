@@ -1,22 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  createMatchingObjectType,
-  ImportantValues,
-} from '@salto-io/adapter-utils'
+import { createMatchingObjectType, ImportantValues } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
@@ -30,10 +19,7 @@ import {
   ObjectType,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import {
-  definitions,
-  WeakReferencesHandler as ComponentsWeakReferencesHandler,
-} from '@salto-io/adapter-components'
+import { definitions, WeakReferencesHandler as ComponentsWeakReferencesHandler } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
@@ -43,8 +29,7 @@ type UserDeployConfig = definitions.UserDeployConfig
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
-export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS =
-  'customObjectsDeployRetryOptions'
+export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
@@ -102,9 +87,7 @@ export type MetadataInstance = {
   changedAt: string | undefined
 }
 
-export type MetadataQueryParams = Partial<
-  Omit<MetadataInstance, 'isFolderType'>
->
+export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]
@@ -133,13 +116,17 @@ export type OptionalFeatures = {
   hideTypesFolder?: boolean
   omitStandardFieldsNonDeployableValues?: boolean
   latestSupportedApiVersion?: boolean
+  metaTypes?: boolean
+  cpqRulesAndConditionsRefs?: boolean
+  flowCoordinates?: boolean
+  improvedDataBrokenReferences?: boolean
+  sharingRulesMaps?: boolean
 }
 
 export type ChangeValidatorName =
   | 'managedPackage'
   | 'picklistStandardField'
   | 'customObjectInstances'
-  | 'unknownField'
   | 'customFieldType'
   | 'standardFieldLabel'
   | 'mapKeys'
@@ -170,6 +157,9 @@ export type ChangeValidatorName =
   | 'taskOrEventFieldsModifications'
   | 'newFieldsAndObjectsFLS'
   | 'elementApiVersion'
+  | 'cpqBillingStartDate'
+  | 'cpqBillingTriggers'
+  | 'managedApexComponent'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -186,6 +176,7 @@ type ObjectAliasSettings = {
 export type SaltoIDSettings = {
   defaultIdFields: string[]
   overrides?: ObjectIdSettings[]
+  regenerateSaltoIds?: boolean
 }
 
 export type SaltoAliasSettings = {
@@ -197,34 +188,20 @@ export type SaltoManagementFieldSettings = {
   defaultFieldName: string
 }
 
-export const outgoingReferenceBehaviors = [
-  'ExcludeInstance',
-  'BrokenReference',
-  'InternalId',
-] as const
-export type OutgoingReferenceBehavior =
-  (typeof outgoingReferenceBehaviors)[number]
+export const outgoingReferenceBehaviors = ['ExcludeInstance', 'BrokenReference', 'InternalId'] as const
+export type OutgoingReferenceBehavior = (typeof outgoingReferenceBehaviors)[number]
 
 export type BrokenOutgoingReferencesSettings = {
   defaultBehavior: OutgoingReferenceBehavior
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = [
-  'profiles',
-  'managedElements',
-  'permisisonSets',
-] as const
-export type CustomReferencesHandlers =
-  (typeof customReferencesHandlersNames)[number]
+const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements'] as const
+export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
-export type CustomReferencesSettings = Partial<
-  Record<CustomReferencesHandlers, boolean>
->
+export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>
 
-export type FixElementsSettings = Partial<
-  Record<CustomReferencesHandlers, boolean>
->
+export type FixElementsSettings = Partial<Record<CustomReferencesHandlers, boolean>>
 
 const objectIdSettings = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
@@ -258,6 +235,9 @@ const saltoIDSettingsType = new ObjectType({
     },
     overrides: {
       refType: new ListType(objectIdSettings),
+    },
+    regenerateSaltoIds: {
+      refType: BuiltinTypes.BOOLEAN,
     },
   } as Record<keyof SaltoIDSettings, FieldDefinition>,
   annotations: {
@@ -335,22 +315,12 @@ const brokenOutgoingReferencesSettingsType = new ObjectType({
 
 const customReferencesSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoCustomReferencesSettings'),
-  fields: Object.fromEntries(
-    customReferencesHandlersNames.map((name) => [
-      name,
-      { refType: BuiltinTypes.BOOLEAN },
-    ]),
-  ),
+  fields: Object.fromEntries(customReferencesHandlersNames.map(name => [name, { refType: BuiltinTypes.BOOLEAN }])),
 })
 
 const fixElementsSettingsType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'saltoFixElementsSettings'),
-  fields: Object.fromEntries(
-    customReferencesHandlersNames.map((name) => [
-      name,
-      { refType: BuiltinTypes.BOOLEAN },
-    ]),
-  ),
+  fields: Object.fromEntries(customReferencesHandlersNames.map(name => [name, { refType: BuiltinTypes.BOOLEAN }])),
 })
 
 const warningSettingsType = new ObjectType({
@@ -376,6 +346,7 @@ export type DataManagementConfig = {
   saltoManagementFieldSettings?: SaltoManagementFieldSettings
   brokenOutgoingReferencesSettings?: BrokenOutgoingReferencesSettings
   omittedFields?: string[]
+  regenerateSaltoIds?: boolean
 }
 
 export type FetchParameters = {
@@ -426,11 +397,7 @@ export type ClientDeployConfig = Partial<{
   ignoreWarnings: boolean
   purgeOnDelete: boolean
   checkOnly: boolean
-  testLevel:
-    | 'NoTestRun'
-    | 'RunSpecifiedTests'
-    | 'RunLocalTests'
-    | 'RunAllTestsInOrg'
+  testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
   runTests: string[]
   deleteBeforeUpdate: boolean
   quickDeployParams: QuickDeployParams
@@ -507,18 +474,15 @@ export type ConfigChangeSuggestion =
 
 export const isDataManagementConfigSuggestions = (
   suggestion: ConfigChangeSuggestion,
-): suggestion is DataManagementConfigSuggestions =>
-  suggestion.type === 'dataObjectsExclude'
+): suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
 
 export const isMetadataConfigSuggestions = (
   suggestion: ConfigChangeSuggestion,
-): suggestion is MetadataConfigSuggestion =>
-  suggestion.type === 'metadataExclude'
+): suggestion is MetadataConfigSuggestion => suggestion.type === 'metadataExclude'
 
 export const isRetrieveSizeConfigSuggestion = (
   suggestion: ConfigChangeSuggestion,
-): suggestion is RetrieveSizeConfigSuggestion =>
-  suggestion.type === MAX_ITEMS_IN_RETRIEVE_REQUEST
+): suggestion is RetrieveSizeConfigSuggestion => suggestion.type === MAX_ITEMS_IN_RETRIEVE_REQUEST
 
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]
@@ -560,15 +524,13 @@ export const oauthRequestParameters = new ObjectType({
     consumerKey: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message:
-          'Consumer key for a connected app, whose redirect URI is http://localhost:port',
+        message: 'Consumer key for a connected app, whose redirect URI is http://localhost:port',
       },
     },
     consumerSecret: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message:
-          'Consumer secret for a connected app, whose redirect URI is http://localhost:port',
+        message: 'Consumer secret for a connected app, whose redirect URI is http://localhost:port',
       },
     },
     port: {
@@ -582,9 +544,7 @@ export const oauthRequestParameters = new ObjectType({
   },
 })
 
-export const isAccessTokenConfig = (
-  config: Readonly<InstanceElement>,
-): boolean => config.value.authType === 'oauth'
+export const isAccessTokenConfig = (config: Readonly<InstanceElement>): boolean => config.value.authType === 'oauth'
 
 export class UsernamePasswordCredentials {
   constructor({
@@ -642,9 +602,7 @@ export class OauthAccessTokenCredentials {
   clientSecret: string
 }
 
-export type Credentials =
-  | UsernamePasswordCredentials
-  | OauthAccessTokenCredentials
+export type Credentials = UsernamePasswordCredentials | OauthAccessTokenCredentials
 
 const dataManagementType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, DATA_CONFIGURATION),
@@ -716,12 +674,7 @@ const clientDeployConfigType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: [
-            'NoTestRun',
-            'RunSpecifiedTests',
-            'RunLocalTests',
-            'RunAllTestsInOrg',
-          ],
+          values: ['NoTestRun', 'RunSpecifiedTests', 'RunLocalTests', 'RunAllTestsInOrg'],
         }),
       },
     },
@@ -773,25 +726,24 @@ const clientRetryConfigType = new ObjectType({
   },
 })
 
-const readMetadataChunkSizeConfigType =
-  createMatchingObjectType<ReadMetadataChunkSizeConfig>({
-    elemID: new ElemID(constants.SALESFORCE, 'readMetadataChunkSizeConfig'),
-    fields: {
-      default: { refType: BuiltinTypes.NUMBER },
-      overrides: {
-        refType: new MapType(BuiltinTypes.NUMBER),
-        annotations: {
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-            min: 1,
-            max: 10,
-          }),
-        },
+const readMetadataChunkSizeConfigType = createMatchingObjectType<ReadMetadataChunkSizeConfig>({
+  elemID: new ElemID(constants.SALESFORCE, 'readMetadataChunkSizeConfig'),
+  fields: {
+    default: { refType: BuiltinTypes.NUMBER },
+    overrides: {
+      refType: new MapType(BuiltinTypes.NUMBER),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+          max: 10,
+        }),
       },
     },
-    annotations: {
-      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-    },
-  })
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
 
 const clientConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientConfig'),
@@ -861,57 +813,63 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
     omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
     latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
+    metaTypes: { refType: BuiltinTypes.BOOLEAN },
+    cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
+    flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
+    improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
+    sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
-const changeValidatorConfigType =
-  createMatchingObjectType<ChangeValidatorConfig>({
-    elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
-    fields: {
-      managedPackage: { refType: BuiltinTypes.BOOLEAN },
-      picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
-      customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
-      unknownField: { refType: BuiltinTypes.BOOLEAN },
-      customFieldType: { refType: BuiltinTypes.BOOLEAN },
-      standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-      mapKeys: { refType: BuiltinTypes.BOOLEAN },
-      multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
-      picklistPromote: { refType: BuiltinTypes.BOOLEAN },
-      cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-      recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
-      flowsValidator: { refType: BuiltinTypes.BOOLEAN },
-      fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
-      invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
-      caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
-      omitData: { refType: BuiltinTypes.BOOLEAN },
-      dataChange: { refType: BuiltinTypes.BOOLEAN },
-      unknownUser: { refType: BuiltinTypes.BOOLEAN },
-      animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
-      currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
-      duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
-      lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
-      accountSettings: { refType: BuiltinTypes.BOOLEAN },
-      unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
-      dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
-      installedPackages: { refType: BuiltinTypes.BOOLEAN },
-      standardFieldOrObjectAdditionsOrDeletions: {
-        refType: BuiltinTypes.BOOLEAN,
-      },
-      deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
-      instanceWithUnknownType: { refType: BuiltinTypes.BOOLEAN },
-      artificialTypes: { refType: BuiltinTypes.BOOLEAN },
-      metadataTypes: { refType: BuiltinTypes.BOOLEAN },
-      taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
-      newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
-      elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
+  fields: {
+    managedPackage: { refType: BuiltinTypes.BOOLEAN },
+    picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
+    customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
+    customFieldType: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
+    mapKeys: { refType: BuiltinTypes.BOOLEAN },
+    multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
+    picklistPromote: { refType: BuiltinTypes.BOOLEAN },
+    cpqValidator: { refType: BuiltinTypes.BOOLEAN },
+    recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    flowsValidator: { refType: BuiltinTypes.BOOLEAN },
+    fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
+    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
+    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
+    omitData: { refType: BuiltinTypes.BOOLEAN },
+    dataChange: { refType: BuiltinTypes.BOOLEAN },
+    unknownUser: { refType: BuiltinTypes.BOOLEAN },
+    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
+    currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
+    lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
+    accountSettings: { refType: BuiltinTypes.BOOLEAN },
+    unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
+    dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
+    installedPackages: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldOrObjectAdditionsOrDeletions: {
+      refType: BuiltinTypes.BOOLEAN,
     },
-    annotations: {
-      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-    },
-  })
+    deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
+    instanceWithUnknownType: { refType: BuiltinTypes.BOOLEAN },
+    artificialTypes: { refType: BuiltinTypes.BOOLEAN },
+    metadataTypes: { refType: BuiltinTypes.BOOLEAN },
+    taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
+    newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
+    elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
+    cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
+    cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
+    managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
 
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
@@ -968,6 +926,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DocumentFolder' },
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
+              { metadataType: 'MutingPermissionSet' },
+              { metadataType: 'PermissionSetGroup' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',
@@ -1004,6 +964,9 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               {
                 metadataType: 'Translations',
               },
+              {
+                metadataType: 'ManagedEventSubscription',
+              },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
@@ -1014,8 +977,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]:
-          constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
           max: constants.MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST,
@@ -1029,10 +991,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: definitions.createUserDeployConfigType(
-        constants.SALESFORCE,
-        changeValidatorConfigType,
-      ),
+      refType: definitions.createUserDeployConfigType(constants.SALESFORCE, changeValidatorConfigType),
     },
     [CUSTOM_REFS_CONFIG]: {
       refType: customReferencesSettingsType,
@@ -1060,24 +1019,21 @@ export type TypeFetchCategory = 'Always' | 'IfReferenced' | 'Never'
 
 export type DataManagement = {
   shouldFetchObjectType: (objectType: ObjectType) => Promise<TypeFetchCategory>
-  brokenReferenceBehaviorForTargetType: (
-    typeName: string | undefined,
-  ) => OutgoingReferenceBehavior
+  brokenReferenceBehaviorForTargetType: (typeName: string | undefined) => OutgoingReferenceBehavior
   isReferenceAllowed: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
   managedBySaltoFieldForType: (objType: ObjectType) => string | undefined
   omittedFieldsForType: (name: string) => string[]
+  regenerateSaltoIds: boolean
 }
 
 export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
-  readonly isCustomReferencesHandlerEnabled: (
-    name: CustomReferencesHandlers,
-  ) => boolean
+  readonly isCustomReferencesHandlerEnabled: (name: CustomReferencesHandlers) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
@@ -1087,18 +1043,15 @@ export type FetchProfile = {
   readonly importantValues: ImportantValues
 }
 
-export type TypeWithNestedInstances =
-  (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]
-export type TypeWithNestedInstancesPerParent =
-  (typeof constants.TYPES_WITH_NESTED_INSTANCES_PER_PARENT)[number]
+export type TypeWithNestedInstances = (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]
+export type TypeWithNestedInstancesPerParent = (typeof constants.TYPES_WITH_NESTED_INSTANCES_PER_PARENT)[number]
 export type LastChangeDateOfTypesWithNestedInstances = {
   [key in TypeWithNestedInstancesPerParent]: Record<string, string>
 } & {
   [key in TypeWithNestedInstances]: string | undefined
 }
 
-export type ProfileRelatedMetadataType =
-  (typeof constants.PROFILE_RELATED_METADATA_TYPES)[number]
+export type ProfileRelatedMetadataType = (typeof constants.PROFILE_RELATED_METADATA_TYPES)[number]
 
 export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource

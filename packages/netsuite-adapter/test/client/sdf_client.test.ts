@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { readFile, writeFile, mkdirp, rm, rename } from '@salto-io/file'
@@ -639,6 +631,30 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+    })
+
+    it('should return custom record type with matching custom segment in instancesIds', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: [{ type: 'customsegment', scriptId: 'cseg123' }],
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const { instancesIds: currentInstanceIds } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      expect(currentInstanceIds).toEqual([
+        { type: 'customsegment', instanceId: 'cseg123' },
+        { type: 'customrecordtype', instanceId: 'customrecord_cseg123' },
+      ])
     })
 
     it('should pass fetch configured suite apps', async () => {

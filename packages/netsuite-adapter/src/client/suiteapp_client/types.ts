@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
@@ -42,6 +34,15 @@ export const SUITE_QL_RESULTS_SCHEMA = {
   },
   required: ['hasMore', 'items'],
   additionalProperties: true,
+}
+
+export type SuiteQLQueryArgs = {
+  select: string
+  from: string
+  join?: string
+  where?: string
+  groupBy?: string
+  orderBy?: string
 }
 
 export type SuiteQLResults = {
@@ -100,8 +101,6 @@ export type RestletErrorResults = {
 export type RestletResults = RestletSuccessResults | RestletErrorResults
 
 export const isError = (results: RestletResults): results is RestletErrorResults => results.status === 'error'
-
-export type HttpMethod = 'POST' | 'GET'
 
 export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials

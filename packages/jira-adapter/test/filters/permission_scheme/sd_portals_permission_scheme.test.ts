@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -58,28 +50,28 @@ describe('permissionSchemeFilter', () => {
     })
   })
   describe('preDeploy and onDeploy', () => {
-    it('should not remove or add any permission scheme', () => {
+    it('should not remove or add any permission scheme', async () => {
       const changes = [toChange({ after: instance })]
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
-      filter.preDeploy?.(changes)
+      await filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
-      filter.onDeploy?.(changes)
+      await filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
     })
 
-    it('should remove the problematic permission scheme in the preDeploy and add it back in the onDeploy', () => {
+    it('should remove the problematic permission scheme in the preDeploy and add it back in the onDeploy', async () => {
       instance.value.permissions.push(UNSUPPORTED_PERMISSION_SCHEME)
       const changes = [toChange({ after: instance })]
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
-      filter.preDeploy?.(changes)
+      await filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
-      filter.onDeploy?.(changes)
+      await filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)

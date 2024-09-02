@@ -1,23 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
 import { roleType } from '../../src/autogen/types/standard_types/role'
 import invalidValuesValidator from '../../src/change_validators/standard_types_invalid_values'
 import { SCRIPT_ID } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('invalid values validator', () => {
   const origInstance = new InstanceElement('instance', roleType().type, {
@@ -40,20 +33,29 @@ describe('invalid values validator', () => {
 
     const after = anotherInstance.clone()
     after.value.name = 'Changed'
-    const changeErrors = await invalidValuesValidator([toChange({ before: instance, after })])
+    const changeErrors = await invalidValuesValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
   it('should not have ChangeError when deploying an instance without invalid value', async () => {
     const after = instance.clone()
     after.value.subsidiaryoption = 'OWN'
-    const changeErrors = await invalidValuesValidator([toChange({ before: instance, after })])
+    const changeErrors = await invalidValuesValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should have error ChangeError when modifying an invalid value', async () => {
     const after = instance.clone()
     after.value.subsidiaryoption = 'SELECTED'
-    const changeErrors = await invalidValuesValidator([toChange({ before: instance, after })])
+    const changeErrors = await invalidValuesValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(instance.elemID.createNestedID('subsidiaryoption'))
@@ -65,7 +67,7 @@ describe('invalid values validator', () => {
     before.value.subsidiaryoption = 'SELECTED'
     after.value.subsidiaryoption = 'SELECTED'
     after.value.name = 'changed'
-    const changeErrors = await invalidValuesValidator([toChange({ before, after })])
+    const changeErrors = await invalidValuesValidator([toChange({ before, after })], mockChangeValidatorParams())
     expect(changeErrors).toHaveLength(0)
   })
 })

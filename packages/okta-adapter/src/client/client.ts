@@ -1,36 +1,28 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
 import { LINK_HEADER_NAME } from './pagination'
-import { OktaClientRateLimitConfig } from '../config'
+import { OktaClientRateLimitConfig } from '../user_config'
 
 const { sleep } = promises.timeout
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   DEFAULT_RETRY_OPTS,
   DEFAULT_TIMEOUT_OPTS,
+  RATE_LIMIT_DEFAULT_OPTIONS,
   throttle,
   logDecorator,
 } = clientUtils
@@ -157,6 +149,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
     super(OKTA, clientOpts, createConnection, {
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+      delayPerRequestMS: clientOpts.config?.delayPerRequestMS ?? RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
+      useBottleneck: clientOpts.config?.useBottleneck ?? RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
       maxRequestsPerMinute:
         clientOpts.config?.rateLimit?.rateLimitBuffer === UNLIMITED_MAX_REQUESTS_PER_MINUTE
           ? DEFAULT_MAX_REQUESTS_PER_MINUTE // This means the dynamic calculation is disabled, so we use the default
@@ -164,6 +158,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       retry: DEFAULT_RETRY_OPTS,
       timeout: DEFAULT_TIMEOUT_OPTS,
     })
+
     this.rateLimitBuffer = clientOpts.config?.rateLimit?.rateLimitBuffer ?? DEFAULT_RATE_LIMIT_BUFFER
   }
 
@@ -224,11 +219,20 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
    */
   // eslint-disable-next-line class-methods-use-this
   protected clearValuesFromResponseData(responseData: Values, url: string): Values {
-    const OMITTED_PLACEHOLER = '<OMITTED>'
+    const OMITTED_PLACEHODLER = '<OMITTED>'
+    const cleanUsersData = (key: string, val: unknown): unknown => {
+      if (key === 'profile' && _.isObject(val)) {
+        return _.pick(val, 'login')
+      }
+      if (['recovery_question', 'password'].includes(key)) {
+        return OMITTED_PLACEHODLER
+      }
+      return undefined
+    }
     const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
-      '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHOLER : undefined),
-      '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHOLER : undefined),
-      '/api/v1/users': (key, val) => (key === 'profile' && _.isObject(val) ? _.pick(val, 'login') : undefined),
+      '/api/v1/idps': key => (key === 'client_secret' ? OMITTED_PLACEHODLER : undefined),
+      '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHODLER : undefined),
+      '/api/v1/users': cleanUsersData,
     }
     if (!Object.keys(URL_TO_OMIT_FUNC).includes(url)) {
       return responseData
@@ -242,7 +246,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
   /**
    * Extract the pagination header
    */
-  // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       ? {
@@ -256,7 +259,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
   @logDecorator(['url'])
   // We use this function without client instance because we don't need it
   // but we want to take advantage of the client's capabilities.
-  // eslint-disable-next-line class-methods-use-this
   public async getResource(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
@@ -265,16 +267,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       const httpClient = axios.create({ url })
       const response = await httpClient.get(url, { responseType })
       const { data, status } = response
-      log.trace(
-        'Full HTTP response for GET on %s: %s',
-        url,
-        safeJsonStringify({
-          url,
-          status,
-          responseType,
-          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-        }),
-      )
+      this.logResponse({ method: 'get', params: args, response })
       return {
         data,
         status,

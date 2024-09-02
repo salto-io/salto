@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -178,17 +170,16 @@ export const getWithPageOffsetAndLastPagination = (firstPage: number): Paginatio
   return nextPageFullPages
 }
 
-export const getWithOffsetAndLimit = (): PaginationFunc => {
-  // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
+export const getWithOffsetAndLimit = (isLastPageField: string): PaginationFunc => {
+  // Hard coded "values" in order to fit the configuration scheme which only allows
   // "paginationField" to be configured
   type PageResponse = {
-    isLast: boolean
     values: unknown[]
     [k: string]: unknown
   }
   const isPageResponse = (responseData: unknown, paginationField: string): responseData is PageResponse =>
     _.isObject(responseData) &&
-    _.isBoolean(_.get(responseData, 'isLast')) &&
+    _.isBoolean(_.get(responseData, isLastPageField)) &&
     Array.isArray(_.get(responseData, 'values')) &&
     _.isNumber(_.get(responseData, paginationField))
 
@@ -202,7 +193,7 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
         `Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`,
       )
     }
-    if (responseData.isLast) {
+    if (_.get(responseData, isLastPageField)) {
       return []
     }
     const currentPageStart = _.get(responseData, paginationField) as number

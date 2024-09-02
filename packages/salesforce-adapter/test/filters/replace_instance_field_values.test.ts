@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -191,18 +183,16 @@ describe('replace instance field values filter', () => {
       ],
     })
 
-  const getAllNamesFromForecastingValue = (
-    forecastValue: ForecastingSettingsValue,
-  ): string[] => {
+  const getAllNamesFromForecastingValue = (forecastValue: ForecastingSettingsValue): string[] => {
     const res: string[] = []
-    forecastValue.forecastingTypeSettings.forEach((t) => {
+    forecastValue.forecastingTypeSettings.forEach(t => {
       const additionalNames = [
         ...t.opportunityListFieldsSelectedSettings.field,
         // opportunityListFieldsUnselectedSettings might be undefined due to value modification
         ...(t.opportunityListFieldsUnselectedSettings?.field ?? []),
       ]
-      additionalNames.forEach((name) => res.push(name))
-      t.opportunityListFieldsLabelMappings.forEach((map) => {
+      additionalNames.forEach(name => res.push(name))
+      t.opportunityListFieldsLabelMappings.forEach(map => {
         res.push(map.field)
       })
     })
@@ -243,11 +233,7 @@ describe('replace instance field values filter', () => {
       }),
       opportunityType,
     ]
-    return [
-      types[FORECASTING_METADATA_TYPE],
-      types[CUSTOM_OBJECT],
-      ...instances,
-    ]
+    return [types[FORECASTING_METADATA_TYPE], types[CUSTOM_OBJECT], ...instances]
   }
 
   beforeAll(() => {
@@ -271,15 +257,11 @@ describe('replace instance field values filter', () => {
       namesAfterFilter = []
       await awu(elements)
         .filter(isInstanceElement)
-        .filter(
-          async (e) => (await metadataType(e)) === FORECASTING_METADATA_TYPE,
-        )
-        .map((e) => e.value)
-        .forEach((val) => {
-          const names = getAllNamesFromForecastingValue(
-            val as ForecastingSettingsValue,
-          )
-          names.forEach((name) => namesAfterFilter.push(name))
+        .filter(async e => (await metadataType(e)) === FORECASTING_METADATA_TYPE)
+        .map(e => e.value)
+        .forEach(val => {
+          const names = getAllNamesFromForecastingValue(val as ForecastingSettingsValue)
+          names.forEach(name => namesAfterFilter.push(name))
         })
     })
 
@@ -330,15 +312,11 @@ describe('replace instance field values filter', () => {
       describe('the change is in selected/unselected fields', () => {
         beforeEach(async () => {
           // modify afterElem:
-          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field =
-            [
-              ...afterElem.value.forecastingTypeSettings[0]
-                .opportunityListFieldsSelectedSettings.field,
-              ...afterElem.value.forecastingTypeSettings[0]
-                .opportunityListFieldsUnselectedSettings.field,
-            ]
-          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field =
-            []
+          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field = [
+            ...afterElem.value.forecastingTypeSettings[0].opportunityListFieldsSelectedSettings.field,
+            ...afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field,
+          ]
+          afterElem.value.forecastingTypeSettings[0].opportunityListFieldsUnselectedSettings.field = []
 
           change = {
             action: 'modify',
@@ -349,9 +327,7 @@ describe('replace instance field values filter', () => {
           }
 
           await filter.preDeploy([change])
-          namesAfterFilter = getAllNamesFromForecastingValue(
-            afterElem.value as ForecastingSettingsValue,
-          )
+          namesAfterFilter = getAllNamesFromForecastingValue(afterElem.value as ForecastingSettingsValue)
         })
         it('should replace names to ids', () => {
           expect(namesAfterFilter).toContain(BEFORE_ID_1)
@@ -376,9 +352,7 @@ describe('replace instance field values filter', () => {
             },
           }
           await filter.preDeploy([change])
-          namesAfterFilter = getAllNamesFromForecastingValue(
-            afterElem.value as ForecastingSettingsValue,
-          )
+          namesAfterFilter = getAllNamesFromForecastingValue(afterElem.value as ForecastingSettingsValue)
         })
 
         it('should replace names to ids', () => {
@@ -425,9 +399,7 @@ describe('replace instance field values filter', () => {
           },
         }
         await filter.onDeploy([change])
-        namesAfterFilter = getAllNamesFromForecastingValue(
-          afterElem.value as ForecastingSettingsValue,
-        )
+        namesAfterFilter = getAllNamesFromForecastingValue(afterElem.value as ForecastingSettingsValue)
       })
       it('should replace ids to names', () => {
         expect(namesAfterFilter).not.toContain(BEFORE_ID_1)

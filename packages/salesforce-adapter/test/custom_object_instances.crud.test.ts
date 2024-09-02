@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -34,12 +26,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import {
-  BulkLoadOperation,
-  BulkOptions,
-  Record as SfRecord,
-  Batch,
-} from '@salto-io/jsforce'
+import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from '@salto-io/jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
 import SalesforceAdapter from '../src/adapter'
@@ -204,14 +191,10 @@ describe('Custom Object Instances CRUD', () => {
     LastName: 'last',
     Salutation: 'mrs.',
   }
-  const anotherExistingInstance = new InstanceElement(
-    anotherInstanceName,
-    customObject,
-    {
-      SaltoName: "anotherExistingInstanceWithThing'",
-      NotCreatable: 'DoNotSendMeOnCreate',
-    },
-  )
+  const anotherExistingInstance = new InstanceElement(anotherInstanceName, customObject, {
+    SaltoName: "anotherExistingInstanceWithThing'",
+    NotCreatable: 'DoNotSendMeOnCreate',
+  })
   const anotherExistingInstanceRecordValues = {
     attributes: {
       type: 'Type',
@@ -230,48 +213,31 @@ describe('Custom Object Instances CRUD', () => {
     },
   )
   const newInstanceWithRefName = 'newInstanceWithRef'
-  const newInstanceWithRef = new InstanceElement(
-    newInstanceWithRefName,
-    customObject,
-    {
-      SaltoName: 'newInstanceWithRef',
-      AnotherField: new ReferenceExpression(mockElemID, 'Type'),
-      NumField: 2,
-    },
-  )
+  const newInstanceWithRef = new InstanceElement(newInstanceWithRefName, customObject, {
+    SaltoName: 'newInstanceWithRef',
+    AnotherField: new ReferenceExpression(mockElemID, 'Type'),
+    NumField: 2,
+  })
   const anotherNewInstanceName = 'anotherNewInstance'
-  const anotherNewInstance = new InstanceElement(
-    anotherNewInstanceName,
-    customObject,
-    {
-      SaltoName: 'anotherNewInstance',
-      NumField: 3,
-      Address: {
-        city: 'Ashkelon',
-        country: 'Israel',
-      },
+  const anotherNewInstance = new InstanceElement(anotherNewInstanceName, customObject, {
+    SaltoName: 'anotherNewInstance',
+    NumField: 3,
+    Address: {
+      city: 'Ashkelon',
+      country: 'Israel',
     },
-  )
-  const newInstanceWithNonCreatableFieldName =
-    'newInstanceWithNonCreatableField'
-  const newInstanceWithNonCreatableField = new InstanceElement(
-    newInstanceWithNonCreatableFieldName,
-    customObject,
-    {
-      SaltoName: 'newInstanceWithNonCreatableField',
-      NumField: 4,
-      NotCreatable: 'ShouldNotBeCreated',
-    },
-  )
-  const instanceWithMissingFields = new InstanceElement(
-    'instanceWithMissingFields',
-    customObject,
-    {
-      SaltoName: 'instanceWithMissingFields',
-      NumField: 4,
-      UnknownField: 'unknown',
-    },
-  )
+  })
+  const newInstanceWithNonCreatableFieldName = 'newInstanceWithNonCreatableField'
+  const newInstanceWithNonCreatableField = new InstanceElement(newInstanceWithNonCreatableFieldName, customObject, {
+    SaltoName: 'newInstanceWithNonCreatableField',
+    NumField: 4,
+    NotCreatable: 'ShouldNotBeCreated',
+  })
+  const instanceWithMissingFields = new InstanceElement('instanceWithMissingFields', customObject, {
+    SaltoName: 'instanceWithMissingFields',
+    NumField: 4,
+    UnknownField: 'unknown',
+  })
 
   describe('When adapter defined with dataManagement config', () => {
     let connection: MockInterface<Connection>
@@ -281,41 +247,34 @@ describe('Custom Object Instances CRUD', () => {
     const getBulkLoadMock = (mode: string): jest.Mock<Batch> =>
       jest
         .fn()
-        .mockImplementation(
-          (
-            _type: string,
-            _operation: BulkLoadOperation,
-            _opt?: BulkOptions,
-            input?: SfRecord[],
-          ) => {
-            const isError = (index: number): boolean => {
-              if (mode === 'fail') {
-                return true
-              }
-              // For partial mode return error every 2nd index
-              return mode === 'partial' && index % 2 === 0
+        .mockImplementation((_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+          const isError = (index: number): boolean => {
+            if (mode === 'fail') {
+              return true
             }
+            // For partial mode return error every 2nd index
+            return mode === 'partial' && index % 2 === 0
+          }
 
-            const loadEmitter = new EventEmitter()
-            loadEmitter.on('newListener', (_event, _listener) => {
-              // This is a workaround to call emit('close')
-              // that is really called as a side effect to load() inside
-              // jsforce *after* our code listens on.('close')
-              setTimeout(() => loadEmitter.emit('close'), 0)
-            })
-            return {
-              then: () =>
-                Promise.resolve(
-                  input?.map((res, index) => ({
-                    id: res.Id || `newId${index}`,
-                    success: !isError(index),
-                    errors: isError(index) ? errorMsgs : [],
-                  })),
-                ),
-              job: loadEmitter,
-            }
-          },
-        )
+          const loadEmitter = new EventEmitter()
+          loadEmitter.on('newListener', (_event, _listener) => {
+            // This is a workaround to call emit('close')
+            // that is really called as a side effect to load() inside
+            // jsforce *after* our code listens on.('close')
+            setTimeout(() => loadEmitter.emit('close'), 0)
+          })
+          return {
+            then: () =>
+              Promise.resolve(
+                input?.map((res, index) => ({
+                  id: res.Id || `newId${index}`,
+                  success: !isError(index),
+                  errors: isError(index) ? errorMsgs : [],
+                })),
+              ),
+            job: loadEmitter,
+          }
+        })
 
     beforeEach(() => {
       ;({ connection, adapter } = mockAdapter({
@@ -389,7 +348,6 @@ describe('Custom Object Instances CRUD', () => {
             [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
         },
-        // eslint-disable-next-line camelcase
         TestField__c: {
           label: 'TestField',
           refType: stringType,
@@ -416,22 +374,16 @@ describe('Custom Object Instances CRUD', () => {
         fields: basicFields,
       })
       const existingSettingRecord = {
-        // eslint-disable-next-line camelcase
         TestField__c: 'somevalue',
         Id: 'a014W00000zMPT6QAO',
         Name: 'TestName1',
       }
       const nonExistingSettingRecord = {
         Name: 'TestName2',
-        // eslint-disable-next-line camelcase
         TestField__c: 'somevalue2',
         Id: 'a014W00000zNPT6QAO',
       }
-      const existingSettingInstance = new InstanceElement(
-        instanceName,
-        customSettingsObject,
-        existingSettingRecord,
-      )
+      const existingSettingInstance = new InstanceElement(instanceName, customSettingsObject, existingSettingRecord)
       const nonExistingSettingInstance = new InstanceElement(
         anotherInstanceName,
         customSettingsObject,
@@ -458,26 +410,18 @@ describe('Custom Object Instances CRUD', () => {
       })
       it('Should query according to instance values', () => {
         expect(mockQuery.mock.calls).toHaveLength(1)
-        expect(mockQuery.mock.calls[0][0]).toEqual(
-          "SELECT Id,Name FROM Type WHERE Name IN ('TestName1','TestName2')",
-        )
+        expect(mockQuery.mock.calls[0][0]).toEqual("SELECT Id,Name FROM Type WHERE Name IN ('TestName1','TestName2')")
       })
 
       it('Should call load operation twice - once with insert once with update', () => {
         expect(mockBulkLoad.mock.calls).toHaveLength(2)
-        const insertCall = mockBulkLoad.mock.calls.find(
-          (call) => call[1] === 'insert',
-        )
+        const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
         expect(insertCall).toBeDefined()
-        const updateCall = mockBulkLoad.mock.calls.find(
-          (call) => call[1] === 'update',
-        )
+        const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
         expect(updateCall).toBeDefined()
       })
       it('Should call load operation with update for the "existing" record', () => {
-        const updateCall = mockBulkLoad.mock.calls.find(
-          (call) => call[1] === 'update',
-        )
+        const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
         expect(updateCall).toHaveLength(4)
         expect(updateCall[0]).toBe('Type')
 
@@ -488,9 +432,7 @@ describe('Custom Object Instances CRUD', () => {
       })
 
       it('Should call load operation with insert for the "new" record', () => {
-        const insertCall = mockBulkLoad.mock.calls.find(
-          (call) => call[1] === 'insert',
-        )
+        const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
         expect(insertCall.length).toBe(4)
         expect(insertCall[0]).toBe('Type')
 
@@ -507,9 +449,7 @@ describe('Custom Object Instances CRUD', () => {
         // existingInstance appliedChange
         const existingInstanceChangeData = result.appliedChanges
           .map(getChangeData)
-          .find((element) =>
-            element.elemID.isEqual(existingSettingInstance.elemID),
-          ) as InstanceElement
+          .find(element => element.elemID.isEqual(existingSettingInstance.elemID)) as InstanceElement
         expect(existingInstanceChangeData).toBeDefined()
         expect(existingInstanceChangeData.value.Name).toBeDefined()
         expect(existingInstanceChangeData.value.Name).toBe('TestName1')
@@ -517,12 +457,8 @@ describe('Custom Object Instances CRUD', () => {
         // newInstance appliedChange
         const newInstanceChangeData = result.appliedChanges
           .map(getChangeData)
-          .find((element) =>
-            element.elemID.isEqual(nonExistingSettingInstance.elemID),
-          ) as InstanceElement
-        expect(newInstanceChangeData.elemID).toEqual(
-          nonExistingSettingInstance.elemID,
-        )
+          .find(element => element.elemID.isEqual(nonExistingSettingInstance.elemID)) as InstanceElement
+        expect(newInstanceChangeData.elemID).toEqual(nonExistingSettingInstance.elemID)
         expect(newInstanceChangeData.value.Name).toBeDefined()
         expect(newInstanceChangeData.value.Name).toBe('TestName2')
       })
@@ -566,20 +502,14 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should call load operation twice - once with insert once with update', () => {
             expect(mockBulkLoad.mock.calls).toHaveLength(2)
-            const insertCall = mockBulkLoad.mock.calls.find(
-              (call) => call[1] === 'insert',
-            )
+            const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
             expect(insertCall).toBeDefined()
-            const updateCall = mockBulkLoad.mock.calls.find(
-              (call) => call[1] === 'update',
-            )
+            const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
             expect(updateCall).toBeDefined()
           })
 
           it('Should call load operation with update for the "existing" record', () => {
-            const updateCall = mockBulkLoad.mock.calls.find(
-              (call) => call[1] === 'update',
-            )
+            const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
             expect(updateCall).toHaveLength(4)
             expect(updateCall[0]).toBe('Type')
 
@@ -595,40 +525,25 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           it('Should call load operation with insert for the "new" records', () => {
-            const insertCall = mockBulkLoad.mock.calls.find(
-              (call) => call[1] === 'insert',
-            )
+            const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
             expect(insertCall.length).toBe(4)
             expect(insertCall[0]).toBe('Type')
             // Record
             expect(insertCall[3]).toHaveLength(3)
 
             const newInstanceWithRefRecord = insertCall[3][0]
-            expect(newInstanceWithRefRecord).toHaveProperty(
-              'SaltoName',
-              'newInstanceWithRef',
-            )
-            expect(newInstanceWithRefRecord).toHaveProperty(
-              'AnotherField',
-              'Type',
-            )
+            expect(newInstanceWithRefRecord).toHaveProperty('SaltoName', 'newInstanceWithRef')
+            expect(newInstanceWithRefRecord).toHaveProperty('AnotherField', 'Type')
             expect(newInstanceWithRefRecord).not.toHaveProperty('NotCreatable')
-            expect(newInstanceWithRefRecord).not.toHaveProperty(
-              'FieldWithNoValue',
-            )
+            expect(newInstanceWithRefRecord).not.toHaveProperty('FieldWithNoValue')
 
             const newInstanceWithNonCreatableFieldRecord = insertCall[3][1]
             expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty(
               'SaltoName',
               'newInstanceWithNonCreatableField',
             )
-            expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty(
-              'NumField',
-              4,
-            )
-            expect(newInstanceWithNonCreatableFieldRecord).not.toHaveProperty(
-              'NotCreatable',
-            )
+            expect(newInstanceWithNonCreatableFieldRecord).toHaveProperty('NumField', 4)
+            expect(newInstanceWithNonCreatableFieldRecord).not.toHaveProperty('NotCreatable')
           })
 
           it('Should have result with correct applied changes and add Id to the inserted instances', async () => {
@@ -637,14 +552,10 @@ describe('Custom Object Instances CRUD', () => {
             // existingInstance appliedChange
             const existingInstanceChangeData = result.appliedChanges
               .map(getChangeData)
-              .find((element) =>
-                element.elemID.isEqual(existingInstance.elemID),
-              ) as InstanceElement
+              .find(element => element.elemID.isEqual(existingInstance.elemID)) as InstanceElement
             expect(existingInstanceChangeData).toBeDefined()
             expect(existingInstanceChangeData.value.SaltoName).toBeDefined()
-            expect(existingInstanceChangeData.value.SaltoName).toBe(
-              'existingInstance',
-            )
+            expect(existingInstanceChangeData.value.SaltoName).toBe('existingInstance')
             // Should add result (query) Id
             expect(existingInstanceChangeData.value.Id).toBeDefined()
             expect(existingInstanceChangeData.value.Id).toEqual('queryId')
@@ -652,63 +563,46 @@ describe('Custom Object Instances CRUD', () => {
             // newInstance appliedChange
             const newInstanceChangeData = result.appliedChanges
               .map(getChangeData)
-              .find((element) =>
-                element.elemID.isEqual(newInstanceWithRef.elemID),
-              ) as InstanceElement
-            expect(newInstanceChangeData.elemID).toEqual(
-              newInstanceWithRef.elemID,
-            )
+              .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
+            expect(newInstanceChangeData.elemID).toEqual(newInstanceWithRef.elemID)
             expect(newInstanceChangeData.value.SaltoName).toBeDefined()
-            expect(newInstanceChangeData.value.SaltoName).toBe(
-              'newInstanceWithRef',
-            )
+            expect(newInstanceChangeData.value.SaltoName).toBe('newInstanceWithRef')
             // Should add result Id
             expect(newInstanceChangeData.value.Id).toBeDefined()
             expect(newInstanceChangeData.value.Id).toEqual('newId0')
 
             // Reference should stay a reference
-            expect(newInstanceChangeData.value.AnotherField).toEqual(
-              new ReferenceExpression(mockElemID, 'Type'),
-            )
+            expect(newInstanceChangeData.value.AnotherField).toEqual(new ReferenceExpression(mockElemID, 'Type'))
 
             // newInstanceWithNonCreatableFieldChangeData has its own test case
           })
 
           it('Should not insert non-creatable fields', () => {
             expect(result.errors).toSatisfyAny(
-              (error) =>
+              error =>
                 error.elemID.isEqual(newInstanceWithNonCreatableField.elemID) &&
                 error.message.includes('createable') &&
                 error.severity === 'Warning',
             )
-            const newInstanceWithNonCreatableFieldChangeData =
-              result.appliedChanges
-                .map(getChangeData)
-                .find((element) =>
-                  element.elemID.isEqual(
-                    newInstanceWithNonCreatableField.elemID,
-                  ),
-                ) as InstanceElement
+            const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
+              .map(getChangeData)
+              .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
 
-            expect(
-              newInstanceWithNonCreatableFieldChangeData.value,
-            ).not.toHaveProperty('NotCreatable')
+            expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
           })
 
           it('Should create a warning for instance with missing fields', () => {
             expect(result.errors).toSatisfyAny(
-              (error) =>
+              error =>
                 error.severity === 'Warning' &&
                 error.elemID.isEqual(instanceWithMissingFields.elemID) &&
-                error.message.includes(
-                  'they are not defined in the type: [UnknownField]',
-                ),
+                error.message.includes('they are not defined in the type: [UnknownField]'),
             )
           })
         })
         describe('When called with only new instances', () => {
           beforeEach(async () => {
-            mockQuery = jest.fn().mockImplementation(async (query) =>
+            mockQuery = jest.fn().mockImplementation(async query =>
               // Second query should return the OwnerId to test flow of mandatory fields for update calls
               query.includes("('firstInstance','secondInstance')")
                 ? {
@@ -762,9 +656,7 @@ describe('Custom Object Instances CRUD', () => {
 
             it('Should call load operation once with insert', () => {
               expect(mockBulkLoad.mock.calls.length).toBe(1)
-              const insertCall = mockBulkLoad.mock.calls.find(
-                (call) => call[1] === 'insert',
-              )
+              const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
               expect(insertCall).toBeDefined()
             })
 
@@ -773,61 +665,40 @@ describe('Custom Object Instances CRUD', () => {
               // newInstance appliedChange
               const newInstanceChangeData = result.appliedChanges
                 .map(getChangeData)
-                .find((element) =>
-                  element.elemID.isEqual(newInstanceWithRef.elemID),
-                ) as InstanceElement
-              expect(newInstanceChangeData.elemID).toEqual(
-                newInstanceWithRef.elemID,
-              )
+                .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
+              expect(newInstanceChangeData.elemID).toEqual(newInstanceWithRef.elemID)
               expect(newInstanceChangeData.value.SaltoName).toBeDefined()
-              expect(newInstanceChangeData.value.SaltoName).toBe(
-                'newInstanceWithRef',
-              )
+              expect(newInstanceChangeData.value.SaltoName).toBe('newInstanceWithRef')
               // Should add result Id
               expect(newInstanceChangeData.value.Id).toBeDefined()
               expect(newInstanceChangeData.value.Id).toEqual('newId0')
 
               // Reference should stay a reference
-              expect(newInstanceChangeData.value.AnotherField).toEqual(
-                new ReferenceExpression(mockElemID, 'Type'),
-              )
+              expect(newInstanceChangeData.value.AnotherField).toEqual(new ReferenceExpression(mockElemID, 'Type'))
 
               // anotherNewInstance appliedChange
               const anotherNewInstanceChangeData = result.appliedChanges
                 .map(getChangeData)
-                .find((element) =>
-                  element.elemID.isEqual(anotherNewInstance.elemID),
-                ) as InstanceElement
+                .find(element => element.elemID.isEqual(anotherNewInstance.elemID)) as InstanceElement
               expect(anotherNewInstanceChangeData).toBeDefined()
               expect(anotherNewInstanceChangeData.value.SaltoName).toBeDefined()
-              expect(anotherNewInstanceChangeData.value.SaltoName).toBe(
-                'anotherNewInstance',
-              )
+              expect(anotherNewInstanceChangeData.value.SaltoName).toBe('anotherNewInstance')
               // Should add result Id
               expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
               expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
             })
             it('Should not insert non-creatable fields', () => {
               expect(result.errors).toSatisfyAny(
-                (error) =>
-                  error.elemID.isEqual(
-                    newInstanceWithNonCreatableField.elemID,
-                  ) &&
+                error =>
+                  error.elemID.isEqual(newInstanceWithNonCreatableField.elemID) &&
                   error.message.includes('createable') &&
                   error.severity === 'Warning',
               )
-              const newInstanceWithNonCreatableFieldChangeData =
-                result.appliedChanges
-                  .map(getChangeData)
-                  .find((element) =>
-                    element.elemID.isEqual(
-                      newInstanceWithNonCreatableField.elemID,
-                    ),
-                  ) as InstanceElement
+              const newInstanceWithNonCreatableFieldChangeData = result.appliedChanges
+                .map(getChangeData)
+                .find(element => element.elemID.isEqual(newInstanceWithNonCreatableField.elemID)) as InstanceElement
 
-              expect(
-                newInstanceWithNonCreatableFieldChangeData.value,
-              ).not.toHaveProperty('NotCreatable')
+              expect(newInstanceWithNonCreatableFieldChangeData.value).not.toHaveProperty('NotCreatable')
             })
           })
           describe('when group has circular dependencies', () => {
@@ -876,30 +747,16 @@ describe('Custom Object Instances CRUD', () => {
                 Name: 'firstInstance',
                 Number__c: 1,
               })
-              secondInstance = new InstanceElement(
-                'secondInstance',
-                objectType,
-                {
-                  Name: 'secondInstance',
-                  Number__c: 1,
-                  TestType__c: new ReferenceExpression(
-                    firstInstance.elemID,
-                    firstInstance,
-                  ),
-                },
-              )
-              firstInstance.value.TestType__c = new ReferenceExpression(
-                secondInstance.elemID,
-                secondInstance,
-              )
-              instanceWithoutRef = new InstanceElement(
-                'instanceWithoutRef',
-                objectType,
-                {
-                  Name: 'instanceWithoutRef',
-                  Number__c: 1,
-                },
-              )
+              secondInstance = new InstanceElement('secondInstance', objectType, {
+                Name: 'secondInstance',
+                Number__c: 1,
+                TestType__c: new ReferenceExpression(firstInstance.elemID, firstInstance),
+              })
+              firstInstance.value.TestType__c = new ReferenceExpression(secondInstance.elemID, secondInstance)
+              instanceWithoutRef = new InstanceElement('instanceWithoutRef', objectType, {
+                Name: 'instanceWithoutRef',
+                Number__c: 1,
+              })
 
               result = await adapter.deploy({
                 changeGroup: {
@@ -916,49 +773,37 @@ describe('Custom Object Instances CRUD', () => {
             it('should update the partially deployed instances after inserting them with mandatory field values', () => {
               expect(result.errors).toBeEmpty()
               expect(connection.bulk.load).toHaveBeenCalledTimes(2)
-              expect(connection.bulk.load).toHaveBeenNthCalledWith(
-                1,
-                'TestType__c',
-                'insert',
-                expect.anything(),
-                [
-                  {
-                    Id: undefined,
-                    Name: 'firstInstance',
-                    Number__c: 1,
-                    TestType__c: null,
-                  },
-                  {
-                    Id: undefined,
-                    Name: 'secondInstance',
-                    Number__c: 1,
-                    TestType__c: null,
-                  },
-                  { Id: undefined, Name: 'instanceWithoutRef', Number__c: 1 },
-                ],
-              )
-              expect(connection.bulk.load).toHaveBeenNthCalledWith(
-                2,
-                'TestType__c',
-                'update',
-                expect.anything(),
-                [
-                  {
-                    Id: 'newId0',
-                    Name: 'firstInstance',
-                    Number__c: 1,
-                    TestType__c: 'newId1',
-                    [OWNER_ID]: 'ownerId',
-                  },
-                  {
-                    Id: 'newId1',
-                    Name: 'secondInstance',
-                    Number__c: 1,
-                    TestType__c: 'newId0',
-                    [OWNER_ID]: 'ownerId',
-                  },
-                ],
-              )
+              expect(connection.bulk.load).toHaveBeenNthCalledWith(1, 'TestType__c', 'insert', expect.anything(), [
+                {
+                  Id: undefined,
+                  Name: 'firstInstance',
+                  Number__c: 1,
+                  TestType__c: null,
+                },
+                {
+                  Id: undefined,
+                  Name: 'secondInstance',
+                  Number__c: 1,
+                  TestType__c: null,
+                },
+                { Id: undefined, Name: 'instanceWithoutRef', Number__c: 1 },
+              ])
+              expect(connection.bulk.load).toHaveBeenNthCalledWith(2, 'TestType__c', 'update', expect.anything(), [
+                {
+                  Id: 'newId0',
+                  Name: 'firstInstance',
+                  Number__c: 1,
+                  TestType__c: 'newId1',
+                  [OWNER_ID]: 'ownerId',
+                },
+                {
+                  Id: 'newId1',
+                  Name: 'secondInstance',
+                  Number__c: 1,
+                  TestType__c: 'newId0',
+                  [OWNER_ID]: 'ownerId',
+                },
+              ])
             })
           })
         })
@@ -967,10 +812,7 @@ describe('Custom Object Instances CRUD', () => {
             mockQuery = jest.fn().mockImplementation(async () => ({
               totalSize: 2,
               done: true,
-              records: [
-                existingInstanceRecordValues,
-                anotherExistingInstanceRecordValues,
-              ],
+              records: [existingInstanceRecordValues, anotherExistingInstanceRecordValues],
             }))
             connection.query = mockQuery
             result = await adapter.deploy({
@@ -994,9 +836,7 @@ describe('Custom Object Instances CRUD', () => {
 
           it('Should call load operation once with update', () => {
             expect(mockBulkLoad.mock.calls.length).toBe(1)
-            const updateCall = mockBulkLoad.mock.calls.find(
-              (call) => call[1] === 'update',
-            )
+            const updateCall = mockBulkLoad.mock.calls.find(call => call[1] === 'update')
             expect(updateCall).toBeDefined()
           })
 
@@ -1007,55 +847,35 @@ describe('Custom Object Instances CRUD', () => {
             // existingInstance appliedChange
             const existingInstanceChangeData = result.appliedChanges
               .map(getChangeData)
-              .find((element) =>
-                element.elemID.isEqual(existingInstance.elemID),
-              ) as InstanceElement
+              .find(element => element.elemID.isEqual(existingInstance.elemID)) as InstanceElement
             expect(existingInstanceChangeData).toBeDefined()
             expect(existingInstanceChangeData.value.SaltoName).toBeDefined()
-            expect(existingInstanceChangeData.value.SaltoName).toBe(
-              'existingInstance',
-            )
+            expect(existingInstanceChangeData.value.SaltoName).toBe('existingInstance')
             // Should add result Id
             expect(existingInstanceChangeData.value.Id).toBeDefined()
             expect(existingInstanceChangeData.value.Id).toEqual('queryId')
             // Should add result OwnerId
             expect(existingInstanceChangeData.value.Id).toBeDefined()
-            expect(existingInstanceChangeData.value[OWNER_ID]).toEqual(
-              'ownerId',
-            )
+            expect(existingInstanceChangeData.value[OWNER_ID]).toEqual('ownerId')
 
             // anotherExistingInstance appliedChange
             const anotherExistingInstanceChangeData = result.appliedChanges
               .map(getChangeData)
-              .find((element) =>
-                element.elemID.isEqual(anotherExistingInstance.elemID),
-              ) as InstanceElement
-            expect(anotherExistingInstanceChangeData.elemID).toEqual(
-              anotherExistingInstance.elemID,
-            )
-            expect(
-              anotherExistingInstanceChangeData.value.SaltoName,
-            ).toBeDefined()
-            expect(anotherExistingInstanceChangeData.value.SaltoName).toBe(
-              "anotherExistingInstanceWithThing'",
-            )
+              .find(element => element.elemID.isEqual(anotherExistingInstance.elemID)) as InstanceElement
+            expect(anotherExistingInstanceChangeData.elemID).toEqual(anotherExistingInstance.elemID)
+            expect(anotherExistingInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(anotherExistingInstanceChangeData.value.SaltoName).toBe("anotherExistingInstanceWithThing'")
             // Should add result Id
             expect(anotherExistingInstanceChangeData.value.Id).toBeDefined()
-            expect(anotherExistingInstanceChangeData.value.Id).toEqual(
-              'anotherQueryId',
-            )
+            expect(anotherExistingInstanceChangeData.value.Id).toEqual('anotherQueryId')
             // Should add result OwnerId
             expect(anotherExistingInstanceChangeData.value.Id).toBeDefined()
-            expect(anotherExistingInstanceChangeData.value[OWNER_ID]).toEqual(
-              'anotherOwnerId',
-            )
+            expect(anotherExistingInstanceChangeData.value[OWNER_ID]).toEqual('anotherOwnerId')
           })
         })
         describe('When called with a large number of new instances', () => {
           beforeEach(async () => {
-            const createTestInstanceAddition = (
-              idx: number,
-            ): Change<InstanceElement> => ({
+            const createTestInstanceAddition = (idx: number): Change<InstanceElement> => ({
               action: 'add',
               data: {
                 after: new InstanceElement(`test${idx}`, customObject, {
@@ -1073,33 +893,22 @@ describe('Custom Object Instances CRUD', () => {
             })
           })
           it('should not not exceed max query size', () => {
-            const queryLengths = connection.query.mock.calls.map(
-              (args) => args[0].length,
-            )
-            expect(_.max(queryLengths)).toBeLessThanOrEqual(
-              DefaultSoqlQueryLimits.maxQueryLength,
-            )
+            const queryLengths = connection.query.mock.calls.map(args => args[0].length)
+            expect(_.max(queryLengths)).toBeLessThanOrEqual(DefaultSoqlQueryLimits.maxQueryLength)
           })
           it('should query all instances', () => {
-            const queries = connection.query.mock.calls.map((args) => args[0])
-            _.times(100).forEach((idx) => {
+            const queries = connection.query.mock.calls.map(args => args[0])
+            _.times(100).forEach(idx => {
               expect(queries).toContainEqual(
                 expect.stringMatching(
-                  new RegExp(
-                    `SELECT.*WHERE SaltoName IN.*'name${idx}'.*NumField IN.*${idx}(,|\\)).*`,
-                  ),
+                  new RegExp(`SELECT.*WHERE SaltoName IN.*'name${idx}'.*NumField IN.*${idx}(,|\\)).*`),
                 ),
               )
             })
           })
           it('should call bulk insert once', () => {
             expect(connection.bulk.load).toHaveBeenCalledTimes(1)
-            expect(connection.bulk.load).toHaveBeenCalledWith(
-              'Type',
-              'insert',
-              expect.anything(),
-              expect.anything(),
-            )
+            expect(connection.bulk.load).toHaveBeenCalledWith('Type', 'insert', expect.anything(), expect.anything())
           })
         })
       })
@@ -1109,10 +918,7 @@ describe('Custom Object Instances CRUD', () => {
           mockQuery = jest.fn().mockImplementation(async () => ({
             totalSize: 2,
             done: true,
-            records: [
-              existingInstanceRecordValues,
-              anotherExistingInstanceRecordValues,
-            ],
+            records: [existingInstanceRecordValues, anotherExistingInstanceRecordValues],
           }))
           connection.query = mockQuery
           connection.bulk.load = partialBulkLoad
@@ -1140,13 +946,9 @@ describe('Custom Object Instances CRUD', () => {
 
         it('Should call load operation both with update and with insert', () => {
           expect(partialBulkLoad.mock.calls.length).toBe(2)
-          const insertCall = partialBulkLoad.mock.calls.find(
-            (call) => call[1] === 'insert',
-          )
+          const insertCall = partialBulkLoad.mock.calls.find(call => call[1] === 'insert')
           expect(insertCall).toBeDefined()
-          const updateCall = partialBulkLoad.mock.calls.find(
-            (call) => call[1] === 'update',
-          )
+          const updateCall = partialBulkLoad.mock.calls.find(call => call[1] === 'update')
           expect(updateCall).toBeDefined()
         })
 
@@ -1192,29 +994,19 @@ describe('Custom Object Instances CRUD', () => {
           const changeData = getChangeData(result.appliedChanges[0])
           expect(changeData).toBeDefined()
           expect(isInstanceElement(changeData)).toBeTruthy()
-          expect(
-            (changeData as InstanceElement).value[
-              constants.CUSTOM_OBJECT_ID_FIELD
-            ],
-          ).toBe('newId1')
+          expect((changeData as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('newId1')
           expect(isAdditionChange(result.appliedChanges[1])).toBeTruthy()
           const anotherChangeData = getChangeData(result.appliedChanges[1])
           expect(anotherChangeData).toBeDefined()
           expect(isInstanceElement(anotherChangeData)).toBeTruthy()
-          expect(
-            (anotherChangeData as InstanceElement).value[
-              constants.CUSTOM_OBJECT_ID_FIELD
-            ],
-          ).toBe('newId3')
+          expect((anotherChangeData as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe('newId3')
           expect(isAdditionChange(result.appliedChanges[2])).toBeTruthy()
           const anotherNewChangeData = getChangeData(result.appliedChanges[2])
           expect(anotherNewChangeData).toBeDefined()
           expect(isInstanceElement(anotherNewChangeData)).toBeTruthy()
-          expect(
-            (anotherNewChangeData as InstanceElement).value[
-              constants.CUSTOM_OBJECT_ID_FIELD
-            ],
-          ).toBe('anotherQueryId')
+          expect((anotherNewChangeData as InstanceElement).value[constants.CUSTOM_OBJECT_ID_FIELD]).toBe(
+            'anotherQueryId',
+          )
         })
       })
     })
@@ -1224,13 +1016,10 @@ describe('Custom Object Instances CRUD', () => {
       instanceToModify.value.Id = 'modifyId'
       const anotherInstanceToModify = anotherExistingInstance.clone()
       anotherInstanceToModify.value.Id = 'anotherModifyId'
-      const instanceWithNonUpdateableFieldBefore =
-        existingInstanceWithNonUpdateableField.clone()
+      const instanceWithNonUpdateableFieldBefore = existingInstanceWithNonUpdateableField.clone()
       instanceWithNonUpdateableFieldBefore.value.Id = 'yetAnotherModifyId'
-      const instanceWithNonUpdateableFieldAfter =
-        instanceWithNonUpdateableFieldBefore.clone()
-      instanceWithNonUpdateableFieldAfter.value.NotUpdateable =
-        'PleaseDoNotUpdate'
+      const instanceWithNonUpdateableFieldAfter = instanceWithNonUpdateableFieldBefore.clone()
+      instanceWithNonUpdateableFieldAfter.value.NotUpdateable = 'PleaseDoNotUpdate'
       const modifyDeployGroup = {
         groupID: 'modify__Test__c',
         changes: [
@@ -1285,9 +1074,7 @@ describe('Custom Object Instances CRUD', () => {
           const thirdChangeData = getChangeData(result.appliedChanges[2])
           expect(thirdChangeData).toBeDefined()
           expect(isInstanceElement(thirdChangeData)).toBeTruthy()
-          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty(
-            'NotUpdateable',
-          )
+          expect((thirdChangeData as InstanceElement).value).not.toHaveProperty('NotUpdateable')
         })
       })
 
@@ -1559,7 +1346,7 @@ describe('Custom Object Instances CRUD', () => {
         })
         afterEach(() => {
           expect(result.errors).toSatisfyAll(
-            (error) =>
+            error =>
               error.severity === 'Error' &&
               error.message.includes(
                 'Custom Object Instances change group should have a single type but got: Type,anotherType',
@@ -1615,11 +1402,9 @@ describe('Custom Object Instances CRUD', () => {
             progressReporter: nullProgressReporter,
           })
           expect(result.errors).toSatisfyAll(
-            (error) =>
+            error =>
               error.severity === 'Error' &&
-              error.message.includes(
-                'Custom Object Instances change group must have one action',
-              ) &&
+              error.message.includes('Custom Object Instances change group must have one action') &&
               error.elemID !== undefined,
           )
         })
@@ -1629,28 +1414,15 @@ describe('Custom Object Instances CRUD', () => {
     describe('when group is ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP', () => {
       describe('when no Errors occur during the deploy', () => {
         beforeEach(async () => {
-          const approvalRule = new InstanceElement(
-            'customApprovalRule',
-            mockTypes.ApprovalRule,
-            {
-              [SBAA_CONDITIONS_MET]: 'Custom',
-            },
-          )
-          const approvalCondition = new InstanceElement(
-            'customApprovalCondition',
-            mockTypes.ApprovalCondition,
-            {
-              [SBAA_APPROVAL_RULE]: new ReferenceExpression(
-                approvalRule.elemID,
-                approvalRule,
-              ),
-            },
-          )
+          const approvalRule = new InstanceElement('customApprovalRule', mockTypes.ApprovalRule, {
+            [SBAA_CONDITIONS_MET]: 'Custom',
+          })
+          const approvalCondition = new InstanceElement('customApprovalCondition', mockTypes.ApprovalCondition, {
+            [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+          })
           const changeGroup = {
             groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-            changes: [approvalRule, approvalCondition].map((instance) =>
-              toChange({ after: instance }),
-            ),
+            changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
           }
           result = await adapter.deploy({
             changeGroup,
@@ -1660,9 +1432,7 @@ describe('Custom Object Instances CRUD', () => {
         it('should deploy successfully', () => {
           expect(result.errors).toBeEmpty()
           expect(result.appliedChanges).toHaveLength(2)
-          const [approvalRule, approvalCondition] = result.appliedChanges
-            .map(getChangeData)
-            .filter(isInstanceElement)
+          const [approvalRule, approvalCondition] = result.appliedChanges.map(getChangeData).filter(isInstanceElement)
           expect(approvalRule.value).toEqual({
             [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
             [SBAA_CONDITIONS_MET]: 'Custom',
@@ -1675,30 +1445,18 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           expect(connection.bulk.load).toHaveBeenCalledTimes(3)
-          expect(connection.bulk.load).toHaveBeenCalledWith(
-            SBAA_APPROVAL_RULE,
-            'insert',
-            expect.anything(),
-            [{ Id: undefined, [SBAA_CONDITIONS_MET]: 'All' }],
-          )
-          expect(connection.bulk.load).toHaveBeenCalledWith(
-            SBAA_APPROVAL_CONDITION,
-            'insert',
-            expect.anything(),
-            [
-              {
-                Id: undefined,
-                [SBAA_APPROVAL_RULE]:
-                  approvalRule.value[CUSTOM_OBJECT_ID_FIELD],
-              },
-            ],
-          )
-          expect(connection.bulk.load).toHaveBeenCalledWith(
-            SBAA_APPROVAL_RULE,
-            'update',
-            expect.anything(),
-            [{ Id: 'newId0', [SBAA_CONDITIONS_MET]: 'Custom' }],
-          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(SBAA_APPROVAL_RULE, 'insert', expect.anything(), [
+            { Id: undefined, [SBAA_CONDITIONS_MET]: 'All' },
+          ])
+          expect(connection.bulk.load).toHaveBeenCalledWith(SBAA_APPROVAL_CONDITION, 'insert', expect.anything(), [
+            {
+              Id: undefined,
+              [SBAA_APPROVAL_RULE]: approvalRule.value[CUSTOM_OBJECT_ID_FIELD],
+            },
+          ])
+          expect(connection.bulk.load).toHaveBeenCalledWith(SBAA_APPROVAL_RULE, 'update', expect.anything(), [
+            { Id: 'newId0', [SBAA_CONDITIONS_MET]: 'Custom' },
+          ])
         })
       })
       describe('when some ApprovalRule instances fail to deploy', () => {
@@ -1710,49 +1468,27 @@ describe('Custom Object Instances CRUD', () => {
           approvalRule = new InstanceElement('1', mockTypes.ApprovalRule, {
             [SBAA_CONDITIONS_MET]: 'Custom',
           })
-          approvalCondition = new InstanceElement(
-            '1',
-            mockTypes.ApprovalCondition,
-            {
-              [SBAA_APPROVAL_RULE]: new ReferenceExpression(
-                approvalRule.elemID,
-                approvalRule,
-              ),
-            },
-          )
+          approvalCondition = new InstanceElement('1', mockTypes.ApprovalCondition, {
+            [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+          })
           failApprovalRule = new InstanceElement('2', mockTypes.ApprovalRule, {
             [SBAA_CONDITIONS_MET]: 'Custom',
             Name: 'Fail', // Used to indicate which Record should fail in SF
           })
-          failApprovalCondition = new InstanceElement(
-            '2',
-            mockTypes.ApprovalCondition,
-            {
-              [SBAA_APPROVAL_RULE]: new ReferenceExpression(
-                failApprovalRule.elemID,
-                failApprovalRule,
-              ),
-            },
-          )
+          failApprovalCondition = new InstanceElement('2', mockTypes.ApprovalCondition, {
+            [SBAA_APPROVAL_RULE]: new ReferenceExpression(failApprovalRule.elemID, failApprovalRule),
+          })
           const changeGroup = {
             groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-            changes: [
-              approvalRule,
-              failApprovalRule,
-              approvalCondition,
-              failApprovalCondition,
-            ].map((instance) => toChange({ after: instance })),
+            changes: [approvalRule, failApprovalRule, approvalCondition, failApprovalCondition].map(instance =>
+              toChange({ after: instance }),
+            ),
           }
 
           connection.bulk.load = jest
             .fn()
             .mockImplementation(
-              (
-                _type: string,
-                _operation: BulkLoadOperation,
-                _opt?: BulkOptions,
-                input?: SfRecord[],
-              ) => {
+              (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
                 const loadEmitter = new EventEmitter()
                 loadEmitter.on('newListener', (_event, _listener) => {
                   // This is a workaround to call emit('close')
@@ -1766,10 +1502,7 @@ describe('Custom Object Instances CRUD', () => {
                       input?.map((res, index) => ({
                         id: res.Id || `newId${index}`,
                         success: res.Name !== 'Fail',
-                        errors:
-                          res.Name === 'Fail'
-                            ? ['Failed to deploy ApprovalRule with Name Fail']
-                            : [],
+                        errors: res.Name === 'Fail' ? ['Failed to deploy ApprovalRule with Name Fail'] : [],
                       })),
                     ),
                   job: loadEmitter,
@@ -1789,39 +1522,25 @@ describe('Custom Object Instances CRUD', () => {
             expect.objectContaining({ elemID: failApprovalCondition.elemID }),
           ])
           expect(result.appliedChanges).toHaveLength(2)
-          const [appliedApprovalRule, appliedApprovalCondition] =
-            result.appliedChanges.map(getChangeData).filter(isInstanceElement)
+          const [appliedApprovalRule, appliedApprovalCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
           expect(appliedApprovalRule.elemID).toEqual(approvalRule.elemID)
-          expect(appliedApprovalCondition.elemID).toEqual(
-            approvalCondition.elemID,
-          )
+          expect(appliedApprovalCondition.elemID).toEqual(approvalCondition.elemID)
         })
       })
       describe('when an ApprovalRule instance does not have sbaa__ConditionsMet__c = Custom', () => {
         let changeGroup: ChangeGroup
         beforeEach(() => {
-          const approvalRule = new InstanceElement(
-            '1',
-            mockTypes.ApprovalRule,
-            {
-              [SBAA_CONDITIONS_MET]: 'All',
-            },
-          )
-          const approvalCondition = new InstanceElement(
-            '1',
-            mockTypes.ApprovalCondition,
-            {
-              [SBAA_APPROVAL_RULE]: new ReferenceExpression(
-                approvalRule.elemID,
-                approvalRule,
-              ),
-            },
-          )
+          const approvalRule = new InstanceElement('1', mockTypes.ApprovalRule, {
+            [SBAA_CONDITIONS_MET]: 'All',
+          })
+          const approvalCondition = new InstanceElement('1', mockTypes.ApprovalCondition, {
+            [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+          })
           changeGroup = {
             groupID: ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-            changes: [approvalRule, approvalCondition].map((instance) =>
-              toChange({ after: instance }),
-            ),
+            changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
           }
         })
         it('should throw an error', async () => {
@@ -1867,28 +1586,15 @@ describe('Custom Object Instances CRUD', () => {
       })
       describe('when no Errors occur during the deploy', () => {
         beforeEach(async () => {
-          const priceRule = new InstanceElement(
-            'somePriceRule',
-            mockTypes[CPQ_PRICE_RULE],
-            {
-              [CPQ_CONDITIONS_MET]: 'Custom',
-            },
-          )
-          const priceCondition = new InstanceElement(
-            'somePriceCondition',
-            mockTypes[CPQ_PRICE_CONDITION],
-            {
-              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(
-                priceRule.elemID,
-                priceRule,
-              ),
-            },
-          )
+          const priceRule = new InstanceElement('somePriceRule', mockTypes[CPQ_PRICE_RULE], {
+            [CPQ_CONDITIONS_MET]: 'Custom',
+          })
+          const priceCondition = new InstanceElement('somePriceCondition', mockTypes[CPQ_PRICE_CONDITION], {
+            [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+          })
           const changeGroup = {
             groupID: ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
-            changes: [priceRule, priceCondition].map((instance) =>
-              toChange({ after: instance }),
-            ),
+            changes: [priceRule, priceCondition].map(instance => toChange({ after: instance })),
           }
           result = await adapter.deploy({
             changeGroup,
@@ -1898,8 +1604,9 @@ describe('Custom Object Instances CRUD', () => {
         it('should deploy successfully', () => {
           expect(result.errors).toBeEmpty()
           expect(result.appliedChanges).toHaveLength(2)
-          const [appliedPriceRule, appliedPriceCondition] =
-            result.appliedChanges.map(getChangeData).filter(isInstanceElement)
+          const [appliedPriceRule, appliedPriceCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
           expect(appliedPriceRule.value).toEqual({
             [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
             [CPQ_CONDITIONS_MET]: 'Custom',
@@ -1913,37 +1620,23 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           expect(connection.bulk.load).toHaveBeenCalledTimes(3)
-          expect(connection.bulk.load).toHaveBeenCalledWith(
-            CPQ_PRICE_RULE,
-            'insert',
-            expect.anything(),
-            [{ Id: undefined, [CPQ_CONDITIONS_MET]: 'All' }],
-          )
-          expect(connection.bulk.load).toHaveBeenCalledWith(
-            CPQ_PRICE_CONDITION,
-            'insert',
-            expect.anything(),
-            [
-              {
-                Id: undefined,
-                [CPQ_PRICE_CONDITION_RULE_FIELD]:
-                  appliedPriceRule.value[CUSTOM_OBJECT_ID_FIELD],
-              },
-            ],
-          )
-          expect(connection.bulk.load).toHaveBeenCalledWith(
-            CPQ_PRICE_RULE,
-            'update',
-            expect.anything(),
-            [
-              {
-                Id: 'newId0',
-                [OWNER_ID]: 'SomeOwnerId',
-                [CPQ_CONDITIONS_MET]: 'Custom',
-                Name: null,
-              },
-            ],
-          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(CPQ_PRICE_RULE, 'insert', expect.anything(), [
+            { Id: undefined, [CPQ_CONDITIONS_MET]: 'All' },
+          ])
+          expect(connection.bulk.load).toHaveBeenCalledWith(CPQ_PRICE_CONDITION, 'insert', expect.anything(), [
+            {
+              Id: undefined,
+              [CPQ_PRICE_CONDITION_RULE_FIELD]: appliedPriceRule.value[CUSTOM_OBJECT_ID_FIELD],
+            },
+          ])
+          expect(connection.bulk.load).toHaveBeenCalledWith(CPQ_PRICE_RULE, 'update', expect.anything(), [
+            {
+              Id: 'newId0',
+              [OWNER_ID]: 'SomeOwnerId',
+              [CPQ_CONDITIONS_MET]: 'Custom',
+              Name: null,
+            },
+          ])
         })
       })
       describe('when some PriceRule instances fail to deploy', () => {
@@ -1955,49 +1648,27 @@ describe('Custom Object Instances CRUD', () => {
           priceRule = new InstanceElement('1', mockTypes[CPQ_PRICE_RULE], {
             [CPQ_CONDITIONS_MET]: 'Custom',
           })
-          priceCondition = new InstanceElement(
-            '1',
-            mockTypes[CPQ_PRICE_CONDITION],
-            {
-              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(
-                priceRule.elemID,
-                priceRule,
-              ),
-            },
-          )
+          priceCondition = new InstanceElement('1', mockTypes[CPQ_PRICE_CONDITION], {
+            [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+          })
           failPriceRule = new InstanceElement('2', mockTypes[CPQ_PRICE_RULE], {
             [CPQ_CONDITIONS_MET]: 'Custom',
             Name: 'Fail', // Used to indicate which Record should fail in SF
           })
-          failPriceCondition = new InstanceElement(
-            '2',
-            mockTypes[CPQ_PRICE_CONDITION],
-            {
-              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(
-                failPriceRule.elemID,
-                failPriceRule,
-              ),
-            },
-          )
+          failPriceCondition = new InstanceElement('2', mockTypes[CPQ_PRICE_CONDITION], {
+            [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(failPriceRule.elemID, failPriceRule),
+          })
           const changeGroup = {
             groupID: ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
-            changes: [
-              priceRule,
-              failPriceRule,
-              priceCondition,
-              failPriceCondition,
-            ].map((instance) => toChange({ after: instance })),
+            changes: [priceRule, failPriceRule, priceCondition, failPriceCondition].map(instance =>
+              toChange({ after: instance }),
+            ),
           }
 
           connection.bulk.load = jest
             .fn()
             .mockImplementation(
-              (
-                _type: string,
-                _operation: BulkLoadOperation,
-                _opt?: BulkOptions,
-                input?: SfRecord[],
-              ) => {
+              (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
                 const loadEmitter = new EventEmitter()
                 loadEmitter.on('newListener', (_event, _listener) => {
                   // This is a workaround to call emit('close')
@@ -2011,10 +1682,7 @@ describe('Custom Object Instances CRUD', () => {
                       input?.map((res, index) => ({
                         id: res.Id || `newId${index}`,
                         success: res.Name !== 'Fail',
-                        errors:
-                          res.Name === 'Fail'
-                            ? ['Failed to deploy ApprovalRule with Name Fail']
-                            : [],
+                        errors: res.Name === 'Fail' ? ['Failed to deploy ApprovalRule with Name Fail'] : [],
                       })),
                     ),
                   job: loadEmitter,
@@ -2034,8 +1702,9 @@ describe('Custom Object Instances CRUD', () => {
             expect.objectContaining({ elemID: failPriceCondition.elemID }),
           ])
           expect(result.appliedChanges).toHaveLength(2)
-          const [appliedPriceRule, appliedPriceCondition] =
-            result.appliedChanges.map(getChangeData).filter(isInstanceElement)
+          const [appliedPriceRule, appliedPriceCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
           expect(appliedPriceRule.elemID).toEqual(priceRule.elemID)
           expect(appliedPriceCondition.elemID).toEqual(priceCondition.elemID)
         })
@@ -2043,28 +1712,15 @@ describe('Custom Object Instances CRUD', () => {
       describe('when a PriceRule instance does not have SBQQ__ConditionsMet__c = Custom', () => {
         let changeGroup: ChangeGroup
         beforeEach(() => {
-          const priceRule = new InstanceElement(
-            '1',
-            mockTypes[CPQ_PRICE_RULE],
-            {
-              [CPQ_CONDITIONS_MET]: 'All',
-            },
-          )
-          const priceCondition = new InstanceElement(
-            '1',
-            mockTypes[CPQ_PRICE_CONDITION],
-            {
-              [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(
-                priceRule.elemID,
-                priceRule,
-              ),
-            },
-          )
+          const priceRule = new InstanceElement('1', mockTypes[CPQ_PRICE_RULE], {
+            [CPQ_CONDITIONS_MET]: 'All',
+          })
+          const priceCondition = new InstanceElement('1', mockTypes[CPQ_PRICE_CONDITION], {
+            [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
+          })
           changeGroup = {
             groupID: ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
-            changes: [priceRule, priceCondition].map((instance) =>
-              toChange({ after: instance }),
-            ),
+            changes: [priceRule, priceCondition].map(instance => toChange({ after: instance })),
           }
         })
         it('should throw an error', async () => {

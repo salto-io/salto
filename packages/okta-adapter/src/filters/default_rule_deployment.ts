@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -22,22 +14,48 @@ import {
   getChangeData,
   isAdditionChange,
   toChange,
+  isAdditionOrModificationChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { collections } from '@salto-io/lowerdash'
+import { client as clientUtils, definitions as definitionsUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { getParents } from '@salto-io/adapter-utils'
-import { ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from '../constants'
-import OktaClient from '../client/client'
+import { createSchemeGuard, getParents } from '@salto-io/adapter-utils'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  MFA_POLICY_TYPE_NAME,
+  PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+} from '../constants'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployWithStatus } from '../deployment'
+import { deployChanges, defaultDeployWithStatus } from '../deprecated_deployment'
+import { OktaOptions } from '../definitions/types'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type PolicyRule = {
   id: string
   system: boolean
 }
+type PolicyResponse = {
+  data: {
+    priority: number
+  }
+}
+const POLICY_RESPONSE_SCHEMA = Joi.object({
+  data: Joi.object({
+    priority: Joi.number().required(),
+  })
+    .required()
+    .unknown(true),
+}).unknown(true)
+
+const isPolicyResponse = createSchemeGuard<PolicyResponse>(POLICY_RESPONSE_SCHEMA)
+
+const SUPPORTED_RULE_TYPES = [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
+const SUPPORT_POLICY_TYPES = [ACCESS_POLICY_TYPE_NAME]
 
 const EXPECTED_POLICY_RULE_SCHEMA = Joi.object({
   id: Joi.string().required(),
@@ -55,7 +73,10 @@ const isRulesResponse = (values: unknown): values is PolicyRule[] => {
   return true
 }
 
-const getDefaultPolicyRuleEntry = async (policyId: string, client: OktaClient): Promise<PolicyRule> => {
+const getDefaultPolicyRuleEntry = async (
+  policyId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<PolicyRule> => {
   const url = `/api/v1/policies/${policyId}/rules`
   const ruleEntries = (await client.get({ url })).data
   if (!isRulesResponse(ruleEntries)) {
@@ -73,24 +94,17 @@ const getDefaultPolicyRuleEntry = async (policyId: string, client: OktaClient): 
 const getCreatedPolicyRuleInstance = (
   policyRuleEntry: PolicyRule,
   defaultPolicyRuleInstance: InstanceElement,
-  apiDefinitions: OktaSwaggerApiConfig,
+  fieldsToOmit: string[] = [],
 ): InstanceElement => {
   const createdPolicyRuleInstance = defaultPolicyRuleInstance.clone()
-  const { fieldsToOmit } = configUtils.getTypeTransformationConfig(
-    createdPolicyRuleInstance.elemID.typeName,
-    apiDefinitions.types,
-    apiDefinitions.typeDefaults,
-  )
-  createdPolicyRuleInstance.value = _.omit(
-    policyRuleEntry,
-    (fieldsToOmit ?? []).map(field => field.fieldName),
-  )
+  createdPolicyRuleInstance.value = _.omit(policyRuleEntry, fieldsToOmit)
   return createdPolicyRuleInstance
 }
 
 const deployDefaultPolicy = async (
   change: Change<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+  defQuery: definitionsUtils.DefQuery<definitionsUtils.fetch.InstanceFetchApiDefinitions<OktaOptions>, string>,
   apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const defaultRuleInstance = getChangeData(change)
@@ -102,12 +116,17 @@ const deployDefaultPolicy = async (
     )
   }
   const createdPolicyRuleEntry = await getDefaultPolicyRuleEntry(parentPolicyId, client)
+  const fieldsToOmit = _.pickBy(
+    defQuery.query(defaultRuleInstance.elemID.typeName)?.element?.fieldCustomizations ?? {},
+    f => f.omit,
+  )
+
   // Assign the id created by the service to the default policy rule
   defaultRuleInstance.value.id = createdPolicyRuleEntry.id
   const createdPolicyRuleInstance = getCreatedPolicyRuleInstance(
     createdPolicyRuleEntry,
     defaultRuleInstance,
-    apiDefinitions,
+    Object.keys(fieldsToOmit),
   )
   await defaultDeployWithStatus(
     toChange({ before: createdPolicyRuleInstance, after: defaultRuleInstance }),
@@ -119,37 +138,60 @@ const deployDefaultPolicy = async (
 /**
  * Deploy addition changes of default rules for AccessPolicy and ProfileEnrollmentPolicy
  * by changing them to modification changes, because default rules automatically created by the service
+ * Also, set the priority of the default rules before deployment
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ definitions, oldApiDefinitions }) => ({
   name: 'defaultPolicyRuleDeployment',
   preDeploy: async changes => {
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionChange)
+    const instanceChanges = changes.filter(isInstanceChange)
+    await awu(instanceChanges)
+      .filter(isModificationChange)
       .filter(
         change =>
-          [PROFILE_ENROLLMENT_RULE_TYPE_NAME].includes(getChangeData(change).elemID.typeName) &&
+          getChangeData(change).elemID.typeName === MFA_POLICY_TYPE_NAME && getChangeData(change).value.system === true,
+      )
+      .map(change => getChangeData(change))
+      .forEach(async instance => {
+        const response = await definitions.clients.options.main.httpClient.get({
+          url: `/api/v1/policies/${instance.value.id}`,
+        })
+        if (isPolicyResponse(response)) {
+          instance.value.priority = response.data.priority
+        }
+      })
+
+    instanceChanges
+      .filter(isAdditionOrModificationChange)
+      .filter(
+        change =>
+          SUPPORTED_RULE_TYPES.concat(SUPPORT_POLICY_TYPES).includes(getChangeData(change).elemID.typeName) &&
           getChangeData(change).value.system === true,
       )
       .map(change => getChangeData(change))
       .forEach(instance => {
-        instance.value.priority = 99
+        if (instance.elemID.typeName === ACCESS_POLICY_TYPE_NAME) {
+          // service default priority for AccessPolicy is 1
+          instance.value.priority = 1
+        } else {
+          // service default priority for AccessPolicyRule and ProfileEnrollmentRule is 99
+          instance.value.priority = 99
+        }
       })
   },
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
+    const defQuery = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {})
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>
         isInstanceChange(change) &&
         isAdditionChange(change) &&
-        [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME].includes(
-          getChangeData(change).elemID.typeName,
-        ) &&
+        SUPPORTED_RULE_TYPES.includes(getChangeData(change).elemID.typeName) &&
         getChangeData(change).value.system === true,
     )
 
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change =>
-      deployDefaultPolicy(change, client, config[API_DEFINITIONS_CONFIG]),
+      deployDefaultPolicy(change, client, defQuery, oldApiDefinitions[API_DEFINITIONS_CONFIG]),
     )
 
     return {
@@ -160,10 +202,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   onDeploy: async changes => {
     changes
       .filter(isInstanceChange)
-      .filter(isAdditionChange)
+      .filter(isAdditionOrModificationChange)
       .filter(
         change =>
-          [PROFILE_ENROLLMENT_RULE_TYPE_NAME].includes(getChangeData(change).elemID.typeName) &&
+          SUPPORTED_RULE_TYPES.concat(SUPPORT_POLICY_TYPES).includes(getChangeData(change).elemID.typeName) &&
           getChangeData(change).value.system === true,
       )
       .map(change => getChangeData(change))

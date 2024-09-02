@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, ObjectType, Element, ReadOnlyElementsSource } from './elements'
 import { AdapterAuthentication } from './authentication_types'
@@ -164,6 +156,7 @@ type AdapterBaseContext = {
 
 export type AdapterOperationsContext = {
   credentials: InstanceElement
+  accountName?: string
 } & AdapterBaseContext
 
 export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
@@ -175,6 +168,7 @@ export const isAdapterSuccessInstallResult = (result: AdapterInstallResult): res
 
 export type AccountInfo = {
   accountId: string
+  accountUrl?: string
   accountType?: string
   isProduction?: boolean
   extraInformation?: Record<string, string>
@@ -189,6 +183,17 @@ export type LoadElementsFromFolderArgs = {
   baseDir: string
 } & AdapterBaseContext
 
+export type DumpElementsToFolderArgs = {
+  baseDir: string
+  changes: ReadonlyArray<Change>
+  elementsSource: ReadOnlyElementsSource
+}
+
+export type DumpElementsResult = {
+  unappliedChanges: Change[]
+  errors: ReadonlyArray<SaltoError | SaltoElementError>
+}
+
 export type ReferenceMapping = {
   source: ElemID
   target: ElemID
@@ -199,12 +204,26 @@ export type ReferenceMapping = {
  */
 export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<ReferenceMapping[]>
 
-export type ReferenceType = 'strong' | 'weak'
+export const REFERENCE_TYPES = ['strong', 'weak'] as const
+export type ReferenceType = (typeof REFERENCE_TYPES)[number]
 
+export const REFERENCE_SOURCE_SCOPES = ['baseId', 'value'] as const
+export type ReferenceSourceScope = (typeof REFERENCE_SOURCE_SCOPES)[number]
+export const DEFAULT_SOURCE_SCOPE: ReferenceSourceScope = 'baseId'
+
+/**
+ * **sourceScope**
+ *
+ * The source scope states what part of the reference source actually depends on the target.
+ * - When it is "baseId" it means the existence of the whole "base element" which includes the source depends on the target
+ * - When it is "value" it means that only the value specified by the sourceId depends on the target
+ * - Defaults to {@link DEFAULT_SOURCE_SCOPE}
+ */
 export type ReferenceInfo = {
   source: ElemID
   target: ElemID
   type: ReferenceType
+  sourceScope?: ReferenceSourceScope
 }
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
@@ -217,6 +236,7 @@ export type Adapter = {
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
+  dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
   getCustomReferences?: GetCustomReferencesFunc
 }

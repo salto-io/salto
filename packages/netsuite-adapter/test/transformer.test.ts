@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -74,83 +66,82 @@ describe('Transformer', () => {
     WITH_NESTED_ATTRIBUTE: {
       typeName: 'customrecordtype',
       values: {
-        '@_scriptid': 'customrecord_my_script_id',
         customrecordcustomfields: {
           customrecordcustomfield: {
             '@_scriptid': 'custrecord_my_nested_script_id',
           },
         },
+        '@_scriptid': 'customrecord_my_script_id',
       },
       scriptId: 'customrecord_my_script_id',
     },
     WITH_UNKNOWN_ATTRIBUTE: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         unknownattr: 'val',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_STRING_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         label: 'elementName',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_TRUE_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         checkspelling: 'T',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNKNOWN_TRUE_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         unknownattr: 'T',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_FALSE_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         checkspelling: 'F',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNKNOWN_FALSE_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         unknownattr: 'F',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_NUMBER_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         displayheight: '123',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNDEFINED_PRIMITIVE_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         description: '',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_LIST_OF_OBJECTS: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         roleaccesses: {
           roleaccess: [
             {
@@ -165,13 +156,13 @@ describe('Transformer', () => {
             },
           ],
         },
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_LIST_OF_SINGLE_OBJECT: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         roleaccesses: {
           roleaccess: {
             accesslevel: '1',
@@ -179,23 +170,23 @@ describe('Transformer', () => {
             searchlevel: '2',
           },
         },
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNDEFINED_LIST_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         roleaccesses: {
           roleaccess: '',
         },
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNDEFINED_OBJECT_INNER_FIELDS: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         roleaccesses: {
           roleaccess: {
             accesslevel: '',
@@ -203,22 +194,23 @@ describe('Transformer', () => {
             searchlevel: '',
           },
         },
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNDEFINED_OBJECT_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         roleaccesses: '',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },
     WITH_UNKNOWN_FIELD: {
       typeName: 'entitycustomfield',
       values: {
-        '@_scriptid': 'custentity_my_script_id',
         unknownfield: 'unknownVal',
+        '@_scriptid': 'custentity_my_script_id',
       },
       scriptId: 'custentity_my_script_id',
     },

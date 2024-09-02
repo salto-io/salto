@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ElemID,
@@ -26,8 +18,9 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
-import { FILE, NETSUITE } from '../../src/constants'
-import { LocalFilterOpts } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
+import { FILE, NETSUITE, RECORD_REF } from '../../src/constants'
+import { RemoteFilterOpts } from '../../src/filter'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { fullFetchConfig } from '../../src/config/config_creator'
 import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
@@ -36,24 +29,36 @@ import filterCreator, {
   UNKNOWN_TYPE_REFERENCES_TYPE_NAME,
 } from '../../src/filters/data_account_specific_values'
 
+const runSuiteQLMock = jest.fn()
+const runSavedSearchQueryMock = jest.fn()
+const client = {
+  runSuiteQL: runSuiteQLMock,
+  runSavedSearchQuery: runSavedSearchQueryMock,
+  isSuiteAppConfigured: () => true,
+} as unknown as NetsuiteClient
+
 describe('data account specific values filter', () => {
   let dataType: ObjectType
   let accountType: ObjectType
   let fileType: ObjectType
+  let recordRefType: ObjectType
   let suiteQLTableType: ObjectType
   let suiteQLTableInstance: InstanceElement
+  let taxScheduleSuiteQLTableInstance: InstanceElement
   let unknownTypeReferencesType: ObjectType
   let existingUnknownTypeReferencesInstance: InstanceElement
-  let filterOpts: LocalFilterOpts
+  let filterOpts: RemoteFilterOpts
 
   beforeEach(async () => {
     accountType = new ObjectType({ elemID: new ElemID(NETSUITE, 'account') })
     fileType = new ObjectType({ elemID: new ElemID(NETSUITE, FILE) })
+    recordRefType = new ObjectType({ elemID: new ElemID(NETSUITE, RECORD_REF) })
     dataType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'someType'),
       fields: {
         accountField: { refType: accountType },
         fileField: { refType: fileType },
+        taxSchedule: { refType: recordRefType },
       },
       annotations: { source: 'soap' },
     })
@@ -63,6 +68,11 @@ describe('data account specific values filter', () => {
         1: { name: 'Account 1' },
       },
     })
+    taxScheduleSuiteQLTableInstance = new InstanceElement('taxSchedule', suiteQLTableType, {
+      [INTERNAL_IDS_MAP]: {
+        1: { name: 'Tax Schedule 1' },
+      },
+    })
     unknownTypeReferencesType = new ObjectType({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
     existingUnknownTypeReferencesInstance = new InstanceElement(ElemID.CONFIG_NAME, unknownTypeReferencesType, {
       [naclCase('someType.someField.inner')]: {
@@ -70,10 +80,9 @@ describe('data account specific values filter', () => {
       },
     })
     filterOpts = {
+      client,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
       elementsSource: buildElementsSourceFromElements([
-        suiteQLTableType,
-        suiteQLTableInstance,
         unknownTypeReferencesType,
         existingUnknownTypeReferencesInstance,
       ]),
@@ -118,8 +127,11 @@ describe('data account specific values filter', () => {
             internalId: '456',
           },
         ],
+        taxSchedule: {
+          internalId: '1',
+        },
       })
-      elements = [dataType, dataInstance, suiteQLTableType, suiteQLTableInstance]
+      elements = [dataType, dataInstance, suiteQLTableType, suiteQLTableInstance, taxScheduleSuiteQLTableInstance]
     })
 
     it('should transform references to ACCOUNT_SPECIFIC_VALUE', async () => {
@@ -145,6 +157,9 @@ describe('data account specific values filter', () => {
             id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
           },
         ],
+        taxSchedule: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (taxSchedule) (Tax Schedule 1)',
+        },
       })
     })
 
@@ -268,6 +283,9 @@ describe('data account specific values filter', () => {
             internalId: '456',
           },
         ],
+        taxSchedule: {
+          internalId: '1',
+        },
       })
     })
   })
@@ -323,6 +341,12 @@ describe('data account specific values filter', () => {
         },
         [naclCase('someType.fileField')]: {
           1010: 'File Reference',
+        },
+      }
+      filterOpts.suiteQLNameToInternalIdsMap = {
+        account: {
+          'Account 1': ['1'],
+          'Account 2': ['2'],
         },
       }
     })

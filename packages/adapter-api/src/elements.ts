@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 /* eslint-disable no-use-before-define */
 
@@ -20,9 +12,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX, GLOBAL_ADAPTER } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
-// eslint-disable-next-line import/no-cycle
 import { Values, Value, TypeReference, isTypeReference, cloneDeepWithoutRefs, CompareOptions } from './values'
-// eslint-disable-next-line import/no-cycle
 import { isEqualValues } from './comparison'
 
 const { awu } = collections.asynciterable
@@ -30,15 +20,18 @@ const { mapValuesAsync } = promises.object
 
 const log = logger(module)
 
-export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
+export const BuiltinTypesRefByFullName: Record<string, TypeReference<PrimitiveType>> = {}
 
-export const createRefToElmWithValue = (element: TypeElement): TypeReference =>
-  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
-  BuiltinTypesRefByFullName[element.elemID.getFullName()] ?? new TypeReference(element.elemID, element)
+export const createRefToElmWithValue = <T extends TypeElement>(element: T): TypeReference<T> =>
+  // For BuiltinTypes we use hardcoded refs with values to avoid duplicate instances.
+  // If the element ID is in the present we know the element is of type PrimitiveType but TS does not,
+  // so we need to tell it.
+  (BuiltinTypesRefByFullName[element.elemID.getFullName()] as TypeReference<T>) ??
+  new TypeReference(element.elemID, element)
 
 // This is used to allow constructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): TypeReference =>
+const getRefType = <T extends TypeElement>(typeOrRef: TypeOrRef<T>): TypeReference<T> =>
   isTypeReference(typeOrRef) ? typeOrRef : createRefToElmWithValue(typeOrRef)
 
 /**
@@ -94,8 +87,6 @@ export abstract class Element {
 
   async getAnnotationTypes(elementsSource?: ReadOnlyElementsSource): Promise<TypeMap> {
     const annotationTypes = mapValuesAsync(this.annotationRefTypes, refType => refType.getResolvedValue(elementsSource))
-
-    // eslint-disable-next-line no-use-before-define
     const nonTypeValues = Object.values(annotationTypes).filter(type => !isType(type))
     if (nonTypeValues.length) {
       throw new Error(
@@ -119,6 +110,17 @@ export abstract class Element {
    * @return {Type} the cloned instance
    */
   abstract clone(annotations?: Values): Element
+
+  /**
+   * Assign all element fields from other.
+   * Needs to be overridden by each subclass as this is structure dependent.
+   * Note that the element ID is not changed.
+   */
+  assign(other: Element): void {
+    this.annotationRefTypes = other.annotationRefTypes
+    this.annotations = other.annotations
+    this.path = other.path
+  }
 }
 export type ElementMap = Record<string, Element>
 
@@ -136,7 +138,7 @@ export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TopLevelElement = TypeElement | InstanceElement
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
+type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference<T>
 export type TypeRefMap = Record<string, TypeOrRef>
 export type ReferenceMap = Record<string, TypeReference>
 
@@ -163,15 +165,17 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
 
   isEqual(other: ListType, options?: CompareOptions): boolean {
     return (
-      super.isEqual(other, options) &&
-      // eslint-disable-next-line no-use-before-define
-      this.refInnerType.elemID.isEqual(other.refInnerType.elemID) &&
-      isListType(other)
+      super.isEqual(other, options) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
     )
   }
 
   clone(): ListType {
     return new ListType(this.refInnerType.clone())
+  }
+
+  assign(other: ListType): void {
+    super.assign(other)
+    this.refInnerType = other.refInnerType
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
@@ -186,7 +190,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.type
-      // eslint-disable-next-line no-use-before-define
+
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -223,15 +227,17 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 
   isEqual(other: MapType, options?: CompareOptions): boolean {
     return (
-      super.isEqual(other, options) &&
-      // eslint-disable-next-line no-use-before-define
-      this.refInnerType.elemID.isEqual(other.refInnerType.elemID) &&
-      isMapType(other)
+      super.isEqual(other, options) && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
     )
   }
 
   clone(): MapType {
     return new MapType(this.refInnerType.clone())
+  }
+
+  assign(other: MapType): void {
+    super.assign(other)
+    this.refInnerType = other.refInnerType
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
@@ -246,7 +252,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.type
-      // eslint-disable-next-line no-use-before-define
+
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -305,6 +311,13 @@ export class Field extends Element {
       annotations === undefined ? this.cloneAnnotations() : annotations,
     )
   }
+
+  assign(other: Field): void {
+    super.assign(other)
+    this.parent = other.parent
+    this.name = other.name
+    this.refType = other.refType
+  }
 }
 export type FieldMap = Record<string, Field>
 
@@ -349,17 +362,41 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
     res.annotate(additionalAnnotations)
     return res
   }
+
+  assign(other: PrimitiveType<Primitive>): void {
+    super.assign(other)
+    this.primitive = other.primitive
+  }
 }
 
 export type FieldDefinition = {
   refType: TypeOrRef
   annotations?: Values
 }
+
+const validateMetaType = (metaType?: ObjectType): ObjectType | undefined => {
+  if (metaType === undefined) {
+    return undefined
+  }
+
+  if (!isObjectType(metaType)) {
+    log.error(`Got an invalid meta type which is not an object type with ${(metaType as Element).elemID}.`)
+    return undefined
+  }
+
+  if (metaType instanceof PlaceholderObjectType) {
+    log.warn(`Meta type with ID ${metaType.elemID.getFullName()} not found in elements source.`)
+  }
+
+  return metaType
+}
+
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
 export class ObjectType extends Element {
   fields: FieldMap
+  metaType: TypeReference<ObjectType> | undefined
   isSettings: boolean
 
   constructor({
@@ -367,6 +404,7 @@ export class ObjectType extends Element {
     fields = {},
     annotationRefsOrTypes = {},
     annotations = {},
+    metaType = undefined,
     isSettings = false,
     path = undefined,
   }: {
@@ -374,6 +412,7 @@ export class ObjectType extends Element {
     fields?: Record<string, FieldDefinition>
     annotationRefsOrTypes?: TypeRefMap
     annotations?: Values
+    metaType?: TypeOrRef<ObjectType>
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
@@ -382,6 +421,9 @@ export class ObjectType extends Element {
       fields,
       (fieldDef, name) => new Field(this, name, getRefType(fieldDef.refType), fieldDef.annotations),
     )
+    if (metaType !== undefined) {
+      this.metaType = getRefType(metaType)
+    }
     this.isSettings = isSettings
   }
 
@@ -400,9 +442,30 @@ export class ObjectType extends Element {
         _.mapValues(this.fields, f => f.elemID.getFullName()),
         _.mapValues(other.fields, f => f.elemID.getFullName()),
       ) &&
+      this.isMetaTypeEqual(other) &&
       _.isEqual(this.isSettings, other.isSettings) &&
       _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n], options)))
     )
+  }
+
+  isMetaTypeEqual(other: ObjectType): boolean {
+    if (this.metaType === undefined && other.metaType === undefined) {
+      return true
+    }
+
+    if (this.metaType === undefined || other.metaType === undefined) {
+      return false
+    }
+
+    return this.metaType.elemID.isEqual(other.metaType.elemID)
+  }
+
+  async getMetaType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType | undefined> {
+    return validateMetaType(await this.metaType?.getResolvedValue(elementsSource))
+  }
+
+  getMetaTypeSync(): ObjectType | undefined {
+    return validateMetaType(this.metaType?.getResolvedValueSync())
   }
 
   /**
@@ -417,6 +480,7 @@ export class ObjectType extends Element {
       fields: this.cloneFields(),
       annotationRefsOrTypes: this.cloneAnnotationTypes(),
       annotations: this.cloneAnnotations(),
+      metaType: this.metaType?.clone(),
       isSettings,
       path: this.path !== undefined ? [...this.path] : undefined,
     })
@@ -424,6 +488,13 @@ export class ObjectType extends Element {
     res.annotate(additionalAnnotations)
 
     return res
+  }
+
+  assign(other: ObjectType): void {
+    super.assign(other)
+    this.fields = other.fields
+    this.metaType = other.metaType
+    this.isSettings = other.isSettings
   }
 
   getFieldsElemIDsFullName(): string[] {
@@ -453,11 +524,12 @@ const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElemen
   }
   return type
 }
+
 export class InstanceElement extends Element {
-  public refType: TypeReference
+  public refType: TypeReference<ObjectType>
   constructor(
     name: string,
-    typeOrRefType: ObjectType | TypeReference,
+    typeOrRefType: TypeOrRef<ObjectType>,
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,
@@ -501,6 +573,17 @@ export class InstanceElement extends Element {
       cloneDeepWithoutRefs(this.annotations),
     )
   }
+
+  assign(other: InstanceElement): void {
+    if (!this.refType.elemID.isEqual(other.refType.elemID)) {
+      throw Error(
+        `Cannot replace instance with type ${this.refType.elemID} with instance with type ${this.refType.elemID}.`,
+      )
+    }
+
+    super.assign(other)
+    this.value = other.value
+  }
 }
 
 export class Variable extends Element {
@@ -518,6 +601,11 @@ export class Variable extends Element {
 
   clone(): Variable {
     return new Variable(this.elemID, cloneDeepWithoutRefs(this.value), this.path)
+  }
+
+  assign(other: Variable): void {
+    super.assign(other)
+    this.value = other.value
   }
 }
 

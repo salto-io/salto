@@ -1,20 +1,20 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  Change,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
 import { defaultDynamicContentItemVariantValidator } from '../../src/change_validators'
@@ -45,8 +45,18 @@ const notDefaultVariant = new InstanceElement(
   },
 )
 
-const setDynamicContentItemVariants = (variants: InstanceElement[]): void => {
-  dynamicContentItem.value.variants = variants.map(variant => new ReferenceExpression(variant.elemID, variant))
+const invalidVariant = {
+  invalid: 'test',
+} as const
+
+const setDynamicContentItemVariants = (variants: (InstanceElement | typeof invalidVariant)[]): void => {
+  dynamicContentItem.value.variants = variants.map(
+    variant =>
+      new ReferenceExpression(
+        isInstanceElement(variant) ? variant.elemID : ElemID.fromFullName('zendesk.mock.instance.invalid'),
+        variant,
+      ),
+  )
 }
 
 describe('defaultDynamicContentItemVariantValidator', () => {
@@ -134,6 +144,10 @@ describe('defaultDynamicContentItemVariantValidator', () => {
       dynamicContentItem.value.variants = [unresolvedVariant]
       const arrayErrors = await defaultDynamicContentItemVariantValidator(changes)
       expect(arrayErrors.length).toBe(0)
+    })
+    it('should not throw when one of the variants in not a valid InstanceElement', async () => {
+      setDynamicContentItemVariants([invalidVariant])
+      await expect(defaultDynamicContentItemVariantValidator(changes)).resolves.not.toThrow()
     })
   })
 })

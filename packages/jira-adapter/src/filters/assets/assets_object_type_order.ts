@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -71,10 +63,6 @@ const createOrderType = (): ObjectType =>
         refType: new ListType(BuiltinTypes.NUMBER),
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
       },
-      assetsSchema: {
-        refType: BuiltinTypes.NUMBER,
-        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
-      },
     },
     path: [JIRA, adapterElements.TYPES_PATH, OBJECT_TYPE_ORDER_TYPE],
     annotations: {
@@ -89,16 +77,6 @@ const createAssetsObjectTypeOrder = (
   orderType: ObjectType,
   treeParent: InstanceElement,
 ): InstanceElement | undefined => {
-  const schema =
-    treeParent.elemID?.typeName === OBJECT_TYPE_TYPE
-      ? treeParent.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
-      : new ReferenceExpression(treeParent.elemID, treeParent)
-  if (schema.elemID?.typeName !== OBJECT_SCHEMA_TYPE) {
-    log.error(
-      `Failed to create ${OBJECT_TYPE_ORDER_TYPE} for ${treeParent.elemID.getFullName()} because it's parent is not ${OBJECT_SCHEMA_TYPE}`,
-    )
-    return undefined
-  }
   const name = naclCase(`${invertNaclCase(treeParent.elemID.name)}_childOrder`)
   const subFolder = treeParent.elemID.typeName === OBJECT_TYPE_TYPE ? [] : ['objectTypes']
   return new InstanceElement(
@@ -108,7 +86,6 @@ const createAssetsObjectTypeOrder = (
       objectTypes: assetsObjectTypes
         .sort((a, b) => a.value.position - b.value.position)
         .map(inst => new ReferenceExpression(inst.elemID, inst)),
-      assetsSchema: schema,
     },
     [...(treeParent.path ?? []).slice(0, -1), ...subFolder, pathNaclCase(name)],
     {

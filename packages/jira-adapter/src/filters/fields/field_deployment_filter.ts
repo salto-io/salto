@@ -1,69 +1,56 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
-  createSaltoElementError,
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  isAdditionOrModificationChange,
   isInstanceChange,
-  SaltoElementError,
+  isRemovalChange,
   toChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, getContexts, getContextType } from './contexts'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
-import { FIELD_TYPE_NAME, IS_LOCKED, SERVICE } from './constants'
+import { FIELD_TYPE_NAME } from './constants'
 import { JiraConfig } from '../../config/config'
 
-const { toArrayAsync } = collections.asynciterable
-const { makeArray } = collections.array
-const { awu } = collections.asynciterable
 const log = logger(module)
+const { awu } = collections.asynciterable
 
-const getFieldsByQuery = async (
-  paginator: clientUtils.Paginator,
-  queries: string[],
-): Promise<Record<string, string>> => {
-  const fetchFieldsForQuery = async (query: string): Promise<clientUtils.ResponseValue[][]> => {
-    const paginationArgs = {
-      url: `/rest/api/3/field/search?query=${query}`,
-      paginationField: 'startAt',
-    }
-    return toArrayAsync(paginator(paginationArgs, page => makeArray(page.values) as clientUtils.ResponseValue[]))
-  }
-  const allFieldValues = (await Promise.all(queries.map(fetchFieldsForQuery))).flat(2)
-
-  const fieldNameToId = Object.fromEntries(allFieldValues.map(field => [field.name, field.id]))
-  return fieldNameToId
-}
+const REDIRECT_PATH_PREFIX = '/rest/api/3/task/'
 
 const deployField = async (change: Change<InstanceElement>, client: JiraClient, config: JiraConfig): Promise<void> => {
-  await defaultDeployChange({
-    change,
-    client,
-    apiDefinitions: config.apiDefinitions,
-    fieldsToIgnore: ['contexts'],
-  })
+  try {
+    await defaultDeployChange({
+      change,
+      client,
+      apiDefinitions: config.apiDefinitions,
+      fieldsToIgnore: ['contexts'],
+    })
+  } catch (err) {
+    if (
+      isRemovalChange(change) &&
+      err instanceof clientUtils.HTTPError &&
+      err.response.requestPath?.startsWith(REDIRECT_PATH_PREFIX)
+    ) {
+      log.warn(
+        `Got an error when trying to delete a field, probably becuase a redirect happened. Ignoring error. requestPath: ${err.response.requestPath}`,
+      )
+    } else {
+      throw err
+    }
+  }
 
   if (isAdditionChange(change)) {
     const contextType = await getContextType(await getChangeData(change).getType())
@@ -74,57 +61,26 @@ const deployField = async (change: Change<InstanceElement>, client: JiraClient, 
       : []
 
     await awu(removalContextsChanges).forEach(contextChange =>
-      deployContextChange(contextChange, client, config.apiDefinitions),
+      deployContextChange({ change: contextChange, client, config }),
     )
   }
 }
-const hasLockedFieldsChanges = (changes: Change[]): boolean => {
-  const fields = changes.filter(isInstanceChange).filter(isAdditionChange).map(getChangeData)
-  return fields.some(instance => instance.value?.[IS_LOCKED] === true)
-}
 
-const filter: FilterCreator = ({ client, config, paginator }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'fieldDeploymentFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
-      change =>
-        isInstanceChange(change) &&
-        isAdditionOrModificationChange(change) &&
-        getChangeData(change).elemID.typeName === FIELD_TYPE_NAME,
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === FIELD_TYPE_NAME,
     )
 
-    const allFieldsByQuery = hasLockedFieldsChanges(relevantChanges)
-      ? await getFieldsByQuery(paginator, [SERVICE])
-      : undefined
-    const errors: SaltoElementError[] = []
-
-    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
-      const inst = getChangeData(change)
-      if (isAdditionChange(change) && inst.value?.[IS_LOCKED] === true && allFieldsByQuery !== undefined) {
-        if (allFieldsByQuery[inst.value.name] !== undefined) {
-          log.debug(`Field ${getChangeData(change).value.name} was auto-generated in Jira.`)
-          inst.value.id = allFieldsByQuery[inst.value.name]
-          return
-        }
-        log.debug(
-          `Locked field ${inst.value.name} was supposed to be auto-generated by Jira when deploying a project, but was unexpectedly not created`,
-        )
-        errors.push(
-          createSaltoElementError({
-            message: `Locked field ${inst.value.name} was supposed to be auto-generated by Jira when deploying a project, but was unexpectedly not created`,
-            severity: 'Error',
-            elemID: inst.elemID,
-          }),
-        )
-        return
-      }
-      await deployField(change, client, config)
-    })
+    const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), change =>
+      deployField(change, client, config),
+    )
 
     return {
       leftoverChanges,
-      deployResult: { appliedChanges: deployResult.appliedChanges, errors: [...deployResult.errors, ...errors] },
+      deployResult,
     }
   },
 })

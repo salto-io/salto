@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
 import _ from 'lodash'
@@ -41,12 +33,8 @@ import {
 import {
   Plan,
   PlanItem,
-  EVENT_TYPES,
   DeployResult,
-  telemetrySender,
   Telemetry,
-  Tags,
-  TelemetryEvent,
   CommandConfig,
   deploy as coreDeploy,
   ItemStatus,
@@ -116,32 +104,20 @@ export interface MockCliReturn {
   exitCode: number
 }
 
-export type MockTelemetry = {
-  getEvents(): TelemetryEvent[]
-  getEventsMap(): { [name: string]: TelemetryEvent[] }
-} & Telemetry
+export type MockTelemetry = jest.Mocked<Telemetry>
 
 export const getMockTelemetry = (): MockTelemetry => {
-  const commonTags = { installationID: '1234', app: 'test' }
-  const telemetry = telemetrySender({ url: '', enabled: false, token: '' }, commonTags)
-  const events: TelemetryEvent[] = []
-  telemetry.sendCountEvent = async (name: string, value: number, tags: Tags = {}): Promise<void> => {
-    events.push({
-      name,
-      value,
-      tags: { ...tags, ...commonTags },
-      type: EVENT_TYPES.COUNTER,
-      timestamp: '',
-    })
+  let stopped = false
+  return {
+    enabled: true,
+    isStopped: mockFunction<Telemetry['isStopped']>().mockReturnValue(stopped),
+    sendCountEvent: mockFunction<Telemetry['sendCountEvent']>(),
+    sendStackEvent: mockFunction<Telemetry['sendStackEvent']>(),
+    stop: mockFunction<Telemetry['stop']>().mockImplementation(async () => {
+      stopped = true
+    }),
+    flush: mockFunction<Telemetry['flush']>(),
   }
-
-  return Object.assign(telemetry, {
-    getEvents: (): TelemetryEvent[] => events,
-    getEventsMap: (): { [name: string]: TelemetryEvent[] } =>
-      _(events)
-        .groupBy(e => e.name)
-        .value(),
-  })
 }
 
 const getMockCommandConfig = (): CommandConfig => ({
@@ -382,6 +358,9 @@ export const mockWorkspace = ({
     getReferenceSourcesIndex: mockFunction<Workspace['getReferenceSourcesIndex']>(),
     getElementOutgoingReferences: mockFunction<Workspace['getElementOutgoingReferences']>().mockResolvedValue([]),
     getElementIncomingReferences: mockFunction<Workspace['getElementIncomingReferences']>().mockResolvedValue([]),
+    getElementIncomingReferenceInfos: mockFunction<Workspace['getElementIncomingReferenceInfos']>().mockResolvedValue(
+      [],
+    ),
     getElementAuthorInformation: mockFunction<Workspace['getElementAuthorInformation']>().mockResolvedValue({}),
     getElementsAuthorsById: mockFunction<Workspace['getElementsAuthorsById']>().mockResolvedValue({}),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),
@@ -445,7 +424,12 @@ export const mockCredentialsType = (adapterName: string): AdapterAuthentication 
             refType: BuiltinTypes.STRING,
             annotations: {},
           },
-          sandbox: { refType: BuiltinTypes.BOOLEAN },
+          sandbox: {
+            refType: BuiltinTypes.BOOLEAN,
+            annotations: {
+              _required: true,
+            },
+          },
         },
       }),
     },

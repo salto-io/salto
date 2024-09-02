@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { logger } from '@salto-io/logging'
@@ -31,7 +23,7 @@ import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 import { JiraConfig } from '../../config/config'
-import JiraClient, { graphQLResponseType } from '../../client/client'
+import JiraClient, { GQL_BASE_URL_GIRA, graphQLResponseType } from '../../client/client'
 import { QUERY, QUERY_JSM } from './layout_queries'
 import {
   ISSUE_LAYOUT_CONFIG_ITEM_SCHEME,
@@ -99,7 +91,7 @@ export const getLayoutResponse = async ({
   client: JiraClient
   typeName: LayoutTypeName
 }): Promise<graphQLResponseType> => {
-  const baseUrl = '/rest/gira/1'
+  const baseUrl = GQL_BASE_URL_GIRA
   try {
     const query = LAYOUT_TYPE_NAME_TO_DETAILS[typeName]?.query
     if (query === undefined) {
@@ -125,20 +117,46 @@ const fromLayoutConfigRespToLayoutConfig = (layoutConfig: IssueLayoutConfigurati
   const fieldItemIdToMetaData: Record<string, Value> = Object.fromEntries(
     (layoutConfig.metadata?.configuration.items.nodes ?? [])
       .filter(node => !_.isEmpty(node))
-      .map(node => [node.fieldItemId, _.omit(node, 'fieldItemId')]),
+      .map(node => {
+        if (node.fieldItemId) {
+          return [node.fieldItemId, _.omit(node, 'fieldItemId')]
+        }
+        return [node.panelItemId, _.omit(node, 'panelItemId')]
+      }),
   )
-  const items = containers
+  const topItems = containers
     .flatMap(container =>
-      container.items.nodes.map(node => ({
-        type: 'FIELD',
-        sectionType: container.containerType,
-        key: node.fieldItemId,
-        data: fieldItemIdToMetaData[node.fieldItemId],
-      })),
+      container.items.nodes.map(node => {
+        const dataKey = node.panelItemId ?? node.fieldItemId
+        if (dataKey === undefined) {
+          return undefined
+        }
+        return {
+          type: node.fieldItemId ? 'FIELD' : 'PANEL',
+          sectionType: container.containerType,
+          key: dataKey,
+          data: fieldItemIdToMetaData[dataKey],
+        }
+      }),
     )
     .filter(isLayoutConfigItem)
-
-  return { items }
+  const defaultContentItems = containers
+    .flatMap(container =>
+      container.items.nodes[0]?.items?.nodes?.map(innerNode => {
+        const dataKey = innerNode.panelItemId ?? innerNode.fieldItemId
+        if (dataKey === undefined) {
+          return undefined
+        }
+        return {
+          type: innerNode.panelItemId ? 'PANEL' : 'FIELD',
+          sectionType: container.containerType,
+          key: dataKey,
+          data: fieldItemIdToMetaData[dataKey],
+        }
+      }),
+    )
+    .filter(isLayoutConfigItem)
+  return { items: topItems.concat(defaultContentItems) }
 }
 
 interface LayoutIdParts {
@@ -191,7 +209,7 @@ export const getLayout = async ({
       defaultName: name,
       getElemIdFunc,
       nestedPath: [
-        ...instance.path?.slice(2, instance.path?.length - 1),
+        ...(instance.path?.slice(2, instance.path?.length - 1) ?? []),
         LAYOUT_TYPE_NAME_TO_DETAILS[typeName].pathParam,
         pathNaclCase(instanceName),
       ],

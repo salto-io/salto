@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   InstanceElement,
@@ -29,10 +21,11 @@ import { soap } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import { collections, strings } from '@salto-io/lowerdash'
-import { NETSUITE, RECORDS_PATH, SOAP } from '../constants'
+import { INTERNAL_ID, NETSUITE, RECORDS_PATH, SOAP } from '../constants'
 import { NetsuiteQuery } from '../config/query'
 import { getTypeIdentifier, SUPPORTED_TYPES } from './types'
 import NetsuiteClient from '../client/client'
+import { ATTRIBUTES } from '../client/suiteapp_client/constants'
 import { DataElementsResult } from '../client/types'
 import { castFieldValue } from './custom_fields'
 import { addIdentifierToValues, addIdentifierToType } from './multi_fields_identifiers'
@@ -40,11 +33,16 @@ import { addIdentifierToValues, addIdentifierToType } from './multi_fields_ident
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export type DataTypeConfig = Record<string, string[]>
-
 const setTypeSourceAnnotation = (type: ObjectType): void => {
   type.annotationRefTypes.source = createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING)
   type.annotations.source = SOAP
+}
+
+const setServiceIdField = (type: ObjectType): void => {
+  if (type.fields[INTERNAL_ID] === undefined) {
+    return
+  }
+  type.fields[INTERNAL_ID].refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
 }
 
 export const getDataTypes = async (client: NetsuiteClient): Promise<ObjectType[]> => {
@@ -62,19 +60,9 @@ export const getDataTypes = async (client: NetsuiteClient): Promise<ObjectType[]
   types.forEach(type => {
     setTypeSourceAnnotation(type)
     addIdentifierToType(type)
+    setServiceIdField(type)
   })
 
-  types
-    .filter(type => getTypeIdentifier(type) !== undefined)
-    .forEach(type => {
-      const identifierField = getTypeIdentifier(type)
-      const field = type.fields[identifierField]
-      if (field !== undefined) {
-        field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
-      } else {
-        log.warn(`Identifier field ${identifierField} does not exists on type ${type.elemID.getFullName()}`)
-      }
-    })
   return types
 }
 
@@ -126,7 +114,7 @@ const createInstances = async (
         ? elemIdGetter(
             NETSUITE,
             {
-              [serviceIdFieldName]: identifierValue,
+              [INTERNAL_ID]: values[ATTRIBUTES][INTERNAL_ID],
               [OBJECT_SERVICE_ID]: toServiceIdsString({
                 [OBJECT_NAME]: type.elemID.getFullName(),
               }),

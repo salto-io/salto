@@ -1,19 +1,11 @@
 #!/usr/bin/env node
 
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 const fs = require('fs')
 const os = require('os')
@@ -44,18 +36,19 @@ const fontFiles = require('./dist/src/fonts').fontFiles
  * and the binaries you uploaded should be used automatically.
  * */
 
-const BUILD_NODE_EXECUTABLE = false
+const BUILD_NODE_EXECUTABLE = process.env.BUILD_NODE_EXECUTABLE ? true : false
 
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
 const TARGET_ARCH = BUILD_NODE_EXECUTABLE ? os.arch() : 'x64'
-const TARGET_NODE_VERSION = '14.15.3'
+const TARGET_NODE_VERSION = '18.12.1'
 const TARGET_PLATFORMS = {
   win: { ext: '.exe' },
   linux: {},
   mac: {},
 } // alpine not included for now
-const PREBUILT_REMOTE_URL = 'https://github.com/nexe/nexe/releases/download/v3.3.3/'
+const PREBUILT_REMOTE_URL = 'https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/'
+const PYTHON3_PATH = process.env.PYTHON3_PATH
 
 const resources = [
   ...fontFiles.values(),
@@ -66,6 +59,7 @@ const resources = [
 
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
+  python: PYTHON3_PATH,
   resources,
   ...(BUILD_NODE_EXECUTABLE ? { build: true, make: ['--jobs=4'] } : {}),
 }

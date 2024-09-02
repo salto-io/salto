@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
@@ -34,8 +26,16 @@ describe('script', () => {
     let results: Change[]
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
-      runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'a', id: '1' }, { scriptid: 'b', id: '2' }, { invalid: 0 }])
-      runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'c', id: '3' }, { scriptid: 'd', id: '4' }, { invalid: 0 }])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptscriptid: 'a', id: '1' },
+        { scriptscriptid: 'b', id: '2' },
+        { invalid: 0 },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptscriptid: 'c', id: '3' },
+        { scriptscriptid: 'd', id: '4' },
+        { invalid: 0 },
+      ])
       runSuiteQLMock.mockResolvedValueOnce([
         {
           lastmodifieddate: '03/15/2021',
@@ -62,13 +62,13 @@ describe('script', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'a', time: '2021-01-14 18:55:15' },
-        { scriptid: 'b', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'a', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'b', time: '2021-01-14 18:55:15' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'c', time: '2021-01-14 18:55:15' },
-        { scriptid: 'd', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'c', time: '2021-01-14 18:55:15' },
+        { scriptscriptid: 'd', time: '2021-01-14 18:55:15' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([])
@@ -90,38 +90,35 @@ describe('script', () => {
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(
         1,
-        `
-      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM script
-      JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -417
-      GROUP BY script.scriptid
-      ORDER BY script.scriptid ASC
-    `,
+
+        {
+          select: `script.scriptid as scriptscriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+          from: 'script',
+          join: 'systemnote ON systemnote.recordid = script.id',
+          where:
+            "systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -417",
+          groupBy: 'script.scriptid',
+          orderBy: 'scriptscriptid',
+        },
       )
 
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        2,
-        `
-      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM scriptdeployment 
-      JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
-      JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -418
-      GROUP BY script.scriptid
-      ORDER BY script.scriptid ASC
-    `,
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+        select: `script.scriptid as scriptscriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+        from: 'scriptdeployment',
+        join: 'systemnote ON systemnote.recordid = scriptdeployment.primarykey JOIN script ON scriptdeployment.script = script.id',
+        where:
+          "systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -418",
+        groupBy: 'script.scriptid',
+        orderBy: 'scriptscriptid',
+      })
 
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        3,
-        `
-      SELECT internalid
-      FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
-      ORDER BY internalid ASC
-    `,
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, {
+        select: 'internalid',
+        from: 'customfield',
+        where:
+          "fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')",
+        orderBy: 'internalid',
+      })
     })
   })
 

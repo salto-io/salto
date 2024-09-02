@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -39,13 +31,16 @@ import {
 import { INTERNAL_IDS_MAP, SUITEQL_TABLE } from '../../src/data_elements/suiteql_table_elements'
 import filterCreator from '../../src/filters/workflow_account_specific_values'
 import { RemoteFilterOpts } from '../../src/filter'
+import { getUpdatedSuiteQLNameToInternalIdsMap } from '../../src/account_specific_values_resolver'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 const runSavedSearchQueryMock = jest.fn()
 const runRecordsQueryMock = jest.fn()
+const runSuiteQLMock = jest.fn()
 const client = {
   runSavedSearchQuery: runSavedSearchQueryMock,
   runRecordsQuery: runRecordsQueryMock,
+  runSuiteQL: runSuiteQLMock,
 } as unknown as NetsuiteClient
 
 describe('workflow account specific values filter', () => {
@@ -85,7 +80,17 @@ describe('workflow account specific values filter', () => {
           15: { name: 'Account 5' },
         },
       }),
+      new InstanceElement('subsidiary', suiteQLTableType, {
+        [INTERNAL_IDS_MAP]: {
+          38: { name: 'Some Company' },
+        },
+      }),
       new InstanceElement('partner', suiteQLTableType),
+      new InstanceElement('entityStatus', suiteQLTableType, {
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'Entity Status 1' },
+        },
+      }),
     ]
     customRecordType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord123'),
@@ -113,7 +118,7 @@ describe('workflow account specific values filter', () => {
             },
           }),
       },
-      elementsSource: buildElementsSourceFromElements(suiteQLInstances),
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: true,
       config: await getDefaultAdapterConfig(),
     }
@@ -128,7 +133,7 @@ describe('workflow account specific values filter', () => {
         [NAME_FIELD]: 'Custom workflow 1',
         [INIT_CONDITION]: {
           formula:
-            '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1")',
+            '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1","Role2")',
           parameters: {
             parameter: {
               'Subsidiary__Main__Default_Account_for_Corporate_Card_Expenses@sjkfsssss': {
@@ -181,7 +186,12 @@ describe('workflow account specific values filter', () => {
               Role1: {
                 name: 'Role1',
                 [SELECT_RECORD_TYPE]: '-118',
-                value: '[scriptid=customrole123]',
+                value: new ReferenceExpression(new ElemID(NETSUITE, 'role', 'instance', 'customrole123')),
+              },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
               },
             },
           },
@@ -193,6 +203,11 @@ describe('workflow account specific values filter', () => {
               [SELECT_RECORD_TYPE]: new ReferenceExpression(
                 customRecordType.elemID.createNestedID('field', 'custom_field', SCRIPT_ID),
               ),
+              defaultvalue: ACCOUNT_SPECIFIC_VALUE,
+            },
+            custworkflow2: {
+              [SCRIPT_ID]: 'custworkflow2',
+              [SELECT_RECORD_TYPE]: '-104',
               defaultvalue: ACCOUNT_SPECIFIC_VALUE,
             },
           },
@@ -270,9 +285,38 @@ describe('workflow account specific values filter', () => {
                     workflowaction66: {
                       [SCRIPT_ID]: 'workflowaction66',
                       [INIT_CONDITION]: {
-                        formula: '"Employee" IN ("Employee2")',
+                        formula:
+                          '((( "Total" > "0.0" AND "Preferred Language" IN ("Language1","Language2","Language3") AND "Type" IN ("Transaction Type1") AND "Employee" IN ("Employee2") ) OR ( "Type" IN ("Transaction Type1") AND "Preferred Language" IN ("Language2","Language1","Language3") ) AND "Employee" IN ("Employee2") ) AND "Subsidiary (Main)" IN ("{#Subsidiary#}1") )',
                         parameters: {
                           parameter: {
+                            'Preferred_Language@s': {
+                              name: 'Preferred Language',
+                              value: '[scriptid=custbody_rsm_klp_preferred_language]',
+                            },
+                            Language1: {
+                              name: 'Language1',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '2',
+                            },
+                            Language2: {
+                              name: 'Language2',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '13',
+                            },
+                            Language3: {
+                              name: 'Language3',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '60',
+                            },
+                            Type: {
+                              name: 'Type',
+                              value: 'STDBODYTRANTYPE',
+                            },
+                            'Transaction_Type1@s': {
+                              name: 'Transaction Type1',
+                              [SELECT_RECORD_TYPE]: '-100',
+                              value: 'INVOICE',
+                            },
                             Employee: {
                               name: 'Employee',
                               value: 'STDBODYEMPLOYEE',
@@ -280,6 +324,15 @@ describe('workflow account specific values filter', () => {
                             Employee2: {
                               name: 'Employee2',
                               [SELECT_RECORD_TYPE]: '-4',
+                              value: ACCOUNT_SPECIFIC_VALUE,
+                            },
+                            'Subsidiary__Main_@sjk': {
+                              name: 'Subsidiary (Main)',
+                              value: 'STDBODYSUBSIDIARY',
+                            },
+                            '__Subsidiary__1@_00123nn_00125': {
+                              name: '{#Subsidiary#}1',
+                              [SELECT_RECORD_TYPE]: '-117',
                               value: ACCOUNT_SPECIFIC_VALUE,
                             },
                           },
@@ -292,6 +345,7 @@ describe('workflow account specific values filter', () => {
                       [SCRIPT_ID]: 'workflowaction124',
                       field: 'STDBODYACCOUNT',
                       defaultvalue: ACCOUNT_SPECIFIC_VALUE,
+                      valuemultiselect: ACCOUNT_SPECIFIC_VALUE,
                       recipient: ACCOUNT_SPECIFIC_VALUE,
                       sender: ACCOUNT_SPECIFIC_VALUE,
                     },
@@ -320,13 +374,21 @@ describe('workflow account specific values filter', () => {
           {
             body: {
               [SCRIPT_ID]: 'customworkflow1',
-              initconditionformula: '{subsidiary} in (1,2,3,4,5,6) AND {employee}=-1 or {role}=4',
+              initconditionformula:
+                '{subsidiary} in (1,2,3,4,5,6) AND {employee}=-1 or {role} in (4,3) or {custom_123}="1"',
             },
             sublists: [
               {
                 body: {
                   [SCRIPT_ID]: 'custworkflow1',
                   defaultvalue: '5',
+                },
+                sublists: [],
+              },
+              {
+                body: {
+                  [SCRIPT_ID]: 'custworkflow2',
+                  defaultvalue: '1',
                 },
                 sublists: [],
               },
@@ -360,7 +422,8 @@ describe('workflow account specific values filter', () => {
                   {
                     body: {
                       [SCRIPT_ID]: 'workflowaction66',
-                      conditionformula: '{employee}=-2',
+                      conditionformula:
+                        "((({total} > '0.0' and {custbody_rsm_klp_preferred_language.id} in (2,13,60) and UPPER({type.id})=UPPER('CustInvc') and {employee}=-2) or (UPPER({type.id})=UPPER('CustInvc') and {custbody_rsm_klp_preferred_language.id} in (13,2,60)) {employee}=-2) and {subsidiary.id}=38)",
                     },
                     sublists: [],
                   },
@@ -369,6 +432,7 @@ describe('workflow account specific values filter', () => {
                       [SCRIPT_ID]: 'workflowaction124',
                       conditionformula: '',
                       defaultvalue: '5',
+                      valuemultiselect: ['4'],
                       sender: '-3',
                       recipient: '-4',
                     },
@@ -386,6 +450,7 @@ describe('workflow account specific values filter', () => {
             ],
           },
         ])
+        runSuiteQLMock.mockResolvedValue([])
         await filterCreator(filterOpts).onFetch?.(elements)
       })
       it('should call runSavedSearchQuery with right params', () => {
@@ -420,7 +485,7 @@ describe('workflow account specific values filter', () => {
                   sublistId: 'actions',
                   typeSuffix: 'action',
                   customTypes: { customactionaction: 'customaction' },
-                  fields: ['scriptid', 'defaultvalue', 'conditionformula', 'recipient', 'sender'],
+                  fields: ['scriptid', 'defaultvalue', 'conditionformula', 'valuemultiselect', 'recipient', 'sender'],
                   filter: {
                     fieldId: 'scriptid',
                     in: ['workflowaction167', 'workflowaction66', 'workflowaction124'],
@@ -445,7 +510,7 @@ describe('workflow account specific values filter', () => {
               fields: ['scriptid', 'defaultvalue'],
               filter: {
                 fieldId: 'scriptid',
-                in: ['custworkflow1'],
+                in: ['custworkflow1', 'custworkflow2'],
               },
             },
           ],
@@ -457,7 +522,7 @@ describe('workflow account specific values filter', () => {
           [NAME_FIELD]: 'Custom workflow 1',
           [INIT_CONDITION]: {
             formula:
-              '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1")',
+              '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1","Role2")',
             parameters: {
               parameter: {
                 'Subsidiary__Main__Default_Account_for_Corporate_Card_Expenses@sjkfsssss': {
@@ -511,7 +576,12 @@ describe('workflow account specific values filter', () => {
                 Role1: {
                   name: 'Role1',
                   [SELECT_RECORD_TYPE]: '-118',
-                  value: '[scriptid=customrole123]',
+                  value: new ReferenceExpression(new ElemID(NETSUITE, 'role', 'instance', 'customrole123')),
+                },
+                Role2: {
+                  name: 'Role2',
+                  [SELECT_RECORD_TYPE]: '-118',
+                  value: 'ADMINISTRATOR',
                 },
               },
             },
@@ -524,6 +594,11 @@ describe('workflow account specific values filter', () => {
                   customRecordType.elemID.createNestedID('field', 'custom_field', SCRIPT_ID),
                 ),
                 defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Account 5)`,
+              },
+              custworkflow2: {
+                [SCRIPT_ID]: 'custworkflow2',
+                [SELECT_RECORD_TYPE]: '-104',
+                defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Entity Status 1)`,
               },
             },
           },
@@ -598,9 +673,38 @@ describe('workflow account specific values filter', () => {
                       workflowaction66: {
                         [SCRIPT_ID]: 'workflowaction66',
                         [INIT_CONDITION]: {
-                          formula: '"Employee" IN ("Employee2")',
+                          formula:
+                            '((( "Total" > "0.0" AND "Preferred Language" IN ("Language1","Language2","Language3") AND "Type" IN ("Transaction Type1") AND "Employee" IN ("Employee2") ) OR ( "Type" IN ("Transaction Type1") AND "Preferred Language" IN ("Language2","Language1","Language3") ) AND "Employee" IN ("Employee2") ) AND "Subsidiary (Main)" IN ("{#Subsidiary#}1") )',
                           parameters: {
                             parameter: {
+                              'Preferred_Language@s': {
+                                name: 'Preferred Language',
+                                value: '[scriptid=custbody_rsm_klp_preferred_language]',
+                              },
+                              Language1: {
+                                name: 'Language1',
+                                [SELECT_RECORD_TYPE]: '-224',
+                                value: '2',
+                              },
+                              Language2: {
+                                name: 'Language2',
+                                [SELECT_RECORD_TYPE]: '-224',
+                                value: '13',
+                              },
+                              Language3: {
+                                name: 'Language3',
+                                [SELECT_RECORD_TYPE]: '-224',
+                                value: '60',
+                              },
+                              Type: {
+                                name: 'Type',
+                                value: 'STDBODYTRANTYPE',
+                              },
+                              'Transaction_Type1@s': {
+                                name: 'Transaction Type1',
+                                [SELECT_RECORD_TYPE]: '-100',
+                                value: 'INVOICE',
+                              },
                               Employee: {
                                 name: 'Employee',
                                 value: 'STDBODYEMPLOYEE',
@@ -609,6 +713,15 @@ describe('workflow account specific values filter', () => {
                                 name: 'Employee2',
                                 [SELECT_RECORD_TYPE]: '-4',
                                 value: `${ACCOUNT_SPECIFIC_VALUE} (Salto user 2)`,
+                              },
+                              'Subsidiary__Main_@sjk': {
+                                name: 'Subsidiary (Main)',
+                                value: 'STDBODYSUBSIDIARY',
+                              },
+                              '__Subsidiary__1@_00123nn_00125': {
+                                name: '{#Subsidiary#}1',
+                                [SELECT_RECORD_TYPE]: '-117',
+                                value: `${ACCOUNT_SPECIFIC_VALUE} (Some Company)`,
                               },
                             },
                           },
@@ -620,6 +733,7 @@ describe('workflow account specific values filter', () => {
                         [SCRIPT_ID]: 'workflowaction124',
                         field: 'STDBODYACCOUNT',
                         defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Account 5)`,
+                        valuemultiselect: `${ACCOUNT_SPECIFIC_VALUE} (Account 4)`,
                         recipient: `${ACCOUNT_SPECIFIC_VALUE} (Salto user 4)`,
                         sender: `${ACCOUNT_SPECIFIC_VALUE} (Salto user 3)`,
                       },
@@ -751,6 +865,11 @@ describe('workflow account specific values filter', () => {
                 [SELECT_RECORD_TYPE]: '-118',
                 value: '[scriptid=customrole123]',
               },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
+              },
             },
           },
         },
@@ -764,6 +883,11 @@ describe('workflow account specific values filter', () => {
                 customRecordType,
               ),
               defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Account 5)`,
+            },
+            custworkflow2: {
+              [SCRIPT_ID]: 'custworkflow2',
+              [SELECT_RECORD_TYPE]: '-104',
+              defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Entity Status 1)`,
             },
           },
         },
@@ -840,9 +964,38 @@ describe('workflow account specific values filter', () => {
                     workflowaction66: {
                       [SCRIPT_ID]: 'workflowaction66',
                       [INIT_CONDITION]: {
-                        formula: '"Employee" IN ("Employee2")',
+                        formula:
+                          '((( "Total" > "0.0" AND "Preferred Language" IN ("Language1","Language2","Language3") AND "Type" IN ("Transaction Type1") AND "Employee" IN ("Employee2") ) OR ( "Type" IN ("Transaction Type1") AND "Preferred Language" IN ("Language2","Language1","Language3") ) AND "Employee" IN ("Employee2") ) AND "Subsidiary (Main)" IN ("{#Subsidiary#}1") )',
                         parameters: {
                           parameter: {
+                            'Preferred_Language@s': {
+                              name: 'Preferred Language',
+                              value: '[scriptid=custbody_rsm_klp_preferred_language]',
+                            },
+                            Language1: {
+                              name: 'Language1',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '2',
+                            },
+                            Language2: {
+                              name: 'Language2',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '13',
+                            },
+                            Language3: {
+                              name: 'Language3',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '60',
+                            },
+                            Type: {
+                              name: 'Type',
+                              value: 'STDBODYTRANTYPE',
+                            },
+                            'Transaction_Type1@s': {
+                              name: 'Transaction Type1',
+                              [SELECT_RECORD_TYPE]: '-100',
+                              value: 'INVOICE',
+                            },
                             Employee: {
                               name: 'Employee',
                               value: 'STDBODYEMPLOYEE',
@@ -851,6 +1004,15 @@ describe('workflow account specific values filter', () => {
                               name: 'Employee2',
                               [SELECT_RECORD_TYPE]: '-4',
                               value: `${ACCOUNT_SPECIFIC_VALUE} (Salto user 2)`,
+                            },
+                            'Subsidiary__Main_@sjk': {
+                              name: 'Subsidiary (Main)',
+                              value: 'STDBODYSUBSIDIARY',
+                            },
+                            '__Subsidiary__1@_00123nn_00125': {
+                              name: '{#Subsidiary#}1',
+                              [SELECT_RECORD_TYPE]: '-117',
+                              value: `${ACCOUNT_SPECIFIC_VALUE} (Some Company)`,
                             },
                           },
                         },
@@ -885,10 +1047,13 @@ describe('workflow account specific values filter', () => {
           },
         },
       })
-      await filterCreator(filterOpts).preDeploy?.([
-        toChange({ after: workflowInstance1 }),
-        toChange({ after: workflowInstance2 }),
-      ])
+      const changes = [toChange({ after: workflowInstance1 }), toChange({ after: workflowInstance2 })]
+      const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
+        client,
+        buildElementsSourceFromElements(suiteQLInstances),
+        changes,
+      )
+      await filterCreator({ ...filterOpts, suiteQLNameToInternalIdsMap }).preDeploy?.(changes)
     })
     it('should resolve account specific values', () => {
       expect(workflowInstance1.value).toEqual({
@@ -952,6 +1117,11 @@ describe('workflow account specific values filter', () => {
                 [SELECT_RECORD_TYPE]: '-118',
                 value: '[scriptid=customrole123]',
               },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
+              },
             },
           },
         },
@@ -965,6 +1135,11 @@ describe('workflow account specific values filter', () => {
                 customRecordType,
               ),
               defaultvalue: '5',
+            },
+            custworkflow2: {
+              [SCRIPT_ID]: 'custworkflow2',
+              [SELECT_RECORD_TYPE]: '-104',
+              defaultvalue: '1',
             },
           },
         },
@@ -1041,9 +1216,38 @@ describe('workflow account specific values filter', () => {
                     workflowaction66: {
                       [SCRIPT_ID]: 'workflowaction66',
                       [INIT_CONDITION]: {
-                        formula: '"Employee" IN ("Employee2")',
+                        formula:
+                          '((( "Total" > "0.0" AND "Preferred Language" IN ("Language1","Language2","Language3") AND "Type" IN ("Transaction Type1") AND "Employee" IN ("Employee2") ) OR ( "Type" IN ("Transaction Type1") AND "Preferred Language" IN ("Language2","Language1","Language3") ) AND "Employee" IN ("Employee2") ) AND "Subsidiary (Main)" IN ("{#Subsidiary#}1") )',
                         parameters: {
                           parameter: {
+                            'Preferred_Language@s': {
+                              name: 'Preferred Language',
+                              value: '[scriptid=custbody_rsm_klp_preferred_language]',
+                            },
+                            Language1: {
+                              name: 'Language1',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '2',
+                            },
+                            Language2: {
+                              name: 'Language2',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '13',
+                            },
+                            Language3: {
+                              name: 'Language3',
+                              [SELECT_RECORD_TYPE]: '-224',
+                              value: '60',
+                            },
+                            Type: {
+                              name: 'Type',
+                              value: 'STDBODYTRANTYPE',
+                            },
+                            'Transaction_Type1@s': {
+                              name: 'Transaction Type1',
+                              [SELECT_RECORD_TYPE]: '-100',
+                              value: 'INVOICE',
+                            },
                             Employee: {
                               name: 'Employee',
                               value: 'STDBODYEMPLOYEE',
@@ -1052,6 +1256,15 @@ describe('workflow account specific values filter', () => {
                               name: 'Employee2',
                               [SELECT_RECORD_TYPE]: '-4',
                               value: '-2',
+                            },
+                            'Subsidiary__Main_@sjk': {
+                              name: 'Subsidiary (Main)',
+                              value: 'STDBODYSUBSIDIARY',
+                            },
+                            '__Subsidiary__1@_00123nn_00125': {
+                              name: '{#Subsidiary#}1',
+                              [SELECT_RECORD_TYPE]: '-117',
+                              value: '38',
                             },
                           },
                         },

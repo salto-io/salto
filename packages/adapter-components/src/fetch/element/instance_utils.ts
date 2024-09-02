@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -30,10 +22,21 @@ import {
   transformValuesSync,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FetchApiDefinitionsOptions, InstanceFetchApiDefinitions } from '../../definitions/system/fetch'
-import { DefQuery, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
+import {
+  ApiDefinitions,
+  APIDefinitionsOptions,
+  DefQuery,
+  NameMappingFunctionMap,
+  queryWithDefault,
+  ResolveCustomNameMappingOptionsType,
+} from '../../definitions'
 import { ElemIDCreator, PartsCreator, createElemIDFunc, getElemPath } from './id_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
+import { removeNullValues } from './type_utils'
+
+const log = logger(module)
 
 /**
  * Transform a value to a valid instance value by nacl-casing all its keys,
@@ -90,7 +93,24 @@ export const omitInstanceValues = <Options extends FetchApiDefinitionsOptions>({
     type,
     transformFunc: omitValues(defQuery),
     strict: false,
+    allowEmptyArrays: defQuery.query(type.elemID.name)?.element?.topLevel?.allowEmptyArrays,
   })
+
+/**
+ * calling "omitInstanceValues" on all instances and adding a log time to it
+ */
+export const omitAllInstancesValues = <Options extends FetchApiDefinitionsOptions>({
+  instances,
+  defQuery,
+}: {
+  instances: InstanceElement[]
+  defQuery: ElementAndResourceDefFinder<Options>
+}): void =>
+  log.timeDebug(() => {
+    instances.forEach(inst => {
+      inst.value = omitInstanceValues({ value: inst.value, type: inst.getTypeSync(), defQuery })
+    })
+  }, 'omitAllInstancesValues')
 
 export type InstanceCreationParams = {
   entry: Values
@@ -99,6 +119,7 @@ export type InstanceCreationParams = {
   parent?: InstanceElement
   toElemName: ElemIDCreator
   toPath: PartsCreator
+  allowEmptyArrays?: boolean
 }
 
 /**
@@ -126,7 +147,7 @@ export const getInstanceCreationFunctions = <Options extends FetchApiDefinitions
   const { element: elementDef, resource: resourceDef } = defQuery.query(typeName) ?? {}
 
   if (!elementDef?.topLevel?.isTopLevel) {
-    // should have already been tested in caller
+    // should have already been tested in caller, we should not get here if topLevel is undefined
     const error = `type ${adapterName}:${typeName} is not defined as top-level, cannot create instances`
     throw new Error(error)
   }
@@ -173,14 +194,31 @@ export const createInstance = ({
   toPath,
   defaultName,
   parent,
-}: InstanceCreationParams): InstanceElement => {
+  allowEmptyArrays = false,
+}: InstanceCreationParams): InstanceElement | undefined => {
   const annotations = _.pick(entry, Object.keys(INSTANCE_ANNOTATIONS))
   const value = _.omit(entry, Object.keys(INSTANCE_ANNOTATIONS))
+  const refinedValue = value !== undefined ? removeNullValues({ values: value, type, allowEmptyArrays }) : {}
+
+  if (_.isEmpty(refinedValue)) {
+    return undefined
+  }
   if (parent !== undefined) {
     annotations[INSTANCE_ANNOTATIONS.PARENT] = collections.array.makeArray(annotations[INSTANCE_ANNOTATIONS.PARENT])
     annotations[INSTANCE_ANNOTATIONS.PARENT].push(new ReferenceExpression(parent.elemID, parent))
   }
 
   const args = { entry, parent, defaultName }
-  return new InstanceElement(toElemName(args), type, value, toPath(args), annotations)
+  return new InstanceElement(toElemName(args), type, refinedValue, toPath(args), annotations)
+}
+
+export const getFieldsToOmit = <Options extends APIDefinitionsOptions = {}>(
+  definitions: ApiDefinitions<Options>,
+  typeName: string,
+): string[] => {
+  const defQuery = queryWithDefault(definitions.fetch?.instances ?? {})
+  const customizations = defQuery.query(typeName)?.element?.fieldCustomizations ?? {}
+  return Object.entries(customizations)
+    .filter(([, customization]) => customization.omit === true)
+    .map(([fieldName]) => fieldName)
 }

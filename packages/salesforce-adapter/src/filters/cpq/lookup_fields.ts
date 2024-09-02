@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -32,11 +24,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../../filter'
-import {
-  apiName,
-  isCustomObject,
-  relativeApiName,
-} from '../../transformers/transformer'
+import { apiName, isCustomObject, relativeApiName } from '../../transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
   CPQ_PRODUCT_RULE,
@@ -75,9 +63,8 @@ type CustomFieldLookupDef = {
 
 type LookupFieldDef = CustomObjectLookupDef | CustomFieldLookupDef
 
-const isCustomFieldLookupDef = (
-  lookupDef: LookupFieldDef,
-): lookupDef is CustomFieldLookupDef => lookupDef.type === CUSTOM_FIELD
+const isCustomFieldLookupDef = (lookupDef: LookupFieldDef): lookupDef is CustomFieldLookupDef =>
+  lookupDef.type === CUSTOM_FIELD
 
 const LOOKUP_FIELDS = {
   [CPQ_PRODUCT_RULE]: {
@@ -119,9 +106,7 @@ const LOOKUP_FIELDS = {
 } as Record<string, Record<string, LookupFieldDef>>
 
 const getLookupFields = async (object: ObjectType): Promise<Field[]> =>
-  Object.values(
-    _.pick(object.fields, Object.keys(LOOKUP_FIELDS[await apiName(object)])),
-  )
+  Object.values(_.pick(object.fields, Object.keys(LOOKUP_FIELDS[await apiName(object)])))
 
 const transformLookupValueSetFullNames = async (
   lookupField: Field,
@@ -135,9 +120,7 @@ const transformLookupValueSetFullNames = async (
   if (lookupValueSet === undefined) {
     return lookupField
   }
-  lookupField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = await awu(
-    lookupValueSet,
-  )
+  lookupField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = await awu(lookupValueSet)
     .map(async (value: Value) => ({
       ...value,
       fullName: transformFullNameFn(
@@ -159,24 +142,18 @@ const transformObjectLookupValueSetFullNames = async (
   ) => ReferenceExpression | string | undefined,
 ): Promise<ObjectType> => {
   const lookupFields = await getLookupFields(object)
-  lookupFields.forEach((field) =>
-    transformLookupValueSetFullNames(field, transformFullNameFn),
-  )
+  lookupFields.forEach(field => transformLookupValueSetFullNames(field, transformFullNameFn))
   return object
 }
 
-const replaceLookupObjectValueSetValuesWithReferences = async (
-  customObjects: ObjectType[],
-): Promise<void> => {
+const replaceLookupObjectValueSetValuesWithReferences = async (customObjects: ObjectType[]): Promise<void> => {
   const apiNameToCustomObject = Object.fromEntries(
     await awu(customObjects)
-      .map(async (object) => [await apiName(object), object])
+      .map(async object => [await apiName(object), object])
       .toArray(),
   )
   const relevantObjects = await awu(customObjects)
-    .filter(async (object) =>
-      Object.keys(LOOKUP_FIELDS).includes(await apiName(object)),
-    )
+    .filter(async object => Object.keys(LOOKUP_FIELDS).includes(await apiName(object)))
     .toArray()
 
   const transformFullNameToRef = (
@@ -193,13 +170,9 @@ const replaceLookupObjectValueSetValuesWithReferences = async (
     const elementToRef = isCustomFieldLookupDef(lookupDef)
       ? apiNameToCustomObject[lookupDef.objectContext]?.fields[mappedFullName]
       : apiNameToCustomObject[mappedFullName]
-    return elementToRef !== undefined
-      ? new ReferenceExpression(elementToRef.elemID)
-      : fullName
+    return elementToRef !== undefined ? new ReferenceExpression(elementToRef.elemID) : fullName
   }
-  relevantObjects.forEach((object) =>
-    transformObjectLookupValueSetFullNames(object, transformFullNameToRef),
-  )
+  relevantObjects.forEach(object => transformObjectLookupValueSetFullNames(object, transformFullNameToRef))
 }
 
 const transformFullNameToApiName = (
@@ -230,20 +203,14 @@ const transformFullNameToLabel = (
     return undefined
   }
   const nameToApiMapping = _.invert(lookupDef.valuesMapping ?? {})
-  const lookupApiName = isCustomFieldLookupDef(lookupDef)
-    ? relativeApiName(fullName)
-    : fullName
+  const lookupApiName = isCustomFieldLookupDef(lookupDef) ? relativeApiName(fullName) : fullName
   return nameToApiMapping[lookupApiName] ?? lookupApiName
 }
 
-const transformObjectLabelsToApiName = (
-  object: ObjectType,
-): Promise<ObjectType> =>
+const transformObjectLabelsToApiName = (object: ObjectType): Promise<ObjectType> =>
   transformObjectLookupValueSetFullNames(object, transformFullNameToApiName)
 
-const transformObjectValuesBackToLabel = (
-  object: ObjectType,
-): Promise<ObjectType> =>
+const transformObjectValuesBackToLabel = (object: ObjectType): Promise<ObjectType> =>
   transformObjectLookupValueSetFullNames(object, transformFullNameToLabel)
 
 const transformFieldLabelsToApiName = (field: Field): Promise<Field> =>
@@ -253,9 +220,7 @@ const transformFieldValuesBackToLabel = (field: Field): Promise<Field> =>
   transformLookupValueSetFullNames(field, transformFullNameToLabel)
 
 const doesObjectHaveValuesMappingLookup = (objectApiName: string): boolean =>
-  Object.values(LOOKUP_FIELDS[objectApiName] ?? {}).some(
-    (lookupDef) => lookupDef.valuesMapping,
-  )
+  Object.values(LOOKUP_FIELDS[objectApiName] ?? {}).some(lookupDef => lookupDef.valuesMapping)
 
 const getCustomObjectWithMappingLookupChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>,
@@ -264,7 +229,7 @@ const getCustomObjectWithMappingLookupChanges = (
     .filter(isAdditionOrModificationChange)
     .filter(isObjectTypeChange)
     .filter(
-      async (change) =>
+      async change =>
         (await isCustomObject(getChangeData(change))) &&
         doesObjectHaveValuesMappingLookup(await apiName(getChangeData(change))),
     )
@@ -276,26 +241,22 @@ const applyFuncOnCustomFieldWithMappingLookupChange = async (
 ): Promise<void> =>
   awu(changes)
     .filter<Change<Field>>(isFieldChange)
-    .filter(async (change) => {
+    .filter(async change => {
       const changeData = getChangeData(change)
       const parentApiName = await apiName(changeData.parent)
       return (
         doesObjectHaveValuesMappingLookup(parentApiName) &&
-        LOOKUP_FIELDS[parentApiName][await apiName(changeData, true)]
-          ?.valuesMapping !== undefined
+        LOOKUP_FIELDS[parentApiName][await apiName(changeData, true)]?.valuesMapping !== undefined
       )
     })
-    .forEach(async (change) => applyFunctionToChangeData(change, fn))
+    .forEach(async change => applyFunctionToChangeData(change, fn))
 
 const applyFuncOnCustomObjectWithMappingLookupChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>,
   fn: (customObject: ObjectType) => Promise<ObjectType>,
 ): Promise<void> => {
-  const customObjectWithMappingLookupChanges =
-    await getCustomObjectWithMappingLookupChanges(changes)
-  await awu(customObjectWithMappingLookupChanges).forEach(async (change) =>
-    applyFunctionToChangeData(change, fn),
-  )
+  const customObjectWithMappingLookupChanges = await getCustomObjectWithMappingLookupChanges(changes)
+  await awu(customObjectWithMappingLookupChanges).forEach(async change => applyFunctionToChangeData(change, fn))
 }
 
 const filter: LocalFilterCreator = () => ({
@@ -307,29 +268,23 @@ const filter: LocalFilterCreator = () => ({
     )
     log.debug('Finished replacing lookupObject values with references')
   },
-  preDeploy: async (changes) => {
+  preDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
     await applyFuncOnCustomObjectWithMappingLookupChange(
       // Fields are taken from object changes only when the object is added
       addOrModifyChanges.filter(isAdditionChange),
       transformObjectValuesBackToLabel,
     )
-    await applyFuncOnCustomFieldWithMappingLookupChange(
-      addOrModifyChanges,
-      transformFieldValuesBackToLabel,
-    )
+    await applyFuncOnCustomFieldWithMappingLookupChange(addOrModifyChanges, transformFieldValuesBackToLabel)
   },
-  onDeploy: async (changes) => {
+  onDeploy: async changes => {
     const addOrModifyChanges = changes.filter(isAdditionOrModificationChange)
     await applyFuncOnCustomObjectWithMappingLookupChange(
       // Fields are taken from object changes only when the object is added
       addOrModifyChanges.filter(isAdditionChange),
       transformObjectLabelsToApiName,
     )
-    await applyFuncOnCustomFieldWithMappingLookupChange(
-      addOrModifyChanges,
-      transformFieldLabelsToApiName,
-    )
+    await applyFuncOnCustomFieldWithMappingLookupChange(addOrModifyChanges, transformFieldLabelsToApiName)
   },
 })
 

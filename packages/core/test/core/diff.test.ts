@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -28,7 +20,14 @@ import {
   getChangeData,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { merger, createElementSelector, elementSource, createElementSelectors, remoteMap } from '@salto-io/workspace'
+import {
+  merger,
+  createElementSelector,
+  elementSource,
+  createElementSelectors,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockWorkspace } from '../common/workspace'
 import { createDiffChanges, getEnvsDeletionsDiff } from '../../src/core/diff'
@@ -176,24 +175,22 @@ describe('diff', () => {
   describe('with no changes', () => {
     describe('detailedChanges', () => {
       it('should not create changes toElements and the fromElements are the same', async () => {
-        const changes = await createDiffChanges(
-          createElementSource(allElement),
-          createElementSource(allElement),
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-        )
+        const changes = await createDiffChanges({
+          toElementsSrc: createElementSource(allElement),
+          fromElementsSrc: createElementSource(allElement),
+          referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+        })
         expect(changes).toHaveLength(0)
       })
     })
     describe('changesWithDetails', () => {
       it('should not create changes toElements and the fromElements are the same', async () => {
-        const changes = await createDiffChanges(
-          createElementSource(allElement),
-          createElementSource(allElement),
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-          undefined,
-          undefined,
-          'changes',
-        )
+        const changes = await createDiffChanges({
+          toElementsSrc: createElementSource(allElement),
+          fromElementsSrc: createElementSource(allElement),
+          referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+          resultType: 'changes',
+        })
         expect(changes).toHaveLength(0)
       })
     })
@@ -213,11 +210,11 @@ describe('diff', () => {
       describe('without filters', () => {
         let changes: DetailedChange[]
         beforeAll(async () => {
-          changes = await createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-          )
+          changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements),
+            fromElementsSrc: createElementSource(afterElements),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+          })
         })
         it('should create all changes', () => {
           expect(changes).toHaveLength(3)
@@ -267,12 +264,12 @@ describe('diff', () => {
             createElementSelector(addedInstance.elemID.createNestedID('nested', 'str').getFullName()),
             createElementSelector(afterInstance.elemID.createNestedID('nested').getFullName()),
           ]
-          changes = await createDiffChanges(
-            createElementSource(beforeElements.concat(beforeInstance)),
-            createElementSource(afterElements.concat(afterInstance, addedInstance)),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-          )
+          changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements.concat(beforeInstance)),
+            fromElementsSrc: createElementSource(afterElements.concat(afterInstance, addedInstance)),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+          })
         })
         it('should filter out changes that did not pass any of the filters', () => {
           expect(changes).toHaveLength(3)
@@ -292,12 +289,12 @@ describe('diff', () => {
       describe('check diff handling of selectors', () => {
         it('returns empty diff when element id exists but is not in diff', async () => {
           const selectors = [createElementSelector(multiPathInstMerged.elemID.getFullName())]
-          const changes = await createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-          )
+          const changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements),
+            fromElementsSrc: createElementSource(afterElements),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+          })
           expect(changes).toHaveLength(0)
         })
         // test disabled because validation is disabled.
@@ -305,12 +302,12 @@ describe('diff', () => {
         it.skip('throws error when selector catches nothing', async () => {
           const selectors = [createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname')]
           await expect(
-            createDiffChanges(
-              createElementSource(beforeElements),
-              createElementSource(afterElements),
-              new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-              selectors,
-            ),
+            createDiffChanges({
+              toElementsSrc: createElementSource(beforeElements),
+              fromElementsSrc: createElementSource(afterElements),
+              referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+              elementSelectors: selectors,
+            }),
           ).rejects.toThrow()
         })
         it('includes child elements when their parent is selected ', async () => {
@@ -320,12 +317,12 @@ describe('diff', () => {
           newSinglePathInstMergedAfter.value.simple = 'old simple'
           const newAfterElements = [multiPathObjMerged, multiPathInstMerged, newSinglePathInstMergedAfter]
           const selectors = [createElementSelector(singlePathInstMerged.elemID.getFullName())]
-          const changes = await createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(newAfterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-          )
+          const changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements),
+            fromElementsSrc: createElementSource(newAfterElements),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+          })
           expect(changes).toHaveLength(2)
           expect(changes.map(change => change.id.getFullName()).sort()).toEqual([nestedID, simpleId].sort())
         })
@@ -334,15 +331,68 @@ describe('diff', () => {
           newSinglePathObjMerged.fields.simple.annotations.description = 'new description'
           const simpleFieldId = newSinglePathObjMerged.elemID.createNestedID('field', 'simple')
           const selectors = [createElementSelector(simpleFieldId.getFullName())]
-          const changes = await createDiffChanges(
-            createInMemoryElementSource([newSinglePathObjMerged]),
-            createInMemoryElementSource([singlePathObjMerged]),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-          )
+          const changes = await createDiffChanges({
+            toElementsSrc: createInMemoryElementSource([newSinglePathObjMerged]),
+            fromElementsSrc: createInMemoryElementSource([singlePathObjMerged]),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+          })
           expect(changes.map(change => change.id.getFullName())).toEqual([
             simpleFieldId.createNestedID('description').getFullName(),
           ])
+        })
+      })
+      describe('with compare options', () => {
+        describe('compareListItems', () => {
+          let changes: DetailedChange[]
+          beforeAll(async () => {
+            const beforeInstance = new InstanceElement('instance', singlePathObject, {
+              simple: 'Simple',
+              nested: {
+                str: 'Str',
+                num: 7,
+                list: [1, 2, 3],
+              },
+            })
+            const afterInstance = new InstanceElement('instance', singlePathObject, {
+              simple: 'Simple',
+              nested: {
+                str: 'Str',
+                num: 7,
+                list: [2, 3, 4, 5],
+              },
+            })
+            changes = await createDiffChanges({
+              toElementsSrc: createElementSource([beforeInstance]),
+              fromElementsSrc: createElementSource([afterInstance]),
+              compareOptions: { compareListItems: true },
+            })
+          })
+          it('should create all list items detailed changes', () => {
+            expect(changes).toHaveLength(5)
+
+            const firstItemRemoval = changes.find(change => change.elemIDs?.before?.name === '0')
+            expect(firstItemRemoval?.action).toEqual('remove')
+            expect(firstItemRemoval?.data).toEqual({ before: 1 })
+
+            const secondItemReorder = changes.find(change => change.elemIDs?.before?.name === '1')
+            expect(secondItemReorder?.action).toEqual('modify')
+            expect(secondItemReorder?.data).toEqual({ before: 2, after: 2 })
+            expect(secondItemReorder?.elemIDs?.after?.name).toEqual('0')
+
+            const thirdItemReorder = changes.find(change => change.elemIDs?.before?.name === '2')
+            expect(thirdItemReorder?.action).toEqual('modify')
+            expect(thirdItemReorder?.data).toEqual({ before: 3, after: 3 })
+            expect(thirdItemReorder?.elemIDs?.after?.name).toEqual('1')
+
+            const fourthItemAddition = changes.find(change => change.elemIDs?.after?.name === '2')
+            expect(fourthItemAddition?.action).toEqual('add')
+            expect(fourthItemAddition?.data).toEqual({ after: 4 })
+
+            const fifthItemAddition = changes.find(change => change.elemIDs?.after?.name === '3')
+            expect(fifthItemAddition?.action).toEqual('add')
+            expect(fifthItemAddition?.data).toEqual({ after: 5 })
+          })
         })
       })
     })
@@ -359,14 +409,12 @@ describe('diff', () => {
       describe('without filters', () => {
         let changes: ChangeWithDetails[]
         beforeAll(async () => {
-          changes = await createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            undefined,
-            undefined,
-            'changes',
-          )
+          changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements),
+            fromElementsSrc: createElementSource(afterElements),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            resultType: 'changes',
+          })
         })
         it('should create all changes', () => {
           expect(changes).toHaveLength(3)
@@ -426,14 +474,13 @@ describe('diff', () => {
             createElementSelector(addedInstance.elemID.createNestedID('nested', 'str').getFullName()),
             createElementSelector(afterInstance.elemID.createNestedID('nested').getFullName()),
           ]
-          changes = await createDiffChanges(
-            createElementSource(beforeElements.concat(beforeInstance)),
-            createElementSource(afterElements.concat(afterInstance, addedInstance)),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-            undefined,
-            'changes',
-          )
+          changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements.concat(beforeInstance)),
+            fromElementsSrc: createElementSource(afterElements.concat(afterInstance, addedInstance)),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+            resultType: 'changes',
+          })
         })
         it('should filter out changes that did not pass any of the filters', () => {
           expect(changes).toHaveLength(3)
@@ -469,14 +516,13 @@ describe('diff', () => {
       describe('check diff handling of selectors', () => {
         it('returns empty diff when element id exists but is not in diff', async () => {
           const selectors = [createElementSelector(multiPathInstMerged.elemID.getFullName())]
-          const changes = await createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(afterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-            undefined,
-            'changes',
-          )
+          const changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements),
+            fromElementsSrc: createElementSource(afterElements),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+            resultType: 'changes',
+          })
           expect(changes).toHaveLength(0)
         })
         // test disabled because validation is disabled.
@@ -484,14 +530,13 @@ describe('diff', () => {
         it.skip('throws error when selector catches nothing', async () => {
           const selectors = [createElementSelector('salto.multiPathObj.field.thereisnofieldbythisname')]
           await expect(
-            createDiffChanges(
-              createElementSource(beforeElements),
-              createElementSource(afterElements),
-              new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-              selectors,
-              undefined,
-              'changes',
-            ),
+            createDiffChanges({
+              toElementsSrc: createElementSource(beforeElements),
+              fromElementsSrc: createElementSource(afterElements),
+              referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+              elementSelectors: selectors,
+              resultType: 'changes',
+            }),
           ).rejects.toThrow()
         })
         it('includes child elements when their parent is selected', async () => {
@@ -501,14 +546,13 @@ describe('diff', () => {
           newSinglePathInstMergedAfter.value.simple = 'old simple'
           const newAfterElements = [multiPathObjMerged, multiPathInstMerged, newSinglePathInstMergedAfter]
           const selectors = [createElementSelector(singlePathInstMerged.elemID.getFullName())]
-          const changes = await createDiffChanges(
-            createElementSource(beforeElements),
-            createElementSource(newAfterElements),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-            undefined,
-            'changes',
-          )
+          const changes = await createDiffChanges({
+            toElementsSrc: createElementSource(beforeElements),
+            fromElementsSrc: createElementSource(newAfterElements),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+            resultType: 'changes',
+          })
           expect(changes).toHaveLength(1)
           expect(getChangeData(changes[0]).elemID).toEqual(singlePathInstMerged.elemID)
           expect(
@@ -523,19 +567,75 @@ describe('diff', () => {
           newSinglePathObjMerged.fields.simple.annotations.description = 'new description'
           const simpleFieldId = newSinglePathObjMerged.elemID.createNestedID('field', 'simple')
           const selectors = [createElementSelector(simpleFieldId.getFullName())]
-          const changes = await createDiffChanges(
-            createInMemoryElementSource([newSinglePathObjMerged]),
-            createInMemoryElementSource([singlePathObjMerged]),
-            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-            selectors,
-            undefined,
-            'changes',
-          )
+          const changes = await createDiffChanges({
+            toElementsSrc: createInMemoryElementSource([newSinglePathObjMerged]),
+            fromElementsSrc: createInMemoryElementSource([singlePathObjMerged]),
+            referenceSourcesIndex: new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+            elementSelectors: selectors,
+            resultType: 'changes',
+          })
           expect(changes).toHaveLength(1)
           expect(getChangeData(changes[0]).elemID).toEqual(simpleFieldId)
           expect(changes[0].detailedChanges().map(detailed => detailed.id.getFullName())).toEqual([
             simpleFieldId.createNestedID('description').getFullName(),
           ])
+        })
+      })
+      describe('with compare options', () => {
+        describe('compareListItems', () => {
+          let changes: ChangeWithDetails[]
+          let detailedChanges: DetailedChange[]
+          beforeAll(async () => {
+            const beforeInstance = new InstanceElement('instance', singlePathObject, {
+              simple: 'Simple',
+              nested: {
+                str: 'Str',
+                num: 7,
+                list: [1, 2, 3],
+              },
+            })
+            const afterInstance = new InstanceElement('instance', singlePathObject, {
+              simple: 'Simple',
+              nested: {
+                str: 'Str',
+                num: 7,
+                list: [2, 3, 4, 5],
+              },
+            })
+            changes = await createDiffChanges({
+              toElementsSrc: createElementSource([beforeInstance]),
+              fromElementsSrc: createElementSource([afterInstance]),
+              compareOptions: { compareListItems: true },
+              resultType: 'changes',
+            })
+            detailedChanges = changes.flatMap(c => c.detailedChanges())
+          })
+          it('should create all list items detailed changes', () => {
+            expect(changes).toHaveLength(1)
+            expect(detailedChanges).toHaveLength(5)
+
+            const firstItemRemoval = detailedChanges.find(change => change.elemIDs?.before?.name === '0')
+            expect(firstItemRemoval?.action).toEqual('remove')
+            expect(firstItemRemoval?.data).toEqual({ before: 1 })
+
+            const secondItemReorder = detailedChanges.find(change => change.elemIDs?.before?.name === '1')
+            expect(secondItemReorder?.action).toEqual('modify')
+            expect(secondItemReorder?.data).toEqual({ before: 2, after: 2 })
+            expect(secondItemReorder?.elemIDs?.after?.name).toEqual('0')
+
+            const thirdItemReorder = detailedChanges.find(change => change.elemIDs?.before?.name === '2')
+            expect(thirdItemReorder?.action).toEqual('modify')
+            expect(thirdItemReorder?.data).toEqual({ before: 3, after: 3 })
+            expect(thirdItemReorder?.elemIDs?.after?.name).toEqual('1')
+
+            const fourthItemAddition = detailedChanges.find(change => change.elemIDs?.after?.name === '2')
+            expect(fourthItemAddition?.action).toEqual('add')
+            expect(fourthItemAddition?.data).toEqual({ after: 4 })
+
+            const fifthItemAddition = detailedChanges.find(change => change.elemIDs?.after?.name === '3')
+            expect(fifthItemAddition?.action).toEqual('add')
+            expect(fifthItemAddition?.data).toEqual({ after: 5 })
+          })
         })
       })
     })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
@@ -54,11 +46,8 @@ describe('swagger_type_elements', () => {
     const expectedParsedConfigs = {
       Order: { request: { url: '/store/order/{orderId}' } },
       Pet: { request: { url: '/pet/{petId}' } },
-      // eslint-disable-next-line camelcase
       pet__findByStatus: { request: { url: '/pet/findByStatus' } },
-      // eslint-disable-next-line camelcase
       pet__findByTags: { request: { url: '/pet/findByTags' } },
-      // eslint-disable-next-line camelcase
       store__inventory: { request: { url: '/store/inventory' } },
       User: { request: { url: '/user/{username}' } },
       Food: { request: { url: '/food/{foodId}' } },
@@ -294,13 +283,9 @@ describe('swagger_type_elements', () => {
         const updatedExpectedParsedConfigs = {
           Order: { request: { url: '/store/order/{orderId}' } },
           Pet: { request: { url: '/newPet/all' } },
-          // eslint-disable-next-line camelcase
           Pet__new: { request: { url: '/pet/{petId}' } },
-          // eslint-disable-next-line camelcase
           pet__findByStatus: { request: { url: '/pet/findByStatus' } },
-          // eslint-disable-next-line camelcase
           PetByTag: { request: { url: '/pet/findByTags' } },
-          // eslint-disable-next-line camelcase
           store__inventory: { request: { url: '/store/inventory' } },
           User: { request: { url: '/user/{username}' } },
           Food: { request: { url: '/food/{foodId}' } },

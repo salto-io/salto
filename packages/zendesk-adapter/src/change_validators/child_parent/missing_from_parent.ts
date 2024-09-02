@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -26,20 +18,18 @@ import {
   ChangeError,
   isAdditionChange,
   isAdditionOrModificationChange,
+  ElemID,
 } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../user_config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
 
-export const createParentReferencesError = (
-  change: AdditionChange<InstanceElement>,
-  parentFullName: string,
-): ChangeError => {
+const createParentReferencesError = (change: AdditionChange<InstanceElement>, parentElemId: ElemID): ChangeError => {
   const instance = getChangeData(change)
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot add this element since it is missing a reference from its parent',
-    detailedMessage: `In order to add this element, please add a reference to it from its parent ‘${parentFullName}’`,
+    message: 'Element needs to be referred from its parent',
+    detailedMessage: `To add this ${instance.elemID.typeName}, please make sure ${instance.elemID.getFullName()} is included in ‘${parentElemId.getFullName()}’. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/9582618-element-needs-to-be-referred-from-its-parent`,
   }
 }
 
@@ -65,11 +55,11 @@ export const missingFromParentValidatorCreator =
       return relevantRelations.flatMap(relation => {
         const parentChange = changeByID[parentFullName]
         if (parentChange === undefined || !isAdditionOrModificationChange(parentChange)) {
-          return [createParentReferencesError(change, parentFullName)]
+          return [createParentReferencesError(change, parentRef.value.elemID)]
         }
         const { added } = getRemovedAndAddedChildren(parentChange, relation.fieldName)
         if (isAdditionChange(change) && !added.some(id => id.isEqual(instance.elemID))) {
-          return [createParentReferencesError(change, parentFullName)]
+          return [createParentReferencesError(change, parentRef.value.elemID)]
         }
         return []
       })

@@ -1,19 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { mockFunction } from '@salto-io/test-utils'
 import { ClientRateLimitConfig } from '../../src/definitions/user/client_config'
@@ -27,6 +19,7 @@ import {
 } from '../../src/client'
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'
+import { RATE_LIMIT_DEFAULT_USE_BOTTLENECK } from '../../src/client/constants'
 
 const STATUSES_TO_RETRY = [1, 2, 3]
 
@@ -50,6 +43,8 @@ describe('client_http_client', () => {
         pageSize: { get: 123 },
         rateLimit: { total: -1, get: 3, deploy: 4 },
         maxRequestsPerMinute: -1,
+        delayPerRequestMS: 0,
+        useBottleneck: RATE_LIMIT_DEFAULT_USE_BOTTLENECK,
         retry: {
           maxAttempts: 3,
           retryDelay: 123,
@@ -77,20 +72,33 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+      mockAxiosAdapter.onGet('/ep2', { a: ['AAA', 'BBB'] }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const getRes = await client.get({ url: '/ep' })
-      const getRes2 = await client.get({ url: '/ep2', queryParams: { a: 'AAA' } })
+      const getRes2 = await client.get({
+        url: '/ep2',
+        queryParams: { a: ['AAA', 'BBB'] },
+        queryParamsSerializer: { indexes: null },
+      })
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
       expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(
+        1,
+        new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
+      )
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(
+        2,
+        new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
+      )
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, new AxiosHeaders({ hh: 'header' }))
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, new AxiosHeaders({ hh: 'header' }))
+      const request = mockAxiosAdapter.history.get[2]
+      expect(request.url).toEqual('/ep2')
+      expect(request.paramsSerializer).toEqual({ indexes: null })
     })
 
     it('should throw Unauthorized on login 401', async () => {
@@ -164,10 +172,16 @@ describe('client_http_client', () => {
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
       expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(
+        1,
+        new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
+      )
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(
+        2,
+        new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
+      )
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, new AxiosHeaders({ hh: 'header' }))
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, new AxiosHeaders({ hh: 'header' }))
     })
 
     it('should throw HTTPError on http errors', async () => {
@@ -206,10 +220,16 @@ describe('client_http_client', () => {
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
       expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(
+        1,
+        new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
+      )
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(
+        2,
+        new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
+      )
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, new AxiosHeaders({ hh: 'header' }))
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, new AxiosHeaders({ hh: 'header' }))
     })
 
     it('should throw HTTPError on http errors', async () => {
@@ -236,7 +256,7 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onPost('/ep', 'someData').replyOnce(200, { a: 'b' })
 
       const postRes = await client.post({ url: '/ep', data: 'someData' })
-      expect(postRes).toEqual({ data: { a: 'b' }, status: 200 })
+      expect(postRes).toEqual({ data: { a: 'b' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(1)
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledWith({ a: 'b' }, '/ep')
     })
@@ -266,7 +286,7 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onPut('/ep', 'someData').replyOnce(200, { a: 'b' })
 
       const putRes = await client.put({ url: '/ep', data: 'someData' })
-      expect(putRes).toEqual({ data: { a: 'b' }, status: 200 })
+      expect(putRes).toEqual({ data: { a: 'b' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(1)
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledWith({ a: 'b' }, '/ep')
     })
@@ -286,7 +306,7 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onDelete('/ep', { a: 'AAA' }).replyOnce(200, { a: 'b' })
 
       const getRes = await client.delete({ url: '/ep' })
-      expect(getRes).toEqual({ data: { a: 'b' }, status: 200 })
+      expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(1)
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledWith({ a: 'b' }, '/ep')
     })
@@ -313,7 +333,7 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onPatch('/ep', 'someData').replyOnce(200, { a: 'b' })
 
       const patchRes = await client.patch({ url: '/ep', data: 'someData' })
-      expect(patchRes).toEqual({ data: { a: 'b' }, status: 200 })
+      expect(patchRes).toEqual({ data: { a: 'b' }, status: 200, headers: {} })
     })
   })
 

@@ -1,26 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { EOL } from 'os'
-import requestretry, {
-  RequestRetryOptions,
-  RetryStrategies,
-  RetryStrategy,
-} from 'requestretry'
-import Bottleneck from 'bottleneck'
+import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
   BatchResultInfo,
@@ -43,7 +30,7 @@ import {
   UpsertResult,
 } from '@salto-io/jsforce'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { flatValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { flatValues, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
@@ -69,17 +56,17 @@ import {
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
+import { getFullName } from '../filters/utils'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
 
 const log = logger(module)
-const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } =
-  clientUtils
+const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
-export const API_VERSION = '60.0'
+export const API_VERSION = '61.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete call
@@ -107,14 +94,13 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   timeout: 60 * 1000 * 8, // timeout per request retry in milliseconds
 }
 
-const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> =
-  {
-    default: MAX_ITEMS_IN_READ_METADATA_REQUEST,
-    overrides: {
-      Profile: 1,
-      PermissionSet: 1,
-    },
-  }
+const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {
+  default: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+  overrides: {
+    Profile: 1,
+    PermissionSet: 1,
+  },
+}
 
 const errorCodesToRetry = [400, 406]
 
@@ -142,51 +128,59 @@ const errorMessagesToRetry = [
   'no healthy upstream',
   'upstream connect error or disconnect/reset before headers',
   'security policies took too long to evaluate',
+  // The following are from the force.com source code, we did not encounter them ourselves:
+  // ref: https://github.com/forcedotcom/source-deploy-retrieve/blob/f7881c94d46aad5e67005af1802f7b66bd0b26f4/src/client/metadataTransfer.ts#L207-L228
+  'ENOMEM',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'ECONNRESET',
+  'connection timeout',
+  'INVALID_QUERY_LOCATOR',
+  'ERROR_HTTP_502',
+  'ERROR_HTTP_503',
+  '<h1>Bad Message 400</h1><pre>reason: Bad Request</pre>',
+  'Unable to complete the creation of the query cursor at this time',
+  'Failed while fetching query cursor data for this QueryLocator',
+  'Client network socket disconnected before secure TLS connection was established',
+  'Unexpected internal servlet state',
+  // end of force.com error messages
+  'ERROR_HTTP_420',
+  'down for maintenance',
+  'REQUEST_RUNNING_TOO_LONG',
+  'request exceeded the time limit for processing',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
 
 const isAlreadyDeletedError = (error: SfError): boolean =>
-  error.statusCode === 'INVALID_CROSS_REFERENCE_KEY' &&
-  error.message.match(/no.*named.*found/) !== null
+  error.statusCode === 'INVALID_CROSS_REFERENCE_KEY' && error.message.match(/no.*named.*found/) !== null
 
 export type ErrorFilter = (error: Error) => boolean
 
 const isSFDCUnhandledException = (error: Error): boolean =>
-  !HANDLED_ERROR_PREDICATES.some((predicate) => predicate(error))
+  !HANDLED_ERROR_PREDICATES.some(predicate => predicate(error))
 
-const validateCRUDResult = (
-  isDelete: boolean,
-): decorators.InstanceMethodDecorator =>
-  decorators.wrapMethodWith(
-    async (original: decorators.OriginalCall): Promise<unknown> => {
-      const result = await original.call()
+const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
+  decorators.wrapMethodWith(async (original: decorators.OriginalCall): Promise<unknown> => {
+    const result = await original.call()
 
-      const errors = _(makeArray(result))
-        .filter((r) => r)
-        .map((r) => r as CompleteSaveResult)
-        .map((r) => makeArray(r.errors))
-        .flatten()
-        .value()
+    const errors = _(makeArray(result))
+      .filter(r => r)
+      .map(r => r as CompleteSaveResult)
+      .map(r => makeArray(r.errors))
+      .flatten()
+      .value()
 
-      const [silencedErrors, realErrors] = _.partition(
-        errors,
-        (err) => isDelete && isAlreadyDeletedError(err),
-      )
-      if (silencedErrors.length > 0) {
-        log.debug(
-          'ignoring errors:%s%s',
-          EOL,
-          silencedErrors.map((e) => e.message).join(EOL),
-        )
-      }
-      if (realErrors.length > 0) {
-        throw new Error(realErrors.map((e) => e.message).join(EOL))
-      }
+    const [silencedErrors, realErrors] = _.partition(errors, err => isDelete && isAlreadyDeletedError(err))
+    if (silencedErrors.length > 0) {
+      log.debug('ignoring errors:%s%s', EOL, silencedErrors.map(e => e.message).join(EOL))
+    }
+    if (realErrors.length > 0) {
+      throw new Error(realErrors.map(e => e.message).join(EOL))
+    }
 
-      return result
-    },
-  )
+    return result
+  })
 
 const validateDeleteResult = validateCRUDResult(true)
 const validateSaveResult = validateCRUDResult(false)
@@ -213,8 +207,7 @@ export const setPollIntervalForConnection = (
 }
 
 export const createRequestModuleFunction =
-  (retryOptions: RequestRetryOptions) =>
-  (opts: Options, callback: RequestCallback) =>
+  (retryOptions: RequestRetryOptions) => (opts: Options, callback: RequestCallback) =>
     requestretry({ ...retryOptions, ...opts }, (err, response, body) => {
       const attempts = _.get(response, 'attempts') || _.get(err, 'attempts')
       if (attempts && attempts > 1) {
@@ -222,15 +215,8 @@ export const createRequestModuleFunction =
       }
       // Temp code to check to have more details to fix https://salto-io.atlassian.net/browse/SALTO-1600
       // response can be undefined when there was an error
-      if (
-        response !== undefined &&
-        !response.request.path.startsWith('/services/Soap')
-      ) {
-        log.debug(
-          'Received headers: %o from request to path: %s',
-          response.headers,
-          response.request.path,
-        )
+      if (response !== undefined && !response.request.path.startsWith('/services/Soap')) {
+        log.debug('Received headers: %o from request to path: %s', response.headers, response.request.path)
       }
       return callback(err, response, body)
     })
@@ -256,9 +242,7 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
     oauth2: {
       clientId: params.clientId,
       clientSecret: params.clientSecret,
-      loginUrl: params.isSandbox
-        ? 'https://test.salesforce.com'
-        : 'https://login.salesforce.com',
+      loginUrl: params.isSandbox ? 'https://test.salesforce.com' : 'https://login.salesforce.com',
     },
     version: API_VERSION,
     instanceUrl: params.instanceUrl,
@@ -267,7 +251,7 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
     requestModule: createRequestModuleFunction(params.retryOptions),
   })
 
-  conn.on('refresh', (accessToken) => {
+  conn.on('refresh', accessToken => {
     log.debug('accessToken has been refreshed', {
       accessToken: toMD5(accessToken),
     })
@@ -276,10 +260,7 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
   return conn
 }
 
-const realConnection = (
-  isSandbox: boolean,
-  retryOptions: RequestRetryOptions,
-): Connection =>
+const realConnection = (isSandbox: boolean, retryOptions: RequestRetryOptions): Connection =>
   new RealConnection({
     version: API_VERSION,
     loginUrl: `https://${isSandbox ? 'test' : 'login'}.salesforce.com/`,
@@ -312,9 +293,7 @@ const sendChunked = async <TIn, TOut>({
   isSuppressedError = () => false,
   isUnhandledError = () => true,
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
-  const sendSingleChunk = async (
-    chunkInput: TIn[],
-  ): Promise<SendChunkedResult<TIn, TOut>> => {
+  const sendSingleChunk = async (chunkInput: TIn[]): Promise<SendChunkedResult<TIn, TOut>> => {
     try {
       log.debug('Sending chunked %s on %o', operationInfo, chunkInput)
       const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
@@ -331,54 +310,35 @@ const sendChunked = async <TIn, TOut>({
           error.name,
           error.message,
         )
-        const sendChunkResult = await Promise.all(
-          chunkInput.map((item) => sendSingleChunk([item])),
-        )
+        const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
-          result: _.flatten(
-            sendChunkResult.map((e) => e.result).map(flatValues),
-          ),
-          errors: _.flatten(sendChunkResult.map((e) => e.errors)),
+          result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),
+          errors: _.flatten(sendChunkResult.map(e => e.errors)),
         }
       }
       if (isSuppressedError(error)) {
-        log.warn(
-          'chunked %s ignoring recoverable error on %o: %s',
-          operationInfo,
-          chunkInput[0],
-          error.message,
-        )
+        log.warn('chunked %s ignoring recoverable error on %o: %s', operationInfo, chunkInput[0], error.message)
         return { result: [], errors: [] }
       }
       if (isUnhandledError(error)) {
-        log.warn(
-          'chunked %s unrecoverable error on %o: %o',
-          operationInfo,
-          chunkInput[0],
-          error,
-        )
+        log.warn('chunked %s unrecoverable error on %o: %o', operationInfo, chunkInput[0], error)
         throw error
       }
-      log.warn(
-        'chunked %s unknown error on %o: %o',
-        operationInfo,
-        chunkInput[0],
-        error,
-      )
+      log.warn('chunked %s unknown error on %o: %o', operationInfo, chunkInput[0], error)
       return {
         result: [],
-        errors: chunkInput.map((i) => ({ input: i, error })),
+        errors: chunkInput.map(i => ({ input: i, error })),
       }
     }
   }
   const result = await Promise.all(
     _.chunk(makeArray(input), chunkSize)
-      .filter((chunk) => !_.isEmpty(chunk))
+      .filter(chunk => !_.isEmpty(chunk))
       .map(sendSingleChunk),
   )
   return {
-    result: _.flatten(result.map((e) => e.result)),
-    errors: _.flatten(result.map((e) => e.errors)),
+    result: _.flatten(result.map(e => e.result)),
+    errors: _.flatten(result.map(e => e.errors)),
   }
 }
 
@@ -390,7 +350,7 @@ const retryErrorsByCodeWrapper =
     if (strategy(err, response, body)) {
       return true
     }
-    if (errorCodesToRetry.some((code) => response.statusCode === code)) {
+    if (errorCodesToRetry.some(code => response.statusCode === code)) {
       log.warn(
         `Retrying on ${response.statusCode} due to known salesforce issues. Err: ${err}, headers: ${response.headers}, status message: ${response.statusMessage}, body: ${body}`,
       )
@@ -398,13 +358,9 @@ const retryErrorsByCodeWrapper =
     }
     return false
   }
-const createRetryOptions = (
-  retryOptions: Required<ClientRetryConfig>,
-): RequestRetryOptions => ({
+const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RequestRetryOptions => ({
   maxAttempts: retryOptions.maxAttempts,
-  retryStrategy: retryErrorsByCodeWrapper(
-    RetryStrategies[retryOptions.retryStrategy],
-  ),
+  retryStrategy: retryErrorsByCodeWrapper(RetryStrategies[retryOptions.retryStrategy]),
   timeout: retryOptions.timeout,
   delayStrategy: (err, _response, _body) => {
     log.warn(
@@ -416,10 +372,7 @@ const createRetryOptions = (
   },
 })
 
-const createConnectionFromCredentials = (
-  credentials: Credentials,
-  options: RequestRetryOptions,
-): Connection => {
+const createConnectionFromCredentials = (credentials: Credentials, options: RequestRetryOptions): Connection => {
   if (credentials instanceof OauthAccessTokenCredentials) {
     try {
       return oauthConnection({
@@ -447,13 +400,8 @@ const retryOnBadResponse = async <T extends object>(
     try {
       res = await request()
     } catch (e) {
-      log.warn(
-        `caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`,
-      )
-      if (
-        attempts > 1 &&
-        errorMessagesToRetry.some((message) => e.message.includes(message))
-      ) {
+      log.warn(`caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`)
+      if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
         log.warn(
           'Encountered invalid result from salesforce, error message: %s, will retry %d more times',
           e.message,
@@ -465,17 +413,12 @@ const retryOnBadResponse = async <T extends object>(
     }
 
     if (typeof res === 'string') {
-      log.warn(
-        'Received string when expected object, attempting the json parse the received string',
-      )
+      log.warn('Received string when expected object, attempting the json parse the received string')
 
       try {
         return JSON.parse(res)
       } catch (e) {
-        log.warn(
-          'Received string that is not json parsable when expected object. Retries left %d',
-          attempts - 1,
-        )
+        log.warn('Received string that is not json parsable when expected object. Retries left %d', attempts - 1)
         if (attempts > 1) {
           return requestWithRetry(attempts - 1)
         }
@@ -494,12 +437,8 @@ export const loginFromCredentialsAndReturnOrgId = async (
 ): Promise<string> => {
   if (credentials instanceof UsernamePasswordCredentials) {
     try {
-      return (
-        await connection.login(
-          credentials.username,
-          credentials.password + (credentials.apiToken ?? ''),
-        )
-      ).organizationId
+      return (await connection.login(credentials.username, credentials.password + (credentials.apiToken ?? '')))
+        .organizationId
     } catch (error) {
       throw new CredentialError(error.message)
     }
@@ -518,24 +457,15 @@ type OrganizationRecord = SalesforceRecord & {
   IsSandbox: boolean
 }
 
-const isOrganizationRecord = (
-  record: SalesforceRecord,
-): record is OrganizationRecord =>
+const isOrganizationRecord = (record: SalesforceRecord): record is OrganizationRecord =>
   _.isString(record.OrganizationType) && _.isBoolean(record.IsSandbox)
 
-const queryOrganization = async (
-  conn: Connection,
-  orgId: string,
-): Promise<OrganizationRecord | undefined> => {
+const queryOrganization = async (conn: Connection, orgId: string): Promise<OrganizationRecord | undefined> => {
   try {
-    const result = await conn.query(
-      `SELECT OrganizationType, IsSandbox FROM Organization WHERE Id = '${orgId}'`,
-    )
+    const result = await conn.query(`SELECT OrganizationType, IsSandbox FROM Organization WHERE Id = '${orgId}'`)
     const [organizationRecord] = result.records as SalesforceRecord[]
     log.debug('organization record: %o', organizationRecord)
-    return isOrganizationRecord(organizationRecord)
-      ? organizationRecord
-      : undefined
+    return isOrganizationRecord(organizationRecord) ? organizationRecord : undefined
   } catch (e) {
     log.error('Failed to query the organization record from salesforce', e)
     return undefined
@@ -566,8 +496,7 @@ export const getConnectionDetails = async (
     maxAttempts: 2,
     retryStrategy: RetryStrategies.HTTPOrNetworkError,
   }
-  const conn =
-    connection || createConnectionFromCredentials(credentials, options)
+  const conn = connection || createConnectionFromCredentials(credentials, options)
   const orgId = await loginFromCredentialsAndReturnOrgId(conn, credentials)
   const limits = await conn.limits()
   const organizationRecord = await queryOrganization(conn, orgId)
@@ -582,10 +511,19 @@ export const getConnectionDetails = async (
     orgId,
     accountType: organizationRecord.OrganizationType,
     isProduction:
-      !organizationRecord.IsSandbox &&
-      PRODUCTION_ACCOUNT_TYPES.includes(organizationRecord.OrganizationType),
+      !organizationRecord.IsSandbox && PRODUCTION_ACCOUNT_TYPES.includes(organizationRecord.OrganizationType),
     instanceUrl: conn.instanceUrl,
   }
+}
+
+const getAccountID = (credentials: Credentials, orgId: string, instanceUrl?: string): string => {
+  if (credentials.isSandbox) {
+    if (instanceUrl === undefined) {
+      throw new Error('Expected Salesforce organization URL to exist in the connection')
+    }
+    return instanceUrl
+  }
+  return orgId
 }
 
 export const validateCredentials = async (
@@ -593,33 +531,16 @@ export const validateCredentials = async (
   minApiRequestsRemaining = 0,
   connection?: Connection,
 ): Promise<AccountInfo> => {
-  const {
-    remainingDailyRequests,
-    orgId,
-    accountType,
-    isProduction,
-    instanceUrl,
-  } = await getConnectionDetails(credentials, connection)
+  const { remainingDailyRequests, orgId, accountType, isProduction, instanceUrl } = await getConnectionDetails(
+    credentials,
+    connection,
+  )
   if (remainingDailyRequests < minApiRequestsRemaining) {
-    throw new ApiLimitsTooLowError(
-      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`,
-    )
-  }
-  if (credentials.isSandbox) {
-    if (instanceUrl === undefined) {
-      throw new Error(
-        'Expected Salesforce organization URL to exist in the connection',
-      )
-    }
-    return {
-      accountId: instanceUrl,
-      accountType,
-      isProduction,
-      extraInformation: { orgId },
-    }
+    throw new ApiLimitsTooLowError(`Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`)
   }
   return {
-    accountId: orgId,
+    accountId: getAccountID(credentials, orgId, instanceUrl),
+    accountUrl: instanceUrl,
     accountType,
     isProduction,
     extraInformation: { orgId },
@@ -628,7 +549,36 @@ export const validateCredentials = async (
 
 type DeployProgressCallback = (inProgressResult: DeployResult) => void
 
-export default class SalesforceClient {
+interface ISalesforceClient {
+  ensureLoggedIn(): Promise<void>
+  isSandbox(): boolean
+  countInstances(typeName: string): Promise<number>
+  listMetadataTypes(): Promise<MetadataObject[]>
+  describeMetadataType(type: string): Promise<DescribeValueTypeResult>
+  listMetadataObjects(queries: ListMetadataQuery[]): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+  getUrl(): Promise<URL | undefined>
+  readMetadata(type: string, fullNames: string[]): Promise<SendChunkedResult<string, MetadataInfo>>
+  listSObjects(): Promise<DescribeGlobalSObjectResult[]>
+  describeSObjects(objectNames: string[]): Promise<SendChunkedResult<string, DescribeSObjectResult>>
+  upsert(type: string, metadata: MetadataInfo | MetadataInfo[]): Promise<UpsertResult[]>
+  delete(type: string, fullNames: string[]): Promise<SaveResult[]>
+  retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult>
+  deploy(zip: Buffer, deployOptions: DeployOptions, progressCallback?: DeployProgressCallback): Promise<DeployResult>
+  quickDeploy(validationId: string, progressCallback?: DeployProgressCallback): Promise<DeployResult>
+  queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
+  bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
+  request(url: string): Promise<unknown>
+}
+
+type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
+export type CustomListFunc = (client: ISalesforceClient) => ListMetadataObjectsResult
+
+export type CustomListFuncDef = {
+  func: CustomListFunc
+  isPartial: boolean
+}
+
+export default class SalesforceClient implements ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
@@ -637,26 +587,23 @@ export default class SalesforceClient {
   private readonly config?: SalesforceClientConfig
   private readonly setFetchPollingTimeout: () => void
   private readonly setDeployPollingTimeout: () => void
-  readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
+  readonly rateLimiters: Record<RateLimitBucketName, clientUtils.RateLimiter>
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
   readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
-  private readonly filePropsByType: Record<string, FileProperties[]>
+  readonly listedInstancesByType: collections.map.DefaultMap<string, Set<string>>
+  private readonly listMetadataObjectsOfTypePromises: Record<string, ListMetadataObjectsResult>
+
+  private readonly fullListPromisesByType: Record<string, ListMetadataObjectsResult>
+  private customListFuncDefByType: Record<string, CustomListFuncDef>
 
   constructor({ credentials, connection, config }: SalesforceClientOpts) {
+    this.customListFuncDefByType = {}
     this.credentials = credentials
     this.config = config
-    this.retryOptions = createRetryOptions(
-      _.defaults({}, config?.retry, DEFAULT_RETRY_OPTS),
-    )
-    this.conn =
-      connection ??
-      createConnectionFromCredentials(credentials, this.retryOptions)
-    const pollingConfig = _.defaults(
-      {},
-      config?.polling,
-      DEFAULT_POLLING_CONFIG,
-    )
+    this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
+    this.conn = connection ?? createConnectionFromCredentials(credentials, this.retryOptions)
+    const pollingConfig = _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG)
     this.setFetchPollingTimeout = () => {
       this.conn.metadata.pollTimeout = pollingConfig.fetchTimeout
       this.conn.bulk.pollTimeout = pollingConfig.fetchTimeout
@@ -669,29 +616,30 @@ export default class SalesforceClient {
     setPollIntervalForConnection(this.conn, pollingConfig)
     this.setFetchPollingTimeout()
     this.rateLimiters = createRateLimitersFromConfig({
-      rateLimit: _.defaults(
-        {},
-        config?.maxConcurrentApiRequests,
-        DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-      ),
+      rateLimit: _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
       clientName: SALESFORCE,
     })
-    this.dataRetry =
-      config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
+    this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
     this.clientName = 'SFDC'
-    this.readMetadataChunkSize = _.merge(
-      {},
-      DEFAULT_READ_METADATA_CHUNK_SIZE,
-      config?.readMetadataChunkSize,
-    )
-    this.filePropsByType = {}
+    this.readMetadataChunkSize = _.merge({}, DEFAULT_READ_METADATA_CHUNK_SIZE, config?.readMetadataChunkSize)
+    this.listMetadataObjectsOfTypePromises = {}
+    this.fullListPromisesByType = {}
+    this.listedInstancesByType = new collections.map.DefaultMap(() => new Set())
   }
 
-  private retryOnBadResponse = <T extends object>(
-    request: () => Promise<T>,
-  ): Promise<T> => {
-    const retryAttempts =
-      this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts
+  public setCustomListFuncDefByType(customListFuncDefByType: typeof this.customListFuncDefByType): void {
+    this.customListFuncDefByType = _.mapValues(customListFuncDefByType, def => ({
+      func: def.isPartial
+        ? def.func
+        : // Populate the listedInstancesByType for non-partial custom list functions
+          async (client: ISalesforceClient) =>
+            def.func(client).then(result => this.populateListedInstancesByType(result)),
+      isPartial: def.isPartial,
+    }))
+  }
+
+  private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
+    const retryAttempts = this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts
     return retryOnBadResponse(request, retryAttempts)
   }
 
@@ -723,9 +671,7 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    const describeResult = await this.retryOnBadResponse(() =>
-      this.conn.metadata.describe(),
-    )
+    const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
     this.orgNamespace = describeResult.organizationNamespace
     log.debug('org namespace: %s', this.orgNamespace)
     return flatValues(describeResult.metadataObjects)
@@ -739,14 +685,57 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
-  public async describeMetadataType(
-    type: string,
-  ): Promise<DescribeValueTypeResult> {
+  public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = await this.retryOnBadResponse(() =>
-      this.conn.metadata.describeValueType(fullName),
-    )
+    const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describeValueType(fullName))
     return flatValues(describeResult)
+  }
+
+  private populateListedInstancesByType(
+    listResult: SendChunkedResult<ListMetadataQuery, FileProperties>,
+  ): SendChunkedResult<ListMetadataQuery, FileProperties> {
+    if (listResult.errors.length === 0) {
+      listResult.result.forEach(fileProps => {
+        this.listedInstancesByType.get(fileProps.type).add(getFullName(fileProps))
+      })
+    }
+    return listResult
+  }
+
+  private async sendChunkedList(input: ListMetadataQuery[], isUnhandledError: ErrorFilter): ListMetadataObjectsResult {
+    return sendChunked({
+      operationInfo: 'listMetadataObjects',
+      input,
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
+      chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
+      isUnhandledError,
+    }).then(result => this.populateListedInstancesByType(result))
+  }
+
+  private async listMetadataObjectsOfType(
+    type: string,
+    isUnhandledError: ErrorFilter = isSFDCUnhandledException,
+  ): ListMetadataObjectsResult {
+    const existingRequest = this.listMetadataObjectsOfTypePromises[type]
+    if (existingRequest !== undefined) {
+      return existingRequest
+    }
+    const customListFuncDef: CustomListFuncDef | undefined = this.customListFuncDefByType[type]
+    // For partial custom list functions we run an additional full list request
+    if (customListFuncDef?.isPartial) {
+      this.fullListPromisesByType[type] = this.sendChunkedList([{ type }], isUnhandledError)
+    }
+    const request =
+      customListFuncDef?.func(this).catch(e => {
+        log.error(
+          'Failed to run custom list function for type %s. Falling back to full list. Error: %s',
+          type,
+          inspectValue(e),
+        )
+        return this.fullListPromisesByType[type] ?? this.sendChunkedList([{ type }], isUnhandledError)
+      }) ?? this.sendChunkedList([{ type }], isUnhandledError)
+    this.listMetadataObjectsOfTypePromises[type] = request
+    return request
   }
 
   @mapToUserFriendlyErrorMessages
@@ -759,54 +748,20 @@ export default class SalesforceClient {
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
-  ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
-    const sendChunkedList = async (
-      input: typeof listMetadataQuery,
-    ): Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> =>
-      sendChunked({
-        operationInfo: 'listMetadataObjects',
-        input,
-        sendChunk: (chunk) =>
-          this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
-        chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
-        isUnhandledError,
-      })
-    // We do not cache if one of the queries is on Folder to avoid complexity by storing
-    // folder-level caches as this is only relevant for specific Metadata Types that are stored within Folders.
-    if (
-      makeArray(listMetadataQuery).some((query) => query.folder !== undefined)
-    ) {
-      return sendChunkedList(listMetadataQuery)
+  ): ListMetadataObjectsResult {
+    const queries = makeArray(listMetadataQuery)
+    if (queries.some(query => query.folder !== undefined)) {
+      // We can't cache folder queries, so we just send them all at once
+      return this.sendChunkedList(queries, isUnhandledError)
     }
-    const [cachedQueries, nonCachedQueries] = _.partition(
-      makeArray(listMetadataQuery),
-      (query) => Object.keys(this.filePropsByType).includes(query.type),
+
+    const listResults = await Promise.all(
+      queries.map(query => this.listMetadataObjectsOfType(query.type, isUnhandledError)),
     )
-    const cachedProps = cachedQueries.flatMap((query) =>
-      makeArray(this.filePropsByType[query.type]),
-    )
-    if (nonCachedQueries.length === 0) {
-      log.debug(
-        'returning cached listMetadataObjects for %s',
-        safeJsonStringify(listMetadataQuery),
-      )
-      return { result: cachedProps, errors: [] }
+    return {
+      result: listResults.flatMap(listResult => listResult.result),
+      errors: listResults.flatMap(listResult => listResult.errors),
     }
-    return sendChunkedList(nonCachedQueries).then(
-      ({ result: nonCachedProps, errors }) => {
-        // Save the retrieved props in the cache
-        const nonCachedPropsByType = _.groupBy(
-          nonCachedProps,
-          (prop) => prop.type,
-        )
-        nonCachedQueries.forEach((query) => {
-          this.filePropsByType[query.type] = makeArray(
-            nonCachedPropsByType[query.type],
-          )
-        })
-        return { result: cachedProps.concat(nonCachedProps), errors }
-      },
-    )
   }
 
   @mapToUserFriendlyErrorMessages
@@ -815,9 +770,7 @@ export default class SalesforceClient {
     try {
       return new URL(this.conn.instanceUrl)
     } catch (e) {
-      log.error(
-        `Caught exception when tried to parse salesforce url: ${e.stack}`,
-      )
+      log.error(`Caught exception when tried to parse salesforce url: ${e.stack}`)
       return undefined
     }
   }
@@ -827,7 +780,7 @@ export default class SalesforceClient {
    */
   @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
-  @logDecorator([], (args) => {
+  @logDecorator([], args => {
     const arg = args[1]
     return (_.isArray(arg) ? arg : [arg]).length.toString()
   })
@@ -840,22 +793,16 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
       input: name,
-      sendChunk: (chunk) =>
-        this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
-      chunkSize:
-        this.readMetadataChunkSize.overrides[type] ??
-        this.readMetadataChunkSize.default,
-      isSuppressedError: (error) =>
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
+      chunkSize: this.readMetadataChunkSize.overrides[type] ?? this.readMetadataChunkSize.default,
+      isSuppressedError: error =>
         // This seems to happen with actions that relate to sending emails - these are disabled in
         // some way on sandboxes and for some reason this causes the SF API to fail reading
-        (this.credentials.isSandbox &&
-          type === 'QuickAction' &&
-          error.message === 'targetObject is invalid') ||
+        (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid') ||
         error.name === 'sf:INSUFFICIENT_ACCESS' ||
         // Seems that reading TopicsForObjects for Problem, Incident and ChangeRequest fails.
         // Unclear why this happens, might be a SF API bug, suppressing as this seems unimportant
-        (type === 'TopicsForObjects' &&
-          error.name === 'sf:INVALID_TYPE_FOR_OPERATION'),
+        (type === 'TopicsForObjects' && error.name === 'sf:INVALID_TYPE_FOR_OPERATION'),
       isUnhandledError,
     })
   }
@@ -868,24 +815,18 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
-    return flatValues(
-      (await this.retryOnBadResponse(() => this.conn.describeGlobal()))
-        .sobjects,
-    )
+    return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
 
   @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
-  public async describeSObjects(
-    objectNames: string[],
-  ): Promise<SendChunkedResult<string, DescribeSObjectResult>> {
+  public async describeSObjects(objectNames: string[]): Promise<SendChunkedResult<string, DescribeSObjectResult>> {
     return sendChunked({
       operationInfo: 'describeSObjects',
       input: objectNames,
-      sendChunk: (chunk) =>
-        this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
     })
   }
@@ -900,19 +841,15 @@ export default class SalesforceClient {
   @logDecorator(['fullName'])
   @validateSaveResult
   @requiresLogin()
-  public async upsert(
-    type: string,
-    metadata: MetadataInfo | MetadataInfo[],
-  ): Promise<UpsertResult[]> {
+  public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]): Promise<UpsertResult[]> {
     const result = await sendChunked({
       operationInfo: `upsert (${type})`,
       input: metadata,
-      sendChunk: (chunk) =>
-        this.retryOnBadResponse(() => this.conn.metadata.upsert(type, chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.upsert(type, chunk)),
     })
     log.debug(
       'upsert %o of type %s [result=%o]',
-      makeArray(metadata).map((f) => f.fullName),
+      makeArray(metadata).map(f => f.fullName),
       type,
       result.result,
     )
@@ -929,22 +866,13 @@ export default class SalesforceClient {
   @logDecorator()
   @validateDeleteResult
   @requiresLogin()
-  public async delete(
-    type: string,
-    fullNames: string | string[],
-  ): Promise<SaveResult[]> {
+  public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
       input: fullNames,
-      sendChunk: (chunk) =>
-        this.retryOnBadResponse(() => this.conn.metadata.delete(type, chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.delete(type, chunk)),
     })
-    log.debug(
-      'deleted %o of type %s [result=%o]',
-      fullNames,
-      type,
-      result.result,
-    )
+    log.debug('deleted %o of type %s [result=%o]', fullNames, type, result.result)
     return result.result
   }
 
@@ -952,14 +880,8 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
-  public async retrieve(
-    retrieveRequest: RetrieveRequest,
-  ): Promise<RetrieveResult> {
-    return flatValues(
-      await this.retryOnBadResponse(() =>
-        this.conn.metadata.retrieve(retrieveRequest).complete(),
-      ),
-    )
+  public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
+    return flatValues(await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete()))
   }
 
   private async reportDeployProgressUntilComplete(
@@ -969,22 +891,13 @@ export default class SalesforceClient {
     const progressCallbackWrapper = async (): Promise<void> => {
       const partialResult = await deployStatus.check()
       try {
-        const detailedResult = await this.conn.metadata.checkDeployStatus(
-          partialResult.id,
-          true,
-        )
+        const detailedResult = await this.conn.metadata.checkDeployStatus(partialResult.id, true)
         progressCallback(detailedResult)
       } catch (e) {
-        log.warn(
-          'checkDeployStatus API call failed. Progress update will not take place. Error: %s',
-          e.message,
-        )
+        log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
       }
     }
-    const pollingInterval = setInterval(
-      progressCallbackWrapper,
-      this.conn.metadata.pollInterval,
-    )
+    const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
 
     const clearPollingInterval = (result: DeployResult): DeployResult => {
       clearInterval(pollingInterval)
@@ -997,9 +910,27 @@ export default class SalesforceClient {
     // We can't use finally() because, despite what the type definition for jsforce says,
     // DeployResultLocator.complete() actually returns an AsyncResultLocator<T> and not a Promise<T>.
     // ref. https://github.com/jsforce/jsforce/blob/c04515846e91f84affa4eb87a7b2adb1f58bf04d/lib/api/metadata.js#L830
-    return deployStatus
-      .complete(true)
-      .then(clearPollingInterval, clearPollingIntervalOnError)
+    return deployStatus.complete(true).then(clearPollingInterval, clearPollingIntervalOnError)
+  }
+
+  private async deployWithProgress(
+    deployStatus: DeployResultLocator<DeployResult>,
+    progressCallback?: DeployProgressCallback,
+  ): Promise<DeployResult> {
+    this.setDeployPollingTimeout()
+    try {
+      let deployResult: DeployResult
+
+      if (progressCallback) {
+        deployResult = await this.reportDeployProgressUntilComplete(deployStatus, progressCallback)
+      } else {
+        deployResult = await deployStatus.complete(true)
+      }
+
+      return flatValues(deployResult)
+    } finally {
+      this.setFetchPollingTimeout() // Revert the timeouts to what they were before
+    }
   }
 
   /**
@@ -1019,7 +950,6 @@ export default class SalesforceClient {
     deployOptions?: DeployOptions,
     progressCallback?: DeployProgressCallback,
   ): Promise<DeployResult> {
-    this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
     const { checkOnly = false } = deployOptions ?? {}
     const optionsToSend: (keyof ClientDeployConfig)[] = [
@@ -1030,58 +960,29 @@ export default class SalesforceClient {
       'runTests',
       'performRetrieve',
     ]
-    const deployStatus = this.conn.metadata.deploy(zip, {
-      ...defaultDeployOptions,
-      ..._.pick(this.config?.deploy, optionsToSend),
-      checkOnly,
-    })
-
-    try {
-      let deployResult: DeployResult
-
-      if (progressCallback) {
-        deployResult = await this.reportDeployProgressUntilComplete(
-          deployStatus,
-          progressCallback,
-        )
-      } else {
-        deployResult = await deployStatus.complete(true)
-      }
-
-      return flatValues(deployResult)
-    } finally {
-      this.setFetchPollingTimeout() // Revert the timeouts to what they were before
-    }
+    return this.deployWithProgress(
+      this.conn.metadata.deploy(zip, {
+        ...defaultDeployOptions,
+        ..._.pick(this.config?.deploy, optionsToSend),
+        checkOnly,
+      }),
+      progressCallback,
+    )
   }
 
-  /**
-   * preform quick deploy to salesforce metadata
-   * @param validationId The package zip
-   * @returns The save result of the requested update
-   */
   @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  public async quickDeploy(validationId: string): Promise<DeployResult> {
-    this.setDeployPollingTimeout()
-    const deployResult = flatValues(
-      await this.conn.metadata
-        .deployRecentValidation(validationId)
-        .complete(true),
-    )
-    this.setFetchPollingTimeout()
-    return deployResult
+  public async quickDeploy(validationId: string, progressCallback?: DeployProgressCallback): Promise<DeployResult> {
+    return this.deployWithProgress(this.conn.metadata.deployRecentValidation(validationId), progressCallback)
   }
 
   @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
-  private query<T>(
-    queryString: string,
-    useToolingApi: boolean,
-  ): Promise<QueryResult<T>> {
+  private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.query(queryString))
   }
@@ -1090,10 +991,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
-  private queryMore<T>(
-    queryString: string,
-    useToolingApi: boolean,
-  ): Promise<QueryResult<T>> {
+  private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.queryMore(queryString))
   }
@@ -1105,12 +1003,8 @@ export default class SalesforceClient {
    *
    * @param queryString the string to query with for records
    */
-  private async *getQueryAllIterable(
-    queryString: string,
-    useToolingApi = false,
-  ): AsyncIterable<SalesforceRecord[]> {
-    const hadMore = (results: QueryResult<Value>): boolean =>
-      !_.isUndefined(results.nextRecordsUrl)
+  private async *getQueryAllIterable(queryString: string, useToolingApi = false): AsyncIterable<SalesforceRecord[]> {
+    const hadMore = (results: QueryResult<Value>): boolean => !_.isUndefined(results.nextRecordsUrl)
 
     let results = await this.query(queryString, useToolingApi)
     if (results.records === undefined) {
@@ -1149,10 +1043,7 @@ export default class SalesforceClient {
    */
   @mapToUserFriendlyErrorMessages
   @requiresLogin()
-  public async queryAll(
-    queryString: string,
-    useToolingApi = false,
-  ): Promise<AsyncIterable<SalesforceRecord[]>> {
+  public async queryAll(queryString: string, useToolingApi = false): Promise<AsyncIterable<SalesforceRecord[]>> {
     return this.getQueryAllIterable(queryString, useToolingApi)
   }
 
@@ -1166,11 +1057,11 @@ export default class SalesforceClient {
     records: SalesforceRecord[],
   ): Promise<BatchResultInfo[]> {
     log.trace(
-      'client.bulkLoadOperation: %s %d records of type %s: %o',
+      'client.bulkLoadOperation: %s %d records of type %s: %s',
       operation,
       records.length,
       type,
-      records,
+      inspectValue(records, { maxArrayLength: null }),
     )
     const batch = this.conn.bulk.load(
       type,
@@ -1179,7 +1070,7 @@ export default class SalesforceClient {
       records,
     )
     const { job } = batch
-    await new Promise((resolve) => job.on('close', resolve))
+    await new Promise(resolve => job.on('close', resolve))
     const result = (await batch.then()) as BatchResultInfo[]
     log.trace('client.bulkLoadOperation result: %o', result)
     return flatValues(result)
@@ -1190,5 +1081,10 @@ export default class SalesforceClient {
   @requiresLogin()
   public async request(url: string): Promise<unknown> {
     return this.conn.request(url)
+  }
+
+  @logDecorator()
+  public async awaitCompletionOfAllListRequests(): Promise<void> {
+    await Promise.all(Object.values(this.fullListPromisesByType))
   }
 }

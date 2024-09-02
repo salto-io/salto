@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ChangeValidator,
@@ -26,12 +18,8 @@ import {
 } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { isEmpty } from 'lodash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS, JIRA } from '../constants'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 const PERMISSION_ITEM_SCHEME = Joi.object({
@@ -75,7 +63,16 @@ const getInvalidPermissionErrorMessage = (
 
 export const permissionTypeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
-    log.warn('Elements source was not passed to permissionTypeValidator. Skipping validator')
+    log.warn('Skipping permissionTypeValidator as elements source is undefined')
+    return []
+  }
+  const permissionSchemeChangesData = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
+
+  if (permissionSchemeChangesData.length === 0) {
     return []
   }
   const allowedPermissionTypes = await getAllowedPermissionTypes(elementsSource)
@@ -83,17 +80,12 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     log.warn('Could not find allowed permission types for permissionTypeValidator. Skipping validator')
     return []
   }
-  return awu(changes)
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-    .filter(instance => !isEmpty(getInvalidPermissions(instance, allowedPermissionTypes)))
-    .map(async instance => ({
+  return permissionSchemeChangesData
+    .filter(instance => getInvalidPermissions(instance, allowedPermissionTypes).length > 0)
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,
       message: 'Invalid permission type in permission scheme',
       detailedMessage: getInvalidPermissionErrorMessage(instance, allowedPermissionTypes),
     }))
-    .toArray()
 }

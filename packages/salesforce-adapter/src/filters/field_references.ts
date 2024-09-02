@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -30,8 +22,8 @@ import {
   generateReferenceResolverFinder,
   ReferenceContextStrategyName,
   FieldReferenceDefinition,
+  fieldNameToTypeMappingDefs,
   getLookUpName,
-  getReferenceMappingDefs,
 } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -45,21 +37,18 @@ import {
   GROUP_METADATA_TYPE,
   ROLE_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
-import {
-  buildElementsSourceForFetch,
-  extractFlatCustomObjectFields,
-  hasApiName,
-} from './utils'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName, isInstanceOfTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 const { flatMapAsync } = collections.asynciterable
 const { neighborContextGetter, replaceReferenceValues } = referenceUtils
 
-const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (
-  val: string,
-) => {
+const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
   const typeMapping: Record<string, string> = {
     Alert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
     FieldUpdate: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -70,9 +59,7 @@ const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (
   return typeMapping[val]
 }
 
-const flowActionCallMapper: referenceUtils.ContextValueMapperFunc = (
-  val: string,
-) => {
+const flowActionCallMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
   const typeMapping: Record<string, string> = {
     apex: 'ApexClass',
     emailAlert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -95,18 +82,12 @@ const neighborContextFunc = (args: {
   contextFieldName: string
   levelsUp?: number | 'top'
   contextValueMapper?: referenceUtils.ContextValueMapperFunc
-}): referenceUtils.ContextFunc =>
-  neighborContextGetter({ ...args, getLookUpName })
+}): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName })
 
-const contextStrategyLookup: Record<
-  ReferenceContextStrategyName,
-  referenceUtils.ContextFunc
-> = {
+const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   instanceParent: async ({ instance, elemByElemID }) => {
     const parentRef = getParents(instance)[0]
-    const parent = isReferenceExpression(parentRef)
-      ? elemByElemID.get(parentRef.elemID.getFullName())
-      : undefined
+    const parent = isReferenceExpression(parentRef) ? elemByElemID.get(parentRef.elemID.getFullName()) : undefined
     return parent !== undefined ? apiName(parent) : undefined
   },
   neighborTypeLookup: neighborContextFunc({ contextFieldName: 'type' }),
@@ -173,45 +154,42 @@ export const addReferences = async (
   elements: Element[],
   referenceElements: ReadOnlyElementsSource,
   defs: FieldReferenceDefinition[],
+  typesToIgnore: string[],
 ): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
-  const elementsWithFields = flatMapAsync(
-    await referenceElements.getAll(),
-    extractFlatCustomObjectFields,
-  )
-  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
-  // element and we can use the element source directly instead of creating the second index
+  const elementsWithFields = flatMapAsync(await referenceElements.getAll(), extractFlatCustomObjectFields)
   const { elemLookup, elemByElemID } = await multiIndex
     .buildMultiIndex<Element>()
     .addIndex({
       name: 'elemLookup',
       filter: hasApiName,
-      key: async (elem) => [await metadataType(elem), await apiName(elem)],
+      key: async elem => [await metadataType(elem), await apiName(elem)],
     })
     .addIndex({
       name: 'elemByElemID',
-      filter: (elem) => !isField(elem),
-      key: (elem) => [elem.elemID.getFullName()],
+      filter: elem => !isField(elem),
+      key: elem => [elem.elemID.getFullName()],
     })
     .process(elementsWithFields)
 
   const fieldsWithResolvedReferences = new Set<string>()
-  await awu(elements)
-    .filter(isInstanceElement)
-    .forEach(async (instance) => {
-      instance.value = await replaceReferenceValues({
-        instance,
-        resolverFinder,
-        elemLookupMaps: { elemLookup },
-        fieldsWithResolvedReferences,
-        elemByElemID,
-        contextStrategyLookup,
-      })
+  let instances = elements.filter(isInstanceElement)
+  if (typesToIgnore.length > 0) {
+    const isIgnoredInstance = isInstanceOfTypeSync(...typesToIgnore)
+    instances = instances.filter(instance => !isIgnoredInstance(instance))
+  }
+  await awu(instances).forEach(async instance => {
+    instance.value = await replaceReferenceValues({
+      instance,
+      resolverFinder,
+      elemLookupMaps: { elemLookup },
+      fieldsWithResolvedReferences,
+      elemByElemID,
+      contextStrategyLookup,
     })
-  log.debug('added references in the following fields: %s', [
-    ...fieldsWithResolvedReferences,
-  ])
+  })
+  log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
 }
 
 /**
@@ -220,19 +198,15 @@ export const addReferences = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
-  onFetch: async (elements) => {
-    const refDef = getReferenceMappingDefs({
-      enumFieldPermissions: config.enumFieldPermissions ?? false,
-      otherProfileRefs: config.fetchProfile.isFeatureEnabled(
-        'generateRefsInProfiles',
-      ),
-      permissionsSetRefs:
-        !config.fetchProfile.isCustomReferencesHandlerEnabled('permisisonSets'),
-    })
+  onFetch: async elements => {
+    const typesToIgnore = config.fetchProfile.isCustomReferencesHandlerEnabled('profilesAndPermissionSets')
+      ? [PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, MUTING_PERMISSION_SET_METADATA_TYPE]
+      : []
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),
-      refDef,
+      fieldNameToTypeMappingDefs,
+      typesToIgnore,
     )
   },
 })

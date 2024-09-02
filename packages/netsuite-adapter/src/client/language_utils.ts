@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { logger } from '@salto-io/logging'
 
@@ -31,7 +23,8 @@ type ErrorDetectors = {
   deployStartMessageRegex: RegExp
   settingsValidationErrorRegex: RegExp
   objectValidationErrorRegexes: RegExp[]
-  missingFeatureErrorRegexes: RegExp[]
+  missingFeatureInManifestErrorRegexes: RegExp[]
+  missingFeatureInAccountErrorRegex: RegExp
   deployedObjectRegex: RegExp
   errorObjectRegex: RegExp
   manifestErrorDetailsRegex: RegExp
@@ -51,7 +44,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
       ),
       RegExp(`^Details: The object (?<${OBJECT_ID}>[a-z0-9_]+) cannot be deployed because it is locked.`, 'gm'),
     ],
-    missingFeatureErrorRegexes: [
+    missingFeatureInManifestErrorRegexes: [
       RegExp(`Details: You must specify the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature in the project manifest`, 'gm'),
       RegExp(
         `Details: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`,
@@ -62,6 +55,10 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
         'gm',
       ),
     ],
+    missingFeatureInAccountErrorRegex: RegExp(
+      `Details: To install this SuiteCloud project, the (?<${FEATURE_NAME}>\\w+\\(.*?\\)) feature must be enabled in the account.`,
+      'gm',
+    ),
     deployedObjectRegex: RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
     manifestErrorDetailsRegex: RegExp(
@@ -92,7 +89,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
       ),
       RegExp(`^Details: The object (?<${OBJECT_ID}>[a-z0-9_]+) cannot be deployed because it is locked.`, 'gm'),
     ],
-    missingFeatureErrorRegexes: [
+    missingFeatureInManifestErrorRegexes: [
       RegExp(
         `D.tails: Vous devez sp.cifier la fonctionnalit. (?<${FEATURE_NAME}>\\w+)\\(.*?\\) dans le manifeste du projet`,
         'gm',
@@ -106,6 +103,11 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
         'gm',
       ),
     ],
+    // TODO: find in french
+    missingFeatureInAccountErrorRegex: RegExp(
+      `Details: To install this SuiteCloud project, the (?<${FEATURE_NAME}>\\w+\\(.*?\\)) feature must be enabled in the account.`,
+      'gm',
+    ),
     deployedObjectRegex: RegExp(`^(Cr.er un objet|Mettre . jour l'objet) -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     // TODO: find in french
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),

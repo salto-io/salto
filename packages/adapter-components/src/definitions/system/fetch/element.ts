@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { types } from '@salto-io/lowerdash'
 import {
@@ -26,7 +18,6 @@ import {
 import { ImportantValues } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion } from '../../user'
 import { ArgsWithCustomizer } from '../shared/types'
-// eslint-disable-next-line import/no-cycle
 import { GenerateTypeArgs } from './types'
 import { ResolveCustomNameMappingOptionsType } from '../api'
 import { NameMappingFunctionMap, NameMappingOptions } from '../shared'
@@ -64,7 +55,7 @@ export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
 
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
   // when id parts info is missing, inherited from elemID (but the values are path-nacl-cased)
-  pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[]
+  pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[] & { extendsParent?: boolean }
 }
 
 type StandaloneFieldDefinition = {
@@ -105,7 +96,7 @@ export type ElementFieldCustomization = types.XOR<
   },
   types.OneOf<{
     // omit the field
-    omit: true
+    omit: boolean
     // set the field to a map and determine its inner type dynamically.
     // the type is determined dynamically, since if the inner type is known, fieldType can be used instead.
     // note: will not work if a predefined type is provided
@@ -141,7 +132,7 @@ export type ElementFetchDefinitionOptions = {
 type ResolveValueType<Options extends Pick<ElementFetchDefinitionOptions, 'valueType'>> =
   Options['valueType'] extends Values ? Options['valueType'] : Values
 
-type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
+export type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOptions = {}> = {
   isTopLevel: true
 
   custom?: (
@@ -159,7 +150,7 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
     {
       entry: Values
       defaultName: string
-      parentName?: string
+      parent?: InstanceElement
     },
     ElemIDCreatorArgs<ResolveCustomNameMappingOptionsType<Options>>
   >
@@ -187,6 +178,9 @@ type FetchTopLevelElementDefinition<Options extends ElementFetchDefinitionOption
   alias?: AliasData
 
   importantValues?: ImportantValues
+
+  // when true, empty arrays in instance values will not be omitted
+  allowEmptyArrays?: boolean
 }
 
 export type ElementFetchDefinition<Options extends ElementFetchDefinitionOptions = {}> = {

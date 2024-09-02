@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -25,7 +17,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ResponseResult } from '@salto-io/adapter-components/src/deployment'
+import { deployment } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { addId, addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
@@ -98,7 +90,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     //  This means that if we want to add a dynamic content item with a placeholder that is different from the name,
     //  we need to first add the item with a placeholder that is the same as the name, and then modify it to have the
     //  desired placeholder.
-    const alterDynamicContentAddition = async (change: Change<InstanceElement>): Promise<ResponseResult> => {
+    const alterDynamicContentAddition = async (change: Change<InstanceElement>): Promise<deployment.ResponseResult> => {
       const clonedAdditionChange = await applyFunctionToChangeData(change, inst => inst.clone())
       const clonedChangeData = getChangeData(clonedAdditionChange)
       const newPlaceholder = clonedChangeData.value.placeholder

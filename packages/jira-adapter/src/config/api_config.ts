@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { config as configUtils } from '@salto-io/adapter-components'
 import {
@@ -37,7 +29,7 @@ export type JspUrls = {
   dataField?: string
 }
 
-export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
+export type JiraApiConfig = Omit<configUtils.AdapterApiConfig, 'types'> & {
   types: Record<
     string,
     configUtils.TypeConfig & {
@@ -333,6 +325,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
+      serviceIdField: 'id',
+      idFields: ['parentName', 'value'],
+    },
+  },
+  AssetsObjectFieldConfiguration: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'objectSchemaName' }, { fieldName: 'attributesLimit' }, { fieldName: 'workspaceId' }],
     },
   },
 
@@ -353,6 +352,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         urlParamsToFields: {
           fieldId: '_parent.0.id',
         },
+        fieldsToIgnore: ['assetsObjectFieldConfiguration'],
       },
       modify: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',
@@ -361,6 +361,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           contextId: 'id',
           fieldId: '_parent.0.id',
         },
+        fieldsToIgnore: ['assetsObjectFieldConfiguration'],
       },
       remove: {
         url: '/rest/api/3/field/{fieldId}/context/{contextId}',
@@ -1624,6 +1625,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Automation: {
     transformation: {
+      fieldsToOmit: [{ fieldName: 'ruleHome' }, { fieldName: 'schemaVersion' }, { fieldName: 'idUuid' }],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
       idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.
     },
@@ -1883,6 +1885,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   RequestType: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/requesttype',
+      paginationField: 'start',
       recurseInto: [
         {
           type: 'RequestType__workflowStatuses',
@@ -1895,7 +1898,13 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       idFields: ['name', 'projectKey'],
       sourceTypeName: 'RequestType__values',
       dataField: 'values',
-      fieldsToOmit: [{ fieldName: '_expands' }, { fieldName: 'portalId' }, { fieldName: 'groupIds' }],
+      fieldsToOmit: [
+        { fieldName: '_expands' },
+        { fieldName: 'portalId' },
+        { fieldName: 'groupIds' },
+        { fieldName: 'canCreateRequest' },
+        { fieldName: 'restrictionStatus' },
+      ],
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'icon' }, { fieldName: 'serviceDeskId' }],
       serviceIdField: 'id',
     },
@@ -1944,6 +1953,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   Queue: {
     request: {
       url: '/rest/servicedeskapi/servicedesk/projectId:{projectId}/queue',
+      paginationField: 'start',
     },
     transformation: {
       idFields: ['name', 'projectKey'],
@@ -2165,6 +2175,7 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
   ObjectSchemas: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/objectschema/list',
+      paginationField: 'startAt',
       recurseInto: [
         {
           type: 'ObjectSchemaStatuses',
@@ -2417,6 +2428,32 @@ const JSM_DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
       },
     },
   },
+  ObjectSchemaGlobalStatus: {
+    request: {
+      url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+    },
+    transformation: {
+      dataField: '.',
+      fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
+      fieldsToOmit: [{ fieldName: 'objectSchemaId' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype',
+        method: 'post',
+      },
+      modify: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'put',
+      },
+      remove: {
+        url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/config/statustype/{id}',
+        method: 'delete',
+        omitRequestBody: true,
+      },
+    },
+  },
   ObjectTypeIcon: {
     request: {
       url: '/gateway/api/jsm/assets/workspace/{workspaceId}/v1/icon/global',
@@ -2453,6 +2490,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
   Form: [], // being fetched by a filter.
   ObjectSchema: [],
   ObjectSchemaDefaultReferenceType: [],
+  ObjectSchemaGlobalStatus: [],
   ObjectTypeIcon: [],
   ObjectSchemaStatus: [], // being fetched by recurseInto.
   ObjectType: [], // being fetched by recurseInto.
@@ -2462,6 +2500,7 @@ export const JSM_DUCKTYPE_SUPPORTED_TYPES = {
 export const JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES = {
   ObjectSchema: ['ObjectSchemas'],
   ObjectSchemaDefaultReferenceType: ['ObjectSchemaDefaultReferenceType'],
+  ObjectSchemaGlobalStatus: ['ObjectSchemaGlobalStatus'],
   ObjectTypeIcon: ['ObjectTypeIcon'],
 }
 

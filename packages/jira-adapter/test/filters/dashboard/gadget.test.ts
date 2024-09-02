@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -19,15 +11,20 @@ import {
   CORE_ANNOTATIONS,
   ElemID,
   InstanceElement,
+  Element,
   ObjectType,
   ReferenceExpression,
   toChange,
+  Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
-import gadgetFilter from '../../../src/filters/dashboard/gadget'
+import gadgetFilter, {
+  getDashboardPropertiesAsync,
+  InstantToPropertiesResponse,
+} from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
@@ -51,6 +48,8 @@ describe('gadgetFilter', () => {
   let config: JiraConfig
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
+  let elements: Element[]
+  let adapterContext: Values = {}
 
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
@@ -58,13 +57,6 @@ describe('gadgetFilter', () => {
     connection = conn
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    filter = gadgetFilter(
-      getFilterParams({
-        client,
-        paginator,
-        config,
-      }),
-    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
 
     dashboardGadgetType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE),
@@ -92,7 +84,17 @@ describe('gadgetFilter', () => {
         ],
       },
     )
-
+    adapterContext = {
+      dashboardPropertiesPromise: [{ instance, promisePropertyValues: { key1: 'value1', key2: 'value2' } }],
+    }
+    filter = gadgetFilter(
+      getFilterParams({
+        client,
+        paginator,
+        config,
+        adapterContext,
+      }),
+    ) as filterUtils.FilterWith<'onFetch' | 'deploy'>
     connection.get.mockImplementation(async (url: string) => {
       if (url.endsWith('/properties')) {
         return {
@@ -130,33 +132,33 @@ describe('gadgetFilter', () => {
 
       throw new Error('Unexpected url')
     })
+    elements = [instance]
   })
 
-  describe('onFetch', () => {
-    it('should add deployment annotations to properties field', async () => {
-      await filter.onFetch?.([dashboardGadgetType])
-      expect(dashboardGadgetType.fields.properties.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
+  describe('async get', () => {
+    let responsePromise: InstantToPropertiesResponse[]
+    beforeEach(async () => {
+      responsePromise = getDashboardPropertiesAsync(client, elements)
+    })
+    it('should return the dashboard properties', async () => {
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toEqual('value1')
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toEqual('value2')
     })
 
-    it('should add properties values', async () => {
-      await filter.onFetch?.([instance])
-
-      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties', undefined)
-
-      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
-
-      expect(connection.get).toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
-
-      expect(instance.value.properties).toEqual({
-        key1: 'value1',
-        key2: 'value2',
-      })
+    it('should return empty list if the elements are not instances', async () => {
+      responsePromise = getDashboardPropertiesAsync(client, [dashboardGadgetType])
+      expect(responsePromise).toHaveLength(0)
     })
 
-    it('should not add properties when got invalid response from keys request', async () => {
+    it('should return empty list if the request threw an error', async () => {
+      connection.get.mockRejectedValue(new Error('error'))
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await responsePromise[0].promisePropertyValues).toEqual({})
+    })
+    it('should return empty list when got invalid response from keys request', async () => {
       connection.get.mockImplementation(async (url: string) => {
         if (url.endsWith('/properties')) {
           return {
@@ -185,20 +187,20 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
-      await filter.onFetch?.([instance])
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key1', undefined)
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/dashboard/0/items/1/properties/key2', undefined)
 
-      expect(instance.value.properties).toEqual({})
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
-
     it('should not add properties when keys request failed', async () => {
       connection.get.mockRejectedValue(new Error('Failed to get keys'))
-      await filter.onFetch?.([instance])
-
-      expect(instance.value.properties).toEqual({})
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await responsePromise[0].promisePropertyValues).toEqual({})
     })
 
     it('should not add properties when got invalid response from values request', async () => {
@@ -237,11 +239,11 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
-      await filter.onFetch?.([instance])
 
-      expect(instance.value.properties).toEqual({
-        key2: 'value2',
-      })
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toEqual(undefined)
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toEqual('value2')
     })
 
     it('should not add properties when values request failed', async () => {
@@ -277,14 +279,30 @@ describe('gadgetFilter', () => {
 
         throw new Error('Unexpected url')
       })
-      await filter.onFetch?.([instance])
 
+      expect(responsePromise).toHaveLength(1)
+      expect(responsePromise[0].instance.value.id).toEqual('1')
+      expect(await (await responsePromise[0].promisePropertyValues).key1).toEqual(undefined)
+      expect(await (await responsePromise[0].promisePropertyValues).key2).toEqual('value2')
+    })
+  })
+  describe('onFetch', () => {
+    it('should add dashboard properties to the instance', async () => {
+      await filter.onFetch?.(elements)
       expect(instance.value.properties).toEqual({
+        key1: 'value1',
         key2: 'value2',
       })
     })
+    it('should add deployment annotations to properties field', async () => {
+      elements = [dashboardGadgetType]
+      await filter.onFetch?.(elements)
+      expect(dashboardGadgetType.fields.properties.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+    })
   })
-
   describe('deploy', () => {
     const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
 
@@ -292,6 +310,24 @@ describe('gadgetFilter', () => {
 
     beforeEach(async () => {
       deployChangeMock.mockReset()
+
+      instance = new InstanceElement(
+        'instance',
+        dashboardGadgetType,
+        {
+          id: '1',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [
+            new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent'), {
+              value: {
+                id: '0',
+              },
+            }),
+          ],
+        },
+      )
 
       instance.value.properties = {
         key1: 'value1',

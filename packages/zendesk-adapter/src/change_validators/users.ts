@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -41,7 +33,7 @@ import { lookupFunc } from '../filters/field_references'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
-import { ZendeskFetchConfig } from '../config'
+import { ZendeskFetchConfig } from '../user_config'
 
 const { createPaginator } = clientUtils
 const { awu } = collections.asynciterable
@@ -106,6 +98,7 @@ const handleExistingUsers = ({
  * Change error will vary based on the following scenarios:
  *  1. If we could not use user fallback value for some reason, we will return an error.
  *  2. If the user has no permissions to its field, we will return a warning (default user included).
+ *  3. if resolveUserIDs is false, meaning we can't translate users, we will return no errors.
  */
 export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) => ChangeValidator =
   (client, fetchConfig) => async (changes, elementSource) => {
@@ -117,7 +110,7 @@ export const usersValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchCo
       .map(data => resolveValues(data, lookupFunc))
       .toArray()
 
-    if (relevantInstances.length === 0) {
+    if (relevantInstances.length === 0 || fetchConfig.resolveUserIDs === false) {
       return []
     }
 

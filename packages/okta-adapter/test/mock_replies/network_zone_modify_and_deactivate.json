@@ -1,0 +1,91 @@
+[
+  {
+    "path": "/api/v1/zones/networkzone-fakeid1/lifecycle/deactivate",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "type": "IP",
+      "id": "networkzone-fakeid1",
+      "name": "my_zone",
+      "status": "INACTIVE",
+      "usage": "POLICY",
+      "created": "2024-08-05T08:00:33.000Z",
+      "lastUpdated": "2024-08-05T08:03:34.000Z",
+      "system": false,
+      "gateways": [
+        {
+          "type": "RANGE",
+          "value": "100.100.100.100-200.100.100.100"
+        }
+      ],
+      "proxies": null,
+      "_links": {
+        "activate": {
+          "href": "https://<omitted>.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/activate",
+          "hints": {
+            "allow": ["POST"]
+          }
+        },
+        "self": {
+          "href": "https://<omitted>.okta.com/api/v1/zones/networkzone-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        }
+      }
+    },
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "95",
+      "x-rate-limit-reset": "1722845054"
+    }
+  },
+  {
+    "path": "/api/v1/zones/networkzone-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "type": "IP",
+      "id": "networkzone-fakeid1",
+      "name": "my_zone",
+      "status": "INACTIVE",
+      "usage": "POLICY",
+      "created": "2024-08-05T08:00:33.000Z",
+      "lastUpdated": "2024-08-05T08:03:34.000Z",
+      "system": false,
+      "gateways": [
+        {
+          "type": "RANGE",
+          "value": "100.100.100.100-100.100.100.100"
+        }
+      ],
+      "proxies": null,
+      "_links": {
+        "activate": {
+          "href": "https://<omitted>.okta.com/api/v1/zones/networkzone-fakeid1/lifecycle/activate",
+          "hints": {
+            "allow": ["POST"]
+          }
+        },
+        "self": {
+          "href": "https://<omitted>.okta.com/api/v1/zones/networkzone-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        }
+      }
+    },
+    "body": {
+      "id": "networkzone-fakeid1",
+      "name": "your_zone"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "94",
+      "x-rate-limit-reset": "1722845054"
+    }
+  }
+]

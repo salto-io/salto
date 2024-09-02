@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -47,7 +39,7 @@ describe('client', () => {
       result = await client.get({ url: '/myPath' })
     })
     it('should return the response', () => {
-      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+      expect(result).toEqual({ status: 200, data: { response: 'asd' }, headers: {} })
     })
     it('should request the correct path with auth headers', () => {
       const request = mockAxios.history.get[1]
@@ -81,7 +73,6 @@ describe('client', () => {
     it('should wait for first request, then wait according to rate limit', async () => {
       for (let i = 1; i <= 2; i += 1) {
         for (let j = 1; j <= 4; j += 1) {
-          // eslint-disable-next-line no-loop-func
           clientGetSinglePageSpy.mockImplementationOnce(async () => {
             await sleep(100)
             return {
@@ -261,9 +252,11 @@ describe('client', () => {
         id: '123',
         protocol: {
           type: 'OIDC',
-          credentials: '<OMITTED>',
+          credentials: {
+            client: { client_id: 'test', client_secret: '<OMITTED>' },
+          },
         },
-        array: [{ credentials: '<OMITTED>' }, { somethingElse: 'b' }],
+        array: [{ credentials: 'a' }, { somethingElse: 'b' }],
       })
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(2, [
         {

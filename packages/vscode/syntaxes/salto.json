@@ -87,7 +87,7 @@
           "name": "punctuation.definition.tag.salto"
         }
       },
-      "match": "(resource|data|type|extension)\\s+(\")?([\\w]+)(?:(\\.)(\\w+))?(\")?(?:\\s+(is)\\s+(string|object|boolean|number))?(?:\\s+(\")?([\\w\\-]+)(\")?)?\\s+({)",
+      "match": "(resource|data|type|extension)\\s+(\")?(\\w+)(?:(\\.)(\\w+))?(\")?(?:\\s+(is)\\s+(string|object|boolean|number|\\w+\\.\\w+))?(?:\\s+(\")?([\\w\\-]+)(\")?)?\\s+({)",
       "name": "meta.resource.salto"
     },
     {

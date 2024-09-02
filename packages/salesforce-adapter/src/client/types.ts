@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { MetadataInfo, SaveResult } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -25,8 +17,7 @@ const RELATIONSHIP_FIELD_NAMES: string[] = [
   FIELD_TYPE_NAMES.HIERARCHY,
 ]
 
-const isRelationshipFieldName = (fieldName: string): boolean =>
-  RELATIONSHIP_FIELD_NAMES.includes(fieldName)
+const isRelationshipFieldName = (fieldName: string): boolean => RELATIONSHIP_FIELD_NAMES.includes(fieldName)
 
 export type JSONBool = boolean | 'true' | 'false'
 
@@ -126,7 +117,7 @@ export interface LookupFilter {
 export class CustomField implements MetadataInfo {
   // Common field annotations
   readonly label?: string
-  readonly type: string
+  readonly type?: string
   readonly required?: boolean
   readonly defaultValue?: string
   // For formula fields
@@ -182,7 +173,7 @@ export class CustomField implements MetadataInfo {
 
   constructor(
     public fullName: string,
-    type: string,
+    type: string | undefined,
     required = false,
     defaultVal?: string,
     defaultValFormula?: string,
@@ -201,8 +192,7 @@ export class CustomField implements MetadataInfo {
   ) {
     this.type = type
     if (metadataRelationshipControllingField !== undefined) {
-      this.metadataRelationshipControllingField =
-        metadataRelationshipControllingField
+      this.metadataRelationshipControllingField = metadataRelationshipControllingField
     }
     if (formula) {
       this.formula = formula
@@ -228,10 +218,7 @@ export class CustomField implements MetadataInfo {
     }
 
     // For Picklist we save the default value in defaultVal but Metadata requires it at Value level
-    if (
-      type === FIELD_TYPE_NAMES.PICKLIST ||
-      type === FIELD_TYPE_NAMES.MULTIPICKLIST
-    ) {
+    if (type === FIELD_TYPE_NAMES.PICKLIST || type === FIELD_TYPE_NAMES.MULTIPICKLIST) {
       if ((values && !_.isEmpty(values)) || valueSetName) {
         if (values && !_.isEmpty(values)) {
           this.valueSet = {
@@ -239,14 +226,7 @@ export class CustomField implements MetadataInfo {
             valueSetDefinition: {
               ...(picklistSorted ? { sorted: true } : {}),
               value: values.map(
-                (val) =>
-                  new CustomPicklistValue(
-                    val.fullName,
-                    val.default,
-                    val.isActive ?? true,
-                    val.label,
-                    val.color,
-                  ),
+                val => new CustomPicklistValue(val.fullName, val.default, val.isActive ?? true, val.label, val.color),
               ),
             },
           }
@@ -264,7 +244,7 @@ export class CustomField implements MetadataInfo {
     } else if (type === FIELD_TYPE_NAMES.CHECKBOX && !formula) {
       // For Checkbox the default value comes from defaultVal and not defaultValFormula
       this.defaultValue = defaultVal
-    } else if (isRelationshipFieldName(type)) {
+    } else if (type !== undefined && isRelationshipFieldName(type)) {
       this.relationshipName = relationshipName
       // "Can not specify 'referenceTo' for a CustomField of type Hierarchy" Error will be thrown
       // if we try sending the `referenceTo` value to Salesforce.
@@ -287,7 +267,7 @@ export class CustomField implements MetadataInfo {
           FIELD_TYPE_NAMES.AUTONUMBER,
           FIELD_TYPE_NAMES.LONGTEXTAREA,
           FIELD_TYPE_NAMES.RICHTEXTAREA,
-        ] as string[]
+        ] as (string | undefined)[]
       ).includes(this.type) &&
       !formula
     ) {

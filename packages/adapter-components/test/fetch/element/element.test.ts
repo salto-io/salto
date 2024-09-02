@@ -1,29 +1,25 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
   ElemID,
   InstanceElement,
   ObjectType,
+  SaltoError,
   isEqualElements,
   isInstanceElement,
   isObjectType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { getElementGenerator } from '../../../src/fetch/element/element'
-import { queryWithDefault } from '../../../src/definitions'
+import { AbortFetchOnFailure } from '../../../src/fetch/errors'
+import { ConfigChangeSuggestion, queryWithDefault } from '../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
 
 describe('element', () => {
@@ -46,11 +42,19 @@ describe('element', () => {
       expect(res.elements).toHaveLength(1)
       expect(res.elements[0].isEqual(new ObjectType({ elemID: typeID, fields: {} }))).toEqual(true)
     })
-    it('should not throw when type is not marked as top-level', () => {
+    it('should create type with serviceId field as string and hidden fields as unknown when no entries provided', () => {
       const generator = getElementGenerator({
         adapterName: 'myAdapter',
         defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
-          customizations: { myType: { element: { topLevel: { isTopLevel: true } } } },
+          customizations: {
+            myType: {
+              element: {
+                topLevel: { isTopLevel: true },
+                fieldCustomizations: { fieldToHide: { hide: true }, serviceId: { hide: true } },
+              },
+              resource: { serviceIDFields: ['serviceId'], directFetch: true },
+            },
+          },
         }),
         customNameMappingFunctions: {},
       })
@@ -60,8 +64,30 @@ describe('element', () => {
       })
       const res = generator.generate()
       expect(res.errors).toEqual([])
-      expect(res.elements.length).toBe(1)
-      expect(res.elements.map(e => e.elemID.getFullName())).toEqual(['myAdapter.myType'])
+      expect(res.elements).toHaveLength(1)
+      expect(res.elements[0]).toBeInstanceOf(ObjectType)
+      const objType = res.elements[0] as ObjectType
+      expect(_.mapValues(objType?.fields, f => f.getTypeSync().elemID.name)).toEqual({
+        fieldToHide: 'unknown',
+        serviceId: 'serviceid',
+      })
+      expect(objType.fields.fieldToHide?.annotations).toEqual({ [CORE_ANNOTATIONS.HIDDEN_VALUE]: true })
+    })
+    it('should not throw when type is not marked as top-level', () => {
+      const generator = getElementGenerator({
+        adapterName: 'myAdapter',
+        defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+          customizations: { myType: { element: {} } },
+        }),
+        customNameMappingFunctions: {},
+      })
+      generator.pushEntries({
+        entries: [],
+        typeName: 'myType',
+      })
+      const res = generator.generate()
+      expect(res.errors).toEqual([])
+      expect(res.elements).toEqual([])
     })
     it('should create instances and matching type when entries are provided and no defs', () => {
       const entries = [
@@ -204,6 +230,257 @@ describe('element', () => {
           new InstanceElement('CCCCustomTest_SecondDDD', objType, entries[1], []),
         ),
       ).toBeTruthy()
+    })
+
+    describe('handleError', () => {
+      const fetchError = new Error('failed to fetch')
+      const logging = logger('adapter-components/src/fetch/element/element')
+      const logErrorSpy = jest.spyOn(logging, 'error')
+      const logWarnSpy = jest.spyOn(logging, 'warn')
+
+      beforeEach(() => {
+        jest.clearAllMocks()
+      })
+
+      describe('when onError defined with failEntireFetch', () => {
+        it('should throw an error when failEntireFetch is true', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                    onError: {
+                      action: 'failEntireFetch',
+                      value: true,
+                    },
+                  },
+                },
+              },
+            }),
+            customNameMappingFunctions: {},
+          })
+          expect(() => generator.handleError({ typeName: 'myType', error: fetchError })).toThrow(AbortFetchOnFailure)
+        })
+      })
+
+      describe('when onError defined with customSaltoError', () => {
+        const customSaltoError: SaltoError = {
+          message: 'custom error',
+          severity: 'Warning',
+          type: 'unresolvedReferences',
+        }
+
+        it('should generate custom error that returned from onError', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                    onError: {
+                      action: 'customSaltoError',
+                      value: customSaltoError,
+                    },
+                  },
+                },
+              },
+            }),
+          })
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          const res = generator.generate()
+          expect(res.errors).toHaveLength(1)
+          expect(res.errors?.[0]).toEqual(customSaltoError)
+        })
+
+        it('should log "failed to fetch type" warning', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                    onError: {
+                      action: 'customSaltoError',
+                      value: customSaltoError,
+                    },
+                  },
+                },
+              },
+            }),
+          })
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          generator.generate()
+          expect(logWarnSpy).toHaveBeenCalledWith(
+            'failed to fetch type %s:%s, generating custom Salto error',
+            expect.any(String),
+            expect.any(String),
+          )
+          expect(logErrorSpy).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when onError defined with configSuggestion', () => {
+        const configSuggestion: ConfigChangeSuggestion = {
+          reason: 'test',
+          type: 'typeToExclude',
+          value: 'valueToExclude',
+        }
+
+        it('should generate config change suggestion that returned from onError', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                    onError: {
+                      action: 'configSuggestion',
+                      value: configSuggestion,
+                    },
+                  },
+                },
+              },
+            }),
+          })
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          const res = generator.generate()
+          expect(res.configChanges).toHaveLength(1)
+          expect(res.configChanges?.[0]).toEqual(configSuggestion)
+        })
+
+        it('should log "failed to fetch type" warning', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                    onError: {
+                      action: 'configSuggestion',
+                      value: configSuggestion,
+                    },
+                  },
+                },
+              },
+            }),
+          })
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          generator.generate()
+          expect(logWarnSpy).toHaveBeenCalledWith(
+            'failed to fetch type %s:%s, generating config suggestions',
+            expect.any(String),
+            expect.any(String),
+          )
+          expect(logErrorSpy).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when onError defined with ignoreError', () => {
+        const generator = getElementGenerator({
+          adapterName: 'myAdapter',
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+            customizations: {
+              myType: {
+                element: { topLevel: { isTopLevel: true } },
+                resource: {
+                  directFetch: true,
+                  onError: {
+                    action: 'ignoreError',
+                  },
+                },
+              },
+            },
+          }),
+        })
+        it('should not return any error', () => {
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          const res = generator.generate()
+          expect(res.elements).toHaveLength(0)
+          expect(res.errors).toHaveLength(0)
+          expect(res.configChanges).toHaveLength(0)
+        })
+
+        it('should not log "failed to fetch type" error', () => {
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          generator.generate()
+          expect(logErrorSpy).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when using a custom error handler', () => {
+        it('should call custom error handler if defined', () => {
+          const customErrorHandler = jest.fn().mockReturnValue({ action: 'failEntireFetch', value: true, ignore: true })
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                  },
+                },
+              },
+              default: {
+                resource: {
+                  onError: {
+                    custom: () => customErrorHandler,
+                  },
+                },
+              },
+            }),
+          })
+          expect(() => generator.handleError({ typeName: 'myType', error: fetchError })).toThrow(AbortFetchOnFailure)
+          expect(customErrorHandler).toHaveBeenCalledWith({ error: fetchError, typeName: 'myType' })
+        })
+      })
+
+      describe('when onError is not provided', () => {
+        const generator = getElementGenerator({
+          adapterName: 'myAdapter',
+          defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+            customizations: {
+              myType: {
+                element: { topLevel: { isTopLevel: true } },
+                resource: {
+                  directFetch: true,
+                },
+              },
+            },
+          }),
+        })
+
+        it('should not return any error', () => {
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          const res = generator.generate()
+          expect(res.elements).toHaveLength(0)
+          expect(res.errors).toHaveLength(0)
+          expect(res.configChanges).toHaveLength(0)
+        })
+
+        it('should log "unexpectedly failed to fetch type" error by default', () => {
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          generator.generate()
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'unexpectedly failed to fetch type %s:%s: %s',
+            expect.any(String),
+            expect.any(String),
+            fetchError.message,
+            { adapterName: 'myAdapter', typeName: 'myType' },
+          )
+        })
+      })
     })
   })
 })

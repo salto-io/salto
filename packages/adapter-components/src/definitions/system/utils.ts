@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -67,7 +59,7 @@ export type DefQuery<T, K extends string = string> = {
   getAll: () => Record<K, T>
 }
 
-export const queryWithDefault = <T, K extends string = string>(
+export const queryWithDefaultNoCache = <T, K extends string = string>(
   defsWithDefault: DefaultWithCustomizations<T, K>,
 ): DefQuery<T, K> => {
   const query: DefQuery<T, K>['query'] = key =>
@@ -83,11 +75,34 @@ export const queryWithDefault = <T, K extends string = string>(
   }
 }
 
+export const queryWithDefault = <T, K extends string = string>(
+  defsWithDefault: DefaultWithCustomizations<T, K>,
+): DefQuery<T, K> => {
+  const cache = {} as Record<K, T | undefined>
+  let all: Record<K, T> | undefined
+  const query = queryWithDefaultNoCache<T, K>(defsWithDefault)
+  return {
+    allKeys: () => query.allKeys(),
+    query: key => {
+      if (!Object.prototype.hasOwnProperty.call(cache, key)) {
+        cache[key] = query.query(key)
+      }
+      return cache[key]
+    },
+    getAll: () => {
+      if (all === undefined) {
+        all = query.getAll()
+      }
+      return all
+    },
+  }
+}
+
 export function mergeWithDefault<T, K extends string = string>(
   defsWithDefault: DefaultWithCustomizations<T, K>,
 ): Record<K, T>
 export function mergeWithDefault<T>(defsWithDefault: DefaultWithCustomizations<T, string>): Record<string, T> {
-  const query = queryWithDefault<T>(defsWithDefault)
+  const query = queryWithDefaultNoCache<T>(defsWithDefault)
   return _.pickBy(
     _.mapValues(defsWithDefault.customizations, (_val, k) => query.query(k)),
     lowerdashValues.isDefined,

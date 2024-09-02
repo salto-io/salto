@@ -1,23 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { usereventscriptType } from '../../src/autogen/types/standard_types/usereventscript'
 import accountSpecificValueValidator from '../../src/change_validators/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, PATH, SCRIPT_ID } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('account specific value validator', () => {
   const origInstance = new InstanceElement('instance', usereventscriptType().type, {
@@ -35,21 +28,30 @@ describe('account specific value validator', () => {
       [PATH]: '/Path/to/file',
       content: ACCOUNT_SPECIFIC_VALUE,
     })
-    const changeErrors = await accountSpecificValueValidator([toChange({ after: newFileInstance })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ after: newFileInstance })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should not have ChangeError when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
     const after = instance.clone()
     after.value.name = 'NewName'
-    const changeErrors = await accountSpecificValueValidator([toChange({ before: instance, after })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should have Warning ChangeError when modifying an instance with ACCOUNT_SPECIFIC_VALUE', async () => {
     const after = instance.clone()
     after.value.name = ACCOUNT_SPECIFIC_VALUE
-    const changeErrors = await accountSpecificValueValidator([toChange({ before: instance, after })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -58,7 +60,10 @@ describe('account specific value validator', () => {
   it('should have Warning ChangeError when modifying an instance with value that includes ACCOUNT_SPECIFIC_VALUE', async () => {
     const after = instance.clone()
     after.value.name = `${ACCOUNT_SPECIFIC_VALUE}|${ACCOUNT_SPECIFIC_VALUE}|${ACCOUNT_SPECIFIC_VALUE}`
-    const changeErrors = await accountSpecificValueValidator([toChange({ before: instance, after })])
+    const changeErrors = await accountSpecificValueValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)

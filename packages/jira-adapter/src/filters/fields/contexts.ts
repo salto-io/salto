@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AdditionChange,
@@ -27,7 +19,7 @@ import {
   ReadOnlyElementsSource,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { config, client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { defaultDeployChange } from '../../deployment/standard_deployment'
@@ -36,8 +28,10 @@ import { setContextOptions, setOptionTypeDeploymentAnnotations } from './context
 import { setDefaultValueTypeDeploymentAnnotations, updateDefaultValues } from './default_values'
 import { setContextField } from './issues_and_projects'
 import { setFieldDeploymentAnnotations } from '../../utils'
+import { deployAssetObjectContext } from '../assets/assets_object_field_configuration'
+import { JiraConfig } from '../../config/config'
 
-const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext']
+const FIELDS_TO_IGNORE = ['defaultValue', 'options', 'isGlobalContext', 'AssetsObjectFieldConfiguration']
 
 const log = logger(module)
 
@@ -55,13 +49,19 @@ export const getContextType = async (fieldType: ObjectType): Promise<ObjectType>
   return contextType
 }
 
-export const deployContextChange = async (
-  change: Change<InstanceElement>,
-  client: JiraClient,
-  apiDefinitions: config.AdapterApiConfig,
-  paginator?: clientUtils.Paginator,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<void> => {
+export const deployContextChange = async ({
+  change,
+  client,
+  config,
+  paginator,
+  elementsSource,
+}: {
+  change: Change<InstanceElement>
+  client: JiraClient
+  config: JiraConfig
+  paginator?: clientUtils.Paginator
+  elementsSource?: ReadOnlyElementsSource
+}): Promise<void> => {
   const fieldsToIgnore = isAdditionChange(change)
     ? FIELDS_TO_IGNORE
     : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds']
@@ -70,7 +70,7 @@ export const deployContextChange = async (
     await defaultDeployChange({
       change,
       client,
-      apiDefinitions,
+      apiDefinitions: config.apiDefinitions,
       // 'issueTypeIds' can be deployed in the same endpoint as create
       // but for modify there are different endpoints for them
       fieldsToIgnore,
@@ -91,8 +91,11 @@ export const deployContextChange = async (
     elementsSource,
   })
   await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client, elementsSource })
-  await setContextOptions(change, client, elementsSource, paginator)
-  await updateDefaultValues(change, client, elementsSource)
+  if (!config.fetch.splitFieldContextOptions) {
+    await setContextOptions(change, client, elementsSource, paginator)
+    await updateDefaultValues(change, client, config, elementsSource)
+  }
+  await deployAssetObjectContext(change, client, config)
 }
 
 export const getContexts = async (

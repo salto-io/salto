@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -106,7 +98,6 @@ class PromisesQueue {
     }
     const promise = singlePagePagination(pageArgs, additionalArgs)
     this.promises.push(promise)
-    log.trace(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
   }
 
   async dequeue(): Promise<PaginationResult> {
@@ -116,7 +107,6 @@ class PromisesQueue {
       log.error('No promises to dequeue from pagination queue')
       throw new Error('No promises to dequeue from pagination queue')
     }
-    log.trace(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
     return settledPromise
   }
 
@@ -183,6 +173,7 @@ export const traverseRequestsAsync: (
   customEntryExtractor?: PageEntriesExtractor,
 ) => GetAllItemsFunc = (paginationFunc, extractPageEntries, customEntryExtractor) =>
   async function* getPages({ client, pageSize, getParams }) {
+    const isAllowedFailure = getParams.allowFailure ?? false
     const usedParams = new Set<string>()
     const promisesQueue: PromisesQueue = new PromisesQueue()
     let numResults = 0
@@ -209,6 +200,12 @@ export const traverseRequestsAsync: (
         // avoid leaking promises
         // eslint-disable-next-line no-await-in-loop
         await promisesQueue.clear()
+        if (isAllowedFailure) {
+          log.error(
+            `Failed to get the page starting at ${numResults} for endpoint ${getParams.url} with error: ${e.message}`,
+          )
+          return
+        }
         throw e
       }
     }

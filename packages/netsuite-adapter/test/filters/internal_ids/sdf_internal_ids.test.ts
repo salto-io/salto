@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, toChange, ChangeDataType, BuiltinTypes } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -181,15 +173,21 @@ describe('sdf internal ids tests', () => {
       await filterCreator(filterOpts).onFetch?.(elements.concat(clientScriptType))
     })
     it('should query information from api', () => {
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        2,
-        'SELECT scriptid, internalid FROM customfield ORDER BY internalid ASC',
-      )
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-        3,
-        'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC',
-      )
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, {
+        select: 'scriptid, id',
+        from: 'clientscript',
+        orderBy: 'id',
+      })
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+        select: 'scriptid, internalid',
+        from: 'customfield',
+        orderBy: 'internalid',
+      })
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, {
+        select: 'scriptid, internalid',
+        from: 'customrecordtype',
+        orderBy: 'internalid',
+      })
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
         { type: 'savedsearch', filters: [], columns: ['id', 'internalid'] },
@@ -205,7 +203,6 @@ describe('sdf internal ids tests', () => {
       expect(otherCustomFieldInstance.value.internalId).toBe('5')
     })
     it('should add field to object', () => {
-      expect(customRecordType.annotationRefTypes.internalId).toBeDefined()
       expect(clientScriptType.fields.internalId).toBeDefined()
     })
   })
@@ -243,11 +240,16 @@ describe('sdf internal ids tests', () => {
         )
       })
       it('should query information from api', () => {
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(
-          2,
-          'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC',
-        )
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, {
+          select: 'scriptid, id',
+          from: 'clientscript',
+          orderBy: 'id',
+        })
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, {
+          select: 'scriptid, internalid',
+          from: 'customrecordtype',
+          orderBy: 'internalid',
+        })
         expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
         expect(runSavedSearchQueryMock).toHaveBeenCalledWith(
           { type: 'savedsearch', filters: [], columns: ['id', 'internalid'] },

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -24,11 +16,7 @@ import {
   FieldDefinition,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/value_to_static_file'
-import {
-  SALESFORCE,
-  WEBLINK_METADATA_TYPE,
-  METADATA_TYPE,
-} from '../../src/constants'
+import { SALESFORCE, WEBLINK_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
@@ -94,15 +82,11 @@ describe('value to static file filter', () => {
       ['Objects', 'dir'],
     )
 
-    const webLinkInstanceNoPath = new InstanceElement(
-      'weblinkUndefinedPathInstance',
-      webLinkType,
-      {
-        [URL]: codeAsString,
-        [LINK_TYPE_FIELD]: JAVASCRIPT,
-        [NOT_URL]: anotherFieldContent,
-      },
-    )
+    const webLinkInstanceNoPath = new InstanceElement('weblinkUndefinedPathInstance', webLinkType, {
+      [URL]: codeAsString,
+      [LINK_TYPE_FIELD]: JAVASCRIPT,
+      [NOT_URL]: anotherFieldContent,
+    })
     const anotherInstance = new InstanceElement(
       'anotherInstance',
       anotherType,
@@ -144,44 +128,30 @@ describe('value to static file filter', () => {
       it('should not extract from non-weblink instances', () => {
         const anotherInstanceAfterFilter = elements
           .filter(isInstanceElement)
-          .find((e) => e.elemID.name === 'anotherInstance')
+          .find(e => e.elemID.name === 'anotherInstance')
         expect(anotherInstanceAfterFilter?.value[URL]).toBe(regularUrl)
-        expect(anotherInstanceAfterFilter?.value[NOT_URL]).toBe(
-          anotherFieldContent,
-        )
+        expect(anotherInstanceAfterFilter?.value[NOT_URL]).toBe(anotherFieldContent)
       })
 
       it('should only extract from weblink instances with linkType=javascript field', () => {
         const weblinkInstanceAfterFilterWithCode = elements
           .filter(isInstanceElement)
-          .find((e) => e.elemID.name === 'webLinkInstanceCode')
-        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).not.toBe(
-          codeAsString,
-        )
-        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).toEqual(
-          codeAsFile,
-        )
-        expect(weblinkInstanceAfterFilterWithCode?.value[NOT_URL]).toBe(
-          anotherFieldContent,
-        )
+          .find(e => e.elemID.name === 'webLinkInstanceCode')
+        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).not.toBe(codeAsString)
+        expect(weblinkInstanceAfterFilterWithCode?.value[URL]).toEqual(codeAsFile)
+        expect(weblinkInstanceAfterFilterWithCode?.value[NOT_URL]).toBe(anotherFieldContent)
 
         const weblinkInstanceAfterFilterWithoutCode = elements
           .filter(isInstanceElement)
-          .find((e) => e.elemID.name === 'webLinkInstanceNotCode')
-        expect(weblinkInstanceAfterFilterWithoutCode?.value[URL]).toBe(
-          codeAsString,
-        )
-        expect(weblinkInstanceAfterFilterWithoutCode?.value[NOT_URL]).toBe(
-          anotherFieldContent,
-        )
+          .find(e => e.elemID.name === 'webLinkInstanceNotCode')
+        expect(weblinkInstanceAfterFilterWithoutCode?.value[URL]).toBe(codeAsString)
+        expect(weblinkInstanceAfterFilterWithoutCode?.value[NOT_URL]).toBe(anotherFieldContent)
       })
     })
     describe('do not replace value for undefined path', () => {
       let instanceUndefinedPath: InstanceElement | undefined
       beforeAll(async () => {
-        instanceUndefinedPath = elements
-          ?.filter(isInstanceElement)
-          .find((e) => e.path === undefined)
+        instanceUndefinedPath = elements?.filter(isInstanceElement).find(e => e.path === undefined)
         if (instanceUndefinedPath !== undefined) {
           instanceUndefinedPath.path = undefined
         }
@@ -189,9 +159,7 @@ describe('value to static file filter', () => {
       })
 
       it('do not replace value for undefined path', () => {
-        instanceUndefinedPath = elements
-          ?.filter(isInstanceElement)
-          .find((e) => e.path === undefined)
+        instanceUndefinedPath = elements?.filter(isInstanceElement).find(e => e.path === undefined)
         expect(instanceUndefinedPath?.value[URL]).toBe(codeAsString)
         expect(instanceUndefinedPath?.value[NOT_URL]).toBe(anotherFieldContent)
       })

@@ -1,25 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ChangeValidator,
-  getChangeData,
-  ChangeError,
-  InstanceElement,
-  ElemID,
-} from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, ChangeError, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getNamespace } from '../filters/utils'
 import { hasNamespace } from './package'
@@ -58,16 +44,13 @@ const getCpqError = (elemID: ElemID): ChangeError => ({
 })
 
 // this changeValidator will return none or a single changeError
-const changeValidator: ChangeValidator = async (changes) => {
+const changeValidator: ChangeValidator = async changes => {
   const cpqInstance = await awu(changes)
     .filter(isInstanceOfCustomObjectChange)
-    .map((change) => getChangeData(change) as InstanceElement) // already checked that this is an instance element
-    .find(async (instance) => {
+    .map(change => getChangeData(change) as InstanceElement) // already checked that this is an instance element
+    .find(async instance => {
       const type = await instance.getType()
-      return (
-        (await hasNamespace(type)) &&
-        (await getNamespace(type)) === CPQ_NAMESPACE
-      )
+      return (await hasNamespace(type)) && (await getNamespace(type)) === CPQ_NAMESPACE
     })
 
   return cpqInstance !== undefined ? [getCpqError(cpqInstance.elemID)] : []

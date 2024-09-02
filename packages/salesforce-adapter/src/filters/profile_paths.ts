@@ -1,23 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Element,
-  InstanceElement,
-  isInstanceElement,
-} from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 
@@ -31,21 +19,12 @@ const { awu } = collections.asynciterable
 
 const { toArrayAsync } = collections.asynciterable
 
-const generateProfileInternalIdToName = async (
-  client: SalesforceClient,
-): Promise<Map<string, string>> => {
-  const profileNames = await toArrayAsync(
-    await client.queryAll('SELECT Id, Name FROM Profile'),
-  )
-  return new Map(
-    profileNames.flat().map((profile) => [profile.Id, profile.Name]),
-  )
+const generateProfileInternalIdToName = async (client: SalesforceClient): Promise<Map<string, string>> => {
+  const profileNames = await toArrayAsync(await client.queryAll('SELECT Id, Name FROM Profile'))
+  return new Map(profileNames.flat().map(profile => [profile.Id, profile.Name]))
 }
 
-const replacePath = async (
-  profile: InstanceElement,
-  profileInternalIdToName: Map<string, string>,
-): Promise<void> => {
+const replacePath = async (profile: InstanceElement, profileInternalIdToName: Map<string, string>): Promise<void> => {
   const name =
     (await apiName(profile)) === 'PlatformPortal'
       ? // Both 'PlatformPortal' & 'AuthenticatedWebsite' profiles have 'Authenticated Website'
@@ -74,14 +53,13 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     filterName: 'profilePaths',
     fetchFilterFunc: async (elements: Element[]) => {
       const profiles = await awu(elements)
-        .filter(async (e) => isInstanceOfType(PROFILE_METADATA_TYPE)(e))
+        .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e))
         .toArray()
       if (profiles.length > 0) {
-        const profileInternalIdToName =
-          await generateProfileInternalIdToName(client)
+        const profileInternalIdToName = await generateProfileInternalIdToName(client)
         await awu(profiles)
           .filter(isInstanceElement)
-          .forEach(async (inst) => replacePath(inst, profileInternalIdToName))
+          .forEach(async inst => replacePath(inst, profileInternalIdToName))
       }
     },
   }),

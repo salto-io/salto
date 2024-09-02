@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
@@ -79,6 +71,7 @@ import {
   OBJECT_SCHEMA_TYPE,
   OBJECT_TYPE_ICON_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
+  OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -110,15 +103,6 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
-const toReferenceTypeTypeName: referenceUtils.ContextValueMapperFunc = val => {
-  // 1,2,3,4,5,8 are the default values for the reference type field in jira.
-  const defaultVals = new Set(['1', '2', '3', '4', '5', '8'])
-  if (defaultVals.has(val)) {
-    return OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE
-  }
-  return OBJECT_SCHMEA_REFERENCE_TYPE_TYPE
-}
-
 export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'priority' || val === 'resolution') {
     return _.capitalize(val)
@@ -133,7 +117,6 @@ export type ReferenceContextStrategyName =
   | 'parentFieldId'
   | 'parentField'
   | 'gadgetPropertyValue'
-  | 'referenceTypeTypeName'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   parentSelectedFieldType: neighborContextFunc({
@@ -152,10 +135,6 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     contextValueMapper: resolutionAndPriorityToTypeName,
   }),
   gadgetPropertyValue: gadgetValuesContextFunc,
-  referenceTypeTypeName: neighborContextFunc({
-    contextFieldName: 'additionalValue',
-    contextValueMapper: toReferenceTypeTypeName,
-  }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -875,6 +854,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
+    serializationStrategy: 'groupId',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
     src: { field: 'field', parentTypes: [AUTOMATION_CONDITION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
@@ -1207,7 +1191,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'key', parentTypes: ['issueLayoutItem'] },
     serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },
   },
   {
@@ -1319,11 +1302,23 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_TYPE_TYPE },
   },
+  // additionalValue in ObjectTypeAttribute can be of types ObjectSchemaReferenceType or ObjectSchemaDefaultReferenceType
+  {
+    src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_SCHMEA_REFERENCE_TYPE_TYPE },
+  },
+  {
+    src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE },
+  },
+  // Hack to handle missing references when the type is unknown
   {
     src: { field: 'additionalValue', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
-    target: { typeContext: 'referenceTypeTypeName' },
+    target: { type: 'UnknownType' },
   },
   {
     src: { field: 'objectTypeId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
@@ -1336,6 +1331,23 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
     target: { type: OBJECT_SCHEMA_TYPE },
+  },
+  {
+    src: { field: 'objectSchemaId', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: OBJECT_SCHEMA_TYPE },
+  },
+  {
+    src: { field: 'attributesIncludedInAutoCompleteSearch', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+    target: { type: OBJECT_TYPE_ATTRIBUTE_TYPE },
+  },
+  {
+    src: { field: 'attributesDisplayedOnIssue', parentTypes: ['AssetsObjectFieldConfiguration'] },
+    serializationStrategy: 'name',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: OBJECT_TYPE_ATTRIBUTE_TYPE },
   },
   {
     src: { field: 'requestType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
@@ -1364,6 +1376,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'id',
     target: { type: OBJECT_SCHEMA_STATUS_TYPE },
+  },
+  {
+    src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: OBJECT_SCHEMA_GLOBAL_STATUS_TYPE },
   },
   {
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },

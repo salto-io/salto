@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -360,12 +352,7 @@ const validateAdditionalDependencies = ({
   }
 }
 
-const validateFetchConfig = ({
-  include,
-  exclude,
-  fieldsToOmit,
-  skipResolvingAccountSpecificValuesToTypes,
-}: Record<keyof FetchParams, unknown>): void => {
+const validateFetchConfig = ({ include, exclude, fieldsToOmit }: Record<keyof FetchParams, unknown>): void => {
   validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validateFetchParameters(include)
@@ -381,17 +368,6 @@ const validateFetchConfig = ({
 
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
-  }
-
-  if (skipResolvingAccountSpecificValuesToTypes !== undefined) {
-    validateArrayOfStrings(skipResolvingAccountSpecificValuesToTypes, [
-      CONFIG.fetch,
-      FETCH_PARAMS.skipResolvingAccountSpecificValuesToTypes,
-    ])
-    validateRegularExpressions(skipResolvingAccountSpecificValuesToTypes, [
-      CONFIG.fetch,
-      FETCH_PARAMS.skipResolvingAccountSpecificValuesToTypes,
-    ])
   }
 }
 
@@ -423,16 +399,12 @@ const validateDeployParams = ({
 const validateSuiteAppClientParams = ({
   suiteAppConcurrencyLimit,
   httpTimeoutLimitInMinutes,
-  maxRecordsPerSuiteQLTable,
 }: Record<keyof SuiteAppClientConfig, unknown>): void => {
   if (suiteAppConcurrencyLimit !== undefined) {
     validateNumber(suiteAppConcurrencyLimit, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.suiteAppConcurrencyLimit])
   }
   if (httpTimeoutLimitInMinutes !== undefined) {
     validateNumber(httpTimeoutLimitInMinutes, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.httpTimeoutLimitInMinutes])
-  }
-  if (maxRecordsPerSuiteQLTable !== undefined) {
-    validateMaxInstancesPerType(maxRecordsPerSuiteQLTable, { validateInvalidTypes: false })
   }
 }
 

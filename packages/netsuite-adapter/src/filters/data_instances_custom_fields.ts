@@ -1,22 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { PLATFORM_CORE_CUSTOM_FIELD } from '../client/suiteapp_client/constants'
+import {
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isModificationChange,
+  Value,
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
+import { PLATFORM_CORE_CUSTOM_FIELD, PLATFORM_CORE_VALUE } from '../client/suiteapp_client/constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix, toCustomFieldName } from '../types'
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
@@ -26,6 +25,42 @@ import { CUSTOM_FIELD, CUSTOM_FIELD_LIST, SOAP_SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
+
+const VALUE_ATTRIBUTE = 'value'
+
+const toCustomFieldItem = (fieldScriptId: string, fieldValue: Value): Value => ({
+  attributes: {
+    [SOAP_SCRIPT_ID]: fieldScriptId,
+    [XSI_TYPE]: getSoapType(fieldValue),
+  },
+  [PLATFORM_CORE_VALUE]: fieldValue,
+})
+
+const transformNestedCustomFieldLists = (instance: InstanceElement): void => {
+  const transformFunc: TransformFuncSync = ({ value, field }) => {
+    if (
+      _.isPlainObject(value) &&
+      _.isArray(value[CUSTOM_FIELD]) &&
+      field !== undefined &&
+      field.name === CUSTOM_FIELD_LIST &&
+      field.refType.elemID.typeName === CUSTOM_FIELD_LIST
+    ) {
+      return {
+        [PLATFORM_CORE_CUSTOM_FIELD]: value[CUSTOM_FIELD].map(item =>
+          toCustomFieldItem(item[SOAP_SCRIPT_ID], item[VALUE_ATTRIBUTE]),
+        ),
+      }
+    }
+    return value
+  }
+
+  instance.value = transformValuesSync({
+    values: instance.value,
+    type: instance.getTypeSync(),
+    transformFunc,
+    strict: false,
+  })
+}
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesCustomFields',
@@ -40,7 +75,7 @@ const filterCreator: LocalFilterCreator = () => ({
             .map(async value => {
               const fieldName = toCustomFieldName(value[SOAP_SCRIPT_ID])
               const field = type.fields[fieldName]
-              return [fieldName, await castFieldValue(value.value, field)]
+              return [fieldName, await castFieldValue(value[VALUE_ATTRIBUTE], field)]
             })
             .toArray(),
         )
@@ -57,18 +92,14 @@ const filterCreator: LocalFilterCreator = () => ({
         .filter(isInstanceElement)
         .filter(async instance => isDataObjectType(await instance.getType()))
         .forEach(instance => {
+          transformNestedCustomFieldLists(instance)
+
           const customFields = _(instance.value)
             .pickBy((_value, key) => isCustomFieldName(key))
             .entries()
             .sortBy(([key]) => key)
             .filter(([key]) => !differentKeys || differentKeys.has(key))
-            .map(([key, customField]) => ({
-              attributes: {
-                [SOAP_SCRIPT_ID]: removeCustomFieldPrefix(key),
-                [XSI_TYPE]: getSoapType(customField),
-              },
-              'platformCore:value': customField,
-            }))
+            .map(([key, value]) => toCustomFieldItem(removeCustomFieldPrefix(key), value))
             .value()
 
           instance.value = {

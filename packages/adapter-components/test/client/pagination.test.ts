@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
@@ -1223,7 +1215,7 @@ describe('client_pagination', () => {
   describe('getWithOffsetAndLimit', () => {
     let paginate: PaginationFunc
     beforeEach(async () => {
-      paginate = getWithOffsetAndLimit()
+      paginate = getWithOffsetAndLimit('isLast')
     })
     describe('with paginationField', () => {
       describe('when response is a valid page', () => {
@@ -1258,6 +1250,27 @@ describe('client_pagination', () => {
             }),
           ).toEqual([])
         })
+        it('should work with different last page values', () => {
+          paginate = getWithOffsetAndLimit('isLastPage')
+          expect(
+            paginate({
+              pageSize: 2,
+              getParams: { url: '/ep', paginationField: 'startAt' },
+              currentParams: {},
+              responseData: { isLastPage: false, startAt: 0, values: [1, 2] },
+              page: [{ isLastPage: false, startAt: 0, values: [1, 2] }],
+            }),
+          ).toEqual([{ startAt: '2' }])
+          expect(
+            paginate({
+              pageSize: 2,
+              getParams: { url: '/ep', paginationField: 'startAt' },
+              currentParams: { startAt: '2' },
+              responseData: { isLastPage: true, startAt: 2, values: [3] },
+              page: [{ isLastPage: true, startAt: 2, values: [3] }],
+            }),
+          ).toEqual([])
+        })
       })
       describe('when response is not a valid page', () => {
         it('should throw error', async () => {
@@ -1270,6 +1283,19 @@ describe('client_pagination', () => {
               page: [{ isLast: false, startAt: 0, values: [1, 2] }],
             }),
           ).toThrow('Response from /ep expected page with pagination field wrong')
+        })
+        it('should throw error when isLastPage is not valid', async () => {
+          expect(() =>
+            paginate({
+              pageSize: 2,
+              getParams: { url: '/ep', paginationField: 'startAt' },
+              currentParams: {},
+              responseData: { isLastPage: false, startAt: 0, values: [1, 2] },
+              page: [{ isLastPage: false, startAt: 0, values: [1, 2] }],
+            }),
+          ).toThrow(
+            'Response from /ep expected page with pagination field startAt, got {"isLastPage":false,"startAt":0,"values":[1,2]}',
+          )
         })
       })
     })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 // We ignore the use before define lint rule in some cases here since we really do
@@ -32,7 +24,7 @@ import {
   positionAtStart,
   positionAtEnd,
 } from '../helpers'
-import { TOKEN_TYPES, LexerToken, TRUE, FALSE } from '../lexer'
+import { TOKEN_TYPES, LexerToken, TRUE, FALSE, stringLexer } from '../lexer'
 import {
   missingComma,
   unknownFunction,
@@ -66,15 +58,18 @@ const consumeWord: Consumer<string> = context => {
   }
 }
 
-const defaultStringTokenTransformFunc = (context: ParseContext, token: Required<Token>): string => {
+const createSimpleStringValue = (
+  context: Pick<ParseContext, 'errors' | 'filename'>,
+  tokens: Required<Token>[],
+): string => {
   try {
-    return JSON.parse(`"${unescapeTemplateMarker(token.text)}"`)
+    return JSON.parse(`"${unescapeTemplateMarker(tokens.map(token => token.text).join(''))}"`)
   } catch (e) {
     context.errors.push(
       invalidStringChar(
         {
-          start: positionAtStart(token),
-          end: positionAtEnd(token),
+          start: positionAtStart(tokens[0]),
+          end: positionAtEnd(tokens[tokens.length - 1]),
           filename: context.filename,
         },
         e.message,
@@ -84,16 +79,13 @@ const defaultStringTokenTransformFunc = (context: ParseContext, token: Required<
   }
 }
 
-const createSimpleStringValue = (
-  context: ParseContext,
-  tokens: Required<Token>[],
-  transformFunc: (context: ParseContext, token: Required<Token>) => string = defaultStringTokenTransformFunc,
-): string => tokens.map(token => transformFunc(context, token)).join('')
-
 const createTemplateExpressions = (
-  context: ParseContext,
+  context: Pick<ParseContext, 'errors' | 'filename'>,
   tokens: Required<Token>[],
-  transformFunc: (context: ParseContext, token: Required<Token>) => string = defaultStringTokenTransformFunc,
+  createSimpleStringValueFunc: (
+    context: Pick<ParseContext, 'errors' | 'filename'>,
+    tokens: Required<Token>[],
+  ) => string,
 ): TemplateExpression =>
   createTemplateExpression({
     parts: tokens.map(token => {
@@ -101,19 +93,21 @@ const createTemplateExpressions = (
         const ref = createReferenceExpression(token.value)
         return ref instanceof IllegalReference ? token.text : ref
       }
-      return transformFunc(context, token)
+      return createSimpleStringValueFunc(context, [token])
     }),
   })
 
-const createStringValue = (
-  context: ParseContext,
+export const createStringValue = (
+  context: Pick<ParseContext, 'errors' | 'filename'>,
   tokens: Required<Token>[],
-  transformFunc?: (context: ParseContext, token: Required<Token>) => string,
+  createSimpleStringValueFunc = createSimpleStringValue,
 ): string | TemplateExpression => {
-  const simpleString = _.every(tokens, token => [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE].includes(token.type))
-  return simpleString
-    ? createSimpleStringValue(context, tokens, transformFunc)
-    : createTemplateExpressions(context, tokens, transformFunc)
+  const isSimpleString = _.every(tokens, token =>
+    [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE, TOKEN_TYPES.NEWLINE].includes(token.type),
+  )
+  return isSimpleString
+    ? createSimpleStringValueFunc(context, tokens)
+    : createTemplateExpressions(context, tokens, createSimpleStringValueFunc)
 }
 
 const consumeStringData = (context: ParseContext): ConsumerReturnType<Required<Token>[]> => {
@@ -148,9 +142,10 @@ const consumeStringData = (context: ParseContext): ConsumerReturnType<Required<T
       }),
     )
   }
+  const stringTokens = stringLexer(tokens, start)
   return {
     range: { start, end },
-    value: tokens,
+    value: stringTokens,
   }
 }
 
@@ -250,6 +245,9 @@ const unescapeMultilineMarker = (prim: string): string => prim.replace(/\\'''/g,
 
 const unescapeMultilineString = (text: string): string => unescapeMultilineMarker(unescapeTemplateMarker(text))
 
+const createMultilineSimpleStringValue = (_context: unknown, tokens: Required<Token>[]): string =>
+  unescapeMultilineString(tokens.map(token => token.text).join(''))
+
 const consumeMultilineString: Consumer<string | TemplateExpression> = context => {
   // Getting the position of the start marker
   const start = positionAtStart(context.lexer.next())
@@ -265,7 +263,8 @@ const consumeMultilineString: Consumer<string | TemplateExpression> = context =>
 
   // Getting the position of the end marker
   const end = positionAtEnd(context.lexer.next())
-  const value = createStringValue(context, tokens, (_c, t) => unescapeMultilineString(t.text))
+  const stringTokens = stringLexer(tokens, start)
+  const value = createStringValue(context, stringTokens, createMultilineSimpleStringValue)
   return {
     value,
     range: { start, end },

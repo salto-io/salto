@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -31,11 +23,7 @@ import _ from 'lodash'
 import path from 'path'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
-import {
-  EMAIL_TEMPLATE_METADATA_TYPE,
-  RECORDS_PATH,
-  SALESFORCE,
-} from '../constants'
+import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../constants'
 import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
@@ -49,26 +37,16 @@ type Attachment = {
   content: string | Buffer | StaticFile
 }
 
-const isEmailTemplateAttachment = (
-  attachment: unknown,
-): attachment is Attachment => {
+const isEmailTemplateAttachment = (attachment: unknown): attachment is Attachment => {
   const name = _.get(attachment, 'name')
   const content = _.get(attachment, 'content')
-  return (
-    _.isString(name) &&
-    (Buffer.isBuffer(content) || _.isString(content) || isStaticFile(content))
-  )
+  return _.isString(name) && (Buffer.isBuffer(content) || _.isString(content) || isStaticFile(content))
 }
 
-const isEmailAttachmentsArray = (
-  attachments: unknown[],
-): attachments is Attachment[] => attachments.every(isEmailTemplateAttachment)
+const isEmailAttachmentsArray = (attachments: unknown[]): attachments is Attachment[] =>
+  attachments.every(isEmailTemplateAttachment)
 
-const createStaticFile = (
-  folderName: string,
-  name: string,
-  content: string,
-): StaticFile =>
+const createStaticFile = (folderName: string, name: string, content: string): StaticFile =>
   new StaticFile({
     filepath: `${folderName}/${name}`,
     content: Buffer.from(content, 'base64'),
@@ -77,15 +55,11 @@ const createStaticFile = (
 const findFolderPath = (instance: InstanceElement): string =>
   `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
 
-const organizeStaticFiles = async (
-  instance: InstanceElement,
-): Promise<void> => {
+const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
   const folderPath = findFolderPath(instance)
   if (_.isUndefined(folderPath)) {
     const instApiName = await apiName(instance)
-    log.warn(
-      `could not extract the attachments of instance ${instApiName}, instance path is undefined`,
-    )
+    log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
   } else {
     const emailName = `${folderPath.split('/').pop()}.email`
     instance.value.content = new StaticFile({
@@ -95,7 +69,7 @@ const organizeStaticFiles = async (
     try {
       instance.value.attachments = makeArray(instance.value.attachments)
       if (isEmailAttachmentsArray(instance.value.attachments)) {
-        instance.value.attachments.forEach((attachment) => {
+        instance.value.attachments.forEach(attachment => {
           attachment.content = createStaticFile(
             // attachment.content type is a string before the creation of the static file
             folderPath,
@@ -119,24 +93,18 @@ const organizeStaticFiles = async (
         )
       }
     } catch (err) {
-      log.warn(
-        'Error when handling email template attachments of %s: %s',
-        instance.elemID.getFullName(),
-        err.message,
-      )
+      log.warn('Error when handling email template attachments of %s: %s', instance.elemID.getFullName(), err.message)
     }
   }
 }
 
-const getAttachmentsFromChanges = async (
-  changes: Change[],
-): Promise<Attachment[]> =>
+const getAttachmentsFromChanges = async (changes: Change[]): Promise<Attachment[]> =>
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
     .map(getChangeData)
-    .flatMap((instance) => makeArray(instance.value.attachments))
+    .flatMap(instance => makeArray(instance.value.attachments))
     .filter(isEmailTemplateAttachment)
     .toArray()
 
@@ -152,26 +120,22 @@ const filter: LocalFilterCreator = () => ({
       .forEach(organizeStaticFiles)
   },
   // Convert EmailTemplate attachments content from Buffer to base64 string
-  preDeploy: async (changes) => {
-    ;(await getAttachmentsFromChanges(changes)).forEach((attachment) => {
+  preDeploy: async changes => {
+    ;(await getAttachmentsFromChanges(changes)).forEach(attachment => {
       if (_.isBuffer(attachment.content)) {
         attachment.content = attachment.content.toString('base64')
       } else {
-        log.error(
-          `The EmailTemplate attachment "${attachment.name}" content is not a Buffer on preDeploy`,
-        )
+        log.error(`The EmailTemplate attachment "${attachment.name}" content is not a Buffer on preDeploy`)
       }
     })
   },
   // Convert EmailTemplate attachments back to binary files
-  onDeploy: async (changes) => {
-    ;(await getAttachmentsFromChanges(changes)).forEach((attachment) => {
+  onDeploy: async changes => {
+    ;(await getAttachmentsFromChanges(changes)).forEach(attachment => {
       if (_.isString(attachment.content)) {
         attachment.content = Buffer.from(attachment.content, 'base64')
       } else {
-        log.error(
-          `The EmailTemplate attachment "${attachment.name}" content is not a string on onDeploy`,
-        )
+        log.error(`The EmailTemplate attachment "${attachment.name}" content is not a string on onDeploy`)
       }
     })
   },

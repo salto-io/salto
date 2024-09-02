@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { MetadataInfo } from '@salto-io/jsforce'
 import { ObjectType } from '@salto-io/adapter-api'
@@ -19,10 +11,7 @@ import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'
 import { CustomField, ProfileInfo } from '../src/client/types'
 import { createDeployPackage } from '../src/transformers/xml_transformer'
-import {
-  MetadataValues,
-  createInstanceElement,
-} from '../src/transformers/transformer'
+import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
 import { removeMetadataIfAlreadyExists } from './utils'
@@ -63,18 +52,14 @@ export const CUSTOM_FIELD_NAMES = {
   FORMULA: 'Whiskey__c',
 }
 
-export const removeCustomObjectsWithVariousFields = async (
-  client: SalesforceClient,
-): Promise<void> => {
+export const removeCustomObjectsWithVariousFields = async (client: SalesforceClient): Promise<void> => {
   const deployPkg = createDeployPackage()
   deployPkg.delete(mockTypes.CustomObject, customObjectWithFieldsName)
   deployPkg.delete(mockTypes.CustomObject, customObjectAddFieldsName)
   await client.deploy(await deployPkg.getZip())
 }
 
-export const verifyElementsExist = async (
-  client: SalesforceClient,
-): Promise<void> => {
+export const verifyElementsExist = async (client: SalesforceClient): Promise<void> => {
   const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
     await client.upsert('GlobalValueSet', {
       fullName: gvsName,
@@ -97,11 +82,7 @@ export const verifyElementsExist = async (
   }
 
   const addCustomObjectWithVariousFields = async (): Promise<void> => {
-    await removeMetadataIfAlreadyExists(
-      client,
-      constants.CUSTOM_FIELD,
-      summaryFieldName,
-    )
+    await removeMetadataIfAlreadyExists(client, constants.CUSTOM_FIELD, summaryFieldName)
     await removeCustomObjectsWithVariousFields(client)
     const objectToAdd = {
       deploymentStatus: 'Deployed',
@@ -298,9 +279,7 @@ export const verifyElementsExist = async (
           fullName: CUSTOM_FIELD_NAMES.MASTER_DETAIL,
           label: 'MasterDetail label',
           referenceTo: ['Case'],
-          relationshipName: CUSTOM_FIELD_NAMES.MASTER_DETAIL.split(
-            constants.SALESFORCE_CUSTOM_SUFFIX,
-          )[0],
+          relationshipName: CUSTOM_FIELD_NAMES.MASTER_DETAIL.split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
           reparentableMasterDetail: true,
           required: false,
           type: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
@@ -381,9 +360,7 @@ export const verifyElementsExist = async (
       fullName: CUSTOM_FIELD_NAMES.LOOKUP,
       label: 'Lookup label',
       referenceTo: ['Opportunity'],
-      relationshipName: CUSTOM_FIELD_NAMES.LOOKUP.split(
-        constants.SALESFORCE_CUSTOM_SUFFIX,
-      )[0],
+      relationshipName: CUSTOM_FIELD_NAMES.LOOKUP.split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
       required: false,
       type: constants.FIELD_TYPE_NAMES.LOOKUP,
     } as CustomField
@@ -409,25 +386,18 @@ export const verifyElementsExist = async (
     }
     await verifyObjectsDependentFieldsExist()
     await client.upsert(constants.CUSTOM_OBJECT, objectToAdd as MetadataInfo)
-    await client.upsert(
-      constants.CUSTOM_FIELD,
-      additionalFieldsToAdd as MetadataInfo[],
-    )
+    await client.upsert(constants.CUSTOM_FIELD, additionalFieldsToAdd as MetadataInfo[])
 
     // Add the fields permissions
     const objectFieldNames = objectToAdd.fields
-      .filter((field) => !field.required)
-      .filter(
-        (field) => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
-      )
-      .map((field) => `${customObjectWithFieldsName}.${field.fullName}`)
-    const additionalFieldNames = additionalFieldsToAdd
-      .filter((field) => !field.required)
-      .map((f) => f.fullName)
+      .filter(field => !field.required)
+      .filter(field => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL)
+      .map(field => `${customObjectWithFieldsName}.${field.fullName}`)
+    const additionalFieldNames = additionalFieldsToAdd.filter(field => !field.required).map(f => f.fullName)
     const fieldNames = objectFieldNames.concat(additionalFieldNames)
     await client.upsert(constants.PROFILE_METADATA_TYPE, {
       fullName: constants.ADMIN_PROFILE,
-      fieldPermissions: fieldNames.map((name) => ({
+      fieldPermissions: fieldNames.map(name => ({
         field: name,
         editable: true,
         readable: true,
@@ -858,10 +828,7 @@ export const verifyElementsExist = async (
       [mockDefaultValues.ApexClass, mockTypes.ApexClass],
       [mockDefaultValues.ApexPage, mockTypes.ApexPage],
       [mockDefaultValues.AuraDefinitionBundle, mockTypes.AuraDefinitionBundle],
-      [
-        mockDefaultValues.LightningComponentBundle,
-        mockTypes.LightningComponentBundle,
-      ],
+      [mockDefaultValues.LightningComponentBundle, mockTypes.LightningComponentBundle],
       [mockDefaultValues.StaticResource, mockTypes.StaticResource],
     ]
     const pkg = createDeployPackage()

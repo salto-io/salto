@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -202,7 +194,7 @@ describe('client', () => {
       await client.get({ url: 'organizations/autocomplete' })
 
       const responseText1 =
-        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}'
+        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(1, [
         'Full HTTP response for %s on %s (size %d): %s',
@@ -213,7 +205,7 @@ describe('client', () => {
       ])
 
       const responseText2 =
-        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}'
+        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(2, [
         'Full HTTP response for %s on %s (size %d): %s',
@@ -224,7 +216,7 @@ describe('client', () => {
       ])
 
       const responseText3 =
-        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
+        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(3, [
         'Full HTTP response for %s on %s (size %d): %s',
@@ -235,7 +227,7 @@ describe('client', () => {
       ])
 
       const responseText4 =
-        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}'
+        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"headers":{}}'
 
       expect(logTrace).toHaveBeenNthCalledWith(4, [
         'Full HTTP response for %s on %s (size %d): %s',

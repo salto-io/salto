@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import _ from 'lodash'
@@ -33,7 +25,7 @@ import FormData from 'form-data'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, getParents, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
-import { getOktaError } from './deployment'
+import { getOktaError } from './deprecated_deployment'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { extractIdFromUrl } from './utils'
 
@@ -165,9 +157,9 @@ export const getLogo = async ({
   if (logoContent instanceof Error) {
     return logoContent
   }
-  const pathName = pathNaclCase(logoName)
-  const camelCaseName = pathName.replace(/_/g, '')
-  const resourcePathName = `${normalizeFilePathPart(camelCaseName)}.${contentType}`
+  // Use the full NaCL name (including suffix) to avoid naming collisions, but replace '@' with '.' to ensure file
+  // names are valid across all operating systems.
+  const resourcePathName = `${normalizeFilePathPart(logoName.replace('@', '.'))}.${contentType}`
   const logoId = extractIdFromUrl(link)
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(
@@ -175,14 +167,14 @@ export const getLogo = async ({
     logoType,
     {
       id: logoId,
-      fileName: `${camelCaseName}.${contentType}`,
+      fileName: resourcePathName,
       contentType,
       content: new StaticFile({
         filepath: `${OKTA}/${logoType.elemID.name}/${resourcePathName}`,
         content: logoContent,
       }),
     },
-    [OKTA, RECORDS_PATH, ...nestedPath, logoType.elemID.typeName, pathName],
+    [OKTA, RECORDS_PATH, ...nestedPath, logoType.elemID.typeName, pathNaclCase(logoName)],
     {
       [CORE_ANNOTATIONS.PARENT]: refParents,
     },

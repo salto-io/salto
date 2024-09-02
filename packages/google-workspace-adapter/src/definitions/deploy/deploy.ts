@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { isModificationChange } from '@salto-io/adapter-api'
@@ -366,7 +358,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  adjust: item => {
+                  adjust: async item => {
                     const { value } = item
                     if (!(lowerdashValues.isPlainRecord(value) && lowerdashValues.isPlainRecord(value.fields))) {
                       throw new Error('Expected schema to be an object')
@@ -400,7 +392,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'put',
                 },
                 transformation: {
-                  adjust: item => {
+                  adjust: async item => {
                     const { value } = item
                     if (!(lowerdashValues.isPlainRecord(value) && lowerdashValues.isPlainRecord(value.fields))) {
                       throw new Error('Expected schema to be an object')
@@ -430,7 +422,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  adjust: item => {
+                  adjust: async item => {
                     const { value } = item
                     if (!lowerdashValues.isPlainRecord(value)) {
                       throw new Error('Can not deploy when the value is not an object')
@@ -481,7 +473,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 },
                 transformation: {
                   omit: ['resourceEmail'],
-                  adjust: item => {
+                  adjust: async item => {
                     const { value } = item
                     if (!lowerdashValues.isPlainRecord(value)) {
                       throw new Error('Can not deploy when the value is not an object')

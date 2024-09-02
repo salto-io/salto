@@ -1,39 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Element,
-  Field,
-  ReferenceExpression,
-  ObjectType,
-  isObjectType,
-} from '@salto-io/adapter-api'
+import { Element, Field, ReferenceExpression, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import {
-  FIELD_ANNOTATIONS,
-  FOREIGN_KEY_DOMAIN,
-  CUSTOM_OBJECT,
-} from '../constants'
-import {
-  apiName,
-  metadataType,
-  isMetadataObjectType,
-  isCustomObject,
-} from '../transformers/transformer'
+import { FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN, CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME } from '../constants'
+import { apiName, metadataType, isMetadataObjectType, isCustomObject } from '../transformers/transformer'
 import { apiNameSync, buildElementsSourceForFetch } from './utils'
 
 const { makeArray } = collections.array
@@ -55,22 +32,16 @@ const convertAnnotationsToReferences = async (
   nameToElement: multiIndex.Index<[string, string], Element>,
   annotationNames: string[],
 ): Promise<void> => {
-  const resolveTypeReference = (
-    ref: string | ReferenceExpression,
-  ): string | ReferenceExpression => {
+  const resolveTypeReference = (ref: string | ReferenceExpression): string | ReferenceExpression => {
     if (_.isString(ref)) {
       // Try finding a metadata type and fallback to finding a custom object
       const referenceElement =
-        nameToElement.get(ref, ref) ?? nameToElement.get(CUSTOM_OBJECT, ref)
+        nameToElement.get(ref, ref) ??
+        nameToElement.get(CUSTOM_OBJECT, ref) ??
+        nameToElement.get(CUSTOM_OBJECT_TYPE_NAME, ref)
       // SALTO-5064
-      if (
-        referenceElement !== undefined &&
-        apiNameSync(referenceElement) !== CUSTOM_OBJECT
-      ) {
-        return new ReferenceExpression(
-          referenceElement.elemID,
-          referenceElement,
-        )
+      if (referenceElement !== undefined && apiNameSync(referenceElement) !== CUSTOM_OBJECT) {
+        return new ReferenceExpression(referenceElement.elemID, referenceElement)
       }
     }
     return ref
@@ -80,16 +51,12 @@ const convertAnnotationsToReferences = async (
     .filter(isObjectType)
     .filter(isMetadataTypeOrCustomObject)
     .flatMap((obj: ObjectType) => Object.values(obj.fields))
-    .filter((field: Field) =>
-      annotationNames.some((name) => field.annotations[name] !== undefined),
-    )
+    .filter((field: Field) => annotationNames.some(name => field.annotations[name] !== undefined))
     .forEach((field: Field): void => {
       annotationNames
-        .filter((name) => field.annotations[name] !== undefined)
-        .forEach((name) => {
-          field.annotations[name] = makeArray(field.annotations[name]).map(
-            resolveTypeReference,
-          )
+        .filter(name => field.annotations[name] !== undefined)
+        .forEach(name => {
+          field.annotations[name] = makeArray(field.annotations[name]).map(resolveTypeReference)
         })
     })
 }
@@ -104,12 +71,9 @@ const filter: LocalFilterCreator = ({ config }) => ({
     const nameToElement = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),
       filter: isMetadataTypeOrCustomObject,
-      key: async (obj) => [await metadataType(obj), await apiName(obj)],
+      key: async obj => [await metadataType(obj), await apiName(obj)],
     })
-    await convertAnnotationsToReferences(elements, nameToElement, [
-      REFERENCE_TO,
-      FOREIGN_KEY_DOMAIN,
-    ])
+    await convertAnnotationsToReferences(elements, nameToElement, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
   },
 })
 

@@ -1,22 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import Ajv from 'ajv'
+import Ajv, { Schema } from 'ajv'
 import { logger } from '@salto-io/logging'
-import { collections, regex, strings } from '@salto-io/lowerdash'
 import {
   CORE_ANNOTATIONS,
   ElemID,
@@ -29,30 +20,35 @@ import {
 } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { NetsuiteConfig } from '../config/types'
-import { ALLOCATION_TYPE, EMPLOYEE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
-import { getLastServerTime } from '../server_time'
-import { toSuiteQLWhereDateString } from '../changes_detector/date_formats'
+import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, SUPPORT_CASE_PROFILE, TAX_SCHEDULE } from '../constants'
 import { SuiteQLTableName } from './types'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 export const SUITEQL_TABLE = 'suiteql_table'
 export const INTERNAL_IDS_MAP = 'internalIdsMap'
 
-const VERSION_FIELD = 'version'
-const LATEST_VERSION = 1
+const COLUMN_QUERY_LIMIT = 50
+const ITEMS_PER_QUERY_LIMIT = 200
 
-const ALLOCATION_TYPE_QUERY_LIMIT = 50
+export type MissingInternalId = {
+  tableName: string
+  name: string
+}
 
-const MAX_ALLOWED_RECORDS = 100_000
+export type AdditionalQueryName =
+  | typeof TAX_SCHEDULE
+  | typeof PROJECT_EXPENSE_TYPE
+  | typeof ALLOCATION_TYPE
+  | typeof SUPPORT_CASE_PROFILE
 
 type InternalIdsMap = Record<string, { name: string }>
+
+type QueryBy = 'internalId' | 'name'
 
 type QueryParams = {
   internalIdField: 'id' | 'key'
   nameField: string
-  lastModifiedDateField?: 'lastmodifieddate'
 }
 
 type SavedSearchInternalIdsResult = {
@@ -64,14 +60,15 @@ type SavedSearchInternalIdsResult = {
   name: string
 }
 
-type AllocationTypeSearchResult = {
-  [ALLOCATION_TYPE]: [
+type ColumnSearchResult = Record<
+  string,
+  [
     {
       value: string
       text: string
     },
   ]
-}
+>
 
 const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
   type: 'array',
@@ -100,13 +97,13 @@ const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
   },
 }
 
-const ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA = {
+const getColumnSearchResultSchema = (searchColumn: string): Schema => ({
   type: 'array',
   items: {
     type: 'object',
-    required: [ALLOCATION_TYPE],
+    required: [searchColumn],
     properties: {
-      [ALLOCATION_TYPE]: {
+      [searchColumn]: {
         type: 'array',
         maxItems: 1,
         minItems: 1,
@@ -125,181 +122,145 @@ const ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA = {
       },
     },
   },
-}
+})
 
 export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undefined> = {
   item: {
     internalIdField: 'id',
     nameField: 'itemid',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   transaction: {
     internalIdField: 'id',
     nameField: 'trandisplayname',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   account: {
     internalIdField: 'id',
     nameField: 'accountsearchdisplayname',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   bom: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   customer: {
     internalIdField: 'id',
     nameField: 'companyname',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   accountingPeriod: {
     internalIdField: 'id',
     nameField: 'periodname',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   calendarEvent: {
     internalIdField: 'id',
     nameField: 'title',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   charge: {
     internalIdField: 'id',
     nameField: 'description',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   classification: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   contact: {
     internalIdField: 'id',
     nameField: 'entitytitle',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   currency: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   department: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   employee: {
     internalIdField: 'id',
     nameField: 'entityid',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   expenseCategory: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   generalToken: {
     internalIdField: 'id',
     nameField: 'externalid',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   inventoryNumber: {
     internalIdField: 'id',
     nameField: 'inventorynumber',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   job: {
     internalIdField: 'id',
     nameField: 'companyname',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   location: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   manufacturingCostTemplate: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   partner: {
     internalIdField: 'id',
     nameField: 'companyname',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   paymentCard: {
     internalIdField: 'id',
     nameField: 'nameoncard',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   paymentCardToken: {
     internalIdField: 'id',
     nameField: 'externalid',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   paymentMethod: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   phoneCall: {
     internalIdField: 'id',
     nameField: 'title',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   priceLevel: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   pricingGroup: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   subsidiary: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   task: {
     internalIdField: 'id',
     nameField: 'title',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   term: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   timeBill: {
     internalIdField: 'id',
     nameField: 'displayfield',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   unitsType: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   usage: {
     internalIdField: 'id',
     nameField: 'externalid',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   vendor: {
     internalIdField: 'id',
     nameField: 'entitytitle',
-    lastModifiedDateField: 'lastmodifieddate',
   },
   vendorCategory: {
     internalIdField: 'id',
     nameField: 'name',
-    lastModifiedDateField: 'lastmodifieddate',
   },
-
-  // tables with no 'lastmodifieddate' field
   billingSchedule: {
     internalIdField: 'id',
     nameField: 'name',
@@ -412,6 +373,34 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'description',
   },
+  revenueRecognitionRule: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  incoterm: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  approvalStatus: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  accountingBook: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  shipItem: {
+    internalIdField: 'id',
+    nameField: 'itemid',
+  },
+  employeeStatus: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  jobResourceRole: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
 
   // could not find table
   address: undefined,
@@ -471,76 +460,123 @@ export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): Intern
   return instance.value[INTERNAL_IDS_MAP]
 }
 
-export const getSuiteQLNameToInternalIdsMap = async (
-  elementsSource: ReadOnlyElementsSource,
-): Promise<Record<string, Record<string, string[]>>> => {
-  const suiteQLTableInstances = await awu(await elementsSource.list())
-    .filter(elemId => elemId.idType === 'instance' && elemId.typeName === SUITEQL_TABLE)
-    .map(elemId => elementsSource.get(elemId))
-    .filter(isInstanceElement)
-    .toArray()
-
-  return _(suiteQLTableInstances)
-    .keyBy(instance => instance.elemID.name)
-    .mapValues(getSuiteQLTableInternalIdsMap)
-    .mapValues(internalIdsMap =>
-      _(internalIdsMap)
-        .entries()
-        .groupBy(([_key, value]) => value.name)
-        .mapValues(rows => rows.map(([key, _value]) => key))
-        .value(),
-    )
-    .value()
-}
-
-const getWhereParam = (
-  { lastModifiedDateField }: Pick<QueryParams, 'lastModifiedDateField'>,
-  lastFetchTime: Date | undefined,
-): string =>
-  lastModifiedDateField !== undefined && lastFetchTime !== undefined
-    ? `WHERE ${lastModifiedDateField} >= ${toSuiteQLWhereDateString(lastFetchTime)}`
-    : ''
-
-const shouldSkipQuery = async (
-  client: NetsuiteClient,
-  tableName: string,
-  queryParams: QueryParams,
-  lastFetchTime: Date | undefined,
-  maxAllowedRecords: number,
-): Promise<{ skip: boolean; exclude?: boolean }> => {
-  const whereParam = getWhereParam(queryParams, lastFetchTime)
-  const queryString = `SELECT count(*) as count FROM ${tableName} ${whereParam}`
-  const results = await client.runSuiteQL(queryString)
-  if (results?.length !== 1) {
-    log.warn('query received unexpected number of results: %o', { queryString, numOfResults: results?.length })
-    return { skip: true }
+const getSavedSearchInternalIdsMap =
+  (searchType: string) =>
+  async (client: NetsuiteClient, queryBy: QueryBy, items: string[]): Promise<InternalIdsMap> => {
+    const result = await Promise.all(
+      _.chunk(items, ITEMS_PER_QUERY_LIMIT).map(itemsChunk =>
+        client.runSavedSearchQuery({
+          type: searchType,
+          columns: ['internalid', 'name'],
+          filters:
+            queryBy === 'internalId'
+              ? [['internalid', 'anyof', ...itemsChunk]]
+              : itemsChunk
+                  .map(name => ['name', 'is', name])
+                  .reduce(
+                    (filter, curr, i) => (i < itemsChunk.length - 1 ? [...filter, curr, 'OR'] : [...filter, curr]),
+                    [] as Array<string[] | string>,
+                  ),
+        }),
+      ),
+    ).then(results => results.flatMap(res => res ?? []))
+    const ajv = new Ajv({ allErrors: true, strict: false })
+    if (result.length === 0) {
+      log.warn('failed to search %s using saved search query', searchType)
+      return {}
+    }
+    if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
+      log.error('Got invalid results from %s saved search query: %s', searchType, ajv.errorsText())
+      return {}
+    }
+    return Object.fromEntries(result.map(res => [res.internalid[0].value, { name: res.name }]))
   }
-  const [result] = results
-  if (!_.isString(result.count) || !strings.isNumberStr(result.count)) {
-    log.warn('query received unexpected result (expected "count" to be a number string): %o', { queryString, result })
-    return { skip: true }
+
+const getSavedSearchInternalIdsMapFromColumn =
+  (searchType: string, searchColumn: string) =>
+  async (client: NetsuiteClient, queryBy: QueryBy, items: string[]): Promise<InternalIdsMap> => {
+    const ajv = new Ajv({ allErrors: true, strict: false })
+    const getColumnValues = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
+      const include = _.difference(items, exclude)
+      const anyOfFilter = include.length > 0 ? [[searchColumn, 'anyof', ...include]] : undefined
+      const noneOfFilter = exclude.length > 0 ? [[searchColumn, 'noneof', ...exclude]] : []
+      // we can't filter by name, so we query all column values when queryBy='name'
+      const queryFilters = queryBy === 'internalId' ? anyOfFilter : noneOfFilter
+      if (queryFilters === undefined) {
+        return {}
+      }
+      const result = await client.runSavedSearchQuery(
+        {
+          type: searchType,
+          columns: [searchColumn],
+          filters: queryFilters,
+        },
+        COLUMN_QUERY_LIMIT,
+      )
+      if (result === undefined) {
+        log.warn('failed to search %s using saved search query', searchColumn)
+        return {}
+      }
+      if (!ajv.validate<ColumnSearchResult[]>(getColumnSearchResultSchema(searchColumn), result)) {
+        log.error(
+          'Got invalid results from %s saved search query: %s',
+          `${searchType}.${searchColumn}`,
+          ajv.errorsText(),
+        )
+        return {}
+      }
+      const internalIdToName = Object.fromEntries(
+        result.map(row => [row[searchColumn][0].value, { name: row[searchColumn][0].text }]),
+      )
+      if (result.length < COLUMN_QUERY_LIMIT) {
+        return internalIdToName
+      }
+      return {
+        ...internalIdToName,
+        ...(await getColumnValues(Object.keys(internalIdToName).concat(exclude))),
+      }
+    }
+    const internalIdsMap = await getColumnValues()
+    if (queryBy === 'name') {
+      return _.pickBy(internalIdsMap, row => items.includes(row.name))
+    }
+    return internalIdsMap
   }
-  const count = Number(result.count)
-  if (count > maxAllowedRecords) {
-    log.warn(
-      `skipping query of ${tableName}${whereParam !== '' ? ` (${whereParam})` : ''} because it has ${count} results (max allowed: ${maxAllowedRecords})`,
-    )
-    return { skip: true, exclude: true }
-  }
-  return { skip: false }
+
+export const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternalIdsMap>> = {
+  [TAX_SCHEDULE]: getSavedSearchInternalIdsMap(TAX_SCHEDULE),
+  [PROJECT_EXPENSE_TYPE]: getSavedSearchInternalIdsMap(PROJECT_EXPENSE_TYPE),
+  [ALLOCATION_TYPE]: getSavedSearchInternalIdsMapFromColumn('resourceAllocation', ALLOCATION_TYPE),
+  [SUPPORT_CASE_PROFILE]: getSavedSearchInternalIdsMapFromColumn('supportCase', 'profile'),
 }
 
 const getInternalIdsMap = async (
   client: NetsuiteClient,
+  queryBy: QueryBy,
   tableName: string,
-  { internalIdField, nameField, lastModifiedDateField }: QueryParams,
-  lastFetchTime: Date | undefined,
+  items: string[],
 ): Promise<InternalIdsMap> => {
-  const whereLastModified = getWhereParam({ lastModifiedDateField }, lastFetchTime)
-  const queryString = `SELECT ${internalIdField}, ${nameField} FROM ${tableName} ${whereLastModified} ORDER BY ${internalIdField} ASC`
-  const results = await client.runSuiteQL(queryString)
-  if (results === undefined) {
-    log.warn('failed to query table %s', tableName)
+  const additionalQuery = ADDITIONAL_QUERIES[tableName as AdditionalQueryName]
+  if (additionalQuery !== undefined) {
+    return additionalQuery(client, queryBy, items)
+  }
+  const queryParams = QUERIES_BY_TABLE_NAME[tableName as SuiteQLTableName]
+  if (queryParams === undefined) {
+    return {}
+  }
+  const { internalIdField, nameField } = queryParams
+  const results = await Promise.all(
+    _.chunk(items, ITEMS_PER_QUERY_LIMIT).map(itemsChunk =>
+      client.runSuiteQL({
+        select: `${internalIdField}, ${nameField}`,
+        from: tableName,
+        where: `${queryBy === 'internalId' ? internalIdField : nameField} in (${itemsChunk.map(id => `'${id}'`).join(', ')})`,
+        orderBy: internalIdField,
+      }),
+    ),
+  ).then(result => result.flatMap(res => res ?? []))
+  if (results.length === 0) {
+    log.warn('received no results from query table %s', tableName)
     return {}
   }
   const validResults = results.flatMap(res => {
@@ -555,227 +591,78 @@ const getInternalIdsMap = async (
   return Object.fromEntries(validResults.map(({ internalId, name }) => [internalId, { name }]))
 }
 
-const isUpdatedExistingInstance = (
-  existingInstance: InstanceElement | undefined,
-): existingInstance is InstanceElement => existingInstance?.value[VERSION_FIELD] === LATEST_VERSION
+export const updateSuiteQLTableInstances = async ({
+  client,
+  queryBy,
+  itemsToQuery,
+  suiteQLTablesMap,
+}: {
+  client: NetsuiteClient
+  queryBy: QueryBy
+  itemsToQuery: { tableName: string; item: string }[]
+  suiteQLTablesMap: Record<string, InstanceElement>
+}): Promise<void> => {
+  const itemsToQueryByTableName = _.mapValues(
+    _.groupBy(itemsToQuery, row => row.tableName),
+    rows => _.uniq(rows.map(row => row.item)),
+  )
 
-const createOrGetExistingInstance = (
-  suiteQLTableType: ObjectType,
-  tableName: string,
-  existingInstance: InstanceElement | undefined,
-): InstanceElement =>
-  isUpdatedExistingInstance(existingInstance)
-    ? existingInstance
-    : new InstanceElement(tableName, suiteQLTableType, { [INTERNAL_IDS_MAP]: {} }, undefined, {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
-      })
-
-const fixExistingInstance = (suiteQLTableType: ObjectType, existingInstance: InstanceElement | undefined): void => {
-  if (existingInstance !== undefined) {
-    existingInstance.refType = createRefToElmWithValue(suiteQLTableType)
-    if (existingInstance.value[INTERNAL_IDS_MAP] === undefined) {
-      existingInstance.value[INTERNAL_IDS_MAP] = {}
-    }
-  }
+  await log.timeDebug(
+    () =>
+      Promise.all(
+        Object.entries(itemsToQueryByTableName).map(async ([tableName, items]) =>
+          Object.assign(
+            getSuiteQLTableInternalIdsMap(suiteQLTablesMap[tableName]),
+            await getInternalIdsMap(client, queryBy, tableName, items),
+          ),
+        ),
+      ),
+    'updating %d suiteql_table elements',
+    Object.keys(itemsToQueryByTableName).length,
+  )
 }
 
 const getSuiteQLTableInstance = async (
-  client: NetsuiteClient,
   suiteQLTableType: ObjectType,
   tableName: string,
-  queryParams: QueryParams,
   elementsSource: ReadOnlyElementsSource,
-  lastFetchTime: Date | undefined,
   isPartial: boolean,
-  maxAllowedRecords: number,
-  largeSuiteQLTables: string[],
-): Promise<InstanceElement | undefined> => {
-  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
-  const existingInstance = await elementsSource.get(instanceElemId)
-  fixExistingInstance(suiteQLTableType, existingInstance)
-
-  const lastFetchTimeForQuery = isUpdatedExistingInstance(existingInstance) ? lastFetchTime : undefined
-
-  // we always want to query employees, for _changed_by
-  if (tableName !== EMPLOYEE) {
-    if (isPartial) {
+): Promise<InstanceElement> => {
+  if (isPartial) {
+    const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', tableName)
+    const existingInstance = await elementsSource.get(instanceElemId)
+    if (isInstanceElement(existingInstance)) {
+      existingInstance.refType = createRefToElmWithValue(suiteQLTableType)
       return existingInstance
     }
-    const shouldSkip = await shouldSkipQuery(client, tableName, queryParams, lastFetchTimeForQuery, maxAllowedRecords)
-    if (shouldSkip.skip) {
-      if (shouldSkip.exclude) {
-        largeSuiteQLTables.push(tableName)
-      }
-      return undefined
-    }
   }
-
-  const instance = createOrGetExistingInstance(suiteQLTableType, tableName, existingInstance)
-  Object.assign(
-    instance.value[INTERNAL_IDS_MAP],
-    await getInternalIdsMap(client, tableName, queryParams, lastFetchTimeForQuery),
-  )
-  instance.value[VERSION_FIELD] = LATEST_VERSION
-  return instance
-}
-
-const getSavedSearchQueryInstance = async (
-  client: NetsuiteClient,
-  suiteQLTableType: ObjectType,
-  searchType: string,
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean,
-): Promise<InstanceElement | undefined> => {
-  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', searchType)
-  const existingInstance = await elementsSource.get(instanceElemId)
-  fixExistingInstance(suiteQLTableType, existingInstance)
-  if (isPartial) {
-    return existingInstance
-  }
-  const instance = createOrGetExistingInstance(suiteQLTableType, searchType, existingInstance)
-  const result = await client.runSavedSearchQuery({
-    type: searchType,
-    columns: ['internalid', 'name'],
-    filters: [],
-  })
-  const ajv = new Ajv({ allErrors: true, strict: false })
-  if (result === undefined) {
-    log.warn('failed to search %s using saved search query', searchType)
-  } else if (!ajv.validate<SavedSearchInternalIdsResult[]>(SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA, result)) {
-    log.error('Got invalid results from %s saved search query: %s', searchType, ajv.errorsText())
-  } else {
-    instance.value[INTERNAL_IDS_MAP] = Object.fromEntries(
-      result.map(res => [res.internalid[0].value, { name: res.name }]),
-    )
-  }
-  instance.value[VERSION_FIELD] = LATEST_VERSION
-  return instance
-}
-
-const getAllocationTypeInstance = async (
-  client: NetsuiteClient,
-  suiteQLTableType: ObjectType,
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean,
-): Promise<InstanceElement | undefined> => {
-  const instanceElemId = suiteQLTableType.elemID.createNestedID('instance', ALLOCATION_TYPE)
-  const existingInstance = await elementsSource.get(instanceElemId)
-  fixExistingInstance(suiteQLTableType, existingInstance)
-  if (isPartial) {
-    return existingInstance
-  }
-  const instance = createOrGetExistingInstance(suiteQLTableType, ALLOCATION_TYPE, existingInstance)
-  const ajv = new Ajv({ allErrors: true, strict: false })
-  const getAllocationTypes = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
-    const result = await client.runSavedSearchQuery(
-      {
-        type: 'resourceAllocation',
-        columns: [ALLOCATION_TYPE],
-        filters: exclude.length > 0 ? [[ALLOCATION_TYPE, 'noneof', ...exclude]] : [],
-      },
-      ALLOCATION_TYPE_QUERY_LIMIT,
-    )
-    if (result === undefined) {
-      log.warn('failed to search %s using saved search query', ALLOCATION_TYPE)
-      return {}
-    }
-    if (!ajv.validate<AllocationTypeSearchResult[]>(ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA, result)) {
-      log.error('Got invalid results from %s saved search query: %s', ALLOCATION_TYPE, ajv.errorsText())
-      return {}
-    }
-    const internalIdToName = Object.fromEntries(
-      result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }]),
-    )
-    if (result.length < ALLOCATION_TYPE_QUERY_LIMIT) {
-      return internalIdToName
-    }
-    return {
-      ...internalIdToName,
-      ...(await getAllocationTypes(Object.keys(internalIdToName).concat(exclude))),
-    }
-  }
-  instance.value[INTERNAL_IDS_MAP] = await getAllocationTypes()
-  instance.value[VERSION_FIELD] = LATEST_VERSION
-  return instance
-}
-
-const getAdditionalInstances = (
-  client: NetsuiteClient,
-  suiteQLTableType: ObjectType,
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean,
-  shouldSkipSuiteQLTable: (tableName: string) => boolean,
-): Promise<InstanceElement | undefined>[] => [
-  shouldSkipSuiteQLTable(TAX_SCHEDULE)
-    ? Promise.resolve(undefined)
-    : getSavedSearchQueryInstance(client, suiteQLTableType, TAX_SCHEDULE, elementsSource, isPartial),
-  shouldSkipSuiteQLTable(PROJECT_EXPENSE_TYPE)
-    ? Promise.resolve(undefined)
-    : getSavedSearchQueryInstance(client, suiteQLTableType, PROJECT_EXPENSE_TYPE, elementsSource, isPartial),
-  shouldSkipSuiteQLTable(ALLOCATION_TYPE)
-    ? Promise.resolve(undefined)
-    : getAllocationTypeInstance(client, suiteQLTableType, elementsSource, isPartial),
-]
-
-const getMaxAllowedRecordsForTable = (config: NetsuiteConfig, tableName: string): number => {
-  const maxAllowedRecords = (config.suiteAppClient?.maxRecordsPerSuiteQLTable ?? [])
-    .filter(maxType => regex.isFullRegexMatch(tableName, maxType.name))
-    .map(maxType => maxType.limit)
-  if (maxAllowedRecords.length === 0) {
-    return MAX_ALLOWED_RECORDS
-  }
-  return Math.max(...maxAllowedRecords)
+  const newInstance = new InstanceElement(tableName, suiteQLTableType)
+  newInstance.annotate({ [CORE_ANNOTATIONS.HIDDEN]: true })
+  return newInstance
 }
 
 export const getSuiteQLTableElements = async (
   config: NetsuiteConfig,
-  client: NetsuiteClient,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
-): Promise<{ elements: TopLevelElement[]; largeSuiteQLTables: string[] }> => {
-  if (config.fetch.resolveAccountSpecificValues !== true || !client.isSuiteAppConfigured()) {
-    return { elements: [], largeSuiteQLTables: [] }
+): Promise<{ elements: TopLevelElement[] }> => {
+  if (config.fetch.resolveAccountSpecificValues !== true) {
+    return { elements: [] }
   }
   const suiteQLTableType = new ObjectType({
     elemID: new ElemID(NETSUITE, SUITEQL_TABLE),
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
   })
 
-  const shouldSkipSuiteQLTable = (tableName: string): boolean => {
-    const shouldSkip = (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? []).some(name =>
-      regex.isFullRegexMatch(tableName, name),
-    )
-    if (shouldSkip) {
-      log.debug('skipping query of SuiteQL table %s', tableName)
-    }
-    return shouldSkip
-  }
-
-  const largeSuiteQLTables: string[] = []
-  const lastFetchTime = await getLastServerTime(elementsSource)
   const instances = await Promise.all(
     Object.entries(QUERIES_BY_TABLE_NAME)
-      .map(([tableName, queryParams]) => {
-        if (queryParams === undefined || shouldSkipSuiteQLTable(tableName)) {
-          return undefined
-        }
-        return getSuiteQLTableInstance(
-          client,
-          suiteQLTableType,
-          tableName,
-          queryParams,
-          elementsSource,
-          lastFetchTime,
-          isPartial,
-          getMaxAllowedRecordsForTable(config, tableName),
-          largeSuiteQLTables,
-        )
-      })
-      .concat(getAdditionalInstances(client, suiteQLTableType, elementsSource, isPartial, shouldSkipSuiteQLTable)),
-  ).then(res => res.flatMap(instance => instance ?? []))
+      .filter(([_tableName, queryParams]) => queryParams !== undefined)
+      .map(([tableName, _queryParams]) => tableName)
+      .concat(Object.keys(ADDITIONAL_QUERIES))
+      .map(tableName => getSuiteQLTableInstance(suiteQLTableType, tableName, elementsSource, isPartial)),
+  )
 
   return {
     elements: [suiteQLTableType, ...instances],
-    largeSuiteQLTables,
   }
 }

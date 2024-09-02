@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AdditionChange,
@@ -42,12 +34,13 @@ import {
   replaceTemplatesWithValues,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerdashValues, values } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues, values, promises } from '@salto-io/lowerdash'
 import { parserUtils } from '@salto-io/parser'
 import JSZip from 'jszip'
 import _, { remove } from 'lodash'
+import { Themes } from '../user_config'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG, isGuideThemesEnabled, Themes } from '../config'
+import { FETCH_CONFIG, isGuideThemesEnabled } from '../config'
 import {
   GUIDE_THEME_TYPE_NAME,
   THEME_FILE_TYPE_NAME,
@@ -68,6 +61,8 @@ import {
 } from './template_engines/creator'
 import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
 import { prepRef } from './article/utils'
+
+const READ_CONCURRENCY = 100
 
 const log = logger(module)
 const { isPlainRecord } = lowerdashValues
@@ -95,7 +90,7 @@ const createTemplateExpression = ({
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
   config: Themes
 }): string | TemplateExpression => {
-  if (config.referenceOptions.enableReferenceLookup === false) {
+  if (config.referenceOptions?.enableReferenceLookup !== true) {
     return content
   }
   try {
@@ -188,13 +183,14 @@ export const unzipFolderToElements = async ({
       currentDir: currentDir.folders[naclCase(firstPart)],
     })
   }
-  await Promise.all(
-    Object.entries(unzippedContents.files).map(async ([fullPath, file]): Promise<void> => {
+  await promises.array.withLimitedConcurrency<void>(
+    Object.entries(unzippedContents.files).map(([fullPath, file]): (() => Promise<void>) => async () => {
       if (!file.dir) {
         const pathParts = fullPath.split('/')
         await addFile({ fullPath, pathParts, file, currentDir: elements })
       }
     }),
+    READ_CONCURRENCY,
   )
   return elements
 }

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
@@ -25,8 +17,12 @@ describe('collision errors', () => {
   let filter: FilterType
   const objType = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
   const inst = new InstanceElement('inst1', objType, { name: 'test', position: 1 })
-  const collidedInst = new InstanceElement('inst1', objType, { name: 'test', position: 2 })
-  const differentInst = new InstanceElement('inst2', objType, { name: 'test2', position: 3 })
+  const collidedInst = new InstanceElement('inst1', objType, { name: 'test', position: 2 }, undefined, {
+    [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+  })
+  const differentInst = new InstanceElement('inst2', objType, { name: 'test2', position: 3 }, undefined, {
+    [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl',
+  })
   const childInst1 = new InstanceElement('childInst1', objType, { name: 'childInst1', position: 2 }, undefined, {
     [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(inst.elemID, inst),
   })
@@ -49,7 +45,7 @@ Current Salto ID configuration for obj is defined as [name].
 Breakdown per colliding Salto ID:
 - inst1:
 \t* Instance with Id - inst1
-\t* Instance with Id - inst1
+\t* Instance with Id - inst1. View in the service - someUrl
 
 To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change obj's idFields to include all fields that uniquely identify the type's instances.

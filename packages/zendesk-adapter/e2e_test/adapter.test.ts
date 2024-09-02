@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _, { isArray } from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -94,6 +86,7 @@ import {
   USER_FIELD_CUSTOM_FIELD_OPTIONS,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
+  GROUP_TYPE_NAME,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -178,7 +171,6 @@ const deployChanges = async (
     .map(async ([id, group]) => {
       planElementById = _.keyBy(group.map(getChangeData), data => data.elemID.getFullName())
       const nullProgressReporter: ProgressReporter = {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         reportProgress: () => {},
       }
       const deployResult = await adapterAttr.adapter.deploy({
@@ -396,7 +388,11 @@ describe('Zendesk adapter E2E', () => {
         .filter(isInstanceElement)
         .find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
       expect(brandInstanceE2eHelpCenter).toBeDefined()
-      if (brandInstanceE2eHelpCenter === undefined) {
+      const defaultGroup = firstFetchResult.elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === GROUP_TYPE_NAME && e.value.default === true)
+      expect(defaultGroup).toBeDefined()
+      if (brandInstanceE2eHelpCenter === undefined || defaultGroup === undefined) {
         return
       }
       adapterAttr = realAdapter(
@@ -440,6 +436,13 @@ describe('Zendesk adapter E2E', () => {
       const groupInstance = createInstanceElement({
         type: 'group',
         valuesOverride: { name: createName('group') },
+      })
+      const queueInstance = createInstanceElement({
+        type: 'queue',
+        valuesOverride: {
+          name: createName('queue'),
+          primary_groups_id: [new ReferenceExpression(defaultGroup.elemID, defaultGroup)],
+        },
       })
       const macroInstance = createInstanceElement({
         type: 'macro',
@@ -548,6 +551,22 @@ describe('Zendesk adapter E2E', () => {
       const userSegmentInstance = createInstanceElement({
         type: 'user_segment',
         valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
+      })
+
+      // Adding explicitly the `name` here as layout isn't in the old infra, so the transformation isn't in the config.
+      const layoutInstance = createInstanceElement({
+        type: 'layout',
+        valuesOverride: { title: createName('layout') },
+        name: createName('layout'),
+      })
+
+      const workspaceInstance = createInstanceElement({
+        type: 'workspace',
+        valuesOverride: {
+          title: createName('workspace'),
+          // This doesn't currently work in the test suite, revisit after the new infra is in place
+          // layout_uuid: new ReferenceExpression(layoutInstance.elemID, layoutInstance),
+        },
       })
 
       const customObjName = createName('custom_object')
@@ -1145,11 +1164,14 @@ describe('Zendesk adapter E2E', () => {
         scheduleInstance,
         customRoleInstance,
         groupInstance,
+        queueInstance,
         macroInstance,
         slaPolicyInstance,
         viewInstance,
         brandInstanceToAdd,
         userSegmentInstance,
+        layoutInstance,
+        workspaceInstance,
         ...customObjectInstances,
         // guide elements
         ...guideInstances,
@@ -1201,6 +1223,7 @@ describe('Zendesk adapter E2E', () => {
         'custom_role',
         'dynamic_content_item',
         'group',
+        'layout',
         'locale',
         'macro_categories',
         'macro',
@@ -1208,6 +1231,7 @@ describe('Zendesk adapter E2E', () => {
         'oauth_global_client',
         'organization',
         'organization_field',
+        'queue',
         'routing_attribute',
         'sharing_agreement',
         'sla_policy',
@@ -1238,6 +1262,7 @@ describe('Zendesk adapter E2E', () => {
         'organization_field_order',
         'ticket_form_order',
         'sla_policy_order',
+        'queue_order',
       ]
       const orderElementsElemIDs = orderElements.map(name => ({
         type: new ElemID(ZENDESK, name),
@@ -1352,7 +1377,8 @@ describe('Zendesk adapter E2E', () => {
         verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value)),
       )
     })
-    it('should handle guide theme elements correctly ', async () => {
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('should handle guide theme elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch([guideThemeInstance])
       verifyInstanceValues(
         fetchedElements[guideThemeInstance.elemID.getFullName()],

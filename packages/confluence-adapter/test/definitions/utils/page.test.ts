@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -24,7 +16,13 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME } from '../../../src/constants'
-import { adjustPageOnModification, homepageAdditionToModification } from '../../../src/definitions/utils'
+import {
+  putHomepageIdInAdditionContext,
+  homepageAdditionToModification,
+  createAdjustUserReferences,
+  adjustPageOnModification,
+  adjustUserReferencesOnPageReverse,
+} from '../../../src/definitions/utils'
 
 describe('page definitions utils', () => {
   const pageObjectType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, PAGE_TYPE_NAME) })
@@ -34,43 +32,8 @@ describe('page definitions utils', () => {
     after: new InstanceElement('mockSpaceName', spaceObjectType, { id: 'mockSpaceId' }),
   })
   describe('adjustPageOnModification', () => {
-    describe('increasePageVersion', () => {
-      it('should increase the page version number', () => {
-        const args = {
-          typeName: 'mockType',
-          context: {
-            elementSource: buildElementsSourceFromElements([]),
-            changeGroup: {
-              changes: [],
-              groupID: 'group-id',
-            },
-            sharedContext: {},
-            change: pageChange,
-          },
-          value: { version: { number: 1 } },
-        }
-        expect(adjustPageOnModification(args).value.version.number).toEqual(2)
-      })
-
-      it('should return the same value if the version number is not a number (should not happen)', () => {
-        const args = {
-          typeName: 'mockType',
-          context: {
-            elementSource: buildElementsSourceFromElements([]),
-            changeGroup: {
-              changes: [],
-              groupID: 'group-id',
-            },
-            sharedContext: {},
-            change: pageChange,
-          },
-          value: { version: { number: 'not a number' } },
-        }
-        expect(adjustPageOnModification(args).value).toEqual(args.value)
-      })
-    })
     describe('updateHomepageId', () => {
-      it('should do nothing if there is no space change in the change group', () => {
+      it('should do nothing if there is no space change in the change group', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -84,9 +47,9 @@ describe('page definitions utils', () => {
           },
           value: getChangeData(pageChange).value,
         }
-        expect(adjustPageOnModification(args).value.id).toEqual('mockPageId')
+        expect((await adjustPageOnModification(args)).value.id).toEqual('mockPageId')
       })
-      it('should do nothing if there is no homepageId in the shared context', () => {
+      it('should do nothing if there is no homepageId in the shared context', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -100,9 +63,9 @@ describe('page definitions utils', () => {
           },
           value: getChangeData(pageChange).value,
         }
-        expect(adjustPageOnModification(args).value.id).toEqual('mockPageId')
+        expect((await adjustPageOnModification(args)).value.id).toEqual('mockPageId')
       })
-      it('should modify id when homepage id is found in the shared context', () => {
+      it('should modify id when homepage id is found in the shared context', async () => {
         const args = {
           typeName: 'mockType',
           context: {
@@ -118,7 +81,33 @@ describe('page definitions utils', () => {
           },
           value: getChangeData(pageChange).value,
         }
-        expect(adjustPageOnModification(args).value.id).toEqual('homepageId')
+        expect((await adjustPageOnModification(args)).value.id).toEqual('homepageId')
+      })
+    })
+    describe('adjustUserReferencesOnPageReverse', () => {
+      it('should adjust user references on page', async () => {
+        const args = {
+          typeName: 'mockType',
+          context: {
+            elementSource: buildElementsSourceFromElements([]),
+            changeGroup: {
+              changes: [],
+              groupID: 'group-id',
+            },
+            sharedContext: {},
+            change: pageChange,
+          },
+          value: {
+            authorId: { accountId: 'authorId', displayName: 'authorId' },
+            ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
+            notUser: 'not',
+          },
+        }
+        expect((await adjustUserReferencesOnPageReverse(args)).value).toEqual({
+          authorId: 'authorId',
+          ownerId: 'ownerId',
+          notUser: 'not',
+        })
       })
     })
   })
@@ -196,6 +185,63 @@ describe('page definitions utils', () => {
         sharedContext: {},
       }
       expect(homepageAdditionToModification(args)).toEqual(['modify'])
+    })
+  })
+  describe('putHomepageIdInAdditionContext', () => {
+    it('should return empty object if there is no space change in the change group', () => {
+      const args = {
+        change: pageChange,
+        changeGroup: {
+          changes: [pageChange],
+          groupID: 'group-id',
+        },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {
+          [getChangeData(spaceChange).elemID.getFullName()]: { id: 'homepageId' },
+        },
+      }
+      expect(putHomepageIdInAdditionContext(args)).toEqual({})
+    })
+    it('should return empty object if there is no homepageId in the shared context', () => {
+      const args = {
+        change: pageChange,
+        changeGroup: {
+          changes: [spaceChange],
+          groupID: 'group-id',
+        },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
+      }
+      expect(putHomepageIdInAdditionContext(args)).toEqual({})
+    })
+    it('should return homepageId in the shared context', () => {
+      const args = {
+        change: pageChange,
+        changeGroup: {
+          changes: [spaceChange],
+          groupID: 'group-id',
+        },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {
+          [getChangeData(spaceChange).elemID.getFullName()]: { id: 'homepageId' },
+        },
+      }
+      expect(putHomepageIdInAdditionContext(args)).toEqual({ id: 'homepageId' })
+    })
+    describe('adjustUserReferencesOnPage', () => {
+      it('should adjust user references on page', async () => {
+        const args = {
+          typeName: 'page',
+          context: {},
+          value: { authorId: 'authorId', ownerId: 'ownerId', notUser: 'not' },
+        }
+        const adjustUserReferencesOnPage = createAdjustUserReferences(PAGE_TYPE_NAME)
+        expect((await adjustUserReferencesOnPage(args)).value).toEqual({
+          authorId: { accountId: 'authorId', displayName: 'authorId' },
+          ownerId: { accountId: 'ownerId', displayName: 'ownerId' },
+          notUser: 'not',
+        })
+      })
     })
   })
 })

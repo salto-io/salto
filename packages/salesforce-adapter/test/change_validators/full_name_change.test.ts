@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Change, getAllChangeData, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/full_name_changed'
@@ -23,10 +15,7 @@ describe('fullName change validator', () => {
   describe('when fullName changes', () => {
     let fullNameChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement(
-        { fullName: 'original_full_name' },
-        mockTypes.RecordType,
-      )
+      const beforeRecord = createInstanceElement({ fullName: 'original_full_name' }, mockTypes.RecordType)
       const afterRecord = beforeRecord.clone()
       afterRecord.value[INSTANCE_FULL_NAME_FIELD] = 'modified_full_name'
       fullNameChange = toChange({ before: beforeRecord, after: afterRecord })
@@ -44,10 +33,7 @@ describe('fullName change validator', () => {
   describe('when fullName does not change', () => {
     let fullNameChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement(
-        { fullName: 'original_full_name', status: 'ACTIVE' },
-        mockTypes.Flow,
-      )
+      const beforeRecord = createInstanceElement({ fullName: 'original_full_name', status: 'ACTIVE' }, mockTypes.Flow)
       const afterRecord = beforeRecord.clone()
       afterRecord.value.status = 'INACTIVE'
       fullNameChange = toChange({ before: beforeRecord, after: afterRecord })

@@ -1,24 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import removeSdfElementsValidator from '../../src/change_validators/remove_sdf_elements'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('remove sdf object change validator', () => {
   const customRecordType = new ObjectType({
@@ -26,7 +18,6 @@ describe('remove sdf object change validator', () => {
     annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [INTERNAL_ID]: '1' },
   })
   const customRecordTypeInstance = new InstanceElement('test', customRecordType)
-  const elementsSource = buildElementsSourceFromElements([])
 
   describe('remove instance of standard type', () => {
     it('should have change error when removing an instance of an unsupported standard type', async () => {
@@ -34,8 +25,7 @@ describe('remove sdf object change validator', () => {
 
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: standardInstanceNoInternalId })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
@@ -48,8 +38,7 @@ describe('remove sdf object change validator', () => {
 
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: standardInstanceNoInternalId })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
@@ -62,8 +51,7 @@ describe('remove sdf object change validator', () => {
 
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: standardInstance })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(0)
     })
@@ -73,8 +61,7 @@ describe('remove sdf object change validator', () => {
     it('should not have change error when removing an instance with non standard type', async () => {
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: customRecordTypeInstance })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(0)
     })
@@ -89,8 +76,7 @@ describe('remove sdf object change validator', () => {
 
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: customRecordTypeNoInternalID })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
@@ -108,8 +94,7 @@ describe('remove sdf object change validator', () => {
 
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: customRecordType }), toChange({ before: instanceOfAnotherType })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
@@ -117,12 +102,9 @@ describe('remove sdf object change validator', () => {
     })
 
     it('should have change error when removing a custom record type with internal id when instances exists in the index', async () => {
-      const elementsSourceInstance = buildElementsSourceFromElements([customRecordTypeInstance])
-
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: customRecordType })],
-        undefined,
-        elementsSourceInstance,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
@@ -141,8 +123,7 @@ describe('remove sdf object change validator', () => {
 
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: field }), toChange({ before: anotherCustomRecordType })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(2)
       expect(changeErrors[0].severity).toEqual('Error')
@@ -154,8 +135,7 @@ describe('remove sdf object change validator', () => {
     it('should have change warning on the custom record type when removing a field with its custom record type', async () => {
       const changeErrors = await removeSdfElementsValidator(
         [toChange({ before: field }), toChange({ before: customRecordType })],
-        undefined,
-        elementsSource,
+        mockChangeValidatorParams(),
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')

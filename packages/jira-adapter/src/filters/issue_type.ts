@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -30,7 +22,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { ISSUE_TYPE_NAME } from '../constants'
+import { CONTENT_TYPE_HEADER, ISSUE_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { PRIVATE_API_HEADERS } from '../client/headers'
@@ -50,7 +42,7 @@ const deployIcon = async (
 ): Promise<number> => {
   const instance = getChangeData(change)
   try {
-    const headers = { ...PRIVATE_API_HEADERS, 'Content-Type': 'image/png' }
+    const headers = { ...PRIVATE_API_HEADERS, [CONTENT_TYPE_HEADER]: 'image/png' }
     const url = `/rest/api/3/universal_avatar/type/issuetype/owner/${instance.value.id}`
     const resp = await sendIconRequest({ client, change, url, fieldName: 'avatar', headers })
     if (!isIconResponse(resp)) {

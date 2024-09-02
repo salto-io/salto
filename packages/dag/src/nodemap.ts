@@ -1,23 +1,17 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 
 const { difference } = collections.set
 type DFS_STATUS = 'in_progress' | 'done'
+const log = logger(module)
 
 export type NodeId = collections.set.SetId
 export type Edge = [NodeId, NodeId]
@@ -37,6 +31,14 @@ export class NodeSkippedError extends Error {
   constructor(causingNode: NodeId) {
     super(`Skipped due to an error in parent node ${causingNode}`)
     this.causingNode = causingNode
+  }
+}
+
+// Errors that should be thrown *during* the walk. (The default behavior is to finish the walk and only then throw the errors that were encountered).
+// Please note that async jobs that have already started will not be interrupted; however, the function will return with an error.
+export class FatalError extends Error {
+  constructor(message: string) {
+    super(message)
   }
 }
 
@@ -80,12 +82,17 @@ class WalkErrors<T> extends Map<NodeId, Error> {
   }
 
   set(nodeId: NodeId, value: Error, visited: Set<string> = new Set()): this {
+    log.error('Error encountered while walking on node %s: %s\n stack: %s', nodeId, value, value.stack)
     const idAsString = nodeId.toString()
     if (visited.has(idAsString)) {
       return this
     }
     visited.add(idAsString)
     super.set(nodeId, value)
+    if (value instanceof FatalError) {
+      this.nodeMap.forEach((_, id) => this.set(id, new NodeSkippedError(nodeId), visited))
+      throw new WalkError(this, undefined)
+    }
     this.nodeMap
       .getReverse(nodeId)
       .forEach(dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId), visited))
@@ -234,7 +241,12 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   getCycle(): Edge[] | undefined {
     const getCycleFrom = (id: NodeId, nodeColors: Map<NodeId, DFS_STATUS>, path: Edge[] = []): Edge[] | undefined => {
       if (nodeColors.has(id)) {
-        return nodeColors.get(id) === 'in_progress' ? path : undefined
+        if (nodeColors.get(id) === 'in_progress') {
+          // Found a cycle - the cycle is "closed" on this node.
+          // In order to return just the cycle, we need to remove any edges that lead up to this node
+          return path.slice(path.findIndex(edge => edge[0] === id))
+        }
+        return undefined
       }
       nodeColors.set(id, 'in_progress')
       const children = this.get(id).keys()
@@ -401,10 +413,11 @@ export class DAG<T> extends DataNodeMap<T> {
       wu(this.freeNodes(affectedNodes)).forEach(node => {
         try {
           handler(node)
-          next(this.deleteNode(node))
         } catch (e) {
           errors.set(node, e)
+          return
         }
+        next(this.deleteNode(node))
       })
     }
     next(this.keys())

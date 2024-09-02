@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -46,8 +38,8 @@ describe('client connection', () => {
       expect(mockAxiosAdapter.history.get.length).toBe(2)
       expect(mockAxiosAdapter.history.get[0].headers).toMatchObject({
         'X-Zendesk-Marketplace-Name': 'Salto',
-        'X-Zendesk-Marketplace-Organization-Id': 5110,
-        'X-Zendesk-Marketplace-App-Id': 608042,
+        'X-Zendesk-Marketplace-Organization-Id': '5110',
+        'X-Zendesk-Marketplace-App-Id': '608042',
       })
     })
 
@@ -57,6 +49,38 @@ describe('client connection', () => {
       await expect(() => conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })).rejects.toThrow(
         'Unauthorized - update credentials and try again',
       )
+    })
+    describe('authParamsFunc', () => {
+      let conn: ReturnType<typeof createConnection>
+      beforeEach(() => {
+        conn = createConnection({ retries: 3 })
+      })
+      it('should return the correct auth params for username password', async () => {
+        mockAxiosAdapter.onGet('/api/v2/account').reply(config => {
+          expect(config?.auth).toEqual({ username: 'user123', password: 'pwd456' })
+          return [200, { settings: {} }]
+        })
+        const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
+        expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
+      })
+
+      it('should return the correct auth params for token', async () => {
+        mockAxiosAdapter.onGet('/api/v2/account').reply(config => {
+          expect(config?.auth).toEqual({ username: 'user123/token', password: 'token456' })
+          return [200, { settings: {} }]
+        })
+        const apiConn = await conn.login({ username: 'user123', token: 'token456', subdomain: 'abc' })
+        expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
+      })
+
+      it('should return the correct auth params for oauth', async () => {
+        mockAxiosAdapter.onGet('/api/v2/account').reply(config => {
+          expect(config?.headers?.Authorization).toEqual('Bearer token 123')
+          return [200, { settings: {} }]
+        })
+        const apiConn = await conn.login({ accessToken: 'token 123', subdomain: 'abc' })
+        expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
+      })
     })
   })
 

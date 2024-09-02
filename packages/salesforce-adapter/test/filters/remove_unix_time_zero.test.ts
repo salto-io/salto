@@ -1,24 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Element,
-  ElemID,
-  ObjectType,
-  CORE_ANNOTATIONS,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_unix_time_zero'
 import { defaultFilterContext } from '../utils'
@@ -82,42 +69,26 @@ describe('removeUnixTimeZero', () => {
   describe('on fetch', () => {
     it('should remove invalid unix time 0 annotations', () => {
       const testValueBothInvalidFields = testElements[0] as ObjectType
-      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
-      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
+      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
+      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
 
       const testValueInvalidCreatedAt = testElements[1] as ObjectType
-      expect(testValueInvalidCreatedAt.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
+      expect(testValueInvalidCreatedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
 
       const testValueInvalidChangedAt = testElements[2] as ObjectType
-      expect(testValueInvalidChangedAt.annotations).not.toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
+      expect(testValueInvalidChangedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
     })
 
     it('should not remove annotations with valid time', () => {
       const testValueBothValidFields = testElements[3] as ObjectType
-      expect(testValueBothValidFields.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
-      expect(testValueBothValidFields.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
+      expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+      expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
 
       const testValueInvalidCreatedAt = testElements[1] as ObjectType
-      expect(testValueInvalidCreatedAt.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CHANGED_AT,
-      )
+      expect(testValueInvalidCreatedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
 
       const testValueInvalidChangedAt = testElements[2] as ObjectType
-      expect(testValueInvalidChangedAt.annotations).toHaveProperty(
-        CORE_ANNOTATIONS.CREATED_AT,
-      )
+      expect(testValueInvalidChangedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
     })
   })
 })

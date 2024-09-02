@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
 import _ from 'lodash'
@@ -218,7 +210,7 @@ const getResolveFunctions = ({
       pendingAsyncOperations.push(
         pendingResolve.then(resolveResult => {
           if (resolveResult === undefined) {
-            setTypeOnReference(typeReference, resolveResult)
+            setTypeOnReference(typeReference, undefined)
           } else {
             const resolvedType = getResolvedType(
               typeReference.elemID,
@@ -270,8 +262,10 @@ const getClonedElements = (elements: Element[]): Element[] => {
     clonedRestOfElements.filter(isObjectType).map(type => [type.elemID.getFullName(), type]),
   )
   const clonedMissingParentsMap = new Map(
-    fields
-      .map(field => field.parent)
+    _.uniqBy(
+      fields.map(field => field.parent),
+      parent => parent.elemID.getFullName(),
+    )
       .filter(parent => !clonedTypesMap.has(parent.elemID.getFullName()))
       .map(parent => [parent.elemID.getFullName(), parent.clone()]),
   )
@@ -351,6 +345,9 @@ export const resolve = (
             Object.values(element.annotationRefTypes).forEach(resolveTypeReference)
           }
           if (isObjectType(element)) {
+            if (element.metaType !== undefined) {
+              resolveTypeReference(element.metaType)
+            }
             Object.values(element.fields).forEach(field => resolveTypeReference(field.refType))
           }
           if (isContainerType(element)) {

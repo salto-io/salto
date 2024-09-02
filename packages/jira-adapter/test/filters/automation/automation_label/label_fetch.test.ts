@@ -1,31 +1,20 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { HTTPError } from '@salto-io/adapter-components/src/client'
-import { getFilterParams, mockClient } from '../../../utils'
+import { FAULTY_CLOUD_ID_RESPONSE, getFilterParams, mockClient } from '../../../utils'
 import automationLabelFetchFilter from '../../../../src/filters/automation/automation_label/label_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import { JIRA } from '../../../../src/constants'
 import JiraClient from '../../../../src/client/client'
 import { createAutomationLabelType } from '../../../../src/filters/automation/automation_label/types'
-import { CLOUD_RESOURCE_FIELD } from '../../../../src/filters/automation/cloud_id'
 
 describe('automationLabelFetchFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -37,7 +26,7 @@ describe('automationLabelFetchFilter', () => {
   let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
   beforeEach(async () => {
-    const { client: cli, paginator, connection: conn } = mockClient()
+    const { client: cli, paginator, connection: conn } = mockClient(false)
     client = cli
     connection = conn
 
@@ -60,21 +49,6 @@ describe('automationLabelFetchFilter', () => {
       }),
     ) as filterUtils.FilterWith<'onFetch'>
 
-    connection.post.mockImplementation(async url => {
-      if (url === '/rest/webResources/1.0/resources') {
-        return {
-          status: 200,
-          data: {
-            unparsedData: {
-              [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
-                tenantId: 'cloudId',
-              }),
-            },
-          },
-        }
-      }
-      throw new Error(`Unexpected url ${url}`)
-    })
     connection.get.mockImplementation(async url => {
       if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
         return {
@@ -107,17 +81,6 @@ describe('automationLabelFetchFilter', () => {
       expect(automationLabel.value).toEqual(automationLabelInstance.value)
 
       expect(labelType).toEqual(automationLabelType)
-
-      expect(connection.post).toHaveBeenCalledWith(
-        '/rest/webResources/1.0/resources',
-        {
-          r: [],
-          c: ['jira.webresources:jira-global'],
-          xc: [],
-          xr: [],
-        },
-        undefined,
-      )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
@@ -207,58 +170,8 @@ describe('automationLabelFetchFilter', () => {
       expect(automation.elemID.getFullName()).toEqual('jira.AutomationLabel.instance.someName')
     })
 
-    it('should throw if resources response is invalid', async () => {
-      connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {},
-            },
-          }
-        }
-
-        throw new Error(`Unexpected url ${url}`)
-      })
-
-      const elements = [] as Element[]
-      await expect(filter.onFetch(elements)).rejects.toThrow()
-    })
-
-    it('should throw if cloud resource is not an object', async () => {
-      connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: '[]',
-              },
-            },
-          }
-        }
-
-        throw new Error(`Unexpected url ${url}`)
-      })
-
-      const elements = [] as Element[]
-      await expect(filter.onFetch(elements)).rejects.toThrow()
-    })
-
     it('should throw if tenantId not in response', async () => {
-      connection.post.mockImplementation(async url => {
-        if (url === '/rest/webResources/1.0/resources') {
-          return {
-            status: 200,
-            data: {
-              unparsedData: {
-                [CLOUD_RESOURCE_FIELD]: '{}',
-              },
-            },
-          }
-        }
-        throw new Error(`Unexpected url ${url}`)
-      })
+      connection.get.mockImplementation(FAULTY_CLOUD_ID_RESPONSE)
 
       const elements = [] as Element[]
       await expect(filter.onFetch(elements)).rejects.toThrow()
@@ -299,7 +212,7 @@ describe('automationLabelFetchFilter', () => {
 
     conn.get.mockImplementation(async url => {
       if (url === '/rest/cb-automation/latest/rule-label') {
-        throw new HTTPError('failed', { data: {}, status: 403 })
+        throw new clientUtils.HTTPError('failed', { data: {}, status: 403 })
       }
 
       throw new Error(`Unexpected url ${url}`)
@@ -328,7 +241,7 @@ describe('automationLabelFetchFilter', () => {
 
     conn.get.mockImplementation(async url => {
       if (url === '/rest/cb-automation/latest/rule-label') {
-        throw new HTTPError('failed', { data: {}, status: 405 })
+        throw new clientUtils.HTTPError('failed', { data: {}, status: 405 })
       }
 
       throw new Error(`Unexpected url ${url}`)

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -26,7 +18,6 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import Joi from 'joi'
-import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../filter'
 import { OBJECT_TYPE_ICON_TYPE } from '../../constants'
@@ -37,7 +28,6 @@ import { getWorkspaceId, getWorkspaceIdMissingErrors } from '../../workspace_id'
 import { createLogoConnection } from '../../client/connection'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
 type AuthorizationToken = {
   data: {
@@ -130,14 +120,17 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
       }
     }
     const errors: SaltoError[] = []
-    await awu(objectTypeIcons).forEach(async objectTypeIcon => {
-      try {
-        const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
-        await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
-      } catch (e) {
-        errors.push({ message: e.message, severity: 'Error' })
-      }
-    })
+    await Promise.all(
+      objectTypeIcons.map(async objectTypeIcon => {
+        try {
+          const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
+          return await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
+        } catch (e) {
+          errors.push({ message: e.message, severity: 'Error' })
+          return undefined
+        }
+      }),
+    )
     return { errors }
   },
   /* Only deploys addition of object type icons. The deployment of modifications and deletion of object type icons

@@ -1,26 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ObjectType,
-  ElemID,
-  Element,
-  InstanceElement,
-  isObjectType,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Element, InstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import {
   SALESFORCE,
   CPQ_PRODUCT_RULE,
@@ -82,17 +67,13 @@ describe('fields with context references filter', () => {
       [CPQ_LOOKUP_PRODUCT_FIELD]: {
         refType: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_PRODUCT_FIELD].join(
-            API_NAME_SEPARATOR,
-          ),
+          [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_PRODUCT_FIELD].join(API_NAME_SEPARATOR),
         },
       },
       [CPQ_LOOKUP_MESSAGE_FIELD]: {
         refType: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_MESSAGE_FIELD].join(
-            API_NAME_SEPARATOR,
-          ),
+          [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_MESSAGE_FIELD].join(API_NAME_SEPARATOR),
         },
       },
     },
@@ -109,17 +90,13 @@ describe('fields with context references filter', () => {
       [CPQ_LOOKUP_FIELD]: {
         refType: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: [CPQ_LOOKUP_QUERY, CPQ_LOOKUP_FIELD].join(
-            API_NAME_SEPARATOR,
-          ),
+          [API_NAME]: [CPQ_LOOKUP_QUERY, CPQ_LOOKUP_FIELD].join(API_NAME_SEPARATOR),
         },
       },
       anotherField: {
         refType: Types.primitiveDataTypes.Text,
         annotations: {
-          [API_NAME]: [CPQ_LOOKUP_QUERY, 'anotherField'].join(
-            API_NAME_SEPARATOR,
-          ),
+          [API_NAME]: [CPQ_LOOKUP_QUERY, 'anotherField'].join(API_NAME_SEPARATOR),
         },
       },
     },
@@ -134,20 +111,12 @@ describe('fields with context references filter', () => {
     [CPQ_LOOKUP_PRODUCT_FIELD]: 'not a real product',
     [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
   }
-  const productRuleInstance = new InstanceElement(
-    'productRuleInst',
-    mockProductRuleObject,
-    productRuleValues,
-  )
-  const productRuleWithBadLookupObjInstance = new InstanceElement(
-    'productRuleBadLookupInst',
-    mockProductRuleObject,
-    {
-      [CPQ_LOOKUP_OBJECT_NAME]: 'NotARealObject',
-      [CPQ_LOOKUP_PRODUCT_FIELD]: 'product',
-      [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
-    },
-  )
+  const productRuleInstance = new InstanceElement('productRuleInst', mockProductRuleObject, productRuleValues)
+  const productRuleWithBadLookupObjInstance = new InstanceElement('productRuleBadLookupInst', mockProductRuleObject, {
+    [CPQ_LOOKUP_OBJECT_NAME]: 'NotARealObject',
+    [CPQ_LOOKUP_PRODUCT_FIELD]: 'product',
+    [CPQ_LOOKUP_MESSAGE_FIELD]: 'message',
+  })
   const productRuleValuesWithReference = {
     [CPQ_LOOKUP_OBJECT_NAME]: new ReferenceExpression(mockLookupDataElemID),
     [CPQ_LOOKUP_PRODUCT_FIELD]: 'not a real product',
@@ -180,26 +149,20 @@ describe('fields with context references filter', () => {
     it('Should not change the ObjectTypes', () => {
       const objectTypes = elements.filter(isObjectType)
       expect(objectTypes).toHaveLength(3)
-      const lookupObj = objectTypes.find((ot) =>
-        ot.elemID.isEqual(mockLookupQueryElemID),
-      )
+      const lookupObj = objectTypes.find(ot => ot.elemID.isEqual(mockLookupQueryElemID))
       expect(lookupObj).toBeDefined()
       expect(lookupObj).toStrictEqual(mockLookupQueryObject)
-      const productRule = objectTypes.find((ot) =>
-        ot.elemID.isEqual(mockProductRuleElemID),
-      )
+      const productRule = objectTypes.find(ot => ot.elemID.isEqual(mockProductRuleElemID))
       expect(productRule).toBeDefined()
       expect(productRule).toStrictEqual(mockProductRuleObject)
-      const lookupData = objectTypes.find((ot) =>
-        ot.elemID.isEqual(mockLookupDataElemID),
-      )
+      const lookupData = objectTypes.find(ot => ot.elemID.isEqual(mockLookupDataElemID))
       expect(lookupData).toBeDefined()
       expect(lookupData).toStrictEqual(mockLookupDataObject)
     })
 
     describe('When product rule (field context based) uses lookup object that does not exist', () => {
       it('Should not change any values', () => {
-        const badLookupInst = elements.find((element) =>
+        const badLookupInst = elements.find(element =>
           element.elemID.isEqual(productRuleWithBadLookupObjInstance.elemID),
         )
         expect(badLookupInst).toBeDefined()
@@ -210,16 +173,12 @@ describe('fields with context references filter', () => {
     describe('When product rule (field context based) uses good lookup object', () => {
       let productRule: InstanceElement
       beforeAll(() => {
-        productRule = elements.find((element) =>
-          element.elemID.isEqual(productRuleInstance.elemID),
-        ) as InstanceElement
+        productRule = elements.find(element => element.elemID.isEqual(productRuleInstance.elemID)) as InstanceElement
       })
 
       it('Should not change value if field name does not exist in lookup object', () => {
         expect(productRule).toBeDefined()
-        expect(productRule.value.SBQQ__LookupProductField__c).toEqual(
-          productRuleValues.SBQQ__LookupProductField__c,
-        )
+        expect(productRule.value.SBQQ__LookupProductField__c).toEqual(productRuleValues.SBQQ__LookupProductField__c)
       })
       it('Should replace value of field that exists in lookup object with reference', () => {
         const value = productRule.value.SBQQ__LookupMessageField__c
@@ -233,16 +192,14 @@ describe('fields with context references filter', () => {
     describe('When product rule (field context based) uses good lookup object and the context field is itself a reference', () => {
       let productRule: InstanceElement
       beforeAll(() => {
-        productRule = elements.find((element) =>
+        productRule = elements.find(element =>
           element.elemID.isEqual(productRuleInstanceWithReference.elemID),
         ) as InstanceElement
       })
 
       it('Should not change value if field name does not exist in lookup object', () => {
         expect(productRule).toBeDefined()
-        expect(productRule.value.SBQQ__LookupProductField__c).toEqual(
-          productRuleValues.SBQQ__LookupProductField__c,
-        )
+        expect(productRule.value.SBQQ__LookupProductField__c).toEqual(productRuleValues.SBQQ__LookupProductField__c)
       })
       it('Should replace value of field that exists in lookup object with reference', () => {
         const value = productRule.value.SBQQ__LookupMessageField__c

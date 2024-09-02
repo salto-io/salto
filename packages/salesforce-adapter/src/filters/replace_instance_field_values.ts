@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -28,17 +20,9 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import {
-  apiName,
-  metadataType,
-  isCustomObject,
-} from '../transformers/transformer'
+import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
-import {
-  getInternalId,
-  hasInternalId,
-  buildElementsSourceForFetch,
-} from './utils'
+import { getInternalId, hasInternalId, buildElementsSourceForFetch } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -79,28 +63,22 @@ const getRelevantFieldMapping = async ({
   elementsSource,
   key,
   value,
-}: GetRelevantFieldMappingParams): Promise<
-  multiIndex.Index<[string], string>
-> => {
+}: GetRelevantFieldMappingParams): Promise<multiIndex.Index<[string], string>> => {
   const isReferencedCustomObject = async (elem: Element): Promise<boolean> =>
-    (await isCustomObject(elem)) &&
-    Object.values(metadataTypeToInstanceName).includes(await apiName(elem))
+    (await isCustomObject(elem)) && Object.values(metadataTypeToInstanceName).includes(await apiName(elem))
 
   return multiIndex.keyByAsync({
     iter: awu(await elementsSource.getAll())
       .filter(isObjectType)
       .filter(isReferencedCustomObject)
-      .flatMap((obj) => Object.values(obj.fields)),
+      .flatMap(obj => Object.values(obj.fields)),
     filter: hasInternalId,
     key,
     map: value,
   })
 }
 
-const shouldReplace = async (
-  field: Field,
-  instance: InstanceElement,
-): Promise<boolean> => {
+const shouldReplace = async (field: Field, instance: InstanceElement): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
   return (await resolverFinder(field, instance)).length > 0
 }
@@ -116,9 +94,7 @@ const replaceInstanceValues = async (
 
     // if we can't find an item in the lookup it's because
     // it's a standard field that doesn't need translation
-    return _.isArray(value)
-      ? value.map((s) => nameLookup.get(s) ?? s)
-      : nameLookup.get(value) ?? value
+    return _.isArray(value) ? value.map(s => nameLookup.get(s) ?? s) : nameLookup.get(value) ?? value
   }
 
   const values = instance.value
@@ -128,7 +104,8 @@ const replaceInstanceValues = async (
       type: await instance.getType(),
       transformFunc,
       strict: false,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
     })) ?? values
 }
 
@@ -138,10 +115,8 @@ const replaceInstancesValues = async (
 ): Promise<void> => {
   await awu(elements)
     .filter(isInstanceElement)
-    .filter(async (e) =>
-      Object.keys(metadataTypeToInstanceName).includes(await metadataType(e)),
-    )
-    .forEach(async (e) => {
+    .filter(async e => Object.keys(metadataTypeToInstanceName).includes(await metadataType(e)))
+    .forEach(async e => {
       await replaceInstanceValues(e, nameLookUp)
       log.debug(`replaced values of instance ${await apiName(e)}`)
     })
@@ -156,23 +131,23 @@ const filter: LocalFilterCreator = ({ config }) => ({
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const idToApiNameLookUp = await getRelevantFieldMapping({
       elementsSource: referenceElements,
-      key: (field) => [toShortId(getInternalId(field))],
-      value: async (field) => apiName(field),
+      key: field => [toShortId(getInternalId(field))],
+      value: async field => apiName(field),
     })
     await replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
     const apiNameToIdLookup = await getRelevantFieldMapping({
       elementsSource: config.elementsSource,
-      key: async (field) => [await apiName(field)],
-      value: (field) => toShortId(getInternalId(field)),
+      key: async field => [await apiName(field)],
+      value: field => toShortId(getInternalId(field)),
     })
     await replaceInstancesValues(changes.map(getChangeData), apiNameToIdLookup)
   },
-  onDeploy: async (changes) => {
+  onDeploy: async changes => {
     const idToApiNameLookUp = await getRelevantFieldMapping({
       elementsSource: config.elementsSource,
-      key: (field) => [toShortId(getInternalId(field))],
+      key: field => [toShortId(getInternalId(field))],
       value: apiName,
     })
     await replaceInstancesValues(changes.map(getChangeData), idToApiNameLookUp)

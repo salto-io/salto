@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   MetadataObject,
@@ -39,6 +31,7 @@ import {
   Record as SfRecord,
 } from '@salto-io/jsforce'
 import { Value } from '@salto-io/adapter-api'
+import { Stream } from 'stream'
 
 // This class is the interfaces we use from jsforce library
 // It's here so we will be able to mock jsforce efficiently
@@ -47,52 +40,24 @@ export interface Metadata {
   pollInterval: number
   pollTimeout: number
 
-  checkDeployStatus(
-    id: string,
-    includeDetails?: boolean,
-    callback?: Callback<DeployResult>,
-  ): Promise<DeployResult>
+  checkDeployStatus(id: string, includeDetails?: boolean, callback?: Callback<DeployResult>): Promise<DeployResult>
   describe(): Promise<{
     metadataObjects: MetadataObject[]
     organizationNamespace: string
   }>
   describeValueType(type: string): Promise<DescribeValueTypeResult>
-  read(
-    type: string,
-    fullNames: string | string[],
-  ): Promise<MetadataInfo | MetadataInfo[]>
-  list(
-    queries: ListMetadataQuery | ListMetadataQuery[],
-  ): Promise<FileProperties[]>
-  upsert(
-    type: string,
-    metadata: MetadataInfo | MetadataInfo[],
-  ): Promise<UpsertResult | UpsertResult[]>
-  delete(
-    type: string,
-    fullNames: string | string[],
-  ): Promise<SaveResult | SaveResult[]>
-  update(
-    type: string,
-    updateMetadata: MetadataInfo | MetadataInfo[],
-  ): Promise<SaveResult | SaveResult[]>
-  retrieve(
-    request: RetrieveRequest,
-    callback?: Callback<RetrieveResult>,
-  ): RetrieveResultLocator<RetrieveResult>
-  deploy(
-    zipInput: Buffer | string | NodeJS.ReadableStream,
-    options: DeployOptions,
-  ): DeployResultLocator<DeployResult>
-  deployRecentValidation(
-    validationId: string,
-  ): DeployResultLocator<DeployResult>
+  read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
+  list(queries: ListMetadataQuery | ListMetadataQuery[]): Promise<FileProperties[]>
+  upsert(type: string, metadata: MetadataInfo | MetadataInfo[]): Promise<UpsertResult | UpsertResult[]>
+  delete(type: string, fullNames: string | string[]): Promise<SaveResult | SaveResult[]>
+  update(type: string, updateMetadata: MetadataInfo | MetadataInfo[]): Promise<SaveResult | SaveResult[]>
+  retrieve(request: RetrieveRequest, callback?: Callback<RetrieveResult>): RetrieveResultLocator<RetrieveResult>
+  deploy(zipInput: Buffer | string | Stream, options: DeployOptions): DeployResultLocator<DeployResult>
+  deployRecentValidation(validationId: string): DeployResultLocator<DeployResult>
 }
 
 export interface Soap {
-  describeSObjects(
-    typeNames: string | string[],
-  ): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
+  describeSObjects(typeNames: string | string[]): Promise<DescribeSObjectResult | DescribeSObjectResult[]>
 }
 
 export interface Global {
@@ -110,12 +75,7 @@ export type Limits = {
 export interface Bulk {
   pollInterval: number
   pollTimeout: number
-  load(
-    type: string,
-    operation: BulkLoadOperation,
-    options?: BulkOptions,
-    input?: SfRecord[],
-  ): Batch
+  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
 }
 
 export interface Tooling {

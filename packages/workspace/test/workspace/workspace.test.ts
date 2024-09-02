@@ -1,18 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import 'jest-extended'
 import _ from 'lodash'
 import wu from 'wu'
 import {
@@ -44,8 +37,10 @@ import {
   StaticFile,
   isStaticFile,
   TemplateExpression,
+  ReferenceInfo,
 } from '@salto-io/adapter-api'
-import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
+import { ReferenceIndexEntry } from 'index'
+import { findElement, applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
@@ -55,6 +50,8 @@ import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
+import { buildStaticFilesCache } from '../../src/workspace/static_files/static_files_cache'
+import * as remoteMap from '../../src/workspace/remote_map'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
@@ -67,6 +64,8 @@ import {
   deserializeReferenceTree,
   listElementsDependenciesInWorkspace,
   COMMON_ENV_PREFIX,
+  serializeReferenceSourcesEntries,
+  deserializeReferenceSourcesEntries,
 } from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,
@@ -78,7 +77,7 @@ import {
   UnknownAccountError,
   InvalidAccountNameError,
 } from '../../src/workspace/errors'
-import { MissingStaticFile } from '../../src/workspace/static_files'
+import { buildStaticFilesSource, MissingStaticFile } from '../../src/workspace/static_files'
 import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
@@ -108,6 +107,7 @@ const changedNaclFile = {
   buffer: `type salesforce.lead {
     salesforce.text new_base {}
   }`,
+  timestamp: expect.anything(),
 }
 const changedConfFile = {
   filename: 'salto.config/adapters/salesforce.nacl',
@@ -122,6 +122,7 @@ const emptyNaclFile = {
 const newNaclFile = {
   filename: 'new.nacl',
   buffer: 'type salesforce.new {}',
+  timestamp: expect.anything(),
 }
 const services = ['salesforce']
 
@@ -699,7 +700,7 @@ describe('workspace', () => {
   })
 
   describe('setNaclFiles', () => {
-    const naclFileStore = mockDirStore()
+    const naclFileStore = mockDirStore<string>()
     let workspace: Workspace
     let elemMap: Record<string, Element>
     let changes: Record<string, ChangeSet<Change<Element>>>
@@ -709,9 +710,7 @@ describe('workspace', () => {
     const salesforceLeadObject = new ObjectType({
       elemID: salesforceLeadElemID,
       fields: {
-        // eslint-disable-next-line camelcase
         new_base: { refType: salesforceText },
-        // eslint-disable-next-line camelcase
         ext_field: { refType: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
       },
     })
@@ -873,6 +872,102 @@ describe('workspace', () => {
         ])
 
         expect((await ws.errors()).merge).toHaveLength(0)
+      })
+    })
+  })
+
+  describe('updateNaclFiles with static files', () => {
+    let workspace: Workspace
+    const staticFileInstanceType = new ObjectType({
+      elemID: new ElemID('salesforce', 'staticFile'),
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+      path: ['salesforce', 'Types', 'staticFile'],
+      isSettings: false,
+    })
+
+    staticFileInstanceType.fields.staticFile = new Field(staticFileInstanceType, 'staticFile', BuiltinTypes.STRING)
+
+    const beforeStaticFile = new StaticFile({
+      content: Buffer.from('I am a little static file'),
+      filepath: 'static1.nacl',
+    })
+
+    const afterStaticFile = new StaticFile({
+      content: Buffer.from('I am a little static file2'),
+      filepath: 'static1.nacl',
+    })
+
+    const staticFileInstanceBefore = new InstanceElement(
+      'staticFileInstance',
+      staticFileInstanceType,
+      {
+        staticFile: beforeStaticFile,
+      },
+      ['Records', 'staticFile', 'staticFileInstance'],
+    )
+    const setUp = async (): Promise<void> => {
+      const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
+      const inMemRemoteMapCreator =
+        (): remoteMap.RemoteMapCreator =>
+        async <T, K extends string = string>(opts: remoteMap.CreateRemoteMapParams<T>) => {
+          const map = maps.get(opts.namespace) ?? new remoteMap.InMemoryRemoteMap<T, K>()
+          if (!maps.has(opts.namespace)) {
+            maps.set(opts.namespace, map)
+          }
+          return map as remoteMap.RemoteMap<T, K>
+        }
+      const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
+      const defaultFilePath = 'static1.nacl'
+      const otherStaticFiles = { [defaultFilePath]: Buffer.from('I am a little static file') }
+      const mockStaticFileDirStore = mockDirStore(undefined, undefined, otherStaticFiles)
+      const staticFilesSource = buildStaticFilesSource(mockStaticFileDirStore, staticFilesCache)
+      const otherNaclFiles = {
+        'staticFile.nacl': `
+        
+type salesforce.staticFile {
+  string staticFile {
+  }
+}
+
+salesforce.staticFile staticFileInstance {
+  staticFile = file("static1.nacl")
+}
+        `,
+      }
+
+      const otherDirStore = mockDirStore(undefined, undefined, otherNaclFiles)
+      const state = createState([...Object.values(BuiltinTypes), staticFileInstanceType, staticFileInstanceBefore])
+
+      workspace = await createWorkspace(
+        otherDirStore,
+        state,
+        undefined,
+        undefined,
+        undefined,
+        staticFilesSource,
+        undefined,
+        inMemRemoteMapCreator(),
+      )
+    }
+    it('should have right number of results when there is only a change in 1 static file', async () => {
+      await setUp()
+      const changes: DetailedChange[] = [
+        // modify static file
+        {
+          id: new ElemID('salesforce', 'staticFile', 'instance', 'staticFileInstance', 'staticFile'),
+          action: 'modify',
+          data: {
+            before: beforeStaticFile,
+            after: afterStaticFile,
+          },
+        },
+      ]
+      const otherUpdateNaclFileResults = await workspace.updateNaclFiles(changes)
+      expect(otherUpdateNaclFileResults).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 0,
       })
     })
   })
@@ -1581,7 +1676,7 @@ describe('workspace', () => {
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
     let updateNaclFileResults: UpdateNaclFilesResult
-    const dirStore = mockDirStore()
+    const dirStore = mockDirStore<string>()
 
     beforeAll(async () => {
       const helperWorkspace = await createWorkspace(dirStore, createState([]))
@@ -2459,7 +2554,7 @@ describe('workspace', () => {
     const naclFileStore = mockDirStore(undefined, undefined, {
       'firstFile.nacl': firstFile,
     })
-    const emptyFileStore = mockDirStore(undefined, undefined, {})
+    const emptyFileStore = mockDirStore<string>(undefined, undefined, {})
     describe('empty index', () => {
       beforeEach(async () => {
         workspace = await createWorkspace(emptyFileStore, undefined, undefined, undefined, undefined, undefined, {
@@ -3373,6 +3468,62 @@ describe('workspace', () => {
     })
   })
 
+  describe('getElementIncomingReferenceInfos', () => {
+    let targetElementId: ElemID
+    let sourceInstance: InstanceElement
+    let anotherSourceInstance: InstanceElement
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      const testType = new ObjectType({ elemID: new ElemID('adapter', 'test') })
+      targetElementId = new ElemID('adapter', 'test', 'instance', 'target')
+      sourceInstance = new InstanceElement('source', testType, {
+        nested: {
+          nested: 'value',
+        },
+      })
+      anotherSourceInstance = new InstanceElement('anotherSource', testType)
+      const elementSources = {
+        default: {
+          naclFiles: createMockNaclFileSource([sourceInstance, anotherSourceInstance]),
+          state: createState([]),
+        },
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+      }
+      const customRefs: ReferenceInfo[] = [
+        {
+          source: sourceInstance.elemID.createNestedID('nested'),
+          target: targetElementId.createNestedID('field2'),
+          type: 'weak',
+        },
+        // Case where the target is baseId
+        { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
+      ]
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        elementSources,
+        undefined,
+        async (..._args) => customRefs,
+      )
+    })
+
+    it('should return reference infos for both baseIds and nested Ids', async () => {
+      const incomingReferenceInfos = await workspace.getElementIncomingReferenceInfos(targetElementId)
+      expect(incomingReferenceInfos).toIncludeSameMembers([
+        { id: anotherSourceInstance.elemID, type: 'weak', sourceScope: 'value' },
+        { id: sourceInstance.elemID.createNestedID('nested'), type: 'weak', sourceScope: 'baseId' },
+      ])
+    })
+  })
+
   describe('getElementOutgoingReferences', () => {
     let workspace: Workspace
     const ref1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'ref1'))
@@ -3380,7 +3531,7 @@ describe('workspace', () => {
     const templateRef1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template1'))
     const templateRef2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template2'))
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       const instanceElement = new InstanceElement('test', new ObjectType({ elemID: new ElemID('adapter', 'test') }), {
         ref: ref1,
         ref2,
@@ -3416,6 +3567,30 @@ describe('workspace', () => {
           state: createState([]),
         },
       }
+
+      const customRefs: ReferenceInfo[] = [
+        // undefined sourceScope
+        { source: instanceElement.elemID, target: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak' },
+        // baseId sourceScope
+        {
+          source: instanceElement.elemID,
+          target: new ElemID('adapter', 'test', 'instance', 'target2'),
+          type: 'weak',
+          sourceScope: 'baseId',
+        },
+        // value sourceScope
+        {
+          source: instanceElement.elemID,
+          target: new ElemID('adapter', 'test', 'instance', 'target3'),
+          type: 'weak',
+          sourceScope: 'value',
+        },
+        {
+          source: new ElemID('adapter', 'test', 'instance', 'test', 'inner'),
+          target: new ElemID('adapter', 'test', 'instance', 'target4'),
+          type: 'strong',
+        },
+      ]
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3424,6 +3599,8 @@ describe('workspace', () => {
         undefined,
         undefined,
         elementSources,
+        undefined,
+        async (..._args) => customRefs,
       )
     })
 
@@ -3431,18 +3608,28 @@ describe('workspace', () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(
         new ElemID('adapter', 'test', 'instance', 'test'),
       )
-      expect(instanceRefs).toMatchObject(
-        [ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })),
-      )
+      expect(instanceRefs).toIncludeSameMembers([
+        { id: ref1.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: ref2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef1.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target1'), type: 'weak', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target2'), type: 'weak', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target3'), type: 'weak', sourceScope: 'value' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target4'), type: 'strong', sourceScope: 'baseId' },
+      ])
     })
 
     it('instance field should return all references nested under it', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(
         new ElemID('adapter', 'test', 'instance', 'test', 'inner'),
       )
-      expect(instanceRefs).toMatchObject(
-        [ref2.elemID, templateRef1.elemID, templateRef2.elemID].map(id => ({ id, type: 'strong' })),
-      )
+      expect(instanceRefs).toIncludeSameMembers([
+        { id: ref2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef1.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: templateRef2.elemID, type: 'strong', sourceScope: 'baseId' },
+        { id: new ElemID('adapter', 'test', 'instance', 'target4'), type: 'strong', sourceScope: 'baseId' },
+      ])
     })
 
     it('specific nested instance field path should return references under it', async () => {
@@ -4354,6 +4541,7 @@ describe('non persistent workspace', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       false,
     )
     await expect(() => nonPWorkspace.flush()).rejects.toThrow()
@@ -4976,7 +5164,7 @@ describe('isValidEnvName', () => {
 describe('update nacl files with invalid state cache', () => {
   let workspace: Workspace
   beforeAll(async () => {
-    const dirStore = mockDirStore()
+    const dirStore = mockDirStore<string>()
     const changes: DetailedChange[] = [
       {
         action: 'remove',
@@ -5039,6 +5227,58 @@ describe('nacl sources reuse', () => {
   it('should not create a new copy of a secondary env when invoking a command directly on the secondary env', async () => {
     await ws.elements(true, 'inactive')
     expect(mockMultiEnv).toHaveBeenCalledTimes(1)
+  })
+
+  describe('serializeReferenceSourcesEntries and deserializeReferenceSourcesEntries', () => {
+    it('should serialize and deserialize correctly', async () => {
+      const entries: ReferenceIndexEntry[] = [
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref1'),
+          type: 'strong',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref2'),
+          type: 'strong',
+          sourceScope: 'baseId',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref3'),
+          type: 'strong',
+          sourceScope: 'value',
+        },
+      ]
+      const serialized = await serializeReferenceSourcesEntries(entries)
+      expect(await deserializeReferenceSourcesEntries(serialized)).toEqual(entries)
+    })
+    it('should deserialize old format correctly', async () => {
+      const oldSerializeFunc = (ids: ElemID[]): string => safeJsonStringify(ids.map(id => id.getFullName()))
+      const serialized = oldSerializeFunc(
+        [
+          'test.adapter.instance.testInstance.ref1',
+          'test.adapter.instance.testInstance.ref2',
+          'test.adapter.instance.testInstance.ref3',
+        ].map(ElemID.fromFullName),
+      )
+      const expected: ReferenceIndexEntry[] = [
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref1'),
+          type: 'strong',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref2'),
+          type: 'strong',
+        },
+        {
+          id: ElemID.fromFullName('test.adapter.instance.testInstance.ref3'),
+          type: 'strong',
+        },
+      ]
+      expect(await deserializeReferenceSourcesEntries(serialized)).toEqual(expected)
+    })
+
+    it('should throw error when deserializing invalid format', async () => {
+      await expect(deserializeReferenceSourcesEntries('invalid')).rejects.toThrow()
+    })
   })
 })
 

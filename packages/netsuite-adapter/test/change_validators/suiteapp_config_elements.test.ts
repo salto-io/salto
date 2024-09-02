@@ -1,22 +1,15 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION } from '../../src/constants'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from '../../src/types'
 import suiteAppConfigElementsValidator from '../../src/change_validators/suiteapp_config_elements'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('config elements change validator', () => {
   const selectOptionType = new ObjectType({
@@ -52,7 +45,7 @@ describe('config elements change validator', () => {
       selectField: { value: '2', text: 'Two' },
       multiselectField: [{ value: '2', text: 'Two' }],
     }
-    const result = await suiteAppConfigElementsValidator([toChange({ before, after })])
+    const result = await suiteAppConfigElementsValidator([toChange({ before, after })], mockChangeValidatorParams())
     expect(result.length).toBe(2)
     expect(result[0]).toEqual({
       elemID: after.elemID.createNestedID('selectField'),

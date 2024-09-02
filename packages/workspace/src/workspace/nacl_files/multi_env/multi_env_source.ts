@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import path from 'path'
@@ -22,9 +14,12 @@ import {
   ElemID,
   getChangeData,
   DetailedChange,
+  AdditionChange,
+  ModificationChange,
   Change,
   ChangeDataType,
   StaticFile,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -48,6 +43,7 @@ import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 import { MissingStaticFile } from '../../static_files'
+import { ReferenceIndexEntry } from '../../reference_indexes'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -125,13 +121,14 @@ export type MultiEnvSource = {
     encoding: BufferEncoding
     env: string
     isTemplate?: boolean
+    hash?: string
   }) => Promise<StaticFile | undefined>
   getAll: (env: string) => Promise<AsyncIterable<Element>>
   promote: (env: string, idsToMove: ElemID[], idsToRemove?: Record<string, ElemID[]>) => Promise<EnvsChanges>
   getElementIdsBySelectors: (
     env: string,
     selectors: ElementSelector[],
-    referencedByIndex: RemoteMap<ElemID[]>,
+    referencedByIndex: RemoteMap<ReferenceIndexEntry[]>,
     fromSource?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
@@ -168,39 +165,33 @@ const buildMultiEnvSource = (
 
   const getActiveSources = (env: string): Record<string, NaclFilesSource> => _.pick(sources, [commonSourceName, env])
 
-  const getStaticFile = async (
-    args: string | { filePath: string; encoding: BufferEncoding; env: string; isTemplate?: boolean },
-    encoding?: BufferEncoding,
-    envName?: string,
-  ): Promise<StaticFile> => {
-    let filePath: string
-    let fileEncoding: BufferEncoding
-    let environmentName: string
-
-    // Check if args is a string or an object and assign values accordingly
-    if (_.isString(args)) {
-      if (encoding === undefined || envName === undefined) {
-        throw new Error("When 'args' is a string, 'encoding' and 'envName' must be provided")
-      }
-      filePath = args
-      fileEncoding = encoding
-      environmentName = envName
-    } else {
-      filePath = args.filePath
-      fileEncoding = args.encoding
-      environmentName = args.env
-    }
-    const sourcesFiles = (
-      await Promise.all(
-        Object.values(getActiveSources(environmentName)).map(src =>
-          src.getStaticFile({
-            filePath,
-            encoding: fileEncoding,
-            isTemplate: _.isObject(args) ? args.isTemplate : undefined,
-          }),
-        ),
+  const getStaticFile = async (args: {
+    filePath: string
+    encoding: BufferEncoding
+    env: string
+    isTemplate?: boolean
+    hash?: string
+  }): Promise<StaticFile> => {
+    const { env, filePath, encoding, isTemplate, hash } = args
+    // without filtering the sources, we would run getStaticFile on an empty source and we will get invalid results. for
+    // example if common is empty, when we will run getStaticFile of buildNaclFilesSource, this will run
+    // staticFilesSource.getStaticFile, and since we are passing a hash, we will get a static file without content
+    // and not a missing staticFile. Finally we will get both common and env as sourcesFiles (common returned a static
+    // file and therefore is not filtered out). As we return sourcesFiles[0], we will return the invalid static file
+    // (without content) that came from common. To avoid this we filter the sources before the calls to get static file
+    // so that only the ones with files will be called.
+    const sourcesFiles = await awu(Object.values(getActiveSources(env)))
+      .filter(async src => !(await (await src.getElementsSource()).isEmpty()))
+      .map(src =>
+        src.getStaticFile({
+          filePath,
+          encoding,
+          isTemplate,
+          hash,
+        }),
       )
-    ).filter(values.isDefined)
+      .filter(values.isDefined)
+      .toArray()
     if (sourcesFiles.length > 1 && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
       log.warn(`Found different hashes for static file ${filePath}`)
     }
@@ -221,6 +212,7 @@ const buildMultiEnvSource = (
                 encoding: staticFile.encoding,
                 env: envName,
                 isTemplate: staticFile.isTemplate,
+                hash: staticFile.hash,
               })) ?? staticFile,
           ),
         persistent,
@@ -342,6 +334,46 @@ const buildMultiEnvSource = (
     return naclFile ? { ...naclFile, filename } : undefined
   }
 
+  const additionFromModificationChange = <T>(
+    change: DetailedChange<T> & ModificationChange<T>,
+  ): DetailedChange<T> & AdditionChange<T> => ({
+    action: 'add',
+    data: { after: change.data.after },
+    id: change.id,
+    elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
+    path: change.path,
+  })
+
+  const removalChangeFromModificationChanges = <T>(
+    changes: (DetailedChange<T> & ModificationChange<T>)[],
+  ): DetailedChange<T>[] =>
+    changes.length > 0
+      ? [
+          {
+            action: 'remove',
+            data: { before: changes[0].data.before },
+            id: changes[0].id,
+            elemIDs: { before: changes[0].id },
+            path: changes[0].path,
+          },
+        ]
+      : []
+
+  // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
+  // so we split them into a removal and additions.
+  // For this to work for modifications of elements spread across multiple files, this relies on the
+  // fact that we receive a separate modification for the part of the element in each file.
+  const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
+    _(changes)
+      .groupBy(change => change.id.getFullName())
+      .values()
+      .flatMap(elemChanges =>
+        elemChanges[0].id.isBaseID() && elemChanges.every(isModificationChange)
+          ? removalChangeFromModificationChanges(elemChanges).concat(elemChanges.map(additionFromModificationChange))
+          : elemChanges,
+      )
+      .value()
+
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({
     ...(await resolveValues({
       [commonSourceName]: commonSource().updateNaclFiles(routedChanges.commonSource ?? []),
@@ -354,7 +386,8 @@ const buildMultiEnvSource = (
     changes: DetailedChange[],
     mode: RoutingMode = 'default',
   ): Promise<EnvsChanges> => {
-    const routedChanges = await routeChanges(changes, env, commonSource(), envSources(), mode)
+    const normalizedChanges = normalizeChanges(changes)
+    const routedChanges = await routeChanges(normalizedChanges, env, commonSource(), envSources(), mode)
     const elementChanges = await applyRoutedChanges(routedChanges)
     const buildRes = await buildMultiEnvState({ envChanges: elementChanges })
     state = buildRes.state
@@ -377,11 +410,11 @@ const buildMultiEnvSource = (
     }
   }
 
-  const getElementIdsBySelectors = async (
-    env: string,
-    selectors: ElementSelector[],
-    referenceSourcesIndex: RemoteMap<ElemID[]>,
-    fromSource: FromSource = 'env',
+  const getElementIdsBySelectors: MultiEnvSource['getElementIdsBySelectors'] = async (
+    env,
+    selectors,
+    referenceSourcesIndex,
+    fromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(env, fromSource)

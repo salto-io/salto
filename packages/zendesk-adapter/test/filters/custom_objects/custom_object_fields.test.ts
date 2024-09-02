@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ElemID,
@@ -27,6 +19,7 @@ import {
   CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_NAME,
+  QUEUE_TYPE_NAME,
   TICKET_FIELD_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
@@ -359,6 +352,77 @@ describe('customObjectFieldsFilter', () => {
         )
         const missingOptionsRef = missingRef(CUSTOM_OBJECT_FIELD_OPTIONS_TYPE_NAME, MISSING_ID)
         expect(customObjectFieldInstance.value.relationship_filter.all[2].value).toMatchObject(missingOptionsRef)
+      })
+    })
+
+    describe('queue', () => {
+      const createInstance = (rules = {}): InstanceElement =>
+        new InstanceElement(QUEUE_TYPE_NAME, new ObjectType({ elemID: new ElemID(ZENDESK, QUEUE_TYPE_NAME) }), {
+          definition: rules,
+        })
+      it('should create reference expressions in queue definition field', async () => {
+        const rules = {
+          all: [
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'present',
+            },
+          ],
+          any: [
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'is',
+              value: valueInstance.value.id.toString(),
+            },
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.${customObjectField.value.key}`,
+              operator: 'is_not',
+              value: USER.id.toString(),
+            },
+          ],
+        }
+        const queueInstance = createInstance(rules)
+        await customObjectFieldsFilter.onFetch([
+          ticketField,
+          customObjectField,
+          customObject,
+          queueInstance,
+          valueInstance,
+        ])
+        expect(queueInstance.value.definition.all[0].field).toMatchObject(lookUpTemplate)
+        expect(queueInstance.value.definition.any[0].value).toMatchObject(
+          new ReferenceExpression(valueInstance.elemID, valueInstance),
+        )
+        expect(queueInstance.value.definition.any[1].value).toBe('User')
+      })
+      it('should create missing reference', async () => {
+        const rules = {
+          all: [
+            {
+              field: `lookup:ticket.ticket_field_${ticketField.value.id}.custom_fields.nonExistingKey`,
+              operator: 'is',
+              value: '123123',
+            },
+          ],
+        }
+        const queueInstance = createInstance(rules)
+        await customObjectFieldsFilter.onFetch([
+          ticketField,
+          customObjectField,
+          customObject,
+          queueInstance,
+          valueInstance,
+        ])
+        expect(queueInstance.value.definition.all[0].field).toMatchObject(
+          new TemplateExpression({
+            parts: [
+              'lookup:ticket.ticket_field_',
+              new ReferenceExpression(ticketField.elemID, ticketField),
+              '.custom_fields.',
+              missingRef(CUSTOM_OBJECT_FIELD_TYPE_NAME, `${customObject.value.key}__nonExistingKey`),
+            ],
+          }),
+        )
       })
     })
   })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -26,6 +18,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import filterCreator from '../../src/filters/element_references'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
@@ -34,6 +27,9 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '..
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 import { LocalFilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
+import { fullFetchConfig } from '../../src/config/config_creator'
+
+const logging = logger('netsuite-adapter/src/filters/element_references')
 
 describe('instance_references filter', () => {
   describe('onFetch', () => {
@@ -43,6 +39,7 @@ describe('instance_references filter', () => {
     let workflowInstance: InstanceElement
     let instanceWithRefs: InstanceElement
     let customRecordType: ObjectType
+    let lockedCustomRecordType: ObjectType
 
     const getIndexesMock = jest.fn()
     const elementsSourceIndex = {
@@ -50,6 +47,7 @@ describe('instance_references filter', () => {
     }
 
     beforeEach(async () => {
+      jest.clearAllMocks()
       getIndexesMock.mockReset()
       getIndexesMock.mockResolvedValue({
         serviceIdRecordsIndex: {},
@@ -115,6 +113,7 @@ describe('instance_references filter', () => {
           refWithAppId: '[appid=foo.bar, scriptid=top_level]',
           refToCustomSegmentWithAppId: '[appid=foo.bar, type=customsegment, scriptid=cseg_1]',
           refWithBundleId: '[bundleid=123, scriptid=top_level]',
+          refToHiddenElement: '[scriptid=customrecord_locked]',
         },
         undefined,
         {
@@ -139,6 +138,14 @@ describe('instance_references filter', () => {
           [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
           [SCRIPT_ID]: 'customrecord1',
           customsegment: '[scriptid=cseg_1]',
+        },
+      })
+      lockedCustomRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord_locked'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord_locked',
+          [CORE_ANNOTATIONS.HIDDEN]: true,
         },
       })
     })
@@ -378,6 +385,16 @@ describe('instance_references filter', () => {
       expect(instanceWithRefs.value.refWithBundleId).toEqual('[bundleid=123, scriptid=top_level]')
     })
 
+    it('should not replace reference to hidden element', async () => {
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([lockedCustomRecordType, instanceWithRefs])
+      expect(instanceWithRefs.value.refToHiddenElement).toEqual('[scriptid=customrecord_locked]')
+    })
+
     it('should not replace path references for unresolved ref', async () => {
       await filterCreator({
         elementsSourceIndex,
@@ -481,6 +498,7 @@ describe('instance_references filter', () => {
     })
 
     it('should add extracted element to generated dependencies', async () => {
+      const mockLogInfo = jest.spyOn(logging, 'info')
       const fileContent = `
       define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
@@ -496,6 +514,11 @@ describe('instance_references filter', () => {
             id: requestBody.salesRep,
             isDynamic: true
           });
+          /* 'custom_field' in a \n multiline comment */ 
+          var values = {
+            cseg_1: notAnId,
+            someValue: top_level
+          }
           return JSON.stringify(salesRep);
           }
         }
@@ -515,9 +538,25 @@ describe('instance_references filter', () => {
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
-        config: await getDefaultAdapterConfig(),
-      }).onFetch?.([fileInstance, syntacticFileInstance, syntacticFileInstance2, innerFileInstance, customRecordType])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
+        config: {
+          ...(await getDefaultAdapterConfig()),
+          fetch: {
+            ...fullFetchConfig(),
+            calculateNewReferencesInSuiteScripts: true,
+            findReferencesInFilesWithExtension: ['.name'],
+          },
+        },
+      }).onFetch?.([
+        fileInstance,
+        syntacticFileInstance,
+        syntacticFileInstance2,
+        innerFileInstance,
+        customRecordType,
+        customSegmentInstance,
+        workflowInstance,
+      ])
+      expect(mockLogInfo).toHaveBeenCalledTimes(1)
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
         expect.arrayContaining([
           {
@@ -534,6 +573,53 @@ describe('instance_references filter', () => {
           },
           {
             reference: new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID)),
+            occurrences: undefined,
+          },
+          {
+            reference: new ReferenceExpression(customRecordType.fields.custom_field.elemID.createNestedID(SCRIPT_ID)),
+            occurrences: undefined,
+          },
+        ]),
+      )
+    })
+
+    it('should not add generated dependency for files with invalid extension', async () => {
+      const mockLogInfo = jest.spyOn(logging, 'info')
+      const innerFileInstance = new InstanceElement('innerRefFile', fileType(), {
+        [PATH]: '/Templates/innerFileRef.name',
+      })
+      // references from non js file should not be added to the generated dependencies as they are not parsed
+      const nonJsFileContent = `
+      This is some free text which contains the word 'top_level' in it
+      `
+      innerFileInstance.value.content = new StaticFile({
+        filepath: 'Templates/innerFileRef.name',
+        content: Buffer.from(nonJsFileContent),
+      })
+
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: {
+          ...(await getDefaultAdapterConfig()),
+          fetch: { ...fullFetchConfig(), calculateNewReferencesInSuiteScripts: true },
+        },
+      }).onFetch?.([innerFileInstance, workflowInstance])
+      expect(mockLogInfo).toHaveBeenCalledTimes(2)
+      expect(mockLogInfo).toHaveBeenNthCalledWith(
+        1,
+        'Ignoring file with unsupported extension %s and %d references will be removed: %o',
+        '/Templates/innerFileRef.name',
+        1,
+        [workflowInstance.elemID.createNestedID(SCRIPT_ID)],
+      )
+      expect(mockLogInfo).toHaveBeenNthCalledWith(2, 'Ignored files with unsupported extensions: %o', ['.name'])
+      expect(innerFileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
+      expect(innerFileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        expect.arrayContaining([
+          {
+            reference: new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)),
             occurrences: undefined,
           },
         ]),
@@ -589,6 +675,7 @@ describe('instance_references filter', () => {
       * @NModuleScope SameAccount
       */
      `
+      fileInstance.value[PATH] = '/Templates/file.js'
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       const commentRefFileInstance = new InstanceElement('commentFileInstance', fileType(), {
         [PATH]: '/Templates/utils/ToastDalConfig.json',
@@ -616,6 +703,7 @@ describe('instance_references filter', () => {
           // Load employee record
         }
       });`
+      fileInstance.value[PATH] = '/Templates/file.js'
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       await filterCreator({
         elementsSourceIndex,
@@ -647,6 +735,7 @@ describe('instance_references filter', () => {
           // Load employee record
         }
       });`
+      fileInstance.value[PATH] = '/Templates/file.js'
       fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
       await filterCreator({
         elementsSourceIndex,

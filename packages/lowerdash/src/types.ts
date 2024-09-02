@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 export type AtLeastOne<T, U = { [K in keyof T]: Pick<T, K> }> = Partial<T> & U[keyof U]
 
@@ -35,10 +27,16 @@ export const hasMember = <T, M extends keyof T>(m: M, o: T): o is HasMember<T, M
 export const filterHasMember = <T, M extends keyof T>(m: M, objs: T[]): HasMember<T, M>[] =>
   objs.filter(f => hasMember(m, f)) as HasMember<T, M>[]
 
+// Ensures an object contains a specific key K of type T
+export type HasKeyOfType<K extends string, T> = { [P in K]: T }
+// Extracts keys from type T whose values are assignable to type U.
 export type KeysOfType<T, U> = { [K in keyof T]: T[K] extends U ? K : never }[keyof T]
+// Extracts keys from type T whose values extend type U.
 export type KeysOfExtendingType<T, U> = { [K in keyof T]: U extends T[K] ? K : never }[keyof T]
+// Converts the keys of type T into an enum-like type where each key is a required property.
 export type TypeKeysEnum<T> = Required<{ [k in keyof T]: k }>
 
+// Extracts the union of all possible values of the properties of type `T`.
 export type ValueOf<T> = T[keyof T]
 
 // makes specific fields required

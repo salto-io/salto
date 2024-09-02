@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -22,7 +14,6 @@ import {
   CORE_ANNOTATIONS,
   ElemID,
   ReadOnlyElementsSource,
-  ChangeError,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JiraClient from '../../src/client/client'
@@ -66,7 +57,6 @@ describe('issue layouts validator', () => {
   let changeIssueLayout2: Change
   let elementSource: ReadOnlyElementsSource
   let client: JiraClient
-  let error: ChangeError
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -239,13 +229,6 @@ describe('issue layouts validator', () => {
     ]
 
     elementSource = buildElementsSourceFromElements(elements)
-
-    error = {
-      elemID: issueLayoutInstance1.elemID,
-      severity: 'Error',
-      message: 'Invalid screen in Issue Layout',
-      detailedMessage: 'This issue layout references an invalid or non-existing screen.',
-    }
   })
   it('should not return error when issue layout is linked to relevant project screens', async () => {
     const errors = await validator([changeIssueLayout1], elementSource)
@@ -255,7 +238,13 @@ describe('issue layouts validator', () => {
     issueTypeScreenSchemeInstance1.value.issueTypeMappings = []
     const errors = await validator([changeIssueLayout1], elementSource)
     expect(errors).toHaveLength(1)
-    expect(errors).toEqual([error])
+    expect(errors).toContainEqual({
+      elemID: issueLayoutInstance1.elemID,
+      severity: 'Error',
+      message: 'Invalid screen for Issue Layout',
+      detailedMessage:
+        'This issue layout references a screen (jira.Screen.instance.screen1) that is not associated with its project (jira.Project.instance.project1). Learn more at https://help.salto.io/en/articles/9306685-deploying-issue-layouts',
+    })
   })
   it('should not return error if the issue layout is linked to the view screen', async () => {
     issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
@@ -538,7 +527,30 @@ describe('issue layouts validator', () => {
     elements.push(issueTypeScreenSchemeInstance3)
     const errors = await validator([changeIssueLayout1, changeIssueLayout2], buildElementsSourceFromElements(elements))
     expect(errors).toHaveLength(2)
-    expect(errors[0].elemID).toEqual(issueLayoutInstance1.elemID)
-    expect(errors[1].elemID).toEqual(issueLayoutInstance2.elemID)
+    expect(errors).toContainEqual({
+      elemID: issueLayoutInstance2.elemID,
+      severity: 'Error',
+      message: 'Invalid screen for Issue Layout',
+      detailedMessage:
+        'This issue layout references a screen (jira.Screen.instance.screen1) that is not associated with its project (jira.Project.instance.project2). Learn more at https://help.salto.io/en/articles/9306685-deploying-issue-layouts',
+    })
+    expect(errors).toContainEqual({
+      elemID: issueLayoutInstance1.elemID,
+      severity: 'Error',
+      message: 'Invalid screen for Issue Layout',
+      detailedMessage:
+        'This issue layout references a screen (jira.Screen.instance.screen2) that is not associated with its project (jira.Project.instance.project1). Learn more at https://help.salto.io/en/articles/9306685-deploying-issue-layouts',
+    })
+  })
+  it('should return an error if the IssueTypeScheme has no issueTypeIds', async () => {
+    issueTypeSchemeInstance1.value.issueTypeIds = undefined
+    issueTypeScreenSchemeInstance1.value.issueTypeMappings = [
+      {
+        issueTypeId: 'default',
+        screenSchemeId: new ReferenceExpression(screenSchemeInstance2.elemID, screenSchemeInstance2),
+      },
+    ]
+    const errors = await validator([changeIssueLayout1], elementSource)
+    expect(errors).toHaveLength(1)
   })
 })

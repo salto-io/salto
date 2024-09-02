@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 export { accountSettingsValidator } from './account_settings'
 export {
@@ -79,6 +71,7 @@ export { duplicateRoutingAttributeValueValidator } from './duplicate_routing_att
 export { triggerCategoryRemovalValidator } from './trigger_category_removal'
 export { ticketFieldDeactivationValidator } from './ticket_field_deactivation'
 export { duplicateIdFieldValuesValidator } from './duplicate_id_field_values'
+export { duplicateDynamicContentItemValidator } from './duplicate_dynamic_content_item'
 export { notEnabledMissingReferencesValidator } from './not_enabled_missing_references'
 export { conditionalTicketFieldsValidator } from './conditional_ticket_fields'
 export { dynamicContentDeletionValidator } from './dynamic_content_deletion'

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
@@ -20,15 +12,14 @@ import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { BRAND_THEME_TYPE_NAME } from '../constants'
-import { deployChanges } from '../deployment'
-import OktaClient from '../client/client'
+import { deployChanges } from '../deprecated_deployment'
 
 const log = logger(module)
 
 const verifyBrandThemeIsDeleted = async (
   brandId: string,
   brandThemeId: string,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
 ): Promise<boolean> => {
   try {
     return (
@@ -54,7 +45,7 @@ const verifyBrandThemeIsDeleted = async (
  *
  * A separate change validator ensures that this is only executed if the Brand was removed in the same deploy action.
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ definitions }) => ({
   name: 'brandThemeRemovalFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
@@ -68,7 +59,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const deployResult = await deployChanges(relevantChanges.filter(isInstanceChange), async change => {
       const brandId = getParents(getChangeData(change))[0]?.id
       const brandThemeId = getChangeData(change).value.id
-      if (!(await verifyBrandThemeIsDeleted(brandId, brandThemeId, client))) {
+      if (!(await verifyBrandThemeIsDeleted(brandId, brandThemeId, definitions.clients.options.main.httpClient))) {
         throw new Error('Expected BrandTheme to be deleted')
       }
     })

@@ -1,19 +1,19 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ObjectType, ElemID, InstanceElement, toChange, getChangeData, isEqualElements } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  toChange,
+  getChangeData,
+  isEqualElements,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { FilterWith } from '../../src/filter_utils'
@@ -177,6 +177,85 @@ describe('default deploy filter', () => {
     })
     it('should throw if change group is not provided', async () => {
       await expect(() => filter.deploy([])).rejects.toThrow('change group not provided')
+    })
+
+    it('should use a custom lookup function creator if provided', async () => {
+      const lookupFunc = jest.fn()
+      const lookupFuncCreator = jest.fn().mockReturnValue(lookupFunc)
+      // Custom lookup is only called to resolve references when not using a
+      // custom deploy function, so we provide an actual request in the
+      // type's deploy definitions.
+      filter = defaultDeployFilterCreator({
+        convertError: (_elemID, err) => err,
+        lookupFuncCreator,
+      })({
+        definitions: {
+          clients: {
+            default: 'main',
+            options: {
+              main: {
+                httpClient: client,
+                endpoints: {
+                  default: {
+                    get: {
+                      readonly: true,
+                    },
+                  },
+                  customizations: {},
+                },
+              },
+            },
+          },
+          deploy: {
+            instances: {
+              customizations: {
+                myType: {
+                  requestsByAction: {
+                    customizations: {
+                      add: [
+                        {
+                          request: {
+                            endpoint: {
+                              path: 'http://example.com',
+                              method: 'get',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        elementSource: buildElementsSourceFromElements([]),
+      }) as FilterType
+      const changes = [
+        toChange({
+          after: new InstanceElement('name1', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') }), {
+            refField: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name2')),
+          }),
+        }),
+        toChange({
+          after: new InstanceElement('name2', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') }), {
+            refField1: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name1')),
+            refField2: new ReferenceExpression(new ElemID('myAdapter', 'myType', 'instance', 'name1')),
+          }),
+        }),
+      ]
+      const res = await filter.deploy(changes, { changes, groupID: 'a' })
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(changes.length)
+      expect(
+        res.deployResult.appliedChanges.every((change, idx) =>
+          isEqualElements(getChangeData(change), getChangeData(changes[idx])),
+        ),
+      ).toBeTruthy()
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(lookupFuncCreator).toHaveBeenCalledTimes(1)
+      // Should be called once for each reference expression.
+      expect(lookupFunc).toHaveBeenCalledTimes(3)
     })
   })
 })

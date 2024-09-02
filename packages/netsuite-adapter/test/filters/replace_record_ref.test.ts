@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ContainerType, ElemID, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/replace_record_ref'
@@ -20,6 +12,7 @@ import { LocalFilterOpts } from '../../src/filter'
 
 describe('replaceRecordRef', () => {
   let recordRefType: ObjectType
+  let recordRefListType: ObjectType
   let typeWithRecordRef: ObjectType
   let elements: TypeElement[]
   const departmentType = new ObjectType({ elemID: new ElemID(NETSUITE, 'department') })
@@ -27,16 +20,18 @@ describe('replaceRecordRef', () => {
 
   beforeEach(() => {
     recordRefType = new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRef') })
+    recordRefListType = new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRefList') })
     typeWithRecordRef = new ObjectType({
       elemID: new ElemID(NETSUITE, 'typeWithRecordRef'),
       fields: {
         department: { refType: recordRefType },
         parent: { refType: recordRefType },
-        subsidiaryList: { refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRefList') }) },
+        subsidiaryList: { refType: recordRefListType },
         recordRef: { refType: recordRefType },
+        recordRefList: { refType: recordRefListType },
       },
     })
-    elements = [typeWithRecordRef, recordRefType, departmentType, subsidiaryType]
+    elements = [typeWithRecordRef, recordRefType, recordRefListType, departmentType, subsidiaryType]
   })
 
   it('should add field to record ref type', async () => {
@@ -52,5 +47,6 @@ describe('replaceRecordRef', () => {
     ).toBe('subsidiary')
     expect((await typeWithRecordRef.fields.parent.getType()).elemID.name).toBe('typeWithRecordRef')
     expect((await typeWithRecordRef.fields.recordRef.getType()).elemID.name).toBe('recordRef')
+    expect((await typeWithRecordRef.fields.recordRefList.getType()).elemID.name).toBe('List<netsuite.recordRef>')
   })
 })

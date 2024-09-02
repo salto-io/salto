@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import axios from 'axios'
@@ -76,7 +68,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/wiki/rest/api/space').replyOnce(200)
+    mockAxiosAdapter.onGet('/wiki/api/v2/spaces').replyOnce(200)
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -100,7 +92,9 @@ describe('adapter', () => {
               token: 'pass',
               subdomain: 'subdomain',
             }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+            config: new InstanceElement('config', adapter.configType as ObjectType, {
+              fetch: { ...DEFAULT_CONFIG.fetch, managePagesForSpaces: ['My first space'] },
+            }),
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
@@ -114,20 +108,23 @@ describe('adapter', () => {
           'confluence.blog_post',
           'confluence.blog_post.instance.65539_Hey__I_m_am_a_first_blog_post@ulstsssss',
           'confluence.blog_post.instance.Omri_Farkash_This_is_My_super_blog@sussss',
+          'confluence.blog_post__authorId',
           'confluence.blog_post__body',
           'confluence.blog_post__version',
           'confluence.global_template',
+          'confluence.group',
           'confluence.page',
-          'confluence.page.instance.Omri_Farkash_Getting_started_in_Confluence@susss',
-          'confluence.page.instance.Omri_Farkash_Overview@su',
-          'confluence.page.instance.Omri_Farkash_This_is_my_page_yay@sussss',
+          'confluence.page.instance.My_first_space_Getting_started_in_Confluence@ssusss',
+          'confluence.page__authorId',
           'confluence.page__body',
+          'confluence.page__ownerId',
           'confluence.page__restriction',
           'confluence.page__restriction__restrictions',
           'confluence.page__version',
           'confluence.space',
           'confluence.space.instance.My_first_space@s',
           'confluence.space.instance.Omri_Farkash@s',
+          'confluence.space__authorId',
           'confluence.space__permissionInternalIdMap',
           'confluence.space__permissions',
         ])
@@ -139,33 +136,12 @@ describe('adapter', () => {
               .map(e => [e.elemID.name, e.path]),
           ),
         ).toEqual({
-          'Omri_Farkash_Overview@su': [
+          'My_first_space_Getting_started_in_Confluence@ssusss': [
             'confluence',
             'Records',
             'space',
-            'Omri_Farkash',
+            'My_first_space',
             'pages',
-            'Overview',
-            'Overview',
-          ],
-          'Omri_Farkash_This_is_my_page_yay@sussss': [
-            'confluence',
-            'Records',
-            'space',
-            'Omri_Farkash',
-            'pages',
-            'Overview',
-            'This_is_my_page_yay',
-            'This_is_my_page_yay',
-          ],
-          'Omri_Farkash_Getting_started_in_Confluence@susss': [
-            'confluence',
-            'Records',
-            'space',
-            'Omri_Farkash',
-            'pages',
-            'Overview',
-            'This_is_my_page_yay',
             'Getting_started_in_Confluence',
             'Getting_started_in_Confluence',
           ],
@@ -177,7 +153,10 @@ describe('adapter', () => {
               e => e.elemID.getFullName() === 'confluence.blog_post.instance.Omri_Farkash_This_is_My_super_blog@sussss',
             )?.value,
         ).toEqual({
-          authorId: 'mockId22',
+          authorId: {
+            accountId: 'mockId22',
+            displayName: 'Some Test User',
+          },
           createdAt: '2024-03-20T10:30:12.473Z',
           id: '22',
           spaceId: expect.any(ReferenceExpression),
@@ -205,7 +184,6 @@ describe('adapter', () => {
     beforeEach(() => {
       spaceType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'space') })
       pageType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'page') })
-      // globalTemplateType = new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'global_template') })
       space1 = new InstanceElement('space1', spaceType, { name: 'space1', key: 'spaceKey', id: 11 })
       page1 = new InstanceElement('My_page@s', pageType, {
         title: 'My page',

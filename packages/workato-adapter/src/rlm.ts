@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { EOL } from 'os'
@@ -62,7 +54,6 @@ const IMPORT_HEADER = { 'Content-Type': 'application/octet-type' }
 const RESTART_RECIPES_QUERY_PARAMS: Record<string, string> = { restart_recipes: 'true' }
 
 type JsonRecipeConfigAccountID = {
-  // eslint-disable-next-line camelcase
   zip_name: string
   name: string
   folder: string
@@ -71,9 +62,7 @@ type JsonRecipeConfigAccountID = {
 type JsonRecipeConfig = {
   keyword: string
   provider: string
-  // eslint-disable-next-line camelcase
   skip_validation: boolean
-  // eslint-disable-next-line camelcase
   account_id: JsonRecipeConfigAccountID | null
 }
 
@@ -96,17 +85,14 @@ type Folder = {
 type Connection = {
   id: number
   name: string
-  // eslint-disable-next-line camelcase
   folder_id: Folder
   application: string
 }
 
 type RecipeConfig = {
-  // eslint-disable-next-line camelcase
   account_id: Connection
   keyword: string
   provider: string
-  // eslint-disable-next-line camelcase
   skip_validation: boolean
 }
 
@@ -276,7 +262,6 @@ const recipeToZipFormat = async (zip: JSZip, recipe: InstanceElement): Promise<v
     keyword: conf.keyword,
     provider: conf.provider,
     skip_validation: conf.skip_validation,
-    // eslint-disable-next-line camelcase
     account_id:
       conf.account_id !== undefined
         ? {

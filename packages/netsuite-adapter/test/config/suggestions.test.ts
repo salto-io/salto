@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
@@ -23,7 +15,7 @@ import {
   STOP_MANAGING_ITEMS_MSG,
   getConfigFromConfigChanges,
   ALIGNED_INACTIVE_CRITERIAS,
-  toLargeSuiteQLTablesExcludedMessage,
+  toRemovedDeprecatedConfigsMessage,
 } from '../../src/config/suggestions'
 import { NetsuiteQueryParameters, fetchDefault, configType, NetsuiteConfig } from '../../src/config/types'
 import { INACTIVE_FIELDS } from '../../src/constants'
@@ -77,7 +69,6 @@ describe('netsuite config suggestions', () => {
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
           failedCustomRecords: [],
-          largeSuiteQLTables: [],
         },
         currentConfigWithFetch,
       ),
@@ -93,7 +84,6 @@ describe('netsuite config suggestions', () => {
         failedFilePaths: { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
         failedCustomRecords: [],
-        largeSuiteQLTables: [],
       },
       { fetch: fullFetchConfig() },
     )?.config as InstanceElement[]
@@ -150,7 +140,6 @@ describe('netsuite config suggestions', () => {
         failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
         failedTypes: { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: ['excludedTypeTest'] },
         failedCustomRecords: ['excludedCustomRecord'],
-        largeSuiteQLTables: [],
       },
       currentConfigWithFetch,
     )
@@ -200,7 +189,6 @@ describe('netsuite config suggestions', () => {
         failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
-        largeSuiteQLTables: [],
       },
       config,
     )
@@ -208,24 +196,6 @@ describe('netsuite config suggestions', () => {
     expect(configChange?.message).toBe(
       formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, toLargeFoldersExcludedMessage([newLargeFolderPath])]),
     )
-  })
-
-  it('should exclude large SuiteQL tables', () => {
-    const config: NetsuiteConfig = {
-      fetch: fullFetchConfig(),
-    }
-    const configChange = getConfigFromConfigChanges(
-      {
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
-        failedCustomRecords: [],
-        largeSuiteQLTables: ['account'],
-      },
-      config,
-    )
-    expect(configChange?.config[0].value.fetch.skipResolvingAccountSpecificValuesToTypes).toEqual(['account'])
-    expect(configChange?.message).toMatch(toLargeSuiteQLTablesExcludedMessage(['account']))
   })
 
   it('should align inactive fields', () => {
@@ -244,7 +214,6 @@ describe('netsuite config suggestions', () => {
         failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedCustomRecords: [],
-        largeSuiteQLTables: [],
       },
       config,
     )
@@ -265,5 +234,37 @@ describe('netsuite config suggestions', () => {
       },
     })
     expect(configChange?.message).toMatch(ALIGNED_INACTIVE_CRITERIAS)
+  })
+
+  it('should remove deprecated configs', () => {
+    const config: NetsuiteConfig = {
+      fetch: fullFetchConfig(),
+      suiteAppClient: {},
+    }
+    Object.assign(config.fetch, { skipResolvingAccountSpecificValuesToTypes: [] })
+    Object.assign(config.suiteAppClient ?? {}, { maxRecordsPerSuiteQLTable: [] })
+    Object.assign(config, { useChangesDetection: true })
+
+    const configChange = getConfigFromConfigChanges(
+      {
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
+      },
+      config,
+    )
+
+    expect(configChange?.config[0].value).toEqual({
+      fetch: fullFetchConfig(),
+      suiteAppClient: {},
+    })
+    expect(configChange?.message).toMatch(
+      toRemovedDeprecatedConfigsMessage([
+        'fetch.skipResolvingAccountSpecificValuesToTypes',
+        'suiteAppClient.maxRecordsPerSuiteQLTable',
+        'useChangesDetection',
+      ]),
+    )
   })
 })

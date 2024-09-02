@@ -1,27 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { PROFILE_MAPPING_TYPE_NAME } from '../constants'
-import { deployChanges } from '../deployment'
-import OktaClient from '../client/client'
+import { deployChanges } from '../deprecated_deployment'
 
-const verifyProfileMappingIsDeleted = async (profileMappingId: string, client: OktaClient): Promise<boolean> => {
+const verifyProfileMappingIsDeleted = async (
+  profileMappingId: string,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
+): Promise<boolean> => {
   try {
     return (
       (
@@ -46,9 +40,10 @@ const verifyProfileMappingIsDeleted = async (profileMappingId: string, client: O
  * Separate change validator and dependency changer ensure that this is only executed if one of the mapping side was
  * removed in the same deploy action.
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ definitions }) => ({
   name: 'profileMappingRemovalFilter',
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>

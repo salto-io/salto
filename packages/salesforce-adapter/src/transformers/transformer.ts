@@ -1,19 +1,10 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-/* eslint-disable camelcase */
 import _ from 'lodash'
 import {
   ValueTypeField,
@@ -54,18 +45,8 @@ import {
   createRefToElmWithValue,
   isElement,
 } from '@salto-io/adapter-api'
-import {
-  collections,
-  values as lowerDashValues,
-  promises,
-} from '@salto-io/lowerdash'
-import {
-  TransformFunc,
-  transformElement,
-  naclCase,
-  pathNaclCase,
-  TransformFuncSync,
-} from '@salto-io/adapter-utils'
+import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
+import { TransformFunc, transformElement, naclCase, pathNaclCase, TransformFuncSync } from '@salto-io/adapter-utils'
 
 import { logger } from '@salto-io/logging'
 import { SalesforceRecord } from '../client/types'
@@ -121,6 +102,11 @@ import {
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
   INTERNAL_ID_ANNOTATION,
   SALESFORCE_DATE_PLACEHOLDER,
+  METADATA_META_TYPE,
+  META_TYPES_PATH,
+  CUSTOM_OBJECT_TYPE_NAME,
+  CUSTOM_METADATA,
+  CUSTOM_METADATA_TYPE_NAME,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -146,9 +132,7 @@ const xsdTypes = [
 export type XsdType = (typeof xsdTypes)[number]
 type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
 
-export const metadataType = async (
-  element: Readonly<Element>,
-): Promise<string> => {
+export const metadataType = async (element: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(element)) {
     return metadataType(await element.getType())
   }
@@ -159,9 +143,7 @@ export const metadataType = async (
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
-export const isCustomObject = async (
-  element: Readonly<Element>,
-): Promise<boolean> => {
+export const isCustomObject = async (element: Readonly<Element>): Promise<boolean> => {
   const res =
     isObjectType(element) &&
     (await metadataType(element)) === CUSTOM_OBJECT &&
@@ -171,8 +153,7 @@ export const isCustomObject = async (
   return res
 }
 
-export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
-  isCustomObject(field.parent)
+export const isFieldOfCustomObject = async (field: Field): Promise<boolean> => isCustomObject(field.parent)
 
 // This function checks whether an element is an instance of any custom object type.
 // Note that this does not apply to custom object definitions themselves, e.g, this will be true
@@ -182,26 +163,18 @@ export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
 /**
  * @deprecated use {@link isInstanceOfCustomObjectSync}
  */
-export const isInstanceOfCustomObject = async (
-  element: Readonly<Element>,
-): Promise<boolean> =>
+export const isInstanceOfCustomObject = async (element: Readonly<Element>): Promise<boolean> =>
   isInstanceElement(element) && isCustomObject(await element.getType())
 
-export const isCustom = (fullName: string | undefined): boolean =>
-  fullName?.endsWith(SALESFORCE_CUSTOM_SUFFIX) ?? false
+export const isCustom = (fullName: string | undefined): boolean => fullName?.endsWith(SALESFORCE_CUSTOM_SUFFIX) ?? false
 
-export const isCustomSettings = (
-  instance: Readonly<InstanceElement>,
-): boolean => instance.value[CUSTOM_SETTINGS_TYPE]
+export const isCustomSettings = (instance: Readonly<InstanceElement>): boolean => instance.value[CUSTOM_SETTINGS_TYPE]
 
-export const isCustomSettingsObject = (obj: Readonly<Element>): boolean =>
-  obj.annotations[CUSTOM_SETTINGS_TYPE]
+export const isCustomSettingsObject = (obj: Readonly<Element>): boolean => obj.annotations[CUSTOM_SETTINGS_TYPE]
 
 export const defaultApiName = (element: Readonly<Element>): string => {
   const { name } = element.elemID
-  return isCustom(name) || isInstanceElement(element)
-    ? name
-    : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
+  return isCustom(name) || isInstanceElement(element) ? name : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
 
 const fullApiName = async (elem: Readonly<Element>): Promise<string> => {
@@ -213,51 +186,42 @@ const fullApiName = async (elem: Readonly<Element>): Promise<string> => {
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
 
-export const relativeApiName = (name: string): string =>
-  _.last(name.split(API_NAME_SEPARATOR)) as string
+export const relativeApiName = (name: string): string => _.last(name.split(API_NAME_SEPARATOR)) as string
 
 /**
  * @deprecated use {@link safeApiName} instead.
  */
-export const apiName = async (
-  elem: Readonly<Element>,
-  relative = false,
-): Promise<string> => {
+export const apiName = async (elem: Readonly<Element>, relative = false): Promise<string> => {
   const name = await fullApiName(elem)
   return name && relative ? relativeApiName(name) : name
 }
 
-export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string =>
-  `${FORMULA_TYPE_NAME}${baseTypeName}`
+export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string => `${FORMULA_TYPE_NAME}${baseTypeName}`
 
-export const fieldTypeName = (typeName: string): string => {
+export const fieldTypeName = (typeName: string): string | undefined => {
   if (typeName.startsWith(FORMULA_TYPE_NAME)) {
     return typeName.slice(FORMULA_TYPE_NAME.length)
   }
   if (typeName === LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME) {
     return COMPOUND_FIELD_TYPE_NAMES.LOCATION
   }
+  if (typeName === INTERNAL_FIELD_TYPE_NAMES.UNKNOWN) {
+    return undefined
+  }
   return typeName
 }
 
-const createPicklistValuesAnnotations = (
-  picklistValues: PicklistEntry[],
-): Values =>
-  picklistValues.map((val) => ({
+const createPicklistValuesAnnotations = (picklistValues: PicklistEntry[]): Values =>
+  picklistValues.map(val => ({
     [CUSTOM_VALUE.FULL_NAME]: val.value,
     [CUSTOM_VALUE.DEFAULT]: val.defaultValue,
     [CUSTOM_VALUE.LABEL]: val.label || val.value,
     [CUSTOM_VALUE.IS_ACTIVE]: val.active,
   }))
 
-const addPicklistAnnotations = (
-  picklistValues: PicklistEntry[],
-  restricted: boolean,
-  annotations: Values,
-): void => {
+const addPicklistAnnotations = (picklistValues: PicklistEntry[], restricted: boolean, annotations: Values): void => {
   if (picklistValues && picklistValues.length > 0) {
-    annotations[FIELD_ANNOTATIONS.VALUE_SET] =
-      createPicklistValuesAnnotations(picklistValues)
+    annotations[FIELD_ANNOTATIONS.VALUE_SET] = createPicklistValuesAnnotations(picklistValues)
     annotations[FIELD_ANNOTATIONS.RESTRICTED] = restricted
   }
 }
@@ -269,15 +233,9 @@ const addPicklistAnnotations = (
 
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
-const nameNoSalutationElemID = new ElemID(
-  SALESFORCE,
-  COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION,
-)
+const nameNoSalutationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION)
 // We cannot use "Location" as the Salto ID here because there is a standard object called Location
-const geoLocationElemID = new ElemID(
-  SALESFORCE,
-  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
-)
+const geoLocationElemID = new ElemID(SALESFORCE, LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME)
 
 const restrictedNumberTypeDefinitions = {
   TextLength: createRestriction({ min: 1, max: 255, enforce_value: false }),
@@ -324,6 +282,9 @@ const restrictedNumberTypes = _.mapValues(
 )
 
 export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
+  [CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME],
+  // TODO (SALTO-6264): Uncomment this once hide types is enabled.
+  // [CUSTOM_METADATA, CUSTOM_METADATA_TYPE_NAME],
   ['FlexiPage', 'LightningPage'],
   ['FlexiPageRegion', 'LightningPageRegion'],
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
@@ -332,12 +293,9 @@ export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
 ])
 
 export class Types {
-  private static getElemIdFunc: ElemIdGetter
+  private static getElemIdFunc?: ElemIdGetter
 
-  private static filterItemElemID = new ElemID(
-    SALESFORCE,
-    ANNOTATION_TYPE_NAMES.FILTER_ITEM,
-  )
+  private static filterItemElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.FILTER_ITEM)
 
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
@@ -372,10 +330,7 @@ export class Types {
     },
   })
 
-  private static lookupFilterElemID = new ElemID(
-    SALESFORCE,
-    ANNOTATION_TYPE_NAMES.LOOKUP_FILTER,
-  )
+  private static lookupFilterElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.LOOKUP_FILTER)
 
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
@@ -402,10 +357,7 @@ export class Types {
     },
   })
 
-  private static valueSettingsElemID = new ElemID(
-    SALESFORCE,
-    ANNOTATION_TYPE_NAMES.VALUE_SETTINGS,
-  )
+  private static valueSettingsElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.VALUE_SETTINGS)
 
   private static valueSettingsType = new ObjectType({
     elemID: Types.valueSettingsElemID,
@@ -422,10 +374,7 @@ export class Types {
     },
   })
 
-  private static valueSetElemID = new ElemID(
-    SALESFORCE,
-    FIELD_ANNOTATIONS.VALUE_SET,
-  )
+  private static valueSetElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.VALUE_SET)
 
   public static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
@@ -438,10 +387,7 @@ export class Types {
     },
   })
 
-  private static fieldDependencyElemID = new ElemID(
-    SALESFORCE,
-    ANNOTATION_TYPE_NAMES.FIELD_DEPENDENCY,
-  )
+  private static fieldDependencyElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.FIELD_DEPENDENCY)
 
   private static fieldDependencyType = new ObjectType({
     elemID: Types.fieldDependencyElemID,
@@ -455,10 +401,7 @@ export class Types {
     },
   })
 
-  private static rollupSummaryOperationTypeElemID = new ElemID(
-    SALESFORCE,
-    FIELD_ANNOTATIONS.SUMMARY_OPERATION,
-  )
+  private static rollupSummaryOperationTypeElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.SUMMARY_OPERATION)
 
   private static rollupSummaryOperationType = new PrimitiveType({
     elemID: Types.rollupSummaryOperationTypeElemID,
@@ -471,10 +414,7 @@ export class Types {
   })
 
   private static rollupSummaryFilterItemOperationType = new PrimitiveType({
-    elemID: new ElemID(
-      SALESFORCE,
-      FIELD_ANNOTATIONS.ROLLUP_SUMMARY_FILTER_OPERATION,
-    ),
+    elemID: new ElemID(SALESFORCE, FIELD_ANNOTATIONS.ROLLUP_SUMMARY_FILTER_OPERATION),
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -496,10 +436,7 @@ export class Types {
     },
   })
 
-  private static rollupSummaryFilterItemsElemID = new ElemID(
-    SALESFORCE,
-    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS,
-  )
+  private static rollupSummaryFilterItemsElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS)
 
   private static rollupSummaryFilterItemsType = new ObjectType({
     elemID: Types.rollupSummaryFilterItemsElemID,
@@ -519,11 +456,7 @@ export class Types {
     },
   })
 
-  private static encryptedTextMaskTypeTypeElemID = new ElemID(
-    SALESFORCE,
-    FIELD_ANNOTATIONS.MASK_TYPE,
-    'type',
-  )
+  private static encryptedTextMaskTypeTypeElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.MASK_TYPE, 'type')
 
   private static encryptedTextMaskTypeType = new PrimitiveType({
     elemID: Types.encryptedTextMaskTypeTypeElemID,
@@ -535,11 +468,7 @@ export class Types {
     },
   })
 
-  private static encryptedTextMaskCharTypeElemID = new ElemID(
-    SALESFORCE,
-    FIELD_ANNOTATIONS.MASK_CHAR,
-    'type',
-  )
+  private static encryptedTextMaskCharTypeElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.MASK_CHAR, 'type')
 
   private static encryptedTextMaskCharType = new PrimitiveType({
     elemID: Types.encryptedTextMaskCharTypeElemID,
@@ -551,10 +480,7 @@ export class Types {
     },
   })
 
-  private static BusinessStatusTypeElemID = new ElemID(
-    SALESFORCE,
-    BUSINESS_STATUS,
-  )
+  private static BusinessStatusTypeElemID = new ElemID(SALESFORCE, BUSINESS_STATUS)
 
   private static BusinessStatusType = new PrimitiveType({
     elemID: Types.BusinessStatusTypeElemID,
@@ -566,31 +492,19 @@ export class Types {
     },
   })
 
-  private static SecurityClassificationTypeElemID = new ElemID(
-    SALESFORCE,
-    SECURITY_CLASSIFICATION,
-  )
+  private static SecurityClassificationTypeElemID = new ElemID(SALESFORCE, SECURITY_CLASSIFICATION)
 
   private static SecurityClassificationType = new PrimitiveType({
     elemID: Types.SecurityClassificationTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        values: [
-          'Public',
-          'Internal',
-          'Confidential',
-          'Restricted',
-          'MissionCritical',
-        ],
+        values: ['Public', 'Internal', 'Confidential', 'Restricted', 'MissionCritical'],
       }),
     },
   })
 
-  private static TreatBlankAsTypeElemID = new ElemID(
-    SALESFORCE,
-    FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS,
-  )
+  private static TreatBlankAsTypeElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS)
 
   private static TreatBlankAsType = new PrimitiveType({
     elemID: Types.TreatBlankAsTypeElemID,
@@ -632,10 +546,7 @@ export class Types {
   }
 
   // Type mapping for custom objects
-  public static primitiveDataTypes: Record<
-    ALL_FIELD_TYPE_NAMES,
-    PrimitiveType
-  > = {
+  public static primitiveDataTypes: Record<ALL_FIELD_TYPE_NAMES, PrimitiveType> = {
     serviceid: BuiltinTypes.SERVICE_ID,
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
@@ -727,8 +638,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.VISIBLE_LINES]:
-          restrictedNumberTypes.MultiPicklistVisibleLines,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.MultiPicklistVisibleLines,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
         [FIELD_ANNOTATIONS.VALUE_SET]: new ListType(Types.valueSetType),
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
@@ -769,8 +679,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.VISIBLE_LINES]:
-          restrictedNumberTypes.LongTextAreaVisibleLines,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.LongTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
@@ -780,8 +689,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.VISIBLE_LINES]:
-          restrictedNumberTypes.RichTextAreaVisibleLines,
+        [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.RichTextAreaVisibleLines,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextAreaLength,
       },
     }),
@@ -828,8 +736,7 @@ export class Types {
         [FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: new ListType(BuiltinTypes.STRING),
-        [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]:
-          restrictedNumberTypes.RelationshipOrder,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: restrictedNumberTypes.RelationshipOrder,
         [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
       },
@@ -842,9 +749,7 @@ export class Types {
         // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
         //  field's API name should be modified to elemID reference once we'll use HIL
         [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: new ListType(
-          Types.rollupSummaryFilterItemsType,
-        ),
+        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: new ListType(Types.rollupSummaryFilterItemsType),
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
       },
@@ -904,9 +809,7 @@ export class Types {
     }),
   }
 
-  private static getFormulaDataType = (
-    baseTypeName: FIELD_TYPE_NAMES,
-  ): Record<string, PrimitiveType> => {
+  private static getFormulaDataType = (baseTypeName: FIELD_TYPE_NAMES): Record<string, PrimitiveType> => {
     const baseType = Types.primitiveDataTypes[baseTypeName]
     const typeName = formulaTypeName(baseTypeName)
     return {
@@ -952,10 +855,7 @@ export class Types {
   }
 
   // Type mapping for compound fields
-  public static compoundDataTypes: Record<
-    COMPOUND_FIELD_TYPE_NAMES,
-    ObjectType
-  > = {
+  public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
     Address: new ObjectType({
       elemID: addressElemID,
       fields: {
@@ -1043,15 +943,22 @@ export class Types {
       : this.metadataPrimitiveTypes[name.toLowerCase()]
   }
 
-  static get(
-    name: string,
+  static get({
+    name,
     customObject = true,
     isSettings = false,
-    serviceIds?: ServiceIds,
-  ): TypeElement {
+    serviceIds,
+    metaType,
+  }: {
+    name: string
+    customObject?: boolean
+    isSettings?: boolean
+    serviceIds?: ServiceIds
+    metaType?: ObjectType
+  }): TypeElement {
     const type = Types.getKnownType(name, customObject)
     if (type === undefined) {
-      return this.createObjectType(name, customObject, isSettings, serviceIds)
+      return this.createObjectType(name, customObject, isSettings, serviceIds, metaType)
     }
     return type
   }
@@ -1061,22 +968,24 @@ export class Types {
     customObject = true,
     isSettings = false,
     serviceIds?: ServiceIds,
+    metaType?: ObjectType,
   ): ObjectType {
-    const elemId = this.getElemId(name, customObject, serviceIds)
+    // TODO (SALTO-6264): Revert this once hide types is enabled.
+    // THe meta type not being undefined means that the meta types feature is enabled
+    // and this is not the meta type definition.
+    const elemID =
+      name === CUSTOM_METADATA && metaType !== undefined
+        ? new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME)
+        : this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
-      elemID: elemId,
+      elemID,
       isSettings,
+      metaType,
     })
   }
 
-  public static getElemId(
-    name: string,
-    customObject: boolean,
-    serviceIds?: ServiceIds,
-  ): ElemID {
-    const updatedName = customObject
-      ? name
-      : METADATA_TYPES_TO_RENAME.get(name) ?? name
+  public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
+    const updatedName = customObject ? name : METADATA_TYPES_TO_RENAME.get(name) ?? name
     return customObject && this.getElemIdFunc && serviceIds
       ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
       : new ElemID(SALESFORCE, naclCase(updatedName))
@@ -1086,8 +995,8 @@ export class Types {
     return Object.values<TypeElement>(Types.primitiveDataTypes)
       .concat(Object.values(Types.compoundDataTypes))
       .concat(Object.values(Types.formulaDataTypes))
-      .filter((type) => type.elemID.adapter === SALESFORCE)
-      .map((type) => {
+      .filter(type => type.elemID.adapter === SALESFORCE)
+      .map(type => {
         const fieldType = type.clone()
         fieldType.path = [SALESFORCE, TYPES_PATH, 'fieldTypes']
         return fieldType
@@ -1114,7 +1023,7 @@ export class Types {
       Types.valueSetType,
       Types.TreatBlankAsType,
       ...Object.values(restrictedNumberTypes),
-    ].map((type) => {
+    ].map(type => {
       const fieldType = type.clone()
       fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
         ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
@@ -1129,9 +1038,7 @@ export const isFormulaField = (element: Element): element is Field => {
     return false
   }
   const formulaTypes = Object.values(Types.formulaDataTypes)
-  return formulaTypes.some((type) =>
-    element.refType.elemID.isEqual(type.elemID),
-  )
+  return formulaTypes.some(type => element.refType.elemID.isEqual(type.elemID))
 }
 
 export const isNameField = async (field: Field): Promise<boolean> =>
@@ -1143,16 +1050,12 @@ const transformCompoundValues = async (
   record: SalesforceRecord,
   instance: InstanceElement,
 ): Promise<SalesforceRecord> => {
-  const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(
-    (o) => o.elemID,
-  )
+  const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
   const relevantCompoundFields = _.pickBy(
     (await instance.getType()).fields,
     (field, fieldKey) =>
       Object.keys(record).includes(fieldKey) &&
-      !_.isUndefined(
-        _.find(compoundFieldsElemIDs, (e) => field.refType.elemID.isEqual(e)),
-      ),
+      !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))),
   )
   if (_.isEmpty(relevantCompoundFields)) {
     return record
@@ -1166,21 +1069,14 @@ const transformCompoundValues = async (
       }
       // Other compound fields are added a prefix according to the field name
       // ie. LocalAddress -> LocalCity, LocalState etc.
-      const typeName = compoundField.refType.elemID.isEqual(
-        Types.compoundDataTypes.Address.elemID,
-      )
+      const typeName = compoundField.refType.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
         ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS
         : COMPOUND_FIELD_TYPE_NAMES.LOCATION
       const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
-      return _.mapKeys(record[compoundFieldKey], (_vv, key) =>
-        fieldPrefix.concat(key),
-      )
+      return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
     },
   )
-  return Object.assign(
-    _.omit(record, Object.keys(relevantCompoundFields)),
-    ...Object.values(transformedCompoundValues),
-  )
+  return Object.assign(_.omit(record, Object.keys(relevantCompoundFields)), ...Object.values(transformedCompoundValues))
 }
 
 export const toRecord = async (
@@ -1191,7 +1087,7 @@ export const toRecord = async (
   const instanceType = await instance.getType()
   const values = {
     ...(withNulls ? _.mapValues(instanceType.fields, () => null) : {}),
-    ..._.mapValues(instance.value, (val) => {
+    ..._.mapValues(instance.value, val => {
       // Lookups to the same types will have an Id value only after the referenced Record was deployed
       if (isInstanceElement(val)) {
         const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
@@ -1214,12 +1110,7 @@ export const toRecord = async (
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
-    ..._.pickBy(
-      values,
-      (v, k) =>
-        v !== undefined &&
-        instanceType.fields[k]?.annotations[fieldAnnotationToFilterBy],
-    ),
+    ..._.pickBy(values, (v, k) => v !== undefined && instanceType.fields[k]?.annotations[fieldAnnotationToFilterBy]),
   }
   return transformCompoundValues(filteredRecordValues, instance)
 }
@@ -1228,29 +1119,16 @@ export const instancesToUpdateRecords = async (
   instances: InstanceElement[],
   withNulls: boolean,
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(
-    instances.map((instance) =>
-      toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, withNulls),
-    ),
-  )
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, withNulls)))
 
-export const instancesToCreateRecords = (
-  instances: InstanceElement[],
-): Promise<SalesforceRecord[]> =>
-  Promise.all(
-    instances.map((instance) =>
-      toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, false),
-    ),
-  )
+export const instancesToCreateRecords = (instances: InstanceElement[]): Promise<SalesforceRecord[]> =>
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, false)))
 
-export const instancesToDeleteRecords = (
-  instances: InstanceElement[],
-): SalesforceRecord[] =>
-  instances.map((instance) => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
+export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
+  instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
 
 export const isLocalOnly = (field?: Field): boolean =>
-  field !== undefined &&
-  field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
+  field !== undefined && field.annotations[FIELD_ANNOTATIONS.LOCAL_ONLY] === true
 
 export const getValueTypeFieldElement = (
   parent: ObjectType,
@@ -1261,7 +1139,7 @@ export const getValueTypeFieldElement = (
   const naclFieldType =
     field.name === INSTANCE_FULL_NAME_FIELD
       ? BuiltinTypes.SERVICE_ID
-      : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
+      : knownTypes.get(field.soapType) || Types.get({ name: field.soapType, customObject: false })
   const annotations: Values = {
     ...(additionalAnnotations || {}),
   }
@@ -1274,14 +1152,10 @@ export const getValueTypeFieldElement = (
     if (field.picklistValues.length < MAX_METADATA_RESTRICTION_VALUES) {
       annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
         enforce_value: false,
-        values: _.sortedUniq(
-          field.picklistValues.map((val) => val.value).sort(),
-        ),
+        values: _.sortedUniq(field.picklistValues.map(val => val.value).sort()),
       })
     }
-    const defaults = field.picklistValues
-      .filter((val) => val.defaultValue)
-      .map((val) => val.value)
+    const defaults = field.picklistValues.filter(val => val.defaultValue).map(val => val.value)
     if (defaults.length === 1) {
       annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
     }
@@ -1296,7 +1170,7 @@ export const getValueTypeFieldElement = (
 
 const convertXsdTypeFuncMap: Record<XsdType, ConvertXsdTypeFunc> = {
   'xsd:string': String,
-  'xsd:boolean': (v) => v === 'true',
+  'xsd:boolean': v => v === 'true',
   'xsd:double': Number,
   'xsd:int': Number,
   'xsd:long': Number,
@@ -1305,11 +1179,10 @@ const convertXsdTypeFuncMap: Record<XsdType, ConvertXsdTypeFunc> = {
   'xsd:picklist': String,
 }
 
-const isXsdType = (xsdType: string): xsdType is XsdType =>
-  (xsdTypes as ReadonlyArray<string>).includes(xsdType)
+const isXsdType = (xsdType: string): xsdType is XsdType => (xsdTypes as ReadonlyArray<string>).includes(xsdType)
 
 const getXsdConvertFunc = (xsdType: string): ConvertXsdTypeFunc =>
-  isXsdType(xsdType) ? convertXsdTypeFuncMap[xsdType] : (v) => v
+  isXsdType(xsdType) ? convertXsdTypeFuncMap[xsdType] : v => v
 
 // Salesforce returns nulls in metadata API as objects like { $: { 'xsi:nil': 'true' } }
 // and in retrieve API like <activateRSS xsi:nil="true"/>
@@ -1317,14 +1190,9 @@ const getXsdConvertFunc = (xsdType: string): ConvertXsdTypeFunc =>
 export const isNull = (value: Value): boolean =>
   _.isNull(value) ||
   (_.isObject(value) &&
-    (_.get(value, ['$', 'xsi:nil']) === 'true' ||
-      _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
+    (_.get(value, ['$', 'xsi:nil']) === 'true' || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
 
-export const transformPrimitive: TransformFuncSync = ({
-  value,
-  path,
-  field,
-}) => {
+export const transformPrimitive: TransformFuncSync = ({ value, path, field }) => {
   if (isNull(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
@@ -1355,6 +1223,9 @@ export const transformPrimitive: TransformFuncSync = ({
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
+  if (value === null || value === undefined) {
+    return undefined
+  }
   switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(value)
@@ -1367,34 +1238,26 @@ export const transformPrimitive: TransformFuncSync = ({
   }
 }
 
-const isDefaultWithType = (
-  val: PrimitiveValue | DefaultValueWithType,
-): val is DefaultValueWithType => new Set(_.keys(val)).has('_')
+const isDefaultWithType = (val: PrimitiveValue | DefaultValueWithType): val is DefaultValueWithType =>
+  new Set(_.keys(val)).has('_')
 
 const valueFromXsdType = (val: DefaultValueWithType): PrimitiveValue => {
   const convertFunc = getXsdConvertFunc(val.$['xsi:type'])
   return convertFunc(val._)
 }
 
-const getDefaultValue = (
-  field: SalesforceField,
-): PrimitiveValue | undefined => {
+const getDefaultValue = (field: SalesforceField): PrimitiveValue | undefined => {
   if (field.defaultValue === null || field.defaultValue === undefined) {
     return undefined
   }
 
-  return isDefaultWithType(field.defaultValue)
-    ? valueFromXsdType(field.defaultValue)
-    : field.defaultValue
+  return isDefaultWithType(field.defaultValue) ? valueFromXsdType(field.defaultValue) : field.defaultValue
 }
 
 export const isSubfieldOfCompound = (field: SalesforceField): boolean =>
-  field.compoundFieldName !== undefined &&
-  field.compoundFieldName !== field.name
+  field.compoundFieldName !== undefined && field.compoundFieldName !== field.name
 
-const EXTRA_INFORMATION_FIELD_ANNOTATIONS = [
-  FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE,
-]
+const EXTRA_INFORMATION_FIELD_ANNOTATIONS = [FIELD_ANNOTATIONS.DEFAULTED_ON_CREATE]
 
 // The following method is used during the fetch process and is used in building the objects
 // and their fields described in the Nacl file
@@ -1406,23 +1269,20 @@ export const getSObjectFieldElement = (
   fetchProfile: FetchProfile,
   systemFields: string[] = [],
 ): Field => {
-  const fieldApiName = [parentServiceIds[API_NAME], field.name].join(
-    API_NAME_SEPARATOR,
-  )
+  const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPARATOR)
   const serviceIds = {
     [API_NAME]: fieldApiName,
     [OBJECT_SERVICE_ID]: toServiceIdsString(parentServiceIds),
   }
 
-  const getFieldType = (typeName: string): TypeElement =>
-    Types.get(typeName, true, false, serviceIds)
+  const getFieldType = (typeName: string): TypeElement => Types.get({ name: typeName, serviceIds })
   let naclFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
   const annotations: Values = {
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
   }
   if (fetchProfile.isFeatureEnabled('extendedCustomFieldInformation')) {
-    EXTRA_INFORMATION_FIELD_ANNOTATIONS.forEach((annotation) => {
+    EXTRA_INFORMATION_FIELD_ANNOTATIONS.forEach(annotation => {
       annotations[annotation] = field[annotation]
     })
   }
@@ -1474,11 +1334,7 @@ export const getSObjectFieldElement = (
   }
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
-    addPicklistAnnotations(
-      field.picklistValues,
-      Boolean(field.restrictedPicklist),
-      annotations,
-    )
+    addPicklistAnnotations(field.picklistValues, Boolean(field.restrictedPicklist), annotations)
     if (field.type === 'multipicklist') {
       // Precision is the field for multi-picklist in SFDC API that defines how many objects will
       // be visible in the picklist in the UI. Why? Because.
@@ -1487,9 +1343,7 @@ export const getSObjectFieldElement = (
   } else if (field.calculated) {
     if (!_.isEmpty(field.calculatedFormula)) {
       // Formulas
-      naclFieldType = getFieldType(
-        formulaTypeName(naclFieldType.elemID.name as FIELD_TYPE_NAMES),
-      )
+      naclFieldType = getFieldType(formulaTypeName(naclFieldType.elemID.name as FIELD_TYPE_NAMES))
       annotations[FORMULA] = field.calculatedFormula
     } else {
       // Rollup Summary
@@ -1501,12 +1355,8 @@ export const getSObjectFieldElement = (
       naclFieldType = getFieldType(FIELD_TYPE_NAMES.MASTER_DETAIL)
       // master detail fields are always not required in SF although returned as nillable=false
       delete annotations[CORE_ANNOTATIONS.REQUIRED]
-      annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
-        field.writeRequiresMasterRead,
-      )
-      annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = Boolean(
-        field.updateable,
-      )
+      annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(field.writeRequiresMasterRead)
+      annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = Boolean(field.updateable)
     } else {
       naclFieldType = getFieldType(FIELD_TYPE_NAMES.LOOKUP)
     }
@@ -1518,17 +1368,12 @@ export const getSObjectFieldElement = (
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
     // Compound Fields
-  } else if (
-    !_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) ||
-    field.nameField
-  ) {
+  } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
     // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames[field.name] !== undefined) {
       naclFieldType = field.nameField
         ? // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
-          Types.compoundDataTypes[
-            objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES
-          ]
+          Types.compoundDataTypes[objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES]
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
   }
@@ -1538,10 +1383,7 @@ export const getSObjectFieldElement = (
     // and they are not already assigned
     _.assign(
       annotations,
-      _.pick(
-        _.omit(field, Object.keys(annotations)),
-        Object.keys(naclFieldType.annotationRefTypes),
-      ),
+      _.pick(_.omit(field, Object.keys(annotations)), Object.keys(naclFieldType.annotationRefTypes)),
     )
   }
   // mark all fields from the SOAP API as queryable (internal annotation)
@@ -1566,9 +1408,7 @@ export const getSObjectFieldElement = (
   return new Field(parent, fieldName, naclFieldType, annotations)
 }
 
-export const toDeployableInstance = async (
-  element: InstanceElement,
-): Promise<InstanceElement> => {
+export const toDeployableInstance = async (element: InstanceElement): Promise<InstanceElement> => {
   const removeNonDeployableValues: TransformFunc = ({ value, field }) => {
     if (isLocalOnly(field)) {
       return undefined
@@ -1589,23 +1429,19 @@ export const toDeployableInstance = async (
     element,
     transformFunc: removeNonDeployableValues,
     strict: false,
-    allowEmpty: true,
+    allowEmptyArrays: true,
+    allowEmptyObjects: true,
   })
 }
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => info
 
-export const toMetadataInfo = async (
-  instance: InstanceElement,
-): Promise<MetadataInfo> => ({
+export const toMetadataInfo = async (instance: InstanceElement): Promise<MetadataInfo> => ({
   fullName: await apiName(instance),
   ...(await toDeployableInstance(instance)).value,
 })
 
-export const createInstanceServiceIds = (
-  serviceIdsValues: Values,
-  type: ObjectType,
-): ServiceIds => {
+export const createInstanceServiceIds = (serviceIdsValues: Values, type: ObjectType): ServiceIds => {
   const typeServiceIds = (): ServiceIds => {
     const serviceIds: ServiceIds = {
       [METADATA_TYPE]: type.annotations[METADATA_TYPE],
@@ -1631,10 +1467,7 @@ export type MetadataTypeAnnotations = {
   dirName?: string
 }
 
-export const metadataAnnotationTypes: Record<
-  keyof MetadataTypeAnnotations,
-  TypeReference
-> = {
+export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, TypeReference> = {
   [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
   hasMetaFile: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
   folderType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -1643,22 +1476,35 @@ export const metadataAnnotationTypes: Record<
   dirName: createRefToElmWithValue(BuiltinTypes.STRING),
 }
 
+export const createMetaType = (
+  name: string,
+  annotationTypes: ConstructorParameters<typeof ObjectType>[0]['annotationRefsOrTypes'],
+  alias: string,
+): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, name),
+    annotationRefsOrTypes: annotationTypes,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [CORE_ANNOTATIONS.ALIAS]: alias,
+    },
+    path: [SALESFORCE, META_TYPES_PATH, name],
+  })
+
+export const MetadataMetaType = createMetaType(METADATA_META_TYPE, metadataAnnotationTypes, 'Metadata type')
+
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations
 }
 
-export const isMetadataObjectType = (
-  elem?: Element,
-): elem is MetadataObjectType =>
+export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType =>
   isObjectType(elem) && elem.annotations[METADATA_TYPE] !== undefined
 
 type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
 type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
   annotations: MetadataTypeAnnotations
 }
-export const createMetadataObjectType = (
-  params: CreateMetadataObjectTypeParams,
-): MetadataObjectType =>
+export const createMetadataObjectType = (params: CreateMetadataObjectTypeParams): MetadataObjectType =>
   new ObjectType({
     elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
     ...params,
@@ -1678,20 +1524,14 @@ export type MetadataInstanceElement = InstanceElement & {
   value: InstanceElement['value'] & MetadataValues
 }
 
-export const assertMetadataObjectType = (
-  type: ObjectType,
-): MetadataObjectType => {
+export const assertMetadataObjectType = (type: ObjectType): MetadataObjectType => {
   if (!isMetadataObjectType(type)) {
-    throw new Error(
-      `This type (${type.elemID.getFullName()}) must be MetadataObjectType`,
-    )
+    throw new Error(`This type (${type.elemID.getFullName()}) must be MetadataObjectType`)
   }
   return type
 }
 
-export const isMetadataInstanceElement = async (
-  elem?: Element,
-): Promise<boolean> =>
+export const isMetadataInstanceElement = async (elem?: Element): Promise<boolean> =>
   isInstanceElement(elem) &&
   isMetadataObjectType(await elem.getType()) &&
   elem.value[INSTANCE_FULL_NAME_FIELD] !== undefined
@@ -1725,19 +1565,12 @@ export const createInstanceElement = (
     type.isSettings ? ElemID.CONFIG_NAME : name,
     type,
     values,
-    [
-      ...getPackagePath(),
-      RECORDS_PATH,
-      type.isSettings ? SETTINGS_PATH : typeName,
-      pathNaclCase(name),
-    ],
+    [...getPackagePath(), RECORDS_PATH, type.isSettings ? SETTINGS_PATH : typeName, pathNaclCase(name)],
     annotations,
   ) as MetadataInstanceElement
 }
 
-export const getAuthorAnnotations = (
-  fileProperties: FileProperties,
-): Record<string, string> => {
+export const getAuthorAnnotations = (fileProperties: FileProperties): Record<string, string> => {
   const annotations = {
     [CORE_ANNOTATIONS.CREATED_BY]: fileProperties?.createdByName,
     [CORE_ANNOTATIONS.CREATED_AT]: fileProperties?.createdDate,
@@ -1752,15 +1585,10 @@ export const getAuthorAnnotations = (
 }
 
 const createIdField = (parent: ObjectType): void => {
-  parent.fields[INTERNAL_ID_FIELD] = new Field(
-    parent,
-    INTERNAL_ID_FIELD,
-    BuiltinTypes.STRING,
-    {
-      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
-    },
-  )
+  parent.fields[INTERNAL_ID_FIELD] = new Field(parent, INTERNAL_ID_FIELD, BuiltinTypes.STRING, {
+    [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
+  })
 }
 
 export const getTypePath = (name: string, isTopLevelType = true): string[] => [
@@ -1780,6 +1608,7 @@ type CreateMetadataTypeParams = {
   isSettings?: boolean
   annotations?: Partial<MetadataTypeAnnotations>
   missingFields?: Record<string, ValueTypeField[]>
+  metaType?: ObjectType
 }
 export const createMetadataTypeElements = async ({
   name,
@@ -1791,17 +1620,24 @@ export const createMetadataTypeElements = async ({
   isSettings = false,
   annotations = {},
   missingFields = defaultMissingFields(),
+  metaType,
 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
     return []
   }
 
-  const element = Types.get(name, false, isSettings) as MetadataObjectType
+  const element = Types.get({
+    name,
+    customObject: false,
+    isSettings,
+    metaType,
+  }) as MetadataObjectType
   knownTypes.set(name, element)
-  const isTopLevelType =
-    baseTypeNames.has(name) || annotations.folderContentType !== undefined
-  element.annotationRefTypes = _.clone(metadataAnnotationTypes)
+  const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
+  if (metaType === undefined) {
+    element.annotationRefTypes = _.clone(metadataAnnotationTypes)
+  }
   element.annotate({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,
@@ -1809,8 +1645,7 @@ export const createMetadataTypeElements = async ({
   element.path = getTypePath(element.elemID.name, isTopLevelType)
 
   const shouldCreateIdField = (): boolean =>
-    (isTopLevelType || childTypeNames.has(name)) &&
-    element.fields[INTERNAL_ID_FIELD] === undefined
+    (isTopLevelType || childTypeNames.has(name)) && element.fields[INTERNAL_ID_FIELD] === undefined
 
   const allFields = fields.concat(missingFields[name] ?? [])
   if (_.isEmpty(allFields)) {
@@ -1828,25 +1663,20 @@ export const createMetadataTypeElements = async ({
     const isKnownType = (): boolean =>
       knownTypes.has(field.soapType) ||
       baseTypeNames.has(field.soapType) ||
-      isPrimitiveType(Types.get(field.soapType, false))
+      isPrimitiveType(Types.get({ name: field.soapType, customObject: false }))
 
     const startsWithUppercase = (): boolean =>
       // covers types like base64Binary, anyType etc.
       field.soapType[0] === field.soapType[0].toUpperCase()
 
-    return (
-      _.isEmpty(field.fields) &&
-      _.isEmpty(field.picklistValues) &&
-      !isKnownType() &&
-      startsWithUppercase()
-    )
+    return _.isEmpty(field.fields) && _.isEmpty(field.picklistValues) && !isKnownType() && startsWithUppercase()
   }
 
   // We need to create embedded types BEFORE creating this element's fields
   // in order to make sure all internal types we may need are updated in the
   // knownTypes map
   const enrichedFields = await Promise.all(
-    allFields.map(async (field) => {
+    allFields.map(async field => {
       if (shouldEnrichFieldValue(field)) {
         const innerFields = await client.describeMetadataType(field.soapType)
         return { ...field, fields: innerFields.valueTypeFields }
@@ -1857,12 +1687,9 @@ export const createMetadataTypeElements = async ({
 
   const embeddedTypes = await Promise.all(
     enrichedFields
-      .filter((field) => !baseTypeNames.has(field.soapType))
-      .filter(
-        (field) =>
-          !_.isEmpty(field.fields.concat(missingFields[field.soapType] ?? [])),
-      )
-      .flatMap((field) =>
+      .filter(field => !baseTypeNames.has(field.soapType))
+      .filter(field => !_.isEmpty(field.fields.concat(missingFields[field.soapType] ?? [])))
+      .flatMap(field =>
         createMetadataTypeElements({
           name: field.soapType,
           fields: makeArray(field.fields),
@@ -1871,6 +1698,7 @@ export const createMetadataTypeElements = async ({
           childTypeNames,
           client,
           missingFields,
+          metaType,
         }),
       ),
   )
@@ -1881,18 +1709,16 @@ export const createMetadataTypeElements = async ({
   // types to string.
   // Sometimes, we get known types without fields for some reason, in this case it is not an enum
   enrichedFields
-    .filter((field) => _.isEmpty(field.fields))
-    .filter((field) => !isPrimitiveType(Types.get(field.soapType, false)))
-    .filter((field) => !knownTypes.has(field.soapType))
-    .filter((field) => field.soapType !== name)
-    .forEach((field) => knownTypes.set(field.soapType, BuiltinTypes.STRING))
+    .filter(field => _.isEmpty(field.fields))
+    .filter(field => !isPrimitiveType(Types.get({ name: field.soapType, customObject: false })))
+    .filter(field => !knownTypes.has(field.soapType))
+    .filter(field => field.soapType !== name)
+    .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
-  const fieldElements = enrichedFields.map((field) =>
-    getValueTypeFieldElement(element, field, knownTypes),
-  )
+  const fieldElements = enrichedFields.map(field => getValueTypeFieldElement(element, field, knownTypes))
 
   // Set fields on elements
-  fieldElements.forEach((field) => {
+  fieldElements.forEach(field => {
     element.fields[field.name] = field
   })
 

@@ -1,23 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import removeListItemValidator from '../../src/change_validators/remove_list_item_without_scriptid'
 import { roleType } from '../../src/autogen/types/standard_types/role'
 import { CUSTOM_RECORD_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('remove item without scriptis from inner list change validator', () => {
   const customRecordInstance = new ObjectType({
@@ -100,11 +93,14 @@ describe('remove item without scriptis from inner list change validator', () => 
 
   describe('When adding new instance with inner list', () => {
     it('should have no change errors when adding an instance with inner list', async () => {
-      const changeErrors = await removeListItemValidator([
-        toChange({ after: roleInstance }),
-        toChange({ after: roleWithoutPermissionsInstance }),
-        toChange({ after: nonRelevantInstance }),
-      ])
+      const changeErrors = await removeListItemValidator(
+        [
+          toChange({ after: roleInstance }),
+          toChange({ after: roleWithoutPermissionsInstance }),
+          toChange({ after: nonRelevantInstance }),
+        ],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
   })
@@ -129,18 +125,24 @@ describe('remove item without scriptis from inner list change validator', () => 
 
       const afterNonRelevantInstance = nonRelevantInstance.clone()
       afterNonRelevantInstance.value.name = 'name2'
-      const changeErrors = await removeListItemValidator([
-        toChange({ before: roleInstance, after }),
-        toChange({ before: roleWithoutPermissionsInstance, after: afterWithoutPermissions }),
-        toChange({ before: nonRelevantInstance, after: afterNonRelevantInstance }),
-      ])
+      const changeErrors = await removeListItemValidator(
+        [
+          toChange({ before: roleInstance, after }),
+          toChange({ before: roleWithoutPermissionsInstance, after: afterWithoutPermissions }),
+          toChange({ before: nonRelevantInstance, after: afterNonRelevantInstance }),
+        ],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have change error when removing a permission from the role', async () => {
       const after = roleInstance.clone()
       delete after.value.permissions.permission.TRAN_PAYMENTAUDIT
-      const firstChangeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
+      const firstChangeErrors = await removeListItemValidator(
+        [toChange({ before: roleInstance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(firstChangeErrors).toHaveLength(1)
       expect(firstChangeErrors[0].severity).toEqual('Warning')
       expect(firstChangeErrors[0].elemID).toEqual(roleInstance.elemID)
@@ -149,7 +151,10 @@ describe('remove item without scriptis from inner list change validator', () => 
       )
 
       delete after.value.permissions.permission.customrecord1
-      const secondChangeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
+      const secondChangeErrors = await removeListItemValidator(
+        [toChange({ before: roleInstance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(secondChangeErrors).toHaveLength(1)
       expect(secondChangeErrors[0].severity).toEqual('Warning')
       expect(secondChangeErrors[0].elemID).toEqual(roleInstance.elemID)
@@ -172,13 +177,19 @@ describe('remove item without scriptis from inner list change validator', () => 
         ),
         permlevel: 'FULL',
       }
-      const changeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
+      const changeErrors = await removeListItemValidator(
+        [toChange({ before: roleInstance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
     it('should have a change error when deleting the whole permissions field from the role', async () => {
       const after = roleInstance.clone()
       delete after.value.permissions.permission
-      const changeErrors = await removeListItemValidator([toChange({ before: roleInstance, after })])
+      const changeErrors = await removeListItemValidator(
+        [toChange({ before: roleInstance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(roleInstance.elemID)
@@ -193,21 +204,27 @@ describe('remove item without scriptis from inner list change validator', () => 
       const afterWithOddPermission = roleWithOddPermissionsInstance.clone()
       delete afterWithOddPermission.value.permissions.permission.TRAN_PAYMENTAUDIT
 
-      const changeErrors = await removeListItemValidator([
-        toChange({ before: roleWithArrayPermissionsInstance, after: afterWithArray }),
-        toChange({ before: roleWithOddPermissionsInstance, after: afterWithOddPermission }),
-      ])
+      const changeErrors = await removeListItemValidator(
+        [
+          toChange({ before: roleWithArrayPermissionsInstance, after: afterWithArray }),
+          toChange({ before: roleWithOddPermissionsInstance, after: afterWithOddPermission }),
+        ],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
   })
 
   describe('When deleting an instance with inner list', () => {
     it('should have no change errors when deleting an instance with inner list', async () => {
-      const changeErrors = await removeListItemValidator([
-        toChange({ before: roleInstance }),
-        toChange({ before: roleWithoutPermissionsInstance }),
-        toChange({ before: nonRelevantInstance }),
-      ])
+      const changeErrors = await removeListItemValidator(
+        [
+          toChange({ before: roleInstance }),
+          toChange({ before: roleWithoutPermissionsInstance }),
+          toChange({ before: nonRelevantInstance }),
+        ],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
   })

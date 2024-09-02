@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import * as parse from 'parse-link-header'
@@ -27,7 +19,7 @@ const log = logger(module)
 const getItems = (value: ResponseValue | ResponseValue[], dataField: string): unknown[] =>
   collections.array
     .makeArray(value)
-    .map(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? _.get(item, dataField) : item))
+    .map(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? item : _.get(item, dataField)))
 
 /**
  * Make paginated requests using the specified pagination field
@@ -83,12 +75,12 @@ export const pageOffsetPagination = ({
   firstPage,
   paginationField,
   pageSize,
-  dataField,
+  dataField = DATA_FIELD_ENTIRE_OBJECT,
 }: {
   firstPage: number
   paginationField: string
   pageSize: number
-  dataField: string
+  dataField?: string
 }): PaginationFunction => {
   const nextPageFullPages: PaginationFunction = ({ currentParams, responseData }) => {
     const items = getItems(responseData, dataField)
@@ -134,7 +126,7 @@ export const pageOffsetAndLastPagination = ({
   return nextPageFullPages
 }
 
-export const offsetAndLimitPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
+export const offsetAndValuesPagination = ({ paginationField }: { paginationField: string }): PaginationFunction => {
   // TODO allow customizing the field values (`isLastValues`)
   type PageResponse = {
     isLast: boolean
@@ -160,6 +152,26 @@ export const offsetAndLimitPagination = ({ paginationField }: { paginationField:
       _.merge({}, currentParams, {
         queryParams: {
           [paginationField]: nextPageStart.toString(),
+        },
+      }),
+    ]
+  }
+
+  return getNextPage
+}
+
+export const offsetAndLimitPagination = (): PaginationFunction => {
+  const getNextPage: PaginationFunction = ({ responseData, currentParams }) => {
+    if (_.get(responseData, 'more') !== true) {
+      return []
+    }
+    const currentPageStart = Number(_.get(responseData, 'offset'))
+    const currentLimit = Number(_.get(responseData, 'limit'))
+    const nextPageStart = currentPageStart + currentLimit
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          offset: nextPageStart.toString(),
         },
       }),
     ]

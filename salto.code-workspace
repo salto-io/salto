@@ -1,8 +1,8 @@
 {
   "folders": [
     {
-      "name": "playground",
-      "path": "playground",
+      "name": "root",
+      "path": ".",
     },
     {
       "name": "adapter-api",
@@ -25,6 +25,10 @@
       "path": "packages/cli",
     },
     {
+      "name": "confluence-adapter",
+      "path": "packages/confluence-adapter",
+    },
+    {
       "name": "core",
       "path": "packages/core",
     },
@@ -45,8 +49,16 @@
       "path": "packages/file",
     },
     {
+      "name": "google-workspace-adapter",
+      "path": "packages/google-workspace-adapter",
+    },
+    {
       "name": "intercom-adapter",
       "path": "packages/intercom-adapter",
+    },
+    {
+      "name": "jamf-adapter",
+      "path": "packages/jamf-adapter",
     },
     {
       "name": "jira-adapter",
@@ -65,12 +77,24 @@
       "path": "packages/lowerdash",
     },
     {
+      "name": "microsoft-entra-adapter",
+      "path": "packages/microsoft-entra-adapter",
+    },
+    {
+      "name": "microsoft-security-adapter",
+      "path": "packages/microsoft-security-adapter",
+    },
+    {
       "name": "netsuite-adapter",
       "path": "packages/netsuite-adapter",
     },
     {
       "name": "okta-adapter",
       "path": "packages/okta-adapter",
+    },
+    {
+      "name": "pagerduty-adapter",
+      "path": "packages/pagerduty-adapter",
     },
     {
       "name": "parser",
@@ -87,6 +111,14 @@
     {
       "name": "sap-adapter",
       "path": "packages/sap-adapter",
+    },
+    {
+      "name": "serviceplaceholder-adapter",
+      "path": "packages/serviceplaceholder-adapter",
+    },
+    {
+      "name": "stripe-adapter",
+      "path": "packages/stripe-adapter",
     },
     {
       "name": "test-utils",
@@ -113,28 +145,18 @@
       "path": "packages/zuora-billing-adapter",
     },
     {
-      "name": "stripe-adapter",
-      "path": "packages/stripe-adapter",
-    },
-    {
-      "name": "serviceplaceholder-adapter",
-      "path": "packages/serviceplaceholder-adapter",
-    },
-    {
-      "name": "google-workspace-adapter",
-      "path": "packages/google-workspace-adapter",
-    },
-    {
-      "name": "confluence-adapter",
-      "path": "packages/confluence-adapter",
+      "name": "playground",
+      "path": "playground",
     },
   ],
   "settings": {
     "files.exclude": {
+      "packages": true,
       "**/dist": true,
       "**/node_modules": true,
+      "**/.turbo": true,
     },
-    "typescript.tsdk": "vscode/node_modules/typescript/lib",
+    "typescript.tsdk": "root/node_modules/typescript/lib",
     "cSpell.words": [
       "activateable",
       "aggregatable",
@@ -144,14 +166,17 @@
       "AUTONUMBER",
       "autoresponse",
       "camelcase",
+      "CCURLY",
       "combobox",
       "complexvalue",
       "createable",
       "creds",
       "customizer",
+      "datacenter",
       "datasource",
       "DATETIME",
       "ducktype",
+      "elems",
       "encryptedstring",
       "ENCRYPTEDTEXT",
       "ESOCKETTIMEDOUT",
@@ -176,6 +201,7 @@
       "nearley",
       "netsuite",
       "nillable",
+      "OCURLY",
       "omni",
       "openapi",
       "orientdb",
@@ -184,6 +210,7 @@
       "petstore",
       "PICKLIST",
       "picklists",
+      "pietile",
       "plaintextarea",
       "prefilterable",
       "pricebook",
@@ -217,6 +244,7 @@
       "subresources",
       "subtab",
       "TIMENOW",
+      "tmpl",
       "triggerable",
       "unaliased",
       "undeletable",
@@ -224,6 +252,7 @@
       "undeployed",
       "unfethced",
       "unfiled",
+      "unmergeable",
       "unpackaged",
       "updateable",
       "upsert",

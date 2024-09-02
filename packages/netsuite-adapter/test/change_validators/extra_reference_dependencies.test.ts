@@ -1,29 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import extraReferenceDependenciesValidator from '../../src/change_validators/extra_reference_dependencies'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('extra reference changes', () => {
+  const baseParams = mockChangeValidatorParams()
   const customsegment = customsegmentType().type
   const entitycustomfield = entitycustomfieldType().type
-  const elementsSource = buildElementsSourceFromElements([])
 
   const entityFieldInstance = new InstanceElement('custentity_slt', entitycustomfield, {
     [SCRIPT_ID]: 'custentity_slt',
@@ -83,8 +75,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: entityFieldInstance, after: entityFieldInstance }),
       ],
-      false,
-      elementsSource,
+      baseParams,
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -96,8 +87,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: entityFieldInstance, after: entityFieldInstance }),
       ],
-      true,
-      elementsSource,
+      { ...baseParams, deployReferencedElements: true },
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -108,8 +98,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: dependsOn2Instances, after: dependsOn2Instances }),
       ],
-      false,
-      elementsSource,
+      baseParams,
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual(
@@ -129,8 +118,7 @@ describe('extra reference changes', () => {
   it('should have Warning ChangeErrors when deploying a instances without their dependencies, each instance with its relevant references', async () => {
     const changeErrors = await extraReferenceDependenciesValidator(
       [toChange({ after: customRecordType }), toChange({ before: dependsOn2Instances, after: dependsOn2Instances })],
-      true,
-      elementsSource,
+      { ...baseParams, deployReferencedElements: true },
     )
     expect(changeErrors).toHaveLength(2)
     const customSegmentInstanceElemId = customSegmentInstance.elemID.getFullName()

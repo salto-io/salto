@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import osPath from 'path'
 import {
@@ -110,6 +102,21 @@ export const OBJECT_XML_WITH_HTML_CHARS =
   '<entitycustomfield scriptid="custentity_my_script_id">' +
   '<label>Golf &#x26; Co&#x2019;Co element&#x200B;Name</label>' +
   '</entitycustomfield>'
+
+export const OBJECT_XML_WITH_CDATA_AND_INNER_XML = `<workbook scriptid="my_workbook">
+  <name>My workbook</name>
+  <definition><![CDATA[<root>
+<pivots type="array">
+  <_ITEM_>
+    <_T_>pivot</_T_>
+    <scriptId>my_pivot</scriptId>
+    <definition>&lt;root>&lt;version>1&lt;/version>&lt;/root></definition>
+  </_ITEM_>
+</pivots>
+</root>]]></definition>
+  <definition>Another definition</definition>
+</workbook>
+`
 
 export const OBJECTS_DIR_FILES = ['a.xml', 'b.xml', 'a.template.html']
 

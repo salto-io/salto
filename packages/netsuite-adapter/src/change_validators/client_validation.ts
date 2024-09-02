@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -28,7 +20,7 @@ import { AdditionalDependencies } from '../config/types'
 import { getGroupItemFromRegex } from '../client/utils'
 import NetsuiteClient from '../client/client'
 import { getChangeGroupIdsFunc } from '../group_changes'
-import { multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
+import { FEATURE_NAME, multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
 import { Filter } from '../filter'
 import { cloneChange } from './utils'
 
@@ -39,7 +31,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
   const missingDependenciesRegexes = Object.values(multiLanguageErrorDetectors).map(
     regexes => regexes.manifestErrorDetailsRegex,
   )
-  const [missingDependenciesErrors, otherErrors] = _.partition(errors, error =>
+  const [missingDependenciesErrors, nonMissingDependenciesErrors] = _.partition(errors, error =>
     missingDependenciesRegexes.some(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID).length > 0),
   )
 
@@ -64,7 +56,33 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
     }
   })
 
-  return otherErrors
+  const missingFeatureInAccountRegexes = Object.values(multiLanguageErrorDetectors).map(
+    regexes => regexes.missingFeatureInAccountErrorRegex,
+  )
+  const [missingFeatureErrors, unclassifiedErrors] = _.partition(nonMissingDependenciesErrors, error =>
+    missingFeatureInAccountRegexes.some(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME).length > 0),
+  )
+
+  const missingFeatureChangeErrors = Object.values(
+    _.groupBy(missingFeatureErrors, error => error.elemID.getFullName()),
+  ).map(elementErrors => {
+    const missingFeatures = _.uniq(
+      elementErrors.flatMap(error =>
+        missingFeatureInAccountRegexes.flatMap(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME)),
+      ),
+    )
+
+    return {
+      elemID: elementErrors[0].elemID,
+      severity: 'Error' as const,
+      message: 'This element requires features that are not enabled in the account',
+      detailedMessage:
+        `Cannot deploy element because of required features that are not enabled in the target account: ${missingFeatures.join(', ')}.` +
+        ' Please refer to https://help.salto.io/en/articles/9221278-sdf-validation-fails-on-missing-feature for more information.',
+    }
+  })
+
+  return unclassifiedErrors
     .map(error => ({
       elemID: error.elemID,
       severity: error.severity,
@@ -72,6 +90,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
       detailedMessage: error.message,
     }))
     .concat(missingDependenciesChangeErrors)
+    .concat(missingFeatureChangeErrors)
 }
 
 export type ClientChangeValidator = (
@@ -100,14 +119,15 @@ const changeValidator: ClientChangeValidator = async (changes, client, additiona
     .flatMap(async ([groupId, groupChanges]) => {
       // SALTO-3016 if the real change group of all changes is different than the one used for validation
       // (e.g. only FileCabinet instances) we should skip the validation.
-      if (groupChanges.every(change => realChangesGroupIdMap.get(changeId(change)) !== groupId)) {
+      const realGroupChanges = groupChanges.filter(change => realChangesGroupIdMap.get(changeId(change)) === groupId)
+      if (realGroupChanges.length === 0) {
         return []
       }
 
       const clonedChanges = groupChanges.map(cloneChange)
       await filtersRunner(groupId).preDeploy(clonedChanges)
       const errors = await client.validate(clonedChanges, groupId, additionalDependencies)
-      const originalChangesElemIds = new Set(groupChanges.map(change => getChangeData(change).elemID.getFullName()))
+      const originalChangesElemIds = new Set(realGroupChanges.map(change => getChangeData(change).elemID.getFullName()))
 
       const [saltoElementErrors, saltoErrors] = _.partition(errors, isSaltoElementError)
 
@@ -120,7 +140,7 @@ const changeValidator: ClientChangeValidator = async (changes, client, additiona
       })
 
       const errorsOnAllChanges = saltoErrors.flatMap(error =>
-        groupChanges.map(change => ({
+        realGroupChanges.map(change => ({
           elemID: getChangeData(change).elemID,
           message: error.message,
           severity: error.severity,

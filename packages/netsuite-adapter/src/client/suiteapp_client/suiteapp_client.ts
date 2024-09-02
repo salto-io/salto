@@ -1,22 +1,14 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import Bottleneck from 'bottleneck'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 import axiosRetry from 'axios-retry'
 import Ajv, { Schema } from 'ajv'
 import AsyncLock from 'async-lock'
@@ -37,7 +29,6 @@ import {
   GET_CONFIG_RESULT_SCHEMA,
   ExistingFileCabinetInstanceDetails,
   FILES_READ_SCHEMA,
-  HttpMethod,
   isError,
   ReadResults,
   RestletOperation,
@@ -47,6 +38,7 @@ import {
   SavedSearchResults,
   SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters,
+  SuiteQLQueryArgs,
   SuiteQLResults,
   SUITE_QL_RESULTS_SCHEMA,
   SystemInformation,
@@ -71,7 +63,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config/constants'
 import { CONSUMER_KEY, CONSUMER_SECRET, INSUFFICIENT_PERMISSION_ERROR } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordResponse, RecordResponse } from './soap_client/types'
+import { CustomRecordResponse, SoapDeployResult, RecordResponse } from './soap_client/types'
 import {
   ReadFileEncodingError,
   ReadFileError,
@@ -86,6 +78,7 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
+export const LAST_PAGE_OFFSET = 99000
 
 const log = logger(module)
 
@@ -125,7 +118,7 @@ type VersionFeatures = {
 }
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
-  const errorDetails = error.response?.data?.['o:errorDetails']
+  const errorDetails = _.get(error.response?.data ?? {}, 'o:errorDetails')
   if (!_.isArray(errorDetails)) {
     return undefined
   }
@@ -166,19 +159,29 @@ export default class SuiteAppClient {
     this.ajv = new Ajv({ allErrors: true, strict: false })
     const timeout = (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter, timeout)
+    this.axiosClient = this.createAxiosClient({ timeout })
+    this.versionFeatures = undefined
+    this.setVersionFeaturesLock = new AsyncLock()
+  }
 
-    this.axiosClient = axios.create({ timeout })
+  private createAxiosClient({ timeout }: { timeout: number }): AxiosInstance {
+    const client = axios.create({ timeout })
     const retryOptions = createRetryOptions(DEFAULT_RETRY_OPTS)
-    axiosRetry(this.axiosClient, {
+    axiosRetry(client, {
       ...retryOptions,
       retryCondition: err =>
         retryOptions.retryCondition?.(err) ||
         String(err.response?.status).startsWith(HTTP_SERVER_ERROR_INITIAL) ||
-        RETRYABLE_ERROR_CODES.some(code => code === err.response?.data?.error?.code?.toUpperCase()),
+        RETRYABLE_ERROR_CODES.some(
+          code => code === String(_.get(err.response?.data ?? {}, 'error.code'))?.toUpperCase(),
+        ),
     })
-
-    this.versionFeatures = undefined
-    this.setVersionFeaturesLock = new AsyncLock()
+    client.interceptors.request.use(config => {
+      const authHeader = this.generateAuthHeader(config)
+      Object.assign(config.headers, authHeader)
+      return config
+    })
+    return client
   }
 
   private async runSuiteQLWithForLoop(query: string, initialOffset: number): Promise<Record<string, unknown>[]> {
@@ -235,10 +238,16 @@ export default class SuiteAppClient {
       nextOffset,
       lastOffset,
     })
+    if (lastOffset !== undefined && lastOffset > LAST_PAGE_OFFSET) {
+      log.warn('lastOffset is larger than LAST_PAGE_OFFSET, using LAST_PAGE_OFFSET. %o', {
+        lastOffset,
+        LAST_PAGE_OFFSET,
+      })
+    }
     return {
       items: results.items,
       nextOffset,
-      lastOffset,
+      lastOffset: lastOffset !== undefined ? Math.min(lastOffset, LAST_PAGE_OFFSET) : undefined,
     }
   }
 
@@ -249,9 +258,19 @@ export default class SuiteAppClient {
    * Otherwise, you might not get all the results.
    */
   public async runSuiteQL(
-    query: string,
+    queryArgs: SuiteQLQueryArgs,
     throwOnErrors: Record<string, string> = {},
+    updatedWhere?: string,
   ): Promise<Record<string, unknown>[] | undefined> {
+    const { select, from, join, where, groupBy, orderBy } = queryArgs
+    const whereClause = updatedWhere ?? where
+    const query =
+      `SELECT ${select} FROM ${from}` +
+      `${join !== undefined ? ` JOIN ${join}` : ''}` +
+      `${whereClause !== undefined ? ` WHERE ${whereClause}` : ''}` +
+      `${groupBy !== undefined ? ` GROUP BY ${groupBy}` : ''}` +
+      `${orderBy !== undefined ? ` ORDER BY ${orderBy} ASC` : ''}`
+
     log.debug('Running SuiteQL query: %s', query)
     if (!/ORDER BY .* (ASC|DESC)/.test(query) && !/count\(\*\)/i.test(query)) {
       log.warn(
@@ -274,7 +293,22 @@ export default class SuiteAppClient {
       const items = firstPageItems.concat(restOfItems)
       log.debug('Finished running SuiteQL query with %d results: %s', items.length, query)
 
-      return items
+      if (items.length < PAGE_SIZE + LAST_PAGE_OFFSET) {
+        return items
+      }
+      log.debug('result reached limit of %d items - running offset query', items.length)
+      if (orderBy === undefined) {
+        log.warn('orderBy is undefined - skip running offset query')
+        return items
+      }
+      const lastOrderByValue = items.slice(-1)[0][orderBy]
+      if (lastOrderByValue === undefined) {
+        log.warn('lastOrderByValue is undefined - skip running offset query')
+        return items
+      }
+      const whereWithOffset = `${where !== undefined ? `(${where}) AND ` : ''}${orderBy} > ${lastOrderByValue}`
+      const nextOffsetItems = await this.runSuiteQL(queryArgs, throwOnErrors, whereWithOffset)
+      return items.concat(nextOffsetItems ?? [])
     } catch (error) {
       log.warn('SuiteQL query error - %s', query, { error })
       if (error instanceof InvalidSuiteAppCredentialsError) {
@@ -518,16 +552,13 @@ export default class SuiteAppClient {
     return sysInfo
   }
 
-  private async safeAxiosPost(href: string, data: unknown, headers: Record<string, unknown>): Promise<AxiosResponse> {
+  private async safeAxiosPost(
+    href: string,
+    data: unknown,
+    headers: AxiosRequestConfig['headers'],
+  ): Promise<AxiosResponse> {
     try {
-      return await this.callsLimiter(() =>
-        this.axiosClient.post(href, data, {
-          headers: {
-            ...headers,
-            ...this.generateAuthHeader(href, 'POST'),
-          },
-        }),
-      )
+      return await this.callsLimiter(() => this.axiosClient.post(href, data, { headers }))
     } catch (e) {
       log.warn(
         'Received error from SuiteApp request to %s (postParams: %s) with status %s: %s',
@@ -659,14 +690,13 @@ export default class SuiteAppClient {
     return results
   }
 
-  private generateAuthHeader(url: string, method: HttpMethod): OAuth.Header {
+  private generateAuthHeader(config: InternalAxiosRequestConfig): OAuth.Header {
     const oauth = new OAuth({
       consumer: {
         key: CONSUMER_KEY,
         secret: CONSUMER_SECRET,
       },
       realm: this.credentials.accountId,
-      // eslint-disable-next-line camelcase
       signature_method: 'HMAC-SHA256',
       // eslint-disable-next-line camelcase
       hash_function(base_string, key) {
@@ -679,7 +709,7 @@ export default class SuiteAppClient {
       secret: this.credentials.suiteAppTokenSecret,
     }
 
-    return oauth.toHeader(oauth.authorize({ url, method }, token))
+    return oauth.toHeader(oauth.authorize({ url: config.url ?? '', method: config.method ?? '' }, token))
   }
 
   // This function should be used for files which are bigger than 10 mb,
@@ -694,19 +724,19 @@ export default class SuiteAppClient {
 
   public async updateFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.updateFileCabinetInstances(fileCabinetInstances)
   }
 
   public async addFileCabinetInstances(
     fileCabinetInstances: FileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.addFileCabinetInstances(fileCabinetInstances)
   }
 
   public async deleteFileCabinetInstances(
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
   }
 
@@ -722,19 +752,19 @@ export default class SuiteAppClient {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<SoapDeployResult[]> {
     return this.soapClient.addInstances(instances, hasElemID)
   }
 
-  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteInstances(instances)
   }
 
-  public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async deleteSdfInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
     return this.soapClient.deleteSdfInstances(instances)
   }
 

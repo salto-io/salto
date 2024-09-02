@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -25,11 +17,8 @@ import {
   TypeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { EMPLOYEE, NETSUITE, PARENT, RECORD_REF } from '../constants'
 import { LocalFilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const fieldNameToTypeName: Record<string, string | undefined> = {
   taxEngine: undefined,
@@ -431,6 +420,7 @@ const filterCreator: LocalFilterCreator = () => ({
   name: 'replaceRecordRef',
   onFetch: async elements => {
     const recordRefElemId = new ElemID(NETSUITE, RECORD_REF)
+    const recordRefListElemId = new ElemID(NETSUITE, 'recordRefList')
 
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.isEqual(recordRefElemId))
     if (recordRefType === undefined) {
@@ -444,26 +434,22 @@ const filterCreator: LocalFilterCreator = () => ({
     const containers = elements.filter(isContainerType)
     const typeMap = _.keyBy([...types, ...primitives, ...containers], e => e.elemID.name)
 
-    await awu(types).forEach(async element => {
-      element.fields = Object.fromEntries(
-        await awu(Object.entries(element.fields))
-          .map(async ([name, field]) => {
-            let newField = field
-            const fieldRealType = getFieldType(element, field, typeMap)
-            if (fieldRealType !== undefined) {
-              if ((await field.getType()).elemID.isEqual(recordRefElemId)) {
-                newField = new Field(element, name, fieldRealType, { ...field.annotations, isReference: true })
-              }
-              if ((await field.getType()).elemID.isEqual(new ElemID(NETSUITE, 'recordRefList'))) {
-                newField = new Field(element, name, new ListType(fieldRealType), {
-                  ...field.annotations,
-                  isReference: true,
-                })
-              }
+    types.forEach(type => {
+      type.fields = Object.fromEntries(
+        Object.values(type.fields)
+          .map(field => {
+            const fieldType = field.getTypeSync()
+            const fieldRealType = getFieldType(type, field, typeMap)
+            const refFieldAnnotations = { ...field.annotations, isReference: true }
+            if (fieldRealType !== undefined && fieldType.elemID.isEqual(recordRefElemId)) {
+              return new Field(type, field.name, fieldRealType, refFieldAnnotations)
             }
-            return [name, newField]
+            if (fieldType.elemID.isEqual(recordRefListElemId)) {
+              return new Field(type, field.name, new ListType(fieldRealType ?? recordRefType), refFieldAnnotations)
+            }
+            return field
           })
-          .toArray(),
+          .map(field => [field.name, field]),
       )
     })
   },

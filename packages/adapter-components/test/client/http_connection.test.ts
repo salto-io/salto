@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -90,7 +82,7 @@ describe('client_http_connection', () => {
               }),
           },
         ),
-      ).rejects.toThrow(new Error('Login failed with error: Error: aaa'))
+      ).rejects.toThrow(new Error('Login failed with error: aaa'))
     })
   })
   describe('createRetryOptions', () => {
@@ -261,13 +253,13 @@ describe('client_http_connection', () => {
 
     describe('onRetry', () => {
       describe('last retry', () => {
-        it('should set the config timeout to be 0 if lastRetryNoTimeout is true', () => {
+        it('should set the config timeout to be 0 if lastRetryNoTimeout is true', async () => {
           const requestConfig = { timeout: 4 }
-          retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
+          await retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
           expect(requestConfig.timeout).toBe(0)
         })
 
-        it('should not update the config if lastRetryNoTimeout is false', () => {
+        it('should not update the config if lastRetryNoTimeout is false', async () => {
           retryOptions = createRetryOptions(
             {
               maxAttempts: 3,
@@ -280,14 +272,14 @@ describe('client_http_connection', () => {
             },
           )
           const requestConfig = { timeout: 4 }
-          retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
+          await retryOptions.onRetry?.(3, mockAxiosError({}), requestConfig)
           expect(requestConfig.timeout).toBe(4)
         })
       })
 
-      it('should not update the config if not last retry', () => {
+      it('should not update the config if not last retry', async () => {
         const requestConfig = { timeout: 4 }
-        retryOptions.onRetry?.(1, mockAxiosError({}), requestConfig)
+        await retryOptions.onRetry?.(1, mockAxiosError({}), requestConfig)
         expect(requestConfig.timeout).toBe(4)
       })
     })

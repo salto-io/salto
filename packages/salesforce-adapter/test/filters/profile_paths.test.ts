@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import {
@@ -64,36 +56,23 @@ describe('profile paths filter', () => {
   })
 
   it('should replace profile instance path', async () => {
-    ;(await instance.getType()).annotations[METADATA_TYPE] =
-      PROFILE_METADATA_TYPE
+    ;(await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     await filter.onFetch([instance])
-    expect(instance.path).toEqual([
-      SALESFORCE,
-      RECORDS_PATH,
-      PROFILE_METADATA_TYPE,
-      'System_Administrator',
-    ])
+    expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'System_Administrator'])
   })
 
   it('should replace instance path for PlatformPortal Profile', async () => {
-    ;(await instance.getType()).annotations[METADATA_TYPE] =
-      PROFILE_METADATA_TYPE
+    ;(await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
     instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
     await filter.onFetch([instance])
-    expect(instance.path).toEqual([
-      SALESFORCE,
-      RECORDS_PATH,
-      PROFILE_METADATA_TYPE,
-      'Authenticated_Website2',
-    ])
+    expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'Authenticated_Website2'])
   })
 
   it('should not replace instance path for other metadataTypes', async () => {
-    ;(await instance.getType()).annotations[METADATA_TYPE] =
-      'some other metadataType'
+    ;(await instance.getType()).annotations[METADATA_TYPE] = 'some other metadataType'
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     await filter.onFetch([instance])
@@ -101,8 +80,7 @@ describe('profile paths filter', () => {
   })
 
   it('should not replace instance path if it has no path', async () => {
-    ;(await instance.getType()).annotations[METADATA_TYPE] =
-      PROFILE_METADATA_TYPE
+    ;(await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
     instance.value[INSTANCE_FULL_NAME_FIELD] = 'Admin'
     instance.value[INTERNAL_ID_FIELD] = 'AdminInternalId'
     instance.path = undefined
@@ -111,8 +89,7 @@ describe('profile paths filter', () => {
   })
   describe('when feature is throwing an error', () => {
     it('should return a warning', async () => {
-      ;(await instance.getType()).annotations[METADATA_TYPE] =
-        PROFILE_METADATA_TYPE
+      ;(await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
       instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
       instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
       connection.query.mockImplementation(() => {
@@ -129,8 +106,7 @@ describe('profile paths filter', () => {
   })
   describe('when feature is disabled', () => {
     it('should not run any query when feature is disabled', async () => {
-      ;(await instance.getType()).annotations[METADATA_TYPE] =
-        PROFILE_METADATA_TYPE
+      ;(await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
       instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
       instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
       filter = filterCreator({
@@ -143,12 +119,7 @@ describe('profile paths filter', () => {
         },
       }) as FilterWith<'onFetch'>
       await filter.onFetch([instance])
-      expect(instance.path).toEqual([
-        SALESFORCE,
-        RECORDS_PATH,
-        PROFILE_METADATA_TYPE,
-        'test',
-      ])
+      expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
       expect(connection.query).not.toHaveBeenCalled()
     })
   })

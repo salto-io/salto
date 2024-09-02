@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   isInstanceElement,
@@ -40,6 +32,7 @@ import {
   TICKET_FIELD_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
+  QUEUE_TYPE_NAME,
 } from '../../constants'
 import { FETCH_CONFIG } from '../../config'
 import {
@@ -97,7 +90,6 @@ type CustomObjectCondition = {
   field: string | TemplateExpression
   operator: string
   value?: string | ReferenceExpression
-  // eslint-disable-next-line camelcase
   is_user_value?: boolean
 }
 
@@ -279,6 +271,52 @@ const transformTicketAndCustomObjectFieldValue = ({
   })
 }
 
+const transformQueueValue = ({
+  queue,
+  instancesById,
+  usersById,
+  customObjectsByKey,
+  enableMissingReferences,
+}: {
+  queue: InstanceElement
+  instancesById: Record<string, InstanceElement>
+  usersById: Record<string, string>
+  customObjectsByKey: Record<string, InstanceElement>
+  enableMissingReferences: boolean
+}): void => {
+  const transformArgs = { instancesById, customObjectsByKey, enableMissingReferences }
+  const transformConditionValue = (definitions: Value[]): void => {
+    definitions.filter(isRelevantCondition).forEach(definition => {
+      // always false, used for type casting
+      if (!_.isString(definition.field)) {
+        log.error(`definition field is not a string - ${inspectValue(definition.field)}`)
+        return
+      }
+      const { result, ticketField, customObjectField } = transformCustomObjectLookupField({
+        field: definition.field,
+        ...transformArgs,
+      })
+      definition.field = result
+
+      if (ticketField !== undefined) {
+        transformRuleValue({
+          customObjectField,
+          rule: definition,
+          enableMissingReferences,
+          instancesById,
+          usersById,
+        })
+      }
+    })
+  }
+
+  const definition = [
+    _.isArray(queue.value.definition?.all) ? queue.value.definition?.all : [],
+    _.isArray(queue.value.definition?.any) ? queue.value.definition?.any : [],
+  ].flat()
+  transformConditionValue(definition)
+}
+
 const filterUserConditions = (
   conditions: Value,
   filterCondition: (condition: Value) => boolean,
@@ -347,6 +385,7 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       const triggers = instances.filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME)
       const ticketFields = instances.filter(instance => instance.elemID.typeName === TICKET_FIELD_TYPE_NAME)
       const customObjectFields = instances.filter(inst => inst.elemID.typeName === CUSTOM_OBJECT_FIELD_TYPE_NAME)
+      const queueFields = instances.filter(inst => inst.elemID.typeName === QUEUE_TYPE_NAME)
 
       triggers.forEach(trigger =>
         transformTriggerValue({
@@ -360,6 +399,15 @@ const customObjectFieldsFilter: FilterCreator = ({ config, client }) => {
       ticketFields.concat(customObjectFields).forEach(instance =>
         transformTicketAndCustomObjectFieldValue({
           instance,
+          customObjectsByKey,
+          enableMissingReferences,
+          instancesById,
+          usersById,
+        }),
+      )
+      queueFields.forEach(queue =>
+        transformQueueValue({
+          queue,
           customObjectsByKey,
           enableMissingReferences,
           instancesById,

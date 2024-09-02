@@ -1,22 +1,15 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import * as clientUtils from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
+import { DEFAULT_CLOUD_ID } from '../utils'
 
 describe('client', () => {
   let client: JiraClient
@@ -50,13 +43,17 @@ describe('client', () => {
     })
     it('should call send request decorator', async () => {
       await expect(async () => client.get({ url: '/myPath' })).rejects.toThrow(
-        new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'),
+        new Error('Failed to get /myPath with error: Request failed with status code 400. error message'),
       )
     })
   })
 
   describe('get', () => {
-    const validHeaders = { 'X-RateLimit-Reset': '2024-05-05T18:02Z', 'X-RateLimit-NearLimit': true, 'Retry-After': '5' }
+    const validHeaders = {
+      'X-RateLimit-Reset': '2024-05-05T18:02Z',
+      'X-RateLimit-NearLimit': 'true',
+      'Retry-After': '5',
+    }
     const filteredHeaders = { 'Do-Not-Extract': 'true' }
     beforeEach(async () => {
       extractHeadersFunc.mockClear()
@@ -160,5 +157,13 @@ describe('client', () => {
     mockAxios.onPost().reply(200, { data: { layoutConfiguration: null }, errors: [error] })
     result = await client.gqlPost({ url: 'www.test.com', query: 'query' })
     expect(result).toEqual({ data: { layoutConfiguration: null }, errors: [error] })
+  })
+  it('should check if getCloudId throws an error if the response is not as expected', async () => {
+    mockAxios.onGet().replyOnce(200, { data: { some_field: '' } })
+    await expect(client.getCloudId()).rejects.toThrow()
+  })
+  it('should check if getCloudId returns the CloudID if the response is of the proper format', async () => {
+    mockAxios.onGet().replyOnce(200, { cloudId: DEFAULT_CLOUD_ID })
+    expect(await client.getCloudId()).toEqual(DEFAULT_CLOUD_ID)
   })
 })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { toChange, InstanceElement, ChangeDataType, Change } from '@salto-io/adapter-api'
 import { emptyValidatorWorkflowChangeValidator } from '../../../src/change_validators/workflows/empty_validator_workflow'
@@ -128,17 +120,20 @@ describe('emptyValidatorWorkflow', () => {
             type: 'DIRECTED',
             validators: [
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'fieldHasSingleValue',
                   fieldKey: 'fieldKey',
                 },
               },
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'anotherType',
                 },
               },
               {
+                ruleKey: 'ruleKey',
                 parameters: {
                   ruleType: 'fieldHasSingleValue',
                 },
@@ -162,6 +157,7 @@ describe('emptyValidatorWorkflow', () => {
     })
     it('should return an plural error if there are multiple invalid validators', async () => {
       workflowV2Instance.value.transitions.tran1.validators.push({
+        ruleKey: 'ruleKey',
         parameters: {
           ruleType: 'fieldChanged',
         },
@@ -178,6 +174,7 @@ describe('emptyValidatorWorkflow', () => {
     })
     it('should return a singular error if there are multiple invalid validators but only from one type', async () => {
       workflowV2Instance.value.transitions.tran1.validators.push({
+        ruleKey: 'ruleKey',
         parameters: {
           ruleType: 'fieldHasSingleValue',
         },

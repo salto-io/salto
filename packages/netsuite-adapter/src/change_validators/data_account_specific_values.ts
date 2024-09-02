@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ChangeError,
@@ -26,7 +18,7 @@ import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID } from '../constants'
-import { getSuiteQLNameToInternalIdsMap } from '../data_elements/suiteql_table_elements'
+import { MissingInternalId } from '../data_elements/suiteql_table_elements'
 import { getResolvedAccountSpecificValue, getUnknownTypeReferencesMap } from '../filters/data_account_specific_values'
 import { NetsuiteChangeValidator } from './types'
 import { cloneChange } from './utils'
@@ -48,30 +40,42 @@ const getPathsWithUnresolvedAccountSpecificValue = (instance: InstanceElement): 
   return fieldsWithUnresolvedAccountSpecificValue
 }
 
-const getResolvingErrors = ({
+export const getResolvingErrors = ({
   instance,
-  unknownTypeReferencesMap,
-  suiteQLTablesMap,
+  unknownTypeReferencesMap = {},
+  suiteQLNameToInternalIdsMap,
 }: {
   instance: InstanceElement
-  unknownTypeReferencesMap: Record<string, Record<string, string[]>>
-  suiteQLTablesMap: Record<string, Record<string, string[]>>
-}): ChangeError[] => {
+  unknownTypeReferencesMap?: Record<string, Record<string, string[]>>
+  suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
+}): { changeErrors: ChangeError[]; missingInternalIds: MissingInternalId[] } => {
   const changeErrors: ChangeError[] = []
+  const missingInternalIds: MissingInternalId[] = []
   walkOnElement({
     element: instance,
     func: ({ path, value }) => {
-      const { error } = getResolvedAccountSpecificValue(path, value, unknownTypeReferencesMap, suiteQLTablesMap)
+      const { error, missingInternalId } = getResolvedAccountSpecificValue(
+        path,
+        value,
+        unknownTypeReferencesMap,
+        suiteQLNameToInternalIdsMap,
+      )
       if (error !== undefined) {
         changeErrors.push(error)
+      }
+      if (missingInternalId !== undefined) {
+        missingInternalIds.push(missingInternalId)
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return changeErrors
+  return { changeErrors, missingInternalIds }
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource, config) => {
+const changeValidator: NetsuiteChangeValidator = async (
+  changes,
+  { elementsSource, config, suiteQLNameToInternalIdsMap },
+) => {
   const relevantChangedInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -90,11 +94,10 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     return []
   }
 
-  if (config?.fetch.resolveAccountSpecificValues !== false && elementsSource !== undefined) {
+  if (config.fetch.resolveAccountSpecificValues !== false) {
     const unknownTypeReferencesMap = await getUnknownTypeReferencesMap(elementsSource)
-    const suiteQLTablesMap = await getSuiteQLNameToInternalIdsMap(elementsSource)
-    return relevantChangedInstances.flatMap(instance =>
-      getResolvingErrors({ instance, unknownTypeReferencesMap, suiteQLTablesMap }),
+    return relevantChangedInstances.flatMap(
+      instance => getResolvingErrors({ instance, unknownTypeReferencesMap, suiteQLNameToInternalIdsMap }).changeErrors,
     )
   }
 

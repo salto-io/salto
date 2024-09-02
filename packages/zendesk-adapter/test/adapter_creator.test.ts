@@ -1,24 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement, OAuthMethod } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter, createUrlFromUserInput } from '../src/adapter_creator'
-import { oauthAccessTokenCredentialsType, usernamePasswordCredentialsType } from '../src/auth'
+import { oauthAccessTokenCredentialsType, basicCredentialsType } from '../src/auth'
 import { configType } from '../src/config'
 import { ZENDESK } from '../src/constants'
 import * as connection from '../src/client/connection'
@@ -39,7 +31,7 @@ describe('adapter creator', () => {
   })
   it('should use username+token as the basic auth method', () => {
     expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toEqual(
-      Object.keys(usernamePasswordCredentialsType.fields),
+      Object.keys(basicCredentialsType.fields),
     )
   })
   it('should use accessToken as the OAuth auth method', () => {
@@ -259,10 +251,21 @@ describe('adapter creator', () => {
       settings: {},
     })
 
-    // basic auth method
+    // basic auth token method
     expect(
       await adapter.validateCredentials(
-        new InstanceElement('config', usernamePasswordCredentialsType, {
+        new InstanceElement('config', basicCredentialsType, {
+          username: 'user123/token',
+          token: 'token123',
+          subdomain: 'abc',
+        }),
+      ),
+    ).toEqual({ accountId: 'https://abc.zendesk.com' })
+
+    // basic auth password method
+    expect(
+      await adapter.validateCredentials(
+        new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'pwd456',
           subdomain: 'abc',
@@ -284,7 +287,7 @@ describe('adapter creator', () => {
     // with domain provided
     expect(
       await adapter.validateCredentials(
-        new InstanceElement('config', usernamePasswordCredentialsType, {
+        new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'pwd456',
           subdomain: 'abc',
@@ -305,30 +308,37 @@ describe('adapter creator', () => {
       ),
     ).toEqual({ accountId: 'https://abc.zendesk.com' })
 
-    expect(connection.createConnection).toHaveBeenCalledTimes(4)
+    expect(connection.createConnection).toHaveBeenCalledTimes(5)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+        credentials: { username: 'user123/token', token: 'token123', subdomain: 'abc' },
       }),
     )
 
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        credentials: { accessToken: 'token', subdomain: 'abc' },
+        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc' },
       }),
     )
 
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
-        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
+        credentials: { accessToken: 'token', subdomain: 'abc' },
       }),
     )
 
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       4,
+      expect.objectContaining({
+        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
+      }),
+    )
+
+    expect(connection.validateCredentials).toHaveBeenNthCalledWith(
+      5,
       expect.objectContaining({
         credentials: { accessToken: 'token', subdomain: 'abc' },
       }),
@@ -350,7 +360,7 @@ describe('adapter creator', () => {
       // basic auth method
       expect(
         await adapter.validateCredentials(
-          new InstanceElement('config', usernamePasswordCredentialsType, {
+          new InstanceElement('config', basicCredentialsType, {
             username: 'user123',
             password: 'pwd456',
             subdomain: 'abc',
@@ -373,7 +383,7 @@ describe('adapter creator', () => {
       // basic auth method
       expect(
         await adapter.validateCredentials(
-          new InstanceElement('config', usernamePasswordCredentialsType, {
+          new InstanceElement('config', basicCredentialsType, {
             username: 'user123',
             password: 'pwd456',
             subdomain: 'abc',
@@ -394,7 +404,7 @@ describe('adapter creator', () => {
       // basic auth method
       expect(
         await adapter.validateCredentials(
-          new InstanceElement('config', usernamePasswordCredentialsType, {
+          new InstanceElement('config', basicCredentialsType, {
             username: 'user123',
             password: 'pwd456',
             subdomain: 'abc',
@@ -410,7 +420,7 @@ describe('adapter creator', () => {
       // basic auth method
       await expect(() =>
         adapter.validateCredentials(
-          new InstanceElement('config', usernamePasswordCredentialsType, {
+          new InstanceElement('config', basicCredentialsType, {
             username: 'user123',
             password: 'pwd456',
             subdomain: 'abc',

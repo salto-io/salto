@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -227,7 +219,8 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
       transformFunc: transformPrimitive,
       strict: false,
       pathID: instance.elemID,
-      allowEmpty: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
     })) ?? instance.value
   )
 }
@@ -266,9 +259,6 @@ export const addReferences = async <
   >(defs, fieldReferenceResolverCreator)
   const instances = elements.filter(isInstanceElement)
 
-  // copied from Salesforce - both should be handled similarly:
-  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
-  // element and we can use the element source directly instead of creating the second index
   const indexer = multiIndex.buildMultiIndex<Element>().addIndex({
     name: 'elemByElemID',
     key: elem => [elem.elemID.getFullName()],

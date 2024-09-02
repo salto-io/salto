@@ -1,0 +1,86 @@
+[
+  {
+    "scope": "",
+    "path": "/api/v1/brands",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "brand-fakeid1",
+      "name": "subdomain4.salto.io",
+      "removePoweredByOkta": false,
+      "customPrivacyPolicyUrl": null,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "defaultApp": {
+        "appInstanceId": null,
+        "appLinkName": null,
+        "classicApplicationUri": null
+      },
+      "_links": {
+        "themes": {
+          "href": "https://<sanitized>/api/v1/brands/brand-fakeid1/themes",
+          "hints": {
+            "allow": ["GET"]
+          }
+        },
+        "self": {
+          "href": "https://<sanitized>/api/v1/brands/brand-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        }
+      }
+    },
+    "body": {
+      "name": "subdomain.example.com"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "497",
+      "x-rate-limit-reset": "1718631287"
+    }
+  },
+  {
+    "scope": "",
+    "path": "/api/v1/brands/brand-fakeid1",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "brand-fakeid1",
+      "name": "subdomain.example.com",
+      "removePoweredByOkta": false,
+      "customPrivacyPolicyUrl": null,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "defaultApp": {
+        "appInstanceId": "0oa1ly9huEKlEScdB696",
+        "appLinkName": null,
+        "classicApplicationUri": null
+      },
+      "_links": {
+        "themes": {
+          "href": "https://<sanitized>/api/v1/brands/brand-fakeid1/themes",
+          "hints": {
+            "allow": ["GET"]
+          }
+        },
+        "self": {
+          "href": "https://<sanitized>/api/v1/brands/brand-fakeid1",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        }
+      }
+    },
+    "body": {
+      "id": "brand-fakeid1",
+      "name": "subdomain.example.com",
+      "removePoweredByOkta": false
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1718632593"
+    }
+  }
+]

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -73,9 +65,7 @@ describe('scriptRunnerClient', () => {
       it('should throw correct error when cannot get JWT address', async () => {
         mockAxios.onGet(JWT_ACCESS_URL).reply(400, { response: 'asd', errorMessages: ['error message'] })
         await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(
-          new Error(
-            `Failed to get ${JWT_ACCESS_URL} with error: Error: Request failed with status code 400. error message`,
-          ),
+          new Error(`Failed to get ${JWT_ACCESS_URL} with error: Request failed with status code 400. error message`),
         )
       })
       it('should fail when JWT address object is not in the right format', async () => {
@@ -163,7 +153,7 @@ describe('scriptRunnerClient', () => {
           .onGet('https://my.scriptrunner.net/myPath')
           .replyOnce(400, { response: 'asd', errorMessages: ['error message'] })
         await expect(async () => scriptRunnerClient.get({ url: '/myPath' })).rejects.toThrow(
-          new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'),
+          new Error('Failed to get /myPath with error: Request failed with status code 400. error message'),
         )
       })
       it('should fail without throwing when received page not found error', async () => {
@@ -204,7 +194,7 @@ describe('scriptRunnerClient', () => {
       expect(request?.headers?.Authorization).toEqual('JWT validSR')
     })
     it('should return the response', () => {
-      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+      expect(result).toEqual({ status: 200, data: { response: 'asd' }, headers: {} })
     })
     it('should not call the login endpoint again', async () => {
       await scriptRunnerClient.get({ url: '/myPath2' })

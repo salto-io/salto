@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -49,6 +41,7 @@ describe('Test Salto Expressions', () => {
     new ReferenceExpression(path.length === 0 ? elemID : elemID.createNestedID(...path))
 
   describe('Reference Expression', () => {
+    const metaElemID = new ElemID('salto', 'meta')
     const baseElemID = new ElemID('salto', 'base')
     const varElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
     const falsyVarElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'falsyVarName')
@@ -65,6 +58,12 @@ describe('Test Salto Expressions', () => {
       },
     })
     const listString = new ListType(BuiltinTypes.STRING)
+    const meta = new ObjectType({
+      elemID: metaElemID,
+      annotationRefsOrTypes: {
+        anno: BuiltinTypes.STRING,
+      },
+    })
     const base = new ObjectType({
       elemID: baseElemID,
       fields: {
@@ -82,6 +81,7 @@ describe('Test Salto Expressions', () => {
       annotations: {
         anno: 'base_anno',
       },
+      metaType: meta,
     })
 
     const baseInst = new InstanceElement('inst', base, {
@@ -95,48 +95,48 @@ describe('Test Salto Expressions', () => {
     const simpleRefType = new ObjectType({
       elemID: new ElemID('salto', 'simple_ref_type'),
     })
-    const noRefInst = new InstanceElement('noref', simpleRefType, {
+    const noRefInst = new InstanceElement('no_ref', simpleRefType, {
       test: `${baseInst.elemID.getFullName()}.simple`,
     })
 
-    const simpleRefInst = new InstanceElement('simpleref', simpleRefType, {
+    const simpleRefInst = new InstanceElement('simple_ref', simpleRefType, {
       test: refTo(baseInst, 'simple'),
     })
 
-    const varRefInst = new InstanceElement('varref', simpleRefType, {
+    const varRefInst = new InstanceElement('var_ref', simpleRefType, {
       test: new VariableExpression(varElemID),
     })
 
-    const falsyVarRefInst = new InstanceElement('falsyvarref', simpleRefType, {
+    const falsyVarRefInst = new InstanceElement('falsy_var_ref', simpleRefType, {
       test: new VariableExpression(falsyVarElemID),
     })
 
-    const nestedRefInst = new InstanceElement('nesetedref', simpleRefType, {
+    const nestedRefInst = new InstanceElement('nested_ref', simpleRefType, {
       test: refTo(baseInst, 'obj', 'value'),
     })
 
-    const arrayRefInst = new InstanceElement('arrayref', simpleRefType, {
+    const arrayRefInst = new InstanceElement('array_ref', simpleRefType, {
       test0: refTo(baseInst, 'arr', '0'),
       test1: refTo(baseInst, 'arr', '1'),
     })
 
-    const annoRefInst = new InstanceElement('annoref', simpleRefType, {
+    const annoRefInst = new InstanceElement('anno_ref', simpleRefType, {
       test: refTo(base, 'attr', 'anno'),
     })
 
-    const fieldAnnoRefInst = new InstanceElement('fieldref', simpleRefType, {
+    const fieldAnnoRefInst = new InstanceElement('field_ref', simpleRefType, {
       test: refTo(base, 'field', 'simple', 'anno'),
     })
 
-    const chainedRefInst = new InstanceElement('chainedref', simpleRefType, {
+    const chainedRefInst = new InstanceElement('chained_ref', simpleRefType, {
       test: refTo(simpleRefInst, 'test'),
     })
 
-    const noPathInst = new InstanceElement('nopath', simpleRefType, {
+    const noPathInst = new InstanceElement('no_path', simpleRefType, {
       test: refTo(baseInst),
     })
 
-    const objectRefID = new ElemID('salto', 'objref')
+    const objectRefID = new ElemID('salto', 'obj_ref')
     const objectRef = new ObjectType({
       elemID: objectRefID,
       fields: {
@@ -150,7 +150,7 @@ describe('Test Salto Expressions', () => {
       },
     })
 
-    const instanceWithFunctions = new InstanceElement('withfunctions', base, {
+    const instanceWithFunctions = new InstanceElement('with_functions', base, {
       simple: new TestFuncImpl('simple', ['aaa']),
       several: new TestFuncImpl('several', [false, 123]),
       list: new TestFuncImpl('list', [['aaa', true, 123]]),
@@ -159,6 +159,7 @@ describe('Test Salto Expressions', () => {
     })
 
     const elements = [
+      meta,
       base,
       variable,
       falsyVariable,
@@ -194,6 +195,7 @@ describe('Test Salto Expressions', () => {
           await resolve(elements, createInMemoryElementSource(elements), { shouldResolveReferences: false }),
         ).toArray()
       })
+
       it('should not resolve references', () => {
         const element = findResolved<InstanceElement>(simpleRefInst)
         const ref = element.value.test as ReferenceExpression
@@ -245,21 +247,25 @@ describe('Test Salto Expressions', () => {
         beforeAll(() => {
           element = findResolved<InstanceElement>(instanceWithFunctions)
         })
+
         it('should resolve simple params', () => {
           expect(element.value).toHaveProperty('simple')
           expect(element.value.simple.funcName).toEqual('simple')
           expect(element.value.simple.parameters).toEqual(['aaa'])
         })
+
         it('should resolve several params', () => {
           expect(element.value).toHaveProperty('several')
           expect(element.value.several.funcName).toEqual('several')
           expect(element.value.several.parameters).toEqual([false, 123])
         })
+
         it('should resolve list params', () => {
           expect(element.value).toHaveProperty('list')
           expect(element.value.list.funcName).toEqual('list')
           expect(element.value.list.parameters).toEqual([['aaa', true, 123]])
         })
+
         it('should resolve mixed params', () => {
           expect(element.value).toHaveProperty('mixed')
           expect(element.value.mixed.funcName).toEqual('mixed')
@@ -453,19 +459,19 @@ describe('Test Salto Expressions', () => {
           elemID: ElemID.fromFullName('salto.testObj2'),
         })
         const refTargetInst = new InstanceElement('rrr', new TypeReference(refTargetInstObj.elemID), {
-          test: 'okok',
+          test: 'ok',
         })
         const instanceToResolve = new InstanceElement('rrr', new TypeReference(instanceToResolveObj.elemID), {
           test: refTo(refTargetInst, 'test'),
         })
         const elems = [instanceToResolve]
-        const resovledElems = (await awu(
+        const resolvedElems = (await awu(
           await resolve(
             elems,
             createInMemoryElementSource([refTargetInstObj, instanceToResolveObj, refTargetInst, instanceToResolve]),
           ),
         ).toArray()) as [InstanceElement]
-        const resolvedRef = resovledElems[0].value.test as ReferenceExpression
+        const resolvedRef = resolvedElems[0].value.test as ReferenceExpression
         const resolvedValue = resolvedRef.topLevelParent as InstanceElement
         const resolvedValueType = (await resolvedValue.getType()) as ObjectType
         expect(resolvedValueType).toEqual(refTargetInstObj)
@@ -497,6 +503,7 @@ describe('Test Salto Expressions', () => {
     let fieldType: ObjectType
     let referencedType: ObjectType
     let resolvedField: Field
+
     beforeEach(async () => {
       fieldType = new ObjectType({ elemID: new ElemID('salto', 'field') })
       referencedType = new ObjectType({
@@ -524,13 +531,16 @@ describe('Test Salto Expressions', () => {
       expect(resolved[0]).toBeInstanceOf(Field)
       resolvedField = resolved[0] as Field
     })
+
     it('should resolve field type', () => {
       // We can compare to the unresolved field type because there is nothing to resolve in it
       expect(resolvedField.refType.type).toEqual(fieldType)
     })
+
     it('should resolve references in the field', () => {
       expect(resolvedField.annotations.ref.value).toEqual(referencedType.annotations.value)
     })
+
     it('should resolve the fields parent', () => {
       expect(resolvedField.parent.annotations.ref).toBeInstanceOf(ReferenceExpression)
       expect(resolvedField.parent.annotations.ref.value).toEqual(referencedType)
@@ -543,6 +553,7 @@ describe('Test Salto Expressions', () => {
     let referencedType: ObjectType
     let resolvedField: Field
     let resolvedType: ObjectType
+
     beforeEach(async () => {
       fieldType = new ObjectType({ elemID: new ElemID('salto', 'field') })
       referencedType = new ObjectType({
@@ -572,17 +583,21 @@ describe('Test Salto Expressions', () => {
       resolvedType = resolved[0] as ObjectType
       resolvedField = resolved[1] as Field
     })
+
     it('should resolve field type', () => {
       // We can compare to the unresolved field type because there is nothing to resolve in it
       expect(resolvedField.refType.type).toEqual(fieldType)
     })
+
     it('should resolve references in the field', () => {
       expect(resolvedField.annotations.ref.value).toEqual(referencedType.annotations.value)
     })
+
     it('should resolve the fields parent', () => {
       expect(resolvedField.parent.annotations.ref).toBeInstanceOf(ReferenceExpression)
       expect(resolvedField.parent.annotations.ref.value).toEqual(referencedType)
     })
+
     it('resolve field parent should be the resolved type', () => {
       expect(resolvedField.parent).toBe(resolvedType)
     })
@@ -613,6 +628,7 @@ describe('Test Salto Expressions', () => {
       const element = resolvedElements[1] as InstanceElement
       expect(element.value.into.value).toEqual('Well, you made a long journey from Milano to Minsk, Rochelle Rochelle')
     })
+
     it('should detect circular reference in template expressions', async () => {
       const refType = new ObjectType({
         elemID: new ElemID('salto', 'simple'),
@@ -634,9 +650,10 @@ describe('Test Salto Expressions', () => {
     })
   })
 
-  describe('resolve types', () => {
+  describe('when resolving types', () => {
     describe('with missing types', () => {
       let resolvedInstance: InstanceElement
+
       beforeEach(async () => {
         const missingType = new ObjectType({ elemID: new ElemID('salto', 'missing') })
         const instance = new InstanceElement('inst', missingType, {})
@@ -644,13 +661,16 @@ describe('Test Salto Expressions', () => {
         expect(resolved[0]).toBeInstanceOf(InstanceElement)
         resolvedInstance = resolved[0] as InstanceElement
       })
+
       it('should detect missing type and put a placeholder type there', () => {
         expect(resolvedInstance.refType.type).toBeInstanceOf(PlaceholderObjectType)
       })
     })
+
     describe('with container types', () => {
       let innerObjType: ObjectType
       let outerObjType: ObjectType
+
       beforeEach(async () => {
         innerObjType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
         outerObjType = new ObjectType({
@@ -662,6 +682,7 @@ describe('Test Salto Expressions', () => {
           },
         })
       })
+
       it('should resolve field types to the same inner object type', async () => {
         const resolved = (await resolve([outerObjType], createInMemoryElementSource([innerObjType]))) as [ObjectType]
         expect(resolved[0].fields.listObj.refType.type).toBeInstanceOf(ListType)
@@ -670,6 +691,7 @@ describe('Test Salto Expressions', () => {
         const mapInner = (resolved[0].fields.mapObj.refType.type as MapType).refInnerType.type
         expect(listInner).toBe(mapInner)
       })
+
       it('should handle multi-level containers', async () => {
         const resolved = (await resolve([outerObjType], createInMemoryElementSource([innerObjType]))) as [ObjectType]
         const resolvedInnerType = (resolved[0].fields.listObj.refType.type as ListType)?.refInnerType.type
@@ -683,9 +705,11 @@ describe('Test Salto Expressions', () => {
         expect(innerInnerInnerType).toBe(resolvedInnerType)
       })
     })
+
     describe('when element source returns the wrong element', () => {
       let objType: ObjectType
       let buggyElementSource: ReadOnlyElementsSource
+
       // This case should never happen, but adding another layer of protection, if we do encounter
       // a case where an element source returns an incorrect ID from `get`, the resolve code should
       // identify the issue and not go into an infinite loop
@@ -704,11 +728,33 @@ describe('Test Salto Expressions', () => {
           async elem => _.set(elem.clone(), 'elemID', new ElemID('salto', 'obj')),
         )
       })
+
       it('should return with an unresolved type', async () => {
         const inst = new InstanceElement('asd', new TypeReference(objType.elemID))
         const resolved = (await resolve([inst], buggyElementSource))[0] as InstanceElement
         expect(resolved).toBeInstanceOf(InstanceElement)
         expect(resolved.refType.type).toBeInstanceOf(PlaceholderObjectType)
+      })
+    })
+  })
+
+  describe('when resolving meta types', () => {
+    describe('with missing types', () => {
+      let resolvedObjectType: ObjectType
+
+      beforeEach(async () => {
+        const missingType = new ObjectType({ elemID: new ElemID('salto', 'missing') })
+        const type = new ObjectType({
+          elemID: new ElemID('salto', 'type'),
+          metaType: missingType,
+        })
+        const resolved = await resolve([type], createInMemoryElementSource([]))
+        expect(resolved[0]).toBeInstanceOf(ObjectType)
+        resolvedObjectType = resolved[0] as ObjectType
+      })
+
+      it('should return a placeholder meta type', () => {
+        expect(resolvedObjectType.metaType?.type).toBeInstanceOf(PlaceholderObjectType)
       })
     })
   })

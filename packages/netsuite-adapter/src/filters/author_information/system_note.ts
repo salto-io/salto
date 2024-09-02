@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -28,8 +20,13 @@ import { collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
-import { SUITEQL_TABLE, getSuiteQLTableInternalIdsMap } from '../../data_elements/suiteql_table_elements'
+import {
+  SUITEQL_TABLE,
+  getSuiteQLTableInternalIdsMap,
+  updateSuiteQLTableInstances,
+} from '../../data_elements/suiteql_table_elements'
 import NetsuiteClient from '../../client/client'
+import { SuiteQLQueryArgs } from '../../client/suiteapp_client/types'
 import { RemoteFilterCreator } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import {
@@ -87,24 +84,22 @@ const toDateQuery = (lastFetchTime: Date): string => `date >= ${toSuiteQLWhereDa
 const toFieldWhereQuery = (recordType: string): string =>
   recordType === FILE_TYPE ? `field LIKE '${FILE_FIELD_IDENTIFIER}%'` : `field LIKE '${FOLDER_FIELD_IDENTIFIER}%'`
 
-const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[], lastFetchTime: Date): string => {
-  const recordTypeMatchClause = `recordtypeid IN (${recordTypeIds.join(', ')})`
-  return (
-    'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,' +
-    ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND ${recordTypeMatchClause}` +
-    ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
-  )
-}
+const buildRecordTypeSystemNotesQuery = (recordTypeIds: string[], lastFetchTime: Date): SuiteQLQueryArgs => ({
+  select: 'name, recordid, recordtypeid, date',
+  from:
+    `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date` +
+    ` FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND recordtypeid IN (${recordTypeIds.join(', ')})` +
+    ' GROUP BY name, recordid, recordtypeid)',
+  orderBy: 'name, recordid, recordtypeid',
+})
 
-const buildFieldSystemNotesQuery = (fieldIds: string[], lastFetchTime: Date): string => {
-  const whereQuery = fieldIds.map(toFieldWhereQuery).join(' OR ')
-  return (
-    `SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date` +
-    ` FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})` +
-    ' GROUP BY name, field, recordid' +
-    ' ORDER BY name, field, recordid ASC'
-  )
-}
+const buildFieldSystemNotesQuery = (fieldIds: string[], lastFetchTime: Date): SuiteQLQueryArgs => ({
+  select: `name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`,
+  from: 'systemnote',
+  where: `${toDateQuery(lastFetchTime)} AND (${fieldIds.map(toFieldWhereQuery).join(' OR ')})`,
+  groupBy: 'name, field, recordid',
+  orderBy: 'name, field, recordid',
+})
 
 const querySystemNotesByField = async (
   client: NetsuiteClient,
@@ -151,11 +146,6 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
   return {}
 }
 
-const getEmployeeNamesFromEmployeeSuiteQLTableInstance = (instance: InstanceElement): Record<string, string> => {
-  const internalIdsMap = getSuiteQLTableInternalIdsMap(instance)
-  return _.mapValues(internalIdsMap, row => row.name)
-}
-
 const getKeyForNote = (systemNote: SystemNoteResult): string => {
   if ('recordtypeid' in systemNote) {
     return getRecordIdAndTypeStringKey(systemNote.recordid, systemNote.recordtypeid)
@@ -180,19 +170,42 @@ const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, Modif
     ]),
   )
 
+const getEmployeeInternalIdsMap = async (
+  client: NetsuiteClient,
+  employeeSuiteQLTableInstance: InstanceElement | undefined,
+  systemNotes: SystemNoteResult[],
+): Promise<Record<string, string>> => {
+  if (employeeSuiteQLTableInstance === undefined) {
+    return fetchEmployeeNames(client)
+  }
+  const existingEmployeeInternalIdsMap = getSuiteQLTableInternalIdsMap(employeeSuiteQLTableInstance)
+  const employeeInternalIdsToQuery = systemNotes
+    .map(row => row.name)
+    .filter(name => existingEmployeeInternalIdsMap[name] === undefined)
+    .map(internalId => ({ tableName: EMPLOYEE, item: internalId }))
+
+  await updateSuiteQLTableInstances({
+    client,
+    queryBy: 'internalId',
+    itemsToQuery: employeeInternalIdsToQuery,
+    suiteQLTablesMap: {
+      [EMPLOYEE]: employeeSuiteQLTableInstance,
+    },
+  })
+
+  return _.mapValues(getSuiteQLTableInternalIdsMap(employeeSuiteQLTableInstance), row => row.name)
+}
+
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
   lastFetchTime: Date,
-  employeeNames: Record<string, string>,
+  employeeSuiteQLTableInstance: InstanceElement | undefined,
   timeZone: string | undefined,
 ): Promise<Record<string, ModificationInformation>> => {
-  const systemNotes = await log.timeDebug(() => querySystemNotes(client, queryIds, lastFetchTime), 'querySystemNotes')
-  if (_.isEmpty(systemNotes)) {
-    log.warn('System note query failed')
-    return {}
-  }
   const now = timeZone ? moment.tz(timeZone).utc() : moment().utc()
+  const systemNotes = await log.timeDebug(() => querySystemNotes(client, queryIds, lastFetchTime), 'querySystemNotes')
+  const employeeNames = await getEmployeeInternalIdsMap(client, employeeSuiteQLTableInstance, systemNotes)
   return indexSystemNotes(
     distinctSortedSystemNotes(
       systemNotes
@@ -286,15 +299,9 @@ const filterCreator: RemoteFilterCreator = ({
     const employeeSuiteQLTableInstance = elements
       .filter(isInstanceElement)
       .find(instance => instance.elemID.typeName === SUITEQL_TABLE && instance.elemID.name === EMPLOYEE)
-    const employeeNames =
-      employeeSuiteQLTableInstance !== undefined
-        ? getEmployeeNamesFromEmployeeSuiteQLTableInstance(employeeSuiteQLTableInstance)
-        : await fetchEmployeeNames(client)
 
     const timeZone = timeZoneAndFormat?.timeZone
-    const systemNotes = !_.isEmpty(employeeNames)
-      ? await fetchSystemNotes(client, queryIds, lastFetchTime, employeeNames, timeZone)
-      : {}
+    const systemNotes = await fetchSystemNotes(client, queryIds, lastFetchTime, employeeSuiteQLTableInstance, timeZone)
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
     if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex) && _.isEmpty(elemIdToChangeAtIndex)) {
       return

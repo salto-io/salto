@@ -1,23 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
-  AdditionChange,
   BuiltinTypes,
+  Change,
   CORE_ANNOTATIONS,
   ElemID,
+  getChangeData,
   InstanceElement,
   ListType,
   MapType,
@@ -26,13 +19,15 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { getFilterParams, mockClient } from '../../utils'
+import { getParent } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
 import contextDeploymentFilter from '../../../src/filters/fields/context_deployment_filter'
 import JiraClient from '../../../src/client/client'
 import * as contexts from '../../../src/filters/fields/contexts'
-import { FIELD_CONTEXT_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { FIELD_CONTEXT_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 describe('fieldContextDeployment', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -164,11 +159,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ after: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should call deployContextChange on modification', async () => {
@@ -176,11 +172,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ after: instance, before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should call deployContextChange on removal', async () => {
@@ -197,11 +194,12 @@ describe('fieldContextDeployment', () => {
       const change = toChange({ before: instance })
       await filter.deploy([change])
       expect(deployContextChangeMock).toHaveBeenCalledWith(
-        change,
-        client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-        paginator,
-        expect.anything(),
+        expect.objectContaining({
+          change,
+          client,
+          config: getDefaultConfig({ isDataCenter: false }),
+          paginator,
+        }),
       )
     })
     it('should not call deployContextChange on removal without parent', async () => {
@@ -211,99 +209,54 @@ describe('fieldContextDeployment', () => {
       expect(deployContextChangeMock).not.toHaveBeenCalled()
     })
   })
-  describe('Deploy context for locked field', () => {
-    let fieldInstcnae: InstanceElement
-    let contextInstance: InstanceElement
-    let mockGet: jest.SpyInstance
+  describe('Deploy with splitFieldContextOptions', () => {
+    let changes: Change<InstanceElement>[]
+    let orderInstance: InstanceElement
+    let optionInstance: InstanceElement
+    let cascadeInstance: InstanceElement
     beforeEach(() => {
-      const { client: cli } = mockClient(false)
-      client = cli
-      mockGet = jest.spyOn(client, 'get')
-      fieldInstcnae = new InstanceElement('field', fieldType, {
-        name: 'field_1',
-        description: 'auto-created by jira service',
-        type: 'com.atlassian.servicedesk:vp-origin',
-        isLocked: true,
-      })
-      contextInstance = new InstanceElement(
-        'context',
-        contextType,
-        {
-          name: 'context_1',
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstcnae.elemID, fieldInstcnae),
-        },
-      )
-    })
-    it('should deploy custom field context with jsm locked field if it was created in the service', async () => {
-      mockGet.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          values: [
-            {
-              id: '1',
-              name: 'context_1',
-              isGlobalContext: true,
-            },
-          ],
-        },
-      })
+      const config = getDefaultConfig({ isDataCenter: false })
+      config.fetch.splitFieldContextOptions = true
       filter = contextDeploymentFilter(
         getFilterParams({
           client,
           paginator,
+          config,
         }),
       ) as typeof filter
-      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
-      const res = await filter.deploy([change])
-      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(change.data.after.value.id).toEqual('1')
-    })
-    it('should not deploy custom field context with jsm locked field f it was not created in the service', async () => {
-      mockGet.mockResolvedValueOnce({
-        status: 200,
-        data: {
-          values: [
-            {
-              id: '1',
-              name: 'context_1',
-              isGlobalContext: true,
-            },
-          ],
-        },
+      const contextInstance = new InstanceElement('context', contextType, {})
+      orderInstance = new InstanceElement('order', createEmptyType(OPTIONS_ORDER_TYPE_NAME), {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
       })
-      filter = contextDeploymentFilter(
-        getFilterParams({
-          client,
-          paginator,
-        }),
-      ) as typeof filter
-      contextInstance.value.name = 'context_2'
-      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
-      const res = await filter.deploy([change])
-      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
-      expect(res.deployResult.errors).toHaveLength(1)
-    })
-    it('should not deploy custom field context with jsm locked field if it is a bad response', async () => {
-      mockGet.mockResolvedValue({
-        status: 404,
-        data: {
-          errorMessages: ['The component with id 1 does not exist.'],
-        },
+      optionInstance = new InstanceElement('option', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(contextInstance.elemID, _.cloneDeep(contextInstance)),
       })
-      filter = contextDeploymentFilter(
-        getFilterParams({
-          client,
-          paginator,
-        }),
-      ) as typeof filter
-      const change = toChange({ after: contextInstance }) as AdditionChange<InstanceElement>
-      const res = await filter.deploy([change])
-      expect(deployContextChangeMock).toHaveBeenCalledTimes(0)
-      expect(res.deployResult.errors).toHaveLength(1)
+      cascadeInstance = new InstanceElement('cascade', optionType, {}, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(optionInstance.elemID, _.cloneDeep(optionInstance)),
+      })
+      const randomInstance = new InstanceElement('random', fieldType, {})
+      changes = [
+        toChange({ after: contextInstance }),
+        toChange({ after: orderInstance }),
+        toChange({ after: randomInstance }),
+        toChange({ after: optionInstance }),
+        toChange({ after: cascadeInstance }),
+      ]
+      // mock deployContextChange
+      deployContextChangeMock.mockImplementation(async ({ change }) => {
+        getChangeData(change).value.id = `newId${getChangeData(change).elemID.name}`
+      })
+    })
+    it('should update the ids of added contexts', async () => {
+      await filter.deploy(changes)
+      expect(getParent(optionInstance).value.id).toEqual('newIdcontext')
+      expect(getParent(cascadeInstance).value.id).toBeUndefined()
+      expect(getParent(getParent(cascadeInstance)).value.id).toEqual('newIdcontext')
+      expect(getParent(orderInstance).value.id).toEqual('newIdcontext')
+    })
+    it('should keep context changes in leftoverChanges', async () => {
+      const { leftoverChanges } = await filter.deploy(changes)
+      expect(leftoverChanges).toHaveLength(changes.length)
     })
   })
 })

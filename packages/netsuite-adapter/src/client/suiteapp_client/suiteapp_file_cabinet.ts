@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -43,11 +35,11 @@ import SuiteAppClient from './suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './types'
 import { ImportFileCabinetResult } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
-import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config/constants'
 import { NetsuiteQuery } from '../../config/query'
 import { isFileCabinetType, isFileInstance } from '../../types'
 import { filterFilePathsInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../file_cabinet_utils'
 import { getDeployResultFromSuiteAppResult, toElementError, toError } from '../utils'
+import { SoapDeployResult } from './soap_client/types'
 
 const log = logger(module)
 
@@ -165,7 +157,12 @@ export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
 }
 
 export type SuiteAppFileCabinetOperations = {
-  importFileCabinet: (query: NetsuiteQuery, maxFileCabinetSizeInGB: number) => Promise<ImportFileCabinetResult>
+  importFileCabinet: (
+    query: NetsuiteQuery,
+    maxFileCabinetSizeInGB: number,
+    extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
+  ) => Promise<ImportFileCabinetResult>
   deploy: (changes: ReadonlyArray<Change<InstanceElement>>, type: DeployType) => Promise<FileCabinetDeployResult>
 }
 
@@ -246,16 +243,19 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     isSuiteBundlesEnabled = true,
   ): Promise<{ folderResults: FolderResult[]; isSuiteBundlesEnabled: boolean }> =>
     retryOnRetryableError(async () => {
-      const foldersQuery =
-        `SELECT name, id${isSuiteBundlesEnabled ? BUNDLEABLE : ''}, isinactive, isprivate, description, parent` +
-        ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
+      const foldersQuery = {
+        select: `id, name${isSuiteBundlesEnabled ? BUNDLEABLE : ''}, isinactive, isprivate, description, parent`,
+        from: 'mediaitemfolder',
+        where: whereQuery,
+        orderBy: 'id',
+      }
       try {
         const foldersResults = await suiteAppClient.runSuiteQL(foldersQuery, THROW_ON_MISSING_FEATURE_ERROR)
         return { folderResults: validateFoldersResults(foldersResults), isSuiteBundlesEnabled: true }
       } catch (e) {
         if (toError(e).message === SUITEBUNDLES_DISABLED_ERROR && isSuiteBundlesEnabled) {
           log.debug("SuiteBundles not enabled in the account, removing 'bundleable' from query")
-          const noBundleableQuery = foldersQuery.replace(BUNDLEABLE, '')
+          const noBundleableQuery = { ...foldersQuery, select: foldersQuery.select.replace(BUNDLEABLE, '') }
           const queryResult = await suiteAppClient.runSuiteQL(noBundleableQuery, THROW_ON_MISSING_FEATURE_ERROR)
           return { folderResults: validateFoldersResults(queryResult), isSuiteBundlesEnabled: false }
         }
@@ -278,18 +278,26 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     return (await queryFolders(whereQuery, isSuiteBundlesEnabled)).folderResults
   }
 
-  const queryFiles = (folderIdsToQuery: string[], isSuiteBundlesEnabled: boolean): Promise<FileResult[]> =>
+  const queryFiles = (
+    folderIdsToQuery: string[],
+    isSuiteBundlesEnabled: boolean,
+    extensionsToExclude: string[],
+  ): Promise<FileResult[]> =>
     retryOnRetryableError(async () => {
+      const whereNotHideInBundle = isSuiteBundlesEnabled ? "hideinbundle = 'F' AND " : ''
+      const whereNotExtension = extensionsToExclude.map(reg => `NOT REGEXP_LIKE(name, '${reg}') AND `).join('')
       const whereQueries = _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(
         foldersToQueryChunk =>
-          `${isSuiteBundlesEnabled ? "hideinbundle = 'F' AND " : ''}folder IN (${foldersToQueryChunk.join(', ')})`,
+          `${whereNotExtension}${whereNotHideInBundle}folder IN (${foldersToQueryChunk.join(', ')})`,
       )
       const results = await Promise.all(
         whereQueries.map(async whereQuery => {
-          const filesResults = await suiteAppClient.runSuiteQL(
-            `SELECT name, id, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url${isSuiteBundlesEnabled ? ', bundleable, hideinbundle' : ''}` +
-              ` FROM file WHERE ${whereQuery} ORDER BY id ASC`,
-          )
+          const filesResults = await suiteAppClient.runSuiteQL({
+            select: `id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url${isSuiteBundlesEnabled ? ', bundleable, hideinbundle' : ''}`,
+            from: 'file',
+            where: whereQuery,
+            orderBy: 'id',
+          })
 
           if (filesResults === undefined) {
             throw new RetryableError(new Error('Failed to list files'))
@@ -354,7 +362,11 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
   const fullPath = (fileParts: string[]): string =>
     `${FILE_CABINET_PATH_SEPARATOR}${fileParts.join(FILE_CABINET_PATH_SEPARATOR)}`
 
-  const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
+  const queryFileCabinet = async (
+    query: NetsuiteQuery,
+    extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
+  ): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
       const { folderResults, isSuiteBundlesEnabled } = await queryTopLevelFolders()
       const topLevelFoldersResults = folderResults.filter(folder => query.isParentFolderMatch(`/${folder.name}`))
@@ -377,18 +389,30 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
           path: fullPathParts(folder, idToFolder),
           ...folder,
         })),
-        // remove excluded folders before creating the query
-        folder => {
-          const fileCabinetFullPath = `${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`
-          return query.isFileMatch(fileCabinetFullPath) || query.isParentFolderMatch(fileCabinetFullPath)
-        },
+        // remove excluded folders before creating the files query
+        folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
       )
       log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
+
+      // SALTO-6145: remove this to exclude relevant folders
+      const foldersThatShouldBeRemoved = removedFolders.filter(folder =>
+        query.isParentFolderMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
+      )
+      if (!forceFileCabinetExclude && foldersThatShouldBeRemoved.length > 0) {
+        log.warn(
+          'the following %d folders should be removed too: %o',
+          foldersThatShouldBeRemoved.length,
+          foldersThatShouldBeRemoved,
+        )
+        foldersThatShouldBeRemoved.forEach(folder => filteredFolderResults.push(folder))
+      }
+
       const filesResults =
         filteredFolderResults.length > 0
           ? await queryFiles(
               filteredFolderResults.map(folder => folder.id),
               isSuiteBundlesEnabled,
+              extensionsToExclude,
             )
           : []
       const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
@@ -401,13 +425,15 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
 
   const importFileCabinet = async (
     query: NetsuiteQuery,
-    maxFileCabinetSizeInGB: number = DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+    maxFileCabinetSizeInGB: number,
+    extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
       return { elements: [], failedPaths: { lockedError: [], otherError: [], largeFolderError: [] } }
     }
 
-    const { foldersResults, filesResults } = await queryFileCabinet(query)
+    const { foldersResults, filesResults } = await queryFileCabinet(query, extensionsToExclude, forceFileCabinetExclude)
     const unfilteredFoldersCustomizationInfo = foldersResults.map(folder => ({
       path: folder.path,
       typeName: 'folder',
@@ -577,7 +603,7 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
   const deployInstances = async (
     instances: FileCabinetInstanceDetails[],
     type: DeployType,
-  ): Promise<(number | Error)[]> => {
+  ): Promise<SoapDeployResult[]> => {
     if (type === 'add') {
       return suiteAppClient.addFileCabinetInstances(instances)
     }

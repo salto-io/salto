@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ObjectType,
@@ -24,17 +16,9 @@ import {
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/territory'
 import { createMetadataTypeElement, defaultFilterContext } from '../utils'
-import {
-  createInstanceElement,
-  MetadataInstanceElement,
-} from '../../src/transformers/transformer'
+import { createInstanceElement, MetadataInstanceElement } from '../../src/transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
-import {
-  SALESFORCE,
-  TERRITORY2_TYPE,
-  TERRITORY2_MODEL_TYPE,
-  CUSTOM_OBJECT,
-} from '../../src/constants'
+import { SALESFORCE, TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
 
 describe('territory filter', () => {
@@ -139,10 +123,7 @@ describe('territory filter', () => {
         },
       })
 
-      const modelInstance = createInstanceElement(
-        { description: 'Desc', fullName: 'TerModel' },
-        modelType,
-      )
+      const modelInstance = createInstanceElement({ description: 'Desc', fullName: 'TerModel' }, modelType)
       beforeElementModel = modelInstance
       afterElementModel = modelInstance.clone()
       afterElementModel.value.description = 'Desc yay'
@@ -194,26 +175,23 @@ describe('territory filter', () => {
         await filter.preDeploy(changes)
       })
       it('should add contentFileName annotation Territory2 type', () => {
-        expect(afterElementTerritory.annotations).toHaveProperty(
-          CONTENT_FILENAME_OVERRIDE,
-        )
-        expect(
-          afterElementTerritory.annotations[CONTENT_FILENAME_OVERRIDE],
-        ).toStrictEqual(['TerModel', 'territories', 'testTerritory.territory2'])
+        expect(afterElementTerritory.annotations).toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterElementTerritory.annotations[CONTENT_FILENAME_OVERRIDE]).toStrictEqual([
+          'TerModel',
+          'territories',
+          'testTerritory.territory2',
+        ])
       })
       it('should add contentFileName annotation to Territory2Model type', () => {
-        expect(afterElementModel.annotations).toHaveProperty(
-          CONTENT_FILENAME_OVERRIDE,
-        )
-        expect(
-          afterElementModel.annotations[CONTENT_FILENAME_OVERRIDE],
-        ).toStrictEqual(['TerModel', 'TerModel.territory2Model'])
+        expect(afterElementModel.annotations).toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterElementModel.annotations[CONTENT_FILENAME_OVERRIDE]).toStrictEqual([
+          'TerModel',
+          'TerModel.territory2Model',
+        ])
       })
 
       it('should not annotate non-territory types', () => {
-        expect(afterRegularInstance.annotations).not.toHaveProperty(
-          CONTENT_FILENAME_OVERRIDE,
-        )
+        expect(afterRegularInstance.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
       })
     })
 
@@ -223,15 +201,9 @@ describe('territory filter', () => {
         await filter.onDeploy(changes)
       })
       it('should delete contentFileName annotation from all instances', () => {
-        expect(afterElementTerritory.annotations).not.toHaveProperty(
-          CONTENT_FILENAME_OVERRIDE,
-        )
-        expect(afterElementModel.annotations).not.toHaveProperty(
-          CONTENT_FILENAME_OVERRIDE,
-        )
-        expect(afterRegularInstance.annotations).not.toHaveProperty(
-          CONTENT_FILENAME_OVERRIDE,
-        )
+        expect(afterElementTerritory.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterElementModel.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterRegularInstance.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
       })
     })
   })

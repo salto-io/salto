@@ -1,28 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import path from 'path'
 import {
+  BuiltinTypes,
+  Change,
+  DetailedChange,
   Element,
   ElemID,
-  BuiltinTypes,
-  ObjectType,
-  DetailedChange,
-  Change,
   getChangeData,
+  ObjectType,
   StaticFile,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
@@ -31,8 +24,8 @@ import { collections } from '@salto-io/lowerdash'
 import { createElementSelectors } from '../../../src/workspace/element_selector'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import {
-  multiEnvSource,
   ENVS_PREFIX,
+  multiEnvSource,
   MultiEnvSource,
 } from '../../../src/workspace/nacl_files/multi_env/multi_env_source'
 import * as routers from '../../../src/workspace/nacl_files/multi_env/routers'
@@ -40,15 +33,23 @@ import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
+import * as remoteMap from '../../../src/workspace/remote_map'
 import {
+  CreateRemoteMapParams,
   InMemoryRemoteMap,
   RemoteMap,
   RemoteMapCreator,
-  CreateRemoteMapParams,
 } from '../../../src/workspace/remote_map'
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
-import { MissingStaticFile } from '../../../src/workspace/static_files'
-import { NaclFilesSource, ChangeSet } from '../../../src/workspace/nacl_files'
+import {
+  AbsoluteStaticFile,
+  buildStaticFilesCache,
+  buildStaticFilesSource,
+  MissingStaticFile,
+} from '../../../src/workspace/static_files'
+import { ChangeSet, naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
+import { ReferenceIndexEntry } from '../../../src/workspace/reference_indexes'
+import { mockDirStore } from '../../common/nacl_file_store'
 
 const { awu } = collections.asynciterable
 jest.mock('@salto-io/adapter-utils', () => ({
@@ -226,11 +227,61 @@ const mockRemoteMaps = (): MockRemoteMapCreator => {
 }
 
 describe('multi env source', () => {
-  let referencedByIndex: RemoteMap<ElemID[]>
+  let referencedByIndex: RemoteMap<ReferenceIndexEntry[]>
   beforeAll(async () => {
     await source.load({})
-    referencedByIndex = createMockRemoteMap<ElemID[]>()
+    referencedByIndex = createMockRemoteMap<ReferenceIndexEntry[]>()
   })
+  describe('getStaticFile', () => {
+    const filePath = 'static1.nacl'
+    const staticFile = new StaticFile({ filepath: filePath, content: Buffer.from('I am a little static file') })
+    const setUp = async (sourceName: string, defaultFilePath?: string): Promise<NaclFilesSource> => {
+      const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
+      const inMemRemoteMapCreator =
+        (): remoteMap.RemoteMapCreator =>
+        async <T, K extends string = string>(opts: remoteMap.CreateRemoteMapParams<T>) => {
+          const map = maps.get(opts.namespace) ?? new remoteMap.InMemoryRemoteMap<T, K>()
+          if (!maps.has(opts.namespace)) {
+            maps.set(opts.namespace, map)
+          }
+          return map as remoteMap.RemoteMap<T, K>
+        }
+      const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
+      const otherStaticFiles = defaultFilePath ? { [defaultFilePath]: Buffer.from('I am a little static file') } : {}
+      const mockStaticFileDirStore = mockDirStore<Buffer>(undefined, undefined, otherStaticFiles)
+      const mockNaclFileDirStore = defaultFilePath
+        ? mockDirStore<string>()
+        : mockDirStore<string>(undefined, undefined, {})
+      const staticFileSource = buildStaticFilesSource(mockStaticFileDirStore, staticFilesCache)
+      return naclFilesSource(sourceName, mockNaclFileDirStore, staticFileSource, inMemRemoteMapCreator(), false)
+    }
+    it('should return the correct static file', async () => {
+      const commonStaticFileSource = await setUp(commonPrefix)
+      const envStaticFileSource = await setUp(activePrefix, filePath)
+      const realSources = {
+        [commonPrefix]: commonStaticFileSource,
+        [activePrefix]: envStaticFileSource,
+      }
+      const src = multiEnvSource(realSources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      await src.load({})
+      expect(
+        await src.getStaticFile({
+          filePath: staticFile.filepath,
+          encoding: staticFile.encoding,
+          env: activePrefix,
+          hash: staticFile.hash,
+          isTemplate: staticFile.isTemplate,
+        }),
+      ).toEqual(
+        new AbsoluteStaticFile({
+          absoluteFilePath: filePath,
+          filepath: filePath,
+          content: Buffer.from('I am a little static file'),
+        }),
+      )
+    })
+  })
+
   describe('load', () => {
     let remoteMaps: MockRemoteMapCreator
     beforeEach(() => {
@@ -511,7 +562,7 @@ describe('multi env source', () => {
       const removal = { action: 'remove', data: { before: commonFragment } } as Change<ObjectType>
       const addition = { action: 'add', data: { after: commonObject } } as Change<ObjectType>
       const envObjectRemoval = { action: 'remove', data: { before: envObject } } as Change<ObjectType>
-      const modificaton = {
+      const modification = {
         action: 'modify',
         data: { before: envFragment, after: newEnvFragment },
       } as Change<ObjectType>
@@ -522,7 +573,7 @@ describe('multi env source', () => {
       })
       const primarySourceName = 'env1'
       const mockPrimaryNaclFileSource = createMockNaclFileSource([envFragment, envObject], {}, undefined, undefined, {
-        changes: [envObjectRemoval, modificaton],
+        changes: [envObjectRemoval, modification],
         cacheValid: true,
       })
       const multiEnvSourceWithMockSources = multiEnvSource(
@@ -565,6 +616,93 @@ describe('multi env source', () => {
         _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc => _.omit(dc, ['path', 'id'])),
       )
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
+    })
+    it('should split base element modifications', async () => {
+      const envObjectMeta = envObject.clone()
+      envObjectMeta.metaType = new TypeReference(new ElemID('salto', 'meta'))
+      const { field } = envObject.fields
+      const fieldNumber = field.clone()
+      fieldNumber.refType = new TypeReference(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER)
+
+      const changes: DetailedChange[] = [
+        {
+          action: 'modify',
+          data: {
+            before: envObject,
+            after: envObjectMeta,
+          },
+          id: envObject.elemID,
+          elemIDs: {
+            before: envObject.elemID,
+            after: envObjectMeta.elemID,
+          },
+          path: envObject.path,
+        },
+        {
+          action: 'modify',
+          data: {
+            before: envObject,
+            after: envObjectMeta,
+          },
+          id: envObject.elemID,
+          elemIDs: {
+            before: envObject.elemID,
+            after: envObjectMeta.elemID,
+          },
+          path: envObject.path,
+        },
+        {
+          action: 'modify',
+          data: {
+            before: field,
+            after: fieldNumber,
+          },
+          id: field.elemID,
+          elemIDs: {
+            before: field.elemID,
+            after: fieldNumber.elemID,
+          },
+          path: field.path,
+        },
+      ]
+      await source.updateNaclFiles(activePrefix, changes)
+      expect(envSource.updateNaclFiles).toHaveBeenCalledWith([
+        {
+          action: 'remove',
+          data: { before: envObject },
+          id: envObject.elemID,
+          elemIDs: { before: envObject.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'add',
+          data: { after: envObjectMeta },
+          id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'add',
+          data: { after: envObjectMeta },
+          id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
+          path: envObject.path,
+        },
+        {
+          action: 'remove',
+          data: { before: field },
+          id: field.elemID,
+          elemIDs: { before: field.elemID },
+          path: field.path,
+        },
+        {
+          action: 'add',
+          data: { after: fieldNumber },
+          id: fieldNumber.elemID,
+          elemIDs: { after: fieldNumber.elemID },
+          path: field.path,
+        },
+      ])
     })
   })
   describe('flush', () => {
@@ -655,7 +793,7 @@ describe('multi env source', () => {
     })
   })
   describe('listNaclFiles', () => {
-    it('shoud list all Nacl files', async () => {
+    it('should list all Nacl files', async () => {
       const naclFiles = await source.listNaclFiles(activePrefix)
       expect(naclFiles).toHaveLength(4)
       await expectToContainAllItems(naclFiles, [

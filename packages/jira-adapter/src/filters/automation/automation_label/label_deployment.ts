@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   CORE_ANNOTATIONS,
@@ -33,7 +25,6 @@ import { FilterCreator } from '../../../filter'
 import { deployChanges } from '../../../deployment/standard_deployment'
 import JiraClient from '../../../client/client'
 import { getLookUpName } from '../../../reference_mapping'
-import { getCloudId } from '../cloud_id'
 
 const log = logger(module)
 
@@ -63,7 +54,7 @@ const updateAutomationLabel = async (instance: InstanceElement, client: JiraClie
 
   const url = client.isDataCenter
     ? `/rest/cb-automation/latest/rule-label/${instance.value.id}`
-    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels/${instance.value.id}`
+    : `/gateway/api/automation/internal-api/jira/${await client.getCloudId()}/pro/rest/GLOBAL/rule-labels/${instance.value.id}`
 
   await client.put({ url, data })
 }
@@ -77,7 +68,7 @@ const createAutomationLabel = async (instance: InstanceElement, client: JiraClie
 
   const url = client.isDataCenter
     ? '/rest/cb-automation/latest/rule-label'
-    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
+    : `/gateway/api/automation/internal-api/jira/${await client.getCloudId()}/pro/rest/GLOBAL/rule-labels`
 
   const response = await client.post({ url, data })
   if (!isLabelsPostResponse(response.data)) {

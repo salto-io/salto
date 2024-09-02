@@ -1,40 +1,35 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { promises } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FetchResourceDefinition } from '../../definitions/system/fetch/resource'
 import { TypeFetcherCreator, ValueGeneratedItem } from '../types'
 import { createValueTransformer } from '../utils'
 import { RecurseIntoDefinition } from '../../definitions/system/fetch/dependencies'
+import { ElementGenerator } from '../element/element'
 
+const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 type NestedResourceFetcher = (
   item: ValueGeneratedItem,
 ) => Promise<Record<string, ValueGeneratedItem[] | ValueGeneratedItem>>
 
-const extractRecurseIntoContext = (
+const extractRecurseIntoContext = async (
   item: ValueGeneratedItem,
   recurseIntoDef: RecurseIntoDefinition,
-): Record<string, unknown> => {
+): Promise<Record<string, unknown>> => {
   const { args: contextArgs } = recurseIntoDef.context
-  const context = _.mapValues(contextArgs, contextDef => {
+  const context = await mapValuesAsync(contextArgs, async contextDef => {
     const transformer = createValueTransformer(contextDef)
-    const transformedItem = transformer(item)
+    const transformedItem = await transformer(item)
     if (Array.isArray(transformedItem)) {
       return transformedItem.map(({ value }) => value)
     }
@@ -43,7 +38,11 @@ const extractRecurseIntoContext = (
   return context
 }
 
-export type RecurseIntoConditionBase = { match: string[] }
+export type RecurseIntoConditionBase = {
+  // `match` strings are regex patterns that are matched against the tested value with search semantics.
+  // Patterns have OR semantics between them. To express AND semantics, use multiple conditions instead.
+  match: string[]
+}
 type RecurseIntoConditionByField = RecurseIntoConditionBase & {
   fromField: string
 }
@@ -73,10 +72,12 @@ export const recurseIntoSubresources =
   ({
     def,
     typeFetcherCreator,
+    handleError,
     contextResources,
   }: {
     def: FetchResourceDefinition
     typeFetcherCreator: TypeFetcherCreator
+    handleError: ElementGenerator['handleError']
     contextResources: Record<string, ValueGeneratedItem[] | undefined>
   }): NestedResourceFetcher =>
   async item =>
@@ -86,8 +87,7 @@ export const recurseIntoSubresources =
           Object.entries(def.recurseInto ?? {})
             .filter(([_fieldName, { conditions }]) => shouldRecurseIntoEntry(item.value, item.context, conditions))
             .map(async ([fieldName, recurseDef]) => {
-              const nestedRequestContext = extractRecurseIntoContext(item, recurseDef)
-              // TODO avoid crashing if fails on sub-element (SALTO-5427)
+              const nestedRequestContext = await extractRecurseIntoContext(item, recurseDef)
               const typeFetcher = typeFetcherCreator({
                 typeName: recurseDef.typeName,
                 context: { ...item.context, ...nestedRequestContext },
@@ -98,7 +98,7 @@ export const recurseIntoSubresources =
               }
               const recurseRes = await typeFetcher.fetch({ contextResources, typeFetcherCreator })
               if (!recurseRes.success) {
-                // TODO throw (SALTO-5427)
+                handleError({ typeName: recurseDef.typeName, error: recurseRes.error })
                 return []
               }
               const items = typeFetcher.getItems()

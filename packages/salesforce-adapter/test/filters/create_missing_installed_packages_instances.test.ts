@@ -1,23 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  CORE_ANNOTATIONS,
-  Element,
-  InstanceElement,
-} from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce-types'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
@@ -26,16 +14,8 @@ import { SalesforceClient } from '../../index'
 import Connection from '../../src/client/jsforce'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
-import {
-  apiName,
-  createInstanceElement,
-} from '../../src/transformers/transformer'
-import {
-  INSTALLED_PACKAGE_METADATA,
-  INSTANCE_FULL_NAME_FIELD,
-  RECORDS_PATH,
-  SALESFORCE,
-} from '../../src/constants'
+import { apiName, createInstanceElement } from '../../src/transformers/transformer'
+import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE } from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../connection'
 import mockClient from '../client'
@@ -61,9 +41,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
     let beforeElements: Element[]
     let afterElements: Element[]
 
-    const createInstalledPackageFileProperties = (
-      namespace: string,
-    ): FileProperties =>
+    const createInstalledPackageFileProperties = (namespace: string): FileProperties =>
       mockFileProperties({
         fullName: namespace,
         type: INSTALLED_PACKAGE_METADATA,
@@ -71,9 +49,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
         namespacePrefix: namespace,
       })
 
-    const createInstalledPackageInstance = (
-      namespace: string,
-    ): InstanceElement =>
+    const createInstalledPackageInstance = (namespace: string): InstanceElement =>
       createInstanceElement(
         {
           [INSTANCE_FULL_NAME_FIELD]: namespace,
@@ -83,14 +59,9 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
       )
 
     beforeEach(() => {
-      connection.metadata.list.mockResolvedValue(
-        EXISTING_NAMESPACES.map(createInstalledPackageFileProperties),
-      )
-      beforeElements = [
-        mockTypes.InstalledPackage,
-        ...EXISTING_NAMESPACES.map(createInstalledPackageInstance),
-      ]
-      afterElements = beforeElements.map((e) => e.clone())
+      connection.metadata.list.mockResolvedValue(EXISTING_NAMESPACES.map(createInstalledPackageFileProperties))
+      beforeElements = [mockTypes.InstalledPackage, ...EXISTING_NAMESPACES.map(createInstalledPackageInstance)]
+      afterElements = beforeElements.map(e => e.clone())
     })
 
     describe('when no InstalledPackage is missing', () => {
@@ -106,9 +77,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
       const MISSING_NAMESPACE = 'missingNamespace'
       beforeEach(async () => {
         connection.metadata.list.mockResolvedValueOnce(
-          EXISTING_NAMESPACES.concat(MISSING_NAMESPACE).map(
-            createInstalledPackageFileProperties,
-          ),
+          EXISTING_NAMESPACES.concat(MISSING_NAMESPACE).map(createInstalledPackageFileProperties),
         )
       })
       describe('when the missing InstalledPackage is excluded from the fetch config', () => {
@@ -146,16 +115,11 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
         it('should create an InstalledPackage instance', async () => {
           expect(afterElements).not.toEqual(beforeElements)
           const missingNamespaceInstance = await awu(afterElements).find(
-            async (e) => (await apiName(e)) === MISSING_NAMESPACE,
+            async e => (await apiName(e)) === MISSING_NAMESPACE,
           )
           expect(missingNamespaceInstance).toEqual(
             expect.objectContaining({
-              path: [
-                SALESFORCE,
-                RECORDS_PATH,
-                INSTALLED_PACKAGE_METADATA,
-                MISSING_NAMESPACE,
-              ],
+              path: [SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGE_METADATA, MISSING_NAMESPACE],
               value: {
                 [INSTANCE_FULL_NAME_FIELD]: MISSING_NAMESPACE,
               },

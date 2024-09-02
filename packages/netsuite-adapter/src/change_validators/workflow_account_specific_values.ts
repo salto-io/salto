@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AdditionChange,
@@ -27,9 +19,9 @@ import {
   toChange,
   Value,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP, resolvePath } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { ACCOUNT_SPECIFIC_VALUE, INIT_CONDITION, WORKFLOW } from '../constants'
-import { resolveWorkflowsAccountSpecificValues } from '../filters/workflow_account_specific_values'
+import { getResolvedAccountSpecificValues } from '../filters/workflow_account_specific_values'
 import { NetsuiteChangeValidator } from './types'
 import { toAccountSpecificValuesWarning } from './account_specific_values'
 
@@ -131,13 +123,13 @@ const getChangeErrorsOnAccountSpecificValues = (
     .concat(returnGenericAccountSpecificValuesWarning ? toAccountSpecificValuesWarning(instance) : [])
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { suiteQLNameToInternalIdsMap }) => {
   const workflowChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .filter(change => change.data.after.elemID.typeName === WORKFLOW)
 
-  if (elementsSource === undefined || workflowChanges.length === 0) {
+  if (workflowChanges.length === 0) {
     return []
   }
   const clonedWorkflowChanges = workflowChanges.map(
@@ -148,12 +140,18 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
       }) as AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   )
 
-  const resolveWarnings = await resolveWorkflowsAccountSpecificValues(
-    clonedWorkflowChanges.map(getChangeData),
-    elementsSource,
-  )
+  const allResolveWarnings = clonedWorkflowChanges.flatMap(change => {
+    const instance = getChangeData(change)
+    const { resolvedAccountSpecificValues, resolveWarnings } = getResolvedAccountSpecificValues(
+      instance,
+      suiteQLNameToInternalIdsMap,
+    )
+    resolvedAccountSpecificValues.forEach(({ path, value }) => setPath(instance, path, value))
+    return resolveWarnings
+  })
+
   const accountSpecificValuesErrors = clonedWorkflowChanges.flatMap(getChangeErrorsOnAccountSpecificValues)
-  return resolveWarnings.concat(accountSpecificValuesErrors)
+  return allResolveWarnings.concat(accountSpecificValuesErrors)
 }
 
 export default changeValidator

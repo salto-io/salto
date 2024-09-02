@@ -1,23 +1,15 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, INACTIVE_FIELDS } from '../constants'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, FILE_CABINET_PATH_SEPARATOR, INACTIVE_FIELDS } from '../constants'
 import { removeCustomRecordTypePrefix } from '../types'
 import { fileCabinetTypesNames } from '../types/file_cabinet_types'
 import {
@@ -36,6 +28,7 @@ import {
   DATA_FILE_TYPES,
   DEFAULT_MAX_INSTANCES_PER_TYPE,
   DEFAULT_MAX_INSTANCES_VALUE,
+  EXTENSION_REGEX,
   FILE_CABINET,
   GROUPS_TO_DATA_FILE_TYPES,
   INCLUDE_ALL,
@@ -67,10 +60,10 @@ export const fullFetchConfig = (): FetchParams => ({
 })
 
 const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | undefined => {
-  if (config.fetchTarget?.customRecords === undefined) {
-    return config.fetchTarget
+  if (config.fetchTarget === undefined) {
+    return undefined
   }
-  const { types, filePaths, customRecords } = config.fetchTarget
+  const { types = {}, filePaths = [], customRecords = {} } = config.fetchTarget
   // in case that custom records are fetched, we want to fetch their types too-
   // using this config: { types: { customrecordtype: [<customRecordTypes>] } }.
   // without that addition, the custom record types wouldn't be fetched
@@ -79,15 +72,24 @@ const updatedFetchTarget = (config: NetsuiteConfig): NetsuiteQueryParameters | u
   // custom record types that have custom segments are fetch by them
   // so we need to fetch the matching custom segments too.
   const customSegmentNames = customRecordTypeNames.map(removeCustomRecordTypePrefix).filter(name => name.length > 0)
-  const customRecordTypesQuery = (types?.[CUSTOM_RECORD_TYPE] ?? []).concat(customRecordTypeNames)
-  const customSegmentsQuery = (types?.[CUSTOM_SEGMENT] ?? []).concat(customSegmentNames)
+  const customRecordTypesQuery = (types[CUSTOM_RECORD_TYPE] ?? []).concat(customRecordTypeNames)
+  const customSegmentsQuery = (types[CUSTOM_SEGMENT] ?? []).concat(customSegmentNames)
+
+  const filePathsFolders = filePaths
+    .map(path => path.substring(0, path.lastIndexOf(FILE_CABINET_PATH_SEPARATOR) + 1))
+    .filter(path => path !== FILE_CABINET_PATH_SEPARATOR)
+    // in case that the query was like ".*\.js" (all js files), we want to query all folders
+    .map(path => (path === '' ? `.*${FILE_CABINET_PATH_SEPARATOR}` : path))
+    .filter(regex.isValidRegex)
+  const updatedFilePaths = _.uniq(filePaths.concat(filePathsFolders))
+
   return {
     types: {
       ...types,
-      [CUSTOM_RECORD_TYPE]: customRecordTypesQuery,
-      [CUSTOM_SEGMENT]: customSegmentsQuery,
+      ...(customRecordTypesQuery.length > 0 ? { [CUSTOM_RECORD_TYPE]: customRecordTypesQuery } : {}),
+      ...(customSegmentsQuery.length > 0 ? { [CUSTOM_SEGMENT]: customSegmentsQuery } : {}),
     },
-    filePaths,
+    filePaths: updatedFilePaths,
     customRecords,
   }
 }
@@ -143,7 +145,7 @@ const excludeDataFileTypes = (config: NetsuiteConfig): string[] => {
   if (dataFileTypesToExclude.length === 0) {
     return []
   }
-  const dataFileTypesToExcludeRegex = `.*\\.(${dataFileTypesToExclude.join('|')})`
+  const dataFileTypesToExcludeRegex = `${EXTENSION_REGEX}(${dataFileTypesToExclude.join('|')})`
   return [dataFileTypesToExcludeRegex.toLowerCase(), dataFileTypesToExcludeRegex.toUpperCase()]
 }
 

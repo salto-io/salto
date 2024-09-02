@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
@@ -31,6 +23,12 @@ import {
 import { FetchByQueryFailures, convertToQueryParams, isCriteriaQuery } from './query'
 import { emptyQueryParams, fullFetchConfig } from './config_creator'
 
+const DEPRECATED_CONFIGS_TO_REMOVE = [
+  'fetch.skipResolvingAccountSpecificValuesToTypes',
+  'suiteAppClient.maxRecordsPerSuiteQLTable',
+  'useChangesDetection',
+]
+
 export const STOP_MANAGING_ITEMS_MSG =
   'Salto failed to fetch some items from NetSuite. Failed items must be excluded from the fetch.'
 
@@ -42,12 +40,10 @@ export const toLargeTypesExcludedMessage = (updatedLargeTypes: string[]): string
   `The following types were excluded from the fetch as the elements of that type were too numerous: ${updatedLargeTypes.join(', ')}.` +
   " To include them, increase the types elements' size limitations and remove their exclusion rules."
 
-export const toLargeSuiteQLTablesExcludedMessage = (largeSuiteQLTables: string[]): string =>
-  `The following SuiteQL tables were excluded from the fetch as the records of that table were too numerous: ${largeSuiteQLTables.join(', ')}.` +
-  " Those tables are used to resolve ACCOUNT_SPECIFIC_VALUEs, and without them Salto won't be able to resolve ACCOUNT_SPECIFIC_VALUEs of those types." +
-  " To include them, increase the table records' size limitations and remove their exclusion rules."
-
 export const ALIGNED_INACTIVE_CRITERIAS = 'The exclusion criteria of inactive elements was modified.'
+
+export const toRemovedDeprecatedConfigsMessage = (paths: string[]): string =>
+  `The following configs are deprecated and will be removed from the adapter config: ${paths.join(', ')}.`
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
@@ -206,21 +202,6 @@ const updateConfigFromLargeTypes = (
   return []
 }
 
-const updateConfigFromLargeSuiteQLTables = (
-  config: NetsuiteConfig,
-  { largeSuiteQLTables }: FetchByQueryFailures,
-): string[] => {
-  if (largeSuiteQLTables.length > 0) {
-    config.fetch = {
-      ...config.fetch,
-      skipResolvingAccountSpecificValuesToTypes: (config.fetch.skipResolvingAccountSpecificValuesToTypes ?? []).concat(
-        largeSuiteQLTables,
-      ),
-    }
-  }
-  return largeSuiteQLTables
-}
-
 // TODO: remove at May 24.
 const alignInactiveExclusionCriterias = (config: NetsuiteConfig): boolean => {
   let isUpdated = false
@@ -257,6 +238,12 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   ]
 }
 
+const removeDeprecatedConfigs = (config: NetsuiteConfig): string[] => {
+  const definedDeprecatedConfigs = DEPRECATED_CONFIGS_TO_REMOVE.filter(path => _.get(config, path) !== undefined)
+  definedDeprecatedConfigs.forEach(path => _.unset(config, path))
+  return definedDeprecatedConfigs
+}
+
 export const getConfigFromConfigChanges = (
   failures: FetchByQueryFailures,
   currentConfig: NetsuiteConfig,
@@ -265,15 +252,15 @@ export const getConfigFromConfigChanges = (
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
   const updatedLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
   const updatedLargeTypes = updateConfigFromLargeTypes(config, failures)
-  const updatedLargeSuiteQLTables = updateConfigFromLargeSuiteQLTables(config, failures)
   const alignedInactiveCriterias = alignInactiveExclusionCriterias(config)
+  const removedDeprecatedConfigs = removeDeprecatedConfigs(config)
 
   const messages = [
     didUpdateFromFailures ? STOP_MANAGING_ITEMS_MSG : undefined,
     updatedLargeFolders.length > 0 ? toLargeFoldersExcludedMessage(updatedLargeFolders) : undefined,
     updatedLargeTypes.length > 0 ? toLargeTypesExcludedMessage(updatedLargeTypes) : undefined,
-    updatedLargeSuiteQLTables.length > 0 ? toLargeSuiteQLTablesExcludedMessage(updatedLargeSuiteQLTables) : undefined,
     alignedInactiveCriterias ? ALIGNED_INACTIVE_CRITERIAS : undefined,
+    removedDeprecatedConfigs.length > 0 ? toRemovedDeprecatedConfigsMessage(removedDeprecatedConfigs) : undefined,
   ].filter(values.isDefined)
 
   return messages.length > 0

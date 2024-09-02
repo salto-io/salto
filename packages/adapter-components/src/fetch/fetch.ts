@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ElemIdGetter, ObjectType, isObjectType } from '@salto-io/adapter-api'
@@ -28,7 +20,7 @@ import {
 import { getRequester } from './request/requester'
 import { createResourceManager } from './resource/resource_manager'
 import { getElementGenerator } from './element/element'
-import { FetchElements } from './types'
+import { FetchElements, ValueGeneratedItem } from './types'
 import { RequiredDefinitions } from '../definitions/system/types'
 
 const log = logger(module)
@@ -53,6 +45,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
   predefinedTypes,
   getElemIdFunc,
   additionalRequestContext,
+  customItemFilter,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -60,6 +53,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
   predefinedTypes?: Record<string, ObjectType>
   getElemIdFunc?: ElemIdGetter
   additionalRequestContext?: Record<string, unknown>
+  customItemFilter?: (item: ValueGeneratedItem) => boolean
 }): Promise<FetchElements> => {
   const { clients, fetch, pagination } = definitions
 
@@ -109,6 +103,7 @@ export const getElements = async <Options extends APIDefinitionsOptions>({
     requester,
     elementGenerator,
     initialRequestContext: additionalRequestContext,
+    customItemFilter,
   })
 
   await resourceManager.fetch(fetchQuery)

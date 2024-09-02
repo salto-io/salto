@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Values } from '@salto-io/adapter-api'
 
@@ -226,5 +218,103 @@ export const mockDefaultValues: Record<string, Values> = {
     position: 9999,
     active: true,
     system: false,
+  },
+  workspace: {
+    description: '',
+    activated: true,
+    conditions: {
+      all: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: 'open',
+        },
+      ],
+    },
+  },
+  queue: {
+    name: 'Test',
+    description: 'Test',
+    priority: 1,
+    definition: {
+      all: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: 'open',
+        },
+      ],
+    },
+    primary_groups_id: [],
+  },
+  layout: {
+    state: 'draft',
+    type: 'ticket',
+    is_default: false,
+    sections: [
+      {
+        name: 'ticket-workspace',
+        columns: [
+          {
+            width: 0.6,
+            components: [
+              {
+                type: 'TicketFieldsPane',
+                height: 1,
+              },
+            ],
+            isCollapsed: false,
+            isSplitterHidden: false,
+          },
+          {
+            width: 1.8,
+            components: [
+              {
+                type: 'MainConversationPane',
+                height: 1,
+              },
+            ],
+            isCollapsed: false,
+            isSplitterHidden: false,
+          },
+          {
+            width: 0.6,
+            components: [
+              {
+                type: 'ContextPanel',
+                config: {
+                  open: {
+                    type: 'CustomerContextPane',
+                  },
+                  components: [
+                    {
+                      type: 'CustomerContextPane',
+                    },
+                    {
+                      type: 'RelatedObjectsPane',
+                    },
+                    {
+                      type: 'KnowledgePane',
+                    },
+                    {
+                      type: 'IntelligencePane',
+                    },
+                    {
+                      type: 'SideConversationsPane',
+                    },
+                    {
+                      type: 'AppsPane',
+                    },
+                  ],
+                },
+                height: 1,
+              },
+            ],
+            isCollapsed: false,
+            isSplitterHidden: false,
+          },
+        ],
+      },
+    ],
   },
 }

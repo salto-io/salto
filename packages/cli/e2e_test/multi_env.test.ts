@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
@@ -48,6 +40,7 @@ import {
   getCurrentEnv,
   loadValidWorkspace,
 } from './helpers/workspace'
+import './helpers/jest_matchers'
 import * as templates from './helpers/templates'
 
 const { awu } = collections.asynciterable
@@ -275,8 +268,8 @@ describe.each([
     })
 
     describe('have empty previews', () => {
-      let env1Plan: Plan | undefined
-      let env2Plan: Plan | undefined
+      let env1Plan: Plan
+      let env2Plan: Plan
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV1_NAME)
         env1Plan = await runPreviewGetPlan(baseDir, accounts)
@@ -284,8 +277,8 @@ describe.each([
         env2Plan = await runPreviewGetPlan(baseDir, accounts)
       })
       it('should have empty previews for all envs', async () => {
-        expect(env1Plan?.size).toBe(0)
-        expect(env2Plan?.size).toBe(0)
+        expect(env1Plan).toBeEmptyPlan()
+        expect(env2Plan).toBeEmptyPlan()
       })
     })
 
@@ -363,7 +356,7 @@ describe.each([
       })
 
       it('should have empty preview for the env from which the element was fetched', () => {
-        expect(afterFetchPlan?.size).toBe(0)
+        expect(afterFetchPlan).toBeEmptyPlan()
       })
     })
 
@@ -380,8 +373,8 @@ describe.each([
         }
         await runDeploy({ workspacePath: baseDir })
       })
-      it('should have a non empty preview for the target enviornment', () => {
-        expect(afterOtherEnvFetchPlan?.size).toBeGreaterThan(0)
+      it('should have a non empty preview for the target environment', () => {
+        expect(afterOtherEnvFetchPlan).not.toBeEmptyPlan()
       })
 
       it('should create the element in the target env', async () => {
@@ -418,7 +411,7 @@ describe.each([
         expect(commonInstWithDiffEnv1FilePath()).not.toExist()
       })
       it('should have empty preview after fetching the delete changes', () => {
-        expect(afterDeleteFetchPlan?.size).toBe(0)
+        expect(afterDeleteFetchPlan).toBeEmptyPlan()
       })
     })
 
@@ -431,8 +424,8 @@ describe.each([
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
       })
 
-      it('should have a non empty preview for the target enviornment', () => {
-        expect(afterDeleteOtherEnvFetchPlan?.size).toBeGreaterThan(0)
+      it('should have a non empty preview for the target environment', () => {
+        expect(afterDeleteOtherEnvFetchPlan).not.toBeEmptyPlan()
       })
 
       it('should delete the elements in the target env', async () => {
@@ -442,7 +435,7 @@ describe.each([
       })
     })
   })
-  // eslint-disable-next-line
+
   describe('handle changes that originated in the NaCL files', () => {
     const commonNaclFileObjectName = `CommonObjectNacl${tempID}`
     const env1NaclFileObjectName = `Env1ObjectNacl${tempID}`
@@ -580,8 +573,8 @@ describe.each([
       })
 
       it('Should have non-empty deploy plans', () => {
-        expect(env1DeployPlan?.size).not.toEqual(0)
-        expect(env2DeployPlan?.size).not.toEqual(0)
+        expect(env1DeployPlan).not.toBeEmptyPlan()
+        expect(env2DeployPlan).not.toBeEmptyPlan()
       })
 
       it('should remove common elements from nacl change', async () => {

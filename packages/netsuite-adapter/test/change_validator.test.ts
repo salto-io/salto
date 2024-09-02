@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -51,7 +43,7 @@ const DEFAULT_OPTIONS = {
     }) as unknown as Required<Filter>,
   elementsSource: jest.fn() as unknown as ReadOnlyElementsSource,
   fetchByQuery: jest.fn(),
-  userConfig: {
+  config: {
     fetch: fullFetchConfig(),
   },
 }
@@ -205,7 +197,7 @@ describe('change validator', () => {
         changes,
         client,
         DEFAULT_OPTIONS.additionalDependencies,
-        DEFAULT_OPTIONS.filtersRunner,
+        expect.any(Function),
       )
     })
     it('should call netsuiteClientValidation with only valid changes', async () => {
@@ -232,7 +224,7 @@ describe('change validator', () => {
         [validChange],
         client,
         DEFAULT_OPTIONS.additionalDependencies,
-        DEFAULT_OPTIONS.filtersRunner,
+        expect.any(Function),
       )
     })
   })

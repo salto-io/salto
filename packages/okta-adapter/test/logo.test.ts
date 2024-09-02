@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -24,13 +16,14 @@ import {
   StaticFile,
   toChange,
 } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementsDeprecated } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } from '@salto-io/adapter-components/src/elements_deprecated'
 import OktaClient from '../src/client/client'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../src/constants'
 import { createFileType, deployLogo, getLogo } from '../src/logo'
 import { mockClient } from './utils'
+
+const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } = elementsDeprecated
 
 describe('logo filter', () => {
   const content = Buffer.from('test')

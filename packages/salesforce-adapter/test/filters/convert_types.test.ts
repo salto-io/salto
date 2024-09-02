@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -102,19 +94,14 @@ describe('convert types filter', () => {
     ],
     numArray: ['12', '13', '14'],
     picklist: '0',
-    refToStr: new ReferenceExpression(
-      new ElemID(constants.SALESFORCE, 'dummy'),
-    ),
+    refToStr: new ReferenceExpression(new ElemID(constants.SALESFORCE, 'dummy')),
     withoutTypeDef: 'withoutTypeDef',
   })
 
   const mockSettings = new InstanceElement(
     'test_settings',
     new ObjectType({
-      elemID: new ElemID(
-        constants.SALESFORCE,
-        constants.SETTINGS_METADATA_TYPE,
-      ),
+      elemID: new ElemID(constants.SALESFORCE, constants.SETTINGS_METADATA_TYPE),
     }),
     {},
   )
@@ -130,11 +117,7 @@ describe('convert types filter', () => {
       let inst: InstanceElement
 
       beforeEach(async () => {
-        testElements = [
-          _.clone(mockType),
-          _.clone(mockInstance),
-          _.clone(mockSettings),
-        ]
+        testElements = [_.clone(mockType), _.clone(mockInstance), _.clone(mockSettings)]
         await filter.onFetch(testElements)
         inst = testElements[1] as InstanceElement
       })
@@ -191,9 +174,7 @@ describe('convert types filter', () => {
       })
 
       it('should not change values that have no type definition', () => {
-        expect(inst.value.withoutTypeDef).toBe(
-          mockInstance.value.withoutTypeDef,
-        )
+        expect(inst.value.withoutTypeDef).toBe(mockInstance.value.withoutTypeDef)
       })
     })
   })

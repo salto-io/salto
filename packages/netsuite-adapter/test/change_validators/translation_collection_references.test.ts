@@ -1,22 +1,15 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import translationCollectionValidator from '../../src/change_validators/translation_collection_references'
 import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('translation collection change validator', () => {
   const addressFormInstance = new InstanceElement('test', addressFormType().type, {
@@ -31,7 +24,7 @@ describe('translation collection change validator', () => {
     const changes = [{ after: addressFormInstance }, { after: noReferenceInstance }, { after: nestedRefInstance }].map(
       toChange,
     )
-    const changeErrors = await translationCollectionValidator(changes)
+    const changeErrors = await translationCollectionValidator(changes, mockChangeValidatorParams())
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
       elemID: addressFormInstance.elemID,
@@ -74,7 +67,7 @@ describe('translation collection change validator', () => {
     })
     it('should have change error on parent only when it is a change', async () => {
       const changes = [{ after: customRecordType }, { after: customRecordType.fields.fieldWithoutRef }].map(toChange)
-      const changeErrors = await translationCollectionValidator(changes)
+      const changeErrors = await translationCollectionValidator(changes, mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         elemID: customRecordType.elemID,
@@ -88,7 +81,7 @@ describe('translation collection change validator', () => {
     it('should have change error on field only when it has invalid reference', async () => {
       const changes = [{ after: customRecordType.fields.fieldWithRef }].map(toChange)
       delete customRecordType.annotations.ref
-      const changeErrors = await translationCollectionValidator(changes)
+      const changeErrors = await translationCollectionValidator(changes, mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         elemID: customRecordType.fields.fieldWithRef.elemID,
@@ -101,7 +94,7 @@ describe('translation collection change validator', () => {
     })
     it('should have change error on field when parent has invalid reference', async () => {
       const changes = [{ after: customRecordType.fields.fieldWithoutRef }].map(toChange)
-      const changeErrors = await translationCollectionValidator(changes)
+      const changeErrors = await translationCollectionValidator(changes, mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         elemID: customRecordType.fields.fieldWithoutRef.elemID,
@@ -114,7 +107,7 @@ describe('translation collection change validator', () => {
     })
     it('should have change error on field when field and parent have invalid reference', async () => {
       const changes = [{ after: customRecordType.fields.fieldWithRef }].map(toChange)
-      const changeErrors = await translationCollectionValidator(changes)
+      const changeErrors = await translationCollectionValidator(changes, mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0]).toEqual({
         elemID: customRecordType.fields.fieldWithRef.elemID,

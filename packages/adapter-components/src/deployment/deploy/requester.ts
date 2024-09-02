@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -62,8 +54,8 @@ type ItemExtractor = (
 const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContext>): ItemExtractor => {
   // default single to true for deploy if not explicitly specified
   const transform = createValueTransformer(_.defaults({}, transformationDef, { single: true }))
-  return ({ value, ...args }) => {
-    const res = transform({
+  return async ({ value, ...args }) => {
+    const res = await transform({
       value,
       typeName: getChangeData(args.change).elemID.typeName,
       context: { ...args },
@@ -75,31 +67,31 @@ const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContex
   }
 }
 
-const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndContext) => boolean) => {
+const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndContext) => Promise<boolean>) => {
   const { custom, transformForCheck, skipIfIdentical } = conditionDef ?? {}
   if (custom !== undefined) {
-    return custom({ skipIfIdentical, transformForCheck })
+    return async input => custom({ skipIfIdentical, transformForCheck })(input)
   }
   if (skipIfIdentical === false) {
-    return () => true
+    return async () => true
   }
   // note: no need to add a default for the value of single,
   // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
-  return args => {
+  return async args => {
     const { change } = args
     if (!isModificationChange(change)) {
       return true
     }
     const { typeName } = change.data.after.elemID
     return !isEqualValues(
-      transform({ value: change.data.before.value, typeName, context: args }),
-      transform({ value: change.data.after.value, typeName, context: args }),
+      await transform({ value: change.data.before.value, typeName, context: args }),
+      await transform({ value: change.data.after.value, typeName, context: args }),
     )
   }
 }
 
-const extractDataToApply = ({
+const extractDataToApply = async ({
   definition,
   changeAndContext,
   response,
@@ -107,12 +99,12 @@ const extractDataToApply = ({
   definition: TransformDefinition<ChangeAndContext, Values>
   changeAndContext: ChangeAndContext
   response: Response<ResponseValue | ResponseValue[]>
-}): Values | undefined => {
+}): Promise<Values | undefined> => {
   const { change } = changeAndContext
   const { elemID } = getChangeData(change)
   const extractor = createValueTransformer(definition)
   const dataToApply = collections.array.makeArray(
-    extractor({
+    await extractor({
       value: response.data,
       typeName: getChangeData(change).elemID.typeName,
       context: changeAndContext,
@@ -142,7 +134,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
   if (copyFromResponse?.additional !== undefined) {
     _.assign(
       dataToApply,
-      extractDataToApply({
+      await extractDataToApply({
         definition: copyFromResponse.additional,
         changeAndContext,
         response,
@@ -160,7 +152,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
     if (serviceIDFieldNames.length > 0) {
       _.assign(
         dataToApply,
-        extractDataToApply({
+        await extractDataToApply({
           definition: {
             pick: serviceIDFieldNames,
             // reverse the transformation used for the request
@@ -176,17 +168,17 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
   return dataToApply
 }
 
-const extractExtraContextToApply = <ClientOptions extends string>({
+const extractExtraContextToApply = async <ClientOptions extends string>({
   requestDef,
   response,
   ...changeAndContext
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
-} & ChangeAndContext): Values | undefined => {
+} & ChangeAndContext): Promise<Values | undefined> => {
   const { toSharedContext } = requestDef.copyFromResponse ?? {}
   if (toSharedContext !== undefined) {
-    const dataToApply = extractDataToApply({
+    const dataToApply = await extractDataToApply({
       definition: toSharedContext,
       changeAndContext,
       response,
@@ -272,7 +264,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
 
     const data = mergedEndpointDef.omitBody
       ? undefined
-      : extractor({
+      : await extractor({
           change,
           ...changeContext,
           additionalContext,
@@ -364,7 +356,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         throw new Error(`Invalid request for change ${elemID.getFullName()} action ${action}`)
       }
       const checkFunc = createCheck(condition)
-      if (!checkFunc(args)) {
+      if (!(await checkFunc(args))) {
         if (!request.earlySuccess) {
           const { client, path, method } = request.endpoint
           log.trace(
@@ -395,7 +387,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
           )
           _.assign(getChangeData(change).value, dataToApply)
         }
-        const extraContextToApply = extractExtraContextToApply({ ...args, requestDef: def, response: res })
+        const extraContextToApply = await extractExtraContextToApply({ ...args, requestDef: def, response: res })
         if (extraContextToApply !== undefined) {
           log.trace(
             'applying the following value to extra context in group %s from change %s: %s',

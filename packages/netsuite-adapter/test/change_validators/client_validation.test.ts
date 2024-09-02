@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { Filter } from '../../src/filter'
@@ -175,6 +167,55 @@ describe('client validation', () => {
       ]),
     )
   })
+  it('should return missing features errors', async () => {
+    mockValidate.mockResolvedValue([
+      {
+        elemID: getChangeData(changes[0]).elemID,
+        message:
+          'Details: To install this SuiteCloud project, the ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)) feature must be enabled in the account.',
+        severity: 'Error',
+      },
+      {
+        elemID: getChangeData(changes[0]).elemID,
+        message:
+          'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        severity: 'Error',
+      },
+      {
+        elemID: getChangeData(changes[1]).elemID,
+        message:
+          'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        severity: 'Error',
+      },
+    ])
+    const changeErrors = await clientValidation(
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+    )
+    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors).toEqual(
+      expect.arrayContaining([
+        {
+          elemID: getChangeData(changes[0]).elemID,
+          severity: 'Error',
+          message: 'This element requires features that are not enabled in the account',
+          detailedMessage: expect.stringContaining(
+            'Cannot deploy element because of required features that are not enabled in the target account: ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)), MULTIBOOK(Adjustment Only Books).',
+          ),
+        },
+        {
+          elemID: getChangeData(changes[1]).elemID,
+          severity: 'Error',
+          message: 'This element requires features that are not enabled in the account',
+          detailedMessage: expect.stringContaining(
+            'Cannot deploy element because of required features that are not enabled in the target account: MULTIBOOK(Adjustment Only Books).',
+          ),
+        },
+      ]),
+    )
+  })
   describe('validate file cabinet instances', () => {
     let fileChange: Change<InstanceElement>
     beforeEach(() => {
@@ -209,6 +250,49 @@ describe('client validation', () => {
     it('should not call validate when there are only file cabinet instances that are in suiteapp group', async () => {
       await clientValidation([fileChange], client, {} as unknown as AdditionalDependencies, mockFiltersRunner)
       expect(mockValidate).not.toHaveBeenCalled()
+    })
+    it('should not return change error on file cabinet instance that is in another real change group', async () => {
+      mockValidate.mockResolvedValue([
+        {
+          elemID: getChangeData(fileChange).elemID,
+          message: 'File Error',
+          severity: 'Error',
+        },
+        {
+          elemID: getChangeData(changes[0]).elemID,
+          message: 'SDF Change Error',
+          severity: 'Error',
+        },
+        {
+          message: 'General Error',
+          severity: 'Error',
+        },
+      ])
+      const changesToValidate = changes.concat(fileChange)
+      const changeErrors = await clientValidation(
+        changesToValidate,
+        client,
+        {} as unknown as AdditionalDependencies,
+        mockFiltersRunner,
+      )
+      expect(changeErrors).toHaveLength(changes.length + 1)
+      expect(changeErrors).toEqual(
+        expect.arrayContaining(
+          changes
+            .map(change => ({
+              elemID: getChangeData(change).elemID,
+              message: 'SDF validation error',
+              detailedMessage: 'General Error',
+              severity: 'Error',
+            }))
+            .concat({
+              elemID: getChangeData(changes[0]).elemID,
+              message: 'SDF validation error',
+              detailedMessage: 'SDF Change Error',
+              severity: 'Error',
+            }),
+        ),
+      )
     })
   })
 })

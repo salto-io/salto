@@ -1,33 +1,23 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import {
-  ActionName,
-  CORE_ANNOTATIONS,
-  ElemID,
-  ObjectType,
-} from '@salto-io/adapter-api'
+import { ActionName, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
 export const UNIX_TIME_ZERO_STRING = '1970-01-01T00:00:00.000Z'
 
+// Adapter name
 export const SALESFORCE = 'salesforce'
+
+// Service constants
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
 export const INSTANCE_FULL_NAME_FIELD = 'fullName'
@@ -40,6 +30,8 @@ export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
 export const API_NAME_SEPARATOR = '.'
 export const CUSTOM_OBJECT_ID_FIELD = 'Id'
+
+// Internal constants
 export const INTERNAL_ID_FIELD = 'internalId'
 export const XML_ATTRIBUTE_PREFIX = 'attr_'
 export const DEFAULT_NAMESPACE = 'standard'
@@ -93,20 +85,25 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
 // We use Geolocation internally to avoid conflicts with the Location standard object
 export const LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME = 'Geolocation'
 
-export const COMPOUND_FIELDS_SOAP_TYPE_NAMES: Record<
-  string,
-  COMPOUND_FIELD_TYPE_NAMES
-> = {
+export const COMPOUND_FIELDS_SOAP_TYPE_NAMES: Record<string, COMPOUND_FIELD_TYPE_NAMES> = {
   address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
   location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   // name is handled differently with nameField
 }
 
-// target types for creating / updating custom fields:
-export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
+// target types for creating / updating custom fields
+// we can create fields of these types or update the types of existing fields to these types
+export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: (string | undefined)[] = [
   ...Object.values(FIELD_TYPE_NAMES),
   COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
+]
+
+export const CUSTOM_FIELD_DEPLOYABLE_TYPES: (string | undefined)[] = [
+  ...CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
+  // We cannot create new fields with an unknown type or modify a field to have an unknown type
+  // but if a field is already of an unknown type, we can deploy it as long as we do not specify the type explicitly
+  undefined,
 ]
 
 export const FIELD_SOAP_TYPE_NAMES: Record<string, ALL_FIELD_TYPE_NAMES> = {
@@ -178,8 +175,7 @@ export const KEY_PREFIX = 'keyPrefix'
 export const OBJECT_HISTORY_TRACKING_ENABLED = 'enableHistory'
 export const RECORD_TYPE_HISTORY_TRACKING_ENABLED = 'recordTypeTrackHistory'
 export const OBJECT_FEED_HISTORY_TRACKING_ENABLED = 'enableFeeds'
-export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED =
-  'recordTypeTrackFeedHistory'
+export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED = 'recordTypeTrackFeedHistory'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -221,8 +217,7 @@ export const FIELD_ANNOTATIONS = {
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
   ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
-  METADATA_RELATIONSHIP_CONTROLLING_FIELD:
-    'metadataRelationshipControllingField',
+  METADATA_RELATIONSHIP_CONTROLLING_FIELD: 'metadataRelationshipControllingField',
   DEFAULTED_ON_CREATE: 'defaultedOnCreate',
 } as const
 
@@ -305,6 +300,7 @@ export const RECORDS_PATH = 'Records'
 export const SETTINGS_PATH = 'Settings'
 export const OBJECTS_PATH = 'Objects'
 export const TYPES_PATH = 'Types'
+export const META_TYPES_PATH = 'MetaTypes'
 export const SUBTYPES_PATH = 'Subtypes'
 export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
 export const OBJECT_FIELDS_PATH = 'Fields'
@@ -335,10 +331,7 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 5,
   retryDelay: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY,
   retryDelayMultiplier: DEFAULT_CUSTOM_OBJECT_DEPLOY_RETRY_DELAY_MULTIPLIER,
-  retryableFailures: [
-    'FIELD_CUSTOM_VALIDATION_EXCEPTION',
-    'UNABLE_TO_LOCK_ROW',
-  ],
+  retryableFailures: ['FIELD_CUSTOM_VALIDATION_EXCEPTION', 'UNABLE_TO_LOCK_ROW'],
 }
 export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
@@ -353,6 +346,10 @@ export const DefaultSoqlQueryLimits: SoqlQueryLimits = {
   maxWhereClauseLength: 2000,
 }
 
+// Renamed types
+export const CUSTOM_OBJECT_TYPE_NAME = '_CustomObject'
+export const CUSTOM_METADATA_TYPE_NAME = '_CustomMetadata'
+
 // Fields and Values
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'
@@ -364,6 +361,7 @@ export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'
+export const MUTING_PERMISSION_SET_METADATA_TYPE = 'MutingPermissionSet'
 export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const WORKFLOW_METADATA_TYPE = 'Workflow'
 export const ASSIGNMENT_RULES_METADATA_TYPE = 'AssignmentRules'
@@ -378,15 +376,13 @@ export const CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE = 'CustomObjectTranslation'
 export const SHARING_RULES_TYPE = 'SharingRules'
 export const LAYOUT_TYPE_ID_METADATA_TYPE = 'Layout'
 export const LAYOUT_ITEM_METADATA_TYPE = 'LayoutItem'
-export const LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE =
-  'LightningComponentBundle'
+export const LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE = 'LightningComponentBundle'
 export const SUMMARY_LAYOUT_ITEM_METADATA_TYPE = 'SummaryLayoutItem'
 export const WORKFLOW_ACTION_ALERT_METADATA_TYPE = 'WorkflowAlert'
 export const WORKFLOW_ACTION_REFERENCE_METADATA_TYPE = 'WorkflowActionReference'
 export const WORKFLOW_FIELD_UPDATE_METADATA_TYPE = 'WorkflowFieldUpdate'
 export const WORKFLOW_FLOW_ACTION_METADATA_TYPE = 'WorkflowFlowAction'
-export const WORKFLOW_KNOWLEDGE_PUBLISH_METADATA_TYPE =
-  'WorkflowKnowledgePublish'
+export const WORKFLOW_KNOWLEDGE_PUBLISH_METADATA_TYPE = 'WorkflowKnowledgePublish'
 export const WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE = 'WorkflowOutboundMessage'
 export const WORKFLOW_RULE_METADATA_TYPE = 'WorkflowRule'
 export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
@@ -413,8 +409,7 @@ export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
 export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
 export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
-export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE =
-  'GlobalValueSetTranslation'
+export const GLOBAL_VALUE_SET_TRANSLATION_METADATA_TYPE = 'GlobalValueSetTranslation'
 export const ASSIGNMENT_RULE_METADATA_TYPE = 'AssignmentRule'
 export const AUTO_RESPONSE_RULES_METADATA_TYPE = 'AutoResponseRules'
 export const AUTO_RESPONSE_RULE_METADATA_TYPE = 'AutoResponseRule'
@@ -423,6 +418,14 @@ export const ESCALATION_RULES_TYPE = 'EscalationRules'
 export const ESCALATION_RULE_TYPE = 'EscalationRule'
 export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
 export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
+
+// Meta Types
+export const METADATA_META_TYPE = 'Metadata'
+export const STANDARD_OBJECT_META_TYPE = 'StandardObject'
+export const STANDARD_SETTINGS_META_TYPE = 'StandardSettings'
+export const CUSTOM_OBJECT_META_TYPE = 'CustomObject'
+export const CUSTOM_SETTINGS_META_TYPE = 'CustomSettings'
+export const CUSTOM_METADATA_META_TYPE = 'CustomMetadata'
 
 // Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
@@ -441,6 +444,7 @@ export const ArtificialTypes = {
 
 // Standard Object Types
 export const ORGANIZATION_SETTINGS = 'Organization'
+export const ORGANIZATION_API_VERSION = 'OrganizationApiVersion'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX =
@@ -458,6 +462,7 @@ export const DATA_INSTANCES_CHANGED_AT_MAGIC = '__DataInstances__'
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
+export const CPQ_ERROR_CONDITION = 'SBQQ__ErrorCondition__c'
 export const CPQ_PRICE_RULE = 'SBQQ__PriceRule__c'
 export const CPQ_PRICE_CONDITION = 'SBQQ__PriceCondition__c'
 export const CPQ_LOOKUP_QUERY = 'SBQQ__LookupQuery__c'
@@ -472,6 +477,9 @@ export const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
 export const CPQ_PRICE_SCHEDULE = 'SBQQ__PriceSchedule__c'
 export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
 export const CPQ_SUBSCRIPTION = 'SBQQ__Subscription__c'
+export const CPQ_TERM_CONDITION = 'SBQQ__TermCondition__c'
+export const CPQ_QUOTE_TERM = 'SBQQ__QuoteTerm__c'
+export const CPQ_TERM_CONDITON = 'SBQQ__TermCondition__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'
@@ -484,8 +492,7 @@ export const CPQ_RULE_LOOKUP_OBJECT_FIELD = 'SBQQ__RuleLookupObject__c'
 export const CPQ_SOURCE_LOOKUP_FIELD = 'SBQQ__SourceLookupField__c'
 export const CPQ_OBJECT_NAME = 'SBQQ__ObjectName__c'
 export const CPQ_CONSUMPTION_RATE_FIELDS = 'SBQQ__ConsumptionRateFields__c'
-export const CPQ_CONSUMPTION_SCHEDULE_FIELDS =
-  'SBQQ__ConsumptionScheduleFields__c'
+export const CPQ_CONSUMPTION_SCHEDULE_FIELDS = 'SBQQ__ConsumptionScheduleFields__c'
 export const CPQ_GROUP_FIELDS = 'SBQQ__GroupFields__c'
 export const CPQ_QUOTE_FIELDS = 'SBQQ__QuoteFields__c'
 export const CPQ_QUOTE_LINE_FIELDS = 'SBQQ__QuoteLineFields__c'
@@ -502,6 +509,13 @@ export const CPQ_TARGET_FIELD = 'SBQQ__TargetField__c'
 export const CPQ_TARGET_OBJECT = 'SBQQ__TargetObject__c'
 export const CPQ_CONDITIONS_MET = 'SBQQ__ConditionsMet__c'
 export const CPQ_PRICE_CONDITION_RULE_FIELD = 'SBQQ__Rule__c'
+export const CPQ_ERROR_CONDITION_RULE_FIELD = 'SBQQ__Rule__c'
+export const CPQ_INDEX_FIELD = 'SBQQ__Index__c'
+export const CPQ_ADVANCED_CONDITION_FIELD = 'SBQQ__AdvancedCondition__c'
+export const CPQ_RULE_FIELD = 'SBQQ__Rule__c'
+export const CPQ_QUOTE_TERM_FIELD = 'SBQQ__QuoteTerm__c'
+export const SBAA_ADVANCED_CONDITION_FIELD = 'sbaa__AdvancedCondition__c'
+export const SBAA_INDEX_FIELD = 'sbaa__Index__c'
 
 export const CPQ_QUOTE_NO_PRE = 'Quote__c'
 export const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'
@@ -534,11 +548,11 @@ export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 // sbaa Fields
 export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
+// CPQ Billing
+export const BILLING_NAMESPACE = 'blng'
+
 // Change Groups
-export const groupIdForInstanceChangeGroup = (
-  action: ActionName,
-  typeName: string,
-): string => {
+export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: string): string => {
   const toVerbalNoun = (actionName: ActionName): string => {
     switch (actionName) {
       case 'add':
@@ -554,13 +568,23 @@ export const groupIdForInstanceChangeGroup = (
   }
   return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
 }
-export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP =
-  groupIdForInstanceChangeGroup(
-    'add',
-    'Custom ApprovalRule and ApprovalCondition',
-  )
-export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP =
-  groupIdForInstanceChangeGroup('add', 'Custom PriceRule and PriceCondition')
+export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'add',
+  'Custom ApprovalRule and ApprovalCondition',
+)
+export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'add',
+  'Custom PriceRule and PriceCondition',
+)
+export const ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'add',
+  'Custom ProductRule and ErrorCondition',
+)
+export const ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'add',
+  'Custom QuoteTerm and TermCondition',
+)
+
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
@@ -585,10 +609,7 @@ export const SYSTEM_FIELDS = [
   'SetupOwnerId',
 ]
 
-export const UNSUPPORTED_SYSTEM_FIELDS = [
-  'LastReferencedDate',
-  'LastViewedDate',
-]
+export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
@@ -632,12 +653,7 @@ export type SalesforceError = Error & {
 
 export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
-  return (
-    _.isString(errorCode) &&
-    (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(
-      errorCode,
-    )
-  )
+  return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
 
 // Artifacts
@@ -654,9 +670,7 @@ export const NON_LISTED_ELEMENT_IDS = [
   'salesforce.RecordType.instance.Idea_InternalIdeasIdeaRecordType',
 ]
 
-export const TYPES_WITH_NESTED_INSTANCES = [
-  CUSTOM_LABELS_METADATA_TYPE,
-] as const
+export const TYPES_WITH_NESTED_INSTANCES = [CUSTOM_LABELS_METADATA_TYPE] as const
 
 export const TYPES_WITH_NESTED_INSTANCES_PER_PARENT = [
   CUSTOM_OBJECT,
@@ -677,3 +691,10 @@ export const PROFILE_RELATED_METADATA_TYPES = [
   LAYOUT_TYPE_ID_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
 ] as const
+
+export const ProgressReporterSuffix = {
+  QuickDeploy: 'Attempting quick deploy',
+  QuickDeployFailed: 'Quick deploy failed. Attempting regular deploy',
+}
+
+export const METADATA_DEPLOY_PENDING_STATUS = 'Pending'

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { types as lowerdashTypes } from '@salto-io/lowerdash'
 import {
@@ -56,6 +48,7 @@ export type InstanceLimiterFunc = (type: string, instanceCount: number) => boole
 export interface ObjectID {
   type: string
   instanceId: string
+  suiteAppId?: string
 }
 
 export type NetsuiteTypesQueryParams = Record<string, string[]>
@@ -114,8 +107,12 @@ export type FetchParams = {
   addAlias?: boolean
   addBundles?: boolean
   addImportantValues?: boolean
+  addLockedCustomRecordTypes?: boolean
   resolveAccountSpecificValues?: boolean
-  skipResolvingAccountSpecificValuesToTypes?: string[]
+  // SALTO-6145: should be removed
+  forceFileCabinetExclude?: boolean
+  calculateNewReferencesInSuiteScripts?: boolean
+  findReferencesInFilesWithExtension?: string[]
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -128,8 +125,11 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addAlias: 'addAlias',
   addBundles: 'addBundles',
   addImportantValues: 'addImportantValues',
+  addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
-  skipResolvingAccountSpecificValuesToTypes: 'skipResolvingAccountSpecificValuesToTypes',
+  forceFileCabinetExclude: 'forceFileCabinetExclude',
+  calculateNewReferencesInSuiteScripts: 'calculateNewReferencesInSuiteScripts',
+  findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -196,13 +196,11 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
   httpTimeoutLimitInMinutes?: number
-  maxRecordsPerSuiteQLTable?: MaxInstancesPerType[]
 }
 
 export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
   suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
   httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
-  maxRecordsPerSuiteQLTable: 'maxRecordsPerSuiteQLTable',
 }
 
 export type NetsuiteConfig = {
@@ -224,7 +222,6 @@ export type NetsuiteConfig = {
   fetch: FetchParams
   fetchTarget?: NetsuiteQueryParameters
   skipList?: NetsuiteQueryParameters
-  useChangesDetection?: boolean // TODO remove this from config SALTO-3676
   withPartialDeletion?: boolean
   deployReferencedElements?: boolean
 }
@@ -245,7 +242,6 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   fetch: 'fetch',
   fetchTarget: 'fetchTarget',
   skipList: 'skipList',
-  useChangesDetection: 'useChangesDetection',
   withPartialDeletion: 'withPartialDeletion',
   deployReferencedElements: 'deployReferencedElements',
 }
@@ -387,7 +383,6 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
         }),
       },
     },
-    maxRecordsPerSuiteQLTable: { refType: new ListType(maxInstancesPerConfigType) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -574,8 +569,11 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     addBundles: { refType: BuiltinTypes.BOOLEAN },
     addImportantValues: { refType: BuiltinTypes.BOOLEAN },
+    addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
-    skipResolvingAccountSpecificValuesToTypes: { refType: new ListType(BuiltinTypes.STRING) },
+    forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
+    calculateNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
+    findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -768,9 +766,6 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
     },
     fetchTarget: {
       refType: queryConfigType,
-    },
-    useChangesDetection: {
-      refType: BuiltinTypes.BOOLEAN,
     },
     withPartialDeletion: {
       refType: BuiltinTypes.BOOLEAN,

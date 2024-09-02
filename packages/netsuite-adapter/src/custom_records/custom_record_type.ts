@@ -1,27 +1,21 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
+  FieldDefinition,
   InstanceElement,
   ListType,
   ObjectType,
   TypeRefMap,
+  Values,
 } from '@salto-io/adapter-api'
 import {
   CUSTOM_RECORDS_PATH,
@@ -57,6 +51,37 @@ export const toAnnotationRefTypes = (type: ObjectType): TypeRefMap =>
     return field.refType
   })
 
+const createCustomRecordType = (
+  instanceValues: Values,
+  annotationRefsOrTypes: TypeRefMap = {},
+  additionalFields: Record<string, FieldDefinition> = {},
+): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(NETSUITE, instanceValues[SCRIPT_ID]),
+    fields: {
+      [SCRIPT_ID]: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
+      },
+      [INTERNAL_ID]: {
+        refType: BuiltinTypes.SERVICE_ID,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
+      ...additionalFields,
+    },
+    annotationRefsOrTypes: {
+      ...annotationRefsOrTypes,
+      [SOURCE]: BuiltinTypes.HIDDEN_STRING,
+      [INTERNAL_ID]: BuiltinTypes.HIDDEN_STRING,
+    },
+    annotations: {
+      ...instanceValues,
+      [SOURCE]: SOAP,
+      [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+    },
+    path: [NETSUITE, CUSTOM_RECORDS_PATH, instanceValues[SCRIPT_ID]],
+  })
+
 export const createCustomRecordTypes = (
   customRecordTypeInstances: InstanceElement[],
   customRecordType: ObjectType,
@@ -69,7 +94,7 @@ export const createCustomRecordTypes = (
       label: { refType: BuiltinTypes.STRING },
     },
     annotationRefsOrTypes: {
-      source: BuiltinTypes.HIDDEN_STRING,
+      [SOURCE]: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       [SOURCE]: SOAP,
@@ -83,7 +108,7 @@ export const createCustomRecordTypes = (
       },
     },
     annotationRefsOrTypes: {
-      source: BuiltinTypes.HIDDEN_STRING,
+      [SOURCE]: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       [SOURCE]: SOAP,
@@ -91,37 +116,23 @@ export const createCustomRecordTypes = (
   })
   const annotationRefsOrTypes = toAnnotationRefTypes(customRecordType)
   return customRecordTypeInstances
-    .map(
-      instance =>
-        new ObjectType({
-          elemID: new ElemID(NETSUITE, instance.value[SCRIPT_ID]),
-          fields: {
-            [SCRIPT_ID]: {
-              refType: BuiltinTypes.SERVICE_ID,
-              annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
-            },
-            [INTERNAL_ID]: {
-              refType: BuiltinTypes.STRING,
-              annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-            },
-            [TRANSLATION_LIST]: {
-              refType: translationsList,
-            },
-          },
-          annotationRefsOrTypes: {
-            ...annotationRefsOrTypes,
-            source: BuiltinTypes.HIDDEN_STRING,
-          },
-          annotations: {
-            ...instance.value,
-            [SOURCE]: SOAP,
-            [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-          },
-          path: [NETSUITE, CUSTOM_RECORDS_PATH, instance.value[SCRIPT_ID]],
-        }),
+    .map(instance =>
+      createCustomRecordType(instance.value, annotationRefsOrTypes, {
+        [TRANSLATION_LIST]: {
+          refType: translationsList,
+        },
+      }),
     )
     .concat(translation, translationsList)
 }
+
+export const createLockedCustomRecordTypes = (scriptIds: string[]): ObjectType[] =>
+  scriptIds.map(scriptId =>
+    createCustomRecordType({
+      [SCRIPT_ID]: scriptId,
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+    }),
+  )
 
 export const toCustomRecordTypeInstance = (element: ObjectType): InstanceElement =>
   new InstanceElement(element.elemID.name, customrecordtypeType().type, {

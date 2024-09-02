@@ -1,35 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ElemID,
-  InstanceElement,
-  isInstanceElement,
-  isObjectType,
-  ObjectType,
-  Element,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType, Element } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/settings_type'
 import mockClient from '../client'
 import * as constants from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import {
-  mockFileProperties,
-  mockDescribeValueResult,
-  mockValueTypeField,
-} from '../connection'
+import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
 import { defaultFilterContext } from '../utils'
 import { API_NAME } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -89,9 +70,7 @@ describe('Test Settings Type', () => {
     beforeEach(() => {
       testElements = [mockInstance, mockObject, anotherMockInstance]
       connection.metadata.list.mockResolvedValue(
-        ['Macro', 'Case'].map((fullName) =>
-          mockFileProperties({ fullName, type: 'Settings' }),
-        ),
+        ['Macro', 'Case'].map(fullName => mockFileProperties({ fullName, type: 'Settings' })),
       )
       connection.metadata.describeValueType.mockResolvedValue(
         mockDescribeValueResult({
@@ -113,9 +92,7 @@ describe('Test Settings Type', () => {
 
     it('should generate all settings type', async () => {
       await filter.onFetch(testElements)
-      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(
-        expect.stringMatching(/.*MacroSettings$/),
-      )
+      expect(connection.metadata.describeValueType).toHaveBeenCalledWith(expect.stringMatching(/.*MacroSettings$/))
       expect(testElements).toHaveLength(5)
       expect(isObjectType(testElements[3])).toBeTruthy()
       const { path } = testElements[3]
@@ -127,9 +104,7 @@ describe('Test Settings Type', () => {
         expect(path[2]).toEqual('MacroSettings')
       }
       expect(isInstanceElement(testElements[4])).toBeTruthy()
-      expect(await (testElements[4] as InstanceElement).getType()).toEqual(
-        testElements[3],
-      )
+      expect(await (testElements[4] as InstanceElement).getType()).toEqual(testElements[3])
     })
     it('should not add existing object types', async () => {
       const macroSettingsType = new ObjectType({
@@ -141,11 +116,7 @@ describe('Test Settings Type', () => {
       testElements.push(macroSettingsType)
       await filter.onFetch(testElements)
       expect(testElements.filter(isObjectType)).toHaveLength(2)
-      expect(
-        testElements
-          .filter(isObjectType)
-          .filter((e) => e.elemID.typeName === MACRO_SETTINGS),
-      ).toHaveLength(1)
+      expect(testElements.filter(isObjectType).filter(e => e.elemID.typeName === MACRO_SETTINGS)).toHaveLength(1)
     })
   })
 })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   CORE_ANNOTATIONS,
@@ -31,6 +23,8 @@ import JiraClient from '../../../src/client/client'
 import { deployContextChange } from '../../../src/filters/fields/contexts'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 import { getLookUpName } from '../../../src/reference_mapping'
+import * as contextOptions from '../../../src/filters/fields/context_options'
+import * as defaultValues from '../../../src/filters/fields/default_values'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -106,16 +100,49 @@ describe('deployContextChange', () => {
       before: beforeInstance,
       after: afterInstance,
     })
-    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
 
     expect(deployChangeMock).toHaveBeenCalledWith({
       change: await resolveChangeElement(change, getLookUpName),
       client,
       endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.CustomFieldContext.deployRequests,
-      fieldsToIgnore: ['defaultValue', 'options', 'isGlobalContext', 'issueTypeIds', 'projectIds'],
+      fieldsToIgnore: [
+        'defaultValue',
+        'options',
+        'isGlobalContext',
+        'AssetsObjectFieldConfiguration',
+        'issueTypeIds',
+        'projectIds',
+      ],
     })
   })
+  it('should not call setOptions and setDefaultValue if splitFieldContextOptions is false', async () => {
+    const setOptionsMock = jest.spyOn(contextOptions, 'setContextOptions')
+    const updateDefaultValuesMock = jest.spyOn(defaultValues, 'updateDefaultValues')
 
+    const afterInstance = new InstanceElement(
+      'instance',
+      contextType,
+      {
+        id: '1',
+        name: 'context1',
+        description: 'desc',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+      },
+    )
+
+    const change = toChange({
+      after: afterInstance,
+    })
+    const config = getDefaultConfig({ isDataCenter: false })
+    config.fetch.splitFieldContextOptions = true
+    await deployContextChange({ change, client, config })
+    expect(setOptionsMock).not.toHaveBeenCalled()
+    expect(updateDefaultValuesMock).not.toHaveBeenCalled()
+  })
   it('should not throw if deploy failed because the field was deleted', async () => {
     const beforeInstance = new InstanceElement(
       'instance',
@@ -140,9 +167,8 @@ describe('deployContextChange', () => {
     const change = toChange({
       before: beforeInstance,
     })
-    await deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions)
+    await deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) })
   })
-
   it('should throw for other error messages', async () => {
     const beforeInstance = new InstanceElement(
       'instance',
@@ -168,10 +194,9 @@ describe('deployContextChange', () => {
       before: beforeInstance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
+      deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
-
   it('should throw if not removal', async () => {
     const instance = new InstanceElement(
       'instance',
@@ -202,7 +227,7 @@ describe('deployContextChange', () => {
       after: instance,
     })
     await expect(
-      deployContextChange(change, client, getDefaultConfig({ isDataCenter: false }).apiDefinitions),
+      deployContextChange({ change, client, config: getDefaultConfig({ isDataCenter: false }) }),
     ).rejects.toThrow()
   })
 })

@@ -1,29 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
-  Element,
   InstanceElement,
-  isInstanceElement,
-  CORE_ANNOTATIONS,
-  ReferenceExpression,
-  ObjectType,
-  ElemID,
-  BuiltinTypes,
-  ListType,
   isAdditionOrModificationChange,
   isInstanceChange,
   getChangeData,
@@ -32,20 +16,15 @@ import {
   isAdditionChange,
   SaltoElementError,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { pathNaclCase, safeJsonStringify, applyFunctionToChangeData, getParents } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { safeJsonStringify, applyFunctionToChangeData, getParents } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_TYPE_NAME, GROUP_MEMBERSHIP_TYPE_NAME, OKTA } from '../constants'
-import { areUsers, User } from '../user_utils'
+import { GROUP_MEMBERSHIP_TYPE_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
-import OktaClient from '../client/client'
 
 const log = logger(module)
-const { RECORDS_PATH, TYPES_PATH } = elementUtils
-const { toArrayAsync } = collections.asynciterable
-const { makeArray } = collections.array
 const { isDefined } = values
 
 type GroupMembershipInstance = InstanceElement & {
@@ -57,48 +36,6 @@ type GroupMembershipInstance = InstanceElement & {
 type GroupMembershipDeployResult = {
   appliedChange?: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
   error?: SaltoElementError
-}
-
-const createGroupMembershipType = (): ObjectType =>
-  new ObjectType({
-    elemID: new ElemID(OKTA, GROUP_MEMBERSHIP_TYPE_NAME),
-    fields: {
-      members: { refType: new ListType(BuiltinTypes.STRING) },
-    },
-    path: [OKTA, TYPES_PATH, GROUP_MEMBERSHIP_TYPE_NAME],
-  })
-
-const getGroupMembersData = async (paginator: clientUtils.Paginator, group: InstanceElement): Promise<User[]> => {
-  const paginationArgs = {
-    url: `/api/v1/groups/${group.value.id}/users`,
-    paginationField: 'after',
-  }
-  const members = (
-    await toArrayAsync(paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[]))
-  ).flat()
-  if (!areUsers(members)) {
-    log.error(`Recived invalid response while trying to get members for group: ${group.elemID.getFullName()}`)
-    return []
-  }
-  return members
-}
-
-const createGroupMembershipInstance = async (
-  group: InstanceElement,
-  groupMembersType: ObjectType,
-  paginator: clientUtils.Paginator,
-): Promise<InstanceElement | undefined> => {
-  const groupName = group.elemID.name
-  const groupMembersData = await getGroupMembersData(paginator, group)
-  return groupMembersData.length > 0
-    ? new InstanceElement(
-        groupName,
-        groupMembersType,
-        { members: groupMembersData.map(member => member.profile.login) },
-        [OKTA, RECORDS_PATH, GROUP_MEMBERSHIP_TYPE_NAME, pathNaclCase(groupName)],
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(group.elemID, group)] },
-      )
-    : undefined
 }
 
 export const isValidGroupMembershipInstance = (instance: InstanceElement): instance is GroupMembershipInstance =>
@@ -113,7 +50,7 @@ const deployGroupAssignment = async ({
   groupId: string
   userId: string
   action: 'add' | 'remove'
-  client: OktaClient
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface
 }): Promise<{ userId: string; result: 'success' | 'failure' }> => {
   const endpoint = `/api/v1/groups/${groupId}/users/${userId}`
   try {
@@ -150,12 +87,12 @@ const updateChangeWithFailedAssignments = async (
 
 const deployGroupMembershipChange = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: OktaClient,
+  client: clientUtils.HTTPWriteClientInterface & clientUtils.HTTPReadClientInterface,
 ): Promise<GroupMembershipDeployResult> => {
   const parentGroupId = getParents(getChangeData(change))[0]?.id // parent is already resolved
   if (!_.isString(parentGroupId)) {
     log.error(
-      'Faild to deploy group membership for change %s because parent group id for group is missing: %s',
+      'Failed to deploy group membership for change %s because parent group id for group is missing: %s',
       getChangeData(change).elemID.getFullName(),
       safeJsonStringify(getChangeData(change)),
     )
@@ -211,33 +148,12 @@ const deployGroupMembershipChange = async (
 }
 
 /**
- * Create a single group-memberships instance per group.
+ * Deploy GroupMembership by adding or removing users from groups
  */
-const groupMembersFilter: FilterCreator = ({ config, paginator, client }) => ({
+const groupMembersFilter: FilterCreator = ({ definitions, config }) => ({
   name: 'groupMembersFilter',
-  onFetch: async (elements: Element[]): Promise<void> => {
-    if (!config[FETCH_CONFIG].includeGroupMemberships) {
-      log.debug('Fetch of group members is disabled')
-      return
-    }
-    const groupInstances = elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
-
-    const groupMembersType = createGroupMembershipType()
-    elements.push(groupMembersType)
-
-    const groupMembershipInstances = (
-      await Promise.all(
-        groupInstances.map(async groupInstance =>
-          createGroupMembershipInstance(groupInstance, groupMembersType, paginator),
-        ),
-      )
-    ).filter(isInstanceElement)
-
-    groupMembershipInstances.forEach(instance => elements.push(instance))
-  },
   deploy: async changes => {
+    const client = definitions.clients.options.main.httpClient
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change =>

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
@@ -56,7 +48,6 @@ import { activeSchemeChangeValidator } from './active_scheme_change'
 import { activeSchemeDeletionValidator } from './active_scheme_deletion'
 import { brokenReferenceValidator } from './broken_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
-import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './projects/project_category'
@@ -72,12 +63,32 @@ import { automationToAssetsValidator } from './automation/automation_to_assets'
 import { addJsmProjectValidator } from './adding_jsm_project'
 import { jsmPermissionsValidator } from './jsm/jsm_permissions'
 import { referencedWorkflowDeletionChangeValidator } from './workflowsV2/referenced_workflow_deletion'
+import { missingExtensionsTransitionRulesChangeValidator } from './workflowsV2/missing_extensions_transition_rules'
+import { fieldContextOptionsValidator } from './field_contexts/field_context_options'
+import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from '../constants'
+import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
+import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
+import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
+import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
+import { optionValueValidator } from './field_contexts/option_value'
 
-const { deployTypesNotSupportedValidator, createChangeValidator } = deployment.changeValidators
+const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
+  deployment.changeValidators
+
+const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndUniqueFields> = {
+  [ISSUE_TYPE_NAME]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [PORTAL_GROUP_TYPE]: { scope: SCOPE.global, uniqueFields: ['name'] },
+  [SLA_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
+  [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
+  [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
+  [FIELD_CONTEXT_OPTION_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['value'] },
+}
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {
   const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
+    uniqueFields: uniqueFieldsChangeValidatorCreator(TYPE_TO_UNIQUE_FIELD),
     unresolvedReference: unresolvedReferenceValidator,
     brokenReferences: brokenReferenceValidator,
     deployTypesNotSupported: deployTypesNotSupportedValidator,
@@ -100,9 +111,9 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     permissionType: permissionTypeValidator,
     automations: automationsValidator,
     activeSchemeDeletion: activeSchemeDeletionValidator,
-    sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
     referencedWorkflowDeletion: referencedWorkflowDeletionChangeValidator(config),
     statusMigrationChange: statusMigrationChangeValidator,
+    missingExtensionsTransitionRules: missingExtensionsTransitionRulesChangeValidator(client),
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
     workflowStatusMappings: workflowStatusMappingsValidator,
@@ -124,7 +135,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
-    customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
+    customFieldsWith10KOptions: customFieldsWith10KOptionValidator(config),
     issueTypeHierarchy: issueTypeHierarchyValidator,
     automationProjects: automationProjectsValidator,
     boardColumnConfig: boardColumnConfigValidator,
@@ -135,6 +146,12 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
+    assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
+    projectAssigneeType: projectAssigneeTypeValidator,
+    fieldContextOptions: fieldContextOptionsValidator(config),
+    fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
+    fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
+    optionValue: optionValueValidator(config),
   }
 
   return createChangeValidator({

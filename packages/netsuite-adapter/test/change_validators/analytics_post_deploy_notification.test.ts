@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import analyticsSilentFailureValidator from '../../src/change_validators/analytics_post_deploy_notification'
@@ -19,8 +11,10 @@ import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/pars
 import { parsedWorkbookType } from '../../src/type_parsers/analytics_parsers/parsed_workbook'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import NetsuiteClient from '../../src/client/client'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('analytics post deploy notification', () => {
+  const baseParams = mockChangeValidatorParams()
   const firstDataset = new InstanceElement('dataset 1', parsedDatasetType().type, {
     scriptid: 'custDataset 1',
   })
@@ -44,10 +38,7 @@ describe('analytics post deploy notification', () => {
         toChange({ before: firstDataset }),
         toChange({ before: firstWorkbook }),
       ],
-      undefined,
-      undefined,
-      undefined,
-      client,
+      { ...baseParams, client },
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -60,10 +51,7 @@ describe('analytics post deploy notification', () => {
         toChange({ before: firstDataset, after: firstDataset }),
         toChange({ after: secondDataset }),
       ],
-      undefined,
-      undefined,
-      undefined,
-      client,
+      { ...baseParams, client },
     )
     expect(changeErrors).toHaveLength(2)
   })
@@ -75,9 +63,7 @@ describe('analytics post deploy notification', () => {
         toChange({ before: firstWorkbook, after: firstWorkbook }),
         toChange({ after: secondWorkbook }),
       ],
-      undefined,
-      undefined,
-      undefined,
+      baseParams,
     )
     expect(changeErrors).toHaveLength(2)
   })

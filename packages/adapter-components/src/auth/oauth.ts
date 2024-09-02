@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import qs from 'qs'
@@ -49,7 +41,7 @@ export const oauthClientCredentialsBearerToken = async ({
   retryOptions: RetryOptions
   additionalHeaders?: Record<string, string>
   additionalData?: Record<string, string>
-}): Promise<{ headers?: AxiosRequestHeaders }> => {
+}): Promise<{ headers?: Partial<AxiosRequestHeaders> }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {
@@ -62,18 +54,15 @@ export const oauthClientCredentialsBearerToken = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line camelcase
       client_id: clientId,
-      // eslint-disable-next-line camelcase
       client_secret: clientSecret,
-      // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
       ...additionalData,
     }),
   )
   const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data
   log.debug('received access token: type %s, expires in %s', tokenType, expiresIn)
-  if (tokenType !== BEARER_TOKEN_TYPE) {
+  if (String(tokenType).toLowerCase() !== BEARER_TOKEN_TYPE.toLowerCase()) {
     throw new Error(`Unsupported token type ${tokenType}`)
   }
   return {
@@ -100,7 +89,7 @@ export const oauthAccessTokenRefresh = async ({
   clientSecret: string
   refreshToken: string
   retryOptions: RetryOptions
-}): Promise<{ headers?: AxiosRequestHeaders }> => {
+}): Promise<{ headers?: Partial<AxiosRequestHeaders> }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {
@@ -113,9 +102,7 @@ export const oauthAccessTokenRefresh = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line camelcase
       refresh_token: refreshToken,
-      // eslint-disable-next-line camelcase
       grant_type: 'refresh_token',
     }),
   )

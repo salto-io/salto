@@ -1,32 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  InstanceElement,
-  ObjectType,
-  ElemID,
-  BuiltinTypes,
-  ReferenceExpression,
-  ListType,
-} from '@salto-io/adapter-api'
-import {
-  INSTANCE_FULL_NAME_FIELD,
-  SALESFORCE,
-  FOREIGN_KEY_DOMAIN,
-} from '../../src/constants'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
+import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import referenceAnnotationFilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
@@ -115,25 +96,17 @@ describe('foreign_key_references filter', () => {
       },
       parentObjArr: [parentObjFullName],
     })
-    instanceWithoutReferences = new InstanceElement(
-      'instanceWithoutReferences',
-      objType,
-      {
-        [INSTANCE_FULL_NAME_FIELD]: 'noChangesInstance',
-        reg: 'somevalue',
-        [parentObjFieldName]: 'someRef',
-      },
-    )
+    instanceWithoutReferences = new InstanceElement('instanceWithoutReferences', objType, {
+      [INSTANCE_FULL_NAME_FIELD]: 'noChangesInstance',
+      reg: 'somevalue',
+      [parentObjFieldName]: 'someRef',
+    })
   }
 
   beforeAll(async () => {
     generateElements()
-    objTypeElements = [nestedType, objType].map((elem) => elem)
-    instanceElements = [
-      parentInstance,
-      referrerInstance,
-      instanceWithoutReferences,
-    ].map((elem) => elem)
+    objTypeElements = [nestedType, objType].map(elem => elem)
+    instanceElements = [parentInstance, referrerInstance, instanceWithoutReferences].map(elem => elem)
 
     const elements = [...objTypeElements, ...instanceElements]
 
@@ -145,24 +118,16 @@ describe('foreign_key_references filter', () => {
   // Test the results
   describe('convert values to references', () => {
     it('should convert regular values to references', () => {
-      expect(instanceElements[1].value.parentObj).toBeInstanceOf(
-        ReferenceExpression,
-      )
-      expect(instanceElements[1].value.parentObj.elemID.typeName).toEqual(
-        objTypeID.typeName,
-      )
+      expect(instanceElements[1].value.parentObj).toBeInstanceOf(ReferenceExpression)
+      expect(instanceElements[1].value.parentObj.elemID.typeName).toEqual(objTypeID.typeName)
     })
 
     it('should convert nested objects to references', () => {
-      expect(
-        instanceElements[1].value.parentObjNested.parentObj,
-      ).toBeInstanceOf(ReferenceExpression)
+      expect(instanceElements[1].value.parentObjNested.parentObj).toBeInstanceOf(ReferenceExpression)
     })
 
     it('should convert objects in arrays to references', () => {
-      expect(_.head(instanceElements[1].value.parentObjArr)).toBeInstanceOf(
-        ReferenceExpression,
-      )
+      expect(_.head(instanceElements[1].value.parentObjArr)).toBeInstanceOf(ReferenceExpression)
     })
 
     it('should not change an instance without valid references', () => {
@@ -176,35 +141,25 @@ describe('foreign_key_references filter', () => {
     })
 
     it('should not replace a ref that has a foreign key annotation for a non-existing type', () => {
-      expect(instanceElements[1].value[invalidRefFieldName]).toEqual(
-        parentObjFullName,
-      )
+      expect(instanceElements[1].value[invalidRefFieldName]).toEqual(parentObjFullName)
     })
 
     it('should convert foreignKeyDomain annotations to references when valid', () => {
-      expect(
-        objTypeElements[0].fields[parentObjFieldName].annotations[
-          FOREIGN_KEY_DOMAIN
-        ][0],
-      ).toBeInstanceOf(ReferenceExpression)
-      expect(
-        objTypeElements[1].fields[parentObjFieldName].annotations[
-          FOREIGN_KEY_DOMAIN
-        ][0],
-      ).toBeInstanceOf(ReferenceExpression)
+      expect(objTypeElements[0].fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0]).toBeInstanceOf(
+        ReferenceExpression,
+      )
+      expect(objTypeElements[1].fields[parentObjFieldName].annotations[FOREIGN_KEY_DOMAIN][0]).toBeInstanceOf(
+        ReferenceExpression,
+      )
     })
 
     it('should not convert foreignKeyDomain annotations to references when not valid', () => {
-      expect(
-        objTypeElements[0].fields[invalidRefFieldName].annotations[
-          FOREIGN_KEY_DOMAIN
-        ],
-      ).toEqual(['nonExistingType'])
-      expect(
-        objTypeElements[1].fields[invalidRefFieldName].annotations[
-          FOREIGN_KEY_DOMAIN
-        ],
-      ).toEqual(['nonExistingType'])
+      expect(objTypeElements[0].fields[invalidRefFieldName].annotations[FOREIGN_KEY_DOMAIN]).toEqual([
+        'nonExistingType',
+      ])
+      expect(objTypeElements[1].fields[invalidRefFieldName].annotations[FOREIGN_KEY_DOMAIN]).toEqual([
+        'nonExistingType',
+      ])
     })
   })
 })

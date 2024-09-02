@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { logger } from '@salto-io/logging'
 import { convertSavedSearchStringToDate, convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
@@ -28,8 +20,8 @@ const parseGeneralRolesChanges = (
     return []
   }
   return changes
-    .filter((res): res is { scriptid: string; time: string } => {
-      if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
+    .filter((res): res is { rolescriptid: string; time: string } => {
+      if ([res.rolescriptid, res.time].some(val => typeof val !== 'string')) {
         log.warn('Got invalid result from roles changes query, %o', res)
         return false
       }
@@ -37,7 +29,7 @@ const parseGeneralRolesChanges = (
     })
     .map(res => ({
       type: 'object',
-      objectId: res.scriptid,
+      objectId: res.rolescriptid,
       time: convertSuiteQLStringToDate(res.time, dateRange.end),
     }))
 }
@@ -100,14 +92,14 @@ const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
-    const rolesChangesPromise = client.runSuiteQL(`
-      SELECT role.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
-      FROM role
-      JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -118
-      GROUP BY role.scriptid
-      ORDER BY role.scriptid ASC
-    `)
+    const rolesChangesPromise = client.runSuiteQL({
+      select: `role.scriptid as rolescriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time`,
+      from: 'role',
+      join: 'systemnote ON systemnote.recordid = role.id',
+      where: `systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -118`,
+      groupBy: 'role.scriptid',
+      orderBy: 'rolescriptid',
+    })
 
     const permissionChangesPromise = client.runSavedSearchQuery({
       type: 'role',
@@ -115,11 +107,11 @@ const changesDetector: TypeChangesDetector = {
       filters: [['permchangedate', 'within', ...dateRange.toSavedSearchRange()]],
     })
 
-    const allRolesPromise = client.runSuiteQL(`
-      SELECT scriptid, id
-      FROM role
-      ORDER BY id ASC
-    `)
+    const allRolesPromise = client.runSuiteQL({
+      select: 'scriptid, id',
+      from: 'role',
+      orderBy: 'id',
+    })
 
     const [rolesChanges, permissionChanges, allRoles] = await Promise.all([
       rolesChangesPromise,

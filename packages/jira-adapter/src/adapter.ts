@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -140,6 +132,7 @@ import { paginate, filterResponseEntries } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
+import assetsObjectFieldConfigurationFilter from './filters/assets/assets_object_field_configuration'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
@@ -196,13 +189,19 @@ import assetsObjectTypeOrderFilter from './filters/assets/assets_object_type_ord
 import defaultAttributesFilter from './filters/assets/label_object_type_attribute'
 import changeAttributesPathFilter from './filters/assets/change_attributes_path'
 import asyncApiCallsFilter from './filters/async_api_calls'
+import slaAdditionFilter from './filters/sla_addition_deployment'
 import addImportantValuesFilter from './filters/add_important_values'
 import ScriptRunnerClient from './client/script_runner_client'
-import { weakReferenceHandlers } from './weak_references'
 import { jiraJSMAssetsEntriesFunc, jiraJSMEntriesFunc } from './jsm_utils'
 import { hasSoftwareProject } from './utils'
 import { getWorkspaceId } from './workspace_id'
 import { JSM_ASSETS_DUCKTYPE_SUPPORTED_TYPES } from './config/api_config'
+import { createFixElementFunctions } from './fix_elements'
+import fieldContextOptionsSplitFilter from './filters/fields/field_context_option_split'
+import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
+import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
+import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
+import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -248,9 +247,13 @@ export const DEFAULT_FILTERS = [
   unresolvedParentsFilter,
   localeFilter,
   contextReferencesFilter,
+  // must run after contextReferencesFilter
+  assetsObjectFieldConfigurationFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
+  // This must run after fieldDeploymentFilter
   contextDeploymentFilter,
+  // This must run after contextDeploymentFilter
   avatarsFilter,
   iconUrlFilter,
   triggersFilter,
@@ -269,6 +272,8 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,
+  // must run before workflowTransitionIdsFilter
+  statusPropertiesReferencesFilter,
   // must run after scriptRunnerWorkflowReferencesFilter
   workflowTransitionIdsFilter,
   transitionIdsFilter,
@@ -340,6 +345,7 @@ export const DEFAULT_FILTERS = [
   contextsProjectsFilter,
   // must run after contextsProjectsFilter
   projectFieldContextOrder,
+  fieldContextOptionsSplitFilter,
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
@@ -377,8 +383,13 @@ export const DEFAULT_FILTERS = [
   scriptRunnerInstancesDeploy,
   portalSettingsFilter,
   queueDeploymentFilter,
+  slaAdditionFilter,
   portalGroupsFilter,
   requestTypeFilter,
+  fieldContextOptionsDeploymentFilter,
+  fieldContextOptionsDeploymentOrderFilter,
+  // Must be ran after fieldContextOptionsDeploymentFilter
+  contextDefaultValueDeploymentFilter,
   // Must run before asstesDeployFilter
   assetsInstancesDeploymentFilter,
   // Must be done after JsmTypesFilter
@@ -451,7 +462,11 @@ export default class JiraAdapter implements AdapterOperations {
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
-    this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
+    this.getUserMapFunc = getUserMapFuncCreator(
+      paginator,
+      client.isDataCenter,
+      config.fetch.allowUserCallFailure ?? false,
+    )
 
     const filterContext = {}
     this.createFiltersRunner = () =>
@@ -471,9 +486,7 @@ export default class JiraAdapter implements AdapterOperations {
         objects.concatObjects,
       )
 
-    this.fixElementsFunc = combineElementFixers(
-      _.mapValues(weakReferenceHandlers, handler => handler.removeWeakReferences({ elementsSource })),
-    )
+    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ elementsSource, client, config }))
   }
 
   private async generateSwaggers(): Promise<AdapterSwaggers> {

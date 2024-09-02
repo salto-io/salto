@@ -1,23 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import { customtransactiontypeType } from '../../src/autogen/types/standard_types/customtransactiontype'
 import fileValidator from '../../src/change_validators/file_changes'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('file changes validator', () => {
   const file = fileType()
@@ -70,13 +63,16 @@ describe('file changes validator', () => {
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     })
 
-    const changeErrors = await fileValidator([
-      toChange({ before: validBigFileBefore, after: validBigFileAfter }),
-      toChange({ before: validTimestampChangeBefore, after: validTimestampChangeAfter }),
-      toChange({ before: validDifferentDirChangeBefore, after: validDifferentDirChangeAfter }),
-      toChange({ before: validNonFileChangeBefore, after: validNonFileChangeAfter }),
-      toChange({ after: validNewTimestampChange }),
-    ])
+    const changeErrors = await fileValidator(
+      [
+        toChange({ before: validBigFileBefore, after: validBigFileAfter }),
+        toChange({ before: validTimestampChangeBefore, after: validTimestampChangeAfter }),
+        toChange({ before: validDifferentDirChangeBefore, after: validDifferentDirChangeAfter }),
+        toChange({ before: validNonFileChangeBefore, after: validNonFileChangeAfter }),
+        toChange({ after: validNewTimestampChange }),
+      ],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -93,7 +89,10 @@ describe('file changes validator', () => {
       content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
     })
 
-    const changeErrors = await fileValidator([toChange({ before: invalidBigFileBefore, after: invalidBigFileAfter })])
+    const changeErrors = await fileValidator(
+      [toChange({ before: invalidBigFileBefore, after: invalidBigFileAfter })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       detailedMessage:
@@ -118,9 +117,10 @@ describe('file changes validator', () => {
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     })
 
-    const changeErrors = await fileValidator([
-      toChange({ before: invalidTimestampChangeBefore, after: invalidTimestampChangeAfter }),
-    ])
+    const changeErrors = await fileValidator(
+      [toChange({ before: invalidTimestampChangeBefore, after: invalidTimestampChangeAfter })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       detailedMessage:
@@ -139,7 +139,10 @@ describe('file changes validator', () => {
       content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     })
 
-    const changeErrors = await fileValidator([toChange({ after: invalidNewTimestampChange })])
+    const changeErrors = await fileValidator(
+      [toChange({ after: invalidNewTimestampChange })],
+      mockChangeValidatorParams(),
+    )
 
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({

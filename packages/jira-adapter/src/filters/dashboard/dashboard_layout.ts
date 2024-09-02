@@ -1,19 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  Element,
   AdditionChange,
   getChangeData,
   InstanceElement,
@@ -21,14 +14,25 @@ import {
   isModificationChange,
   ModificationChange,
 } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify, inspectValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { DASHBOARD_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
+import { JiraConfig } from '../../config/config'
 
 const log = logger(module)
+
+type PromiseClientResponse = Promise<
+  clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]> | undefined
+>
+
+export type InstanceToResponse = {
+  instance: InstanceElement
+  PromiseResponse: PromiseClientResponse
+}
 
 export const deployLayout = async (
   dashboardChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
@@ -73,35 +77,53 @@ export const deployLayout = async (
   })
 }
 
-const filter: FilterCreator = ({ client, config }) => ({
+const getAPIResponse = async (client: JiraClient, instance: InstanceElement): PromiseClientResponse => {
+  try {
+    return await client.get({ url: `/rest/dashboards/1.0/${instance.value.id}` })
+  } catch (err) {
+    log.warn(
+      `Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}, inspectValue: ${inspectValue(err)}`,
+    )
+    return undefined
+  }
+}
+
+export const getDashboardLayoutsAsync = (
+  client: JiraClient,
+  config: JiraConfig,
+  elements: Element[],
+): InstanceToResponse[] => {
+  if (!config.client.usePrivateAPI) {
+    log.debug('Skipping dashboard layout filter because private API is not enabled')
+    return []
+  }
+  return elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
+    .map(instance => ({
+      instance,
+      PromiseResponse: getAPIResponse(client, instance),
+    }))
+}
+
+const filter: FilterCreator = ({ adapterContext }) => ({
   name: 'dashboardLayoutFilter',
-  onFetch: async elements => {
-    if (!config.client.usePrivateAPI) {
-      log.debug('Skipping dashboard layout filter because private API is not enabled')
-      return
-    }
-
+  onFetch: async () => {
+    const instanceToResponse: InstanceToResponse[] = adapterContext.dashboardLayoutPromise
     await Promise.all(
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
-        .map(async instance => {
-          try {
-            const response = await client.get({
-              url: `/rest/dashboards/1.0/${instance.value.id}`,
-            })
-
-            if (Array.isArray(response.data)) {
-              log.error(
-                `Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`,
-              )
-              return
-            }
-            instance.value.layout = response.data.layout
-          } catch (err) {
-            log.warn(`Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}`)
-          }
-        }),
+      instanceToResponse.map(async ({ instance, PromiseResponse }) => {
+        const response = await PromiseResponse
+        if (response === undefined) {
+          return
+        }
+        if (Array.isArray(response.data)) {
+          log.error(
+            `Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`,
+          )
+          return
+        }
+        instance.value.layout = response.data.layout
+      }),
     )
   },
 })

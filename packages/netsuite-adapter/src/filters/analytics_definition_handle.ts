@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -33,13 +25,13 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TransformFuncArgs, transformValues, WALK_NEXT_STEP, WalkOnFunc, walkOnValue } from '@salto-io/adapter-utils'
-import { parse, j2xParser } from 'fast-xml-parser'
-import { decode, encode } from 'he'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
+import he from 'he'
 import { collections, strings } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { DATASET, REAL_VALUE_KEY, SCRIPT_ID, SOAP_SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from '../client/constants'
+import { CDATA_TAG_NAME } from '../client/constants'
 import { parsedWorkbookType, workbookDefinitionFields } from '../type_parsers/analytics_parsers/parsed_workbook'
 import { datasetDefinitionFields, parsedDatasetType } from '../type_parsers/analytics_parsers/parsed_dataset'
 import { TypeAndInnerTypes } from '../types/object_types'
@@ -74,6 +66,7 @@ import {
 import { captureServiceIdInfo } from '../service_id_info'
 import { workbookType } from '../autogen/types/standard_types/workbook'
 import { datasetType } from '../autogen/types/standard_types/dataset'
+import { XML_BUILDER_DEFAULT_OPTIONS, XML_PARSER_DEFAULT_OPTIONS } from '../client/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -92,7 +85,7 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
     path !== undefined &&
     !EXPRESSION_VALUE_VALUE_REGEX.test(path.getFullName())
   ) {
-    log.debug('Found a value with an unkown type. path: %s, value: %o', path?.getFullName(), value)
+    log.debug('Found a value with an unknown type. path: %s, value: %o', path?.getFullName(), value)
   }
   if (_.isPlainObject(value)) {
     if (value[TYPE] === xmlType.null) {
@@ -129,15 +122,13 @@ const fetchTransformFunc = async ({ value, field, path }: TransformFuncArgs, typ
   return value
 }
 
+const xmlParser = new XMLParser({
+  ...XML_PARSER_DEFAULT_OPTIONS,
+  tagValueProcessor: (_name, val) => he.decode(val),
+})
+
 const createAnalyticsInstance = async (instance: InstanceElement, analyticsType: ObjectType): Promise<void> => {
-  const definitionValues = _.omit(
-    parse(instance.value[DEFINITION], {
-      attributeNamePrefix: ATTRIBUTE_PREFIX,
-      ignoreAttributes: false,
-      tagValueProcessor: val => decode(val),
-    })[ROOT],
-    fieldsToOmitFromDefinition,
-  )
+  const definitionValues = _.omit(xmlParser.parse(instance.value[DEFINITION])[ROOT], fieldsToOmitFromDefinition)
 
   const updatedValues = await transformValues({
     values: definitionValues,
@@ -317,6 +308,12 @@ const createDefinitionName = (instance: InstanceElement, definitionValues: Value
       : instance.value[NAME]
 }
 
+const xmlBuilder = new XMLBuilder({
+  ...XML_BUILDER_DEFAULT_OPTIONS,
+  cdataPropName: CDATA_TAG_NAME,
+  tagValueProcessor: (_name, val) => he.encode(String(val)),
+})
+
 const returnToOriginalShape = async (instance: InstanceElement): Promise<Values> => {
   const analyticsType = await instance.getType()
 
@@ -335,14 +332,7 @@ const returnToOriginalShape = async (instance: InstanceElement): Promise<Values>
 
   createDefinitionName(instance, updatedDefinitionValues)
 
-  // eslint-disable-next-line new-cap
-  const xmlString = new j2xParser({
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    format: true,
-    ignoreAttributes: false,
-    cdataTagName: CDATA_TAG_NAME,
-    tagValueProcessor: val => encode(val.toString()),
-  }).parse({ [ROOT]: updatedDefinitionValues })
+  const xmlString = xmlBuilder.build({ [ROOT]: updatedDefinitionValues })
 
   return {
     ..._.omit(instance.value, Object.keys(definitionValues)),

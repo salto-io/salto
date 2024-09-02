@@ -1,31 +1,14 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Element,
-  ElemID,
-  ObjectType,
-  InstanceElement,
-  BuiltinTypes,
-  Field,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator, {
-  WARNING_MESSAGE,
-} from '../../src/filters/add_missing_ids'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
 import {
   SALESFORCE,
@@ -153,9 +136,7 @@ describe('Internal IDs filter', () => {
     })
     it('should make the right requests from listMetadataObjects', () => {
       expect(mockListMetadataObjects).toHaveBeenCalledTimes(2)
-      expect(mockListMetadataObjects.mock.calls[0][0].type).toEqual(
-        'CustomField',
-      )
+      expect(mockListMetadataObjects.mock.calls[0][0].type).toEqual('CustomField')
       expect(mockListMetadataObjects.mock.calls[1][0].type).toEqual('obj')
     })
 
@@ -163,21 +144,15 @@ describe('Internal IDs filter', () => {
       expect(elements[0]).toBeInstanceOf(ObjectType)
       const objType = elements[0] as ObjectType
       expect(objType.fields.custom).toBeInstanceOf(Field)
-      expect(
-        objType.fields.custom.annotations?.[INTERNAL_ID_ANNOTATION],
-      ).toEqual('custom field id 123')
+      expect(objType.fields.custom.annotations?.[INTERNAL_ID_ANNOTATION]).toEqual('custom field id 123')
       expect(objType.fields.special).toBeInstanceOf(Field)
-      expect(
-        objType.fields.special.annotations?.[INTERNAL_ID_ANNOTATION],
-      ).toEqual('custom field id 456')
+      expect(objType.fields.special.annotations?.[INTERNAL_ID_ANNOTATION]).toEqual('custom field id 456')
     })
 
     it('should not add id annotation for standard field', () => {
       expect(elements[0]).toBeInstanceOf(ObjectType)
       const objType = elements[0] as ObjectType
-      expect(
-        objType.fields.standard?.annotations?.[INTERNAL_ID_ANNOTATION],
-      ).toBeUndefined()
+      expect(objType.fields.standard?.annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
 
     it('should add id field for instance element', () => {

@@ -1,20 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { detailedCompare, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import {
   ElemID,
   Field,
@@ -31,6 +23,7 @@ import {
   ReferenceExpression,
   INSTANCE_ANNOTATIONS,
   toChange,
+  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -41,6 +34,7 @@ import {
   routeCopyTo,
   getMergeableParentID,
   routeRemoveFrom,
+  RoutedChanges,
 } from '../../../src/workspace/nacl_files/multi_env/routers'
 
 const hasChanges = (changes: DetailedChange[], lookup: { action: string; id: ElemID }[]): boolean =>
@@ -49,7 +43,7 @@ const hasChanges = (changes: DetailedChange[], lookup: { action: string; id: Ele
   )
 
 const objectElemID = new ElemID('salto', 'object')
-const commonField = { name: 'commonField', refType: BuiltinTypes.STRING }
+const commonField = { name: 'commonField', refType: BuiltinTypes.STRING, annotations: { before: 'before' } }
 const envField = { name: 'envField', refType: BuiltinTypes.STRING }
 const simpleObjID = new ElemID('salto', 'simple')
 const simpleObj = new ObjectType({
@@ -1051,6 +1045,100 @@ describe('isolated routing', () => {
       expect(secChangeData.data.after.annotations).toEqual(beforeField.annotations)
     },
   )
+  describe('with field type change for a field that exists in common', () => {
+    let routedChanges: RoutedChanges
+    let beforeField: Field
+    let afterField: Field
+    let fieldModification: DetailedChange
+    beforeEach(() => {
+      beforeField = splitObjJoined.fields.commonField
+      const afterObj = splitObjJoined.clone()
+      afterField = new Field(afterObj, beforeField.name, BuiltinTypes.NUMBER, { value: 'value' })
+      afterObj.fields.commonField = afterField
+      fieldModification = toDetailedChangeFromBaseChange(toChange({ before: beforeField, after: afterField }))
+    })
+    describe('when object type already exists in env', () => {
+      beforeEach(async () => {
+        const objInEnvs = new ObjectType({ elemID: splitObjJoined.elemID })
+        const testEnvSources = {
+          [primarySrcName]: createMockNaclFileSource([objInEnvs], { 'obj.nacl': [objInEnvs] }),
+          [secSrcName]: createMockNaclFileSource([objInEnvs], { 'obj.nacl': [objInEnvs] }),
+        }
+        routedChanges = await routeChanges(
+          [fieldModification],
+          primarySrcName,
+          commonSource,
+          testEnvSources,
+          'isolated',
+        )
+      })
+      it('should remove the field from common', () => {
+        expect(routedChanges.commonSource).toContainEqual(
+          expect.objectContaining({
+            action: 'remove',
+            id: beforeField.elemID,
+          }),
+        )
+      })
+      it('should add the original field value to secondary envs', () => {
+        const secondaryChanges = routedChanges.envSources?.[secSrcName] as DetailedChange[]
+        expect(secondaryChanges).toHaveLength(1)
+        const [change] = secondaryChanges
+        expect(change).toHaveProperty('action', 'add')
+        const afterValue = isAdditionChange(change) ? change.data.after : undefined
+        expect(afterValue).toBeDefined()
+        expect(afterValue).toBeInstanceOf(Field)
+        expect(afterValue).toHaveProperty('annotations', beforeField.annotations)
+        expect(afterValue.refType).toEqual(beforeField.refType)
+      })
+      it('should add the new field with all annotations to the primary env', () => {
+        const primaryChanges = routedChanges.envSources?.[primarySrcName] as DetailedChange[]
+        expect(primaryChanges).toHaveLength(1)
+        const [change] = primaryChanges
+        expect(change).toHaveProperty('action', 'add')
+        const afterValue = isAdditionChange(change) ? change.data.after : undefined
+        expect(afterValue).toBeDefined()
+        expect(afterValue).toBeInstanceOf(Field)
+        expect(afterValue).toHaveProperty('annotations', afterField.annotations)
+        expect(afterValue.refType).toEqual(afterField.refType)
+      })
+    })
+    describe('when object type does not exist in env', () => {
+      beforeEach(async () => {
+        routedChanges = await routeChanges([fieldModification], primarySrcName, commonSource, envSources, 'isolated')
+      })
+      it('should remove the field from common', () => {
+        expect(routedChanges.commonSource).toContainEqual(
+          expect.objectContaining({
+            action: 'remove',
+            id: beforeField.elemID,
+          }),
+        )
+      })
+      it('should add the original field value to secondary envs, wrapped in an object type', () => {
+        const secondaryChanges = routedChanges.envSources?.[secSrcName] as DetailedChange[]
+        expect(secondaryChanges).toHaveLength(1)
+        const [change] = secondaryChanges
+        expect(change).toHaveProperty('action', 'add')
+        const afterValue = isAdditionChange(change) ? change.data.after : undefined
+        expect(afterValue).toBeDefined()
+        expect(afterValue).toBeInstanceOf(ObjectType)
+        expect(afterValue.fields[beforeField.name]).toHaveProperty('annotations', beforeField.annotations)
+        expect(afterValue.fields[beforeField.name].refType).toEqual(beforeField.refType)
+      })
+      it('should add the new field with all annotations to the primary env, wrapped in an object type', () => {
+        const primaryChanges = routedChanges.envSources?.[primarySrcName] as DetailedChange[]
+        expect(primaryChanges).toHaveLength(1)
+        const [change] = primaryChanges
+        expect(change).toHaveProperty('action', 'add')
+        const afterValue = isAdditionChange(change) ? change.data.after : undefined
+        expect(afterValue).toBeDefined()
+        expect(afterValue).toBeInstanceOf(ObjectType)
+        expect(afterValue.fields[afterField.name]).toHaveProperty('annotations', afterField.annotations)
+        expect(afterValue.fields[afterField.name].refType).toEqual(afterField.refType)
+      })
+    })
+  })
   it('name', async () => {
     const annotationID = commonObjWithList.elemID.createNestedID('attr', 'list')
     const specificChange: DetailedChange = {

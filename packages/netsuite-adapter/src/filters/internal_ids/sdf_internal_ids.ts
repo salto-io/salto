@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -26,7 +18,6 @@ import {
   isInstanceChange,
   isInstanceElement,
   isObjectType,
-  TypeReference,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
@@ -95,8 +86,16 @@ const getTableName = (element: Element): string => {
   return element.elemID.typeName
 }
 
-const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string): Promise<RecordIdResult[]> => {
-  const recordIdResults = await client.runSuiteQL(query)
+const queryRecordIds = async (
+  client: NetsuiteClient,
+  idParamName: 'id' | 'internalid',
+  recordType: string,
+): Promise<RecordIdResult[]> => {
+  const recordIdResults = await client.runSuiteQL({
+    select: `scriptid, ${idParamName}`,
+    from: recordType,
+    orderBy: idParamName,
+  })
   if (recordIdResults === undefined) {
     return []
   }
@@ -109,20 +108,6 @@ const queryRecordIds = async (client: NetsuiteClient, query: string, recordType:
     scriptid: res.scriptid,
     id: 'id' in res ? res.id : res.internalid,
   }))
-}
-
-const addInternalIdAnnotationToCustomRecordTypes = (elements: Element[]): void => {
-  elements
-    .filter(isObjectType)
-    .filter(isCustomRecordType)
-    .forEach(object => {
-      if (_.isUndefined(object.annotationRefTypes[INTERNAL_ID])) {
-        object.annotationRefTypes[INTERNAL_ID] = new TypeReference(
-          BuiltinTypes.HIDDEN_STRING.elemID,
-          BuiltinTypes.HIDDEN_STRING,
-        )
-      }
-    })
 }
 
 const isSavedSearch = (element: Element): boolean => element.elemID.typeName === SAVED_SEARCH
@@ -145,8 +130,7 @@ const fetchRecordType = async (
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
-  const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
-  const recordTypeIds = await queryRecordIds(client, query, recordType)
+  const recordTypeIds = await queryRecordIds(client, idParamName, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
@@ -280,7 +264,6 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
     addInternalIdFieldToSupportedType(elements)
-    addInternalIdAnnotationToCustomRecordTypes(elements)
 
     const instances = elements.filter(isInstanceElement).filter(isSupportedInstance)
     await addInternalIdToInstances(client, instances)

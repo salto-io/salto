@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import _ from 'lodash'
@@ -399,6 +391,11 @@ const calculateAndRemoveDeletedAttachments = ({
   return allRemovedAttachmentsIds
 }
 
+const shouldIgnoreUserSegment = (change: Change<InstanceElement>): boolean => {
+  const data = getChangeData(change)
+  return data.value.user_segment_ids !== undefined && data.value.user_segment_id !== undefined
+}
+
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
@@ -504,6 +501,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         const fieldsToIgnore = ['translations', 'attachments']
         if (!isAdditionChange(change)) {
           fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
+        }
+        // we have user_segment_id and user_segment_ids in the article and we can't deploy an article with both
+        if (shouldIgnoreUserSegment(change)) {
+          fieldsToIgnore.push('user_segment_id')
         }
         await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)

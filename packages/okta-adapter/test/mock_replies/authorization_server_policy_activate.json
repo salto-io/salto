@@ -1,0 +1,15 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/policies/authorizationserverpolicy-fakeid1/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "97",
+      "x-rate-limit-reset": "1722424454"
+    }
+  }
+]

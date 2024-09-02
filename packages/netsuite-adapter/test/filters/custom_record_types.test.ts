@@ -1,20 +1,19 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, ElemID, isObjectType, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  isObjectType,
+  ObjectType,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
 import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import filterCreator from '../../src/filters/custom_record_types'
@@ -26,6 +25,7 @@ const { awu } = collections.asynciterable
 describe('custom record types filter', () => {
   let customRecordType: ObjectType
   let customRecordFieldRefType: ObjectType
+  let lockedCustomRecordFieldRefType: ObjectType
   let dataType: ObjectType
 
   const filterOpts = {
@@ -60,6 +60,11 @@ describe('custom record types filter', () => {
               selectrecordtype: `[${SCRIPT_ID}=customrecord2]`,
             },
             {
+              scriptid: 'custrecord_ref_locked',
+              fieldtype: 'SELECT',
+              selectrecordtype: `[${SCRIPT_ID}=customrecord_locked]`,
+            },
+            {
               scriptid: 'custrecord_account',
               fieldtype: 'SELECT',
               selectrecordtype: '-112',
@@ -77,15 +82,29 @@ describe('custom record types filter', () => {
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
+    lockedCustomRecordFieldRefType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord_locked'),
+      annotations: {
+        scriptid: 'customrecord_locked',
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+    })
     dataType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'account'),
     })
   })
   it('should add fields to type', async () => {
-    await filterCreator(filterOpts).onFetch?.([customRecordType, customRecordFieldRefType, dataType])
+    await filterCreator(filterOpts).onFetch?.([
+      customRecordType,
+      customRecordFieldRefType,
+      lockedCustomRecordFieldRefType,
+      dataType,
+    ])
     expect(Object.keys(customRecordType.fields)).toEqual([
       'custom_custrecord_newfield',
       'custom_custrecord_ref',
+      'custom_custrecord_ref_locked',
       'custom_custrecord_account',
     ])
     expect(customRecordType.fields.custom_custrecord_newfield.refType.elemID.name).toEqual(
@@ -103,12 +122,21 @@ describe('custom record types filter', () => {
       selectrecordtype: `[${SCRIPT_ID}=customrecord2]`,
       index: 1,
     })
+    expect(customRecordType.fields.custom_custrecord_ref_locked.refType.elemID.name).toEqual(
+      BuiltinTypes.UNKNOWN.elemID.name,
+    )
+    expect(customRecordType.fields.custom_custrecord_ref_locked.annotations).toEqual({
+      scriptid: 'custrecord_ref_locked',
+      fieldtype: 'SELECT',
+      selectrecordtype: `[${SCRIPT_ID}=customrecord_locked]`,
+      index: 2,
+    })
     expect(customRecordType.fields.custom_custrecord_account.refType.elemID.name).toEqual('account')
     expect(customRecordType.fields.custom_custrecord_account.annotations).toEqual({
       scriptid: 'custrecord_account',
       fieldtype: 'SELECT',
       selectrecordtype: '-112',
-      index: 2,
+      index: 3,
     })
   })
   it('should add fields correctly on partial fetch', async () => {

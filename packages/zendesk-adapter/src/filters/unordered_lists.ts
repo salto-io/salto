@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -22,7 +14,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
@@ -41,9 +33,7 @@ const log = logger(module)
 
 type ChildField = { id: ReferenceExpression }
 type Condition = {
-  // eslint-disable-next-line camelcase
   parent_field_id: ReferenceExpression
-  // eslint-disable-next-line camelcase
   child_fields: ChildField[]
   value: ReferenceExpression | string
 }
@@ -182,6 +172,10 @@ const sortConditions = (
           _.isString(condition.value) || _.isBoolean(condition.value)
             ? condition.value
             : [customFieldById[condition.value.elemID.getFullName()].value.value],
+        condition =>
+          _.isString(condition.value) || _.isBoolean(condition.value)
+            ? condition.value
+            : condition.value.elemID.getFullName(),
         condition => condition.parent_field_id?.elemID?.getFullName(),
       )
     } else {
@@ -211,7 +205,6 @@ const isValidChildFields = (
 const sortChildFields = (formInstances: InstanceElement[], ticketFieldById: Record<string, InstanceElement>): void => {
   formInstances.forEach(form => {
     const conditions = (form.value.agent_conditions ?? []).concat(form.value.end_user_conditions ?? [])
-    // eslint-disable-next-line camelcase
     conditions.forEach((condition: Condition) => {
       if (isValidChildFields(condition, ticketFieldById)) {
         condition.child_fields = _.sortBy(
@@ -226,6 +219,18 @@ const sortChildFields = (formInstances: InstanceElement[], ticketFieldById: Reco
   })
 }
 
+const sortRestrictedBrands = (formInstances: InstanceElement[]): void => {
+  formInstances.forEach(form => {
+    const restrictedBrands = form.value.restricted_brand_ids
+    if (_.isArray(restrictedBrands) && restrictedBrands.every(isReferenceExpression)) {
+      form.value.restricted_brand_ids = _.sortBy(restrictedBrands, brand => brand.elemID.getFullName())
+    } else {
+      log.warn(`could not sort restricted brands for ${form.elemID.getFullName()}`)
+      log.trace('restricted brands are: %s', inspectValue(restrictedBrands, { maxArrayLength: null }))
+    }
+  })
+}
+
 const orderFormCondition = (instances: InstanceElement[]): void => {
   const formInstances = instances.filter(e => e.refType.elemID.name === TICKET_FORM_TYPE_NAME)
   const formAgentInstances = formInstances.filter(form => !_.isEmpty(form.value.agent_conditions))
@@ -237,6 +242,7 @@ const orderFormCondition = (instances: InstanceElement[]): void => {
   sortConditions(formAgentInstances, 'agent_conditions', customFieldById)
   sortConditions(formUserInstances, 'end_user_conditions', customFieldById)
   sortChildFields(formInstances, ticketFieldById)
+  sortRestrictedBrands(formInstances)
 }
 
 // The order is irrelevant and cannot be changed
@@ -264,6 +270,63 @@ const orderArticleLabelNames = (instances: InstanceElement[]): void => {
       if (Array.isArray(article.value.label_names)) {
         article.value.label_names = _.sortBy(article.value.label_names)
       }
+    })
+}
+
+const orderMacroIds = (workspace: InstanceElement): void => {
+  const macroIds = workspace.value.macro_ids
+  if (_.isArray(macroIds)) {
+    workspace.value.macro_ids = _.sortBy(macroIds, id => {
+      if (isReferenceExpression(id)) {
+        return id.elemID.getFullName()
+      }
+      return id
+    })
+  } else {
+    log.trace(`macro_ids in workspace ${workspace.elemID.getFullName()} is not an array`)
+  }
+}
+
+type MacroRestriction = {
+  ids?: ReferenceExpression[]
+}
+
+const sortSelectedMacros = (selectedMacros: { restriction?: MacroRestriction }[]): void =>
+  selectedMacros.forEach(macro => {
+    if (macro.restriction !== undefined && _.isObject(macro.restriction) && 'ids' in macro.restriction) {
+      const restrictionIds = _.get(macro, 'restriction.ids')
+      if (_.isArray(restrictionIds) && restrictionIds.every(isReferenceExpression)) {
+        macro.restriction.ids = _.sortBy(restrictionIds, ref => ref.elemID.getFullName())
+      } else {
+        log.warn(`could not sort restriction ids for restriction ${macro.restriction}`)
+        log.trace(`restriction ids are: ${inspectValue(restrictionIds, { maxArrayLength: null })}`)
+      }
+    }
+  })
+
+const orderSelectedMacros = (workspace: InstanceElement): void => {
+  const selectedMacros = workspace.value.selected_macros
+  if (_.isArray(selectedMacros) && selectedMacros.every(macro => _.isPlainObject(macro) && macro.id !== undefined)) {
+    sortSelectedMacros(selectedMacros)
+    workspace.value.selected_macros = _.sortBy(selectedMacros, macro => {
+      if (isReferenceExpression(macro.id)) {
+        return macro.id.elemID.getFullName()
+      }
+      return macro.id
+    })
+  } else {
+    log.trace(
+      `selected macros in workspace ${workspace.elemID.getFullName()} is not an array or one of the macros does not have an id`,
+    )
+  }
+}
+
+const orderMacrosInWorkspace = (instances: InstanceElement[]): void => {
+  instances
+    .filter(e => e.elemID.typeName === WORKSPACE_TYPE_NAME)
+    .forEach(workspace => {
+      orderMacroIds(workspace)
+      orderSelectedMacros(workspace)
     })
 }
 
@@ -299,6 +362,7 @@ const filterCreator: FilterCreator = () => ({
     orderArticleLabelNames(instances)
     orderAppInstallationsInWorkspace(instances)
     orderRoutingAttributes(instances)
+    orderMacrosInWorkspace(instances)
   },
 })
 

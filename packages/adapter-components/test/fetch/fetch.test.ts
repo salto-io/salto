@@ -1,20 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { SaltoError, isInstanceElement } from '@salto-io/adapter-api'
 import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../src/client'
 import { createMockQuery } from '../../src/fetch/query'
 import { noPagination } from '../../src/fetch/request/pagination'
@@ -48,7 +40,10 @@ describe('fetch', () => {
         if (url === '/api/v1/fields') {
           return {
             data: {
-              fields: [{ id: 456, name: 'field1' }],
+              fields: [
+                { id: 456, name: 'field1' },
+                { id: 789, name: 'field2' },
+              ],
             },
             status: 200,
             statusText: 'OK',
@@ -63,6 +58,9 @@ describe('fetch', () => {
             statusText: 'OK',
           }
         }
+        if (url === '/api/v1/fields/789/options') {
+          throw new Error('error fetching options')
+        }
         if (url === '/api/v1/fields/456/default_option') {
           return {
             data: {
@@ -72,11 +70,27 @@ describe('fetch', () => {
             statusText: 'OK',
           }
         }
+        if (url === '/api/v1/fields/group1/depending_options') {
+          return {
+            data: {
+              depending_options: [{ name: 'deps1' }],
+            },
+            status: 200,
+            statusText: 'OK',
+          }
+        }
+        if (url === '/api/v1/fields/789/default_option') {
+          throw new Error('error fetching default option')
+        }
         throw new Error(`unexpected endpoint called: ${url}`)
       })
     })
     // TODO split into multiple tests per component and add cases
     it('should generate elements correctly', async () => {
+      const customSaltoError: SaltoError = {
+        message: 'error fetching default option',
+        severity: 'Warning',
+      }
       const res = await getElements<{ customNameMappingOptions: 'custom' }>({
         adapterName: 'myAdapter',
         definitions: {
@@ -113,6 +127,36 @@ describe('fetch', () => {
                 },
               },
               customizations: {
+                depending_option: {
+                  requests: [
+                    {
+                      endpoint: {
+                        path: '/api/v1/fields/{parent_id}/depending_options',
+                      },
+                      transformation: {
+                        root: 'depending_options',
+                      },
+                    },
+                  ],
+                  resource: {
+                    directFetch: true,
+                    context: {
+                      dependsOn: {
+                        parent_id: {
+                          parentTypeName: 'group',
+                          transformation: {
+                            root: 'name',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  element: {
+                    topLevel: {
+                      isTopLevel: true,
+                    },
+                  },
+                },
                 group: {
                   requests: [
                     {
@@ -200,6 +244,14 @@ describe('fetch', () => {
                   ],
                   resource: {
                     directFetch: false,
+                    onError: {
+                      action: 'configSuggestion',
+                      value: {
+                        reason: 'error fetching options',
+                        type: 'typeToExclude',
+                        value: 'some value',
+                      },
+                    },
                   },
                   element: {
                     topLevel: {
@@ -217,6 +269,10 @@ describe('fetch', () => {
                   ],
                   resource: {
                     directFetch: false,
+                    onError: {
+                      action: 'customSaltoError',
+                      value: customSaltoError,
+                    },
                   },
                 },
               },
@@ -228,11 +284,20 @@ describe('fetch', () => {
         },
         fetchQuery: createMockQuery(),
       })
-      expect(res.errors).toEqual([])
-      expect(res.configChanges).toHaveLength(0)
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors).toEqual([customSaltoError])
+      expect(res.configChanges).toHaveLength(1)
+      expect(res.configChanges?.[0]).toEqual({
+        type: 'typeToExclude',
+        value: 'some value',
+        reason: 'error fetching options',
+      })
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'myAdapter.depending_option',
+        'myAdapter.depending_option.instance.deps1Custom',
         'myAdapter.field',
         'myAdapter.field.instance.field1Custom',
+        'myAdapter.field.instance.field2Custom',
         'myAdapter.field__default',
         'myAdapter.group',
         'myAdapter.group.instance.group1Custom',

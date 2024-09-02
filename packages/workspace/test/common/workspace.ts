@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { Element, InstanceElement } from '@salto-io/adapter-api'
@@ -27,7 +19,12 @@ import { Path } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { StaticFilesSource } from '../../src/workspace/static_files'
-import { EnvironmentSource, Workspace, loadWorkspace } from '../../src/workspace/workspace'
+import {
+  EnvironmentSource,
+  Workspace,
+  loadWorkspace,
+  WorkspaceGetCustomReferencesFunc,
+} from '../../src/workspace/workspace'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { createMockNaclFileSource } from './nacl_file_source'
@@ -134,6 +131,7 @@ export const createWorkspace = async (
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
   remoteMapCreator?: RemoteMapCreator,
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   persistent = true,
 ): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
@@ -161,5 +159,9 @@ export const createWorkspace = async (
       },
     },
     mapCreator,
+    undefined,
+    undefined,
+    undefined,
+    getCustomReferences,
   )
 }

@@ -1,31 +1,13 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  BuiltinTypes,
-  ElemID,
-  Field,
-  ObjectType,
-  toChange,
-} from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, ObjectType, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/task_or_event_fields_modifications'
-import {
-  EVENT_CUSTOM_OBJECT,
-  SALESFORCE,
-  TASK_CUSTOM_OBJECT,
-} from '../../src/constants'
+import { EVENT_CUSTOM_OBJECT, SALESFORCE, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { createCustomObjectType, createField } from '../utils'
 
 describe('Task or Event Fields Modifications Change Validator', () => {
@@ -49,9 +31,7 @@ describe('Task or Event Fields Modifications Change Validator', () => {
   })
   it('should create correct change errors', async () => {
     const errors = await changeValidator(
-      [taskField, eventField, taskFieldOfNonCustomObject].map((field) =>
-        toChange({ after: field }),
-      ),
+      [taskField, eventField, taskFieldOfNonCustomObject].map(field => toChange({ after: field })),
     )
     expect(errors).toHaveLength(2)
 
@@ -60,23 +40,15 @@ describe('Task or Event Fields Modifications Change Validator', () => {
     expect(taskFieldError).toEqual({
       elemID: taskField.elemID,
       severity: 'Error',
-      message: expect.stringContaining(
-        'Modifying a field of Task or Event is not allowed',
-      ),
-      detailedMessage:
-        expect.stringContaining(FIELD_NAME) &&
-        expect.stringContaining(TASK_CUSTOM_OBJECT),
+      message: expect.stringContaining('Modifying a field of Task or Event is not allowed'),
+      detailedMessage: expect.stringContaining(FIELD_NAME) && expect.stringContaining(TASK_CUSTOM_OBJECT),
     })
 
     expect(eventFieldError).toEqual({
       elemID: eventField.elemID,
       severity: 'Error',
-      message: expect.stringContaining(
-        'Modifying a field of Task or Event is not allowed',
-      ),
-      detailedMessage:
-        expect.stringContaining(FIELD_NAME) &&
-        expect.stringContaining(EVENT_CUSTOM_OBJECT),
+      message: expect.stringContaining('Modifying a field of Task or Event is not allowed'),
+      detailedMessage: expect.stringContaining(FIELD_NAME) && expect.stringContaining(EVENT_CUSTOM_OBJECT),
     })
   })
 })

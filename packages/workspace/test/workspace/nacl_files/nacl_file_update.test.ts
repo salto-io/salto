@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   InstanceElement,
@@ -37,10 +29,12 @@ const createMockType = ({
   dropFields = [],
   withAnnotations = false,
   dropAnnotations = [],
+  metaType,
 }: {
   dropFields?: ('file' | 'numArray' | 'strArray' | 'obj')[]
   withAnnotations?: boolean
   dropAnnotations?: ('anno1' | 'anno2' | 'anno3')[]
+  metaType?: ObjectType
 }): ObjectType => {
   const fields = {
     file: { refType: BuiltinTypes.STRING },
@@ -70,6 +64,7 @@ const createMockType = ({
     elemID: new ElemID('salto', 'mock'),
     fields,
     annotations: withAnnotations ? annotations : undefined,
+    metaType,
     path: ['this', 'is', 'happening'],
   })
 }
@@ -376,6 +371,18 @@ describe('updateNaclFileData', () => {
 }
 `
 
+  const mockTypeMetaNacl = `type salto.mock is salto.meta {
+  string file {
+  }
+  "List<number>" numArray {
+  }
+  "List<string>" strArray {
+  }
+  "List<salto.obj>" obj {
+  }
+}
+`
+
   describe('when the data is empty and there is an element addition', () => {
     beforeEach(() => {
       const mockType = createMockType({})
@@ -407,16 +414,16 @@ describe('updateNaclFileData', () => {
           id: mockType.elemID,
           location: {
             filename: 'file',
-            start: { col: 0, line: 0, byte: 0 },
-            end: { col: 1, line: 10, byte: mockTypeNacl.length },
+            start: { col: 1, line: 0, byte: 0 },
+            end: { col: 2, line: 9, byte: mockTypeNacl.length - 1 },
           },
         },
       ]
     })
 
-    it('should return an empty result', async () => {
+    it('should return a newline', async () => {
       const result = await updateNaclFileData(mockTypeNacl, changes, {})
-      expect(result).toEqual('')
+      expect(result).toEqual('\n')
     })
   })
 
@@ -539,6 +546,63 @@ describe('updateNaclFileData', () => {
     it('should remove the field and preceding whitespaces from the element', async () => {
       const result = await updateNaclFileData(mockTypeNacl, changes, {})
       expect(result).toEqual(mockTypeMissingMiddleNacl)
+    })
+  })
+
+  describe('when data contains an element which is completely replaced', () => {
+    beforeAll(() => {
+      const mockType = createMockType({
+        metaType: new ObjectType({ elemID: new ElemID('salto', 'meta') }),
+      })
+      changes = [
+        {
+          ...toChange({ before: createMockType({}), after: mockType }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: 0, byte: 0 },
+            end: { col: 1, line: 9, byte: mockTypeNacl.length - 1 },
+          },
+        },
+      ]
+    })
+
+    it('should replace the element in the data', async () => {
+      const result = await updateNaclFileData(mockTypeNacl, changes, {})
+      expect(result).toEqual(mockTypeMetaNacl)
+    })
+  })
+
+  describe('when data contains an element which is completely removed and added', () => {
+    beforeAll(() => {
+      const mockType = createMockType({
+        metaType: new ObjectType({ elemID: new ElemID('salto', 'meta') }),
+      })
+      changes = [
+        {
+          ...toChange({ before: createMockType({}) }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: 0, byte: 0 },
+            end: { col: 1, line: 9, byte: mockTypeNacl.length - 1 },
+          },
+        },
+        {
+          ...toChange({ after: mockType }),
+          id: mockType.elemID,
+          location: {
+            filename: 'file',
+            start: { col: 1, line: Infinity, byte: Infinity },
+            end: { col: 1, line: Infinity, byte: Infinity },
+          },
+        },
+      ]
+    })
+
+    it('should replace the element in the data', async () => {
+      const result = await updateNaclFileData(mockTypeNacl, changes, {})
+      expect(result).toEqual(mockTypeMetaNacl)
     })
   })
 })

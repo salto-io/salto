@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { retry as retryUtil } from '@salto-io/lowerdash'
 import { repo as makeRepo, DynamoDbInstances } from '../../../src/lib/dynamodb/dynamodb_repo'
@@ -25,7 +17,7 @@ const { retryStrategies } = retryUtil
 describe('when there are existing leases', () => {
   const NUM_LEASES = 40
 
-  if (global.dynamoEnv.real) {
+  if (global.dynamoEnv?.real) {
     jest.setTimeout(30000)
   }
 
@@ -58,6 +50,9 @@ describe('when there are existing leases', () => {
 
   describe('without retries', () => {
     beforeAll(async () => {
+      if (global.dynamoEnv === undefined) {
+        throw new Error('no dynamo env defined')
+      }
       ;({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       repo = await makeRepo(repoOpts())
       pool = await repo.pool(myTypeName)
@@ -91,6 +86,9 @@ describe('when there are existing leases', () => {
 
   describe('retries', () => {
     it('should throw if at limit', async () => {
+      if (global.dynamoEnv === undefined) {
+        throw new Error('no dynamo env defined')
+      }
       ;({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       const repo2 = await makeRepo({
         ...repoOpts(),
@@ -104,7 +102,7 @@ describe('when there are existing leases', () => {
           await Promise.all(repeat(NUM_LEASES, () => pool2.lease(timeout))),
         ])
       } catch (e) {
-        expect(e.toString()).toContain('ConditionalCheckFailedException')
+        expect((e as Error).toString()).toContain('ConditionalCheckFailedException')
       }
       return expect(pool2.waitForLease(timeout, retryStrategies.none())).resolves.not.toBeNull()
     })

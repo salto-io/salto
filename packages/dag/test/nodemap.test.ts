@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
 import _ from 'lodash'
@@ -23,6 +15,7 @@ import {
   DataNodeMap,
   DAG,
   AbstractNodeMap,
+  FatalError,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -470,21 +463,39 @@ describe('NodeMap', () => {
     })
 
     describe('for a graph with cycles', () => {
-      beforeEach(() => {
-        subject.addNode(1, [6])
-        subject.addNode(2, [3])
-        subject.addNode(3, [4])
-        subject.addNode(4, [2])
-        subject.addNode(5, [6])
-        subject.addNode(6, [])
-      })
+      describe('when the cycle is disconnected from the rest of the graph', () => {
+        beforeEach(() => {
+          subject.addNode(1, [6])
+          subject.addNode(2, [3])
+          subject.addNode(3, [4])
+          subject.addNode(4, [2])
+          subject.addNode(5, [6])
+          subject.addNode(6, [])
+        })
 
-      it('should return the cycles', () => {
-        expect(subject.getCycle()).toEqual([
-          [2, 3],
-          [3, 4],
-          [4, 2],
-        ])
+        it('should return the cycles', () => {
+          expect(subject.getCycle()).toEqual([
+            [2, 3],
+            [3, 4],
+            [4, 2],
+          ])
+        })
+      })
+      describe('when there are edges that lead to a cycle', () => {
+        beforeEach(() => {
+          subject.addNode(1, [2])
+          subject.addNode(2, [3])
+          subject.addNode(3, [4])
+          subject.addNode(4, [2])
+        })
+        it('should only return the cycle without the leading edges', () => {
+          // The 1->2 edge is not part of the cycle
+          expect(subject.getCycle()).toEqual([
+            [2, 3],
+            [3, 4],
+            [4, 2],
+          ])
+        })
       })
     })
   })
@@ -640,6 +651,51 @@ describe('NodeMap', () => {
             expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
             expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
           })
+        })
+      })
+
+      describe('when the handler throws a FatalError', () => {
+        let handlerMock: jest.Mock<void>
+        let error: Error
+        beforeEach(() => {
+          handlerMock = jest.fn()
+          subject.addNode(5, [1])
+          try {
+            subject.walkSync((id: NodeId) => {
+              handlerMock(id)
+
+              if (id === 2) {
+                throw new FatalError('My error message')
+              }
+            })
+          } catch (e) {
+            error = e
+          }
+        })
+
+        it('should not call the handler for nodes that have not started yet', () => {
+          expect(handlerMock).not.toHaveBeenCalledWith(3)
+          expect(handlerMock).not.toHaveBeenCalledWith(4)
+          expect(handlerMock).not.toHaveBeenCalledWith(5)
+        })
+
+        it('should set NodeSkippedError on all the nodes that are skipped due to the error', () => {
+          expect(error).toBeDefined()
+          expect(error).toBeInstanceOf(WalkError)
+
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.size).toBe(4)
+          expect(errors.get(2)).toBeInstanceOf(FatalError)
+          expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(5)).toBeInstanceOf(NodeSkippedError)
+        })
+
+        it('should set the `causingNode` id to the node that caused the fatal error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(3) as NodeSkippedError).toHaveProperty('causingNode', 2)
+          expect(errors.get(4) as NodeSkippedError).toHaveProperty('causingNode', 2)
+          expect(errors.get(5) as NodeSkippedError).toHaveProperty('causingNode', 2)
         })
       })
 
@@ -882,6 +938,54 @@ describe('NodeMap', () => {
             expect(errors.get(3)).toBeInstanceOf(NodeSkippedError)
             expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
           })
+        })
+      })
+
+      describe('when the handler throws a FatalError', () => {
+        let handlerMock: jest.Mock<void>
+        let error: Error
+        let resolve: (value: void | PromiseLike<void>) => void
+        beforeEach(async () => {
+          handlerMock = jest.fn()
+          subject.addNode(6, [3])
+          await subject
+            .walkAsync(async (id: NodeId) => {
+              if (id === 3) {
+                throw new FatalError('My error message')
+              }
+              if (id === 4) {
+                return new Promise(r => {
+                  resolve = r
+                })
+              }
+              return handlerMock(id)
+            })
+            .catch(e => {
+              error = e
+            })
+        })
+
+        afterEach(() => {
+          resolve()
+        })
+
+        it('should throw before all promises are resolved', async () => {
+          expect(error).toBeDefined()
+          expect(error).toBeInstanceOf(WalkError)
+          expect((error as WalkError).handlerErrors.get(3)).toBeInstanceOf(FatalError)
+          expect(handlerMock).not.toHaveBeenCalledWith(4)
+        })
+
+        it('should set NodeSkippedError on all the nodes that are skipped due to the error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(4)).toBeInstanceOf(NodeSkippedError)
+          expect(errors.get(6)).toBeInstanceOf(NodeSkippedError)
+        })
+
+        it('should set the `causingNode` id to the node that caused the fatal error', () => {
+          const errors = (error as WalkError).handlerErrors
+          expect(errors.get(4) as NodeSkippedError).toHaveProperty('causingNode', 3)
+          expect(errors.get(6) as NodeSkippedError).toHaveProperty('causingNode', 3)
         })
       })
 

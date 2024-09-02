@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ElemID,
@@ -28,6 +20,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { AUTOMATION_TYPE, ESCALATION_SERVICE_TYPE, QUEUE_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
+import { FIELD_CONTEXT_TYPE_NAME } from '../fields/constants'
 import {
   generateTemplateExpression,
   generateJqlContext,
@@ -72,8 +65,9 @@ const SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
   'com.onresolve.jira.groovy.GroovyCondition': [['configuration', 'FIELD_JQL_QUERY']],
 }
 
-const instanceTypeToString: Record<string, string[]> = {
-  SLA: ['jqlQuery'],
+const instanceTypeToString: Record<string, string[][]> = {
+  SLA: [['jqlQuery']],
+  [FIELD_CONTEXT_TYPE_NAME]: [['objectFilterQuery'], ['issueScopeFilterQuery']],
 }
 
 const instanceTypeToMap: Map<string, Record<string, string[][]>> = new Map([
@@ -104,21 +98,24 @@ const getRelativePathJqls = (instance: InstanceElement, pathMap: Record<string, 
   return jqlPaths
 }
 
-const getRelativePathJqlsJsm = (instance: InstanceElement, pathMap: Record<string, string[]>): JqlDetails[] => {
+const getRelativePathJqlsJsm = (instance: InstanceElement, pathMap: Record<string, string[][]>): JqlDetails[] => {
   const jqlPaths: JqlDetails[] = []
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
       const jqlRelativePaths = pathMap[instance.elemID.typeName]
       if (jqlRelativePaths !== undefined) {
-        const jqlValue = _.get(value, jqlRelativePaths)
-        if (_.isString(jqlValue) || isTemplateExpression(jqlValue)) {
-          jqlPaths.push({
-            path: path.createNestedID(...jqlRelativePaths),
-            jql: jqlValue,
-          })
-        }
+        jqlRelativePaths.forEach(jqlRelativePath => {
+          const jqlValue = _.get(value, jqlRelativePath)
+          if (_.isString(jqlValue) || isTemplateExpression(jqlValue)) {
+            jqlPaths.push({
+              path: path.createNestedID(...jqlRelativePath),
+              jql: jqlValue,
+            })
+          }
+        })
       }
+
       return WALK_NEXT_STEP.RECURSE
     },
   })

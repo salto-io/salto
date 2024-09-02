@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import path from 'path'
 import { promisify } from 'util'
@@ -245,35 +237,39 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
-  log.debug('closing all remote maps of location %s', location)
-  const persistentConnection = persistentDBConnections[location]
-  if (await persistentConnection) {
-    await closeConnection(location, persistentConnection, persistentDBConnections)
-  }
-  const tmpConnections = tmpDBConnections[location]
-  if (tmpConnections) {
-    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
-      await closeTmpConnection(location, tmpLoc, tmpCon)
-    })
-    delete tmpDBConnections[location]
-  }
-  const readOnlyConnection = readonlyDBConnections[location]
-  if (await readOnlyConnection) {
-    await closeConnection(location, readOnlyConnection, readonlyDBConnections)
-  }
-  const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]
-  if (roConnectionsPerMap) {
-    await awu(Object.values(roConnectionsPerMap)).forEach(async conn => {
-      await closeDanglingConnection(conn)
-    })
-    delete readonlyDBConnectionsPerRemoteMap[location]
-    log.debug('closed read-only connections per remote map of location %s', location)
-  }
-  const locationResources = remoteMapLocations.get(location)
-  locationResources.counters.dump()
-  remoteMapLocations.return(locationResources)
-}
+export const closeRemoteMapsOfLocation = async (location: string): Promise<void> =>
+  log.timeDebug(
+    async () => {
+      const persistentConnection = persistentDBConnections[location]
+      if (await persistentConnection) {
+        await closeConnection(location, persistentConnection, persistentDBConnections)
+      }
+      const tmpConnections = tmpDBConnections[location]
+      if (tmpConnections) {
+        await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
+          await closeTmpConnection(location, tmpLoc, tmpCon)
+        })
+        delete tmpDBConnections[location]
+      }
+      const readOnlyConnection = readonlyDBConnections[location]
+      if (await readOnlyConnection) {
+        await closeConnection(location, readOnlyConnection, readonlyDBConnections)
+      }
+      const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]
+      if (roConnectionsPerMap) {
+        await awu(Object.values(roConnectionsPerMap)).forEach(async conn => {
+          await closeDanglingConnection(conn)
+        })
+        delete readonlyDBConnectionsPerRemoteMap[location]
+        log.debug('closed read-only connections per remote map of location %s', location)
+      }
+      const locationResources = remoteMapLocations.get(location)
+      locationResources.counters.dump()
+      remoteMapLocations.return(locationResources)
+    },
+    'closeRemoteMapsOfLocation with location %s',
+    location,
+  )
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
   log.debug('closing all remote maps')

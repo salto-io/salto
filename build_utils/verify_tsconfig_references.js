@@ -1,18 +1,10 @@
 #!/usr/bin/env node
 /*
-*                      Copyright 2024 Salto Labs Ltd.
+* Copyright 2024 Salto Labs Ltd.
+* Licensed under the Salto Terms of Use (the "License");
+* You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
 *
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
+* CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
 */
 const fs = require('fs')
 const path = require('path')
@@ -36,9 +28,33 @@ const filterValues = (o, f) => Object.fromEntries(
   Object.entries(o).filter(([k, v], i) => f(v, k, i))
 )
 
+const readWorkspacesFromYarnBerry = async () => {
+  const { stdout } = await exec('yarn workspaces list --json -v')
+  const workspaces = stdout
+    .trim()
+    .split('\n')
+    .map(line => JSON.parse(line))
+    .filter(r => r.name[0] === '@')
+    .map(({ name, location, workspaceDependencies, mismatchedWorkspaceDependencies }) => ({
+      name,
+      location,
+      workspaceDependencies: workspaceDependencies.map(dep => "@salto-io" + dep.substr('packages'.length)),
+      mismatchedWorkspaceDependencies,
+    }))
+
+  const result = {}
+  workspaces.forEach(ws => {
+    result[ws.name] = {
+      location: ws.location,
+      workspaceDependencies: ws.workspaceDependencies,
+      mismatchedWorkspaceDependencies: ws.mismatchedWorkspaceDependencies,
+    }
+  })
+  return result
+}
+
 const readWorkspaces = async () => {
-  const { stdout } = await exec('yarn workspaces -s info')
-  return JSON.parse(stdout)
+  return readWorkspacesFromYarnBerry()
 }
 
 const readTsConfig = filename => {
@@ -83,11 +99,10 @@ const main = async () => {
     v => v.length,
   )
 
-  const workspacePackageToReference = (
-    package, refPackage,
-  ) => ({
-    path: path.relative(workspaces[package].location, workspaces[refPackage].location)
-  })
+  const workspacePackageToReference = (package, refPackage) => {
+    const relativePath = path.relative(workspaces[package].location, workspaces[refPackage].location)
+    return { path: relativePath }
+  }
 
   const extraneousReferences = filterValues(
     mapValues(

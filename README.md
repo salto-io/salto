@@ -1,4 +1,4 @@
-# Salto OSS monorepo
+# Salto Monorepo
 [![Knuckles](bnw-face.png)](https://github.com/salto-io/salto/blob/main/docs/faq.md#why-did-we-choose-knuckles-as-our-mascot)
 ---
 
@@ -33,15 +33,16 @@ See [the vscode package documentation](packages/vscode/README.md#installation)
 ### Running using docker
 
 ```bash
-docker build --tag salto-cli
+docker build --tag salto-cli .
 docker run salto-cli
 ```
 
 ### Building from source
 
-  1. Install Node.js 14 (for M1 Macs use 14.15). You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
-  2. Install [yarn 1](https://yarnpkg.com/en/docs/install).
-  3. Fetch dependencies and build:
+  1. Install Node.js 18.9.0. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
+  2. Run Corepack: `corepack enable` to install and set up the relevant yarn version
+  3. Verify Yarn and Node.js versions using `node -v` (should be 18.9.x) and `yarn -v` (should be 3.1.0)
+  4. Fetch dependencies and build:
 
 ```bash
 $ yarn
@@ -112,4 +113,4 @@ Once the PR is merged, the version will be published and a git tag will be creat
 See READMEs of individual packages under the `packages` directory.
 
 ### License
-[Apache License 2.0](LICENSE)
+[Licensed under the Salto Terms of Use](LICENSE)

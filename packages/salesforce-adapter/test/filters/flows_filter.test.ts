@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -25,9 +17,7 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { defaultFilterContext } from '../utils'
 import mockClient from '../client'
-import filterCreator, {
-  createActiveVersionFileProperties,
-} from '../../src/filters/flows_filter'
+import filterCreator, { createActiveVersionFileProperties } from '../../src/filters/flows_filter'
 import * as filterModule from '../../src/filters/flows_filter'
 import {
   ACTIVE_VERSION_NUMBER,
@@ -65,10 +55,7 @@ describe('flows filter', () => {
       elemID: new ElemID(SALESFORCE, FLOW_DEFINITION_METADATA_TYPE),
       annotations: { [METADATA_TYPE]: FLOW_DEFINITION_METADATA_TYPE },
     })
-    fetchMetadataInstancesSpy = jest.spyOn(
-      fetchModule,
-      'fetchMetadataInstances',
-    )
+    fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
   afterEach(() => {
@@ -101,31 +88,21 @@ describe('flows filter', () => {
       })
 
       it('should hide the FlowDefinition metadata type and instances', async () => {
-        expect(
-          flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN],
-        ).toBeTrue()
-        expect(
-          flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN],
-        ).toBeTrue()
+        expect(flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
+        expect(flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
       })
 
       it('Should call fetchMetadataInstances once', async () => {
         expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
       })
       it('should invoke createActiveVersionFileProperties with the FlowDefinition instances', async () => {
-        expect(createActiveVersionFileProperties).toHaveBeenCalledWith(
-          expect.anything(),
-          [flowDefinitionInstance],
-        )
+        expect(createActiveVersionFileProperties).toHaveBeenCalledWith(expect.anything(), [flowDefinitionInstance])
       })
     })
     describe('with preferActiveFlowVersions false', () => {
       beforeEach(async () => {
         elements = [flowType, flowDefinitionType]
-        fetchMetadataInstancesSpy = jest.spyOn(
-          fetchModule,
-          'fetchMetadataInstances',
-        )
+        fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
         filter = filterCreator({
           config: { ...defaultFilterContext },
           client,
@@ -155,14 +132,8 @@ describe('flows filter', () => {
           lastModifiedByName: 'Ruler',
           lastModifiedDate: '2021-10-19T06:30:10.000Z',
         })
-        const flowDef1 = createInstanceElement(
-          { fullName: 'flow1' },
-          mockTypes.FlowDefinition,
-        )
-        const flowDef2 = createInstanceElement(
-          { fullName: 'flow2', activeVersionNumber: 2 },
-          mockTypes.FlowDefinition,
-        )
+        const flowDef1 = createInstanceElement({ fullName: 'flow1' }, mockTypes.FlowDefinition)
+        const flowDef2 = createInstanceElement({ fullName: 'flow2', activeVersionNumber: 2 }, mockTypes.FlowDefinition)
         const result = createActiveVersionFileProperties(
           [mockedFileProperties1, mockedFileProperties2],
           [flowDef1, flowDef2],

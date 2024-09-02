@@ -1,19 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { Keywords } from '../../language'
 import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 
@@ -28,26 +21,57 @@ const createError = (range: SourceRange, summary: string, message?: string): Par
 export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): ParseError =>
   createError(
     range,
-    'unknown primitive type',
-    token ? `Unknown primitive type ${token}.` : 'Expected a primitive type definition.',
+    'Unknown primitive type',
+    token ? `Unknown primitive type '${token}'.` : 'Expected a primitive type definition, using unknown.',
   )
 
-export const invalidPrimitiveTypeDef = (range: SourceRange, token: string): ParseError =>
-  createError(range, 'invalid type definition', `Expected inheritance operator 'is' found ${token} instead`)
+export const primitiveSettingsError = (range: SourceRange): ParseError =>
+  createError(range, 'Primitive settings type', 'Settings types cannot be primitive.')
+
+export const invalidMetaTypeError = (range: SourceRange, token: string): ParseError =>
+  createError(range, 'Invalid meta type', `Meta type ${token} is invalid, must be an object type.`)
 
 export const invalidFieldsInPrimitiveType = (range: SourceRange): ParseError =>
   createError(
     range,
-    'invalid fields in primitive type',
+    'Invalid fields in primitive type',
     'Unexpected field definition(s) in a primitive type. Expected no fields.',
   )
 
 export const invalidBlocksInInstance = (range: SourceRange): ParseError =>
   createError(
     range,
-    'invalid blocks in an instance',
+    'Invalid blocks in an instance',
     'Unexpected field or annotation type definition(s) in a primitive type. Expected only values.',
   )
+
+export const invalidDefinition = (range: SourceRange, labels: string[]): ParseError => {
+  if (labels.length === 0) {
+    return createError(range, 'Missing block definition')
+  }
+
+  if (labels[0] === Keywords.TYPE_DEFINITION) {
+    return createError(
+      range,
+      'Invalid type definition',
+      "Type definition must be of the form 'type <name>' or 'type <name> is <category>'.",
+    )
+  }
+
+  if (labels[0] === Keywords.SETTINGS_DEFINITION) {
+    return createError(
+      range,
+      'Invalid settings type definition',
+      "Settings type definition must be of the form 'settings <name>'.",
+    )
+  }
+
+  return createError(
+    range,
+    'Invalid instance definition',
+    "Instance definition must be of the form '<type> name' or '<settings type>'.",
+  )
+}
 
 export const ambiguousBlock = (range: SourceRange): ParseError => createError(range, 'Ambiguous block definition')
 

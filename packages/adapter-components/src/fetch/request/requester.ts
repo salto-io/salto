@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -28,6 +20,7 @@ import { computeArgCombinations } from '../resource/request_parameters'
 import {
   APIDefinitionsOptions,
   HTTPEndpointDetails,
+  PaginationDefinitions,
   ResolveClientOptionsType,
   ResolvePaginationOptionsType,
 } from '../../definitions/system'
@@ -36,8 +29,6 @@ import { FetchRequestDefinition } from '../../definitions/system/fetch'
 const log = logger(module)
 
 export type Requester<ClientOptions extends string> = {
-  // TODO improve both functions to allow returning partial errors as the return value (SALTO-5427)
-
   request: (args: {
     requestDef: FetchRequestDefinition<ClientOptions>
     contexts: ContextParams[]
@@ -50,21 +41,25 @@ export type Requester<ClientOptions extends string> = {
   }) => Promise<ValueGeneratedItem[]>
 }
 
-type ItemExtractor = (pages: ResponseValue[]) => GeneratedItem[]
+type ItemExtractor = (pages: ResponseValue[]) => Promise<GeneratedItem[]>
 
 const createExtractor = <ClientOptions extends string>(
   extractorDef: FetchRequestDefinition<ClientOptions>,
   typeName: string,
 ): ItemExtractor => {
   const transform = createValueTransformer(extractorDef.transformation)
-  return pages =>
-    pages.flatMap(page =>
-      collections.array.makeArray(
-        transform({
-          value: page,
-          typeName,
-          context: extractorDef.context ?? {},
-        }),
+  return async pages =>
+    _.flatten(
+      await Promise.all(
+        pages.map(async page =>
+          collections.array.makeArray(
+            await transform({
+              value: page,
+              typeName,
+              context: extractorDef.context ?? {},
+            }),
+          ),
+        ),
       ),
     )
 }
@@ -124,11 +119,16 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
     // * add promises for in-flight requests, to avoid making the same request multiple times in parallel
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)
 
-    const paginationOption = mergedRequestDef.endpoint.pagination
-    const paginationDef =
-      paginationOption !== undefined
-        ? pagination[paginationOption]
-        : { funcCreator: noPagination, clientArgs: undefined }
+    const paginationOption = mergedRequestDef.endpoint.pagination ?? 'none'
+    const nonePaginationDef: PaginationDefinitions<ResolveClientOptionsType<Options>> = {
+      funcCreator: noPagination,
+      clientArgs: undefined,
+    }
+    const paginationWithNone = {
+      ...pagination,
+      none: nonePaginationDef,
+    } as Record<ResolvePaginationOptionsType<Options>, PaginationDefinitions<ResolveClientOptionsType<Options>>>
+    const paginationDef = paginationWithNone[paginationOption]
 
     const { clientArgs } = paginationDef
     // order of precedence in case of overlaps: pagination defaults < endpoint < resource-specific request
@@ -143,9 +143,8 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
         typeName,
       )
 
-    const callArgs = mergedEndpointDef.omitBody
-      ? _.pick(mergedEndpointDef, ['queryArgs', 'headers'])
-      : _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body'])
+    const allCallArgs = _.pick(mergedEndpointDef, ['queryArgs', 'headers', 'body', 'params', 'queryParamsSerializer'])
+    const callArgs = mergedEndpointDef.omitBody ? _.omit(allCallArgs, 'body') : allCallArgs
 
     log.trace(
       'traversing pages for adapter %s client %s endpoint %s.%s',
@@ -164,9 +163,14 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
       polling: mergedEndpointDef.polling,
     })
 
-    const itemsWithContext = pagesWithContext
-      .map(({ context, pages }) => ({ items: extractorCreator(context)(pages), context }))
-      .flatMap(({ items, context }) => items.flatMap(item => ({ ...item, context })))
+    const itemsWithContext = (
+      await Promise.all(
+        pagesWithContext.map(async ({ context, pages }) => ({
+          items: await extractorCreator(context)(pages),
+          context,
+        })),
+      )
+    ).flatMap(({ items, context }) => items.map(item => ({ ...item, context })))
     return itemsWithContext.filter(item => {
       if (!lowerdashValues.isPlainRecord(item.value)) {
         log.warn(
@@ -191,12 +195,18 @@ export const getRequester = <Options extends APIDefinitionsOptions>({
         (requestDefQuery.query(callerIdentifier.typeName) ?? []).map(requestDef => {
           const mergedDef = getMergedRequestDefinition(requestDef).merged
           const allArgs = findAllUnresolvedArgs(mergedDef)
-          const relevantArgRoots = _.uniq(allArgs.map(arg => arg.split('.')[0]).filter(arg => arg.length > 0))
+          const relevantArgRoots = _.uniq(allArgs.map(arg => arg.split('.')[0]).filter(arg => arg.length > 0)).concat(
+            _.keys(contextPossibleArgs),
+          )
           const contextFunc =
             mergedDef.context?.custom !== undefined
               ? mergedDef.context.custom(mergedDef.context)
               : (v: ContextParams) => v
-          const contexts = computeArgCombinations(contextPossibleArgs, relevantArgRoots).map(contextFunc)
+          const contexts = computeArgCombinations(
+            contextPossibleArgs,
+            relevantArgRoots?.length === 0 ? undefined : relevantArgRoots,
+          ).map(contextFunc)
+
           return request({
             contexts,
             requestDef,

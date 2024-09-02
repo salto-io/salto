@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { elements as elementsUtils, filterUtils } from '@salto-io/adapter-components'
 import {
@@ -37,8 +29,8 @@ import {
 const { RECORDS_PATH } = elementsUtils
 type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
 
-const createOptionsValue = (id: number, value?: string): Value => ({
-  id,
+const createOptionsValue = (id: number | 'newOption', value?: string): Value => ({
+  id: id === 'newOption' ? undefined : id,
   name: id.toString(),
   raw_name: id.toString().repeat(2),
   value: value ?? id.toString().repeat(3),
@@ -60,7 +52,7 @@ const customObjectFieldOptionType = new ObjectType({
   },
 })
 
-const createOptionInstance = ({ id, value }: { id: number; value: string }): InstanceElement => {
+const createOptionInstance = ({ id, value }: { id: number | 'newOption'; value: string }): InstanceElement => {
   const test = pathNaclCase(naclCase(`customObjectField__${value.toString()}`))
   return new InstanceElement(
     naclCase(`customObjectField__${value.toString()}`),
@@ -106,5 +98,34 @@ describe('customObjectFieldOptionsFilter', () => {
     customObjectFieldOption.value.name = 'test'
     await customObjectFieldOptionsFilter.onDeploy([toChange({ after: customObjectFieldOption })])
     expect(customObjectFieldOption.value.name).toBeUndefined()
+  })
+  describe('when deploying new option', () => {
+    describe('when id does not return on the deployed option', () => {
+      it('should set null id on preDeploy and omit the id on onDeploy', async () => {
+        const newOptionInstance = createOptionInstance({ id: 'newOption', value: 'newOptionValue' })
+        const changes = [toChange({ after: newOptionInstance })]
+
+        await customObjectFieldOptionsFilter.preDeploy(changes)
+        expect(newOptionInstance.value.id).toBeNull()
+
+        await customObjectFieldOptionsFilter.onDeploy(changes)
+        expect(newOptionInstance.value.id).toBeUndefined()
+      })
+    })
+    describe('when id returns on the deployed option', () => {
+      const NEW_OPTION_ID = 1
+      it('should set null id on preDeploy and keep the id on onDeploy', async () => {
+        const newOptionInstance = createOptionInstance({ id: 'newOption', value: 'newOptionValue' })
+        const changes = [toChange({ after: newOptionInstance })]
+
+        await customObjectFieldOptionsFilter.preDeploy(changes)
+        expect(newOptionInstance.value.id).toBeNull()
+
+        newOptionInstance.value.id = NEW_OPTION_ID
+
+        await customObjectFieldOptionsFilter.onDeploy(changes)
+        expect(newOptionInstance.value.id).toEqual(NEW_OPTION_ID)
+      })
+    })
   })
 })

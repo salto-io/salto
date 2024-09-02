@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -36,11 +28,9 @@ const log = logger(module)
 const errorMsg = (reason: string): string => `Failed to run customStatusesEnabledValidator because ${reason}`
 
 type ChildField = {
-  // eslint-disable-next-line camelcase
   required_on_statuses?: {
     type: string
     statuses?: string[]
-    // eslint-disable-next-line camelcase
     custom_statuses?: unknown[]
   }
 }
@@ -54,7 +44,6 @@ const CHILD_FIELD_SCHEMA = Joi.object({
 }).unknown()
 
 type Condition = {
-  // eslint-disable-next-line camelcase
   child_fields: ChildField[]
 }
 
@@ -63,7 +52,6 @@ const CONDITION_SCHEMA = Joi.object({
 }).unknown()
 
 type TicketFormValue = {
-  // eslint-disable-next-line camelcase
   agent_conditions?: Condition[]
 }
 

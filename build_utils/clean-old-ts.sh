@@ -15,7 +15,7 @@ diff --strip-trailing-cr <(
   find ${PWD}/dist -type f |
   sort
 ) <(
-  yarn -s tsc -b --clean --dry |
+  yarn tsc -b --clean --dry |
   grep -e '^ ' |
   sed -e 's/^.*[*] //' |
   sort
@@ -23,5 +23,3 @@ diff --strip-trailing-cr <(
   grep -e '^< ' |
   sed -e 's/^< //' |
   xargs ${XARGS_OPTS} rm -v
-
-

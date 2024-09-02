@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 /* eslint-disable camelcase */
@@ -714,89 +706,3 @@ export const definitionWithArrays = `<root>
   <datasetLinks type="array"></datasetLinks>
 </root>
 `
-
-const newDefinitionWithArrays = `<root>
-  <dataViews type="array">
-    <_ITEM_>
-      <_T_>dataView</_T_>
-      <scriptId type="string">1</scriptId>
-      <id type="null"></id>
-      <applicationId type="null"></applicationId>
-      <version type="null"></version>
-      <name type="null"></name>
-      <workbook type="null"></workbook>
-      <datasets type="array"></datasets>
-      <columns type="array"></columns>
-      <order type="null"></order>
-    </_ITEM_>
-    <_ITEM_>
-      <_T_>dataView</_T_>
-      <scriptId>2</scriptId>
-      <id type="null"></id>
-      <applicationId type="null"></applicationId>
-      <version type="null"></version>
-      <name type="null"></name>
-      <workbook type="null"></workbook>
-      <datasets type="array"></datasets>
-      <columns type="array"></columns>
-      <order type="null"></order>
-    </_ITEM_>
-  </dataViews>
-  <pivots type="array">
-    <_ITEM_>
-      <_T_>pivot</_T_>
-      <scriptId type="string">4</scriptId>
-      <datasets type="array">
-        <_ITEM_>b</_ITEM_>
-        <_ITEM_>a</_ITEM_>
-      </datasets>
-      <id type="null"></id>
-      <applicationId type="null"></applicationId>
-      <version type="null"></version>
-      <name type="null"></name>
-      <workbook type="null"></workbook>
-      <format type="null"></format>
-      <order type="null"></order>
-      <definition>&lt;root>&lt;version>1&lt;/version>&lt;rowAxis>&lt;dimensionTree>&lt;_T_>section&lt;/_T_>&lt;id>5&lt;/id>&lt;children type="array">&lt;_ITEM_>&lt;_T_>dataDimension&lt;/_T_>&lt;id>4&lt;/id>&lt;items type="array">&lt;_ITEM_>&lt;id>1&lt;/id>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>textType&lt;/_T_>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>description&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/items>&lt;/_ITEM_>&lt;/children>&lt;/dimensionTree>&lt;/rowAxis>&lt;columnAxis>&lt;dimensionTree>&lt;_T_>dataDimension&lt;/_T_>&lt;id>6&lt;/id>&lt;children type="array">&lt;_ITEM_>&lt;ref>3&lt;/ref>&lt;/_ITEM_>&lt;/children>&lt;items type="array">&lt;_ITEM_>&lt;id>2&lt;/id>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>textType&lt;/_T_>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>displaynamewithhierarchy&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/items>&lt;/dimensionTree>&lt;uiSettings>&lt;headerAlwaysVisible type="boolean">true&lt;/headerAlwaysVisible>&lt;/uiSettings>&lt;/columnAxis>&lt;measures type="array">&lt;_ITEM_>&lt;_T_>dataMeasure&lt;/_T_>&lt;id>3&lt;/id>&lt;aggregation>count&lt;/aggregation>&lt;expression>&lt;function>field&lt;/function>&lt;args>&lt;type>&lt;_T_>recordType&lt;/_T_>&lt;id>record_accttype&lt;/id>&lt;/type>&lt;dataSourceId>custdataset_dilly_1&lt;/dataSourceId>&lt;fieldId>accttype&lt;/fieldId>&lt;/args>&lt;/expression>&lt;/_ITEM_>&lt;/measures>&lt;/root></definition>
-    </_ITEM_>
-  </pivots>
-  <Workbook>
-    <dataViewIDs type="array">
-      <_ITEM_ type="string">1</_ITEM_>
-      <_ITEM_>2</_ITEM_>
-    </dataViewIDs>
-    <pivotIDs type="array">
-      <_ITEM_ type="string">3</_ITEM_>
-    </pivotIDs>
-    <_T_>workbook</_T_>
-    <id type="null"></id>
-    <scriptId type="null"></scriptId>
-    <applicationId type="null"></applicationId>
-    <version type="null"></version>
-    <name type="null"></name>
-    <audience type="null"></audience>
-    <ownerId type="null"></ownerId>
-    <description type="null"></description>
-    <chartIDs type="array"></chartIDs>
-  </Workbook>
-  <scriptid type="null"></scriptid>
-  <name>arrays test</name>
-  <charts type="array"></charts>
-  <datasetLinks type="array"></datasetLinks>
-</root>
-`
-
-const newWorkbookWithArraysValue = {
-  scriptid: 'custworkbook_with_arrays',
-  name: {
-    '#text': '[scriptid=name]',
-  },
-  definition: newDefinitionWithArrays,
-}
-
-export const newWorkbookWithArrays = new InstanceElement(
-  'custworkbook_with_arrays',
-  workbook,
-  newWorkbookWithArraysValue,
-  [constants.NETSUITE, constants.WORKBOOK],
-)

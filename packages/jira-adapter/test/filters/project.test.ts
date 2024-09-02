@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -254,6 +246,38 @@ describe('projectFilter', () => {
       instance.value.projectTypeKey = 'unexpected'
       await filter.onFetch([type, instance, SoftwareTypeInstance, JsmTypeInstance])
       expect(instance.path).toEqual([JIRA, elementUtils.RECORDS_PATH, 'Project', 'Other', 'instance', 'instance'])
+    })
+    it('should add assigneeType field when exists in the response', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          assigneeType: 'PROJECT_LEAD',
+        },
+      })
+      await filter.onFetch([type, instance])
+      expect(instance.value.assigneeType).toEqual('PROJECT_LEAD')
+    })
+    it('should not add assigneeType field when not exists in the response', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          otherField: 'otherValue',
+        },
+      })
+      await filter.onFetch([type, instance])
+      expect(instance.value.assigneeType).toBeUndefined()
+    })
+    it('should not add assigneeType field when response is not a single element', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: [
+          {
+            assigneeType: 'PROJECT_LEAD',
+          },
+        ],
+      })
+      await filter.onFetch([type, instance])
+      expect(instance.value.assigneeType).toBeUndefined()
     })
   })
 

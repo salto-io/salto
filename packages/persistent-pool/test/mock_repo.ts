@@ -1,52 +1,23 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { types } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 import { Repo, Pool, LeaseWithStatus } from '../src/index'
 
-const mockFunc = <
-  T,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  FN extends types.KeysOfType<T, Function>,
-  F extends T[FN] = T[FN],
-  RT extends ReturnType<F> = ReturnType<F>,
-  PT extends Parameters<F> = Parameters<F>,
->(): jest.Mock<RT, PT> => jest.fn<RT, PT>()
-
-export type MockObj<T> = T & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [K in keyof T]: T[K] extends (...args: any) => any ? jest.Mock<ReturnType<T[K]>> : never
-}
-
-const mockPoolFunc = <
-  T,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  FN extends types.KeysOfType<Pool<T>, Function>,
-  F extends Pool<T>[FN] = Pool<T>[FN],
->(): jest.Mock<ReturnType<F>, Parameters<F>> => mockFunc<Pool<T>, FN>()
-
-export const createMockPool = <T>(): MockObj<Pool<T>> => ({
+export const createMockPool = <T>(): jest.Mocked<Pool<T>> => ({
   [Symbol.asyncIterator]: jest.fn<AsyncIterator<LeaseWithStatus<T>>, []>(),
-  register: mockPoolFunc<T, 'register'>(),
-  unregister: mockPoolFunc<T, 'unregister'>(),
-  suspend: mockPoolFunc<T, 'suspend'>(),
-  lease: mockPoolFunc<T, 'lease'>(),
-  waitForLease: mockPoolFunc<T, 'waitForLease'>(),
-  updateTimeout: mockPoolFunc<T, 'updateTimeout'>(),
-  return: mockPoolFunc<T, 'return'>(),
-  clear: mockPoolFunc<T, 'clear'>(),
+  register: mockFunction<Pool<T>['register']>(),
+  unregister: mockFunction<Pool<T>['unregister']>(),
+  suspend: mockFunction<Pool<T>['suspend']>(),
+  lease: mockFunction<Pool<T>['lease']>(),
+  waitForLease: mockFunction<Pool<T>['waitForLease']>(),
+  updateTimeout: mockFunction<Pool<T>['updateTimeout']>(),
+  return: mockFunction<Pool<T>['return']>(),
+  clear: mockFunction<Pool<T>['clear']>(),
 })
 
 export const createMockRepo = (): Repo => ({

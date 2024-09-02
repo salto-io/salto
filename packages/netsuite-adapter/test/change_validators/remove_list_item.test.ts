@@ -1,22 +1,15 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { CORE_ANNOTATIONS, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { clientscriptType } from '../../src/autogen/types/standard_types/clientscript'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
+import { mockChangeValidatorParams } from '../utils'
 
 describe('remove item from customlist change validator', () => {
   const origInstance = new InstanceElement('instance', customlistType().type, {
@@ -40,7 +33,7 @@ describe('remove item from customlist change validator', () => {
 
   describe('When adding new customlist', () => {
     it('should have no change errors when adding a customlist', async () => {
-      const changeErrors = await removeListItemValidator([toChange({ after: instance })])
+      const changeErrors = await removeListItemValidator([toChange({ after: instance })], mockChangeValidatorParams())
       expect(changeErrors).toHaveLength(0)
     })
   })
@@ -49,14 +42,20 @@ describe('remove item from customlist change validator', () => {
     it('should have no change errors when adding a customvalue', async () => {
       const after = instance.clone()
       after.value.customvalues.customvalue.val3 = { scriptid: 'val_3', value: 'Value 3' }
-      const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
+      const changeErrors = await removeListItemValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have change error when removing a customvalue', async () => {
       const after = instance.clone()
       delete after.value.customvalues.customvalue.val1
-      const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
+      const changeErrors = await removeListItemValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -68,7 +67,10 @@ describe('remove item from customlist change validator', () => {
     it('should not have change errors when modifiying a customvalue', async () => {
       const after = instance.clone()
       after.value.customvalues.customvalue.val1.value = 'newVal'
-      const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
+      const changeErrors = await removeListItemValidator(
+        [toChange({ before: instance, after })],
+        mockChangeValidatorParams(),
+      )
       expect(changeErrors).toHaveLength(0)
     })
   })
@@ -110,7 +112,10 @@ describe('removing inner items from customtypes', () => {
     const after = instance.clone()
     delete after.value.scriptdeployments.scriptdeployment.customdeploy2
 
-    const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
+    const changeErrors = await removeListItemValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -124,7 +129,10 @@ describe('removing inner items from customtypes', () => {
     delete after.value.scriptdeployments.scriptdeployment.customdeploy2
     delete after.value.scriptdeployments.scriptdeployment.customdeploy3
 
-    const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
+    const changeErrors = await removeListItemValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -137,7 +145,10 @@ describe('removing inner items from customtypes', () => {
     const after = instance.clone()
     delete after.value.scriptdeployments.scriptdeployment.customdeploy2.scriptid
 
-    const changeErrors = await removeListItemValidator([toChange({ before: instance, after })])
+    const changeErrors = await removeListItemValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)

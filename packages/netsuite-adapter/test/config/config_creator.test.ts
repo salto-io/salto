@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { regex } from '@salto-io/lowerdash'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
@@ -38,20 +30,6 @@ describe('netsuite config creator', () => {
   })
 
   describe('fetch target', () => {
-    it('should keep query without custom records', () => {
-      config.value.fetchTarget = {
-        types: {
-          addressForm: ['aaa.*', 'bbb.*'],
-        },
-        filePaths: ['eee.*', 'fff.*'],
-      }
-      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
-        types: {
-          addressForm: ['aaa.*', 'bbb.*'],
-        },
-        filePaths: ['eee.*', 'fff.*'],
-      })
-    })
     it('should add custom record types to "types"', () => {
       config.value.fetchTarget = {
         types: {
@@ -66,8 +44,8 @@ describe('netsuite config creator', () => {
         types: {
           addressForm: ['aaa.*', 'bbb.*'],
           customrecordtype: ['customrecord2', 'customrecord1'],
-          customsegment: [],
         },
+        filePaths: [],
         customRecords: {
           customrecord1: ['.*'],
         },
@@ -82,8 +60,8 @@ describe('netsuite config creator', () => {
       expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
         types: {
           customrecordtype: ['customrecord1'],
-          customsegment: [],
         },
+        filePaths: [],
         customRecords: {
           customrecord1: ['.*'],
         },
@@ -100,9 +78,41 @@ describe('netsuite config creator', () => {
           customrecordtype: ['customrecord_cseg1'],
           customsegment: ['cseg1'],
         },
+        filePaths: [],
         customRecords: {
           customrecord_cseg1: ['.*'],
         },
+      })
+    })
+    it('should add parent folders to filePaths', () => {
+      config.value.fetchTarget = {
+        filePaths: ['/SuiteScripts/file.txt'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {},
+        filePaths: ['/SuiteScripts/file.txt', '/SuiteScripts/'],
+        customRecords: {},
+      })
+    })
+    it('should add "all folders matcher" when fetchTarget includes a file extension', () => {
+      config.value.fetchTarget = {
+        filePaths: ['.*\\.js'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {},
+        filePaths: ['.*\\.js', '.*/'],
+        customRecords: {},
+      })
+    })
+    it('should ignore invalid parent folder regex', () => {
+      config.value.fetchTarget = {
+        // extracting "/Templates/[^/" creates an invalid regex
+        filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html'],
+      }
+      expect(netsuiteConfigFromConfig(config).fetchTarget).toEqual({
+        types: {},
+        filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html', '/SuiteScripts/'],
+        customRecords: {},
       })
     })
   })

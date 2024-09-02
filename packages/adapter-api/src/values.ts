@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import path from 'path'
@@ -20,10 +12,9 @@ import { hash as hashUtils } from '@salto-io/lowerdash'
 // import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
-// eslint-disable-next-line import/no-cycle
 import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
 
-export type PrimitiveValue = string | boolean | number
+export type PrimitiveValue = string | boolean | number | null | undefined
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Value = any
@@ -34,6 +25,8 @@ export interface Values {
 
 export type CompareOptions = {
   compareByValue?: boolean
+  createFieldChanges?: boolean
+  compareListItems?: boolean
 }
 
 export const calculateStaticFileHash = (content: Buffer): string => hashUtils.toMD5(content)
@@ -178,25 +171,25 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
-export class TypeReference {
+export class TypeReference<T extends TypeElement = TypeElement> {
   constructor(
     public readonly elemID: ElemID,
-    public type: TypeElement | undefined = undefined,
+    public type: T | undefined = undefined,
   ) {
     if (!elemID.isTopLevel()) {
       throw new Error(`Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`)
     }
   }
 
-  clone(): TypeReference {
+  clone(): TypeReference<T> {
     return new TypeReference(this.elemID, this.type)
   }
 
-  async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+  async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<T> {
     return getResolvedValue(this.elemID, elementsSource, this.type)
   }
 
-  getResolvedValueSync(): TypeElement | undefined {
+  getResolvedValueSync(): T | undefined {
     return this.type
   }
 

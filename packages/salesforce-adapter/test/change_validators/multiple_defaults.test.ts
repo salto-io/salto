@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ChangeError,
@@ -25,25 +17,16 @@ import {
   MapType,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import {
-  createInstanceElement,
-  Types,
-} from '../../src/transformers/transformer'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import multipleDefaultsValidator from '../../src/change_validators/multiple_defaults'
 import { createField } from '../utils'
-import {
-  API_NAME,
-  CUSTOM_OBJECT,
-  METADATA_TYPE,
-  SALESFORCE,
-} from '../../src/constants'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 describe('multiple defaults change validator', () => {
   const runChangeValidatorOnUpdate = (
     before: Field | InstanceElement,
     after: Field | InstanceElement,
-  ): Promise<ReadonlyArray<ChangeError>> =>
-    multipleDefaultsValidator([toChange({ before, after })])
+  ): Promise<ReadonlyArray<ChangeError>> => multipleDefaultsValidator([toChange({ before, after })])
   describe('in custom fields', () => {
     let obj: ObjectType
     beforeEach(() => {
@@ -64,120 +47,88 @@ describe('multiple defaults change validator', () => {
 
     describe('picklist', () => {
       it('should have warning for a picklist field', async () => {
-        const beforeField = createField(
-          obj,
-          Types.primitiveDataTypes.Picklist,
-          'PicklistField',
-          {
-            valueSet: [
-              {
-                fullName: 'Gold',
-                default: true,
-                label: 'Gold',
-              },
-              {
-                fullName: 'Silver',
-                default: false,
-                label: 'Silver',
-              },
-            ],
-          },
-        )
+        const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'PicklistField', {
+          valueSet: [
+            {
+              fullName: 'Gold',
+              default: true,
+              label: 'Gold',
+            },
+            {
+              fullName: 'Silver',
+              default: false,
+              label: 'Silver',
+            },
+          ],
+        })
         const afterField = createAfterField(beforeField)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeField,
-          afterField,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(beforeField.elemID)
         expect(changeError.severity).toEqual('Warning')
       })
       it('should not have error for <= 1 default values in picklist', async () => {
-        const beforeField = createField(
-          obj,
-          Types.primitiveDataTypes.Picklist,
-          'PicklistField',
-          {
-            valueSet: [
-              {
-                fullName: 'Gold',
-                default: false,
-                label: 'Gold',
-              },
-              {
-                fullName: 'Silver',
-                default: false,
-                label: 'Silver',
-              },
-            ],
-          },
-        )
+        const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'PicklistField', {
+          valueSet: [
+            {
+              fullName: 'Gold',
+              default: false,
+              label: 'Gold',
+            },
+            {
+              fullName: 'Silver',
+              default: false,
+              label: 'Silver',
+            },
+          ],
+        })
         const afterField = createAfterField(beforeField)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeField,
-          afterField,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
         expect(changeErrors).toHaveLength(0)
       })
     })
 
     describe('multi-select picklist', () => {
       it('should have warning for a MultiselectPicklist field', async () => {
-        const beforeField = createField(
-          obj,
-          Types.primitiveDataTypes.MultiselectPicklist,
-          'PicklistField',
-          {
-            valueSet: [
-              {
-                fullName: 'Gold',
-                default: true,
-                label: 'Gold',
-              },
-              {
-                fullName: 'Silver',
-                default: false,
-                label: 'Silver',
-              },
-            ],
-          },
-        )
+        const beforeField = createField(obj, Types.primitiveDataTypes.MultiselectPicklist, 'PicklistField', {
+          valueSet: [
+            {
+              fullName: 'Gold',
+              default: true,
+              label: 'Gold',
+            },
+            {
+              fullName: 'Silver',
+              default: false,
+              label: 'Silver',
+            },
+          ],
+        })
         const afterField = createAfterField(beforeField)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeField,
-          afterField,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(beforeField.elemID)
         expect(changeError.severity).toEqual('Warning')
       })
       it('should not have error for <= 1 default values in picklist', async () => {
-        const beforeField = createField(
-          obj,
-          Types.primitiveDataTypes.MultiselectPicklist,
-          'PicklistField',
-          {
-            valueSet: [
-              {
-                fullName: 'Gold',
-                default: false,
-                label: 'Gold',
-              },
-              {
-                fullName: 'Silver',
-                default: false,
-                label: 'Silver',
-              },
-            ],
-          },
-        )
+        const beforeField = createField(obj, Types.primitiveDataTypes.MultiselectPicklist, 'PicklistField', {
+          valueSet: [
+            {
+              fullName: 'Gold',
+              default: false,
+              label: 'Gold',
+            },
+            {
+              fullName: 'Silver',
+              default: false,
+              label: 'Silver',
+            },
+          ],
+        })
         const afterField = createAfterField(beforeField)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeField,
-          afterField,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
         expect(changeErrors).toHaveLength(0)
       })
     })
@@ -208,9 +159,7 @@ describe('multiple defaults change validator', () => {
         })
       })
 
-      const createAfterInstance = (
-        beforeInstance: InstanceElement,
-      ): InstanceElement => {
+      const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
         const afterInstance = beforeInstance.clone()
         afterInstance.value.customValue[1].default = true
         return afterInstance
@@ -236,10 +185,7 @@ describe('multiple defaults change validator', () => {
           type,
         )
         const afterInstance = createAfterInstance(beforeInstance)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeInstance,
-          afterInstance,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(afterInstance.elemID)
@@ -265,10 +211,7 @@ describe('multiple defaults change validator', () => {
           type,
         )
         const afterInstance = createAfterInstance(beforeInstance)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeInstance,
-          afterInstance,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(0)
       })
       it('should handle fields that don`t appear in the type (SALTO-4882)', async () => {
@@ -303,10 +246,7 @@ describe('multiple defaults change validator', () => {
           type,
         )
         const afterInstance = createAfterInstance(beforeInstance)
-        const changeErrors = await runChangeValidatorOnUpdate(
-          beforeInstance,
-          afterInstance,
-        )
+        const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(afterInstance.elemID)
@@ -323,10 +263,7 @@ describe('multiple defaults change validator', () => {
             applicationVisibilities: {
               refType: new MapType(
                 new ObjectType({
-                  elemID: new ElemID(
-                    SALESFORCE,
-                    'ProfileApplicationVisibility',
-                  ),
+                  elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
                   fields: { default: { refType: BuiltinTypes.BOOLEAN } },
                   annotations: {
                     [METADATA_TYPE]: 'ProfileApplicationVisibility',
@@ -338,10 +275,7 @@ describe('multiple defaults change validator', () => {
               refType: new MapType(
                 new MapType(
                   new ObjectType({
-                    elemID: new ElemID(
-                      SALESFORCE,
-                      'ProfileRecordTypeVisibility',
-                    ),
+                    elemID: new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility'),
                     fields: { default: { refType: BuiltinTypes.BOOLEAN } },
                     annotations: {
                       [METADATA_TYPE]: 'ProfileRecordTypeVisibility',
@@ -358,9 +292,7 @@ describe('multiple defaults change validator', () => {
       })
 
       describe('ProfileApplicationVisibility', () => {
-        const createAfterInstance = (
-          beforeInstance: InstanceElement,
-        ): InstanceElement => {
+        const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
           const afterInstance = beforeInstance.clone()
           afterInstance.value.applicationVisibilities.app.default = true
           return afterInstance
@@ -383,10 +315,7 @@ describe('multiple defaults change validator', () => {
           )
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(
-            beforeInstance,
-            afterInstance,
-          )
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.elemID).toEqual(afterInstance.elemID)
@@ -410,21 +339,15 @@ describe('multiple defaults change validator', () => {
           )
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(
-            beforeInstance,
-            afterInstance,
-          )
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(0)
         })
       })
 
       describe('ProfileRecordTypeVisibility', () => {
-        const createAfterInstance = (
-          beforeInstance: InstanceElement,
-        ): InstanceElement => {
+        const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
           const afterInstance = beforeInstance.clone()
-          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default =
-            true
+          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default = true
           return afterInstance
         }
         it('should have error for ProfileRecordTypeVisibility', async () => {
@@ -451,10 +374,7 @@ describe('multiple defaults change validator', () => {
           )
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(
-            beforeInstance,
-            afterInstance,
-          )
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.elemID).toEqual(afterInstance.elemID)
@@ -482,21 +402,15 @@ describe('multiple defaults change validator', () => {
           )
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(
-            beforeInstance,
-            afterInstance,
-          )
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(0)
         })
       })
 
       describe('several warnings in one instance', () => {
-        const createAfterInstance = (
-          beforeInstance: InstanceElement,
-        ): InstanceElement => {
+        const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
           const afterInstance = beforeInstance.clone()
-          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default =
-            true
+          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default = true
           afterInstance.value.applicationVisibilities.app.default = true
           return afterInstance
         }
@@ -527,23 +441,14 @@ describe('multiple defaults change validator', () => {
           )
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(
-            beforeInstance,
-            afterInstance,
-          )
-          const changeErrorsIds = changeErrors.map((error) =>
-            safeJsonStringify(error.elemID),
-          )
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+          const changeErrorsIds = changeErrors.map(error => safeJsonStringify(error.elemID))
           expect(changeErrors).toHaveLength(2)
 
           // doesn't work without the JsonStringify
-          expect(changeErrorsIds).toContain(
-            safeJsonStringify(afterInstance.elemID),
-          )
-          expect(changeErrorsIds).toContain(
-            safeJsonStringify(afterInstance.elemID),
-          )
-          changeErrors.forEach((error) => {
+          expect(changeErrorsIds).toContain(safeJsonStringify(afterInstance.elemID))
+          expect(changeErrorsIds).toContain(safeJsonStringify(afterInstance.elemID))
+          changeErrors.forEach(error => {
             expect(error.severity).toEqual('Warning')
           })
         })

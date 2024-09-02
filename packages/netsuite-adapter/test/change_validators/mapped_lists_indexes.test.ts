@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
@@ -20,6 +12,7 @@ import { SCRIPT_ID } from '../../src/constants'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
+import { mockChangeValidatorParams } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -54,7 +47,10 @@ describe('mapped lists indexes validator', () => {
   it('should not have ChangeError when deploying an instance without mapped lists', async () => {
     const after = instance.clone()
     after.value.workflowcustomfields = {}
-    const changeErrors = await mappedListsIndexesValidator([toChange({ before: instance, after })])
+    const changeErrors = await mappedListsIndexesValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
   it('should not have ChangeError when deploying an instance with unordered list', async () => {
@@ -69,13 +65,18 @@ describe('mapped lists indexes validator', () => {
         },
       },
     })
-    await expect(mappedListsIndexesValidator([toChange({ after: customSegmentInstance })])).resolves.toHaveLength(0)
+    await expect(
+      mappedListsIndexesValidator([toChange({ after: customSegmentInstance })], mockChangeValidatorParams()),
+    ).resolves.toHaveLength(0)
   })
 
   it('should not have ChangeError when deploying an instance with correct indexes', async () => {
     const after = instance.clone()
     after.value.name = 'NewName'
-    const changeErrors = await mappedListsIndexesValidator([toChange({ before: instance, after })])
+    const changeErrors = await mappedListsIndexesValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(0)
   })
 
@@ -104,7 +105,10 @@ describe('mapped lists indexes validator', () => {
         },
       },
     }
-    const changeErrors = await mappedListsIndexesValidator([toChange({ before: instance, after })])
+    const changeErrors = await mappedListsIndexesValidator(
+      [toChange({ before: instance, after })],
+      mockChangeValidatorParams(),
+    )
     expect(changeErrors).toHaveLength(4)
     expect(changeErrors[0]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow1'),

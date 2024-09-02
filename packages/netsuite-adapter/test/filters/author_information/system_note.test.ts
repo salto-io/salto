@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -55,19 +47,21 @@ describe('netsuite system note author information', () => {
   beforeEach(async () => {
     runSuiteQLMock.mockReset()
     runSuiteQLMock.mockResolvedValueOnce([
-      { id: '1', entityid: 'user 1 name', date: '2022-01-01 00:00:00' },
-      { id: '2', entityid: 'user 2 name', date: '2022-01-01 00:00:00' },
-      { id: '3', entityid: 'user 3 name', date: '2022-01-01 00:00:00' },
-    ])
-    runSuiteQLMock.mockResolvedValueOnce([
       { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01 00:00:00' },
       // Should ignore this record because it has a date in the future
       { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '3022-03-01 00:00:00' },
       { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01 00:00:00' },
       { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01 00:00:00' },
       { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01 00:00:00' },
+    ])
+    runSuiteQLMock.mockResolvedValueOnce([
       { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3', date: '2022-01-01 00:00:00' },
       { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3', date: '2022-01-01 00:00:00' },
+    ])
+    runSuiteQLMock.mockResolvedValueOnce([
+      { id: '1', entityid: 'user 1 name', date: '2022-01-01 00:00:00' },
+      { id: '2', entityid: 'user 2 name', date: '2022-01-01 00:00:00' },
+      { id: '3', entityid: 'user 3 name', date: '2022-01-01 00:00:00' },
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
@@ -110,11 +104,24 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    const recordTypeSystemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
-    const fieldSystemNotesQuery = `SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date FROM systemnote WHERE date >= TO_DATE('2022-1-1', 'YYYY-MM-DD') AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%') GROUP BY name, field, recordid ORDER BY name, field, recordid ASC`
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, fieldSystemNotesQuery)
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, recordTypeSystemNotesQuery)
+    const recordTypeSystemNotesQuery = {
+      select: 'name, recordid, recordtypeid, date',
+      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid)`,
+      orderBy: 'name, recordid, recordtypeid',
+    }
+
+    const fieldSystemNotesQuery = {
+      select: `name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`,
+      from: 'systemnote',
+      where:
+        "date >= TO_DATE('2022-1-1', 'YYYY-MM-DD') AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%')",
+      groupBy: 'name, field, recordid',
+      orderBy: 'name, field, recordid',
+    }
+
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, fieldSystemNotesQuery)
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, recordTypeSystemNotesQuery)
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
   })
 
@@ -126,9 +133,13 @@ describe('netsuite system note author information', () => {
       customRecordTypeWithNoInstances,
       missingInstance,
     ])
-    const systemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
+    const systemNotesQuery = {
+      select: 'name, recordid, recordtypeid, date',
+      from: `(SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid)`,
+      orderBy: 'name, recordid, recordtypeid',
+    }
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, systemNotesQuery)
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
   })
 
@@ -164,6 +175,29 @@ describe('netsuite system note author information', () => {
     })
     await filterCreator(filterOpts).onFetch?.(elements.concat(suiteQLTableType, employeeSuiteQLTableInstance))
     expect(runSuiteQLMock).not.toHaveBeenCalledWith(EMPLOYEE_NAME_QUERY)
+    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
+    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
+    expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
+  })
+
+  it('should query missing employee names in SuiteQLTable instance', async () => {
+    runSuiteQLMock.mockReset()
+    runSuiteQLMock.mockResolvedValueOnce([
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01 00:00:00' },
+      { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01 00:00:00' },
+      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01 00:00:00' },
+    ])
+    runSuiteQLMock.mockResolvedValueOnce([])
+    runSuiteQLMock.mockResolvedValueOnce([{ id: '3', entityid: 'user 3 name', date: '2022-01-01 00:00:00' }])
+    const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
+    const employeeSuiteQLTableInstance = new InstanceElement(EMPLOYEE, suiteQLTableType, {
+      [INTERNAL_IDS_MAP]: {
+        1: { name: 'user 1 name' },
+        2: { name: 'user 2 name' },
+      },
+    })
+    await filterCreator(filterOpts).onFetch?.(elements.concat(suiteQLTableType, employeeSuiteQLTableInstance))
+    expect(runSuiteQLMock).toHaveBeenCalledWith({ ...EMPLOYEE_NAME_QUERY, where: "id in ('3')" })
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
     expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
@@ -248,7 +282,7 @@ describe('netsuite system note author information', () => {
         { recordid: '1', recordtypeid: '-123', name: '2' },
         { recordid: '2', recordtypeid: '-112', name: '3' },
       ])
-      filterCreator(filterOpts).onFetch?.(elements)
+      await filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
@@ -263,7 +297,7 @@ describe('netsuite system note author information', () => {
         { id: '3', entityid: 'user 3 name' },
       ])
       runSuiteQLMock.mockResolvedValueOnce(undefined)
-      filterCreator(filterOpts).onFetch?.(elements)
+      await filterCreator(filterOpts).onFetch?.(elements)
     })
     it('bad system note schema', async () => {
       runSuiteQLMock.mockReset()
@@ -278,7 +312,7 @@ describe('netsuite system note author information', () => {
         { recordid: '2', recordtypeid: '-112', name: '3' },
         { recordid: '1', test: 'wow', name: '1' },
       ])
-      filterCreator(filterOpts).onFetch?.(elements)
+      await filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()

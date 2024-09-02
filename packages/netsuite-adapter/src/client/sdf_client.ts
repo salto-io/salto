@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   collections,
@@ -40,7 +32,14 @@ import { v4 as uuidv4 } from 'uuid'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
 import shellQuote from 'shell-quote'
-import { CONFIG_FEATURES, APPLICATION_ID, FILE_CABINET_PATH_SEPARATOR } from '../constants'
+import {
+  CONFIG_FEATURES,
+  APPLICATION_ID,
+  FILE_CABINET_PATH_SEPARATOR,
+  CUSTOM_SEGMENT,
+  CUSTOM_RECORD_TYPE,
+} from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
   DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
@@ -128,6 +127,15 @@ const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
   csvimport: 'savedcsvimport',
   plugintypeimpl: 'pluginimplementation',
 }
+
+const logDecorator = decorators.wrapMethodWith(async ({ call }: decorators.OriginalCall): Promise<unknown> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/return-await
+    return await call()
+  } catch (e) {
+    throw toError(e)
+  }
+})
 
 export type SdfClientOpts = {
   credentials: SdfCredentials
@@ -219,7 +227,7 @@ export default class SdfClient {
     this.instanceLimiter = instanceLimiter
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   static async validateCredentials(credentials: SdfCredentials): Promise<AccountInfo> {
     const netsuiteClient = new SdfClient({
       credentials,
@@ -244,17 +252,6 @@ export default class SdfClient {
       log: NodeConsoleLogger,
     })
   }
-
-  private static logDecorator = decorators.wrapMethodWith(
-    async ({ call }: decorators.OriginalCall): Promise<unknown> => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/return-await
-        return await call()
-      } catch (e) {
-        throw toError(e)
-      }
-    },
-  )
 
   private async createProject(projectName: string, suiteAppId: string | undefined): Promise<void> {
     const projectPath = osPath.join(baseExecutionPath, projectName)
@@ -405,7 +402,7 @@ export default class SdfClient {
     await Promise.all([SdfClient.deleteProject(projectPath), this.deleteAuthId(authId)])
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   async getCustomObjects(typeNames: string[], queries: NetsuiteFetchQueries): Promise<GetCustomObjectsResult> {
     // in case of partial fetch we'd need to proceed in order to calculate deleted elements
     if (typeNames.concat(CONFIG_FEATURES).every(type => !queries.originFetchQuery.isTypeMatch(type))) {
@@ -461,7 +458,14 @@ export default class SdfClient {
 
     const elements = importResult.flatMap(res => res.elements)
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
-    const instancesIds = importResult.flatMap(res => res.instancesIds)
+    const instancesIds = importResult
+      .flatMap(res => res.instancesIds)
+      .flatMap(instanceId =>
+        // custom segments are always connected to a matching custom record type, that doesn't return in the object:list command
+        instanceId.type === CUSTOM_SEGMENT
+          ? [instanceId, { type: CUSTOM_RECORD_TYPE, instanceId: addCustomRecordTypePrefix(instanceId.instanceId) }]
+          : instanceId,
+      )
 
     return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
   }
@@ -737,9 +741,11 @@ export default class SdfClient {
       },
       executor,
     )
-    return results.data.map(({ type, scriptId }: { type: string; scriptId: string }) => ({
+    const instancesIds = results.data as Array<{ type: string; scriptId: string }>
+    return instancesIds.map(({ type, scriptId }) => ({
       type: SdfClient.fixTypeName(type),
       instanceId: scriptId,
+      suiteAppId,
     }))
   }
 
@@ -788,7 +794,7 @@ export default class SdfClient {
     }
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   async importFileCabinetContent(
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
@@ -837,7 +843,7 @@ export default class SdfClient {
     }
   }
 
-  @SdfClient.logDecorator
+  @logDecorator
   async deploy(
     suiteAppId: string | undefined,
     { manifestDependencies, validateOnly = false }: SdfDeployParams,
@@ -899,7 +905,7 @@ export default class SdfClient {
       settingsValidationErrorRegex,
       manifestErrorDetailsRegex,
       objectValidationErrorRegexes,
-      missingFeatureErrorRegexes,
+      missingFeatureInManifestErrorRegexes,
       deployedObjectRegex,
       errorObjectRegex,
       otherErrorRegexes,
@@ -910,7 +916,7 @@ export default class SdfClient {
       return new ManifestValidationError(error.message, manifestErrorScriptids)
     }
 
-    const missingFeatureNames = missingFeatureErrorRegexes.flatMap(regex =>
+    const missingFeatureNames = missingFeatureInManifestErrorRegexes.flatMap(regex =>
       getGroupItemFromRegex(error.message, regex, FEATURE_NAME),
     )
     if (missingFeatureNames.length > 0) {

@@ -1,29 +1,26 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  Change,
+  CORE_ANNOTATIONS,
   DeployResult,
   Element,
   getChangeData,
   InstanceElement,
   isAdditionChange,
+  isInstanceChange,
   isInstanceElement,
   isObjectType,
   ModificationChange,
   ProgressReporter,
   ReadOnlyElementsSource,
+  SaltoElementError,
+  SaltoError,
   toChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -41,6 +38,7 @@ import { findInstance } from './utils'
 import { getLookUpName } from '../src/reference_mapping'
 import { getDefaultConfig } from '../src/config/config'
 import { BEHAVIOR_TYPE } from '../src/constants'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../src/filters/fields/constants'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -58,7 +56,6 @@ const excludedTypes = [
 ]
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 each([
@@ -134,6 +131,7 @@ each([
     let modifyDeployResults: DeployResult[]
     let addInstanceGroups: InstanceElement[][]
     let modifyInstanceGroups: ModificationChange<InstanceElement>[][]
+    let elements: Element[]
 
     beforeAll(async () => {
       elementsSource = buildElementsSourceFromElements(fetchedElements)
@@ -202,9 +200,9 @@ each([
     })
 
     it('fetch should return the new changes', async () => {
-      const { elements } = await adapter.fetch({
+      ;({ elements } = await adapter.fetch({
         progressReporter: { reportProgress: () => null },
-      })
+      }))
 
       const resolvedFetchedElements = await Promise.all(elements.map(e => resolveValues(e, getLookUpName)))
       const { scriptRunnerApiDefinitions } = getDefaultConfig({ isDataCenter })
@@ -245,6 +243,7 @@ each([
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
         .map(change => toChange({ before: getChangeData(change) }))
+        .filter(isInstanceChange)
       removalChanges.forEach(change => {
         const instance = getChangeData(change)
         removalChanges
@@ -256,31 +255,59 @@ each([
           })
       })
 
-      addDeployResults = await Promise.all(
-        removalChanges.map(change => {
-          try {
-            return adapter.deploy({
-              changeGroup: {
-                groupID: getChangeData(change).elemID.getFullName(),
-                changes: [change],
-              },
-              progressReporter: nullProgressReporter,
-            })
-          } catch (e) {
-            if (String(e).includes('status code 404')) {
-              return {
-                errors: [],
-                appliedChanges: [],
+      const deployChanges = async (
+        changes: Change<InstanceElement>[],
+        catchCondition: (e: unknown) => boolean,
+      ): Promise<(SaltoError | SaltoElementError)[]> => {
+        const deployResults = await Promise.all(
+          changes.map(change => {
+            try {
+              return adapter.deploy({
+                changeGroup: {
+                  groupID: getChangeData(change).elemID.getFullName(),
+                  changes: [change],
+                },
+                progressReporter: nullProgressReporter,
+              })
+            } catch (e) {
+              if (catchCondition(e)) {
+                return {
+                  errors: [],
+                  appliedChanges: [],
+                }
               }
+              throw e
             }
-            throw e
-          }
-        }),
-      )
+          }),
+        )
 
-      const errors = addDeployResults.flatMap(res => res.errors)
+        return deployResults.flatMap(res => res.errors)
+      }
+
+      const errors = await deployChanges(removalChanges, (e: unknown) => String(e).includes('status code 404'))
       if (errors.length) {
         throw new Error(`Failed to clean e2e changes: ${errors.map(e => safeJsonStringify(e)).join(', ')}`)
+      }
+      const removalInstancesNames = removalChanges.map(change => getChangeData(change).elemID.getFullName())
+      const allOssCreatedElements = elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.name.includes('createdByOssE2e'))
+        .filter(instance => !removalInstancesNames.includes(instance.elemID.getFullName()))
+        .filter(instance => instance.elemID.typeName !== FIELD_TYPE_NAME || instance.value.isLocked === false) // do not delete locked fields
+        .filter(
+          instance =>
+            instance.elemID.typeName !== FIELD_CONTEXT_TYPE_NAME ||
+            instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0].value.isLocked === false,
+        ) // do not delete contexts of locked fields
+        .map(instance => toChange({ before: instance }))
+
+      if (!isDataCenter) {
+        const allRemovalErrors = await deployChanges(allOssCreatedElements, () => true) // do not fail on errors
+        if (allRemovalErrors.length) {
+          throw new Error(
+            `Failed to clean older e2e changes: ${allRemovalErrors.map(e => safeJsonStringify(e)).join(', ')}`,
+          )
+        }
       }
     })
   })

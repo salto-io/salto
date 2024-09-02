@@ -1,154 +1,125 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
-  Element,
   FetchResult,
   AdapterOperations,
   DeployResult,
   InstanceElement,
-  TypeMap,
   isObjectType,
   FetchOptions,
   DeployOptions,
-  Change,
   isInstanceChange,
   ElemIdGetter,
   ReadOnlyElementsSource,
   getChangeData,
-  ProgressReporter,
   isInstanceElement,
   FixElementsFunc,
+  TypeMap,
 } from '@salto-io/adapter-api'
 import {
-  config as configUtils,
-  definitions,
   elements as elementUtils,
   client as clientUtils,
   combineElementFixers,
-  resolveChangeElement,
   fetch as fetchUtils,
+  definitions as definitionsUtils,
   openapi,
   restoreChangeElement,
+  createChangeElementResolver,
 } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
+import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import {
-  OktaConfig,
-  API_DEFINITIONS_CONFIG,
-  CLIENT_CONFIG,
-  configType,
-  FETCH_CONFIG,
-  getSupportedTypes,
-} from './config'
+import { CLIENT_CONFIG, FETCH_CONFIG, OLD_API_DEFINITIONS_CONFIG } from './config'
+import { configType, getExcludeJWKConfigSuggestion, OktaUserConfig, OktaUserFetchConfig } from './user_config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, Filter, filterRunner } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
-import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
-import appDeploymentFilter from './filters/app_deployment'
+import defaultDeployDefinitionsFilter from './filters/default_deploy_definitions'
+import appDeploymentFilter from './filters/app_fetch'
 import standardRolesFilter from './filters/standard_roles'
-import userTypeFilter from './filters/user_type'
 import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import accessPolicyRuleConstraintsFilter from './filters/access_policy_rule_constraints'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
+import appUserSchemaAdditionAndRemovalFilter from './filters/app_user_schema_deployment'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
-import deleteFieldsFilter from './filters/delete_fields'
 import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
-import schemaFieldsRemovalFilter from './filters/schema_field_removal'
+import schemaDeploymentFilter from './filters/schema_deployment'
 import appLogoFilter from './filters/app_logo'
-import brandThemeAdditionFilter from './filters/brand_theme_addition'
 import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
-import profileMappingPropertiesFilter from './filters/profile_mapping_properties'
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
-import omitAuthenticatorMappingFilter from './filters/omit_authenticator_mapping'
 import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
-import groupPushPathFilter from './filters/group_push_path'
-import renameDefaultAccessPolicy from './filters/rename_default_access_policy'
-import appUserSchemaRemovalFilter from './filters/app_user_schema_removal'
-import emailDomainAdditionFilter from './filters/email_domain_addition'
 import {
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   FAV_ICON_TYPE_NAME,
+  JWK_TYPE_NAME,
   OKTA,
   POLICY_PRIORITY_TYPE_NAMES,
   POLICY_RULE_PRIORITY_TYPE_NAMES,
+  USER_TYPE_NAME,
 } from './constants'
-import { getLookUpName } from './reference_mapping'
-import { User, getUsers, getUsersFromInstances } from './user_utils'
-import { isClassicEngineOrg } from './utils'
+import { getLookUpNameCreator } from './reference_mapping'
+import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
+import { isClassicEngineOrg, logUsersCount } from './utils'
 import { createFixElementFunctions } from './fix_elements'
+import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
+import { createDeployDefinitions } from './definitions/deploy/deploy'
+import { PAGINATION } from './definitions/requests/pagination'
+import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
+import { OktaOptions } from './definitions/types'
+import { OPEN_API_DEFINITIONS } from './definitions/sources'
+import { getAdminUrl } from './client/admin'
 
 const { awu } = collections.asynciterable
-
-const { getAllInstances } = elementUtils.swagger
-const { getAllElements } = elementUtils.ducktype
-const { computeGetArgs } = fetchUtils.resource
-const { findDataField } = elementUtils
+const { generateOpenApiTypes } = openapi
 const { createPaginator } = clientUtils
 const log = logger(module)
 
 const DEFAULT_FILTERS = [
-  renameDefaultAccessPolicy,
-  standardRolesFilter,
-  deleteFieldsFilter,
-  userTypeFilter,
+  standardRolesFilter, // TODO SALTO-5607 - move to infra
   userSchemaFilter,
-  omitAuthenticatorMappingFilter,
-  profileMappingPropertiesFilter,
   authorizationRuleFilter,
   // should run before fieldReferencesFilter
-  urlReferencesFilter,
-  appUserSchemaRemovalFilter,
   userFilter,
-  groupMembersFilter,
   groupPushFilter,
+  groupMembersFilter, // TODO SALTO-5607 - move to infra
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
-  addImportantValues,
+  addImportantValues, // TODO SALTO-5607 - move to infra
   accessPolicyRuleConstraintsFilter,
   defaultPolicyRuleDeployment,
-  schemaFieldsRemovalFilter,
+  appUserSchemaAdditionAndRemovalFilter,
+  schemaDeploymentFilter,
   appLogoFilter,
-  brandThemeAdditionFilter,
   brandThemeRemovalFilter,
   brandThemeFilesFilter,
-  emailDomainAdditionFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter
   policyPrioritiesFilter,
-  addAliasFilter,
+  addAliasFilter, // TODO SALTO-5607 - move to infra
   // should run after fieldReferencesFilter and userFilter
   unorderedListsFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
@@ -158,11 +129,11 @@ const DEFAULT_FILTERS = [
   profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),
-  // should run after commonFilters,
-  groupPushPathFilter,
   // should run last
   privateApiDeployFilter,
   defaultDeployFilter,
+  // This catches types we moved to the new infra definitions
+  defaultDeployDefinitionsFilter,
 ]
 
 const SKIP_RESOLVE_TYPE_NAMES = [
@@ -176,18 +147,37 @@ const SKIP_RESOLVE_TYPE_NAMES = [
 export interface OktaAdapterParams {
   filterCreators?: FilterCreator[]
   client: OktaClient
-  config: OktaConfig
+  userConfig: OktaUserConfig
   configInstance?: InstanceElement
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
   isOAuthLogin: boolean
   adminClient?: OktaClient
+  accountName?: string
 }
 
+/**
+ * Temporary adjusment to support migration of JsonWebKey type into the exclude list
+ */
+const createElementQueryWithJsonWebKey = (
+  fetchConfig: OktaUserFetchConfig,
+  criteria: Record<string, elementUtils.query.QueryCriterion>,
+): elementUtils.query.ElementQuery => {
+  const isJWKExcluded = fetchConfig.exclude.find(fetchEnrty => fetchEnrty.type === JWK_TYPE_NAME)
+  const isJWKIncluded = fetchConfig.include.find(fetchEntry => fetchEntry.type === JWK_TYPE_NAME)
+  const updatedConfig =
+    !isJWKExcluded && !isJWKIncluded
+      ? {
+          ...fetchConfig,
+          exclude: fetchConfig.exclude.concat({ type: JWK_TYPE_NAME }),
+        }
+      : fetchConfig
+  return elementUtils.query.createElementQuery(updatedConfig, criteria)
+}
 export default class OktaAdapter implements AdapterOperations {
   private createFiltersRunner: (usersPromise?: Promise<User[]>) => Required<Filter>
   private client: OktaClient
-  private userConfig: OktaConfig
+  private userConfig: OktaUserConfig
   private configInstance?: InstanceElement
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
@@ -195,18 +185,21 @@ export default class OktaAdapter implements AdapterOperations {
   private isOAuthLogin: boolean
   private adminClient?: OktaClient
   private fixElementsFunc: FixElementsFunc
+  private definitions: definitionsUtils.RequiredDefinitions<OktaOptions>
+  private accountName?: string
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
     getElemIdFunc,
-    config,
+    userConfig,
     configInstance,
     elementsSource,
     isOAuthLogin,
     adminClient,
+    accountName,
   }: OktaAdapterParams) {
-    this.userConfig = config
+    this.userConfig = userConfig
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
@@ -216,72 +209,84 @@ export default class OktaAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
+    this.fetchQuery = createElementQueryWithJsonWebKey(this.userConfig.fetch, fetchCriteria)
+    this.accountName = accountName
 
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
+    const definitions = {
+      // TODO - SALTO-5746 - only provide adminClient when it is defined
+      clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
+      pagination: PAGINATION,
+      fetch: createFetchDefinitions({
+        userConfig: this.userConfig,
+        fetchQuery: this.fetchQuery,
+        usePrivateAPI: shouldAccessPrivateAPIs(this.isOAuthLogin, this.userConfig),
+        baseUrl: getAdminUrl(this.client.baseUrl),
+      }),
+      deploy: createDeployDefinitions(),
+      sources: { openAPI: [OPEN_API_DEFINITIONS] },
+    }
+
+    this.definitions = definitionsUtils.mergeDefinitionsWithOverrides(
+      {
+        ...definitions,
+        fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
+          userElemID: userConfig.fetch.elemID,
+          fetchConfig: definitions.fetch,
+        }),
+      },
+      this.accountName,
+    )
 
     this.paginator = paginator
 
-    const filterContext = {}
     this.createFiltersRunner = usersPromise =>
-      filtersRunner(
+      filterRunner(
         {
-          client,
-          paginator,
+          definitions: this.definitions,
           config: this.userConfig,
           getElemIdFunc,
-          elementsSource,
           fetchQuery: this.fetchQuery,
-          adapterContext: filterContext,
-          adminClient,
+          elementSource: elementsSource,
+          oldApiDefinitions: OLD_API_DEFINITIONS_CONFIG,
           usersPromise,
+          paginator: this.paginator,
+          baseUrl: this.client.baseUrl,
+          isOAuthLogin,
+          sharedContext: {},
         },
         filterCreators,
         objects.concatObjects,
       )
-    this.fixElementsFunc = combineElementFixers(createFixElementFunctions({ client, config, elementsSource }))
+    this.fixElementsFunc = combineElementFixers(
+      createFixElementFunctions({ client, config: this.userConfig, elementsSource, fetchQuery: this.fetchQuery }),
+    )
   }
 
-  @logDuration('generating types from swagger')
-  private async getSwaggerTypes(): Promise<{
-    allTypes: TypeMap
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  }> {
-    return openapi.generateTypes(OKTA, this.userConfig[API_DEFINITIONS_CONFIG])
-  }
-
-  @logDuration('generating instances from service')
-  private async getSwaggerInstances(
-    allTypes: TypeMap,
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-  ): Promise<fetchUtils.FetchElements<InstanceElement[]>> {
-    const updatedApiDefinitionsConfig = {
-      ...this.userConfig.apiDefinitions,
-      types: {
-        ...parsedConfigs,
-        ..._.mapValues(this.userConfig.apiDefinitions.types, (def, typeName) => ({
-          ...parsedConfigs[typeName],
-          ...def,
-        })),
-      },
+  private async handleClassicEngineOrg(): Promise<definitionsUtils.ConfigChangeSuggestion | undefined> {
+    const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
+    const isClassicOrg = isClassicOrgByConfig ?? (await isClassicEngineOrg(this.client))
+    if (isClassicOrg) {
+      const updatedCustomizations = _.omit(
+        this.definitions.fetch.instances.customizations,
+        CLASSIC_ENGINE_UNSUPPORTED_TYPES,
+      )
+      this.definitions.fetch.instances.customizations = updatedCustomizations
+      return {
+        type: 'enableFetchFlag',
+        value: 'isClassicOrg',
+        reason:
+          'We detected that your Okta organization is using the Classic Engine, therefore, certain types of data that are only compatible with newer versions were not fetched.',
+      }
     }
-    return getAllInstances({
-      paginator: this.paginator,
-      objectTypes: _.pickBy(allTypes, isObjectType),
-      apiConfig: updatedApiDefinitionsConfig,
-      fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
-      getElemIdFunc: this.getElemIdFunc,
-    })
+    return undefined
   }
 
-  private async getPrivateApiElements(): Promise<fetchUtils.FetchElements<Element[]>> {
-    const { privateApiDefinitions } = this.userConfig
+  private handleOAuthLogin(): Omit<fetchUtils.FetchElements, 'elements'> {
     if (this.isOAuthLogin && this.userConfig[CLIENT_CONFIG]?.usePrivateAPI) {
       log.warn(
         'Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs',
       )
       return {
-        elements: [],
         errors: [
           {
             message:
@@ -294,76 +299,52 @@ export default class OktaAdapter implements AdapterOperations {
         ],
       }
     }
-    if (this.adminClient === undefined || this.userConfig[CLIENT_CONFIG]?.usePrivateAPI !== true) {
-      return { elements: [] }
-    }
+    return { errors: [], configChanges: [] }
+  }
 
-    const paginator = createPaginator({
-      client: this.adminClient,
-      paginationFuncCreator: paginate,
-    })
+  @logDuration('generating types from swagger')
+  private async getAllSwaggerTypes(): Promise<TypeMap> {
+    return _.defaults(
+      {},
+      ...(await Promise.all(
+        collections.array.makeArray(this.definitions.sources?.openAPI).map(def =>
+          generateOpenApiTypes({
+            adapterName: OKTA,
+            openApiDefs: def,
+            defQuery: definitionsUtils.queryWithDefault(this.definitions.fetch.instances),
+          }),
+        ),
+      )),
+    )
+  }
 
-    return getAllElements({
+  @logDuration('generating instances and types from service')
+  async getElements(): Promise<fetchUtils.FetchElements> {
+    const typesByTypeName = await this.getAllSwaggerTypes()
+
+    const res = await fetchUtils.getElements({
       adapterName: OKTA,
-      types: privateApiDefinitions.types,
-      shouldAddRemainingTypes: false,
-      supportedTypes: privateApiDefinitions.supportedTypes,
       fetchQuery: this.fetchQuery,
-      paginator,
-      nestedFieldFinder: findDataField,
-      computeGetArgs,
-      typeDefaults: privateApiDefinitions.typeDefaults,
+      definitions: this.definitions,
       getElemIdFunc: this.getElemIdFunc,
+      predefinedTypes: _.pickBy(typesByTypeName, isObjectType),
     })
-  }
-
-  @logDuration('generating instances from service')
-  private async getAllElements(progressReporter: ProgressReporter): Promise<fetchUtils.FetchElements<Element[]>> {
-    progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getSwaggerTypes()
-    progressReporter.reportProgress({ message: 'Fetching instances' })
-    const { errors, elements: instances } = await this.getSwaggerInstances(allTypes, parsedConfigs)
-
-    const privateApiResult = await this.getPrivateApiElements()
-
-    const elements = [...Object.values(allTypes), ...instances, ...privateApiResult.elements]
-    return {
-      elements,
-      errors: (errors ?? []).concat(privateApiResult.errors ?? []),
-      configChanges: privateApiResult.configChanges,
-    }
-  }
-
-  private async handleClassicEngineOrg(): Promise<definitions.ConfigChangeSuggestion | undefined> {
-    const { isClassicOrg: isClassicOrgByConfig } = this.userConfig[FETCH_CONFIG]
-    const isClassicOrg = isClassicOrgByConfig ?? (await isClassicEngineOrg(this.client))
-    if (isClassicOrg) {
-      // update supported types to exclude types that are not supported in classic orgs
-      this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes = getSupportedTypes({
-        isClassicOrg,
-        supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
-      })
-      return {
-        type: 'enableFetchFlag',
-        value: 'isClassicOrg',
-        reason:
-          'We detected that your Okta organization is using the Classic Engine, therefore, certain types of data that are only compatible with newer versions were not fetched.',
-      }
-    }
-    return undefined
+    return res
   }
 
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch okta account configuration..')
-    const { convertUsersIds, getUsersStrategy } = this.userConfig[FETCH_CONFIG]
+    progressReporter.reportProgress({ message: 'Fetching elements' })
     const classicOrgConfigSuggestion = await this.handleClassicEngineOrg()
-    const { elements, errors, configChanges: getElementsConfigChanges } = await this.getAllElements(progressReporter)
+    const { errors: oauthError, configChanges: oauthConfigChange } = this.handleOAuthLogin()
+    const { elements, errors, configChanges: getElementsConfigChanges } = await this.getElements()
 
-    const usersPromise = convertUsersIds
+    await logUsersCount(elements, this.client)
+    const usersPromise = shouldConvertUserIds(this.fetchQuery, this.userConfig)
       ? getUsers(
           this.paginator,
-          getUsersStrategy === 'searchQuery'
+          this.userConfig.fetch.getUsersStrategy === 'searchQuery'
             ? { userIds: getUsersFromInstances(elements.filter(isInstanceElement)), property: 'id' }
             : undefined,
         )
@@ -373,10 +354,13 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const filterResult = (await this.createFiltersRunner(usersPromise).onFetch(elements)) || {}
 
-    const configChanges = (getElementsConfigChanges ?? []).concat(classicOrgConfigSuggestion ?? [])
+    const configChanges = (getElementsConfigChanges ?? [])
+      .concat(classicOrgConfigSuggestion ?? [])
+      .concat(oauthConfigChange ?? [])
+      .concat(getExcludeJWKConfigSuggestion(this.configInstance) ?? [])
     const updatedConfig =
       !_.isEmpty(configChanges) && this.configInstance
-        ? definitions.getUpdatedConfigFromConfigChanges({
+        ? definitionsUtils.getUpdatedConfigFromConfigChanges({
             configChanges,
             currentConfig: this.configInstance,
             configType,
@@ -384,7 +368,7 @@ export default class OktaAdapter implements AdapterOperations {
         : undefined
     return {
       elements,
-      errors: (errors ?? []).concat(filterResult.errors ?? []),
+      errors: (errors ?? []).concat(filterResult.errors ?? []).concat(oauthError ?? []),
       updatedConfig,
     }
   }
@@ -394,38 +378,61 @@ export default class OktaAdapter implements AdapterOperations {
    */
   @logDuration('deploying account configuration')
   async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changesToDeploy = await Promise.all(
-      changeGroup.changes
-        .filter(isInstanceChange)
-        .map(change => applyFunctionToChangeData<Change<InstanceElement>>(change, instance => instance.clone())),
-    )
+    const [instanceChanges, nonInstanceChanges] = _.partition(changeGroup.changes, isInstanceChange)
+    if (nonInstanceChanges.length > 0) {
+      log.warn(
+        `We currently can't deploy types. Therefore, the following changes will not be deployed: ${nonInstanceChanges.map(elem => getChangeData(elem).elemID.getFullName()).join(', ')}`,
+      )
+    }
+    if (instanceChanges.length === 0) {
+      log.warn(`no instance changes in group ${changeGroup.groupID}`)
+      return {
+        appliedChanges: [],
+        errors: [],
+      }
+    }
+    if (this.definitions.deploy?.instances === undefined) {
+      // not supposed to happen if we didn't fail on a change validator
+      return {
+        appliedChanges: [],
+        errors: [
+          {
+            message: 'no deploy definitions found, cannot deploy changes',
+            severity: 'Error',
+          },
+        ],
+      }
+    }
 
-    const resolvedChanges = await awu(changesToDeploy)
+    const getLookUpName = getLookUpNameCreator({
+      enableMissingReferences: this.userConfig.fetch.enableMissingReferences,
+      isUserTypeIncluded: this.fetchQuery.isTypeMatch(USER_TYPE_NAME),
+    })
+
+    const sourceChanges = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
+    const runner = this.createFiltersRunner()
+    const deployDefQuery = definitionsUtils.queryWithDefault(this.definitions.deploy.instances)
+    const changeResolver = createChangeElementResolver({ getLookUpName })
+    const resolvedChanges = await awu(instanceChanges)
       .map(async change =>
-        SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
-          ? change
-          : resolveChangeElement(change, getLookUpName),
+        deployDefQuery.query(getChangeData(change).elemID.typeName)?.referenceResolution?.when === 'early' &&
+        !SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+          ? changeResolver(change)
+          : change,
       )
       .toArray()
-    const runner = this.createFiltersRunner()
     await runner.preDeploy(resolvedChanges)
 
-    const {
-      deployResult: { appliedChanges, errors },
-    } = await runner.deploy(resolvedChanges)
-
-    const appliedChangesBeforeRestore = [...appliedChanges]
+    const { deployResult } = await runner.deploy(resolvedChanges, changeGroup)
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
 
-    const sourceChanges = _.keyBy(changesToDeploy, change => getChangeData(change).elemID.getFullName())
-
-    const restoredAppliedChanges = await awu(appliedChangesBeforeRestore)
+    const appliedChanges = await awu(appliedChangesBeforeRestore)
       .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
       .toArray()
-
     return {
-      appliedChanges: restoredAppliedChanges,
-      errors,
+      appliedChanges,
+      errors: deployResult.errors,
     }
   }
 
@@ -433,7 +440,10 @@ export default class OktaAdapter implements AdapterOperations {
     return {
       changeValidator: changeValidator({
         client: this.client,
-        config: this.userConfig,
+        userConfig: this.userConfig,
+        fetchQuery: this.fetchQuery,
+        definitions: this.definitions,
+        oldApiDefsConfig: OLD_API_DEFINITIONS_CONFIG,
       }),
       dependencyChanger,
     }

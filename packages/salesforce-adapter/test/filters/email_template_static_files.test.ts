@@ -1,24 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Element,
-  InstanceElement,
-  StaticFile,
-  toChange,
-} from '@salto-io/adapter-api'
+import { Element, InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/email_template_static_files'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
@@ -40,8 +27,7 @@ describe('emailTemplate static files filter', () => {
   })
 
   const attachment = new StaticFile({
-    filepath:
-      'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/attachment.txt',
+    filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/attachment.txt',
     content: Buffer.from(ATTACHMENT_AS_STRING, 'base64'),
   })
 
@@ -87,9 +73,7 @@ describe('emailTemplate static files filter', () => {
           {
             fullName: 'unfiled$public/emailTemplate',
             content: staticContent,
-            attachments: [
-              { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING },
-            ],
+            attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
           },
           mockTypes.EmailTemplate,
         )
@@ -112,10 +96,7 @@ describe('emailTemplate static files filter', () => {
   })
   describe('deploy flow', () => {
     const ATTACHMENT_AS_BASE64_STRING = 'attachmeng=='
-    const ATTACHMENT_AS_BUFFER = Buffer.from(
-      ATTACHMENT_AS_BASE64_STRING,
-      'base64',
-    )
+    const ATTACHMENT_AS_BUFFER = Buffer.from(ATTACHMENT_AS_BASE64_STRING, 'base64')
 
     let deployedInstance: InstanceElement
     beforeEach(async () => {
@@ -123,9 +104,7 @@ describe('emailTemplate static files filter', () => {
         {
           fullName: 'unfiled$public/emailTemplate',
           content: staticContent,
-          attachments: [
-            { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER },
-          ],
+          attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER }],
         },
         mockTypes.EmailTemplate,
       )
@@ -140,9 +119,7 @@ describe('emailTemplate static files filter', () => {
       ])
       // onDeploy - decode the attachment content back to binary buffer
       await filter.onDeploy(changes)
-      expect(deployedInstance.value.attachments).toEqual([
-        { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER },
-      ])
+      expect(deployedInstance.value.attachments).toEqual([{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER }])
     })
   })
 })

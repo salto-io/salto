@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ElemID,
@@ -60,7 +52,6 @@ describe('Field references filter', () => {
     elemID: new ElemID(WORKATO, 'api_collection'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       api_client_id: { refType: BuiltinTypes.NUMBER },
     },
   })
@@ -68,23 +59,19 @@ describe('Field references filter', () => {
     elemID: new ElemID(WORKATO, 'folder'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       parent_id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const apiAccessProfileType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_access_profile'),
     fields: {
-      // eslint-disable-next-line camelcase
       api_client_id: { refType: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line camelcase
       api_collection_ids: { refType: new ListType(BuiltinTypes.NUMBER) },
     },
   })
   const apiEndpointType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_endpoint'),
     fields: {
-      // eslint-disable-next-line camelcase
       flow_id: { refType: BuiltinTypes.NUMBER },
     },
   })
@@ -94,18 +81,13 @@ describe('Field references filter', () => {
     new InstanceElement('cli123', apiClientType, { id: 123 }),
     apiCollectionType,
     new InstanceElement('collection123', apiCollectionType, { id: 123 }),
-    // eslint-disable-next-line camelcase
     new InstanceElement('collection456', apiCollectionType, { id: 456, api_client_id: 123 }),
     folderType,
-    // eslint-disable-next-line camelcase
     new InstanceElement('folder11', folderType, { id: 11, parent_id: 'invalid' }),
-    // eslint-disable-next-line camelcase
     new InstanceElement('folder222', folderType, { id: 222, parent_id: 11 }),
     apiAccessProfileType,
-    // eslint-disable-next-line camelcase
     new InstanceElement('prof1', apiAccessProfileType, { api_client_id: 123, api_collection_ids: [456] }),
     apiEndpointType,
-    // eslint-disable-next-line camelcase
     new InstanceElement('ep1', apiEndpointType, { flow_id: 123 }),
   ]
 

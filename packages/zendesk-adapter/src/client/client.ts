@@ -1,20 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
@@ -25,8 +17,14 @@ import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 import { PAGE_SIZE, DEFAULT_TIMEOUT_OPTS } from '../config'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, throttle, logDecorator, requiresLogin } =
-  clientUtils
+const {
+  DEFAULT_RETRY_OPTS,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  RATE_LIMIT_DEFAULT_OPTIONS,
+  throttle,
+  logDecorator,
+  requiresLogin,
+} = clientUtils
 const log = logger(module)
 
 const ORG_ENDPOINT_TO_FILTER = 'organizations/'
@@ -43,13 +41,11 @@ export type HolidayRes = {
 }
 export type SupportAddressRes = {
   data: {
-    // eslint-disable-next-line camelcase
     recipient_addresses: Values[]
   }
 }
 export type AttachmentRes = {
   data: {
-    // eslint-disable-next-line camelcase
     article_attachments: Values[]
   }
 }
@@ -140,6 +136,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       pageSize: DEFAULT_PAGE_SIZE,
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+      delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,
+      useBottleneck: RATE_LIMIT_DEFAULT_OPTIONS.useBottleneck,
       // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
       retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       timeout: DEFAULT_TIMEOUT_OPTS,
@@ -213,17 +211,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
             responseType,
           }
         : undefined
-      const { data, status } = await this.resourceClient.get(url, requestConfig)
-      log.trace(
-        'Full HTTP response for GET on %s: %s',
-        url,
-        safeJsonStringify({
-          url,
-          status,
-          requestConfig,
-          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-        }),
-      )
+      const response = await this.resourceClient.get(url, requestConfig)
+      const { data, status } = response
+      this.logResponse({ method: 'get', params: args, response })
       return {
         data,
         status,

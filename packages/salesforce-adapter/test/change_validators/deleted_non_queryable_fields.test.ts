@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -58,10 +50,7 @@ describe('deletedNonQueryableFields', () => {
           fieldIsHidden: false,
           fieldIsReadOnly: false,
         })
-        const instance = createInstanceElement(
-          { fullName: 'SomeInstance', SomeField: true },
-          objectType,
-        )
+        const instance = createInstanceElement({ fullName: 'SomeInstance', SomeField: true }, objectType)
         warnings = await changeValidator([toChange({ after: instance })])
       })
       it('should not warn', () => {
@@ -71,13 +60,8 @@ describe('deletedNonQueryableFields', () => {
   })
 
   describe('modification change', () => {
-    const createInstanceChangeForType = (
-      objectType: ObjectType,
-    ): ModificationChange<InstanceElement> => {
-      const instanceBefore = createInstanceElement(
-        { fullName: 'SomeInstance', SomeField: true },
-        objectType,
-      )
+    const createInstanceChangeForType = (objectType: ObjectType): ModificationChange<InstanceElement> => {
+      const instanceBefore = createInstanceElement({ fullName: 'SomeInstance', SomeField: true }, objectType)
       const instanceAfter = instanceBefore.clone()
       instanceAfter.value.SomeField = false
       return toChange({
@@ -92,9 +76,7 @@ describe('deletedNonQueryableFields', () => {
           fieldIsHidden: false,
           fieldIsReadOnly: false,
         })
-        warnings = await changeValidator([
-          createInstanceChangeForType(objectType),
-        ])
+        warnings = await changeValidator([createInstanceChangeForType(objectType)])
       })
       it('should not warn', () => {
         expect(warnings).toBeEmpty()
@@ -107,9 +89,7 @@ describe('deletedNonQueryableFields', () => {
           fieldIsHidden: true,
           fieldIsReadOnly: false,
         })
-        warnings = await changeValidator([
-          createInstanceChangeForType(typeWithQueryableFields),
-        ])
+        warnings = await changeValidator([createInstanceChangeForType(typeWithQueryableFields)])
       })
       it('should not warn', () => {
         expect(warnings).toBeEmpty()
@@ -122,9 +102,7 @@ describe('deletedNonQueryableFields', () => {
           fieldIsHidden: false,
           fieldIsReadOnly: true,
         })
-        warnings = await changeValidator([
-          createInstanceChangeForType(typeWithQueryableFields),
-        ])
+        warnings = await changeValidator([createInstanceChangeForType(typeWithQueryableFields)])
       })
       it('should not warn', () => {
         expect(warnings).toBeEmpty()

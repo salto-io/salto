@@ -1,22 +1,14 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import _ from 'lodash'
-import { parse } from 'fast-xml-parser'
-import { decode } from 'he'
+import { XMLParser } from 'fast-xml-parser'
+import he from 'he'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import {
@@ -30,9 +22,8 @@ import {
 import { TransformFunc, resolvePath, transformValuesSync } from '@salto-io/adapter-utils'
 import { DATASET, SCRIPT_ID, WORKBOOK } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { ATTRIBUTE_PREFIX } from '../client/constants'
 import { DATASET_LINK, DATASET_LINKS, DATASETS, ROOT } from '../type_parsers/analytics_parsers/analytics_constants'
-import { addAdditionalDependency } from '../client/utils'
+import { addAdditionalDependency, XML_PARSER_DEFAULT_OPTIONS } from '../client/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -41,21 +32,14 @@ const isStringArray = (val: unknown): val is string[] => Array.isArray(val) && _
 
 const isXmlContent = (val: unknown): val is string => _.isString(val) && val.startsWith(`<${ROOT}>`)
 
-const isSameXmlValues = (xml1: string, xml2: string): boolean => {
-  const values1 = parse(xml1, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => decode(val),
-  })
-  const values2 = parse(xml2, {
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    ignoreAttributes: false,
-    tagValueProcessor: val => decode(val),
-  })
-  return _.isEqual(values1, values2)
-}
+const xmlParser = new XMLParser({
+  ...XML_PARSER_DEFAULT_OPTIONS,
+  tagValueProcessor: (_name, val) => he.decode(val),
+})
 
-const discardUnrelevantChanges = (
+const isSameXmlValues = (xml1: string, xml2: string): boolean => _.isEqual(xmlParser.parse(xml1), xmlParser.parse(xml2))
+
+const discardIrrelevantChanges = (
   existingInstance: InstanceElement | undefined,
   newInstance: InstanceElement,
 ): void => {
@@ -113,7 +97,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
       .filter(elem => elem.elemID.typeName === WORKBOOK)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        discardUnrelevantChanges(await elementsSource.get(instance.elemID), instance)
+        discardIrrelevantChanges(await elementsSource.get(instance.elemID), instance)
       })
   },
   preDeploy: async (changes: Change[]) => {

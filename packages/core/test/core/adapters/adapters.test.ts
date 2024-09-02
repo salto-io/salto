@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import 'jest-extended'
 import {
@@ -29,6 +21,8 @@ import {
   ContainerType,
   ListType,
   isContainerType,
+  BuiltinTypes,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
@@ -317,6 +311,7 @@ describe('adapters.ts', () => {
     let field: Field
     let instance: InstanceElement
     let containerType: ContainerType
+    let primitiveTypeInstance: InstanceElement
     let elementsSource: ReadOnlyElementsSource
 
     beforeEach(async () => {
@@ -338,8 +333,16 @@ describe('adapters.ts', () => {
       field = type.fields.field
       instance = new InstanceElement('TestInstance', type)
       containerType = new ListType(new ListType(type))
+      primitiveTypeInstance = new InstanceElement('StringInstance', new TypeReference(BuiltinTypes.STRING.elemID))
       elementsSource = createResolvedTypesElementsSource(
-        utils.buildElementsSourceFromElements([type, field, nestedType, nestedNestedType, instance]),
+        utils.buildElementsSourceFromElements([
+          type,
+          field,
+          nestedType,
+          nestedNestedType,
+          instance,
+          primitiveTypeInstance,
+        ]),
       )
     })
 
@@ -358,12 +361,17 @@ describe('adapters.ts', () => {
       })
       it('should return Instance with fully resolved type', async () => {
         const resolvedInstance = (await elementsSource.get(instance.elemID)) as InstanceElement
-        const resolvedType = resolvedInstance.refType.type as ObjectType
+        const resolvedType = resolvedInstance.refType.type
         expect(isObjectType(resolvedType)).toBeTrue()
-        const resolvedNestedType = resolvedType.fields.field.refType.type as ObjectType
+        const resolvedNestedType = resolvedType?.fields.field.refType.type as ObjectType
         expect(isObjectType(resolvedNestedType)).toBeTrue()
-        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type as ObjectType
+        const resolvedNestedNestedType = resolvedNestedType.fields.field.refType.type
         expect(isObjectType(resolvedNestedNestedType)).toBeTrue()
+      })
+      it('should return primitive type Instance with unresolved type', async () => {
+        const { refType } = (await elementsSource.get(primitiveTypeInstance.elemID)) as InstanceElement
+        expect(refType.type).toBeUndefined()
+        expect(refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
       })
       it('should return fully resolved ContainerType', async () => {
         const resolvedContainerType = (await elementsSource.get(containerType.elemID)) as ContainerType
@@ -379,7 +387,7 @@ describe('adapters.ts', () => {
     describe('getAll', () => {
       it('should return all elements with resolved types, and resolve all the types ones', async () => {
         const resolvedElements = await toArrayAsync(await elementsSource.getAll())
-        expect(resolvedElements).toHaveLength(5)
+        expect(resolvedElements).toHaveLength(6)
         const resolvedElementsByElemId = _.keyBy(resolvedElements, element => element.elemID.getFullName())
         const resolvedType = resolvedElementsByElemId[type.elemID.getFullName()] as ObjectType
         const resolvedInnerType = resolvedElementsByElemId[nestedType.elemID.getFullName()] as ObjectType
@@ -403,6 +411,7 @@ describe('adapters.ts', () => {
           nestedNestedType.elemID,
           instance.elemID,
           field.elemID,
+          primitiveTypeInstance.elemID,
         ])
       })
     })

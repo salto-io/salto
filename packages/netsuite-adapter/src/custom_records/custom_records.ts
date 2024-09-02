@@ -1,32 +1,17 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import Ajv from 'ajv'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import {
-  InstanceElement,
-  ObjectType,
-  ElemIdGetter,
-  OBJECT_SERVICE_ID,
-  toServiceIdsString,
-  OBJECT_NAME,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { CUSTOM_RECORDS_PATH, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
+import { CUSTOM_RECORDS_PATH, INTERNAL_ID, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
 import { NetsuiteQuery } from '../config/query'
 import NetsuiteClient from '../client/client'
 import { RecordValue } from '../client/suiteapp_client/soap_client/types'
@@ -57,7 +42,7 @@ const queryCustomRecordsTable = async (
   type: string,
 ): Promise<Record<string, SuiteQLRecord>> => {
   log.debug("querying custom record type '%s' SuiteQL table", type)
-  const result = await client.runSuiteQL(`SELECT id, scriptid FROM ${type} ORDER BY id ASC`)
+  const result = await client.runSuiteQL({ select: 'id, scriptid', from: type, orderBy: 'id' })
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SuiteQLRecord[]>(SUITE_QL_RESULTS_SCHEMA, result)) {
     log.error(`Got invalid results from listing ${type} table: ${ajv.errorsText()}`)
@@ -77,11 +62,11 @@ const createInstances = async (
     : {}
 
   return records
-    .map(record => ({
-      [SCRIPT_ID]: record[SOAP_SCRIPT_ID]
-        ? String(record[SOAP_SCRIPT_ID]).toLowerCase()
+    .map(({ [SOAP_SCRIPT_ID]: scriptId, ...record }) => ({
+      ...record,
+      [SCRIPT_ID]: scriptId
+        ? String(scriptId).toLowerCase()
         : idToSuiteQLRecord[record.attributes.internalId]?.scriptid.toLowerCase(),
-      ..._.omit(record, SOAP_SCRIPT_ID),
     }))
     .filter(record => {
       if (!record[SCRIPT_ID]) {
@@ -95,9 +80,9 @@ const createInstances = async (
         elemIdGetter?.(
           NETSUITE,
           {
-            [SCRIPT_ID]: record[SCRIPT_ID],
+            [INTERNAL_ID]: record.attributes.internalId,
             [OBJECT_SERVICE_ID]: toServiceIdsString({
-              [OBJECT_NAME]: type.elemID.getFullName(),
+              [SCRIPT_ID]: type.annotations[SCRIPT_ID],
             }),
           },
           naclCase(record[SCRIPT_ID]),

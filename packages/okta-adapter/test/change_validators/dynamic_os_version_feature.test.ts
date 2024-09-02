@@ -1,28 +1,20 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { dynamicOSVersionFeatureValidator } from '../../src/change_validators/dynamic_os_version_feature'
-import { OKTA, FEATURE_TYPE_NAME, DEVICE_ASSURANCE } from '../../src/constants'
+import { OKTA, FEATURE_TYPE_NAME, DEVICE_ASSURANCE_TYPE_NAME } from '../../src/constants'
 
 describe('dynamicOSVersionFeatureValidator', () => {
   const message = 'Dynamic OS version compliance feature is not enabled in the account'
   const detailedMessage =
     'This Device Assurance policy is using dynamic OS version constraints which requires the Dynamic OS version compliance feature to be enabled in the account. To fix this error, enable this feature in your account, fetch your updated configuration through Salto and refresh this deployment.'
-  const deviceAssuranceType = new ObjectType({ elemID: new ElemID(OKTA, DEVICE_ASSURANCE) })
+  const deviceAssuranceType = new ObjectType({ elemID: new ElemID(OKTA, DEVICE_ASSURANCE_TYPE_NAME) })
   const featureType = new ObjectType({ elemID: new ElemID(OKTA, FEATURE_TYPE_NAME) })
   const dynamicOSVersionFeature = new InstanceElement('a', featureType, {
     type: 'self-service',

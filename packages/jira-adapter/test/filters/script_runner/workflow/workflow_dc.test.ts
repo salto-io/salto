@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
@@ -43,6 +35,7 @@ describe('Scriptrunner DC Workflow', () => {
   const goodBase64 = 'YCFgZGVtbyBzdHJpbmc=' // YCFg followed by base64 of 'demo string'
   const objectNoNullsBase64 = 'YCFgeyJhIjoxfQ==' // YCFg followed by base64 of '{"a":1}'
   const objectScriptOnlyBase64 = 'YCFgeyJzY3JpcHQiOjEsInNjcmlwdFBhdGgiOm51bGx9' // YCFg followed by base64 of '{"script":1,"scriptPath":null}'
+  const twoNulls = 'YCFgeyJzY3JpcHQiOm51bGwsICJzY3JpcHRQYXRoIjpudWxsfQ==' // YCFg followed by base64 of '{"script":null, "scriptPath":null}'
   const objectPathOnlyBase64 = 'YCFgeyJzY3JpcHQiOm51bGwsInNjcmlwdFBhdGgiOjF9'
   const FIELD_NAMES_STRINGS = [
     'FIELD_NOTES',
@@ -182,6 +175,13 @@ describe('Scriptrunner DC Workflow', () => {
         expect(
           instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
         ).toBeUndefined()
+      })
+      it('should not return null if both script and path are null', async () => {
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = twoNulls
+        await filter.onFetch([instance])
+        expect(
+          instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT,
+        ).toEqual({})
       })
     })
     describe('pre deploy', () => {

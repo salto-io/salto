@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import process from 'process'
 import { logger } from '@salto-io/logging'
@@ -92,7 +84,6 @@ import { parsedDatasetType } from '../src/type_parsers/analytics_parsers/parsed_
 import { parsedWorkbookType } from '../src/type_parsers/analytics_parsers/parsed_workbook'
 import { bundleType as bundle } from '../src/types/bundle_type'
 import { addApplicationIdToType } from '../src/transformer'
-import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../src/filters/data_account_specific_values'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -106,7 +97,6 @@ const logging = (message: string): void => {
 }
 
 const nullProgressReporter: ProgressReporter = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   reportProgress: () => {},
 }
 
@@ -208,7 +198,7 @@ describe('Netsuite adapter E2E with real account', () => {
     }
 
     const randomNumber = String(Date.now()).substring(6)
-    const randomString = `created by oss e2e - ${randomNumber}`
+    const randomString = `created by e2e - ${randomNumber}`
 
     additionalTypes[FOLDER].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'Folder' })
     additionalTypes[FILE].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'File' })
@@ -676,6 +666,9 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should add alias to elements', async () => {
+        const ignoreCustomRecordInstanceAlias = (type: ObjectType): boolean =>
+          isCustomRecordType(type) && (type.annotations[CORE_ANNOTATIONS.HIDDEN] || !type.annotations.includename)
+
         const relevantElements = fetchResult.elements.filter(
           element =>
             isInstanceElement(element) ||
@@ -687,8 +680,10 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
+          .filter(element => !isInstanceElement(element) || !ignoreCustomRecordInstanceAlias(element.getTypeSync()))
+          .filter(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] !== true)
 
-        expect(elementsWithoutAlias.every(elem => elem.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeTruthy()
+        expect(elementsWithoutAlias.map(element => element.elemID.getFullName())).toEqual([])
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {
@@ -734,22 +729,16 @@ describe('Netsuite adapter E2E with real account', () => {
       it('should fetch the created workflow', async () => {
         const fetchedWorkflow = findElement(fetchedElements, workflowToCreate.elemID) as InstanceElement
         expect(fetchedWorkflow.value.name).toEqual(randomString)
-        // eslint-disable-next-line max-len
         const toStateReference =
           fetchedWorkflow.value.workflowstates?.workflowstate?.workflowstate_state1?.workflowtransitions
             ?.workflowtransition?.workflowtransition_transition1?.tostate
         expect(toStateReference).toBeDefined()
-        expect(
-          isReferenceExpression(toStateReference) &&
-            toStateReference.elemID.isEqual(
-              fetchedWorkflow.elemID.createNestedID(
-                'workflowstates',
-                'workflowstate',
-                'workflowstate_state2',
-                SCRIPT_ID,
-              ),
-            ),
-        ).toBe(true)
+        expect(isReferenceExpression(toStateReference)).toBe(true)
+        expect(toStateReference.elemID.getFullName()).toEqual(
+          fetchedWorkflow.elemID
+            .createNestedID('workflowstates', 'workflowstate', 'workflowstate_state2', SCRIPT_ID)
+            .getFullName(),
+        )
       })
 
       it('should fetch the created email template', async () => {
@@ -988,8 +977,6 @@ describe('Netsuite adapter E2E with real account', () => {
           .concat(filesToImport)
           .concat(existingFileCabinetInstances)
           .concat(newFileCabinetInstancesElemIds)
-          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
-          .concat({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID.createNestedID('instance', ElemID.CONFIG_NAME) })
 
         const expectedElements = _.uniq(allTypes.map(type => type.elemID.getFullName())).sort()
 

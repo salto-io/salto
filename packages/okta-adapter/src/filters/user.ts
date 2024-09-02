@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -19,8 +11,7 @@ import { applyFunctionToChangeData, resolvePath, setPath } from '@salto-io/adapt
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { FETCH_CONFIG } from '../config'
-import { getUsers, USER_MAPPING, getUsersFromInstances, DEFAULT_CONVERT_USERS_IDS_VALUE } from '../user_utils'
+import { getUsers, USER_MAPPING, getUsersFromInstances, shouldConvertUserIds } from '../user_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -61,12 +52,12 @@ export const replaceValuesForChanges = async (
 /**
  * Replaces user ids with login name, when 'convertUsersIds' config flag is enabled
  */
-const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
+const filterCreator: FilterCreator = ({ paginator, config, usersPromise, fetchQuery }) => {
   let userIdToLogin: Record<string, string> = {}
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+      if (!shouldConvertUserIds(fetchQuery, config)) {
         log.debug('Converting user ids was disabled (onFetch)')
         return
       }
@@ -82,8 +73,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      const { convertUsersIds } = config[FETCH_CONFIG]
-      if (!(convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+      if (!shouldConvertUserIds(fetchQuery, config)) {
         log.debug('Converting user ids was disabled (preDeploy)')
         return
       }
@@ -112,7 +102,7 @@ const filterCreator: FilterCreator = ({ paginator, config, usersPromise }) => {
       await replaceValuesForChanges(changes, loginToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
-      if (!(config[FETCH_CONFIG].convertUsersIds ?? DEFAULT_CONVERT_USERS_IDS_VALUE)) {
+      if (!shouldConvertUserIds(fetchQuery, config)) {
         log.debug('Converting user ids was disabled (onDeploy)')
         return
       }

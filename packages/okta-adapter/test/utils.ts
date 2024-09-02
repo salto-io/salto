@@ -1,33 +1,36 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import {
+  client as clientUtils,
+  elements as elementUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG, OktaConfig } from '../src/config'
 import { adapter } from '../src/adapter_creator'
 import OktaClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { FilterCreator } from '../src/filter'
 import { Credentials } from '../src/auth'
+import { DEFAULT_CONFIG, OktaUserConfig } from '../src/user_config'
+import { OLD_API_DEFINITIONS_CONFIG } from '../src/config'
+import { OktaOptions } from '../src/definitions/types'
+import { createClientDefinitions } from '../src/definitions/requests/clients'
+import { PAGINATION } from '../src/definitions/requests/pagination'
+import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
+import { getAdminUrl } from '../src/client/admin'
+import fetchCriteria from '../src/fetch_criteria'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
 
-export const createConfigInstance = (config: OktaConfig): InstanceElement =>
+export const createConfigInstance = (config: OktaUserConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)
 
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
@@ -65,11 +68,42 @@ export const mockClient = (): ClientWithMockConnection => {
   return { client, paginator, connection }
 }
 
+export const createFetchQuery = (config?: OktaUserConfig): elementUtils.query.ElementQuery =>
+  elementUtils.query.createElementQuery(config?.fetch ?? DEFAULT_CONFIG?.fetch, fetchCriteria)
+
+export const createDefinitions = ({
+  fetchQuery = createFetchQuery(),
+  client,
+  usePrivateAPI = true,
+}: {
+  fetchQuery?: elementUtils.query.ElementQuery
+  client?: OktaClient
+  usePrivateAPI?: boolean
+}): definitionsUtils.RequiredDefinitions<OktaOptions> => {
+  const cli = client ?? mockClient().client
+  return {
+    clients: createClientDefinitions({ main: cli, private: cli }),
+    pagination: PAGINATION,
+    fetch: createFetchDefinitions({
+      userConfig: DEFAULT_CONFIG,
+      fetchQuery,
+      usePrivateAPI,
+      baseUrl: getAdminUrl(cli.baseUrl),
+    }),
+  }
+}
+
 export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>): Parameters<FilterCreator>[0] => ({
-  ...mockClient(),
+  paginator: mockClient().paginator,
+  definitions: createDefinitions({
+    fetchQuery: createFetchQuery(params?.config),
+  }),
   config: DEFAULT_CONFIG,
-  elementsSource: buildElementsSourceFromElements([]),
-  fetchQuery: elementUtils.query.createMockQuery(),
-  adapterContext: {},
+  elementSource: buildElementsSourceFromElements([]),
+  fetchQuery: createFetchQuery(params?.config),
+  oldApiDefinitions: OLD_API_DEFINITIONS_CONFIG,
+  baseUrl: 'https://dev-00000000.okta.com',
+  isOAuthLogin: false,
+  sharedContext: {},
   ...(params ?? {}),
 })

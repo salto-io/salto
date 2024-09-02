@@ -1,18 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
@@ -33,12 +26,15 @@ import {
   GROUP_PUSH_TYPE_NAME,
   GROUP_PUSH_RULE_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
+  USER_TYPE_NAME,
+  GROUP_MEMBERSHIP_TYPE_NAME,
+  JWK_TYPE_NAME,
 } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId'
+type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -55,6 +51,11 @@ const OktaReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'mappingRuleId',
   },
+  kid: {
+    serialize: ({ ref }) => ref.value.value.kid,
+    lookup: val => val,
+    lookupIndexName: 'kid',
+  },
 }
 
 const getProfileMappingRefByType: referenceUtils.ContextValueMapperFunc = val => {
@@ -70,7 +71,10 @@ const getProfileMappingRefByType: referenceUtils.ContextValueMapperFunc = val =>
 const getProfileMappingRefByName: referenceUtils.ContextValueMapperFunc = val =>
   val.endsWith('_idp') ? IDENTITY_PROVIDER_TYPE_NAME : undefined
 
-export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName'
+const getUserSchemaPropertyOverrideType: referenceUtils.ContextValueMapperFunc = val =>
+  val === 'APP' ? APPLICATION_TYPE_NAME : undefined
+
+export type ReferenceContextStrategyName = 'profileMappingType' | 'profileMappingName' | 'userSchemaPropertyAppOverride'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   profileMappingType: referenceUtils.neighborContextGetter({
@@ -82,6 +86,11 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     contextFieldName: 'name',
     getLookUpName: async ({ ref }) => ref.elemID.name,
     contextValueMapper: getProfileMappingRefByName,
+  }),
+  userSchemaPropertyAppOverride: referenceUtils.neighborContextGetter({
+    contextFieldName: 'type',
+    getLookUpName: async ({ ref }) => ref.elemID.name,
+    contextValueMapper: getUserSchemaPropertyOverrideType,
   }),
 }
 
@@ -103,7 +112,7 @@ export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceRes
   }
 }
 
-export const referencesRules: OktaFieldReferenceDefinition[] = [
+const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: [APP_GROUP_ASSIGNMENT_TYPE_NAME] },
     serializationStrategy: 'id',
@@ -128,7 +137,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
-    src: { field: 'include', parentTypes: ['GroupCondition'] },
+    src: { field: 'include', parentTypes: ['GroupCondition', 'PolicyAccountLinkFilterGroups'] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },
@@ -249,6 +258,11 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: BRAND_TYPE_NAME },
   },
   {
+    src: { field: 'value', parentTypes: ['UserSchemaAttributeMasterPriority'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'userSchemaPropertyAppOverride' },
+  },
+  {
     src: { field: 'userGroupId', parentTypes: [GROUP_PUSH_TYPE_NAME] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',
@@ -260,7 +274,61 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     missingRefStrategy: 'typeAndValue',
     target: { type: GROUP_PUSH_RULE_TYPE_NAME },
   },
+  {
+    src: { field: 'assignments', parentTypes: ['ProvisioningGroups'] },
+    serializationStrategy: 'id',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'kid', parentTypes: ['IdentityProviderCredentialsTrust'] },
+    serializationStrategy: 'kid',
+    target: { type: JWK_TYPE_NAME },
+  },
+  {
+    src: { field: 'include', parentTypes: ['OAuth2ScopesMediationPolicyRuleCondition'] },
+    serializationStrategy: 'name',
+    target: { type: 'OAuth2Scope' },
+  },
 ]
+
+const userReferenceRules: OktaFieldReferenceDefinition[] = [
+  {
+    src: { field: 'exclude', parentTypes: ['UserCondition', 'GroupRuleUserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'include', parentTypes: ['UserCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'members', parentTypes: [GROUP_MEMBERSHIP_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'technicalContactId', parentTypes: ['EndUserSupport'] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'id', parentTypes: ['UserTypeRef'] },
+    serializationStrategy: 'id',
+    target: { type: USERTYPE_TYPE_NAME },
+  },
+]
+
+export const getReferenceDefs = ({
+  enableMissingReferences,
+  isUserTypeIncluded,
+}: {
+  enableMissingReferences?: boolean
+  isUserTypeIncluded: boolean
+}): OktaFieldReferenceDefinition[] =>
+  referencesRules
+    .concat(isUserTypeIncluded ? userReferenceRules : [])
+    .map(def => (enableMissingReferences ? def : _.omit(def, 'missingRefStrategy')))
 
 // Resolve references to userSchema fields references to field name instead of full value
 const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
@@ -271,13 +339,21 @@ const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
   return userSchemaField ?? ref
 }
 
-const lookupNameFuncs: GetLookupNameFunc[] = [
-  userSchemaLookUpFunc,
-  // The second param is needed to resolve references by serializationStrategy
-  referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
-]
-
-export const getLookUpName: GetLookupNameFunc = async args =>
-  awu(lookupNameFuncs)
-    .map(lookupFunc => lookupFunc(args))
-    .find(res => !isReferenceExpression(res))
+export const getLookUpNameCreator = ({
+  enableMissingReferences,
+  isUserTypeIncluded,
+}: {
+  enableMissingReferences?: boolean
+  isUserTypeIncluded: boolean
+}): GetLookupNameFunc => {
+  const rules = getReferenceDefs({ enableMissingReferences, isUserTypeIncluded })
+  const lookupNameFuncs = [
+    userSchemaLookUpFunc,
+    // The second param is needed to resolve references by serializationStrategy
+    referenceUtils.generateLookupFunc(rules, defs => new OktaFieldReferenceResolver(defs)),
+  ]
+  return async args =>
+    awu(lookupNameFuncs)
+      .map(lookupFunc => lookupFunc(args))
+      .find(res => !isReferenceExpression(res))
+}

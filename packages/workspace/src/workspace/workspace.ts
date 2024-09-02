@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import path from 'path'
@@ -38,6 +30,7 @@ import {
   isObjectType,
   isModificationChange,
   TypeReference,
+  DEFAULT_SOURCE_SCOPE,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -95,7 +88,12 @@ import {
   deserializeValidationErrors,
 } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
-import { ReferenceTargetIndexValue, updateReferenceIndexes } from './reference_indexes'
+import {
+  isSerliazedReferenceIndexEntry,
+  ReferenceIndexEntry,
+  ReferenceTargetIndexValue,
+  updateReferenceIndexes,
+} from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
@@ -180,6 +178,10 @@ export type FromSourceWithEnv = {
   envName?: string
 }
 
+type IncomingReferenceInfo = {
+  id: ReferenceInfo['source']
+} & Required<Pick<ReferenceInfo, 'type' | 'sourceScope'>>
+
 const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv): value is FromSourceWithEnv =>
   value.source === 'env'
 
@@ -239,13 +241,14 @@ export type Workspace = {
   getSourceMap: (filename: string) => Promise<parser.SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
-  getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
+  getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ReferenceIndexEntry[]>>
   getElementOutgoingReferences: (
     id: ElemID,
     envName?: string,
     includeWeakReferences?: boolean,
-  ) => Promise<{ id: ElemID; type: ReferenceType }[]>
+  ) => Promise<Required<ReferenceIndexEntry>[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementIncomingReferenceInfos: (id: ElemID, envName?: string) => Promise<IncomingReferenceInfo[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
   getElementsAuthorsById: (envName?: string) => Promise<Record<string, AuthorInformation>>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
@@ -313,6 +316,7 @@ export type Workspace = {
     encoding: BufferEncoding
     env?: string
     isTemplate?: boolean
+    hash?: string
   }): Promise<StaticFile | undefined>
   getStaticFilePathsByElemIds(elementIds: ElemID[], envName?: string): Promise<string[]>
   getElemIdsByStaticFilePaths(filePaths?: Set<string>, envName?: string): Promise<Record<string, string>>
@@ -330,7 +334,7 @@ type SingleState = {
   authorInformation: RemoteMap<AuthorInformation>
   alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
-  referenceSources: RemoteMap<ElemID[]>
+  referenceSources: RemoteMap<ReferenceIndexEntry[]>
   referenceTargets: RemoteMap<ReferenceTargetIndexValue>
   mapVersions: RemoteMap<number>
 }
@@ -352,6 +356,32 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
     }
   })
   return ret
+}
+
+export const serializeReferenceSourcesEntries = async (entries: ReferenceIndexEntry[]): Promise<string> =>
+  safeJsonStringify(entries.map(entry => ({ ...entry, id: entry.id.getFullName() })))
+
+let hasLoggedOldFormatWarning = false
+export const deserializeReferenceSourcesEntries = async (data: string): Promise<ReferenceIndexEntry[]> => {
+  const parsedEntries: unknown = JSON.parse(data)
+  if (!Array.isArray(parsedEntries)) {
+    log.warn('failed to deserizlize reference sources entries. Parsed Entries: %s', inspectValue(parsedEntries))
+    throw new Error('Failed to deserialize reference sources entries')
+  }
+  // Handle old format
+  if (parsedEntries.some(_.isString)) {
+    // Avoid spammy log, since when we reach here it will be invoked for each key in the index.
+    if (!hasLoggedOldFormatWarning) {
+      log.debug('Deserializing old reference sources entries format')
+      hasLoggedOldFormatWarning = true
+    }
+    return parsedEntries.map(id => ({ id: ElemID.fromFullName(id), type: 'strong' }))
+  }
+  if (parsedEntries.some(isSerliazedReferenceIndexEntry)) {
+    return parsedEntries.map(entry => ({ ...entry, id: ElemID.fromFullName(entry.id) }))
+  }
+  log.warn('failed to deserizlize reference sources entries. Parsed Entries: %s', inspectValue(parsedEntries))
+  throw new Error('Failed to deserialize reference sources entries')
 }
 
 /**
@@ -425,7 +455,6 @@ export const listElementsDependenciesInWorkspace = async ({
       // eslint-disable-next-line no-await-in-loop
       const currentLevelResult = await Promise.all(
         currentLevelIds.map(async currentId => {
-          // eslint-disable-next-line no-await-in-loop
           const references = await workspace.getElementOutgoingReferences(currentId, envToListFrom, false)
           const relevantElemIds = getIndependentElemIDs(
             references
@@ -453,11 +482,18 @@ export const listElementsDependenciesInWorkspace = async ({
     return { dependencies: result, missing: _.uniqBy(missingIds, id => id.getFullName()) }
   }, 'List dependencies in workspace')
 
-type GetCustomReferencesFunc = (
+export type WorkspaceGetCustomReferencesFunc = (
   elements: Element[],
   accountToServiceName: Record<string, string>,
   adaptersConfig: AdaptersConfigSource,
 ) => Promise<ReferenceInfo[]>
+
+const toReferenceIndexEntryWithDefaults = (
+  referenceIndexEntry: ReferenceIndexEntry,
+): Required<ReferenceIndexEntry> => ({
+  ...referenceIndexEntry,
+  sourceScope: referenceIndexEntry.sourceScope ?? DEFAULT_SOURCE_SCOPE,
+})
 
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
@@ -468,7 +504,7 @@ export const loadWorkspace = async (
   ignoreFileChanges = false,
   persistent = true,
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
-  getCustomReferences: GetCustomReferencesFunc = async () => [],
+  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -530,6 +566,7 @@ export const loadWorkspace = async (
                           encoding: staticFile.encoding,
                           env: envName,
                           isTemplate: staticFile.isTemplate,
+                          hash: staticFile.hash,
                         })) ?? staticFile,
                     ),
                   persistent,
@@ -577,10 +614,10 @@ export const loadWorkspace = async (
                 deserialize: data => JSON.parse(data),
                 persistent,
               }),
-              referenceSources: await remoteMapCreator<ElemID[]>({
+              referenceSources: await remoteMapCreator<ReferenceIndexEntry[]>({
                 namespace: getRemoteMapNamespace('referenceSources', envName),
-                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                serialize: serializeReferenceSourcesEntries,
+                deserialize: deserializeReferenceSourcesEntries,
                 persistent,
               }),
               referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
@@ -647,25 +684,38 @@ export const loadWorkspace = async (
 
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = naclFilesSource
-      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> => {
-        elemIDs.forEach(id => addedIDs.add(id.getFullName()))
-        const filesWithDependencies = _.uniq(
-          await awu(elemIDs)
-            .flatMap(id => source.getElementReferencedFiles(envName, id))
-            .toArray(),
+      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> =>
+        log.timeDebug(
+          async () => {
+            elemIDs.forEach(id => addedIDs.add(id.getFullName()))
+            const filesWithDependencies = await log.timeDebug(
+              async () =>
+                _.uniq(
+                  await awu(elemIDs)
+                    .flatMap(id => source.getElementReferencedFiles(envName, id))
+                    .toArray(),
+                ),
+              'running getElementReferencedFiles for %s elemIDs',
+              elemIDs.length,
+            )
+            const dependentsIDs = await log.timeDebug(
+              async () =>
+                awu(filesWithDependencies)
+                  .map(filename => source.getParsedNaclFile(filename))
+                  .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
+                  .filter(id => !addedIDs.has(id.getFullName()))
+                  .toArray(),
+              'get dependentsIDs from %s files',
+              filesWithDependencies.length,
+            )
+            const uniqDependentsIDs = _.uniqBy(dependentsIDs, id => id.getFullName())
+            return _.isEmpty(uniqDependentsIDs)
+              ? uniqDependentsIDs
+              : uniqDependentsIDs.concat(await getElementsDependents(uniqDependentsIDs, addedIDs))
+          },
+          'getElementsDependents for %s elemIDs',
+          elemIDs.length,
         )
-        const dependentsIDs = _.uniqBy(
-          await awu(filesWithDependencies)
-            .map(filename => source.getParsedNaclFile(filename))
-            .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
-            .filter(id => !addedIDs.has(id.getFullName()))
-            .toArray(),
-          id => id.getFullName(),
-        )
-        return _.isEmpty(dependentsIDs)
-          ? dependentsIDs
-          : dependentsIDs.concat(await getElementsDependents(dependentsIDs, addedIDs))
-      }
       const validateElementsAndDependents = async (
         elements: ReadonlyArray<Element>,
         elementSource: ReadOnlyElementsSource,
@@ -675,11 +725,12 @@ export const loadWorkspace = async (
         validatedElementsIDs: ElemID[]
       }> => {
         const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
+        log.debug('found %d dependents for %d elements', dependentsID.length, relevantElementIDs.length)
         const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
-        const elementsToValidate = [...elements, ...dependents]
+        const elementsToValidate = elements.concat(dependents)
         return {
           errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: _.uniqBy([...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs], e =>
+          validatedElementsIDs: _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(relevantElementIDs), e =>
             e.getFullName(),
           ),
         }
@@ -1210,6 +1261,17 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
+  const getElementIncomingReferenceInfos: Workspace['getElementIncomingReferenceInfos'] = async (
+    id,
+    envName = currentEnv(),
+  ) => {
+    if (!id.isBaseID()) {
+      throw new Error(`getElementIncomingReferenceInfos only support base ids, received ${id.getFullName()}`)
+    }
+    const entries = makeArray(await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName()))
+    return entries.map(toReferenceIndexEntryWithDefaults)
+  }
+
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1302,14 +1364,13 @@ export const loadWorkspace = async (
       ).flat()
 
       const filteredReferences = includeWeakReferences ? references : references.filter(ref => ref.type !== 'weak')
-      return _.uniqBy(filteredReferences, ref => ref.id.getFullName())
+      return _.uniqBy(filteredReferences, ref => ref.id.getFullName()).map(toReferenceIndexEntryWithDefaults)
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
-      if (!id.isBaseID()) {
-        throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
-      }
-      return (await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName())) ?? []
+      const referenceInfos = await getElementIncomingReferenceInfos(id, envName)
+      return referenceInfos.map(entry => entry.id)
     },
+    getElementIncomingReferenceInfos,
     getElementAuthorInformation: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
@@ -1595,8 +1656,8 @@ export const loadWorkspace = async (
     getElementSourceOfPath: async (filePath, includeHidden = true) =>
       adaptersConfig.isConfigFile(filePath) ? adaptersConfig.getElements() : elementsImpl(includeHidden),
     getFileEnvs: filePath => naclFilesSource.getFileEnvs(filePath),
-    getStaticFile: async ({ filepath, encoding, env, isTemplate }) =>
-      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate }),
+    getStaticFile: async ({ filepath, encoding, env, isTemplate, hash }) =>
+      naclFilesSource.getStaticFile({ filePath: filepath, encoding, env: env ?? currentEnv(), isTemplate, hash }),
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,
@@ -1615,7 +1676,7 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: GetCustomReferencesFunc = async () => [],
+  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
 ): Promise<Workspace> => {
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({

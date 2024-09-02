@@ -1,21 +1,26 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { logger } from '@salto-io/logging'
-import { DetailedChange, DetailedChangeWithBaseChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
+import {
+  CompareOptions,
+  DetailedChange,
+  DetailedChangeWithBaseChange,
+  ElemID,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
+import {
+  ElementSelector,
+  selectElementIdsByTraversal,
+  elementSource,
+  Workspace,
+  remoteMap,
+  ReferenceIndexEntry,
+} from '@salto-io/workspace'
 import wu from 'wu'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -28,7 +33,7 @@ const { awu } = collections.asynciterable
 const getFilteredIds = (
   selectors: ElementSelector[],
   source: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
 ): Promise<ElemID[]> =>
   log.timeDebug(
     async () =>
@@ -45,7 +50,7 @@ const getFilteredIds = (
 const createMatchers = async (
   beforeElementsSrc: elementSource.ElementsSource,
   afterElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
   elementSelectors: ElementSelector[],
 ): Promise<{
   isChangeMatchSelectors: (change: DetailedChange) => boolean
@@ -109,30 +114,41 @@ const createMatchers = async (
   }
 }
 
-export function createDiffChanges(
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> | undefined,
-  elementSelectors: ElementSelector[] | undefined,
-  topLevelFilters: IDFilter[] | undefined,
-  resultType: 'changes',
-): Promise<ChangeWithDetails[]>
-export function createDiffChanges(
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
-  elementSelectors?: ElementSelector[],
-  topLevelFilters?: IDFilter[],
-  resultType?: 'detailedChanges',
-): Promise<DetailedChangeWithBaseChange[]>
-export async function createDiffChanges(
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
-  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]> = new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-  elementSelectors: ElementSelector[] = [],
-  topLevelFilters: IDFilter[] = [],
-  resultType: 'changes' | 'detailedChanges' = 'detailedChanges',
-): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
+export function createDiffChanges(params: {
+  toElementsSrc: elementSource.ElementsSource
+  fromElementsSrc: elementSource.ElementsSource
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  elementSelectors?: ElementSelector[]
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+  resultType: 'changes'
+}): Promise<ChangeWithDetails[]>
+export function createDiffChanges(params: {
+  toElementsSrc: elementSource.ElementsSource
+  fromElementsSrc: elementSource.ElementsSource
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  elementSelectors?: ElementSelector[]
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+  resultType?: 'detailedChanges'
+}): Promise<DetailedChangeWithBaseChange[]>
+export async function createDiffChanges({
+  toElementsSrc,
+  fromElementsSrc,
+  referenceSourcesIndex = new remoteMap.InMemoryRemoteMap<ReferenceIndexEntry[]>(),
+  elementSelectors = [],
+  topLevelFilters = [],
+  compareOptions,
+  resultType = 'detailedChanges',
+}: {
+  toElementsSrc: elementSource.ElementsSource
+  fromElementsSrc: elementSource.ElementsSource
+  referenceSourcesIndex?: remoteMap.ReadOnlyRemoteMap<ReferenceIndexEntry[]>
+  elementSelectors?: ElementSelector[]
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+  resultType?: 'changes' | 'detailedChanges'
+}): Promise<DetailedChangeWithBaseChange[] | ChangeWithDetails[]> {
   if (elementSelectors.length > 0) {
     const matchers = await createMatchers(toElementsSrc, fromElementsSrc, referenceSourcesIndex, elementSelectors)
     const plan = await getPlan({
@@ -140,6 +156,7 @@ export async function createDiffChanges(
       after: fromElementsSrc,
       dependencyChangers: [],
       topLevelFilters: topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors),
+      compareOptions,
     })
     return resultType === 'changes'
       ? awu(plan.itemsByEvalOrder())
@@ -164,6 +181,7 @@ export async function createDiffChanges(
     after: fromElementsSrc,
     dependencyChangers: [],
     topLevelFilters,
+    compareOptions,
   })
   return wu(plan.itemsByEvalOrder())
     .map(item => item[resultType]())

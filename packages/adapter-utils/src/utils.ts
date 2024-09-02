@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import os from 'os'
 import wu from 'wu'
@@ -66,7 +58,7 @@ import { extractAdditionalPropertiesField } from './additional_properties'
 
 const { mapValuesAsync } = promises.object
 const { awu, mapAsync, toArrayAsync } = collections.asynciterable
-const { isDefined } = lowerDashValues
+const { isDefined, isPlainObject } = lowerDashValues
 
 const log = logger(module)
 
@@ -85,7 +77,8 @@ type TransformValuesBaseArgs = {
   strict?: boolean
   pathID?: ElemID
   isTopLevel?: boolean
-  allowEmpty?: boolean
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
 }
 
 type TransformValuesSyncArgs = TransformValuesBaseArgs & { transformFunc: TransformFuncSync }
@@ -149,14 +142,22 @@ const fieldMapperGenerator = (type: ObjectType | TypeMap | MapType | ListType, v
       : undefined
 }
 
-const removeEmptyParts = (value: Value, allowEmpty: boolean): Value => {
+const removeEmptyParts = ({
+  value,
+  allowEmptyArrays,
+  allowEmptyObjects,
+}: {
+  value: Value
+  allowEmptyArrays: boolean
+  allowEmptyObjects: boolean
+}): Value => {
   if (Array.isArray(value)) {
     const filtered = value.filter(isDefined)
-    return filtered.length === 0 && (value.length > 0 || !allowEmpty) ? undefined : filtered
+    return filtered.length === 0 && (value.length > 0 || !allowEmptyArrays) ? undefined : filtered
   }
   if (_.isPlainObject(value)) {
     const filtered = _.omitBy(value, _.isUndefined)
-    return _.isEmpty(filtered) && (!_.isEmpty(value) || !allowEmpty) ? undefined : filtered
+    return _.isEmpty(filtered) && (!_.isEmpty(value) || !allowEmptyObjects) ? undefined : filtered
   }
   return value
 }
@@ -165,7 +166,7 @@ type recurseIntoValueArgs = {
   newVal: Value
   transformFunc: (value: Value, keyPathID?: ElemID, field?: Field) => Value
   strict: boolean
-  allowEmpty: boolean
+  allowEmptyArrays: boolean
   isAsync: boolean
   keyPathID?: ElemID
   field?: Field
@@ -176,7 +177,7 @@ const recurseIntoValue = ({
   newVal,
   transformFunc,
   strict,
-  allowEmpty,
+  allowEmptyArrays,
   isAsync,
   keyPathID,
   field,
@@ -229,8 +230,16 @@ const recurseIntoValue = ({
       // but we do not want to omit those, we only want to omit empty
       // objects, arrays and strings. we don't need to check for objects here
       // because we cannot get here with an object
-      const valueIsEmpty = (Array.isArray(newVal) || _.isString(newVal)) && _.isEmpty(newVal)
-      return valueIsEmpty && !allowEmpty ? undefined : newVal
+      const isEmptyString = _.isString(newVal) && _.isEmpty(newVal)
+      if (isEmptyString) {
+        log.warn(
+          'found empty string in path %s, string will be omitted: %s',
+          keyPathID?.getFullName(),
+          !allowEmptyArrays,
+        )
+      }
+      const valueIsEmpty = (Array.isArray(newVal) && _.isEmpty(newVal)) || isEmptyString
+      return valueIsEmpty && !allowEmptyArrays ? undefined : newVal
     }
     const fieldMapper = fieldMapperGenerator(fieldType, newVal)
     return objMapFunc(newVal, (value: Value, key: string) =>
@@ -251,7 +260,8 @@ export const transformValues = async ({
   pathID = undefined,
   elementsSource,
   isTopLevel = true,
-  allowEmpty = false,
+  allowEmptyArrays = false,
+  allowEmptyObjects = false,
 }: TransformValuesArgs): Promise<Values | undefined> => {
   const transformValue = async (value: Value, keyPathID?: ElemID, field?: Field): Promise<Value> => {
     if (field === undefined && strict) {
@@ -267,13 +277,13 @@ export const transformValues = async ({
       newVal,
       transformFunc: transformValue,
       strict,
-      allowEmpty,
+      allowEmptyArrays,
       isAsync: true,
       keyPathID,
       field,
       fieldType: await field?.getType(elementsSource),
     })
-    return removeEmptyParts(recursed, allowEmpty)
+    return removeEmptyParts({ value: recursed, allowEmptyArrays, allowEmptyObjects })
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
@@ -286,14 +296,14 @@ export const transformValues = async ({
       ),
       _.isUndefined,
     )
-    return _.isEmpty(result) && !allowEmpty ? undefined : result
+    return _.isEmpty(result) && !allowEmptyObjects ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = await awu(newVal)
       .map((value, index) => transformValue(value, pathID?.createNestedID(String(index)), fieldMapper(String(index))))
       .filter(value => !_.isUndefined(value))
       .toArray()
-    return result.length === 0 && !allowEmpty ? undefined : result
+    return result.length === 0 && !allowEmptyArrays ? undefined : result
   }
   return newVal
 }
@@ -305,7 +315,8 @@ export const transformValuesSync = ({
   strict = true,
   pathID = undefined,
   isTopLevel = true,
-  allowEmpty = false,
+  allowEmptyArrays = false,
+  allowEmptyObjects = false,
 }: TransformValuesSyncArgs): lowerDashTypes.NonPromise<Value> | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): lowerDashTypes.NonPromise<Value> => {
     if (field === undefined && strict) {
@@ -321,13 +332,13 @@ export const transformValuesSync = ({
       newVal,
       transformFunc: transformValue,
       strict,
-      allowEmpty,
+      allowEmptyArrays,
       isAsync: false,
       keyPathID,
       field,
       fieldType: field?.getTypeSync(),
     })
-    return removeEmptyParts(recursed, allowEmpty)
+    return removeEmptyParts({ value: recursed, allowEmptyArrays, allowEmptyObjects })
   }
 
   const fieldMapper = fieldMapperGenerator(type, values)
@@ -338,30 +349,38 @@ export const transformValuesSync = ({
       _.mapValues(newVal ?? {}, (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))),
       _.isUndefined,
     )
-    return _.isEmpty(result) && !allowEmpty ? undefined : result
+    return _.isEmpty(result) && !allowEmptyObjects ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = newVal
       .map((value, index) => transformValue(value, pathID?.createNestedID(String(index)), fieldMapper(String(index))))
       .filter(value => !_.isUndefined(value))
-    return result.length === 0 && !allowEmpty ? undefined : result
+    return result.length === 0 && !allowEmptyArrays ? undefined : result
   }
   return newVal
 }
 
 export const elementAnnotationTypes = async (
   element: Element,
-  elementsSource?: ReadOnlyElementsSource,
+  elementSource?: ReadOnlyElementsSource,
 ): Promise<TypeMap> => {
   if (isInstanceElement(element)) {
     return InstanceAnnotationTypes
   }
+
+  let annotationsType: Element
+  if (isField(element)) {
+    annotationsType = await element.getType(elementSource)
+  } else if (isObjectType(element)) {
+    annotationsType = (await element.getMetaType(elementSource)) ?? element
+  } else {
+    annotationsType = element
+  }
+
   return {
     ...InstanceAnnotationTypes,
     ...CoreAnnotationTypes,
-    ...(isField(element)
-      ? await (await element.getType(elementsSource)).getAnnotationTypes(elementsSource)
-      : await element.getAnnotationTypes(elementsSource)),
+    ...(await annotationsType.getAnnotationTypes(elementSource)),
   }
 }
 
@@ -370,13 +389,15 @@ export const transformElementAnnotations = async <T extends Element>({
   transformFunc,
   strict,
   elementsSource,
-  allowEmpty,
+  allowEmptyArrays,
+  allowEmptyObjects,
 }: {
   element: T
   transformFunc: TransformFunc
   strict?: boolean
   elementsSource?: ReadOnlyElementsSource
-  allowEmpty?: boolean
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
 }): Promise<Values> =>
   (await transformValues({
     values: element.annotations,
@@ -385,7 +406,8 @@ export const transformElementAnnotations = async <T extends Element>({
     strict,
     pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
     elementsSource,
-    allowEmpty,
+    allowEmptyArrays,
+    allowEmptyObjects,
     isTopLevel: false,
   })) || {}
 
@@ -395,14 +417,16 @@ export const transformElement = async <T extends Element>({
   strict,
   elementsSource,
   runOnFields,
-  allowEmpty,
+  allowEmptyArrays,
+  allowEmptyObjects,
 }: {
   element: T
   transformFunc: TransformFunc
   strict?: boolean
   elementsSource?: ReadOnlyElementsSource
   runOnFields?: boolean
-  allowEmpty?: boolean
+  allowEmptyArrays?: boolean
+  allowEmptyObjects?: boolean
 }): Promise<T> => {
   let newElement: Element
   const transformedAnnotations = await transformElementAnnotations({
@@ -410,7 +434,8 @@ export const transformElement = async <T extends Element>({
     transformFunc,
     strict,
     elementsSource,
-    allowEmpty,
+    allowEmptyArrays,
+    allowEmptyObjects,
   })
 
   if (isInstanceElement(element)) {
@@ -422,7 +447,8 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         pathID: element.elemID,
-        allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       })) || {}
 
     newElement = new InstanceElement(
@@ -446,7 +472,8 @@ export const transformElement = async <T extends Element>({
             strict,
             elementsSource,
             runOnFields,
-            allowEmpty,
+            allowEmptyArrays,
+            allowEmptyObjects,
           })
         }
         return undefined
@@ -460,6 +487,7 @@ export const transformElement = async <T extends Element>({
       annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
       path: element.path,
+      metaType: element.metaType,
       isSettings: element.isSettings,
     })
 
@@ -492,7 +520,8 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         runOnFields,
-        allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       }),
     )
     return newElement as T
@@ -506,7 +535,8 @@ export const transformElement = async <T extends Element>({
         strict,
         elementsSource,
         runOnFields,
-        allowEmpty,
+        allowEmptyArrays,
+        allowEmptyObjects,
       }),
     )
     return newElement as T
@@ -550,7 +580,7 @@ export const findInstances = (elements: Iterable<Element>, typeID: ElemID): Iter
   return instances.filter(e => e.refType.elemID.isEqual(typeID))
 }
 
-export const getPath = (rootElement: Element, fullElemID: ElemID): string[] | undefined => {
+export const getPath = (rootElement: Readonly<Element>, fullElemID: ElemID): string[] | undefined => {
   // If rootElement is an objectType or an instance (i.e., a top level element),
   // we want to compare the top level id of fullElemID.
   // If it is a field we want to compare the base id.
@@ -602,7 +632,7 @@ export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value):
   }
 }
 
-export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+export const resolvePath = (rootElement: Readonly<Element>, fullElemID: ElemID): Value => {
   const path = getPath(rootElement, fullElemID)
   if (path === undefined) return undefined
   if (_.isEmpty(path)) return rootElement
@@ -657,6 +687,7 @@ export const flattenElementStr = (element: Element): Element => {
         .mapKeys((_v, k) => flatStr(k))
         .mapValues(flattenField)
         .value(),
+      metaType: obj.metaType,
       isSettings: obj.isSettings,
       path: obj.path?.map(flatStr),
     })
@@ -736,6 +767,7 @@ export const filterByID = async <T extends Element | Values>(
       annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
       fields: await filterFields(value.fields),
       path: value.path,
+      metaType: value.metaType,
       isSettings: value.isSettings,
     }) as Value as T
   }
@@ -892,7 +924,7 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) =>
     : value
 
 // WARNING: using safeJsonStringify with a customizer is inefficient and should not be done at a large scale.
-// prefer inspect / safeStringifyWithInspect (which allow limiting depth / max array length / max string length)
+// prefer inspect / inspectValue (which allows limiting depth / max array length / max string length)
 // where applicable
 export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: string | number): string =>
   safeStringify(value, replacer, space)
@@ -916,6 +948,19 @@ export const getParent = (instance: Element): InstanceElement => {
   return parents[0].value
 }
 
+// This method is used to get the parent's elemID when the references are not neccessarily resolved
+export const getParentElemID = (instance: Element): ElemID => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parent = parents[0]
+  if (!isReferenceExpression(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
+  }
+  return parent.elemID
+}
+
 export const hasValidParent = (element: Element): boolean => {
   try {
     return getParent(element) !== undefined
@@ -929,7 +974,10 @@ export const hasValidParent = (element: Element): boolean => {
 // current Reference.getResolvedValue implementation
 // That's why we need this func and do not use getResolvedValue
 // If we decide switch the getResolvedValue behavior in the future we should lose this
-const getResolvedRef = async (ref: TypeReference, elementsSource: ReadOnlyElementsSource): Promise<TypeReference> => {
+const getResolvedRef = async <T extends TypeElement>(
+  ref: TypeReference<T>,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<TypeReference<T | PlaceholderObjectType>> => {
   if (ref.type !== undefined) {
     return ref
   }
@@ -957,6 +1005,9 @@ export const resolveTypeShallow = async (element: Element, elementsSource: ReadO
   }
   if (isObjectType(element)) {
     await awu(Object.values(element.fields)).forEach(async field => resolveTypeShallow(field, elementsSource))
+    if (element.metaType !== undefined) {
+      element.metaType = await getResolvedRef(element.metaType, elementsSource)
+    }
   }
 }
 
@@ -993,6 +1044,22 @@ export const createSchemeGuardForInstance =
     }
     return true
   }
+
+export function validatePlainObject(obj: unknown, valueName: string): asserts obj is Values {
+  if (!isPlainObject(obj)) {
+    const objStr = inspect(obj)
+    log.warn('Expected  %s to be a plain object, but got %s', valueName, objStr)
+    throw new Error(`Expected ${valueName} to be a plain object, but got ${objStr}`)
+  }
+}
+
+export function validateArray(obj: unknown, valueName: string): asserts obj is unknown[] {
+  if (!Array.isArray(obj)) {
+    const objStr = inspect(obj)
+    log.warn('Expected %s to be an array, but got %s', valueName, objStr)
+    throw new Error(`Expected ${valueName} to be an array, but got ${objStr}`)
+  }
+}
 
 export const getSubtypes = (types: ObjectType[], validateUniqueness = false): ObjectType[] => {
   const subtypes: Record<string, ObjectType> = {}
@@ -1045,6 +1112,24 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
  */
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression =>
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
+
+export const getParentAsyncWithElementsSource = async (
+  instance: Element,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<InstanceElement> => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parentReference = parents[0]
+  const parent = isResolvedReferenceExpression(parentReference)
+    ? parentReference.value
+    : await elementsSource.get(parentReference.elemID)
+  if (!isInstanceElement(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+  return parent
+}
 
 export const getInstancesFromElementSource = async (
   elementSource: ReadOnlyElementsSource,

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -31,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
-import { Keywords } from './language'
+import { Keywords, primitiveTypeToKeyword } from './language'
 import { getFunctionExpression, Functions, FunctionExpression } from './functions'
 import { ValuePromiseWatcher } from './internal/native/types'
 import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/helpers'
@@ -40,21 +32,8 @@ import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/
  * @param primitiveType Primitive type identifier
  * @returns Type name in HCL syntax
  */
-const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
-  if (primitiveType === PrimitiveTypes.STRING) {
-    return Keywords.TYPE_STRING
-  }
-  if (primitiveType === PrimitiveTypes.NUMBER) {
-    return Keywords.TYPE_NUMBER
-  }
-  if (primitiveType === PrimitiveTypes.BOOLEAN) {
-    return Keywords.TYPE_BOOL
-  }
-  if (primitiveType === PrimitiveTypes.UNKNOWN) {
-    return Keywords.TYPE_UNKNOWN
-  }
-  return Keywords.TYPE_OBJECT
-}
+const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string =>
+  primitiveTypeToKeyword[primitiveType] || Keywords.TYPE_OBJECT
 
 export const dumpElemID = (id: ElemID): string => {
   if (id.isConfigType()) {
@@ -135,9 +114,14 @@ const dumpElementBlock = (
     return dumpFieldBlock(elem, functions, valuePromiseWatchers)
   }
   if (isObjectType(elem)) {
+    const labels = [dumpElemID(elem.elemID)]
+    if (elem.metaType !== undefined) {
+      labels.push(Keywords.TYPE_INHERITANCE_SEPARATOR, dumpElemID(elem.metaType.elemID))
+    }
+
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
-      labels: [dumpElemID(elem.elemID)],
+      labels,
       attrs: dumpAttributes(elem.annotations, functions, valuePromiseWatchers),
       blocks: dumpAnnotationTypesBlock(elem.annotationRefTypes).concat(
         Object.values(elem.fields).map(field => dumpFieldBlock(field, functions, valuePromiseWatchers)),

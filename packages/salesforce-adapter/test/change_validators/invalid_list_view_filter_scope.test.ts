@@ -1,36 +1,19 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Change,
-  CORE_ANNOTATIONS,
-  getAllChangeData,
-  InstanceElement,
-  toChange,
-} from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/invalid_list_view_filter_scope'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 const createListView = (filterScopeValue: string): InstanceElement =>
-  createInstanceElement(
-    { fullName: 'Some.FullName', filterScope: filterScopeValue },
-    mockTypes.ListView,
-    undefined,
-    { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
-  )
+  createInstanceElement({ fullName: 'Some.FullName', filterScope: filterScopeValue }, mockTypes.ListView, undefined, {
+    [CORE_ANNOTATIONS.PARENT]: 'Opportunity',
+  })
 
 describe('ListView filterScope validator', () => {
   describe('when filterScope changes to invalid value', () => {
@@ -46,9 +29,7 @@ describe('ListView filterScope validator', () => {
     })
 
     it('should fail validation', async () => {
-      const changeErrors = await changeValidator([
-        filterScopeModificationChange,
-      ])
+      const changeErrors = await changeValidator([filterScopeModificationChange])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       const [beforeData] = getAllChangeData(filterScopeModificationChange)

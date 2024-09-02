@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ChangeValidator,
@@ -30,7 +22,17 @@ const log = logger(module)
 
 export const automationsValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
-    log.warn('Elements source was not passed to automationsValidator. Skipping validator')
+    log.warn('Skipping automationsValidator due to missing elements source')
+    return []
+  }
+
+  const automationChangesData = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+
+  if (automationChangesData.length === 0) {
     return []
   }
 
@@ -39,11 +41,7 @@ export const automationsValidator: ChangeValidator = async (changes, elementsSou
     .map(id => elementsSource.get(id))
     .groupBy(instance => instance.value.name)
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+  return automationChangesData
     .filter(instance => nameToAutomations[instance.value.name].length > 1)
     .map(instance => ({
       elemID: instance.elemID,

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { MockInterface } from '@salto-io/test-utils'
@@ -24,6 +16,7 @@ import SalesforceAdapter from '../index'
 import mockAdapter from './adapter'
 import { CUSTOM_OBJECT_FIELDS } from '../src/fetch_profile/metadata_types'
 import {
+  APEX_CLASS_METADATA_TYPE,
   API_NAME,
   CHANGED_AT_SINGLETON,
   CUSTOM_FIELD,
@@ -31,15 +24,11 @@ import {
   FIELD_ANNOTATIONS,
   UNIX_TIME_ZERO_STRING,
 } from '../src/constants'
-import { mockInstances, mockTypes } from './mock_elements'
-import {
-  mockDescribeResult,
-  mockFileProperties,
-  mockRetrieveLocator,
-  mockRetrieveResult,
-} from './connection'
+import { mockDefaultValues, mockInstances, mockTypes } from './mock_elements'
+import { mockDescribeResult, mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import { createCustomObjectType, mockFetchOpts } from './utils'
-import { Types } from '../src/transformers/transformer'
+import { createInstanceElement, Types } from '../src/transformers/transformer'
+import * as customListFuncsModule from '../src/client/custom_list_funcs'
 
 const { makeArray } = collections.array
 
@@ -51,24 +40,22 @@ describe('Salesforce Fetch With Changes Detection', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let changedAtSingleton: InstanceElement
+  let deletedApexClasss: InstanceElement
   beforeEach(async () => {
     changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
-    const objectWithDeletedField = createCustomObjectType(
-      OBJECT_WITH_DELETED_FIELD_NAME,
-      {
-        fields: {
-          DeletedField__c: {
-            refType: BuiltinTypes.STRING,
-            annotations: {
-              [FIELD_ANNOTATIONS.QUERYABLE]: true,
-              [FIELD_ANNOTATIONS.CREATABLE]: true,
-              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-              [API_NAME]: 'DeletedField__c',
-            },
+    const objectWithDeletedField = createCustomObjectType(OBJECT_WITH_DELETED_FIELD_NAME, {
+      fields: {
+        DeletedField__c: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            [API_NAME]: 'DeletedField__c',
           },
         },
       },
-    )
+    })
     const nonUpdatedObject = createCustomObjectType(NON_UPDATED_OBJECT_NAME, {
       fields: {
         TestField__c: {
@@ -95,6 +82,19 @@ describe('Salesforce Fetch With Changes Detection', () => {
         },
       },
     })
+    const apexClass1 = createInstanceElement(
+      { ...mockDefaultValues.ApexClass, fullName: 'ApexClass1' },
+      mockTypes.ApexClass,
+    )
+    const apexClass2 = createInstanceElement(
+      { ...mockDefaultValues.ApexClass, fullName: 'ApexClass2' },
+      mockTypes.ApexClass,
+    )
+    deletedApexClasss = createInstanceElement(
+      { ...mockDefaultValues.ApexClass, fullName: 'DeletedApex' },
+      mockTypes.ApexClass,
+    )
+
     const sourceElements = [
       ...Object.values(mockTypes),
       ...Types.getAllMissingTypes(),
@@ -102,6 +102,9 @@ describe('Salesforce Fetch With Changes Detection', () => {
       objectWithDeletedField,
       nonUpdatedObject,
       updatedObject,
+      apexClass1,
+      apexClass2,
+      deletedApexClasss,
     ]
     const elementsSource = buildElementsSourceFromElements(sourceElements)
     ;({ connection, adapter } = mockAdapter({
@@ -122,11 +125,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
     }))
   })
   describe('fetch with changes detection for types with nested instances', () => {
-    const RELATED_TYPES = [
-      ...CUSTOM_OBJECT_FIELDS,
-      CUSTOM_FIELD,
-      CUSTOM_OBJECT,
-    ] as const
+    const RELATED_TYPES = [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD, CUSTOM_OBJECT] as const
     type RelatedType = (typeof RELATED_TYPES)[number]
     // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
     const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
@@ -215,15 +214,11 @@ describe('Salesforce Fetch With Changes Detection', () => {
         WebLink: [],
       }
 
-      connection.metadata.describe.mockResolvedValue(
-        mockDescribeResult(RELATED_TYPES.map((type) => ({ xmlName: type }))),
+      connection.metadata.describe.mockResolvedValue(mockDescribeResult(RELATED_TYPES.map(type => ({ xmlName: type }))))
+      connection.metadata.list.mockImplementation(async queries =>
+        makeArray(queries).flatMap(({ type }) => filePropByRelatedType[type as RelatedType] ?? []),
       )
-      connection.metadata.list.mockImplementation(async (queries) =>
-        makeArray(queries).flatMap(
-          ({ type }) => filePropByRelatedType[type as RelatedType] ?? [],
-        ),
-      )
-      connection.metadata.retrieve.mockImplementation((request) => {
+      connection.metadata.retrieve.mockImplementation(request => {
         retrieveRequest = request
         return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
       })
@@ -242,6 +237,39 @@ describe('Salesforce Fetch With Changes Detection', () => {
           members: [UPDATED_OBJECT_NAME, OBJECT_WITH_DELETED_FIELD_NAME],
         },
       ])
+    })
+  })
+  describe('custom list functions', () => {
+    describe('type with partial custom list function', () => {
+      beforeEach(() => {
+        connection.metadata.describe.mockResolvedValue(mockDescribeResult([{ xmlName: APEX_CLASS_METADATA_TYPE }]))
+        connection.metadata.list.mockResolvedValue([
+          mockFileProperties({
+            fullName: 'ApexClass1',
+            type: APEX_CLASS_METADATA_TYPE,
+            lastModifiedDate: '2023-11-01T00:00:00.000Z',
+          }),
+          mockFileProperties({
+            fullName: 'ApexClass2',
+            type: APEX_CLASS_METADATA_TYPE,
+            lastModifiedDate: '2023-11-03T00:00:00.000Z',
+          }),
+        ])
+        // No ApexClasses were updated
+        jest.spyOn(customListFuncsModule, 'createListApexClassesDef').mockReturnValue({
+          func: async _client => ({ result: [], errors: [] }),
+          isPartial: true,
+        })
+        changedAtSingleton.value[APEX_CLASS_METADATA_TYPE] = {
+          ApexClass1: '2023-11-01T00:00:00.000Z',
+          ApexClass2: '2023-11-03T00:00:00.000Z',
+          Deleted: '2023-11-01T00:00:00.000Z',
+        }
+      })
+      it('should return correct deleted elements of type that was listed partially', async () => {
+        const result = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(result.partialFetchData?.deletedElements).toEqual([deletedApexClasss.elemID])
+      })
     })
   })
 })

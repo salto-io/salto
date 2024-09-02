@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -49,8 +41,9 @@ import {
   SavedSearchQuery,
   SystemInformation,
   SuiteAppType,
+  SuiteQLQueryArgs,
 } from './suiteapp_client/types'
-import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
+import { CustomRecordResponse, SoapDeployResult, RecordResponse } from './suiteapp_client/soap_client/types'
 import {
   DeployableChange,
   FeaturesMap,
@@ -138,6 +131,17 @@ const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'T
   return envType
 }
 
+const logDecorator = decorators.wrapMethodWith(async ({ call, name }: decorators.OriginalCall): Promise<unknown> => {
+  const desc = `client.${name}`
+  try {
+    // eslint-disable-next-line @typescript-eslint/return-await
+    return await log.timeDebug(call, desc)
+  } catch (e) {
+    log.error('failed to run Netsuite client command on: %o', e)
+    throw e
+  }
+})
+
 export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
@@ -178,7 +182,7 @@ export default class NetsuiteClient {
     }
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
     const systemInformation = await NetsuiteClient.suiteAppValidateCredentials(credentials)
     const { accountId } = await NetsuiteClient.sdfValidateCredentials(credentials)
@@ -193,12 +197,12 @@ export default class NetsuiteClient {
     }
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async getConfigRecords(): Promise<ConfigRecord[]> {
     return this.suiteAppClient?.getConfigRecords() ?? []
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async getInstalledBundles(): Promise<SuiteAppBundleType[]> {
     return this.suiteAppClient?.getInstalledBundles() ?? []
   }
@@ -207,7 +211,7 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.getInstalledSuiteApps() ?? []
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async deployConfigChanges(instancesChanges: Change<InstanceElement>[]): Promise<DeployResult> {
     if (this.suiteAppClient === undefined) {
       return {
@@ -227,18 +231,25 @@ export default class NetsuiteClient {
     )
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async getCustomObjects(typeNames: string[], queries: NetsuiteFetchQueries): Promise<GetCustomObjectsResult> {
     return this.sdfClient.getCustomObjects(typeNames, queries)
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   async importFileCabinetContent(
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
+    extensionsToExclude: string[],
+    forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB)
+      return this.suiteAppFileCabinet.importFileCabinet(
+        query,
+        maxFileCabinetSizeInGB,
+        extensionsToExclude,
+        forceFileCabinetExclude,
+      )
     }
 
     return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
@@ -493,7 +504,7 @@ export default class NetsuiteClient {
     return { errors, appliedChanges: [] }
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async validate(
     changes: Change[],
     groupID: string,
@@ -511,7 +522,7 @@ export default class NetsuiteClient {
     return []
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async deploy(
     changes: Change[],
     groupID: string,
@@ -566,7 +577,7 @@ export default class NetsuiteClient {
     elements: InstanceElement[],
     groupID: string,
     hasElemID: HasElemIDFunc,
-  ): Promise<(number | Error)[]> {
+  ): Promise<SoapDeployResult[]> {
     if (this.suiteAppClient === undefined) {
       throw new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)
     }
@@ -590,8 +601,8 @@ export default class NetsuiteClient {
     throw new Error(`Cannot deploy group ID: ${groupID}`)
   }
 
-  public async runSuiteQL(query: string): Promise<Record<string, unknown>[] | undefined> {
-    return this.suiteAppClient?.runSuiteQL(query)
+  public async runSuiteQL(args: SuiteQLQueryArgs): Promise<Record<string, unknown>[] | undefined> {
+    return this.suiteAppClient?.runSuiteQL(args)
   }
 
   public async runSavedSearchQuery(
@@ -621,24 +632,11 @@ export default class NetsuiteClient {
     return this.suiteAppClient !== undefined
   }
 
-  private static logDecorator = decorators.wrapMethodWith(
-    async ({ call, name }: decorators.OriginalCall): Promise<unknown> => {
-      const desc = `client.${name}`
-      try {
-        // eslint-disable-next-line @typescript-eslint/return-await
-        return await log.timeDebug(call, desc)
-      } catch (e) {
-        log.error('failed to run Netsuite client command on: %o', e)
-        throw e
-      }
-    },
-  )
-
   public async getNetsuiteWsdl(): Promise<soap.WSDL | undefined> {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async getAllRecords(types: string[]): Promise<RecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
@@ -646,7 +644,7 @@ export default class NetsuiteClient {
     return this.suiteAppClient.getAllRecords(types)
   }
 
-  @NetsuiteClient.logDecorator
+  @logDecorator
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')

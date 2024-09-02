@@ -32,6 +32,7 @@ import {
   NAME_FIELD,
   SCRIPT_ID,
   SELECT_RECORD_TYPE,
+  VALUE_FIELD,
   WORKFLOW,
 } from '../constants'
 import {
@@ -114,6 +115,35 @@ type ResolvedAccountSpecificValuesResult = {
   resolvedAccountSpecificValues: ResolvedAccountSpecificValue[]
   resolveWarnings: ChangeError[]
   missingInternalIds: MissingInternalId[]
+}
+
+// the following formula params are represented with internal id in the formula queried by suiteapp
+const FORMULA_PARAMS_WITH_INTERNAL_ID = [
+  {
+    [SELECT_RECORD_TYPE]: '-118',
+    [VALUE_FIELD]: 'ADMINISTRATOR',
+  },
+]
+
+const isFormulaValueWithInternalId = (param: Value): boolean => {
+  if (!_.isPlainObject(param)) {
+    return false
+  }
+  // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles),
+  // but only params that have selectrecordtype are represented with internalid in the formula.
+  if (param[SELECT_RECORD_TYPE] === undefined) {
+    return false
+  }
+  if (
+    typeof param[VALUE_FIELD] === 'string' &&
+    // params that have a constant string `value` (e.g "INVOICE") aren't represented with internalid in the formula.
+    /^[A-Z]+$/.test(param[VALUE_FIELD]) &&
+    // some constant string `value` are represented with internalid (e.g 'ADMINISTRATOR' role)
+    !FORMULA_PARAMS_WITH_INTERNAL_ID.some(item => _.isEqual(item, _.pick(param, Object.keys(item))))
+  ) {
+    return false
+  }
+  return true
 }
 
 const ADDITIONAL_INTERNAL_ID_TO_TYPES: Record<string, (SuiteQLTableName | AdditionalQueryName)[]> = {
@@ -452,7 +482,7 @@ const getFieldsWithAccountSpecificValue = (
       if (
         parameters.some(
           param =>
-            param?.value === ACCOUNT_SPECIFIC_VALUE &&
+            param?.[VALUE_FIELD] === ACCOUNT_SPECIFIC_VALUE &&
             getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap) !== undefined,
         )
       ) {
@@ -624,12 +654,11 @@ const getParametersAccountSpecificValueToTransform = (
     // not only params with ACCOUNT_SPECIFIC_VALUE are represented with internalid in the formula (e.g roles),
     // but only params that have selectrecordtype are represented with internalid in the formula.
     .filter(param => param?.[SELECT_RECORD_TYPE] !== undefined)
-    // params that have a constant string `value` (e.g "INVOICE") aren't represented with internalid in the formula.
-    .filter(param => typeof param.value !== 'string' || !/^[A-Z]+$/.test(param.value))
+    .filter(isFormulaValueWithInternalId)
     // each param can appear more than once in the condition formula.
     // in that case we're expecting to see it multiple times in formulaWithInternalIds.
     .flatMap(param => getParamLocations({ conditionFormula, param }))
-  const internalIds = Array.from(matchAll(formulaWithInternalIds, /['"]?-?\d+(\.\d*)?['"]?/g))
+  const internalIds = Array.from(matchAll(formulaWithInternalIds, /['"]?[-\w]?\d+(\.\d+)?['"]?/g))
     .map(res => res[0])
     .filter(
       internalId =>
@@ -654,7 +683,7 @@ const getParametersAccountSpecificValueToTransform = (
   }
   const sortedParams = _.sortBy(params, param => param.location)
   return sortedParams.flatMap(({ param, isFirstAppearance }, index) => {
-    if (param.value !== ACCOUNT_SPECIFIC_VALUE || !isFirstAppearance) {
+    if (param[VALUE_FIELD] !== ACCOUNT_SPECIFIC_VALUE || !isFirstAppearance) {
       return []
     }
     const internalId = internalIds[index]

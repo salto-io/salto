@@ -15,7 +15,7 @@ const { getAdjustedOdataTypeFieldName, transformOdataTypeField } = odataType
 describe('Odata type utils', () => {
   describe(`${getAdjustedOdataTypeFieldName.name}`, () => {
     it('should return the correct adjusted field name', () => {
-      expect(getAdjustedOdataTypeFieldName('test')).toEqual('test_type')
+      expect(getAdjustedOdataTypeFieldName('test')).toEqual('testType')
     })
   })
 
@@ -95,7 +95,7 @@ describe('Odata type utils', () => {
         it('should return the adjusted field with the correct value', async () => {
           expect(
             await transformOdataTypeFieldDeploy({
-              value: { testTypeName_type: 'testType' },
+              value: { testTypeNameType: 'testType' },
               typeName: 'testTypeName',
               context: contextMock,
             }),

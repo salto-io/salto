@@ -13,6 +13,9 @@ const { recursiveNestedTypeName } = fetchUtils.element
 const toIntuneTypeName = (typeName: string): string => `Intune${typeName}`
 
 /* Field names */
+// Shared fields
+export const ASSIGNMENTS_FIELD_NAME = 'assignments'
+
 // Application fields
 export const PACKAGE_ID_FIELD_NAME = 'packageId'
 export const BUNDLE_ID_FIELD_NAME = 'bundleId'
@@ -47,6 +50,11 @@ export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPS_FIELD_NAME,
+)
+export const APPLICATION_ASSIGNMENTS_TYPE_NAME = recursiveNestedTypeName(APPLICATION_TYPE_NAME, ASSIGNMENTS_FIELD_NAME)
+export const APPLICATION_ASSIGNMENTS_TARGET_TYPE_NAME = recursiveNestedTypeName(
+  APPLICATION_ASSIGNMENTS_TYPE_NAME,
+  'target',
 )
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME = recursiveNestedTypeName(
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,

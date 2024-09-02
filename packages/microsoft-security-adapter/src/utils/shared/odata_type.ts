@@ -34,7 +34,7 @@ const restoreOdataTypeField = (extractedType: string): string => `${ODATA_PREFIX
 /**
  * Return the adjusted field name for the OData type field, which is unique per typeName.
  */
-export const getAdjustedOdataTypeFieldName = (typeName: string): string => `${typeName}_type`
+export const getAdjustedOdataTypeFieldName = (typeName: string): string => `${typeName}Type`
 
 /**
  *  The OData type field is in the format of #microsoft.graph.{type} as received from the service,

@@ -6,3 +6,4 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 export { createDeployDefinitions } from './shared/deploy'
+export { GET_MANAGED_STORE_APP_POST_DEPLOY_PATH } from './intune/utils/application'

@@ -135,6 +135,20 @@ describe('Microsoft Security adapter', () => {
                 ]),
               )
             })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const applicationWithAssignments = intuneApplications.find(
+                e => e.elemID.name === 'managedAndroidStoreApp_com_test@uv',
+              )
+              expect(applicationWithAssignments).toBeDefined()
+              const { assignments } = (applicationWithAssignments as InstanceElement).value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
           })
 
           describe('application configurations - managed apps', () => {

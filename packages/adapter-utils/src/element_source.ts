@@ -75,9 +75,9 @@ export const buildElementsSourceFromElements = (
   }
 
   const get = async (id: ElemID): Promise<Value> => {
-    const element = getValueByID(id)
-    if (element !== undefined) {
-      return element
+    const value = getValueByID(id)
+    if (value !== undefined) {
+      return value
     }
 
     return awu(fallbackSources)

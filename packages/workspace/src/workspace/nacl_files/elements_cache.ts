@@ -71,7 +71,6 @@ export type RecoveryOverrideFunc = (
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
-  src1Overrides?: Record<string, Element | undefined>
   src2Overrides?: Record<string, Element | undefined>
   recoveryOverride?: RecoveryOverrideFunc
   src1Prefix: string
@@ -218,9 +217,7 @@ export const createMergeManager = async (
     noErrorMergeIds: string[]
   }> => {
     const { src1Changes: possibleSrc1Changes, src2Changes: possibleSrc2Changes } = cacheUpdate
-    const src1 = values.isDefined(cacheUpdate.src1Overrides)
-      ? createOverrideReadOnlyElementsSource(sources[cacheUpdate.src1Prefix], cacheUpdate.src1Overrides)
-      : sources[cacheUpdate.src1Prefix]
+    const src1 = sources[cacheUpdate.src1Prefix]
     const src2 = values.isDefined(cacheUpdate.src2Overrides)
       ? createOverrideReadOnlyElementsSource(sources[cacheUpdate.src2Prefix], cacheUpdate.src2Overrides)
       : sources[cacheUpdate.src2Prefix]

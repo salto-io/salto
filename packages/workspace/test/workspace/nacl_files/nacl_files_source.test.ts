@@ -717,14 +717,17 @@ describe('Nacl Files Source', () => {
     const staticFile4 = new StaticFile({ filepath: 'path4', hash: 'hash4' })
     const staticFile5 = new StaticFile({ filepath: 'path5', hash: 'hash5' })
     const staticFile6 = new StaticFile({ filepath: 'path6', hash: 'hash6' })
+    const staticFile7 = new StaticFile({ filepath: 'path7', hash: 'hash7' })
 
-    beforeAll(() => {
+    beforeAll(async () => {
       beforeElem = new InstanceElement('elem', new ObjectType({ elemID: new ElemID('salesforce', 'type') }), {
         f1: staticFile1, // To modify
         f2: staticFile2, // To remove
         f3: staticFile5, // To change location
         a: { f3: staticFile3 }, // To modify
         b: { f4: staticFile4 }, // To remove
+        stays: staticFile7, // To stay
+        remove: staticFile7, // To remove - shouldn't be returned
       })
       afterElem = beforeElem.clone()
 
@@ -734,8 +737,14 @@ describe('Nacl Files Source', () => {
       delete afterElem.value.f3
       afterElem.value.a = 's'
       delete afterElem.value.b
+      delete afterElem.value.remove
 
-      result = getDanglingStaticFiles(detailedCompare(beforeElem, afterElem))
+      const staticFilesIndex = {
+        get: jest
+          .fn()
+          .mockImplementation((path: string) => Promise.resolve(path !== 'path7' ? [path] : ['path7', 'path8'])),
+      }
+      result = await getDanglingStaticFiles(detailedCompare(beforeElem, afterElem), staticFilesIndex)
       expect(result).toHaveLength(4)
     })
     it('should return static file that was modified', () => {
@@ -752,6 +761,9 @@ describe('Nacl Files Source', () => {
     })
     it('should not return static file if the path in element has changed', () => {
       expect(result).not.toContain(staticFile5)
+    })
+    it('should not return removed static file if it is still referenced in another field', () => {
+      expect(result).not.toContain(staticFile7)
     })
   })
 })

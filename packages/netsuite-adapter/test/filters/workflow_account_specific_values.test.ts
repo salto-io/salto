@@ -133,7 +133,7 @@ describe('workflow account specific values filter', () => {
         [NAME_FIELD]: 'Custom workflow 1',
         [INIT_CONDITION]: {
           formula:
-            '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1")',
+            '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1","Role2")',
           parameters: {
             parameter: {
               'Subsidiary__Main__Default_Account_for_Corporate_Card_Expenses@sjkfsssss': {
@@ -187,6 +187,11 @@ describe('workflow account specific values filter', () => {
                 name: 'Role1',
                 [SELECT_RECORD_TYPE]: '-118',
                 value: new ReferenceExpression(new ElemID(NETSUITE, 'role', 'instance', 'customrole123')),
+              },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
               },
             },
           },
@@ -369,7 +374,8 @@ describe('workflow account specific values filter', () => {
           {
             body: {
               [SCRIPT_ID]: 'customworkflow1',
-              initconditionformula: '{subsidiary} in (1,2,3,4,5,6) AND {employee}=-1 or {role}=4',
+              initconditionformula:
+                '{subsidiary} in (1,2,3,4,5,6) AND {employee}=-1 or {role} in (4,3) or {custom_123}="1"',
             },
             sublists: [
               {
@@ -516,7 +522,7 @@ describe('workflow account specific values filter', () => {
           [NAME_FIELD]: 'Custom workflow 1',
           [INIT_CONDITION]: {
             formula:
-              '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1")',
+              '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1","Role2")',
             parameters: {
               parameter: {
                 'Subsidiary__Main__Default_Account_for_Corporate_Card_Expenses@sjkfsssss': {
@@ -571,6 +577,11 @@ describe('workflow account specific values filter', () => {
                   name: 'Role1',
                   [SELECT_RECORD_TYPE]: '-118',
                   value: new ReferenceExpression(new ElemID(NETSUITE, 'role', 'instance', 'customrole123')),
+                },
+                Role2: {
+                  name: 'Role2',
+                  [SELECT_RECORD_TYPE]: '-118',
+                  value: 'ADMINISTRATOR',
                 },
               },
             },
@@ -854,6 +865,11 @@ describe('workflow account specific values filter', () => {
                 [SELECT_RECORD_TYPE]: '-118',
                 value: '[scriptid=customrole123]',
               },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
+              },
             },
           },
         },
@@ -1100,6 +1116,11 @@ describe('workflow account specific values filter', () => {
                 name: 'Role1',
                 [SELECT_RECORD_TYPE]: '-118',
                 value: '[scriptid=customrole123]',
+              },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
               },
             },
           },

@@ -161,7 +161,7 @@ describe('getImportantValues', () => {
       { key: 'doesNotExist', value: undefined },
     ])
   })
-  it('should get the right important values for an instance when obj is', async () => {
+  it('should get the right important values for an instance when obj is PlaceholderObjectType', async () => {
     const otherInst = new InstanceElement(
       'test inst',
       new PlaceholderObjectType({

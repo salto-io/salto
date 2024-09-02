@@ -12,11 +12,14 @@ import {
   getChangeData,
   isAdditionChange,
   isInstanceChange,
+  isInstanceElement,
   isModificationChange,
+  isReferenceExpression,
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
 import { validatePlainObject } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -38,6 +41,7 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   IDENTITY_PROVIDER_TYPE_NAME,
   JWK_TYPE_NAME,
+  EMAIL_DOMAIN_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -48,6 +52,8 @@ import {
 import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
+
+const { awu } = collections.asynciterable
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -571,6 +577,66 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
       toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
+    },
+    [EMAIL_DOMAIN_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/email-domains',
+                  method: 'post',
+                },
+                transformation: {
+                  // TODO: extract to email domain utils file
+                  adjust: async ({ value, context }) => {
+                    validatePlainObject(value, EMAIL_DOMAIN_TYPE_NAME)
+                    const emailDomainElemId = getChangeData(context.change).elemID
+                    const [brand] = (await awu(await context.elementSource.getAll())
+                      .filter(isInstanceElement)
+                      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+                      .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
+                      .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
+                      .toArray()) ?? [undefined]
+
+                    if (brand === undefined) {
+                      throw new Error(`Brand not found for email domain ${emailDomainElemId.getFullName()}`)
+                    }
+                    // Use the ID directly instead of a reference value to avoid circular references.
+                    return {
+                      value: {
+                        ...value,
+                        brandId: brand.value.id,
+                      },
+                    }
+                  },
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/email-domains/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/email-domains/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
     },
     [USERTYPE_TYPE_NAME]: {
       requestsByAction: {

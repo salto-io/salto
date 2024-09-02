@@ -104,3 +104,4 @@ export const DOMAIN_TYPE_NAME = 'Domain'
 export const USER_TYPE_NAME = 'User'
 export const SMS_TEMPLATE_TYPE_NAME = 'SmsTemplate'
 export const SCHEMA_TYPES = [GROUP_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME]
+export const EMAIL_DOMAIN_TYPE_NAME = 'EmailDomain'

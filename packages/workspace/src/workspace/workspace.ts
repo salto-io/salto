@@ -31,6 +31,7 @@ import {
   isModificationChange,
   TypeReference,
   DEFAULT_SOURCE_SCOPE,
+  isElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -810,12 +811,13 @@ export const loadWorkspace = async (
 
       const workspaceChangedElements = Object.fromEntries(
         await awu(wsChanges[envName]?.changes ?? [])
-          .map(async change => {
+          .map(async (change: Change): Promise<[string, Element | undefined]> => {
             const workspaceElement = getChangeData(change)
+            const stateElement = await state(envName).get(workspaceElement.elemID)
             const hiddenOnlyElement = isRemovalChange(change)
               ? undefined
               : await getElementHiddenParts(
-                  (await state(envName).get(workspaceElement.elemID)) ?? workspaceElement,
+                  isElement(stateElement) ? stateElement : workspaceElement,
                   state(envName),
                   workspaceElement,
                 )

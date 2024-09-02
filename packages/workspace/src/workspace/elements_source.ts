@@ -16,6 +16,7 @@ import {
   ReadOnlyElementsSource,
   ContainerTypeName,
   TypeElement,
+  compareElementIDs,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -163,27 +164,25 @@ export const createOverrideReadOnlyElementsSource = (
   source: ReadOnlyElementsSource,
   overrideElements: Record<string, Element | undefined>,
 ): ReadOnlyElementsSource => {
-  const compareStrings = (id1: string, id2: string): number => {
-    if (id1 === id2) {
-      return 0
-    }
-    return id1 > id2 ? 1 : -1
-  }
   const isOmittedByOverride = (id: string | undefined): boolean =>
     id !== undefined && id in overrideElements && overrideElements[id] === undefined
 
   const list: ReadOnlyElementsSource['list'] = async () =>
     awu(
       collections.asynciterable.iterateTogether(
-        awu(await source.list()).map(id => id.getFullName()),
-        awu(Object.keys(overrideElements).sort()),
-        compareStrings,
+        await source.list(),
+        awu(
+          Object.values(overrideElements)
+            .filter(values.isDefined)
+            .map(elem => elem.elemID)
+            .sort(compareElementIDs),
+        ),
+        compareElementIDs,
       ),
     )
-      .filter(({ after: idFromOverride }) => !isOmittedByOverride(idFromOverride))
+      .filter(({ after: idFromOverride }) => !isOmittedByOverride(idFromOverride?.getFullName()))
       .map(({ before: idFromSource, after: idFromOverride }) => idFromOverride ?? idFromSource)
       .filter(values.isDefined)
-      .map(ElemID.fromFullName)
 
   const get: ReadOnlyElementsSource['get'] = async id =>
     id.getFullName() in overrideElements ? overrideElements[id.getFullName()] : source.get(id)
@@ -192,7 +191,7 @@ export const createOverrideReadOnlyElementsSource = (
     get,
     getAll: async () => awu(await list()).map(get),
     has: async id =>
-      (id.getFullName() in overrideElements && overrideElements[id.getFullName()] !== undefined) || source.has(id),
+      id.getFullName() in overrideElements ? overrideElements[id.getFullName()] !== undefined : source.has(id),
     list,
   }
 }

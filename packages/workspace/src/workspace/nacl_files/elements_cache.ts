@@ -71,8 +71,8 @@ export type RecoveryOverrideFunc = (
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
-  src1Overrides?: Record<string, Element>
-  src2Overrides?: Record<string, Element>
+  src1Overrides?: Record<string, Element | undefined>
+  src2Overrides?: Record<string, Element | undefined>
   recoveryOverride?: RecoveryOverrideFunc
   src1Prefix: string
   src2Prefix: string
@@ -164,8 +164,11 @@ const createFreshChangeSet = async (
   noErrorMergeIds: [],
 })
 
-const getContainerTypeChanges = (changes: Change<Element>[]): Element[] =>
-  changes.map(change => getChangeData(change)).filter(element => isContainerType(element))
+const getContainerTypeChangeIDs = (changes: Change<Element>[]): ElemID[] =>
+  changes
+    .map(getChangeData)
+    .filter(isContainerType)
+    .map(elem => elem.elemID)
 
 export interface Flushable {
   flush: () => Promise<boolean | void>
@@ -271,7 +274,7 @@ export const createMergeManager = async (
         srcChanges: Change<Element>[],
       ): Promise<AsyncIterable<ElemID>> =>
         src && recoveryOperation === REBUILD_ON_RECOVERY
-          ? awu(await src.list()).concat(getContainerTypeChanges(srcChanges).map(elem => elem.elemID))
+          ? awu(await src.list()).concat(getContainerTypeChangeIDs(srcChanges))
           : awu([])
 
       const potentialDeletedIds = new Set<string>()

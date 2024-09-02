@@ -4779,11 +4779,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/logging@npm:<0.4.0":
-  version: 0.3.61
-  resolution: "@salto-io/logging@npm:0.3.61"
+"@salto-io/logging@npm:latest":
+  version: 0.4.0
+  resolution: "@salto-io/logging@npm:0.4.0"
   dependencies:
-    "@salto-io/lowerdash": 0.3.61
+    "@salto-io/lowerdash": 0.4.0
     chalk: ^2.4.2
     fast-safe-stringify: ^2.0.7
     lodash: ^4.17.21
@@ -4791,7 +4791,7 @@ __metadata:
     pino: ^6.14.0
     uuid: ^10.0.0
     wu: ^2.1.0
-  checksum: 05b43ef4847ac89bd256de7fc1f62b943909ddf777ade589f42fb18be96837484e51db2dd65a13276d5059d17927af8ac1852824ce8fd6d16a051f2c7842bbc7
+  checksum: e3c25edd7b54059b57a870ba50417a73d1941be53f820b59c2f2a319879373f48f509d258f1866fd7049cd4ebca571fa48360a5a92a32d4402a9b73742f6d24b
   languageName: node
   linkType: hard
 
@@ -4831,17 +4831,6 @@ __metadata:
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
-
-"@salto-io/lowerdash@npm:0.3.61":
-  version: 0.3.61
-  resolution: "@salto-io/lowerdash@npm:0.3.61"
-  dependencies:
-    lodash: ^4.17.21
-    stacktrace-parser: ^0.1.9
-    wu: ^2.1.0
-  checksum: 68e48363c1aed88eeadacfec4499117a60d4337bca5612c6166e57ea732ba4ff3e1cbd8cbf527718145ef4c9dc806be71564e694d756857af37ad7186dd4f52f
-  languageName: node
-  linkType: hard
 
 "@salto-io/microsoft-entra-adapter@0.4.0, @salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter":
   version: 0.0.0-use.local
@@ -4946,7 +4935,7 @@ __metadata:
     "@salto-io/file": 0.4.0
     "@salto-io/logging": 0.4.0
     "@salto-io/lowerdash": 0.4.0
-    "@salto-io/suitecloud-cli": 1.9.0-salto-2
+    "@salto-io/suitecloud-cli": 1.9.0-salto-3
     "@salto-io/test-utils": 0.4.0
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/async-lock": ^1.1.2
@@ -5399,11 +5388,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/suitecloud-cli@npm:1.9.0-salto-2":
-  version: 1.9.0-salto-2
-  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-2"
+"@salto-io/suitecloud-cli@npm:1.9.0-salto-3":
+  version: 1.9.0-salto-3
+  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-3"
   dependencies:
-    "@salto-io/logging": <0.4.0
+    "@salto-io/logging": latest
     chalk: 4.1.2
     cli-spinner: 0.2.10
     commander: 10.0.0
@@ -5411,7 +5400,7 @@ __metadata:
     xml2js: 0.6.2
   bin:
     suitecloud: src/suitecloud.js
-  checksum: 46b4170aa1323361def39c90c8f1a8394d844f73431ad6f9cbb6c603c1026487de2038303767b3eea00efd19bd36a76b67b42bde75f089570c2798d0e7ac4ae5
+  checksum: dcd126a8e26922854e186e4e3a965d92dc8033168d068de1f985dd33e673c3b723d8004a98e3f6c3c31dcf4bc848dd5b4708b2e49931a1ac1489598dffa03262
   languageName: node
   linkType: hard
 

@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { getChangeData } from '@salto-io/adapter-api'
+import { validatePlainObject } from '@salto-io/adapter-utils'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
@@ -20,6 +21,8 @@ const {
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+  DEVICE_COMPLIANCE_TYPE_NAME,
+  SCHEDULED_ACTIONS_FIELD_NAME,
 } = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
@@ -242,6 +245,73 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/deviceManagement/configurationPolicies/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [DEVICE_COMPLIANCE_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceCompliancePolicies',
+                method: 'post',
+              },
+            },
+          },
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceCompliancePolicies/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                omit: [SCHEDULED_ACTIONS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [SCHEDULED_ACTIONS_FIELD_NAME],
+              },
+            },
+          },
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceCompliancePolicies/{id}/scheduleActionsForRules',
+                method: 'post',
+              },
+              transformation: {
+                adjust: adjustWrapper(async ({ value }) => {
+                  validatePlainObject(value, DEVICE_COMPLIANCE_TYPE_NAME)
+                  return {
+                    value: {
+                      deviceComplianceScheduledActionForRules: value[SCHEDULED_ACTIONS_FIELD_NAME] ?? [],
+                    },
+                  }
+                }),
+              },
+            },
+            condition: {
+              transformForCheck: {
+                pick: [SCHEDULED_ACTIONS_FIELD_NAME],
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceCompliancePolicies/{id}',
                 method: 'delete',
               },
             },

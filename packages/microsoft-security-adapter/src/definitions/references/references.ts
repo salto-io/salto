@@ -11,8 +11,9 @@ import { ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../constants'
 import { CustomReferenceSerializationStrategyName, Options } from '../types'
 import { REFERENCE_RULES as EntraReferenceRules } from './entra_reference_rules'
 import { REFERENCE_RULES as IntuneReferenceRules } from './intune_reference_rules'
+import { REFERENCE_RULES as CrossReferenceRules } from './cross_reference_rules'
 
-const REFERENCE_RULES = [...EntraReferenceRules, ...IntuneReferenceRules]
+const REFERENCE_RULES = [...EntraReferenceRules, ...IntuneReferenceRules, ...CrossReferenceRules]
 
 // We only use this record as a TS 'hack' to fail the build if we add a custom serialization strategy
 // and forget to add it to the fieldsToGroupBy.

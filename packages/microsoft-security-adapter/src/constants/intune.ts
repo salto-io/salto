@@ -27,6 +27,11 @@ export const PAYLOAD_JSON_FIELD_NAME = 'payloadJson'
 // DeviceConfigurationSettingCatalog fields
 export const SETTINGS_FIELD_NAME = 'settings'
 
+// DeviceCompliance fields
+export const RESTRICTED_APPS_FIELD_NAME = 'restrictedApps'
+export const SCHEDULED_ACTIONS_FIELD_NAME = 'scheduledActionsForRule'
+export const SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME = 'scheduledActionConfigurations'
+
 /* Type names */
 // Top level
 export const APPLICATION_TYPE_NAME = toIntuneTypeName('application')
@@ -36,6 +41,7 @@ export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeNa
 )
 export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('deviceConfiguration')
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('deviceConfigurationSettingCatalog')
+export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('deviceCompliance')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
@@ -45,6 +51,18 @@ export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNes
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME = recursiveNestedTypeName(
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   SETTINGS_FIELD_NAME,
+)
+export const DEVICE_COMPLIANCE_RESTRICTED_APPS_TYPE_NAME = recursiveNestedTypeName(
+  DEVICE_COMPLIANCE_TYPE_NAME,
+  RESTRICTED_APPS_FIELD_NAME,
+)
+export const DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME = recursiveNestedTypeName(
+  DEVICE_COMPLIANCE_TYPE_NAME,
+  SCHEDULED_ACTIONS_FIELD_NAME,
+)
+export const DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME = recursiveNestedTypeName(
+  DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
+  SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME,
 )
 
 // Urls

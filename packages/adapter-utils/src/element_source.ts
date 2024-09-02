@@ -67,14 +67,15 @@ export const buildElementsSourceFromElements = (
     }
   }
 
-  const retrieveValueByID = (id: ElemID): Value => {
-    const { parent } = id.createTopLevelParentID()
-    const topLevelElement = elementsMap[parent.getFullName()]
-    return elementsMap[id.getFullName()] ?? (topLevelElement && resolvePath(topLevelElement, id))
+  const getValueByID = (id: ElemID): Value => {
+    const baseId = id.createBaseID().parent
+    const topLevelParentId = id.createTopLevelParentID().parent
+    const element = elementsMap[baseId.getFullName()] ?? elementsMap[topLevelParentId.getFullName()]
+    return element && resolvePath(element, id)
   }
 
   const get = async (id: ElemID): Promise<Value> => {
-    const element = retrieveValueByID(id)
+    const element = getValueByID(id)
     if (element !== undefined) {
       return element
     }
@@ -85,7 +86,7 @@ export const buildElementsSourceFromElements = (
   }
 
   const has = async (id: ElemID): Promise<boolean> =>
-    retrieveValueByID(id) !== undefined || awu(fallbackSources).some(source => source.has(id))
+    getValueByID(id) !== undefined || awu(fallbackSources).some(source => source.has(id))
 
   self = {
     getAll: async () => getElements(),

@@ -14,6 +14,7 @@ import {
   isField,
   isInstanceElement,
   isObjectType,
+  isPlaceholderObjectType,
   isPrimitiveValue,
   isReferenceExpression,
   ObjectType,
@@ -127,9 +128,19 @@ export const getImportantValues = async ({
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
   if (isField(element) || isInstanceElement(element)) {
-    try {
+    const getTypeObj = async (): Promise<ObjectType> => {
       const typeObj = await element.getType(elementSource)
-      const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
+      return isPlaceholderObjectType(typeObj) ? elementSource?.get(typeObj.elemID) : typeObj
+    }
+    try {
+      const typeObj = await getTypeObj()
+      if (typeObj === undefined) {
+        log.trace(
+          `could not get important values as type is undefined returning [] for element ${element.elemID.getFullName()}`,
+        )
+        return []
+      }
+      const importantValues = typeObj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
       return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
     } catch (e) {
       // getType throws an error when the type calculated is not a valid type, or when

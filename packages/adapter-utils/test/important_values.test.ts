@@ -13,6 +13,7 @@ import {
   Field,
   InstanceElement,
   ObjectType,
+  PlaceholderObjectType,
   ReadOnlyElementsSource,
   ReferenceExpression,
   TypeReference,
@@ -152,6 +153,30 @@ describe('getImportantValues', () => {
   it('should get the right important values for an instance', async () => {
     const res = await getImportantValues({
       element: inst,
+      elementSource,
+    })
+    expect(res).toEqual([
+      { key: 'name', value: 'test inst' },
+      { key: 'active', value: true },
+      { key: 'doesNotExist', value: undefined },
+    ])
+  })
+  it('should get the right important values for an instance when obj is', async () => {
+    const otherInst = new InstanceElement(
+      'test inst',
+      new PlaceholderObjectType({
+        elemID: obj.elemID,
+      }),
+      {
+        active: true,
+        name: 'test inst',
+        user: {
+          id: 12345,
+        },
+      },
+    )
+    const res = await getImportantValues({
+      element: otherInst,
       elementSource,
     })
     expect(res).toEqual([

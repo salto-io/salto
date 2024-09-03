@@ -17,7 +17,7 @@ import {
   getChangeData,
   createSaltoElementError,
 } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
 import ZendeskClient from '../../src/client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -116,6 +116,28 @@ describe('brand logo filter', () => {
         ...brandInstance.value,
         [LOGO_FIELD]: new ReferenceExpression(logo.elemID, logo),
       })
+    })
+    it('should return fetch warning in case of 403 error', async () => {
+      mockGet.mockImplementation(_params => {
+        throw new clientUtils.HTTPError('err', { data: 'err' as unknown as clientUtils.ResponseValue, status: 403 })
+      })
+      const elements = [brandType, brandInstance].map(e => e.clone())
+      const res = (await filter.onFetch(elements)) as unknown as filterUtils.FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors).toEqual([
+        {
+          message:
+            "Salto could not access the brand_logo resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          severity: 'Info',
+        },
+      ])
+    })
+    it('should throw error on any other error', async () => {
+      mockGet.mockImplementation(_params => {
+        throw new Error('err')
+      })
+      const elements = [brandType, brandInstance].map(e => e.clone())
+      await expect(filter.onFetch(elements)).rejects.toThrow()
     })
   })
 

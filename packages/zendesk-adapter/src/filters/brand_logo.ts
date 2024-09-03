@@ -24,7 +24,7 @@ import {
   SaltoError,
   StaticFile,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, fetch as fetchUtils, client as clientUtils } from '@salto-io/adapter-components'
 import {
   naclCase,
   safeJsonStringify,
@@ -227,10 +227,20 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
       .filter(e => !_.isEmpty(e.value[LOGO_FIELD]))
     elements.push(BRAND_LOGO_TYPE)
-    const logoInstances = (
-      await Promise.all(brandsWithLogos.map(async brand => getBrandLogo({ client, brand })))
-    ).filter(isInstanceElement)
-    logoInstances.forEach(instance => elements.push(instance))
+    try {
+      const logoInstances = (
+        await Promise.all(brandsWithLogos.map(async brand => getBrandLogo({ client, brand })))
+      ).filter(isInstanceElement)
+      logoInstances.forEach(instance => elements.push(instance))
+      return { errors: [] }
+    } catch (error) {
+      if (error instanceof clientUtils.HTTPError && error.response.status === 403) {
+        log.error('failed to get brand logos due to insufficient permissions with error %s', error.message)
+        return { errors: [fetchUtils.errors.getInsufficientPermissionsError(BRAND_LOGO_TYPE_NAME)] }
+      }
+      log.error('encountered an error while fetching brand logos %s', error.message)
+      throw error
+    }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandLogoChanges, leftoverChanges] = _.partition(

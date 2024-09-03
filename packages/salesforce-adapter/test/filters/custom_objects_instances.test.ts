@@ -682,15 +682,18 @@ describe('Custom Object Instances filter', () => {
             expect(fetchResult.errors).toEqual([
               {
                 message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+                detailedMessage: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
                 severity: 'Info',
               },
             ])
             expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+            expect(fetchResult.errors?.[0].detailedMessage).not.toInclude('HiddenNonQueryable')
           })
           it('should not issue a message if there are no instances of the object', () => {
             expect(fetchResult.errors).not.toIncludeAllPartialMembers([
               {
                 message: expect.stringContaining(refToObjectName),
+                detailedMessage: expect.stringContaining(refToObjectName),
               },
             ])
           })
@@ -1719,6 +1722,8 @@ describe('Custom Object Instances filter', () => {
           expect(errors).toEqual([
             {
               message: expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
+              detailedMessage:
+                expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
               severity: 'Warning',
             },
           ])
@@ -1842,6 +1847,8 @@ describe('Custom Object Instances filter', () => {
         expect(filterResult.errors).toEqual([
           {
             message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+            detailedMessage:
+              expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
             severity: 'Warning',
           },
         ])
@@ -1925,6 +1932,7 @@ describe('Custom Object Instances filter', () => {
         expect(filterResult.errors).toEqual([
           {
             message: expect.stringContaining('missing or is of the wrong type for all data records'),
+            detailedMessage: expect.stringContaining('missing or is of the wrong type for all data records'),
             severity: 'Warning',
           },
         ])

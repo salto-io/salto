@@ -196,10 +196,14 @@ describe('swagger_instance_elements', () => {
           severity: 'Warning',
           message:
             "Salto could not access the Fail resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          detailedMessage:
+            "Salto could not access the Fail resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
         {
           severity: 'Warning',
           message:
+            "Salto could not access the Fail401 resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          detailedMessage:
             "Salto could not access the Fail401 resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
       ])
@@ -1667,6 +1671,7 @@ describe('swagger_instance_elements', () => {
       expect(result.errors).toHaveLength(1)
       expect(result.errors?.[0]).toEqual({
         message: 'Could not fetch type Pet, singleton types should not have more than one instance',
+        detailedMessage: 'Could not fetch type Pet, singleton types should not have more than one instance',
         severity: 'Warning',
       })
     })

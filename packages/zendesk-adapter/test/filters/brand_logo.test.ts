@@ -297,6 +297,7 @@ describe('brand logo filter', () => {
       expect(res.deployResult.errors[0]).toEqual(
         createSaltoElementError({
           message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
+          detailedMessage: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
         }),
@@ -333,6 +334,7 @@ describe('brand logo filter', () => {
       expect(res.deployResult.errors[0]).toEqual(
         createSaltoElementError({
           message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
+          detailedMessage: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
         }),
@@ -354,6 +356,7 @@ describe('brand logo filter', () => {
       expect(res.deployResult.errors[0]).toEqual(
         createSaltoElementError({
           message: `Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`,
+          detailedMessage: `Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
         }),

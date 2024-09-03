@@ -254,6 +254,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors).toHaveLength(3)
 
           expect(result.errors[0].message).toContain('Some profile error')
+          expect(result.errors[0].detailedMessage).toContain('Some profile error')
           expect(isSaltoElementError(result.errors[0])).toBeTruthy()
           if (isSaltoElementError(result.errors[0])) {
             expect(result.errors[0].elemID).toEqual(profileInstance.elemID)
@@ -262,6 +263,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           // BusinessProposal will not have a correct ElemID, should point to its parent (Account)
           expect(result.errors[1].message).toContain('Picklist value: Follow Up Meeting not found')
+          expect(result.errors[1].detailedMessage).toContain('Picklist value: Follow Up Meeting not found')
           expect(isSaltoElementError(result.errors[1])).toBeTruthy()
           if (isSaltoElementError(result.errors[1])) {
             expect(result.errors[1].elemID).not.toEqual(businessProcessInstance.elemID)
@@ -271,6 +273,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           expect(result.errors[2]).toEqual({
             message: expect.stringContaining('Some workflow field update error'),
+            detailedMessage: expect.stringContaining('Some workflow field update error'),
             severity: 'Error',
             elemID: workflowFieldUpdate.elemID,
           })
@@ -308,6 +311,9 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return an error with user friendly message', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toContain(MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM])
+          expect(result.errors[0].detailedMessage).toContain(
+            MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM],
+          )
         })
       })
 
@@ -989,10 +995,12 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors).toEqual([
             expect.objectContaining({
               message: expect.stringContaining('Test failed'),
+              detailedMessage: expect.stringContaining('Test failed'), // ??
             }),
             expect.objectContaining({
               elemID: instance.elemID,
               message: expect.stringContaining('rollbackOnError'),
+              detailedMessage: expect.stringContaining('rollbackOnError'),
               severity: 'Warning',
             }),
           ])
@@ -1018,6 +1026,7 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return the test errors', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+          expect(result.errors[0].detailedMessage).toMatch(/.*Test failed.*/)
         })
       })
     })
@@ -1080,11 +1089,13 @@ describe('SalesforceAdapter CRUD', () => {
             expect.objectContaining({
               elemID: failureElement.elemID,
               message: expect.stringContaining('Failed to deploy'),
+              detailedMessage: expect.stringContaining('Failed to deploy'),
               severity: 'Error',
             }),
             expect.objectContaining({
               elemID: successElement.elemID,
               message: expect.stringContaining('rollbackOnError'),
+              detailedMessage: expect.stringContaining('rollbackOnError'),
               severity: 'Warning',
             }),
           ])
@@ -1131,6 +1142,7 @@ describe('SalesforceAdapter CRUD', () => {
               elemID: successElement.elemID,
               severity: 'Info',
               message: 'Something happened',
+              detailedMessage: 'Something happened',
             },
           ])
         })
@@ -1184,6 +1196,7 @@ describe('SalesforceAdapter CRUD', () => {
               elemID: element.elemID,
               severity: 'Warning',
               message: 'Something happened',
+              detailedMessage: 'Something happened',
             },
           ])
         })
@@ -1227,6 +1240,7 @@ describe('SalesforceAdapter CRUD', () => {
           {
             severity: 'Error',
             message: 'Deployment was canceled.',
+            detailedMessage: 'Deployment was canceled.',
           },
         ])
         expect(result.appliedChanges).toBeEmpty()
@@ -1524,10 +1538,12 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors).toEqual([
             expect.objectContaining({
               message: expect.stringContaining('UNKNOWN_EXCEPTION'),
+              detailedMessage: expect.stringContaining('UNKNOWN_EXCEPTION'),
             }),
             expect.objectContaining({
               elemID: afterInstance.elemID,
               message: expect.stringContaining('rollbackOnError'),
+              detailedMessage: expect.stringContaining('rollbackOnError'),
             }),
           ])
         })
@@ -2204,6 +2220,7 @@ describe('SalesforceAdapter CRUD', () => {
       it('should return an error', () => {
         expect(result.errors).toHaveLength(1)
         expect(result.errors[0].message).toContain('some error')
+        expect(result.errors[0].detailedMessage).toContain('some error')
       })
     })
 

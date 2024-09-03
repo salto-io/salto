@@ -47,6 +47,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
+import e from 'express'
 
 const { awu } = collections.asynciterable
 const { sleep } = promises.timeout
@@ -176,6 +177,11 @@ describe('Google Workspace adapter E2E', () => {
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
+      log.debug(
+        'Google WS fetch result instance elements: %o',
+        fetchResult.elements.filter(isInstanceElement).map(e => e.elemID.getFullName()),
+      )
+      expect(fetchResult.errors).toHaveLength(0)
       elements = fetchResult.elements
       adapterAttr = realAdapter({
         credentials: credLease.value,
@@ -258,6 +264,7 @@ describe('Google Workspace adapter E2E', () => {
         .flat()
         .map(change => getChangeData(change)) as InstanceElement[]
 
+      log.debug('Deployed instances length: %d', deployInstances.length)
       // TODO SALTO-6535 there is a flakiness in the fetch of the group type that we need to fix
       deployInstances
         .filter(deployInstance => deployInstance.elemID.typeName !== GROUP_TYPE_NAME)
@@ -267,7 +274,7 @@ describe('Google Workspace adapter E2E', () => {
             log.error('Failed to fetch instance after deploy: %s', deployedInstance.elemID.getFullName())
           }
           expect(instance).toBeDefined()
-          // Omit hidden fieldId from fields
+          // Omit hidden fieldId from fieldsד
           const originalValue = _.omit(instance?.value, ['fields.roles.fieldId'])
           const isEqualResult = isEqualValues(originalValue, deployedInstance.value)
           if (!isEqualResult) {

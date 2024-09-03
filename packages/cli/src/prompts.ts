@@ -128,6 +128,9 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
   public static readonly FETCH_MERGE_ERRORS = 'These errors occurred as part of the fetch:'
   public static readonly FETCH_WARNINGS = 'The fetch concluded with the following warnings:'
+  public static readonly SYNC_TO_WORKSPACE_ERRORS =
+    'Encountered the following issues when synchronizing the workspace with a folder:'
+
   public static readonly FETCH_CHANGES_APPLIED = (appliedChanges: number): string =>
     `${appliedChanges} changes were applied to the local workspace`
 

@@ -13,7 +13,7 @@ export type UserFetchConfig = definitions.UserFetchConfig<{
 }>
 
 export type UserDeployConfig = definitions.UserDeployConfig & {
-  delayAfterDeploy: number
+  delayAfterDeploy?: number
 }
 
 export type UserConfig = definitions.UserConfig<

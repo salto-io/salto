@@ -31,6 +31,7 @@ import {
   isModificationChange,
   TypeReference,
   DEFAULT_SOURCE_SCOPE,
+  isElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -810,12 +811,13 @@ export const loadWorkspace = async (
 
       const workspaceChangedElements = Object.fromEntries(
         await awu(wsChanges[envName]?.changes ?? [])
-          .map(async change => {
+          .map(async (change: Change): Promise<[string, Element | undefined]> => {
             const workspaceElement = getChangeData(change)
+            const stateElement = await state(envName).get(workspaceElement.elemID)
             const hiddenOnlyElement = isRemovalChange(change)
               ? undefined
               : await getElementHiddenParts(
-                  (await state(envName).get(workspaceElement.elemID)) ?? workspaceElement,
+                  isElement(stateElement) ? stateElement : workspaceElement,
                   state(envName),
                   workspaceElement,
                 )
@@ -824,12 +826,12 @@ export const loadWorkspace = async (
           .toArray(),
       )
 
-      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements) => {
+      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements, src2) => {
         const src1ElementsToMerge = await awu(src1RecElements).toArray()
-        const src1IDSet = new Set(src1ElementsToMerge.map(elem => elem.elemID.getFullName()))
+        const src1IDSet = new Set(src1ElementsToMerge.map(elemID => elemID.getFullName()))
 
-        const shouldIncludeStateElement = async (elem: Element): Promise<boolean> =>
-          src1IDSet.has(elem.elemID.getFullName()) || isHidden(elem, state(envName))
+        const shouldIncludeStateElement = async (elemID: ElemID): Promise<boolean> =>
+          src1IDSet.has(elemID.getFullName()) || isHidden(await src2.get(elemID), state(envName))
 
         const src2ElementsToMerge = awu(src2RecElements).filter(shouldIncludeStateElement)
 

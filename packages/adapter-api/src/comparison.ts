@@ -8,6 +8,7 @@
 import _ from 'lodash'
 import { CompareOptions, ReferenceExpression, Value, isReferenceExpression, isStaticFile } from './values'
 import { ReadOnlyElementsSource, isVariable } from './elements'
+import { ElemID } from './element_id'
 
 type ReferenceCompareReturnValue<T> =
   | {
@@ -199,3 +200,15 @@ export const compareSpecialValues = (first: Value, second: Value, options?: Comp
 
 export const isEqualValues = (first: Value, second: Value, options?: CompareOptions): boolean =>
   _.isEqualWith(first, second, (va1, va2) => compareSpecialValues(va1, va2, options))
+
+export const compareElementIDs = (id1: ElemID, id2: ElemID): number => {
+  const id1FullName = id1.getFullName()
+  const id2FullName = id2.getFullName()
+  if (id1FullName < id2FullName) {
+    return -1
+  }
+  if (id1FullName > id2FullName) {
+    return 1
+  }
+  return 0
+}

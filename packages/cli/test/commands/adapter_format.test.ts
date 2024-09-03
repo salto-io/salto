@@ -270,7 +270,7 @@ describe('sync-to-workspace command', () => {
       })
     })
     it('should return non-success exit code', () => {
-      expect(result).not.toEqual(CliExitCode.Success)
+      expect(result).toEqual(CliExitCode.AppError)
     })
   })
 })

@@ -38,21 +38,27 @@ import { decodeCloudFields, encodeCloudFields } from './workflow_cloud'
 
 const { awu } = collections.asynciterable
 
+const fullDeploymentAnnotation = {
+  [CORE_ANNOTATIONS.CREATABLE]: true,
+  [CORE_ANNOTATIONS.UPDATABLE]: true,
+  [CORE_ANNOTATIONS.DELETABLE]: true,
+}
+
 const addObjectTypes = (elements: Element[]): void => {
   const mailListType = new ObjectType({
     elemID: new ElemID(JIRA, MAIL_LIST_TYPE_NAME),
     fields: {
       field: {
         refType: new ListType(BuiltinTypes.STRING),
-        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+        annotations: fullDeploymentAnnotation,
       },
       group: {
         refType: new ListType(BuiltinTypes.STRING),
-        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+        annotations: fullDeploymentAnnotation,
       },
       role: {
         refType: new ListType(BuiltinTypes.STRING),
-        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+        annotations: fullDeploymentAnnotation,
       },
     },
     path: [JIRA, componentElements.SUBTYPES_PATH, componentElements.TYPES_PATH, MAIL_LIST_TYPE_NAME],
@@ -61,8 +67,14 @@ const addObjectTypes = (elements: Element[]): void => {
   const linkDirectionType = new ObjectType({
     elemID: new ElemID(JIRA, DIRECTED_LINK_TYPE),
     fields: {
-      linkType: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
-      direction: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+      linkType: {
+        refType: BuiltinTypes.STRING,
+        annotations: fullDeploymentAnnotation,
+      },
+      direction: {
+        refType: BuiltinTypes.STRING,
+        annotations: fullDeploymentAnnotation,
+      },
     },
     path: [JIRA, componentElements.TYPES_PATH, componentElements.SUBTYPES_PATH, DIRECTED_LINK_TYPE],
   })
@@ -76,25 +88,25 @@ const addObjectTypes = (elements: Element[]): void => {
       postFunctionsType,
       'FIELD_LINK_DIRECTION',
       new ListType(linkDirectionType),
-      { [CORE_ANNOTATIONS.CREATABLE]: true },
+      fullDeploymentAnnotation,
     )
     postFunctionsType.fields.FIELD_LINK_TYPE = new Field(
       postFunctionsType,
       'FIELD_LINK_TYPE',
       new ListType(linkDirectionType),
-      { [CORE_ANNOTATIONS.CREATABLE]: true },
+      fullDeploymentAnnotation,
     )
     postFunctionsType.fields.FIELD_TO_USER_FIELDS = new Field(
       postFunctionsType,
       'FIELD_TO_USER_FIELDS',
       new ListType(mailListType),
-      { [CORE_ANNOTATIONS.CREATABLE]: true },
+      fullDeploymentAnnotation,
     )
     postFunctionsType.fields.FIELD_CC_USER_FIELDS = new Field(
       postFunctionsType,
       'FIELD_CC_USER_FIELDS',
       new ListType(mailListType),
-      { [CORE_ANNOTATIONS.CREATABLE]: true },
+      fullDeploymentAnnotation,
     )
   }
 
@@ -107,7 +119,7 @@ const addObjectTypes = (elements: Element[]): void => {
       conditionFunctionsType,
       'FIELD_LINK_DIRECTION',
       new ListType(linkDirectionType),
-      { [CORE_ANNOTATIONS.CREATABLE]: true },
+      fullDeploymentAnnotation,
     )
   }
 

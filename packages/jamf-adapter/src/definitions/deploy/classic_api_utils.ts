@@ -11,13 +11,20 @@ import { definitions } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import xmljs from 'xml-js'
+import { UserConfig } from '../../config'
+import { DUMMY_DELAY_TIMEOUT } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
+
+// we use a dummy delay to simulate the delay of the service delay after addition and deletion
+// since it takes time to Jamf servers to be updated https://community.jamf.com/t5/jamf-pro/delay-time-after-post-or-delete-api-calls/m-p/323383/emcs_t/S2h8ZW1haWx8dG9waWNfc3Vic2NyaXB0aW9ufE0wM1dLNk4xNU4yMlBFfDMyMzM4M3xTVUJTQ1JJUFRJT05TfGhL#M278490
+const dummyDelay = (delay = DUMMY_DELAY_TIMEOUT): Promise<void> => new Promise(resolve => setTimeout(resolve, delay))
 
 /*
  * Util function to create deploy definitions for classic Jamf api given a type.
  * Classic Jamf api uses XML for requests and responses, this definition handle it correctly.
  */
 export const createClassicApiDefinitionsForType = (
+  userConfig: UserConfig,
   typeName: string,
   plural: string,
   adjustFunctions?: Partial<
@@ -58,6 +65,7 @@ export const createClassicApiDefinitionsForType = (
                   throw new Error('Expected value to be a record')
                 }
                 const xmlVal = xmljs.js2xml({ [typeName]: { ...value } }, { compact: true })
+                await dummyDelay(userConfig.deploy?.delayAfterDeploy)
                 return { value: xmlVal }
               },
             },
@@ -98,6 +106,7 @@ export const createClassicApiDefinitionsForType = (
             transformation: {
               adjust: async item => {
                 await adjustFunctions?.remove?.(item)
+                await dummyDelay(userConfig.deploy?.delayAfterDeploy)
                 return item
               },
             },

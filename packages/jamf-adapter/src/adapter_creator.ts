@@ -30,7 +30,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,
     fetch: createFetchDefinitions(userConfig.fetch),
-    deploy: createDeployDefinitions(),
+    deploy: createDeployDefinitions(userConfig),
     references: REFERENCES,
   }),
   operationsCustomizations: {

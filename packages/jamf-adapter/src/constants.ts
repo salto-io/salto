@@ -19,3 +19,4 @@ export const RESULTS = 'results'
 export const OS_X_CONFIGURATION_PROFILE_TYPE_NAME = 'os_x_configuration_profile'
 export const MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME = 'mobile_device_configuration_profile'
 export const MAC_APPLICATION_TYPE_NAME = 'mac_application'
+export const DUMMY_DELAY_TIMEOUT = 50 * 1000 // 50 seconds in ms

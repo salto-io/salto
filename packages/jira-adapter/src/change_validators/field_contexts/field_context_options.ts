@@ -88,7 +88,7 @@ const getDeletedOptionsNotInRemovalChanges = (
 
 const getChangedAndUnchangedOrdersByParent = async (
   orderChanges: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[],
-  addedOptionsByParent: Record<string, InstanceElement[]>,
+  parentsOfAddedOptions: string[],
   elementsSource: ReadOnlyElementsSource | undefined,
 ): Promise<{
   changedOrdersByParent: Record<string, InstanceElement>
@@ -99,10 +99,11 @@ const getChangedAndUnchangedOrdersByParent = async (
   )
 
   const parentsWithoutChangedOrder = new Set<string>(
-    Object.keys(addedOptionsByParent).filter(parent => changedOrdersByParent[parent] === undefined),
+    parentsOfAddedOptions.filter(parent => changedOrdersByParent[parent] === undefined),
   )
   if (parentsWithoutChangedOrder.size > 0 && elementsSource === undefined) {
     log.warn('fieldContextOptions validator not fully ran due to missing elementsSource')
+    return { changedOrdersByParent, unchangedOrdersByParent: {} }
   }
   const unchangedOrdersByParent =
     parentsWithoutChangedOrder.size > 0 && elementsSource !== undefined
@@ -127,13 +128,14 @@ const getOptionErrors = async (
 
   const { changedOrdersByParent, unchangedOrdersByParent } = await getChangedAndUnchangedOrdersByParent(
     orderChanges,
-    addedOptionsByParent,
+    Object.keys(addedOptionsByParent),
     elementsSource,
   )
   // We group the added options by their parent and check they are referenced by the corresponding order
-  const addedOptionsErrors = _.flatMap(addedOptionsByParent, (options, parentFullName) => {
+  return _.flatMap(addedOptionsByParent, (options, parentFullName) => {
     const changedOrder = changedOrdersByParent[parentFullName]
     if (changedOrder === undefined) {
+      // If the order is not changed, the new options of this parent cannot be referenced by it and should have errors
       const unchangedOrder = unchangedOrdersByParent[parentFullName]
       return unchangedOrder === undefined ? options.map(getOrderNotExistsError) : options.map(getNotInOrderError)
     }
@@ -145,7 +147,6 @@ const getOptionErrors = async (
     )
     return options.filter(option => !orderOptionsSet.has(option.elemID.getFullName())).map(getNotInOrderError)
   })
-  return addedOptionsErrors
 }
 
 const getOrderErrors = (
@@ -168,7 +169,8 @@ const getOrderErrors = (
 }
 
 /**
- * Verify that the orders reference all the added options, and that all options removed from orders are removed
+ * Verify that the orders reference all the added options, and that all options deleted from orders are removed.
+ * In addition, verify that there is an order instance for each option's parent.
  */
 export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidator =
   config => async (changes, elementsSource) => {

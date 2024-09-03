@@ -396,4 +396,47 @@ describe('netsuite config validations', () => {
       })
     })
   })
+
+  describe('suiteAppClient config', () => {
+    describe('validate suiteAppConcurrencyLimit', () => {
+      it('should validate that suiteAppConcurrencyLimit is a number', () => {
+        config.suiteAppClient = { suiteAppConcurrencyLimit: 5 }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw when suiteAppConcurrencyLimit is not a number', () => {
+        config.suiteAppClient = { suiteAppConcurrencyLimit: '5' }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected "suiteAppClient.suiteAppConcurrencyLimit" to be a number',
+        )
+      })
+    })
+    describe('validate httpTimeoutLimitInMinutes', () => {
+      it('should validate that httpTimeoutLimitInMinutes is a number', () => {
+        config.suiteAppClient = { httpTimeoutLimitInMinutes: 5 }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw when httpTimeoutLimitInMinutes is not a number', () => {
+        config.suiteAppClient = { httpTimeoutLimitInMinutes: '5' }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected "suiteAppClient.httpTimeoutLimitInMinutes" to be a number',
+        )
+      })
+    })
+    describe('validate wsdlVersion', () => {
+      it('should validate that wsdlVersion is a valid enum value', () => {
+        config.suiteAppClient = { wsdlVersion: '2024_1' }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw when wsdlVersion is not a string', () => {
+        config.suiteAppClient = { wsdlVersion: true }
+        expect(() => validateConfig(config)).toThrow('Expected "suiteAppClient.wsdlVersion" to be a string')
+      })
+      it('should throw when wsdlVersion is not a valid enum value', () => {
+        config.suiteAppClient = { wsdlVersion: 'invalid' }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected "suiteAppClient.wsdlVersion" to be one of: "2020_2", "2023_1", "2023_2", "2024_1"',
+        )
+      })
+    })
+  })
 })

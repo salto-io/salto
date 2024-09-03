@@ -47,7 +47,6 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { createFetchDefinitions } from '../src/definitions'
-import e from 'express'
 
 const { awu } = collections.asynciterable
 const { sleep } = promises.timeout

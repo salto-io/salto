@@ -58,15 +58,15 @@ function validateDefined(value: unknown, configPath: string | string[]): asserts
 }
 
 function validateBoolean(value: unknown, configPath: string | string[]): asserts value is boolean {
-  if (value !== undefined && typeof value !== 'boolean') {
+  if (typeof value !== 'boolean') {
     throw new Error(
       `Expected "${makeArray(configPath).join('.')}" to be a boolean, but received:\n ${JSON.stringify(value, undefined, 4)}`,
     )
   }
 }
 
-function validateNumber(value: unknown, configPath: string | string[]): asserts value is boolean | undefined {
-  if (value !== undefined && typeof value !== 'number') {
+function validateNumber(value: unknown, configPath: string | string[]): asserts value is number {
+  if (typeof value !== 'number') {
     throw new Error(
       `Expected "${makeArray(configPath).join('.')}" to be a number, but received:\n ${JSON.stringify(value, undefined, 4)}`,
     )
@@ -77,10 +77,7 @@ function validateEnumValue(
   value: unknown,
   enumValues: ReadonlyArray<string>,
   configPath: string | string[],
-): asserts value is string | undefined {
-  if (value === undefined) {
-    return
-  }
+): asserts value is string {
   if (typeof value !== 'string') {
     throw new Error(
       `Expected "${makeArray(configPath).join('.')}" to be a string, but received:\n ${JSON.stringify(value, undefined, 4)}`,

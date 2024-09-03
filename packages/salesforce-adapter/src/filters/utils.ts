@@ -655,6 +655,7 @@ export const ensureSafeFilterFetch =
         errors: [
           {
             message: warningMessage,
+            detailedMessage: warningMessage,
             severity: 'Warning',
           },
         ],

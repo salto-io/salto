@@ -23,6 +23,10 @@ export abstract class MergeError
     return `Error merging ${this.elemID.getFullName()}: ${this.error}`
   }
 
+  get detailedMessage(): string {
+    return `Error merging ${this.elemID.getFullName()}: ${this.error}`
+  }
+
   public severity: SeverityLevel = 'Error'
 
   toString(): string {

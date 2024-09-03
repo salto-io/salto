@@ -14,6 +14,7 @@ export type SaltoErrorType = 'config' | 'dependency' | 'unresolvedReferences'
 
 export type SaltoError = {
   message: string
+  detailedMessage: string
   severity: SeverityLevel
   type?: SaltoErrorType
 }
@@ -36,16 +37,18 @@ export const createSaltoElementErrorFromError = ({
   error: Error
   severity: SeverityLevel
   elemID: ElemID
-}): SaltoElementError => ({ message: error.message, severity, elemID })
+}): SaltoElementError => ({ message: error.message, detailedMessage: error.message, severity, elemID })
 
 export const createSaltoElementError = ({
   message,
+  detailedMessage,
   severity,
   elemID,
 }: {
   message: string
+  detailedMessage: string
   severity: SeverityLevel
   elemID: ElemID
-}): SaltoElementError => ({ message, severity, elemID })
+}): SaltoElementError => ({ message, detailedMessage, severity, elemID })
 
 export class CredentialError extends Error {}

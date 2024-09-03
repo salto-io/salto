@@ -56,11 +56,13 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
     const { contextId, fieldId } = getContextAndFieldIds(relevantChanges[0])
     if (!allOptionsWithSameContextAndField(relevantChanges, contextId, fieldId)) {
       log.error('All field context options must be of the same context and field')
+      const message = 'Inner problem occurred during deployment of custom field context options, please contact support'
       return {
         leftoverChanges,
         deployResult: {
           errors: relevantChanges.map(change => ({
-            message: 'Inner problem occurred during deployment of custom field context options, please contact support',
+            message,
+            detailedMessage: message,
             severity: 'Error',
             elemID: getChangeData(change).elemID,
           })),
@@ -99,9 +101,11 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
         })
     } catch (err) {
       log.error('An error occurred during deployment of custom field context options: %o', err)
+      const message = inspectValue(err)
       errors.push(
         ...relevantChanges.map(change => ({
-          message: inspectValue(err),
+          message,
+          detailedMessage: message,
           severity: 'Error' as SeverityLevel,
           elemID: getChangeData(change).elemID,
         })),

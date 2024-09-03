@@ -140,8 +140,10 @@ const updateElementPositions = async (
       const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
 
       if (childUpdateApi === undefined) {
+        const message = `No endpoint of type modify for ${child.elemID.typeName}`
         return createSaltoElementError({
-          message: `No endpoint of type modify for ${child.elemID.typeName}`,
+          message,
+          detailedMessage: message,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

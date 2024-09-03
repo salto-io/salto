@@ -115,8 +115,9 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip fetching of ${OBJECT_TYPE_ICON_TYPE} types because workspaceId is undefined`)
+      const message = 'Failed to fetch object type icons because workspaceId is undefined'
       return {
-        errors: [{ message: 'Failed to fetch object type icons because workspaceId is undefined', severity: 'Error' }],
+        errors: [{ message, detailedMessage: message, severity: 'Error' }],
       }
     }
     const errors: SaltoError[] = []
@@ -126,7 +127,7 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
           const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
           return await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
         } catch (e) {
-          errors.push({ message: e.message, severity: 'Error' })
+          errors.push({ message: e.message, detailedMessage: e.message, severity: 'Error' })
           return undefined
         }
       }),

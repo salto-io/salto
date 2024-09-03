@@ -101,16 +101,20 @@ const getRootID = (change: Change<InstanceElement>): number | SaltoElementError 
   const someFolder = someChange.value.folder_id
   if (someFolder === undefined) {
     log.error('folder_id of element %s is undefined', someChange.elemID.getFullName())
+    const message = 'Salto broken element'
     return createSaltoElementError({
-      message: 'Salto broken element',
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: someChange.elemID,
     })
   }
   if (someFolder.rootId === undefined) {
     log.error('folder %s has no root folder', someFolder.elemID.getFullName())
+    const message = 'Salto broken folder element'
     return createSaltoElementError({
-      message: 'Salto broken folder element',
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: someFolder.elemID,
     })
@@ -248,9 +252,11 @@ const pollRLMImportStatus = async (client: WorkatoClient, jobId: number): Promis
 const getWorkatoErrors = (elemList: ElemID[], error: Error): SaltoError[] => {
   log.error(`Deployment of the next elements failed:${elemList.map(elemId => `\n\t${elemId.getFullName()}`)}\n${error}`)
 
+  const message = error.message === undefined ? 'Deployment failed' : error.message
   return elemList.map(elem =>
     createSaltoElementError({
-      message: error.message === undefined ? 'Deployment failed' : error.message,
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: elem,
     }),

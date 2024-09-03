@@ -69,6 +69,10 @@ export abstract class ValidationError
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`
   }
 
+  get detailedMessage(): string {
+    return `Error validating "${this.elemID.getFullName()}": ${this.error}`
+  }
+
   toString(): string {
     return this.message
   }

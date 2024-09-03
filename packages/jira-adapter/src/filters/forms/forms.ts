@@ -170,6 +170,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       log.debug(message)
       errors.push({
         message,
+        detailedMessage: message,
         severity: 'Warning' as SeverityLevel,
       })
     }
@@ -179,6 +180,7 @@ const filter: FilterCreator = ({ config, client, fetchQuery }) => ({
       log.debug(message)
       errors.push({
         message,
+        detailedMessage: message,
         severity: 'Warning' as SeverityLevel,
       })
     }

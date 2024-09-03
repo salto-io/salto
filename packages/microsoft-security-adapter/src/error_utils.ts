@@ -23,5 +23,6 @@ export const customConvertError: deployment.ConvertError = (elemID, error) => {
     return error
   }
 
-  return { elemID, message: getErrorMessage(error), severity: 'Error' }
+  const message = getErrorMessage(error)
+  return { elemID, message, detailedMessage: message, severity: 'Error' }
 }

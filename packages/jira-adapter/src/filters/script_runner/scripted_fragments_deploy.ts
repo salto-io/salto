@@ -103,12 +103,14 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
       fragmentsFromService = response.data
     } catch (e) {
       log.error(`Failed to get scripted fragments with the error: ${e}`)
+      const message = 'Error getting other scripted fragments information from the service'
       return {
         leftoverChanges,
         deployResult: {
           errors: relevantChanges.map(getChangeData).map(instance => ({
             severity: 'Error' as SeverityLevel,
-            message: 'Error getting other scripted fragments information from the service',
+            message,
+            detailedMessage: message,
             elemID: instance.elemID,
           })),
           appliedChanges: [],
@@ -126,12 +128,14 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
       scriptRunnerApiDefinitions,
     })
     if (!isFragmentsArray(fragmentValuesToDeploy)) {
+      const message = 'Error getting other scripted fragments information from the service'
       return {
         leftoverChanges,
         deployResult: {
           errors: relevantChanges.map(getChangeData).map(instance => ({
             severity: 'Error' as SeverityLevel,
-            message: 'Error getting other scripted fragments information from the service',
+            message,
+            detailedMessage: message,
             elemID: instance.elemID,
           })),
           appliedChanges: [],
@@ -172,6 +176,7 @@ const filter: FilterCreator = ({ client, scriptRunnerClient, config, elementsSou
         ...appliedChanges.map(getChangeData).map(instance => ({
           severity: 'Error' as SeverityLevel,
           message: `${errorMessage}`,
+          detailedMessage: `${errorMessage}`,
           elemID: instance.elemID,
         })),
       )

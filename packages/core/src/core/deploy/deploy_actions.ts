@@ -45,6 +45,7 @@ const addElemIDsToError = (
 ): ReadonlyArray<SaltoElementError> =>
   changes.map(change => ({
     message: error.message,
+    detailedMessage: error.message,
     severity: 'Error' as SeverityLevel,
     elemID: getChangeData(change).elemID,
   }))
@@ -183,11 +184,13 @@ export const deployActions = async (
         const item = deployPlan.getItem(key) as PlanItem
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
+          const message = `Element was not deployed, as it depends on ${nodeError.causingNode} which failed to deploy`
           deployErrors.push(
             ...[...item.changes()].map(change => ({
               elemID: getChangeData(change).elemID,
               groupId: item.groupKey,
-              message: `Element was not deployed, as it depends on ${nodeError.causingNode} which failed to deploy`,
+              message,
+              detailedMessage: message,
               severity: 'Error' as SeverityLevel,
               type: 'dependency' as SaltoErrorType,
             })),
@@ -195,7 +198,12 @@ export const deployActions = async (
         } else if (nodeError instanceof WalkDeployError) {
           deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))
         } else {
-          deployErrors.push({ groupId: item.groupKey, message: nodeError.message, severity: 'Error' as SeverityLevel })
+          deployErrors.push({
+            groupId: item.groupKey,
+            message: nodeError.message,
+            detailedMessage: nodeError.message,
+            severity: 'Error' as SeverityLevel,
+          })
         }
       })
       if (error.circularDependencyError) {
@@ -205,6 +213,7 @@ export const deployActions = async (
           deployErrors.push({
             groupId: item.groupKey,
             message: error.circularDependencyError.message,
+            detailedMessage: error.circularDependencyError.message,
             severity: 'Error' as SeverityLevel,
           })
         })

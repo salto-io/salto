@@ -62,9 +62,11 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   const instance = getChangeData(clonedChange)
   const { order } = instance.value
   if (!areTriggerOrderEntries(order)) {
+    const message = "trigger_order' order field has an invalid format"
     throw createSaltoElementError({
       // caught by try block in creator.ts
-      message: "trigger_order' order field has an invalid format",
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })

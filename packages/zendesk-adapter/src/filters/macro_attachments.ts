@@ -92,9 +92,11 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${inspectValue(attachments)}`)
+    const message = 'Macro attachment field has an invalid format'
     throw createSaltoElementError({
       // caught in try block
-      message: 'Macro attachment field has an invalid format',
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: parentInstance.elemID,
     })
@@ -170,11 +172,15 @@ const createAttachmentType = (): ObjectType =>
     path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
-const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => ({
-  message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
-  severity: 'Warning',
-  elemID: attachmentInstance.elemID,
-})
+const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => {
+  const message = `could not add content to attachment ${attachment.filename} with id ${attachment.id}`
+  return {
+    message,
+    detailedMessage: message,
+    severity: 'Warning',
+    elemID: attachmentInstance.elemID,
+  }
+}
 
 const getAttachmentContent = async ({
   client,
@@ -288,12 +294,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         ? await createAdditionalParentChanges(childrenChanges, false)
         : []
     if (additionalParentChanges === undefined) {
+      const message = 'Attachment is not linked to a valid macro'
       return {
         deployResult: {
           appliedChanges: [],
           errors: childrenChanges.map(getChangeData).map(e =>
             createSaltoElementError({
-              message: 'Attachment is not linked to a valid macro',
+              message,
+              detailedMessage: message,
               severity: 'Error',
               elemID: e.elemID,
             }),
@@ -328,13 +336,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         deployResult: {
           appliedChanges: [],
           errors: [
-            ...parentChanges.map(getChangeData).map(e =>
-              createSaltoElementError({
-                message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
+            ...parentChanges.map(getChangeData).map(e => {
+              const message = `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`
+              return createSaltoElementError({
+                message,
+                detailedMessage: message,
                 severity: 'Error',
                 elemID: e.elemID,
-              }),
-            ),
+              })
+            }),
             ...attachmentDeployResult.errors,
           ],
         },

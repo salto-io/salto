@@ -237,9 +237,11 @@ const filter: FilterCreator = ({ config }) => {
               log.error(
                 `Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${error.message}`,
               )
+              const message = 'Error parsing Okta expression language expression'
               ErrorByChangeId[instance.elemID.getFullName()] = createSaltoElementError({
                 severity: 'Error',
-                message: 'Error parsing Okta expression language expression',
+                message,
+                detailedMessage: message,
                 elemID: instance.elemID,
               })
             }

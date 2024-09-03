@@ -92,6 +92,7 @@ export const getZendeskError = (elemID: ElemID, error: Error): SaltoElementError
   if (!_.isPlainObject(errorData)) {
     return createSaltoElementError({
       message: `${error}`,
+      detailedMessage: `${error}`,
       severity: 'Error',
       elemID,
     })
@@ -99,8 +100,10 @@ export const getZendeskError = (elemID: ElemID, error: Error): SaltoElementError
   log.error([logBaseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(' '))
   const errorGenerated = generateErrorMessage(errorData)
   if (!_.isEmpty(errorGenerated)) {
+    const message = [...errorGenerated].join(EOL)
     return createSaltoElementError({
-      message: [...errorGenerated].join(EOL),
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID,
     })
@@ -108,6 +111,7 @@ export const getZendeskError = (elemID: ElemID, error: Error): SaltoElementError
   const errorMessage = [`${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
   return createSaltoElementError({
     message: errorMessage,
+    detailedMessage: errorMessage,
     severity: 'Error',
     elemID,
   })

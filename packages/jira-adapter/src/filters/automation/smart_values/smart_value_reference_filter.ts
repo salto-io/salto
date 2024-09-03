@@ -134,8 +134,10 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
         return undefined
       }
 
+      const message = `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`
       return {
-        message: `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`,
+        message,
+        detailedMessage: message,
         severity: 'Warning' as const,
       }
     })

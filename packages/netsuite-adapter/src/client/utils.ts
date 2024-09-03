@@ -98,19 +98,22 @@ export const sliceMessagesByRegex = (
 export const getConfigRecordsFieldValue = (configRecord: ConfigRecord | undefined, field: string): unknown =>
   configRecord?.data?.fields?.[field]
 
-export const toElementError = (elemID: ElemID, message: string): SaltoElementError => ({
+export const toElementError = (elemID: ElemID, message: string, detailedMessage: string): SaltoElementError => ({
   elemID,
   message,
+  detailedMessage,
   severity: 'Error',
 })
 
 export const toDependencyError = (dependency: { elemId: ElemID; dependOn: ElemID[] }): SaltoElementError => {
   const dependencies = _.uniq(dependency.dependOn)
+  const message = `Element cannot be deployed due to an error in its ${
+    dependencies.length > 1 ? 'dependencies' : 'dependency'
+  }: ${dependencies.map(id => id.getFullName()).join(', ')}`
   return {
     elemID: dependency.elemId,
-    message: `Element cannot be deployed due to an error in its ${
-      dependencies.length > 1 ? 'dependencies' : 'dependency'
-    }: ${dependencies.map(id => id.getFullName()).join(', ')}`,
+    message,
+    detailedMessage: message,
     severity: 'Error',
   }
 }
@@ -138,7 +141,7 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
       appliedChanges.push(change)
       elemIdToInternalId[elemID.getFullName()] = result.internalId
     } else {
-      errors.push(toElementError(elemID, result.errorMessage))
+      errors.push(toElementError(elemID, result.errorMessage, result.errorMessage))
     }
   })
 

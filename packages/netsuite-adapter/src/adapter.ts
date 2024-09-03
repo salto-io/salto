@@ -627,7 +627,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     additionalChangesErrors.forEach(error => {
       const errorsOnFields = errorsOnCustomFieldsByParents[error.elemID.createBaseID().parent.getFullName()]
       if (!errorsOnFields?.has(error.message)) {
-        saltoErrors.push({ message: error.message, severity: error.severity })
+        saltoErrors.push({ message: error.message, detailedMessage: error.message, severity: error.severity })
       }
     })
 

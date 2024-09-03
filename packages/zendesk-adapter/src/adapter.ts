@@ -674,6 +674,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       combinedRes.errors = combinedRes.errors.concat([
         {
           message,
+          detailedMessage: message,
           severity: 'Warning',
         },
       ])
@@ -750,9 +751,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       ).data
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
+          const message =
+            "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support"
           return {
-            message:
-              "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support",
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           }
         }

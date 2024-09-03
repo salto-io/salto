@@ -143,6 +143,7 @@ const changeValidator: ClientChangeValidator = async (changes, client, additiona
         realGroupChanges.map(change => ({
           elemID: getChangeData(change).elemID,
           message: error.message,
+          detailedMessage: error.message,
           severity: error.severity,
         })),
       )

@@ -173,8 +173,10 @@ const filter: FilterCreator = ({ config, elementsSource }) => {
           }
 
           if (ambiguousTokens.size !== 0) {
+            const message = `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`
             return {
-              message: `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`,
+              message,
+              detailedMessage: message,
               severity: 'Warning' as const,
             }
           }

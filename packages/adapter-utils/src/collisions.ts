@@ -30,7 +30,17 @@ export const groupInstancesByTypeAndElemID = async (
     _.groupBy(typeInstances, instance => instance.elemID.name),
   )
 
-export const createWarningFromMsg = (message: string): SaltoError => ({ message, severity: 'Warning' })
+export const createWarningFromMsg = ({
+  message,
+  detailedMessage,
+}: {
+  message: string
+  detailedMessage: string
+}): SaltoError => ({
+  message,
+  detailedMessage,
+  severity: 'Warning',
+})
 
 const getInstanceDescWithServiceUrl = (instanceDetail: InstanceDetail, baseUrl?: string): string =>
   baseUrl
@@ -164,9 +174,21 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
           ? ['', `And ${elemIDCount - maxBreakdownElements} more colliding Salto IDs`]
           : []
       const linkToDocsMsg = docsUrl ? ['', `Learn more at: ${docsUrl}`] : []
-      return createWarningFromMsg(
-        [header, '', collisionsHeader, ...collisionMessages, ...overflowMsg, '', epilogue, ...linkToDocsMsg].join('\n'),
-      )
+      const message = [
+        header,
+        '',
+        collisionsHeader,
+        ...collisionMessages,
+        ...overflowMsg,
+        '',
+        epilogue,
+        ...linkToDocsMsg,
+      ].join('\n')
+
+      return createWarningFromMsg({
+        message,
+        detailedMessage: message,
+      })
     }),
   )
 }

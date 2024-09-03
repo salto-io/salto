@@ -214,10 +214,12 @@ export default class NetsuiteClient {
   @logDecorator
   async deployConfigChanges(instancesChanges: Change<InstanceElement>[]): Promise<DeployResult> {
     if (this.suiteAppClient === undefined) {
+      const message = `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`
       return {
         errors: [
           {
-            message: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`,
+            message,
+            detailedMessage: message,
             severity: 'Error',
           },
         ],
@@ -384,10 +386,12 @@ export default class NetsuiteClient {
       }
     })
     if (missingExcludedFeatures.size > 0) {
+      const message = `The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`
       return {
         failedToUpdate: true,
         error: {
-          message: `The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`,
+          message,
+          detailedMessage: message,
           severity: 'Error',
         },
       }
@@ -441,7 +445,7 @@ export default class NetsuiteClient {
             .filter(isInstanceChange)
             .map(getChangeData)
             .filter(inst => inst.elemID.typeName === CONFIG_FEATURES)
-            .map(({ elemID }) => toElementError(elemID, message))
+            .map(({ elemID }) => toElementError(elemID, message, message))
 
           return {
             errors: errors.concat(featuresError),
@@ -453,7 +457,9 @@ export default class NetsuiteClient {
           const res = NetsuiteClient.updateFeaturesMap(featuresMap, error)
           if (res.failedToUpdate) {
             return {
-              errors: errors.concat({ message: error.message, severity: 'Error' }).concat(res.error ?? []),
+              errors: errors
+                .concat({ message: error.message, detailedMessage: error.message, severity: 'Error' })
+                .concat(res.error ?? []),
               appliedChanges: [],
             }
           }
@@ -462,7 +468,9 @@ export default class NetsuiteClient {
         }
         const elemIdsWithError = getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy)
         const elementErrors = elemIdsWithError.flatMap(({ message, elemID }) =>
-          changesByTopLevel[elemID.getFullName()].map(getChangeData).map(elem => toElementError(elem.elemID, message)),
+          changesByTopLevel[elemID.getFullName()]
+            .map(getChangeData)
+            .map(elem => toElementError(elem.elemID, message, message)),
         )
         errors.push(...elementErrors)
 
@@ -489,8 +497,9 @@ export default class NetsuiteClient {
 
         const numOfRemovedNodes = numOfAttemptedNodesToDeploy - dependencyGraph.nodes.size
         if (numOfRemovedNodes === 0) {
+          const { message } = toError(error)
           log.error('no changes were removed from error: %o', error)
-          errors.push({ message: toError(error).message, severity: 'Error' })
+          errors.push({ message, detailedMessage: message, severity: 'Error' })
           return { errors, appliedChanges: [] }
         }
         log.debug(
@@ -538,12 +547,14 @@ export default class NetsuiteClient {
 
     const instancesChanges = changes.filter(isInstanceChange)
     if (SUITEAPP_FILE_CABINET_GROUPS.includes(groupID)) {
+      const message = `Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`
       return this.suiteAppFileCabinet !== undefined
         ? this.suiteAppFileCabinet.deploy(instancesChanges, GROUP_TO_DEPLOY_TYPE[groupID])
         : {
             errors: [
               {
-                message: `Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`,
+                message,
+                detailedMessage: message,
                 severity: 'Error',
               },
             ],
@@ -566,8 +577,9 @@ export default class NetsuiteClient {
       const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID, hasElemID)
       return getDeployResultFromSuiteAppResult(relevantChanges, deployResults)
     } catch (error) {
+      const { message } = toError(error)
       return {
-        errors: [{ message: toError(error).message, severity: 'Error' }],
+        errors: [{ message, detailedMessage: message, severity: 'Error' }],
         appliedChanges: [],
       }
     }

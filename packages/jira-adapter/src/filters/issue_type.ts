@@ -87,7 +87,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
           await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
         } catch (e) {
-          errors.push({ message: e.message, severity: 'Warning' })
+          errors.push({ message: e.message, detailedMessage: e.message, severity: 'Warning' })
         }
       }),
     )

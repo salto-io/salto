@@ -5,6 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+
+export const SUPPORTED_WSDL_VERSIONS = ['2020_2', '2023_1', '2023_2', '2024_1'] as const
+
+export type WSDLVersion = (typeof SUPPORTED_WSDL_VERSIONS)[number]
+
 type StatusSuccess = {
   attributes: {
     isSuccess: 'true'

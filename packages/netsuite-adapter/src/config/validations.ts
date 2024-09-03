@@ -11,6 +11,7 @@ import { regex, strings, collections } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from '../types'
 import { isRequiredFeature, removeRequiredFeatureSuffix } from '../client/utils'
+import { SUPPORTED_WSDL_VERSIONS } from '../client/suiteapp_client/soap_client/types'
 import { ALL_TYPES_REGEX, ERROR_MESSAGE_PREFIX, SUITEAPP_ID_FORMAT_REGEX } from './constants'
 import {
   AdditionalDependencies,
@@ -57,17 +58,34 @@ function validateDefined(value: unknown, configPath: string | string[]): asserts
 }
 
 function validateBoolean(value: unknown, configPath: string | string[]): asserts value is boolean {
-  if (value !== undefined && typeof value !== 'boolean') {
+  if (typeof value !== 'boolean') {
     throw new Error(
       `Expected "${makeArray(configPath).join('.')}" to be a boolean, but received:\n ${JSON.stringify(value, undefined, 4)}`,
     )
   }
 }
 
-function validateNumber(value: unknown, configPath: string | string[]): asserts value is boolean | undefined {
-  if (value !== undefined && typeof value !== 'number') {
+function validateNumber(value: unknown, configPath: string | string[]): asserts value is number {
+  if (typeof value !== 'number') {
     throw new Error(
       `Expected "${makeArray(configPath).join('.')}" to be a number, but received:\n ${JSON.stringify(value, undefined, 4)}`,
+    )
+  }
+}
+
+function validateEnumValue(
+  value: unknown,
+  enumValues: ReadonlyArray<string>,
+  configPath: string | string[],
+): asserts value is string {
+  if (typeof value !== 'string') {
+    throw new Error(
+      `Expected "${makeArray(configPath).join('.')}" to be a string, but received:\n ${JSON.stringify(value, undefined, 4)}`,
+    )
+  }
+  if (!enumValues.includes(value)) {
+    throw new Error(
+      `Expected "${makeArray(configPath).join('.')}" to be one of: ${enumValues.map(enumValue => JSON.stringify(enumValue, undefined, 4)).join(', ')}, but received:\n ${JSON.stringify(value, undefined, 4)}`,
     )
   }
 }
@@ -399,12 +417,16 @@ const validateDeployParams = ({
 const validateSuiteAppClientParams = ({
   suiteAppConcurrencyLimit,
   httpTimeoutLimitInMinutes,
+  wsdlVersion,
 }: Record<keyof SuiteAppClientConfig, unknown>): void => {
   if (suiteAppConcurrencyLimit !== undefined) {
     validateNumber(suiteAppConcurrencyLimit, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.suiteAppConcurrencyLimit])
   }
   if (httpTimeoutLimitInMinutes !== undefined) {
     validateNumber(httpTimeoutLimitInMinutes, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.httpTimeoutLimitInMinutes])
+  }
+  if (wsdlVersion !== undefined) {
+    validateEnumValue(wsdlVersion, SUPPORTED_WSDL_VERSIONS, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.wsdlVersion])
   }
 }
 

@@ -56,6 +56,7 @@ import {
   SearchResponse,
   SoapSearchType,
   WriteResponse,
+  WSDLVersion,
 } from './types'
 import {
   DEPLOY_LIST_SCHEMA,
@@ -68,7 +69,7 @@ import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { isItemType, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
-import { InstanceLimiterFunc } from '../../../config/types'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../../config/types'
 import { toError } from '../../utils'
 import { removeUneditableLockedField } from './filter_uneditable_locked_field'
 
@@ -85,11 +86,8 @@ const REQUEST_RETRY_DELAY = 5000
 const LOCKED_FIELDS_MAX_DEPLOYS = 6
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
-const NETSUITE_VERSION = '2020_2'
+export const DEFAULT_WSDL_VERSION: WSDLVersion = '2020_2'
 const SEARCH_PAGE_SIZE = 100
-const SOAP_CORE_URN = `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`
-const SOAP_COMMON_URN = `urn:common_${NETSUITE_VERSION}.platform.webservices.netsuite.com`
-const SOAP_FILE_CABINET_URN = `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`
 
 const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'
 
@@ -162,8 +160,15 @@ export default class SoapClient {
   private instanceLimiter: InstanceLimiterFunc
   private timeout: number
 
+  private readonly SOAP_CORE_URN: string
+  private readonly SOAP_COMMON_URN: string
+  private readonly SOAP_FILE_CABINET_URN: string
+  private readonly SOAP_WSDL_URL: string
+  private readonly SOAP_WSDL_ENDPOINT: string
+
   constructor(
     credentials: SuiteAppSoapCredentials,
+    config: SuiteAppClientConfig | undefined,
     callsLimiter: CallsLimiter,
     instanceLimiter: InstanceLimiterFunc,
     timeout: number,
@@ -173,17 +178,23 @@ export default class SoapClient {
     this.instanceLimiter = instanceLimiter
     this.timeout = timeout
     this.ajv = new Ajv({ allErrors: true, strict: false })
+
+    const wsdlVersion = config?.wsdlVersion ?? DEFAULT_WSDL_VERSION
+    log.info('Using SOAP WSDL version %s', wsdlVersion)
+
+    this.SOAP_CORE_URN = `urn:core_${wsdlVersion}.platform.webservices.netsuite.com`
+    this.SOAP_COMMON_URN = `urn:common_${wsdlVersion}.platform.webservices.netsuite.com`
+    this.SOAP_FILE_CABINET_URN = `urn:filecabinet_${wsdlVersion}.documents.webservices.netsuite.com`
+    this.SOAP_WSDL_URL = `https://webservices.netsuite.com/wsdl/v${wsdlVersion}_0/netsuite.wsdl`
+    this.SOAP_WSDL_ENDPOINT = `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${wsdlVersion}`
   }
 
   @retryOnBadResponse
   private async getClient(): Promise<soap.Client> {
     if (this.client === undefined) {
-      this.client = await createClientAsync(
-        `https://webservices.netsuite.com/wsdl/v${NETSUITE_VERSION}_0/netsuite.wsdl`,
-        {
-          endpoint: `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${NETSUITE_VERSION}`,
-        },
-      )
+      this.client = await createClientAsync(this.SOAP_WSDL_URL, {
+        endpoint: this.SOAP_WSDL_ENDPOINT,
+      })
       this.client.addSoapHeader(() => this.generateSoapHeader())
     }
     return this.client
@@ -197,7 +208,7 @@ export default class SoapClient {
           internalId: id.toString(),
           type: 'file',
           [XSI_TYPE]: 'ns7:RecordRef',
-          'xmlns:ns7': SOAP_CORE_URN,
+          'xmlns:ns7': this.SOAP_CORE_URN,
         },
       },
     }
@@ -222,12 +233,12 @@ export default class SoapClient {
     return b64content !== undefined ? Buffer.from(b64content, 'base64') : Buffer.from('')
   }
 
-  private static convertToFileRecord(file: FileDetails): object {
+  private convertToFileRecord(file: FileDetails): object {
     const internalIdEntry = file.id !== undefined ? { internalId: file.id.toString() } : {}
     return {
       attributes: {
         [XSI_TYPE]: 'q1:File',
-        'xmlns:q1': SOAP_FILE_CABINET_URN,
+        'xmlns:q1': this.SOAP_FILE_CABINET_URN,
         ...internalIdEntry,
       },
       'q1:name': path.basename(file.path),
@@ -250,7 +261,7 @@ export default class SoapClient {
     }
   }
 
-  private static convertToFolderRecord(folder: FolderDetails): object {
+  private convertToFolderRecord(folder: FolderDetails): object {
     const parentEntry =
       folder.parent !== undefined
         ? {
@@ -267,7 +278,7 @@ export default class SoapClient {
     return {
       attributes: {
         [XSI_TYPE]: 'q1:Folder',
-        'xmlns:q1': SOAP_FILE_CABINET_URN,
+        'xmlns:q1': this.SOAP_FILE_CABINET_URN,
         ...internalIdEntry,
       },
       'q1:name': path.basename(folder.path),
@@ -279,13 +290,13 @@ export default class SoapClient {
     }
   }
 
-  private static convertToFileCabinetRecord(fileCabinetInstance: FileCabinetInstanceDetails): object {
+  private convertToFileCabinetRecord(fileCabinetInstance: FileCabinetInstanceDetails): object {
     return fileCabinetInstance.type === 'file'
-      ? SoapClient.convertToFileRecord(fileCabinetInstance)
-      : SoapClient.convertToFolderRecord(fileCabinetInstance)
+      ? this.convertToFileRecord(fileCabinetInstance)
+      : this.convertToFolderRecord(fileCabinetInstance)
   }
 
-  private static convertToDeletionRecord({
+  private convertToDeletionRecord({
     id,
     type,
     isCustomRecord,
@@ -300,13 +311,13 @@ export default class SoapClient {
             [TYPE_ID]: type,
             internalId: id,
             [XSI_TYPE]: 'q1:CustomRecordRef',
-            'xmlns:q1': SOAP_CORE_URN,
+            'xmlns:q1': this.SOAP_CORE_URN,
           }
         : {
             type,
             internalId: id,
             [XSI_TYPE]: 'q1:RecordRef',
-            'xmlns:q1': SOAP_CORE_URN,
+            'xmlns:q1': this.SOAP_CORE_URN,
           },
     }
   }
@@ -316,7 +327,7 @@ export default class SoapClient {
     fileCabinetInstances: FileCabinetInstanceDetails[],
   ): Promise<SoapDeployResult[]> {
     const body = {
-      record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
+      record: fileCabinetInstances.map(instance => this.convertToFileCabinetRecord(instance)),
     }
 
     const response = await this.sendSoapRequest('addList', body)
@@ -347,7 +358,7 @@ export default class SoapClient {
     instances: ExistingFileCabinetInstanceDetails[],
   ): Promise<SoapDeployResult[]> {
     const body = {
-      baseRef: instances.map(SoapClient.convertToDeletionRecord),
+      baseRef: instances.map(instance => this.convertToDeletionRecord(instance)),
     }
 
     const response = await this.sendSoapRequest('deleteList', body)
@@ -379,7 +390,7 @@ export default class SoapClient {
     fileCabinetInstances: ExistingFileCabinetInstanceDetails[],
   ): Promise<SoapDeployResult[]> {
     const body = {
-      record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
+      record: fileCabinetInstances.map(instance => this.convertToFileCabinetRecord(instance)),
     }
 
     const response = await this.sendSoapRequest('updateList', body)
@@ -593,7 +604,7 @@ export default class SoapClient {
   private async getAddAndUpdateDeployBody(instances: InstanceElement[]): Promise<AddAndUpdateDeployBody> {
     return {
       attributes: {
-        'xmlns:platformCore': SOAP_CORE_URN,
+        'xmlns:platformCore': this.SOAP_CORE_URN,
       },
       record: await awu(instances)
         .map(async instance => this.convertToSoapRecord(instance.value, await instance.getType()))
@@ -695,7 +706,7 @@ export default class SoapClient {
       baseRef: await awu(instances)
         .map(async instance => {
           const isCustomRecord = isCustomRecordType(await instance.getType())
-          return SoapClient.convertToDeletionRecord({
+          return this.convertToDeletionRecord({
             id: instance.value.attributes.internalId,
             type: isCustomRecord
               ? instance.value.recType.attributes.internalId
@@ -719,7 +730,7 @@ export default class SoapClient {
           const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID).find(
             key => key.toLowerCase() === instance.elemID.typeName.toLowerCase(),
           )
-          return SoapClient.convertToDeletionRecord({
+          return this.convertToDeletionRecord({
             id: instance.value.internalId,
             type: instanceTypeFromMap ?? instance.elemID.typeName,
             isCustomRecord: false,
@@ -828,8 +839,8 @@ export default class SoapClient {
       _.assign(body.searchRecord, {
         'q1:basic': {
           attributes: {
-            'xmlns:platformCommon': SOAP_COMMON_URN,
-            'xmlns:platformCore': SOAP_CORE_URN,
+            'xmlns:platformCommon': this.SOAP_COMMON_URN,
+            'xmlns:platformCore': this.SOAP_CORE_URN,
           },
           'platformCommon:type': {
             attributes: {
@@ -853,14 +864,14 @@ export default class SoapClient {
       searchRecord: {
         attributes: {
           [XSI_TYPE]: 'ns7:CustomRecordSearchBasic',
-          'xmlns:ns7': SOAP_COMMON_URN,
+          'xmlns:ns7': this.SOAP_COMMON_URN,
         },
         'ns7:recType': {
           attributes: {
             scriptId: customRecordType,
             type: 'customRecordType',
             [XSI_TYPE]: 'ns8:CustomizationRef',
-            'xmlns:ns8': SOAP_CORE_URN,
+            'xmlns:ns8': this.SOAP_CORE_URN,
           },
         },
       },
@@ -882,17 +893,17 @@ export default class SoapClient {
       pageIndex,
       fieldDescription: {
         recordType: {
-          attributes: { xmlns: SOAP_CORE_URN },
+          attributes: { xmlns: this.SOAP_CORE_URN },
           $value: type,
         },
         field: {
-          attributes: { xmlns: SOAP_CORE_URN },
+          attributes: { xmlns: this.SOAP_CORE_URN },
           $value: field,
         },
         filterByValueList:
           filterBy.length > 0
             ? {
-                attributes: { xmlns: SOAP_CORE_URN },
+                attributes: { xmlns: this.SOAP_CORE_URN },
                 filterBy: filterBy.map(row => ({
                   field: row.field,
                   internalId: row.internalId,

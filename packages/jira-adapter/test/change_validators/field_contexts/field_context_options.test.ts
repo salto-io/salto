@@ -11,9 +11,11 @@ import {
   ChangeValidator,
   CORE_ANNOTATIONS,
   InstanceElement,
+  ReadOnlyElementsSource,
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { fieldContextOptionsValidator } from '../../../src/change_validators/field_contexts/field_context_options'
@@ -26,6 +28,7 @@ import { createEmptyType } from '../../utils'
 
 describe('fieldContextOptionsValidator', () => {
   let changes: Change<InstanceElement>[] = []
+  let elementsSource: ReadOnlyElementsSource
   const optionType = createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME)
   const orderType = createEmptyType(OPTIONS_ORDER_TYPE_NAME)
   const contextInstance = new InstanceElement('context', createEmptyType(FIELD_CONTEXT_TYPE_NAME), {})
@@ -53,6 +56,7 @@ describe('fieldContextOptionsValidator', () => {
     config.fetch.splitFieldContextOptions = true
     validator = fieldContextOptionsValidator(config)
     changes = []
+    elementsSource = buildElementsSourceFromElements([])
   })
   it('should return no errors when feature flag is false', async () => {
     config.fetch.splitFieldContextOptions = false
@@ -76,6 +80,19 @@ describe('fieldContextOptionsValidator', () => {
     it('should return an error if there is no order change', async () => {
       changes = [toChange({ after: optionInstance })]
       const result = await validator(changes)
+      expect(result).toEqual([
+        {
+          elemID: optionInstance.elemID,
+          severity: 'Error',
+          message: "There is no order instance for this option's scope",
+          detailedMessage: "There should be an order instance related to this option's parent",
+        },
+      ])
+    })
+    it('should return an error if there is no order change but there is an order in the elements source', async () => {
+      elementsSource = buildElementsSourceFromElements([orderInstance])
+      changes = [toChange({ after: optionInstance })]
+      const result = await validator(changes, elementsSource)
       expect(result).toEqual([
         {
           elemID: optionInstance.elemID,

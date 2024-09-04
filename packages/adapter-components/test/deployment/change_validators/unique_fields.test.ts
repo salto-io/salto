@@ -309,7 +309,7 @@ describe('unique fields', () => {
       parentScopeInstance1.annotations[CORE_ANNOTATIONS.PARENT] = 'some string'
       const elementSource = buildElementsSourceFromElements([parentScopeInstance1])
       await expect(changeValidator([toChange({ after: parentScopeInstance1 })], elementSource)).rejects.toThrow(
-        'Expected adapter.parentScopeType.instance.parentScopeInstance1 parent to be a reference expression',
+        'Expected adapter.parentScopeType.instance.parentScopeInstance1 parent to have an ElemID',
       )
     })
     it('should throw an error when there is no parent', async () => {

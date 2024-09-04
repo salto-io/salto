@@ -183,21 +183,25 @@ export const syncWorkspaceToFolder = ({
       })
       const { loadElementsFromFolder, dumpElementsToFolder } = adapter
       if (loadElementsFromFolder === undefined) {
+        const message = `Account ${accountName}'s adapter does not support loading a non-nacl format`
         return {
           errors: [
             {
               severity: 'Error' as const,
-              message: `Account ${accountName}'s adapter does not support loading a non-nacl format`,
+              message,
+              detailedMessage: message,
             },
           ],
         }
       }
       if (dumpElementsToFolder === undefined) {
+        const message = `Account ${accountName}'s adapter does not support writing a non-nacl format`
         return {
           errors: [
             {
               severity: 'Error' as const,
-              message: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
+              message,
+              detailedMessage: message,
             },
           ],
         }

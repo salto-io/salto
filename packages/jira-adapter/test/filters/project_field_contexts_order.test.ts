@@ -11,7 +11,6 @@ import { getFilterParams } from '../utils'
 import { JIRA, PROJECT_TYPE } from '../../src/constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../src/filters/fields/constants'
 import projectFieldContextsFilter from '../../src/filters/project_field_contexts_order'
-import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 describe('projectFieldContext', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'onDeploy'>
@@ -39,12 +38,7 @@ describe('projectFieldContext', () => {
       id: 2,
     })
 
-    projectInstance = new InstanceElement('instance', projectType, {
-      [PROJECT_CONTEXTS_FIELD]: [
-        new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
-        new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
-      ],
-    })
+    projectInstance = new InstanceElement('instance', projectType, {})
 
     filter = projectFieldContextsFilter(getFilterParams()) as typeof filter
   })

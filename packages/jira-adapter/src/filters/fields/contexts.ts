@@ -122,6 +122,7 @@ export const getContexts = async (
 }
 
 export const setContextDeploymentAnnotations = async (contextType: ObjectType): Promise<void> => {
+  setFieldDeploymentAnnotations(contextType, 'projectIds')
   setFieldDeploymentAnnotations(contextType, 'isGlobalContext')
   await setDefaultValueTypeDeploymentAnnotations(contextType)
   setFieldDeploymentAnnotations(contextType, 'issueTypeIds')

@@ -343,7 +343,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [{ fieldName: 'isAnyIssueType' }],
+      fieldsToOmit: [{ fieldName: 'isAnyIssueType' }, { fieldName: 'isGlobalContext' }],
     },
     deployRequests: {
       add: {

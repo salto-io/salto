@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { SaltoError } from '@salto-io/adapter-api'
 import { FatalError } from '@salto-io/dag'
 import { HTTPError } from '../client'
 import { fetch } from '../definitions'
@@ -15,6 +16,11 @@ export class AbortFetchOnFailure extends FatalError {
   }
 }
 
+export const getInsufficientPermissionsError = (typeName: string): SaltoError => ({
+  message: `Salto could not access the ${typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
+  severity: 'Info',
+})
+
 export const createGetInsufficientPermissionsErrorFunction: (
   statuses: number[],
 ) => fetch.FetchResourceDefinition['onError'] = statuses => ({
@@ -24,10 +30,7 @@ export const createGetInsufficientPermissionsErrorFunction: (
       if (error instanceof HTTPError && statuses.includes(error.response.status)) {
         return {
           action: 'customSaltoError',
-          value: {
-            message: `Salto could not access the ${typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
-            severity: 'Info',
-          },
+          value: getInsufficientPermissionsError(typeName),
         }
       }
       return { action: 'failEntireFetch', value: false }

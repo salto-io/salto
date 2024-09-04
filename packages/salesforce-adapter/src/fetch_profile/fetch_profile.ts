@@ -69,6 +69,7 @@ export const buildFetchProfile = ({
     addNamespacePrefixToFullName,
     warningSettings,
     additionalImportantValues,
+    optionalDefaults,
   } = fetchParams
   const enabledCustomReferencesHandlers = customReferencesConfiguration(customReferencesSettings)
   return {
@@ -83,6 +84,7 @@ export const buildFetchProfile = ({
     metadataQuery,
     maxItemsInRetrieveRequest,
     importantValues: mergeWithDefaultImportantValues(additionalImportantValues),
+    optionalDefaults: optionalDefaults ?? {},
   }
 }
 

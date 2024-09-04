@@ -95,6 +95,10 @@ export type MetadataParams = {
   objectsToSeperateFieldsToFiles?: string[]
 }
 
+export type OptionalDefaults = {
+  extraDependenciesChunkSize?: number
+}
+
 export type OptionalFeatures = {
   extraDependencies?: boolean
   extraDependenciesV2?: boolean
@@ -357,6 +361,7 @@ export type FetchParameters = {
   data?: DataManagementConfig
   fetchAllCustomSettings?: boolean // TODO - move this into optional features
   optionalFeatures?: OptionalFeatures
+  optionalDefaults?: OptionalDefaults
   target?: string[]
   maxInstancesPerType?: number
   preferActiveFlowVersions?: boolean
@@ -830,6 +835,16 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   },
 })
 
+const optionalDefaultsType = createMatchingObjectType<OptionalDefaults>({
+  elemID: new ElemID(constants.SALESFORCE, 'optionalDefaults'),
+  fields: {
+    extraDependenciesChunkSize: { refType: BuiltinTypes.NUMBER },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
   fields: {
@@ -883,6 +898,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     metadata: { refType: metadataConfigType },
     data: { refType: dataManagementType },
     optionalFeatures: { refType: optionalFeaturesType },
+    optionalDefaults: { refType: optionalDefaultsType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
     target: {
       refType: new ListType(BuiltinTypes.STRING),
@@ -1039,6 +1055,7 @@ export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
+  readonly optionalDefaults: OptionalDefaults
   readonly isCustomReferencesHandlerEnabled: (name: CustomReferencesHandlers) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number

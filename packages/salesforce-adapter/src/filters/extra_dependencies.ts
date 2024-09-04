@@ -62,6 +62,7 @@ type Dependency = {
 type QueryDepsParams = {
   client: SalesforceClient
   elements: Element[]
+  initialChunkSize?: number
 }
 
 /**
@@ -135,7 +136,8 @@ const getDependencies = async (
   }))
 }
 
-const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Dependency[]> => {
+const queryDeps = async ({ client, elements, initialChunkSize }: QueryDepsParams): Promise<Dependency[]> => {
+  log.debug('about to query dependencies for %d elements with %d initialChunkSize', elements.length, initialChunkSize)
   const elementsByMetadataComponentId = _.keyBy(elements.filter(hasInternalId), getInternalId)
   // The MetadataComponentId of standard objects is the object name
   elements.filter(isStandardObjectSync).forEach(standardObject => {
@@ -159,13 +161,19 @@ const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Depende
     RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
   FROM MetadataComponentDependency WHERE MetadataComponentId IN (${idsChunk.map(id => `'${id}'`).join(', ')})`
           const allRecords = (await toArrayAsync(await client.queryAll(query, true))).flat()
+          log.debug(
+            'Queried %d dependencies for %d elements, the last 3 elements are',
+            allRecords.length,
+            idsChunk.length,
+            idsChunk.slice(-3),
+          )
           queriesExecuted += 1
           if (allRecords.length === TOOLING_QUERY_MAX_RECORDS) {
             // A single Element has more than 2000 dependencies
             if (chunkSize === 1) {
               errorIds.add(idsChunk[0])
             } else {
-              return chunkedQuery(idsChunk, Math.ceil(Math.ceil(idsChunk.length / 2)))
+              return chunkedQuery(idsChunk, Math.ceil(idsChunk.length / 2))
             }
           }
           return allRecords.map(rec => ({
@@ -183,7 +191,10 @@ const queryDeps = async ({ client, elements }: QueryDepsParams): Promise<Depende
         }),
       )
     ).flat()
-  const deps = await chunkedQuery(Object.keys(elementsByMetadataComponentId), INITIAL_QUERY_CHUNK_SIZE)
+  const deps = await chunkedQuery(
+    Object.keys(elementsByMetadataComponentId),
+    initialChunkSize ?? INITIAL_QUERY_CHUNK_SIZE,
+  )
   if (errorIds.size > 0) {
     log.error(
       'Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s',
@@ -323,7 +334,11 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
     filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {
       const groupedDeps = config.fetchProfile.isFeatureEnabled('extraDependenciesV2')
-        ? await getDependenciesV2({ client, elements })
+        ? await getDependenciesV2({
+            client,
+            elements,
+            initialChunkSize: config.fetchProfile.optionalDefaults.extraDependenciesChunkSize,
+          })
         : await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
       const fetchedElements = buildElementsSourceFromElements(elements)
       const allElements = buildElementsSourceForFetch(elements, config)

@@ -935,30 +935,29 @@ export const inspectValue = (value: Value, options?: InspectOptions): string =>
 export const getParents = (instance: Element): Array<Value> =>
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
 
-export const getParent = (instance: Element): InstanceElement => {
+const getParentBase = (instance: Element): Value => {
   const parents = getParents(instance)
   if (parents.length !== 1) {
     throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
   }
+  return parents[0]
+}
 
-  if (!isInstanceElement(parents[0].value)) {
+export const getParent = (instance: Element): InstanceElement => {
+  const parent = getParentBase(instance)
+  if (!isInstanceElement(parent.value)) {
     throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
   }
 
-  return parents[0].value
+  return parent.value
 }
 
-// This method is used to get the parent's elemID when the references are not neccessarily resolved
 export const getParentElemID = (instance: Element): ElemID => {
-  const parents = getParents(instance)
-  if (parents.length !== 1) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  const parentElemId = getParentBase(instance).elemID
+  if (!(parentElemId instanceof ElemID)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to have an ElemID`)
   }
-  const parent = parents[0]
-  if (!isReferenceExpression(parent)) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
-  }
-  return parent.elemID
+  return parentElemId
 }
 
 export const hasValidParent = (element: Element): boolean => {

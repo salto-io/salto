@@ -9,19 +9,13 @@
 import _ from 'lodash'
 import { inspect } from 'util'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { AdjustFunctionSingle, DeployableRequestDefinition } from '../../shared/types'
+import { AdjustFunctionSingle } from '../../shared/types'
 import { intuneConstants } from '../../../../constants'
 import { intuneUtils } from '../../../../utils'
 import { EndpointPath } from '../../../types'
-import { createCustomConditionCheckChangesInFields } from '../../shared/utils'
 
-const {
-  APPLICATION_TYPE_NAME,
-  APP_IDENTIFIER_FIELD_NAME,
-  APP_STORE_URL_FIELD_NAME,
-  PACKAGE_ID_FIELD_NAME,
-  ASSIGNMENTS_FIELD_NAME,
-} = intuneConstants
+const { APPLICATION_TYPE_NAME, APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, PACKAGE_ID_FIELD_NAME } =
+  intuneConstants
 
 const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application
 
@@ -60,28 +54,4 @@ export const transformManagedGooglePlayApp: AdjustFunctionSingle = async ({ valu
   }
 }
 
-const ASSIGNMENTS_ROOT_FIELD_NAME = 'mobileAppAssignments'
-/**
- * Creates a request to assign a resource to a group. This request is used for both addition and modification changes.
- */
-export const ASSIGNMENTS_REQUEST: DeployableRequestDefinition = {
-  request: {
-    endpoint: {
-      path: '/deviceAppManagement/mobileApps/{id}/assign',
-      method: 'post',
-    },
-    transformation: {
-      rename: [
-        {
-          from: ASSIGNMENTS_FIELD_NAME,
-          to: ASSIGNMENTS_ROOT_FIELD_NAME,
-          onConflict: 'skip',
-        },
-      ],
-      pick: [ASSIGNMENTS_ROOT_FIELD_NAME],
-    },
-  },
-  // We can't simply use transformToCheck.pick since this request is also used for addition changes,
-  // while transformToCheck is only valid for modification changes.
-  condition: createCustomConditionCheckChangesInFields([ASSIGNMENTS_FIELD_NAME]),
-}
+export const DEPLOY_ASSIGNMENTS_ROOT_FIELD_NAME = 'mobileAppAssignments'

@@ -6,13 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { getChangeData } from '@salto-io/adapter-api'
-import { validatePlainObject } from '@salto-io/adapter-utils'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
-import { application as applicationDeployUtils, appsConfiguration } from './utils'
+import { application as applicationDeployUtils, appsConfiguration, groupAssignments } from './utils'
 import { application, applicationConfiguration } from '../../../utils/intune'
 
 const {
@@ -24,6 +23,7 @@ const {
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
   // Field names
+  APPS_FIELD_NAME,
   SCHEDULED_ACTIONS_FIELD_NAME,
   ASSIGNMENTS_FIELD_NAME,
 } = intuneConstants
@@ -100,7 +100,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          applicationDeployUtils.ASSIGNMENTS_REQUEST,
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/mobileApps',
+            rootField: applicationDeployUtils.DEPLOY_ASSIGNMENTS_ROOT_FIELD_NAME,
+          }),
         ],
         modify: [
           {
@@ -119,7 +122,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          applicationDeployUtils.ASSIGNMENTS_REQUEST,
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/mobileApps',
+            rootField: applicationDeployUtils.DEPLOY_ASSIGNMENTS_ROOT_FIELD_NAME,
+          }),
         ],
         remove: [
           {
@@ -144,9 +150,15 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceAppManagement/targetedManagedAppConfigurations',
                 method: 'post',
               },
+              transformation: {
+                omit: [APPS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
           appsConfiguration.TARGET_APP_DEPLOY_DEFINITION,
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
+          }),
         ],
         modify: [
           {
@@ -158,11 +170,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             },
             condition: {
               transformForCheck: {
-                omit: ['apps'],
+                omit: [APPS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
               },
             },
           },
           appsConfiguration.TARGET_APP_DEPLOY_DEFINITION,
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
+          }),
         ],
         remove: [
           {
@@ -194,8 +209,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceAppManagement/mobileAppConfigurations',
                 method: 'post',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/mobileAppConfigurations',
+          }),
         ],
         modify: [
           {
@@ -204,8 +225,19 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceAppManagement/mobileAppConfigurations/{id}',
                 method: 'patch',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/mobileAppConfigurations',
+          }),
         ],
         remove: [
           {
@@ -230,8 +262,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceManagement/deviceConfigurations',
                 method: 'post',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceConfigurations',
+          }),
         ],
         modify: [
           {
@@ -240,8 +278,19 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceManagement/deviceConfigurations/{id}',
                 method: 'patch',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceConfigurations',
+          }),
         ],
         remove: [
           {
@@ -266,8 +315,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceManagement/configurationPolicies',
                 method: 'post',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/configurationPolicies',
+          }),
         ],
         modify: [
           {
@@ -276,8 +331,19 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceManagement/configurationPolicies/{id}',
                 method: 'put',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/configurationPolicies',
+          }),
         ],
         remove: [
           {
@@ -302,8 +368,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceManagement/deviceCompliancePolicies',
                 method: 'post',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceCompliancePolicies',
+          }),
         ],
         modify: [
           {
@@ -313,12 +385,12 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'patch',
               },
               transformation: {
-                omit: [SCHEDULED_ACTIONS_FIELD_NAME],
+                omit: [SCHEDULED_ACTIONS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
               },
             },
             condition: {
               transformForCheck: {
-                omit: [SCHEDULED_ACTIONS_FIELD_NAME],
+                omit: [SCHEDULED_ACTIONS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
               },
             },
           },
@@ -329,14 +401,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                adjust: adjustWrapper(async ({ value }) => {
-                  validatePlainObject(value, DEVICE_COMPLIANCE_TYPE_NAME)
-                  return {
-                    value: {
-                      deviceComplianceScheduledActionForRules: value[SCHEDULED_ACTIONS_FIELD_NAME] ?? [],
-                    },
-                  }
-                }),
+                rename: [
+                  {
+                    from: SCHEDULED_ACTIONS_FIELD_NAME,
+                    to: 'deviceComplianceScheduledActionForRules',
+                    onConflict: 'skip',
+                  },
+                ],
+                pick: ['deviceComplianceScheduledActionForRules'],
               },
             },
             condition: {
@@ -345,6 +417,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceCompliancePolicies',
+          }),
         ],
         remove: [
           {

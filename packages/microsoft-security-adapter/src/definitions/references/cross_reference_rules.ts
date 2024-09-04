@@ -24,7 +24,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   {
     src: {
       field: 'groupId',
-      parentTypes: [intuneConstants.APPLICATION_ASSIGNMENTS_TARGET_TYPE_NAME],
+      parentTypes: intuneConstants.TYPES_WITH_GROUP_ASSIGNMENTS_TARGET,
     },
     target: { type: entraConstants.GROUP_TYPE_NAME },
     serializationStrategy: 'id',

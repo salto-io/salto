@@ -236,6 +236,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     } catch (error) {
       if (error instanceof clientUtils.HTTPError && error.response.status === 403) {
         log.error('failed to get brand logos due to insufficient permissions with error %s', error.message)
+        brandsWithLogos.forEach(brand => delete brand.value[LOGO_FIELD])
         return { errors: [fetchUtils.errors.getInsufficientPermissionsError(BRAND_LOGO_TYPE_NAME)] }
       }
       log.error('encountered an error while fetching brand logos %s', error.message)

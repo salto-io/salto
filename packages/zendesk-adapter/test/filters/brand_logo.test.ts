@@ -117,7 +117,7 @@ describe('brand logo filter', () => {
         [LOGO_FIELD]: new ReferenceExpression(logo.elemID, logo),
       })
     })
-    it('should return fetch warning in case of 403 error', async () => {
+    it('should return fetch warning in case of 403 error and remove logo field from brand', async () => {
       mockGet.mockImplementation(_params => {
         throw new clientUtils.HTTPError('err', { data: 'err' as unknown as clientUtils.ResponseValue, status: 403 })
       })
@@ -131,6 +131,8 @@ describe('brand logo filter', () => {
           severity: 'Info',
         },
       ])
+      const brand = elements.filter(isInstanceElement).find(e => e.elemID.typeName === BRAND_TYPE_NAME)
+      expect(brand?.value[LOGO_FIELD]).toBeUndefined()
     })
     it('should throw error on any other error', async () => {
       mockGet.mockImplementation(_params => {

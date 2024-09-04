@@ -165,6 +165,8 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors[1]).toEqual({
       elemID: differentOptionInstance.elemID,
       message: 'Inner problem occurred during deployment of custom field context options, please contact support',
+      detailedMessage:
+        'Inner problem occurred during deployment of custom field context options, please contact support',
       severity: 'Error',
     })
     expect(result.deployResult.appliedChanges).toHaveLength(0)
@@ -196,6 +198,8 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors[0]).toEqual({
       elemID: differentOptionInstance.elemID,
       message: 'Inner problem occurred during deployment of custom field context options, please contact support',
+      detailedMessage:
+        'Inner problem occurred during deployment of custom field context options, please contact support',
       severity: 'Error',
     })
     expect(result.deployResult.appliedChanges).toHaveLength(0)

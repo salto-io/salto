@@ -286,6 +286,7 @@ describe('issueTypeScheme', () => {
       expect(res?.deployResult.errors).toEqual([
         {
           message: 'Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: some error',
+          detailedMessage: 'Error: Failed to delete /rest/api/3/issuetypescheme/1/issuetype/1 with error: some error',
           severity: 'Error',
           elemID: afterInstance.elemID,
         },

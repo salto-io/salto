@@ -196,11 +196,13 @@ describe('adapter', () => {
       expect(deployRes.errors).toEqual([
         {
           message: 'Error: some error',
+          detailedMessage: 'Error: some error',
           severity: 'Error',
           elemID: ElemID.fromFullName('jira.FieldConfigurationIssueTypeItem.instance.inst1'),
         },
         {
           message: 'Error: some error',
+          detailedMessage: 'Error: some error',
           severity: 'Error',
           elemID: ElemID.fromFullName('jira.FieldConfigurationIssueTypeItem.instance.inst2'),
         },
@@ -458,16 +460,16 @@ describe('adapter', () => {
           })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [],
-          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+          errors: [{ message: 'scriptRunnerError', detailedMessage: 'scriptRunnerError', severity: 'Error' }],
         })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [testInstance2],
-          errors: [{ message: 'jsmError', severity: 'Error' }],
+          errors: [{ message: 'jsmError', detailedMessage: 'jsmError', severity: 'Error' }],
         })
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
-          errors: [{ message: 'some error', severity: 'Error' }],
+          errors: [{ message: 'some error', detailedMessage: 'some error', severity: 'Error' }],
         })
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
@@ -524,14 +526,17 @@ describe('adapter', () => {
         expect(result.errors).toEqual([
           {
             message: 'some error',
+            detailedMessage: 'some error',
             severity: 'Error',
           },
           {
             message: 'scriptRunnerError',
+            detailedMessage: 'scriptRunnerError',
             severity: 'Error',
           },
           {
             message: 'jsmError',
+            detailedMessage: 'jsmError',
             severity: 'Error',
           },
         ])
@@ -566,16 +571,16 @@ describe('adapter', () => {
           })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [],
-          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+          errors: [{ message: 'scriptRunnerError', detailedMessage: 'scriptRunnerError', severity: 'Error' }],
         })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [testInstance2],
-          errors: [{ message: 'jsmError', severity: 'Error' }],
+          errors: [{ message: 'jsmError', detailedMessage: 'jsmError', severity: 'Error' }],
         })
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
-          errors: [{ message: 'some error', severity: 'Error' }],
+          errors: [{ message: 'some error', detailedMessage: 'some error', severity: 'Error' }],
         })
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
@@ -627,14 +632,18 @@ describe('adapter', () => {
         expect(result.errors).toEqual([
           {
             message: 'some error',
+            detailedMessage: 'some error',
             severity: 'Error',
           },
           {
             message: 'scriptRunnerError',
+            detailedMessage: 'scriptRunnerError',
             severity: 'Error',
           },
           {
             message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            detailedMessage:
+              'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
             severity: 'Warning',
           },
         ])
@@ -764,20 +773,20 @@ describe('adapter', () => {
           })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [],
-          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+          errors: [{ message: 'scriptRunnerError', detailedMessage: 'scriptRunnerError', severity: 'Error' }],
         })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [testInstance2],
-          errors: [{ message: 'jsmError', severity: 'Error' }],
+          errors: [{ message: 'jsmError', detailedMessage: 'jsmError', severity: 'Error' }],
         })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [],
-          errors: [{ message: 'jsmAssetsError', severity: 'Error' }],
+          errors: [{ message: 'jsmAssetsError', detailedMessage: 'jsmAssetsError', severity: 'Error' }],
         })
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
-          errors: [{ message: 'some error', severity: 'Error' }],
+          errors: [{ message: 'some error', detailedMessage: 'some error', severity: 'Error' }],
         })
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
@@ -837,18 +846,22 @@ describe('adapter', () => {
         expect(result.errors).toEqual([
           {
             message: 'some error',
+            detailedMessage: 'some error',
             severity: 'Error',
           },
           {
             message: 'scriptRunnerError',
+            detailedMessage: 'scriptRunnerError',
             severity: 'Error',
           },
           {
             message: 'jsmError',
+            detailedMessage: 'jsmError',
             severity: 'Error',
           },
           {
             message: 'jsmAssetsError',
+            detailedMessage: 'jsmAssetsError',
             severity: 'Error',
           },
         ])
@@ -883,16 +896,16 @@ describe('adapter', () => {
           })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [],
-          errors: [{ message: 'scriptRunnerError', severity: 'Error' }],
+          errors: [{ message: 'scriptRunnerError', detailedMessage: 'scriptRunnerError', severity: 'Error' }],
         })
         ;(getAllElements as jest.MockedFunction<typeof getAllElements>).mockResolvedValueOnce({
           elements: [testInstance2],
-          errors: [{ message: 'jsmError', severity: 'Error' }],
+          errors: [{ message: 'jsmError', detailedMessage: 'jsmError', severity: 'Error' }],
         })
         ;(addRemainingTypes as jest.MockedFunction<typeof addRemainingTypes>).mockImplementation(() => {})
         ;(getAllInstances as jest.MockedFunction<typeof getAllInstances>).mockResolvedValue({
           elements: [serviceDeskProjectInstance],
-          errors: [{ message: 'some error', severity: 'Error' }],
+          errors: [{ message: 'some error', detailedMessage: 'some error', severity: 'Error' }],
         })
         ;(loadSwagger as jest.MockedFunction<typeof loadSwagger>).mockResolvedValue({
           document: {},
@@ -952,14 +965,17 @@ describe('adapter', () => {
         expect(result.errors).toEqual([
           {
             message: 'some error',
+            detailedMessage: 'some error',
             severity: 'Error',
           },
           {
             message: 'jsmError',
+            detailedMessage: 'jsmError',
             severity: 'Error',
           },
           {
             message: 'scriptRunnerError',
+            detailedMessage: 'scriptRunnerError',
             severity: 'Error',
           },
         ])

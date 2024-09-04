@@ -15,6 +15,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createEmptyType, getFilterParams } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
@@ -169,6 +170,24 @@ describe('jqlReferencesFilter', () => {
       })
       instance.value.jql = templateExpression
 
+      await filter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.jql).toBe('status = Done')
+
+      await filter.onDeploy?.([toChange({ after: instance })])
+      expect(instance.value.jql).toBe(templateExpression)
+    })
+
+    it('should resolve correctly unresolved references', async () => {
+      const elementsSource = buildElementsSourceFromElements([fieldInstance, doneInstance])
+      const templateExpression = new TemplateExpression({
+        parts: [
+          new ReferenceExpression(fieldInstance.elemID),
+          ' = ',
+          new ReferenceExpression(doneInstance.elemID.createNestedID('name')),
+        ],
+      })
+      instance.value.jql = templateExpression
+      filter = jqlReferencesFilter(getFilterParams({ config, elementsSource }))
       await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value.jql).toBe('status = Done')
 

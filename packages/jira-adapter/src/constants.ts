@@ -146,6 +146,7 @@ export const FIELD_CONFIGURATION_DESCRIPTION_MAX_LENGTH = 255
 export const FIELD_CONFIGURATION_ITEM_DESCRIPTION_MAX_LENGTH = 1000
 export const AUTOMATION_RETRY_PERIODS = [0, 1000 * 60, 1000 * 60 * 5] // 0, 1 minute, 5 minutes, increasing exponentially
 export const WORKFLOW_RETRY_PERIODS = [0, 1000 * 3, 1000 * 9, 1000 * 27, 1000 * 81] // 0, 3 seconds, 9 seconds, 27 seconds, 81 seconds
+export const PROJECT_IDS = 'projectIds'
 // almost constant functions
 export const fetchFailedWarnings = (name: string): string =>
   `Salto could not access the ${name} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`

@@ -308,6 +308,7 @@ describe('expression language filter', () => {
       expect(res.deployResult.errors[0]).toEqual({
         severity: 'Error',
         message: 'Error parsing Okta expression language expression',
+        detailedMessage: 'Error parsing Okta expression language expression',
         elemID: groupRuleInvalidTemplate.elemID,
       })
     })

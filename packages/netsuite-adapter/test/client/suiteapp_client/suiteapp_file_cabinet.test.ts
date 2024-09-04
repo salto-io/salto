@@ -808,6 +808,7 @@ describe('suiteapp_file_cabinet', () => {
           {
             elemID: getChangeData(changes[0]).elemID,
             message: 'someError',
+            detailedMessage: 'someError',
             severity: 'Error',
           },
         ])
@@ -827,6 +828,7 @@ describe('suiteapp_file_cabinet', () => {
           {
             elemID: getChangeData(changes[1]).elemID,
             message: 'someError',
+            detailedMessage: 'someError',
             severity: 'Error',
           },
         ])
@@ -971,11 +973,13 @@ describe('suiteapp_file_cabinet', () => {
           {
             elemID: getChangeData(changes[0]).elemID,
             message: 'some error',
+            detailedMessage: 'some error',
             severity: 'Error',
           },
           {
             elemID: getChangeData(changes[1]).elemID,
             message: 'Cannot deploy this file because its parent folder deploy failed',
+            detailedMessage: 'Cannot deploy this file because its parent folder deploy failed',
             severity: 'Error',
           },
         ])

@@ -622,6 +622,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/api/v1/email-domains/{id}',
                   method: 'put',
                 },
+                transformation: {
+                  // These are the only fields that can be modified.
+                  pick: ['displayName', 'userName'],
+                },
               },
             },
           ],

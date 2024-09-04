@@ -34,6 +34,7 @@ import { brandThemeRemovalValidator } from './brand_theme_removal'
 import { userStatusValidator } from './user_status'
 import { disabledAuthenticatorsInMfaPolicyValidator } from './disabled_authenticators_in_mfa'
 import { oidcIdentityProviderValidator } from './oidc_idp'
+import { emailDomainAdditionValidator } from './email_domain_addition'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -110,6 +111,7 @@ export default ({
     userStatusChanges: userStatusValidator,
     disabledAuthenticatorsInMfaPolicy: disabledAuthenticatorsInMfaPolicyValidator,
     oidcIdentityProvider: oidcIdentityProviderValidator,
+    emailDomainAddition: emailDomainAdditionValidator,
   }
 
   return createChangeValidator({

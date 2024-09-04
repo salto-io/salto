@@ -1,0 +1,139 @@
+[
+  {
+    "path": "/api/v1/email-domains",
+    "scope": "",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "OeDifwhben3B0leR2697",
+      "validationStatus": "NOT_STARTED",
+      "displayName": "My Email Domain",
+      "userName": "sender",
+      "domain": "example.com",
+      "validationSubdomain": "mail",
+      "dnsValidationRecords": [
+        {
+          "recordType": "TXT",
+          "fqdn": "_oktaverification.example.com",
+          "verificationValue": "fdcd9e59bc404e638c15388373c61ec3"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "mail.example.com",
+          "verificationValue": "u21992032.wl033.sendgrid.net"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "okt._domainkey.example.com",
+          "verificationValue": "okt.domainkey.u21992032.wl033.sendgrid.net"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "okt2._domainkey.example.com",
+          "verificationValue": "okt2.domainkey.u21992032.wl033.sendgrid.net"
+        }
+      ]
+    },
+    "body": {
+      "validationStatus": "NOT_STARTED",
+      "displayName": "My Email Domain",
+      "userName": "sender",
+      "domain": "example.com",
+      "validationSubdomain": "mail",
+      "dnsValidationRecords": [
+        {
+          "recordType": "TXT",
+          "fqdn": "_oktaverification.example.com",
+          "verificationValue": "f290b4677ee54add8f582ca69d80154c"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "mail.example.com",
+          "verificationValue": "u21992032.wl033.sendgrid.net"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "okt._domainkey.example.com",
+          "verificationValue": "okt.domainkey.u21992032.wl033.sendgrid.net"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "okt2._domainkey.example.com",
+          "verificationValue": "okt2.domainkey.u21992032.wl033.sendgrid.net"
+        }
+      ],
+      "brandId": "bndgy8c9vh5GeoyOe697"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1725438429"
+    }
+  },
+  {
+    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "bndgy8c9vh5GeoyOe697",
+      "name": "amir-brand",
+      "removePoweredByOkta": true,
+      "customPrivacyPolicyUrl": null,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "emailDomainId": "OeDifwhben3B0leR2697",
+      "defaultApp": {
+        "appInstanceId": "0oad1nts1d2M8Bdvy697",
+        "appLinkName": "word",
+        "classicApplicationUri": null
+      },
+      "_links": {
+        "themes": {
+          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes",
+          "hints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        },
+        "self": {
+          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697",
+          "hints": {
+            "allow": [
+              "GET",
+              "PUT",
+              "DELETE"
+            ]
+          }
+        },
+        "emailDomain": {
+          "href": "https://salto.okta.com/api/v1/email-domains/OeDifwhben3B0leR2697",
+          "hints": {
+            "allow": [
+              "GET",
+              "PUT"
+            ]
+          }
+        }
+      }
+    },
+    "body": {
+      "id": "bndgy8c9vh5GeoyOe697",
+      "name": "amir-brand",
+      "removePoweredByOkta": true,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "defaultApp": {
+        "appInstanceId": "0oad1nts1d2M8Bdvy697",
+        "appLinkName": "word"
+      },
+      "emailDomainId": "OeDifwhben3B0leR2697"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "497",
+      "x-rate-limit-reset": "1725438429"
+    }
+  }
+]

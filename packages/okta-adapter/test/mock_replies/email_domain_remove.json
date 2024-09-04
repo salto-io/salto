@@ -1,0 +1,69 @@
+[
+  {
+    "path": "/api/v1/brands/bndgy8c9vh5GeoyOe697",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "bndgy8c9vh5GeoyOe697",
+      "name": "amir-brand",
+      "removePoweredByOkta": true,
+      "customPrivacyPolicyUrl": null,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "defaultApp": {
+        "appInstanceId": "0oad1nts1d2M8Bdvy697",
+        "appLinkName": "word",
+        "classicApplicationUri": null
+      },
+      "_links": {
+        "themes": {
+          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697/themes",
+          "hints": {
+            "allow": [
+              "GET"
+            ]
+          }
+        },
+        "self": {
+          "href": "https://salto.okta.com/api/v1/brands/bndgy8c9vh5GeoyOe697",
+          "hints": {
+            "allow": [
+              "GET",
+              "PUT",
+              "DELETE"
+            ]
+          }
+        }
+      }
+    },
+    "body": {
+      "id": "bndgy8c9vh5GeoyOe697",
+      "name": "amir-brand",
+      "removePoweredByOkta": true,
+      "agreeToCustomPrivacyPolicy": false,
+      "isDefault": false,
+      "defaultApp": {
+        "appInstanceId": "0oad1nts1d2M8Bdvy697",
+        "appLinkName": "word"
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1725439190"
+    }
+  },
+  {
+    "path": "/api/v1/email-domains/OeDifwhben3B0leR2697",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "497",
+      "x-rate-limit-reset": "1725439190"
+    }
+  }
+]

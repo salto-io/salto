@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/api/v1/email-domains/OeDifwhben3B0leR2697",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "OeDifwhben3B0leR2697",
+      "validationStatus": "NOT_STARTED",
+      "displayName": "My Email Domain",
+      "userName": "support",
+      "domain": "example.com",
+      "validationSubdomain": "mail",
+      "dnsValidationRecords": [
+        {
+          "recordType": "TXT",
+          "fqdn": "_oktaverification.example.com",
+          "verificationValue": "fdcd9e59bc404e638c15388373c61ec3"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "mail.example.com",
+          "verificationValue": "u21992032.wl033.sendgrid.net"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "okt._domainkey.example.com",
+          "verificationValue": "okt.domainkey.u21992032.wl033.sendgrid.net"
+        },
+        {
+          "recordType": "cname",
+          "fqdn": "okt2._domainkey.example.com",
+          "verificationValue": "okt2.domainkey.u21992032.wl033.sendgrid.net"
+        }
+      ]
+    },
+    "body": {
+      "displayName": "My Email Domain",
+      "userName": "support"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1725439122"
+    }
+  }
+]

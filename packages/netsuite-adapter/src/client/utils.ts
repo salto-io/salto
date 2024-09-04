@@ -98,7 +98,15 @@ export const sliceMessagesByRegex = (
 export const getConfigRecordsFieldValue = (configRecord: ConfigRecord | undefined, field: string): unknown =>
   configRecord?.data?.fields?.[field]
 
-export const toElementError = (elemID: ElemID, message: string, detailedMessage: string): SaltoElementError => ({
+export const toElementError = ({
+  elemID,
+  message,
+  detailedMessage,
+}: {
+  elemID: ElemID
+  message: string
+  detailedMessage: string
+}): SaltoElementError => ({
   elemID,
   message,
   detailedMessage,
@@ -141,7 +149,7 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
       appliedChanges.push(change)
       elemIdToInternalId[elemID.getFullName()] = result.internalId
     } else {
-      errors.push(toElementError(elemID, result.errorMessage, result.errorMessage))
+      errors.push(toElementError({ elemID, message: result.errorMessage, detailedMessage: result.errorMessage }))
     }
   })
 

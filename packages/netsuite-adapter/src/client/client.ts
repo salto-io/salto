@@ -445,7 +445,7 @@ export default class NetsuiteClient {
             .filter(isInstanceChange)
             .map(getChangeData)
             .filter(inst => inst.elemID.typeName === CONFIG_FEATURES)
-            .map(({ elemID }) => toElementError(elemID, message, message))
+            .map(({ elemID }) => toElementError({ elemID, message, detailedMessage: message }))
 
           return {
             errors: errors.concat(featuresError),
@@ -470,7 +470,7 @@ export default class NetsuiteClient {
         const elementErrors = elemIdsWithError.flatMap(({ message, elemID }) =>
           changesByTopLevel[elemID.getFullName()]
             .map(getChangeData)
-            .map(elem => toElementError(elem.elemID, message, message)),
+            .map(elem => toElementError({ elemID: elem.elemID, message, detailedMessage: message })),
         )
         errors.push(...elementErrors)
 

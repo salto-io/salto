@@ -7,11 +7,13 @@
  */
 
 import _ from 'lodash'
+import { awu } from '@salto-io/lowerdash'
 import { definitions, deployment } from '@salto-io/adapter-components'
 import {
   getChangeData,
   isAdditionChange,
   isInstanceChange,
+  isInstanceElement,
   isModificationChange,
   isReferenceExpression,
   isRemovalChange,
@@ -553,30 +555,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   pick: ['name'],
                 },
               },
-              copyFromResponse: {
-                toSharedContext: {
-                  nestUnderElemID: false,
-                  adjust: async ({ value, context }) => {
-                    validatePlainObject(value, BRAND_TYPE_NAME)
-                    if (value.emailDomainId === undefined || !isReferenceExpression(value.emailDomainId)) {
-                      return {
-                        value: {},
-                      }
-                    }
-                    const emailDomainToReferencingBrandId = _.get(
-                      context.sharedContext,
-                      ['emailDomainToReferencingBrandId', value.emailDomainId.elemID.getFullName()],
-                      [],
-                    )
-                    emailDomainToReferencingBrandId.push(getChangeData(context.change).value.id)
-                    return {
-                      value: {
-                        emailDomainToReferencingBrandId,
-                      },
-                    }
-                  },
-                },
-              },
             },
           ],
           modify: [
@@ -612,18 +590,22 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   // TODO: extract to email domain utils file
                   adjust: async ({ value, context }) => {
                     validatePlainObject(value, EMAIL_DOMAIN_TYPE_NAME)
-                    const emailDomainFullName = getChangeData(context.change).elemID.getFullName()
-                    const referencingBrandId = (
-                      _.get(context.sharedContext, 'emailDomainToReferencingBrandId', [])[emailDomainFullName] ?? []
-                    ).pop()
-                    if (_.isString(referencingBrandId)) {
-                      throw new Error(`Brand not found for email domain ${emailDomainFullName}`)
+                    const emailDomainElemId = getChangeData(context.change).elemID
+                    const [brand] = (await awu(await context.elementSource.getAll())
+                      .filter(isInstanceElement)
+                      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+                      .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
+                      .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
+                      .toArray()) ?? [undefined]
+
+                    if (brand === undefined) {
+                      throw new Error(`Brand not found for email domain ${emailDomainElemId.getFullName()}`)
                     }
                     // Use the ID directly instead of a reference value to avoid circular references.
                     return {
                       value: {
                         ...value,
-                        brandId: referencingBrandId,
+                        brandId: brand.value.id,
                       },
                     }
                   },

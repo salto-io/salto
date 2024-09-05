@@ -60,6 +60,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
+  parseAdditionalAutomationExpressions?: boolean
   enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
   enableJsmExperimental?: boolean
@@ -381,6 +382,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     allowUserCallFailure: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
+    parseAdditionalAutomationExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
@@ -443,6 +445,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.allowUserCallFailure',
       'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
+      'fetch.parseAdditionalAutomationExpressions',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       'deploy.ignoreMissingExtensions',

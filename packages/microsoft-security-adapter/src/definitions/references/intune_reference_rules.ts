@@ -14,6 +14,8 @@ const {
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_COMPLIANCE_RESTRICTED_APPS_TYPE_NAME,
+  FILTER_TYPE_NAME,
+  TYPES_WITH_GROUP_ASSIGNMENTS_TARGET,
 } = intuneConstants
 
 const { recursiveNestedTypeName } = fetchUtils.element
@@ -60,5 +62,13 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     },
     target: { type: APPLICATION_TYPE_NAME },
     serializationStrategy: 'bundleId',
+  },
+  {
+    src: {
+      field: 'deviceAndAppManagementAssignmentFilterId',
+      parentTypes: TYPES_WITH_GROUP_ASSIGNMENTS_TARGET,
+    },
+    target: { type: FILTER_TYPE_NAME },
+    serializationStrategy: 'id',
   },
 ]

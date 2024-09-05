@@ -74,6 +74,7 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
     { fieldName: intuneConstants.APP_STORE_URL_FIELD_NAME },
     { fieldName: intuneConstants.BUNDLE_ID_FIELD_NAME },
   ],
+  [intuneConstants.FILTER_TYPE_NAME]: [{ fieldName: 'platform' }],
 }
 
 export const TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION = _.fromPairs(

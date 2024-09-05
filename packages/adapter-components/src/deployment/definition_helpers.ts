@@ -16,6 +16,7 @@ export const DEFAULT_CONTEXT = {
 type StandardDeployArgs<AdditionalAction extends string, ClientOptions extends string> = {
   bulkPath: string
   idField?: string
+  modificationMethod?: 'put' | 'patch'
   // do not add definitions for some actions
   withoutActions?: (ActionName | AdditionalAction)[]
   client?: ClientOptions
@@ -28,6 +29,7 @@ export const createStandardItemDeployDefinition = <AdditionalAction extends stri
   withoutActions,
   nestUnderField,
   idField = 'id',
+  modificationMethod = 'put',
 }: StandardDeployArgs<AdditionalAction, ClientOptions>): InstanceDeployApiDefinitions<
   AdditionalAction,
   ClientOptions
@@ -49,7 +51,7 @@ export const createStandardItemDeployDefinition = <AdditionalAction extends stri
         request: {
           endpoint: {
             path: `${bulkPath}/{${idField}}`,
-            method: 'put',
+            method: modificationMethod,
             client,
           },
         },

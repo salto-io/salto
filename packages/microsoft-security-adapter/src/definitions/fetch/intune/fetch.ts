@@ -25,6 +25,7 @@ const {
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
+  FILTER_TYPE_NAME,
 
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
@@ -304,6 +305,32 @@ const graphBetaCustomizations: FetchCustomizations = {
           omit: true,
         },
       },
+    },
+  },
+  [FILTER_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/assignmentFilters',
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['payloads'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune_DeviceSettings/AssignmentFilterSummaryBlade/assignmentFilterId/{id}/filterType~/0',
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({

@@ -12,14 +12,12 @@ import {
   getChangeData,
   isAdditionChange,
   isInstanceChange,
-  isInstanceElement,
   isModificationChange,
   isReferenceExpression,
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
 import { validatePlainObject } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -52,8 +50,6 @@ import {
 import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
-
-const { awu } = collections.asynciterable
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -567,15 +563,15 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                         value: {},
                       }
                     }
-                    const emailDomainToReferencingBrand = _.get(
+                    const emailDomainToReferencingBrandId = _.get(
                       context.sharedContext,
-                      ['emailDomainToReferencingBrand', value.emailDomainId.elemID.getFullName()],
+                      ['emailDomainToReferencingBrandId', value.emailDomainId.elemID.getFullName()],
                       [],
                     )
-                    emailDomainToReferencingBrand.push(getChangeData(context.change).elemID)
+                    emailDomainToReferencingBrandId.push(getChangeData(context.change).value.id)
                     return {
                       value: {
-                        emailDomainToReferencingBrand,
+                        emailDomainToReferencingBrandId,
                       },
                     }
                   },
@@ -616,22 +612,18 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   // TODO: extract to email domain utils file
                   adjust: async ({ value, context }) => {
                     validatePlainObject(value, EMAIL_DOMAIN_TYPE_NAME)
-                    const emailDomainElemId = getChangeData(context.change).elemID
-                    const [brand] = (await awu(await context.elementSource.getAll())
-                      .filter(isInstanceElement)
-                      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-                      .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
-                      .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
-                      .toArray()) ?? [undefined]
-
-                    if (brand === undefined) {
-                      throw new Error(`Brand not found for email domain ${emailDomainElemId.getFullName()}`)
+                    const emailDomainFullName = getChangeData(context.change).elemID.getFullName()
+                    const referencingBrandId = (
+                      _.get(context.sharedContext, 'emailDomainToReferencingBrandId', [])[emailDomainFullName] ?? []
+                    ).pop()
+                    if (_.isString(referencingBrandId)) {
+                      throw new Error(`Brand not found for email domain ${emailDomainFullName}`)
                     }
                     // Use the ID directly instead of a reference value to avoid circular references.
                     return {
                       value: {
                         ...value,
-                        brandId: brand.value.id,
+                        brandId: referencingBrandId,
                       },
                     }
                   },

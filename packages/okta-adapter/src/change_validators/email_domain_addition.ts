@@ -5,16 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ChangeValidator,
-  getChangeData,
-  isAdditionChange,
-  isInstanceChange,
-  isInstanceElement,
-  isReferenceExpression,
-} from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { ChangeValidator, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { EMAIL_DOMAIN_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
+import { EMAIL_DOMAIN_TYPE_NAME } from '../constants'
+import { findReferencingBrands } from '../definitions/deploy/types/email_domain'
 
 const { awu } = collections.asynciterable
 
@@ -30,12 +25,7 @@ export const emailDomainAdditionValidator: ChangeValidator = async (changes, ele
     .filter(instance => instance.elemID.typeName === EMAIL_DOMAIN_TYPE_NAME)
     .filter(async emailDomainInstance =>
       // Check if there is at least one brand that uses the email domain, return True if there isn't.
-      awu(await elementsSource.getAll())
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-        .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
-        .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainInstance.elemID))
-        .isEmpty(),
+      _.isEmpty(await findReferencingBrands(emailDomainInstance.elemID, elementsSource)),
     )
     .map(instance => ({
       elemID: instance.elemID,

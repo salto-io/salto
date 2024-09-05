@@ -557,6 +557,30 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   pick: ['name'],
                 },
               },
+              copyFromResponse: {
+                toSharedContext: {
+                  nestUnderElemID: false,
+                  adjust: async ({ value, context }) => {
+                    validatePlainObject(value, BRAND_TYPE_NAME)
+                    if (value.emailDomainId === undefined || !isReferenceExpression(value.emailDomainId)) {
+                      return {
+                        value: {},
+                      }
+                    }
+                    const emailDomainToReferencingBrand = _.get(
+                      context.sharedContext,
+                      ['emailDomainToReferencingBrand', value.emailDomainId.elemID.getFullName()],
+                      [],
+                    )
+                    emailDomainToReferencingBrand.push(getChangeData(context.change).elemID)
+                    return {
+                      value: {
+                        emailDomainToReferencingBrand,
+                      },
+                    }
+                  },
+                },
+              },
             },
           ],
           modify: [

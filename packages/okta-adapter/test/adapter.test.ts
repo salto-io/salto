@@ -65,6 +65,7 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   USER_SCHEMA_TYPE_NAME,
+  EMAIL_DOMAIN_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -2731,6 +2732,88 @@ describe('adapter', () => {
           changeGroup: {
             groupID: 'appLogo',
             changes: [toChange({ before: appLogo, after: updatedAppLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy email domain', () => {
+      let emailDomainType: ObjectType
+
+      beforeEach(() => {
+        emailDomainType = new ObjectType({
+          elemID: new ElemID(OKTA, EMAIL_DOMAIN_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an email domain', async () => {
+        loadMockReplies('email_domain_add.json')
+        const emailDomain = new InstanceElement('emailDomain', emailDomainType, {
+          domain: 'example.com',
+          displayName: 'My Email Domain',
+          userName: 'sender',
+        })
+        // An email domain may only be added if at least one brand uses it.
+        const brandBefore = new InstanceElement('brand1', brandType, {
+          name: 'subdomain.example.com',
+        })
+        const brandAfter = brandBefore.clone()
+        brandAfter.value.emailDomainId = new ReferenceExpression(emailDomain.elemID, emailDomain)
+
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [toChange({ after: emailDomain }), toChange({ before: brandBefore, after: brandAfter })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'emaildomain-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify a brand', async () => {
+        loadMockReplies('brand_modify.json')
+        const updatedBrand1 = brand1.clone()
+        updatedBrand1.value.removePoweredByOkta = true
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [
+              toChange({
+                before: brand1,
+                after: updatedBrand1,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
+          true,
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove a brand', async () => {
+        loadMockReplies('brand_remove.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brand',
+            changes: [toChange({ before: brand1 })],
           },
           progressReporter: nullProgressReporter,
         })

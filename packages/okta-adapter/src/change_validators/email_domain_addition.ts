@@ -5,42 +5,37 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
 import {
   ChangeValidator,
   getChangeData,
   isAdditionChange,
-  isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { EMAIL_DOMAIN_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
 
-/**
- * Validator to check that an email domain is not added without at least one brand that uses it.
- */
-export const emailDomainAdditionValidator: ChangeValidator = async changes => {
-  // To find a brand that uses the email domain, only look at changes, since the email domain is new and cannot be
-  // referenced by an unchanged brand.
-  const brands = changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-    .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
+const { awu } = collections.asynciterable
 
-  return changes
+export const emailDomainAdditionValidator: ChangeValidator = async (changes, elementsSource) => {
+  if (!elementsSource) {
+    return []
+  }
+
+  return awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === EMAIL_DOMAIN_TYPE_NAME)
-    .filter(emailDomainInstance =>
+    .filter(async emailDomainInstance =>
       // Check if there is at least one brand that uses the email domain, return True if there isn't.
-      _.isEmpty(
-        brands.filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainInstance.elemID)),
-      ),
+      awu(await elementsSource.getAll())
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+        .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
+        .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainInstance.elemID))
+        .isEmpty(),
     )
     .map(instance => ({
       elemID: instance.elemID,
@@ -48,4 +43,5 @@ export const emailDomainAdditionValidator: ChangeValidator = async changes => {
       message: 'Cannot add email domain without at least one brand that uses it',
       detailedMessage: 'Cannot add email domain without at least one brand that uses it',
     }))
+    .toArray()
 }

@@ -8,16 +8,17 @@
 
 import { ActionName } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { values } from '@salto-io/lowerdash'
+import { values, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import xmljs from 'xml-js'
 import { UserConfig } from '../../config'
-import { DUMMY_DELAY_TIMEOUT } from '../../constants'
+import { DEFAULT_POST_DEPLOY_DELAY } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 
-// we use a dummy delay to simulate the delay of the service delay after addition and deletion
-// since it takes time to Jamf servers to be updated https://community.jamf.com/t5/jamf-pro/delay-time-after-post-or-delete-api-calls/m-p/323383/emcs_t/S2h8ZW1haWx8dG9waWNfc3Vic2NyaXB0aW9ufE0wM1dLNk4xNU4yMlBFfDMyMzM4M3xTVUJTQ1JJUFRJT05TfGhL#M278490
-const dummyDelay = (delay = DUMMY_DELAY_TIMEOUT): Promise<void> => new Promise(resolve => setTimeout(resolve, delay))
+const { timeout } = promises
+// we use a delay to handle the delay of the service to be updated after addition and deletion
+// https://community.jamf.com/t5/jamf-pro/delay-time-after-post-or-delete-api-calls/m-p/323383/emcs_t/S2h8ZW1haWx8dG9waWNfc3Vic2NyaXB0aW9ufE0wM1dLNk4xNU4yMlBFfDMyMzM4M3xTVUJTQ1JJUFRJT05TfGhL#M278490
+const postDeployDelay = (delay = DEFAULT_POST_DEPLOY_DELAY): Promise<void> => timeout.sleep(delay)
 
 /*
  * Util function to create deploy definitions for classic Jamf api given a type.
@@ -44,6 +45,7 @@ export const createClassicApiDefinitionsForType = (
                 }
                 const parsedXML = xmljs.xml2js(value, { compact: true })
                 const id = _.get(parsedXML, `${typeName}.id._text`)
+                await postDeployDelay(userConfig.deploy?.delayAfterDeploy)
                 return { value: { id: Number(id) } }
               },
             },
@@ -65,7 +67,6 @@ export const createClassicApiDefinitionsForType = (
                   throw new Error('Expected value to be a record')
                 }
                 const xmlVal = xmljs.js2xml({ [typeName]: { ...value } }, { compact: true })
-                await dummyDelay(userConfig.deploy?.delayAfterDeploy)
                 return { value: xmlVal }
               },
             },
@@ -106,8 +107,17 @@ export const createClassicApiDefinitionsForType = (
             transformation: {
               adjust: async item => {
                 await adjustFunctions?.remove?.(item)
-                await dummyDelay(userConfig.deploy?.delayAfterDeploy)
                 return item
+              },
+            },
+          },
+          copyFromResponse: {
+            additional: {
+              adjust: async () => {
+                // We do not really copy from response
+                // This is a hack to run postDeployDelay function after the API call
+                await postDeployDelay(userConfig.deploy?.delayAfterDeploy)
+                return { value: {} }
               },
             },
           },

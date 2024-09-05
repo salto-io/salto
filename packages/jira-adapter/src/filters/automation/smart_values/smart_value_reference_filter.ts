@@ -102,9 +102,7 @@ const getPossibleSmartValues = (
     }
   }
 
-  ;(automation.value.components ?? []).concat(automation.value.trigger).forEach(component => {
-    findSmartValues(component)
-  })
+  ;(automation.value.components ?? []).concat(automation.value.trigger).forEach(component => findSmartValues(component))
   return containers
 }
 

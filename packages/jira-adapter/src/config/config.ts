@@ -272,6 +272,7 @@ const changeValidatorNames = [
   'fieldContextDefaultValue',
   'fieldContextOrderRemoval',
   'optionValue',
+  'enhancedSearchDeployment',
 ]
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]

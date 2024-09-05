@@ -202,6 +202,7 @@ import fieldContextOptionsDeploymentFilter from './filters/fields/context_option
 import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
 import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
 import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
+import enhancedSearchNoiseReductionFilter from './filters/script_runner/enhanced_search/enhanced_search_noise_filter'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -321,6 +322,8 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
+  // Must run before jqlReferencesFilter
+  enhancedSearchNoiseReductionFilter,
   jqlReferencesFilter,
   removeEmptyValuesFilter,
   maskingFilter,

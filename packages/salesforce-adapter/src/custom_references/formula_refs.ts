@@ -49,7 +49,7 @@ const referenceInfoFromFieldValue = (
   return {
     source: path,
     target: referencesToOtherTypes[0],
-    type: 'weak',
+    type: 'strong',
   }
 }
 

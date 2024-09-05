@@ -5,95 +5,195 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceInfo } from '@salto-io/adapter-api'
-import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import { ElemID, InstanceElement, ObjectType, ReferenceInfo } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { formulaRefsHandler } from '../../src/custom_references/formula_refs'
+import { SALESFORCE } from '../../src/constants'
 
 describe('formulaRefs', () => {
-  const flowConditionObjectType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'FlowCondition'),
-    annotations: { [METADATA_TYPE]: 'FlowCondition' },
-    fields: {
-      leftValueReference: {
-        refType: BuiltinTypes.STRING,
-      },
-    },
-  })
-  const flowRuleObjectType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'FlowRule'),
-    annotations: { [METADATA_TYPE]: 'FlowRule' },
-    fields: { conditions: { refType: new ListType(flowConditionObjectType) } },
-  })
-
-  const flowDecisionObjectType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'FlowDecision'),
-    annotations: { [METADATA_TYPE]: 'FlowDecision' },
-    fields: { rules: { refType: new ListType(flowRuleObjectType) } },
-  })
-
-  const flowType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'Flow'),
-    annotations: { [METADATA_TYPE]: 'Flow' },
-    fields: {
-      decisions: { refType: flowDecisionObjectType },
-    },
-  })
-
-  const referringInstance = new InstanceElement('SomeFlow', flowType, {
-    decisions: [
-      {
-        rules: [
-          {
-            conditions: [
-              {
-                leftValueReference: '$Label.SomeLabel',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  })
-
   describe('weak references handler', () => {
+    const referredInstance = new InstanceElement('SomeLabel', mockTypes.CustomLabel, { fullName: 'SomeLabel' })
     let refs: ReferenceInfo[]
-    describe('when there is a valid reference', () => {
-      const referredInstance = new InstanceElement('SomeLabel', mockTypes.CustomLabel, { fullName: 'SomeLabel' })
-      const elements = [flowConditionObjectType, referringInstance, referredInstance].map(element => element.clone())
+    describe('Flow', () => {
+      describe('FlowCondition.leftValueReference', () => {
+        const referringInstance = new InstanceElement('SomeFlow', mockTypes.Flow, {
+          decisions: [
+            {
+              rules: [
+                {
+                  conditions: [
+                    {
+                      leftValueReference: '$Label.SomeLabel',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
 
-      beforeEach(async () => {
-        refs = await formulaRefsHandler.findWeakReferences(elements)
+        describe('when there is a valid reference', () => {
+          const elements = [referringInstance, referredInstance].map(element => element.clone())
+
+          beforeEach(async () => {
+            refs = await formulaRefsHandler.findWeakReferences(elements)
+          })
+
+          it('should generate references', () => {
+            expect(refs).toHaveLength(1)
+            expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
+            expect(refs[0].source).toSatisfy(e =>
+              e.isEqual(
+                referringInstance.elemID.createNestedID(
+                  'decisions',
+                  '0',
+                  'rules',
+                  '0',
+                  'conditions',
+                  '0',
+                  'leftValueReference',
+                ),
+              ),
+            )
+            expect(refs[0].type).toEqual('weak')
+          })
+        })
+        describe('when the reference is not valid', () => {
+          const elements = [referringInstance].map(element => element.clone())
+
+          beforeEach(async () => {
+            refs = await formulaRefsHandler.findWeakReferences(elements)
+          })
+
+          it('should not generate a reference', () => {
+            expect(refs).toBeEmpty()
+          })
+        })
       })
+      describe('FlowAssignmentItem.assignToReference', () => {
+        const referringInstance = new InstanceElement('SomeFlow', mockTypes.Flow, {
+          assignments: [
+            {
+              assignmentItems: [
+                {
+                  assignToReference: '$Label.SomeLabel',
+                },
+              ],
+            },
+          ],
+        })
 
-      it('should generate references', () => {
-        expect(refs).toHaveLength(1)
-        expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
-        expect(refs[0].source).toSatisfy(e =>
-          e.isEqual(
-            referringInstance.elemID.createNestedID(
-              'decisions',
-              '0',
-              'rules',
-              '0',
-              'conditions',
-              '0',
-              'leftValueReference',
-            ),
-          ),
-        )
-        expect(refs[0].type).toEqual('weak')
+
+        describe('when there is a valid reference', () => {
+          const elements = [referringInstance, referredInstance].map(element => element.clone())
+
+          beforeEach(async () => {
+            refs = await formulaRefsHandler.findWeakReferences(elements)
+          })
+
+          it('should generate references', () => {
+            expect(refs).toHaveLength(1)
+            expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
+            expect(refs[0].source).toSatisfy(e =>
+              e.isEqual(
+                referringInstance.elemID.createNestedID(
+                  'assignments',
+                  '0',
+                  'assignmentItems',
+                  '0',
+                  'assignToReference',
+                ),
+              ),
+            )
+            expect(refs[0].type).toEqual('weak')
+          })
+        })
       })
     })
-    describe('when the reference is not valid', () => {
-      const elements = [flowConditionObjectType, referringInstance].map(element => element.clone())
-
-      beforeEach(async () => {
-        refs = await formulaRefsHandler.findWeakReferences(elements)
+    describe('FlowTest', () => {
+      const flowTestType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'FlowTest'),
+        fields: {},
       })
+      describe('FlowTestCondition.leftValueReference', () => {
+        const referringInstance = new InstanceElement('SomeFlowTest', flowTestType, {
+          testPoints: [
+            {
+              assertions: [
+                {
+                  conditions: [
+                    {
+                      leftValueReference: '$Label.SomeLabel',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
+        describe('when there is a valid reference', () => {
+          const elements = [referringInstance, referredInstance].map(element => element.clone())
 
-      it('should replace the field value with a reference expression', () => {
-        expect(refs).toBeEmpty()
+          beforeEach(async () => {
+            refs = await formulaRefsHandler.findWeakReferences(elements)
+          })
+
+          it('should generate references', () => {
+            expect(refs).toHaveLength(1)
+            expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
+            expect(refs[0].source).toSatisfy(e =>
+              e.isEqual(
+                referringInstance.elemID.createNestedID(
+                  'testPoints',
+                  '0',
+                  'assertions',
+                  '0',
+                  'conditions',
+                  '0',
+                  'leftValueReference',
+                ),
+              ),
+            )
+            expect(refs[0].type).toEqual('weak')
+          })
+        })
+      })
+      describe('FlowTestParameter.leftValueReference', () => {
+        const referringInstance = new InstanceElement('SomeFlowTest', flowTestType, {
+          testPoints: [
+            {
+              parameters: [
+                {
+                  leftValueReference: '$Label.SomeLabel',
+                },
+              ],
+            },
+          ],
+        })
+        describe('when there is a valid reference', () => {
+          const elements = [referringInstance, referredInstance].map(element => element.clone())
+
+          beforeEach(async () => {
+            refs = await formulaRefsHandler.findWeakReferences(elements)
+          })
+
+          it('should generate references', () => {
+            expect(refs).toHaveLength(1)
+            expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
+            expect(refs[0].source).toSatisfy(e =>
+              e.isEqual(
+                referringInstance.elemID.createNestedID(
+                  'testPoints',
+                  '0',
+                  'parameters',
+                  '0',
+                  'leftValueReference',
+                ),
+              ),
+            )
+            expect(refs[0].type).toEqual('weak')
+          })
+        })
       })
     })
   })

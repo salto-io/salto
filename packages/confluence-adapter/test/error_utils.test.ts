@@ -34,6 +34,7 @@ describe('customConvertError', () => {
 
       expect(result).toEqual({
         message: 'Version error',
+        detailedMessage: 'Version error',
         severity: 'Error',
         elemID,
       })
@@ -46,6 +47,7 @@ describe('customConvertError', () => {
       } as Error
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
+        detailedMessage: 'mock',
         message: 'mock',
         severity: 'Error',
         elemID,
@@ -59,6 +61,7 @@ describe('customConvertError', () => {
       } as Error
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
+        detailedMessage: 'mock',
         message: 'mock',
         severity: 'Error',
         elemID,
@@ -72,6 +75,7 @@ describe('customConvertError', () => {
       } as Error
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
+        detailedMessage: 'mock',
         message: 'mock',
         severity: 'Error',
         elemID,
@@ -85,6 +89,7 @@ describe('customConvertError', () => {
       } as Error
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
+        detailedMessage: 'mock',
         message: 'mock',
         severity: 'Error',
         elemID,
@@ -98,6 +103,7 @@ describe('customConvertError', () => {
       } as Error
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
+        detailedMessage: 'mock',
         message: 'mock',
         severity: 'Error',
         elemID,
@@ -121,7 +127,12 @@ describe('customConvertError', () => {
         response: { data: { message: 'blabla' }, status: 500 },
       } as Error
       const result = customConvertError(elemID, error)
-      expect(result?.message).toEqual('mock')
+      expect(result).toEqual({
+        detailedMessage: 'mock',
+        message: 'mock',
+        severity: 'Error',
+        elemID,
+      })
     })
   })
 })

@@ -286,11 +286,13 @@ export default class OktaAdapter implements AdapterOperations {
       log.warn(
         'Fetching private APIs is not supported for OAuth login, creating config suggestion to exclude private APIs',
       )
+      const message =
+        'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched'
       return {
         errors: [
           {
-            message:
-              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           },
         ],
@@ -393,11 +395,13 @@ export default class OktaAdapter implements AdapterOperations {
     }
     if (this.definitions.deploy?.instances === undefined) {
       // not supposed to happen if we didn't fail on a change validator
+      const message = 'no deploy definitions found, cannot deploy changes'
       return {
         appliedChanges: [],
         errors: [
           {
-            message: 'no deploy definitions found, cannot deploy changes',
+            message,
+            detailedMessage: message,
             severity: 'Error',
           },
         ],

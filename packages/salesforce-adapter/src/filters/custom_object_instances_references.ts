@@ -125,20 +125,22 @@ const createWarnings = async (
       numMissingInstances > MAX_BREAKDOWN_ELEMENTS
         ? ['', `... and ${numMissingInstances - MAX_BREAKDOWN_ELEMENTS} more missing records`]
         : []
-    return createWarningFromMsg(
-      [
-        header,
-        '',
-        perTargetTypeMsgs,
-        '',
-        perInstancesPreamble,
-        '',
-        ...perMissingInstanceMsgs,
-        ...overflowMsg,
-        '',
-        epilogue,
-      ].join('\n'),
-    )
+    const message = [
+      header,
+      '',
+      perTargetTypeMsgs,
+      '',
+      perInstancesPreamble,
+      '',
+      ...perMissingInstanceMsgs,
+      ...overflowMsg,
+      '',
+      epilogue,
+    ].join('\n')
+    return createWarningFromMsg({
+      message,
+      detailedMessage: message,
+    })
   }
 
   const collisionWarnings = await getAndLogCollisionWarnings({
@@ -157,13 +159,15 @@ const createWarnings = async (
     .filter(instance => !instancesWithCollidingElemID.includes(instance))
     .map(async instance => {
       const typeName = (await safeApiName(await instance.getType())) ?? 'Unknown'
-      return createWarningFromMsg(
-        [
-          `Omitted Instance of type ${typeName} due to empty Salto ID.`,
-          `Current Salto ID configuration for ${typeName} is defined as ${safeJsonStringify(dataManagement.getObjectIdsFields(typeName))}`,
-          `Instance Service Url: ${getInstanceDesc(await serializeInstanceInternalID(instance), baseUrl)}`,
-        ].join('\n'),
-      )
+      const message = [
+        `Omitted Instance of type ${typeName} due to empty Salto ID.`,
+        `Current Salto ID configuration for ${typeName} is defined as ${safeJsonStringify(dataManagement.getObjectIdsFields(typeName))}`,
+        `Instance Service Url: ${getInstanceDesc(await serializeInstanceInternalID(instance), baseUrl)}`,
+      ].join('\n')
+      return createWarningFromMsg({
+        message,
+        detailedMessage: message,
+      })
     })
     .toArray()
 
@@ -174,14 +178,10 @@ const createWarnings = async (
     .toArray()
 
   const typesOfIllegalRefSources = _.uniq([...illegalRefSources].map(deserializeInternalID).map(source => source.type))
-
+  const message = `Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
+  Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`
   const illegalOriginsWarnings =
-    illegalRefSources.size === 0
-      ? []
-      : [
-          createWarningFromMsg(`Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
-  Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`),
-        ]
+    illegalRefSources.size === 0 ? [] : [createWarningFromMsg({ message, detailedMessage: message })]
 
   return [...collisionWarnings, ...instanceWithEmptyIdWarnings, ...missingRefsWarnings, ...illegalOriginsWarnings]
 }

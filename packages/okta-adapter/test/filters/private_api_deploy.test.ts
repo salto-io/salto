@@ -80,6 +80,7 @@ describe('privateApiDeploymentFilter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0]).toEqual({
         message: 'private API is not enabled in this environment',
+        detailedMessage: 'private API is not enabled in this environment',
         severity: 'Error',
         elemID: thirdPartyAdminAfter.elemID,
       })
@@ -90,6 +91,7 @@ describe('privateApiDeploymentFilter', () => {
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.errors[0]).toEqual({
         message: 'private API is not enabled in this environment',
+        detailedMessage: 'private API is not enabled in this environment',
         severity: 'Error',
         elemID: thirdPartyAdminAfter.elemID,
       })

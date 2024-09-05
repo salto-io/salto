@@ -27,6 +27,7 @@ describe('deployChanges', () => {
     expect(res.errors).toEqual([
       {
         message: 'Error: failed',
+        detailedMessage: 'Error: failed',
         severity: 'Error',
         elemID: instance.elemID,
       },
@@ -36,6 +37,7 @@ describe('deployChanges', () => {
   it('should return the applied change and an error when the error severity is not Error', async () => {
     const warningError: SaltoError = {
       message: 'warning message',
+      detailedMessage: 'warning message',
       severity: 'Warning',
     }
     const res = await deployChanges([toChange({ after: instance })], () => {
@@ -46,6 +48,7 @@ describe('deployChanges', () => {
     expect(res.errors).toEqual([
       {
         message: 'warning message',
+        detailedMessage: 'warning message',
         severity: 'Warning',
         elemID: instance.elemID,
       },

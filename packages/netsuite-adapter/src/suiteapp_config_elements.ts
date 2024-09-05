@@ -78,6 +78,7 @@ export const toConfigDeployResult = (
       errors: [
         {
           message: results.errorMessage,
+          detailedMessage: results.errorMessage,
           severity: 'Error',
         },
       ],
@@ -92,20 +93,25 @@ export const toConfigDeployResult = (
 
   const appliedChanges = success.map(item => configTypeToChange[item.configType])
 
+  const internalErrorMessage = 'Failed to deploy instance due to internal server error'
   const missingResultsError = changes
     .map(getChangeData)
     .filter(instance => !resultsConfigTypes.has(instance.value.configType))
     .map(instance => ({
       elemID: instance.elemID,
-      message: 'Failed to deploy instance due to internal server error',
+      message: internalErrorMessage,
+      detailedMessage: internalErrorMessage,
       severity: 'Error' as const,
     }))
 
-  const failResultsErrors = fail.map(item => ({
-    elemID: getChangeData(configTypeToChange[item.configType]).elemID,
-    message: `${item.configType}: ${item.errorMessage}`,
-    severity: 'Error' as const,
-  }))
-
+  const failResultsErrors = fail.map(item => {
+    const message = `${item.configType}: ${item.errorMessage}`
+    return {
+      elemID: getChangeData(configTypeToChange[item.configType]).elemID,
+      message,
+      detailedMessage: message,
+      severity: 'Error' as const,
+    }
+  })
   return { appliedChanges, errors: missingResultsError.concat(failResultsErrors) }
 }

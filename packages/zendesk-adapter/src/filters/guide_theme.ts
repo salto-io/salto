@@ -257,18 +257,25 @@ const extractFilesFromThemeDirectory = (
 
 const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
 
-const addDownloadErrors = (theme: InstanceElement, downloadErrors: string[]): SaltoError[] =>
-  downloadErrors.length > 0
-    ? downloadErrors.map(e => ({
-        message: `Error fetching theme id ${theme.value.id}, ${e}`,
-        severity: 'Warning',
-      }))
+const addDownloadErrors = (theme: InstanceElement, downloadErrors: string[]): SaltoError[] => {
+  const messagePrefix = `Error fetching theme id ${theme.value.id},`
+  return downloadErrors.length > 0
+    ? downloadErrors.map(e => {
+        const message = `${messagePrefix} ${e}`
+        return {
+          message,
+          detailedMessage: message,
+          severity: 'Warning',
+        }
+      })
     : [
         {
-          message: `Error fetching theme id ${theme.value.id}, no content returned from Zendesk API`,
+          message: `${messagePrefix} no content returned from Zendesk API`,
+          detailedMessage: `${messagePrefix} no content returned from Zendesk API`,
           severity: 'Warning',
         },
       ]
+}
 
 const createTheme = async (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
@@ -403,16 +410,19 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
           if (!(e instanceof Error)) {
             remove(elements, element => element.elemID.isEqual(theme.elemID))
             log.error('Error fetching theme id %s, %o', theme.value.id, e)
+            const message = `Error fetching theme id ${theme.value.id}, ${e}`
             return {
-              errors: [{ message: `Error fetching theme id ${theme.value.id}, ${e}`, severity: 'Warning' }],
+              errors: [{ message, detailedMessage: message, severity: 'Warning' }],
             }
           }
 
           remove(elements, element => element.elemID.isEqual(theme.elemID))
+          const message = `Error fetching theme id ${theme.value.id}, ${e.message}`
           return {
             errors: [
               {
-                message: `Error fetching theme id ${theme.value.id}, ${e.message}`,
+                message,
+                detailedMessage: message,
                 severity: 'Warning',
               },
             ],
@@ -467,6 +477,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
               errors: elementErrors.map(e => ({
                 elemID: clonedChange.data.after.elemID,
                 message: e,
+                detailedMessage: e,
                 severity: 'Error',
               })),
             }

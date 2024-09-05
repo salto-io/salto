@@ -16,6 +16,7 @@ const createError = (range: SourceRange, summary: string, message?: string): Par
   context: range,
   severity: 'Error',
   message: message || summary,
+  detailedMessage: message || summary,
 })
 
 export const unknownPrimitiveTypeError = (range: SourceRange, token?: string): ParseError =>

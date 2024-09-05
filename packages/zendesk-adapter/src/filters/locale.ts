@@ -24,13 +24,17 @@ import { LOCALE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-const getWarningsForLocale = (): SaltoError[] => [
-  {
-    message:
-      "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales",
-    severity: 'Warning',
-  },
-]
+const getWarningsForLocale = (): SaltoError[] => {
+  const message =
+    "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales"
+  return [
+    {
+      message,
+      detailedMessage: message,
+      severity: 'Warning',
+    },
+  ]
+}
 
 /**
  * This filter checks that the default locale is set to en-US, if not it will raise a warning. We have seen that the
@@ -72,11 +76,15 @@ const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
     }
 
     const [removalAndAdditionsChanges, modificationChanges] = _.partition(localeChanges, isAdditionOrRemovalChange)
-    const modificationErrors = modificationChanges.map(change => ({
-      message: `Failed to update ${getChangeData(change).elemID.getFullName()} since modification of locale is not supported by Zendesk`,
-      severity: 'Error' as SeverityLevel,
-      elemID: getChangeData(change).elemID,
-    }))
+    const modificationErrors = modificationChanges.map(change => {
+      const message = `Failed to update ${getChangeData(change).elemID.getFullName()} since modification of locale is not supported by Zendesk`
+      return {
+        message,
+        detailedMessage: message,
+        severity: 'Error' as SeverityLevel,
+        elemID: getChangeData(change).elemID,
+      }
+    })
 
     if (removalAndAdditionsChanges.length === 0) {
       return {

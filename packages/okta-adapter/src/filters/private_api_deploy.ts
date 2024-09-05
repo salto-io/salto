@@ -44,9 +44,11 @@ const filterCreator: FilterCreator = ({ definitions, config, oldApiDefinitions, 
     // TODO SALTO-5692 - replace this with checking whether deploy definitions for type exists
     if (!shouldAccessPrivateAPIs(isOAuthLogin, config)) {
       log.debug('Skip deployment of private API types because private API cannot be accessed')
+      const message = 'private API is not enabled in this environment'
       const errors = relevantChanges.map(change =>
         createSaltoElementError({
-          message: 'private API is not enabled in this environment',
+          message,
+          detailedMessage: message,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         }),

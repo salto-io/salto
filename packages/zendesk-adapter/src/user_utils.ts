@@ -219,9 +219,11 @@ const getUsersNoCache = async (paginator: clientUtils.Paginator): Promise<{ user
     return { users }
   } catch (e) {
     if (e.response?.status === 403 || e.response?.status === 401) {
+      const message =
+        "Salto could not access the users resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource"
       const newError: SaltoError = {
-        message:
-          "Salto could not access the users resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+        message,
+        detailedMessage: message,
         severity: 'Warning',
       }
       return { users: [], errors: [newError] }

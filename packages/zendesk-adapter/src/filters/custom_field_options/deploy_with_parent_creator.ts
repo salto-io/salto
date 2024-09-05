@@ -56,11 +56,15 @@ export const createDeployOptionsWithParentCreator =
         return {
           deployResult: {
             appliedChanges: [],
-            errors: childrenChanges.map(getChangeData).map(e => ({
-              message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
-              severity: 'Error',
-              elemID: e.elemID,
-            })),
+            errors: childrenChanges.map(getChangeData).map(e => {
+              const message = `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
+              return {
+                message,
+                detailedMessage: message,
+                severity: 'Error',
+                elemID: e.elemID,
+              }
+            }),
           },
           leftoverChanges,
         }

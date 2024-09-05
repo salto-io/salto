@@ -36,6 +36,7 @@ describe('customConvertError', () => {
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
         message: 'mock: response message',
+        detailedMessage: 'mock: response message',
         severity: 'Error',
         elemID,
       })
@@ -50,6 +51,7 @@ describe('customConvertError', () => {
       const result = customConvertError(elemID, error)
       expect(result).toEqual({
         message: 'mock',
+        detailedMessage: 'mock',
         severity: 'Error',
         elemID,
       })

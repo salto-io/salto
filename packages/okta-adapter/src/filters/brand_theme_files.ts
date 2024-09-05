@@ -44,10 +44,14 @@ const getBrandThemeFile = async (
   })
 }
 
-const toSaltoError = (err: Error): SaltoError => ({
-  message: `Failed to fetch brandTheme file. ${err.message}`,
-  severity: 'Warning',
-})
+const toSaltoError = (err: Error): SaltoError => {
+  const message = `Failed to fetch brandTheme file. ${err.message}`
+  return {
+    message,
+    detailedMessage: message,
+    severity: 'Warning',
+  }
+}
 
 /**
  * Fetches and deploys brand theme fields as static file.

@@ -141,10 +141,14 @@ const appLogoFilter: FilterCreator = ({ definitions, getElemIdFunc }) => ({
 
     const [errors, appLogoInstances] = _.partition(allInstances, _.isError)
     appLogoInstances.forEach(logo => elements.push(logo))
-    const fetchError: SaltoError[] = errors.map(err => ({
-      message: `Failed to fetch App logo. ${err.message}`,
-      severity: 'Warning',
-    }))
+    const fetchError: SaltoError[] = errors.map(err => {
+      const message = `Failed to fetch App logo. ${err.message}`
+      return {
+        message,
+        detailedMessage: message,
+        severity: 'Warning',
+      }
+    })
     return { errors: fetchError }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {

@@ -658,11 +658,13 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     let deployResult: DeployResult
     if (isDataDeployGroup) {
       if (checkOnly) {
+        const message = 'Cannot deploy CustomObject Records as part of check-only deployment'
         return {
           appliedChanges: [],
           errors: [
             {
-              message: 'Cannot deploy CustomObject Records as part of check-only deployment',
+              message,
+              detailedMessage: message,
               severity: 'Error',
             },
           ],

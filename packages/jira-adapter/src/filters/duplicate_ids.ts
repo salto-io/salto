@@ -61,12 +61,14 @@ const filter: FilterCreator = ({ config }) => ({
         .flatMap(instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})`),
     )
     if (!config.fetch.fallbackToInternalId) {
+      const message = `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
+${duplicateInstanceNames.join(',\n')}`
       return {
         errors: [
           {
-            message: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
-If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
-${duplicateInstanceNames.join(',\n')}`,
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           },
         ],
@@ -92,12 +94,14 @@ ${duplicateInstanceNames.join(',\n')}`,
     log.debug(`Replaced duplicate names with: ${newNames.join(', ')}`)
     elements.push(...newInstances)
 
+    const message = `The following elements had duplicate names in Jira and therefore their internal id was added to their names.
+It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.
+${newNames.join(',\n')}`
     return {
       errors: [
         {
-          message: `The following elements had duplicate names in Jira and therefore their internal id was added to their names.
-It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.
-${newNames.join(',\n')}`,
+          message,
+          detailedMessage: message,
           severity: 'Warning',
         },
       ],

@@ -282,6 +282,6 @@ export const getDeletedElements = async ({
   } catch (e) {
     const errorMessage = 'Failed calculating deleted elements'
     log.error(`${errorMessage}: %o`, e)
-    return { errors: [{ message: errorMessage, severity: 'Error' }] }
+    return { errors: [{ message: errorMessage, detailedMessage: errorMessage, severity: 'Error' }] }
   }
 }

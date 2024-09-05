@@ -168,6 +168,7 @@ const customObjectFieldsOrderFilter: FilterCreator = ({ client, config }) => ({
             elemID: getChangeData(change).elemID,
             severity: 'Error',
             message: error ?? '', // We checked that error is defined in the errors partition
+            detailedMessage: error ?? '',
           }),
         ),
       },

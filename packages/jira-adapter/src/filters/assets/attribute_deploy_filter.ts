@@ -186,9 +186,11 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip deployment of ${OBJECT_TYPE_ATTRIBUTE_TYPE} types because workspaceId is undefined`)
+      const message = 'workspaceId could not be found.'
       const errors = attributesChanges.map(change =>
         createSaltoElementError({
-          message: 'workspaceId could not be found.',
+          message,
+          detailedMessage: message,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         }),

@@ -27,6 +27,10 @@ export class MissingFunctionError implements SaltoError {
     return `Invalid function name '${this.funcName}'`
   }
 
+  get detailedMessage(): string {
+    return `Invalid function name '${this.funcName}'`
+  }
+
   toString(): string {
     return this.message
   }

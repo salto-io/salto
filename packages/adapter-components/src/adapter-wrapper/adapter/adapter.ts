@@ -256,11 +256,13 @@ export class AdapterImpl<
     }
     if (this.definitions.deploy?.instances === undefined) {
       // not supposed to happen if we didn't fail on a change validator
+      const message = 'no deploy definitions found, cannot deploy changes'
       return {
         appliedChanges: [],
         errors: [
           {
-            message: 'no deploy definitions found, cannot deploy changes',
+            message,
+            detailedMessage: message,
             severity: 'Error',
           },
         ],

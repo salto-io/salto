@@ -16,3 +16,6 @@ export type ElementFieldCustomization = definitions.fetch.ElementFieldCustomizat
 export type FieldIDPart = definitions.fetch.FieldIDPart
 export type AdjustFunction = definitions.AdjustFunction
 export type AdjustFunctionSingle = definitions.AdjustFunctionSingle
+export type AdjustFunctionMergeAndTransform = definitions.AdjustFunctionSingle<{
+  fragments: definitions.GeneratedItem[]
+}>

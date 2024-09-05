@@ -14,6 +14,7 @@ import {
   isInstanceElement,
   ObjectType,
   ReferenceExpression,
+  StaticFile,
   Values,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
@@ -100,6 +101,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',
           'IntuneFilter',
+          'IntunePlatformScriptLinux',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -494,6 +496,51 @@ describe('Microsoft Security adapter', () => {
 
             it("should not include 'payloads' field", async () => {
               expect(intuneFilters.every(e => !('payloads' in e.value))).toBeTruthy()
+            })
+          })
+
+          describe('platform script linux', () => {
+            let platformScriptsLinux: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsLinux = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptLinux')
+            })
+
+            it('should create the correct instances for platform script linux', async () => {
+              expect(platformScriptsLinux).toHaveLength(1)
+
+              const platformScriptLinuxNames = platformScriptsLinux.map(e => e.elemID.name)
+              expect(platformScriptLinuxNames).toEqual(['test_linux_script@s'])
+            })
+
+            it('should include settings field with the correct values', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              expect(platformScriptLinux.value.settings).toHaveLength(4)
+              expect(Object.keys(platformScriptLinux.value.settings[0])).toEqual(['settingInstance'])
+              const linuxScript = _.get(platformScriptLinux.value.settings[3], [
+                'settingInstance',
+                'simpleSettingValue',
+                'value',
+              ])
+              expect(linuxScript).toBeInstanceOf(StaticFile)
+              const scriptContent = await linuxScript.getContent()
+              expect(scriptContent).toBeInstanceOf(Buffer)
+              expect(scriptContent.toString()).toEqual(
+                '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
+              )
+              expect((linuxScript as StaticFile).encoding).toEqual('base64')
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              const { assignments } = platformScriptLinux.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['source', 'target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
             })
           })
         })

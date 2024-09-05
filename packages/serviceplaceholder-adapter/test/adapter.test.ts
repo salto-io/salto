@@ -28,6 +28,7 @@ import { DEFAULT_CONFIG } from '../src/config'
 import { ADAPTER_NAME } from '../src/constants'
 // TODO update mock file -
 // for fetch: run fetch with trace-level logs:
+// [Please make sure to first set the strategy to 'full' in the DEFAULT_LOGGING_CONFIG under logging.utils.ts]
 //  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
 // then run
 //  > python3 <path-to-repo>/packages/adapter-components/scripts/client/mock_replies.py <log file> fetch_mock_replies.json

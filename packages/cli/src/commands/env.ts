@@ -168,6 +168,7 @@ const envDiffDef = createWorkspaceCommand({
     ],
   },
   action: diffAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 // Rename
@@ -294,6 +295,7 @@ const envCurrentDef = createWorkspaceCommand({
     description: 'Print the name of the current workspace environment',
   },
   action: currentAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 // List
@@ -311,6 +313,7 @@ const envListDef = createWorkspaceCommand({
     description: 'List all workspace environments',
   },
   action: listAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 // Create

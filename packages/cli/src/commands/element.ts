@@ -496,6 +496,7 @@ const listUnresolvedDef = createWorkspaceCommand({
     ],
   },
   action: listUnresolvedAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 // Open
@@ -553,6 +554,7 @@ const elementOpenDef = createWorkspaceCommand({
     ],
   },
   action: openAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 type ElementListArgs = {
@@ -625,6 +627,7 @@ const listElementsDef = createWorkspaceCommand({
     ],
   },
   action: listAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 type ElementRenameArgs = {
@@ -764,6 +767,7 @@ const printElementDef = createWorkspaceCommand({
     ],
   },
   action: printElementAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 type FixElementsArgs = {

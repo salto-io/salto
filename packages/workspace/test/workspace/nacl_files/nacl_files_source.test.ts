@@ -147,7 +147,7 @@ describe('Nacl Files Source', () => {
         ({
           ...change,
           location: {
-            filename: 'file3',
+            filename: 'file',
             start: { line: 0, row: 0, byte: 0 },
             end: { line: 0, row: 0, byte: 0 },
           },

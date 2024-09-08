@@ -152,13 +152,25 @@ const deployGroupMembershipChange = async (
     additions.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client })),
   )
   const failedAdditions = additionsResult.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
-  log.error('failed to add the following group assignments: %s', failedAdditions.join(', '))
+  if (failedAdditions.length > 0) {
+    log.error(
+      'failed to add the following group assignments for group %s: %s',
+      getChangeData(change).elemID.getFullName(),
+      failedAdditions.join(', '),
+    )
+  }
 
   const removalResult = await Promise.all(
     removals.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'remove', client })),
   )
   const failedRemovals = removalResult.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
-  log.error('failed to remove the following group assignments: %s', failedRemovals.join(', '))
+  if (failedRemovals.length > 0) {
+    log.error(
+      'failed to remove the following group assignments for group %s: %s',
+      getChangeData(change).elemID.getFullName(),
+      failedRemovals.join(', '),
+    )
+  }
 
   return { appliedChange: await updateChangeWithFailedAssignments(change, failedAdditions, failedRemovals) }
 }

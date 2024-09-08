@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
@@ -32,10 +24,11 @@ import {
 } from '../../constants'
 import { createClassicApiDefinitionsForType } from './classic_api_utils'
 import { adjustPolicyOnDeploy } from './policy'
+import { UserConfig } from '../../config'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 
-const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> => {
+const createCustomizations = (userConfig: UserConfig): Record<string, InstanceDeployApiDefinitions> => {
   const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
     AdditionalAction,
     ClientOptions
@@ -47,16 +40,18 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
     [PACKAGE_TYPE_NAME]: { bulkPath: '/api/v1/packages' },
   })
   const customDefinitions: Record<string, Partial<InstanceDeployApiDefinitions>> = {
-    [CLASS_TYPE_NAME]: createClassicApiDefinitionsForType(CLASS_TYPE_NAME, `${CLASS_TYPE_NAME}es`),
-    [POLICY_TYPE_NAME]: createClassicApiDefinitionsForType(POLICY_TYPE_NAME, 'policies', {
+    [CLASS_TYPE_NAME]: createClassicApiDefinitionsForType(userConfig, CLASS_TYPE_NAME, `${CLASS_TYPE_NAME}es`),
+    [POLICY_TYPE_NAME]: createClassicApiDefinitionsForType(userConfig, POLICY_TYPE_NAME, 'policies', {
       add: adjustPolicyOnDeploy,
       modify: adjustPolicyOnDeploy,
     }),
     [OS_X_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
+      userConfig,
       OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
       'osxconfigurationprofiles',
     ),
     [MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
+      userConfig,
       'configuration_profile',
       'mobiledeviceconfigurationprofiles',
     ),
@@ -99,13 +94,19 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    [SITE_TYPE_NAME]: createClassicApiDefinitionsForType(SITE_TYPE_NAME, `${SITE_TYPE_NAME}s`),
-    [MAC_APPLICATION_TYPE_NAME]: createClassicApiDefinitionsForType(MAC_APPLICATION_TYPE_NAME, 'macapplications'),
+    [SITE_TYPE_NAME]: createClassicApiDefinitionsForType(userConfig, SITE_TYPE_NAME, `${SITE_TYPE_NAME}s`),
+    [MAC_APPLICATION_TYPE_NAME]: createClassicApiDefinitionsForType(
+      userConfig,
+      MAC_APPLICATION_TYPE_NAME,
+      'macapplications',
+    ),
   }
   return _.merge(standardRequestDefinitions, customDefinitions)
 }
 
-export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<never, ClientOptions> => ({
+export const createDeployDefinitions = (
+  userConfig: UserConfig,
+): definitions.deploy.DeployApiDefinitions<never, ClientOptions> => ({
   instances: {
     default: {
       requestsByAction: {
@@ -118,6 +119,6 @@ export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitio
       },
       changeGroupId: deployment.grouping.selfGroup,
     },
-    customizations: createCustomizations(),
+    customizations: createCustomizations(userConfig),
   },
 })

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils } from '@salto-io/adapter-components'
 import {
@@ -246,6 +238,7 @@ describe('script_runner_listeners_deploy', () => {
           {
             severity: 'Error',
             message: 'Error getting other script-listeners information from the service',
+            detailedMessage: 'Error getting other script-listeners information from the service',
             elemID: scriptInstanceAdd.elemID,
           },
         ],
@@ -309,11 +302,13 @@ describe('script_runner_listeners_deploy', () => {
           {
             severity: 'Error',
             message: 'error',
+            detailedMessage: 'error',
             elemID: scriptInstanceAdd.elemID,
           },
           {
             severity: 'Error',
             message: 'error',
+            detailedMessage: 'error',
             elemID: scriptInstanceModify.elemID,
           },
         ],
@@ -335,11 +330,13 @@ describe('script_runner_listeners_deploy', () => {
           {
             severity: 'Error',
             message: '1',
+            detailedMessage: '1',
             elemID: scriptInstanceAdd.elemID,
           },
           {
             severity: 'Error',
             message: '1',
+            detailedMessage: '1',
             elemID: scriptInstanceModify.elemID,
           },
         ],
@@ -367,16 +364,19 @@ describe('script_runner_listeners_deploy', () => {
     expect(res.deployResult.errors[0]).toEqual({
       severity: 'Error',
       message: 'Instance already exists in the service',
+      detailedMessage: 'Instance already exists in the service',
       elemID: scriptInstanceModify.elemID,
     })
     expect(res.deployResult.errors[1]).toEqual({
       severity: 'Error',
       message: 'Instance does not exist in the service',
+      detailedMessage: 'Instance does not exist in the service',
       elemID: scriptInstanceAdd.elemID,
     })
     expect(res.deployResult.errors[2]).toEqual({
       severity: 'Error',
       message: 'Instance does not exist in the service',
+      detailedMessage: 'Instance does not exist in the service',
       elemID: removalInstance.elemID,
     })
   })

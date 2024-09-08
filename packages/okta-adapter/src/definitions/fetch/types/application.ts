@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -65,34 +57,38 @@ export const assignPolicyIdsToApplication = (value: unknown): Value => {
   }
 }
 
-const endsWithNumberRegex = new RegExp(/_\d+$/)
+// custom app name pattern is: subdomain_appName_number
+const customAppNamePattern = new RegExp(/^[\w-]+_[\w-]+_\d+$/)
 
-export const isCustomApp = (value: Values, subdomain: string): boolean => {
+export const isCustomApp = (value: Values, subdomain?: string): boolean => {
   const subdomainMatch =
+    _.isString(subdomain) &&
     value.name !== undefined &&
     // custom app names starts with subdomain and '_'
     _.startsWith(value.name, `${subdomain}_`)
 
-  const endsWithNumberMatch =
+  const customAppNamePatternMatch =
     value.name !== undefined &&
     // custom app names ends with a number
-    endsWithNumberRegex.test(value.name)
+    customAppNamePattern.test(value.name)
 
-  if (subdomainMatch !== endsWithNumberMatch) {
-    log.warn(
-      'isCustomApp matching methods disagree for %s: subdomainMatch=%s, endsWithNumberMatch=%s',
+  if (subdomainMatch !== customAppNamePatternMatch) {
+    log.debug(
+      'isCustomApp matching methods disagree for %s: subdomainMatch=%s, customAppNamePatternMatch=%s',
       value.name,
       subdomainMatch,
-      endsWithNumberMatch,
+      customAppNamePatternMatch,
     )
   } else {
-    log.info(
-      'isCustomApp matching methods agree for %s: subdomainMatch=%s, endsWithNumberMatch=%s',
+    log.trace(
+      'isCustomApp matching methods agree for %s: subdomainMatch=%s, customAppNamePatternMatch=%s',
       value.name,
       subdomainMatch,
-      endsWithNumberMatch,
+      customAppNamePatternMatch,
     )
   }
 
-  return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && subdomainMatch
+  // when subdomain was replaced in the tenant, existing apps will include the previous subdomain in their name, so we rely on the regex as a fallback
+  const isCustomAppName = subdomainMatch || customAppNamePatternMatch
+  return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && isCustomAppName
 }

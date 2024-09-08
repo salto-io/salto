@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -116,7 +108,7 @@ describe('transformRemovedValuesToNull', () => {
   })
   it('should transform removed values to null', () => {
     const change = toChange({ before, after }) as ModificationChange<InstanceElement>
-    const result = transformRemovedValuesToNull(change)
+    const result = transformRemovedValuesToNull({ change })
     expect(result.data.before.value).toEqual(before.value)
     expect(result.data.after.value).toEqual({
       name: 'inst',
@@ -136,9 +128,18 @@ describe('transformRemovedValuesToNull', () => {
     })
   })
 
+  it('should not modify the original change', () => {
+    const change = toChange({ before, after }) as ModificationChange<InstanceElement>
+    const result = transformRemovedValuesToNull({ change })
+    expect(change.data.before.value).toEqual(before.value)
+    expect(change.data.after.value).toEqual(after.value)
+    expect(result.data.before.value).toEqual(before.value)
+    expect(result.data.after.value).not.toEqual(after.value)
+  })
+
   it('should only transform the values in relevant path', () => {
     const change = toChange({ before, after }) as ModificationChange<InstanceElement>
-    const result = transformRemovedValuesToNull(change, ['nested1', 'nested2'])
+    const result = transformRemovedValuesToNull({ change, applyToPath: ['nested1', 'nested2'] })
     expect(result.data.before.value).toEqual(before.value)
     expect(result.data.after.value).toEqual({
       name: 'inst',
@@ -152,6 +153,28 @@ describe('transformRemovedValuesToNull', () => {
       },
       settings: {
         url: 'http://example.com',
+      },
+    })
+  })
+
+  it('should not transform sub fields when skipSubFields is true', () => {
+    const change = toChange({ before, after }) as ModificationChange<InstanceElement>
+    const result = transformRemovedValuesToNull({ change, skipSubFields: true })
+    expect(result.data.before.value).toEqual(before.value)
+    expect(result.data.after.value).toEqual({
+      name: 'inst',
+      status: 'active',
+      nested1: {
+        field: [1, 2],
+        nested2: {
+          some: 'value',
+          another: null,
+        },
+        removedArray: null,
+      },
+      settings: {
+        url: 'http://example.com',
+        url2: null,
       },
     })
   })

@@ -1,23 +1,16 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { CORE_ANNOTATIONS, Element, Field, ObjectType } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELD, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../constants'
 import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
 import { RemoteFilterCreator } from '../../filter'
@@ -62,7 +55,7 @@ const getCustomObjectFileProperties = async (client: SalesforceClient): Promise<
     type: CUSTOM_OBJECT,
   })
   if (errors && errors.length > 0) {
-    log.warn(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
+    log.warn('Encountered errors while listing file properties for CustomObjects: %s', inspectValue(errors))
   }
   return _.keyBy(result, fileProp => fileProp.fullName)
 }
@@ -72,7 +65,7 @@ const getCustomFieldFileProperties = async (client: SalesforceClient): Promise<R
     type: CUSTOM_FIELD,
   })
   if (errors && errors.length > 0) {
-    log.warn(`Encountered errors while listing file properties for CustomFields: ${errors}`)
+    log.warn('Encountered errors while listing file properties for CustomFields: %s', inspectValue(errors))
   }
   return _(result)
     .groupBy((fileProps: FileProperties) => getFieldNameParts(fileProps).objectName)

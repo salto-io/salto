@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ObjectType,
@@ -255,7 +247,7 @@ describe('syncWorkspaceToFolder', () => {
       it('should apply deletion changes for elements that exist in the folder and not the workspace', () => {
         expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
-          changes: expect.arrayContaining([toChange({ before: separateInstanceInFolder })]),
+          changes: expect.arrayContaining([expect.objectContaining(toChange({ before: separateInstanceInFolder }))]),
           elementsSource: expect.anything(),
         })
       })
@@ -263,37 +255,43 @@ describe('syncWorkspaceToFolder', () => {
         // Note - we currently do not expect the function to filter out changes for elements that are identical
         expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
-          changes: expect.arrayContaining([toChange({ before: sameInstanceInFolder, after: sameInstanceInWorkspace })]),
+          changes: expect.arrayContaining([
+            expect.objectContaining(toChange({ before: sameInstanceInFolder, after: sameInstanceInWorkspace })),
+          ]),
           elementsSource: expect.anything(),
         })
       })
       it('should apply addition changes for elements that exist in the workspace and not the folder', () => {
         expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
-          changes: expect.arrayContaining([toChange({ after: separateInstanceInWorkspace })]),
+          changes: expect.arrayContaining([expect.objectContaining(toChange({ after: separateInstanceInWorkspace }))]),
           elementsSource: expect.anything(),
         })
       })
     })
 
     describe('when adapter does not support loading from folder', () => {
-      let result: Promise<SyncWorkspaceToFolderResult>
-      beforeEach(() => {
+      let result: SyncWorkspaceToFolderResult
+      beforeEach(async () => {
         delete (mockAdapter as Adapter).loadElementsFromFolder
-        result = syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
-      it('should throw an error', async () => {
-        await expect(result).rejects.toThrow()
+      it('should return an error', () => {
+        expect(result.errors).toHaveLength(1)
+        const [error] = result.errors
+        expect(error).toHaveProperty('severity', 'Error')
       })
     })
     describe('when adapter does not support dumping to folder', () => {
-      let result: Promise<SyncWorkspaceToFolderResult>
-      beforeEach(() => {
+      let result: SyncWorkspaceToFolderResult
+      beforeEach(async () => {
         delete (mockAdapter as Adapter).dumpElementsToFolder
-        result = syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
-      it('should throw an error', async () => {
-        await expect(result).rejects.toThrow()
+      it('should return an error', () => {
+        expect(result.errors).toHaveLength(1)
+        const [error] = result.errors
+        expect(error).toHaveProperty('severity', 'Error')
       })
     })
 
@@ -307,6 +305,20 @@ describe('syncWorkspaceToFolder', () => {
       })
       it('should return the error without trying to update the folder', () => {
         expect(result.errors).toEqual(errors)
+        expect(mockAdapter.dumpElementsToFolder).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('when loading elements from folder returns elements that cannot be merged', () => {
+      let result: SyncWorkspaceToFolderResult
+      beforeEach(async () => {
+        mockAdapter.loadElementsFromFolder.mockResolvedValue({
+          elements: [separateInstanceInFolder, separateInstanceInFolder],
+        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      })
+      it('should return error without trying to update the folder', () => {
+        expect(result.errors).not.toHaveLength(0)
         expect(mockAdapter.dumpElementsToFolder).not.toHaveBeenCalled()
       })
     })

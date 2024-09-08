@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -690,15 +682,18 @@ describe('Custom Object Instances filter', () => {
             expect(fetchResult.errors).toEqual([
               {
                 message: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
+                detailedMessage: expect.stringContaining(includeObjectName) && expect.stringContaining('NonQueryable'),
                 severity: 'Info',
               },
             ])
             expect(fetchResult.errors?.[0].message).not.toInclude('HiddenNonQueryable')
+            expect(fetchResult.errors?.[0].detailedMessage).not.toInclude('HiddenNonQueryable')
           })
           it('should not issue a message if there are no instances of the object', () => {
             expect(fetchResult.errors).not.toIncludeAllPartialMembers([
               {
                 message: expect.stringContaining(refToObjectName),
+                detailedMessage: expect.stringContaining(refToObjectName),
               },
             ])
           })
@@ -1727,6 +1722,8 @@ describe('Custom Object Instances filter', () => {
           expect(errors).toEqual([
             {
               message: expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
+              detailedMessage:
+                expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
               severity: 'Warning',
             },
           ])
@@ -1850,6 +1847,8 @@ describe('Custom Object Instances filter', () => {
         expect(filterResult.errors).toEqual([
           {
             message: expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
+            detailedMessage:
+              expect.stringContaining('TestType') && expect.stringContaining(MANAGED_BY_SALTO_FIELD_NAME),
             severity: 'Warning',
           },
         ])
@@ -1933,6 +1932,7 @@ describe('Custom Object Instances filter', () => {
         expect(filterResult.errors).toEqual([
           {
             message: expect.stringContaining('missing or is of the wrong type for all data records'),
+            detailedMessage: expect.stringContaining('missing or is of the wrong type for all data records'),
             severity: 'Warning',
           },
         ])

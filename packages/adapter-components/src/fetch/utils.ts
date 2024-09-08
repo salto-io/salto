@@ -1,27 +1,53 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { TransformDefinition, TransformFunction, SingleValueTransformationFunction } from '../definitions/system/shared'
+import {
+  TransformDefinition,
+  TransformFunction,
+  SingleValueTransformationFunction,
+  TransformationRenameDefinition,
+} from '../definitions/system/shared'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../definitions'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+const getObjectWithRenamedFields = (value: Values, renameDefs: TransformationRenameDefinition[]): Values => {
+  const newVal = _.cloneDeep(value)
+  renameDefs.forEach(def => {
+    const { from, to, onConflict } = def
+    if (_.get(newVal, to) !== undefined) {
+      if (onConflict === 'skip') {
+        log.warn(
+          'rename transformation not performed due to existing value in target (definition: %s)',
+          safeJsonStringify(def),
+        )
+        return
+      }
+      if (onConflict === 'omit') {
+        log.warn(
+          'rename transformation converted to omit due to existing value in target (definition: %s)',
+          safeJsonStringify(def),
+        )
+        _.unset(newVal, from)
+        return
+      }
+      log.warn('rename transformation results in overriding value in target (definition: %s)', safeJsonStringify(def))
+    }
+    _.set(newVal, to, _.get(value, from))
+    _.unset(newVal, from)
+  })
+  return newVal
+}
 
 export const createValueTransformer = <TContext extends Record<string, unknown>, TSource extends Values>(
   def?: TransformDefinition<TContext, unknown>,
@@ -30,9 +56,14 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
     return async item => [item]
   }
 
+  const rename = (value: unknown): unknown =>
+    def.rename !== undefined && lowerdashValues.isPlainObject(value)
+      ? getObjectWithRenamedFields(value, def.rename)
+      : value
+
   const root = (value: unknown): unknown =>
     def.root !== undefined && def.root !== DATA_FIELD_ENTIRE_OBJECT && lowerdashValues.isPlainObject(value)
-      ? _.get(value, def.root)
+      ? collections.array.makeArray(_.get(value, def.root))
       : value
 
   const pick = (value: unknown): unknown =>
@@ -47,7 +78,8 @@ export const createValueTransformer = <TContext extends Record<string, unknown>,
       : value
 
   const transformItem: TransformFunction<TContext, TSource, unknown> = async item => {
-    const transformedValues = _(collections.array.makeArray(root(item.value)))
+    const transformedValues = _(collections.array.makeArray(rename(item.value)))
+      .flatMap(root)
       .map(pick)
       .map(omit)
       .map(nestUnderField)

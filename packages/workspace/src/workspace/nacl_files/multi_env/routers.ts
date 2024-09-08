@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ChangeDataType,
@@ -118,6 +110,10 @@ const separateChangeByFiles = async (change: DetailedChange, source: NaclFilesSo
   if (_.isEmpty(elementNaclFiles)) {
     return [change]
   }
+  if (elementNaclFiles.length === 1) {
+    // Optimization - no need to parse files and go over all the values if there is only one possible location
+    return [{ ...change, path: toPathHint(elementNaclFiles[0]) }]
+  }
   const sortedChanges = (
     await Promise.all(
       elementNaclFiles.map(async filename => {
@@ -137,6 +133,23 @@ const separateChangeByFiles = async (change: DetailedChange, source: NaclFilesSo
       }),
     )
   ).filter(values.isDefined)
+
+  if (sortedChanges.length <= 1) {
+    // The code in "filterByFile" can omit information if it did not exist in the source.
+    // There can be information that does not exist in the source if, for example, the change is a field type modification.
+    // in that case, the change would contain the whole field, but when we filter the annotation values of the field
+    // we would only know where to put the ones that existed before the type change, so the code above would omit
+    // all the new annotation values.
+    // Also, if all the annotation values are new, the entire change would be omitted because of "isEmptyChangeElement".
+    // The hacky bug fix here - assuming there is no case where we actually split the field to multiple files (a wrong assumption)
+    // we will get here with either 1 change that potentially is missing some values, or 0 changes (which is missing everything)
+    // either way, since there is no need to split anything, we can return the original change that contains all the values for sure
+    if (sortedChanges.length === 0) {
+      log.warn('separateChangeByFiles resulted in 0 sorted changes for change id %s', change.id.getFullName())
+      return [change]
+    }
+    return [{ ...change, path: sortedChanges[0].path }]
+  }
 
   return sortedChanges
 }

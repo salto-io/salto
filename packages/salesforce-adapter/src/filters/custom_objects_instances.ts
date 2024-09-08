@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
@@ -659,10 +651,14 @@ const getInaccessibleCustomFields = (objectType: ObjectType): string[] =>
 const createInvalidAliasFieldFetchWarning = ({
   objectType,
   invalidAliasFields,
-}: CustomObjectFetchSetting): SaltoError => ({
-  message: `Invalid alias fields for type ${apiNameSync(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`,
-  severity: 'Warning',
-})
+}: CustomObjectFetchSetting): SaltoError => {
+  const message = `Invalid alias fields for type ${apiNameSync(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`
+  return {
+    message,
+    detailedMessage: message,
+    severity: 'Warning',
+  }
+}
 
 const createInvalidManagedBySaltoFieldFetchWarning = (
   objectType: ObjectType,
@@ -672,22 +668,30 @@ const createInvalidManagedBySaltoFieldFetchWarning = (
   const typeName = apiNameSync(objectType) as string
   const errorPreamble = `The field ${typeName}${API_NAME_SEPARATOR}${fieldName} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration.`
   if ((objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
+    const message = `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`
     return {
-      message: `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`,
+      message,
+      detailedMessage: message,
       severity: 'Warning',
     }
   }
   // we assume if the issue is not the queryability of the field then it must be that the field is of the wrong type
+  const message = `${errorPreamble} However, the type of the field (${objectType.fields[fieldName].getTypeSync().elemID.getFullName()}) is not boolean. Records of type ${typeName} will not be fetched.`
   return {
-    message: `${errorPreamble} However, the type of the field (${objectType.fields[fieldName].getTypeSync().elemID.getFullName()}) is not boolean. Records of type ${typeName} will not be fetched.`,
+    message,
+    detailedMessage: message,
     severity: 'Warning',
   }
 }
 
-const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessibleFields: string[]): SaltoError => ({
-  message: `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`,
-  severity: 'Info',
-})
+const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessibleFields: string[]): SaltoError => {
+  const message = `There are ${inaccessibleFields.length} fields in the ${apiNameSync(objectType)} object that the fetch user does not have access to. These are the fields: ${inaccessibleFields.join(',')}. If ${apiNameSync(objectType)} records are deployed from this environment, values of these fields will appear as deletions.`
+  return {
+    message,
+    detailedMessage: message,
+    severity: 'Info',
+  }
+}
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
@@ -729,9 +733,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         invalidFetchSettings.length > 0 &&
         invalidFetchSettings.every(setting => setting.invalidManagedBySaltoField !== undefined)
       ) {
+        const message =
+          'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.'
         fatalErrors.push({
-          message:
-            'The Salto environment is configured to use a Salto Management field but the field is missing or is of the wrong type for all data records. No data records will be fetched. Please verify the field name in saltoManagementFieldSettings.defaultFieldName in the environment configuration file.',
+          message,
+          detailedMessage: message,
           severity: 'Warning',
         })
       }

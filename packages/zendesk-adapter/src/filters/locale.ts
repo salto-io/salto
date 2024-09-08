@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   isInstanceElement,
@@ -32,13 +24,17 @@ import { LOCALE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
-const getWarningsForLocale = (): SaltoError[] => [
-  {
-    message:
-      "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales",
-    severity: 'Warning',
-  },
-]
+const getWarningsForLocale = (): SaltoError[] => {
+  const message =
+    "Please be aware that your Zendesk account's default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales"
+  return [
+    {
+      message,
+      detailedMessage: message,
+      severity: 'Warning',
+    },
+  ]
+}
 
 /**
  * This filter checks that the default locale is set to en-US, if not it will raise a warning. We have seen that the
@@ -80,11 +76,15 @@ const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
     }
 
     const [removalAndAdditionsChanges, modificationChanges] = _.partition(localeChanges, isAdditionOrRemovalChange)
-    const modificationErrors = modificationChanges.map(change => ({
-      message: `Failed to update ${getChangeData(change).elemID.getFullName()} since modification of locale is not supported by Zendesk`,
-      severity: 'Error' as SeverityLevel,
-      elemID: getChangeData(change).elemID,
-    }))
+    const modificationErrors = modificationChanges.map(change => {
+      const message = `Failed to update ${getChangeData(change).elemID.getFullName()} since modification of locale is not supported by Zendesk`
+      return {
+        message,
+        detailedMessage: message,
+        severity: 'Error' as SeverityLevel,
+        elemID: getChangeData(change).elemID,
+      }
+    })
 
     if (removalAndAdditionsChanges.length === 0) {
       return {

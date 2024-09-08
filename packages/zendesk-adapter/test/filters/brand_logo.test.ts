@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import FormData from 'form-data'
 import {
@@ -25,7 +17,7 @@ import {
   getChangeData,
   createSaltoElementError,
 } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
 import ZendeskClient from '../../src/client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -124,6 +116,32 @@ describe('brand logo filter', () => {
         ...brandInstance.value,
         [LOGO_FIELD]: new ReferenceExpression(logo.elemID, logo),
       })
+    })
+    it('should return fetch warning in case of 403 error and remove logo field from brand', async () => {
+      mockGet.mockImplementation(_params => {
+        throw new clientUtils.HTTPError('err', { data: 'err' as unknown as clientUtils.ResponseValue, status: 403 })
+      })
+      const elements = [brandType, brandInstance].map(e => e.clone())
+      const res = (await filter.onFetch(elements)) as unknown as filterUtils.FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors).toEqual([
+        {
+          message:
+            "Salto could not access the brand_logo resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          detailedMessage:
+            "Salto could not access the brand_logo resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          severity: 'Info',
+        },
+      ])
+      const brand = elements.filter(isInstanceElement).find(e => e.elemID.typeName === BRAND_TYPE_NAME)
+      expect(brand?.value[LOGO_FIELD]).toBeUndefined()
+    })
+    it('should throw error on any other error', async () => {
+      mockGet.mockImplementation(_params => {
+        throw new Error('err')
+      })
+      const elements = [brandType, brandInstance].map(e => e.clone())
+      await expect(filter.onFetch(elements)).rejects.toThrow()
     })
   })
 
@@ -281,6 +299,7 @@ describe('brand logo filter', () => {
       expect(res.deployResult.errors[0]).toEqual(
         createSaltoElementError({
           message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
+          detailedMessage: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
         }),
@@ -317,6 +336,7 @@ describe('brand logo filter', () => {
       expect(res.deployResult.errors[0]).toEqual(
         createSaltoElementError({
           message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
+          detailedMessage: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
         }),
@@ -338,6 +358,7 @@ describe('brand logo filter', () => {
       expect(res.deployResult.errors[0]).toEqual(
         createSaltoElementError({
           message: `Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`,
+          detailedMessage: `Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`,
           severity: 'Error',
           elemID: clonedLogo.elemID,
         }),

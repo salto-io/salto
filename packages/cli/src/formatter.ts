@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { EOL } from 'os'
@@ -40,6 +32,7 @@ import {
   ChangeDataType,
   isStaticFile,
   isSaltoElementError,
+  SaltoElementError,
 } from '@salto-io/adapter-api'
 import {
   Plan,
@@ -498,6 +491,12 @@ export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): stri
 
 export const formatFetchWarnings = (warnings: string[]): string =>
   [emptyLine(), `${Prompts.FETCH_WARNINGS}\n${warnings.join('\n\n')}`].join('\n')
+
+export const formatSyncToWorkspaceErrors = (syncErrors: ReadonlyArray<SaltoError | SaltoElementError>): string =>
+  [
+    emptyLine(),
+    `${Prompts.SYNC_TO_WORKSPACE_ERRORS}\n${syncErrors.map(err => `${err.severity} ${err.message}${isSaltoElementError(err) ? ` (${err.elemID.getFullName()})` : ''}`).join('\n')}`,
+  ].join('\n')
 
 export const formatWorkspaceLoadFailed = (numErrors: number): string =>
   formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}`)

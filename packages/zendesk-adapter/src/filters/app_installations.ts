@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -65,17 +57,21 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 const checkIfJobIsDone = async (client: ZendeskClient, jobId: string, change: Change): Promise<boolean> => {
   const res = (await client.get({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
+    const message = `Got an invalid response for job status. Job ID: ${jobId}`
     throw createSaltoElementError({
       // caught by deployChanges
-      message: `Got an invalid response for job status. Job ID: ${jobId}`,
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })
   }
   if (['failed', 'killed'].includes(res.status)) {
+    const message = `Job status is failed. Job ID: ${jobId}. Error: ${res.message}`
     throw createSaltoElementError({
       // caught by deployChanges
-      message: `Job status is failed. Job ID: ${jobId}. Error: ${res.message}`,
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })
@@ -137,9 +133,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       ])
       if (isAdditionChange(change)) {
         if (response == null || _.isArray(response) || !_.isString(response.pending_job_id)) {
+          const message = 'Got an invalid response when tried to install app'
           throw createSaltoElementError({
             // caught by deployChanges
-            message: 'Got an invalid response when tried to install app',
+            message,
+            detailedMessage: message,
             severity: 'Error',
             elemID: getChangeData(change).elemID,
           })

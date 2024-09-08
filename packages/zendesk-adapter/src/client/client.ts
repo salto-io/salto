@@ -1,20 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
@@ -219,17 +211,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
             responseType,
           }
         : undefined
-      const { data, status } = await this.resourceClient.get(url, requestConfig)
-      log.trace(
-        'Full HTTP response for GET on %s: %s',
-        url,
-        safeJsonStringify({
-          url,
-          status,
-          requestConfig,
-          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-        }),
-      )
+      const response = await this.resourceClient.get(url, requestConfig)
+      const { data, status } = response
+      this.logResponse({ method: 'get', params: args, response })
       return {
         data,
         status,

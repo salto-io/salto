@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -123,8 +115,9 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
     const workspaceId = await getWorkspaceId(client, config)
     if (workspaceId === undefined) {
       log.error(`Skip fetching of ${OBJECT_TYPE_ICON_TYPE} types because workspaceId is undefined`)
+      const message = 'Failed to fetch object type icons because workspaceId is undefined'
       return {
-        errors: [{ message: 'Failed to fetch object type icons because workspaceId is undefined', severity: 'Error' }],
+        errors: [{ message, detailedMessage: message, severity: 'Error' }],
       }
     }
     const errors: SaltoError[] = []
@@ -134,7 +127,7 @@ const filter: FilterCreator = ({ client, config, adapterContext }) => ({
           const link = `/gateway/api/jsm/insight/workspace/${workspaceId}/v1/icon/${objectTypeIcon.value.id}/icon.png`
           return await setIconContent({ client, instance: objectTypeIcon, link, fieldName: 'icon' })
         } catch (e) {
-          errors.push({ message: e.message, severity: 'Error' })
+          errors.push({ message: e.message, detailedMessage: e.message, severity: 'Error' })
           return undefined
         }
       }),

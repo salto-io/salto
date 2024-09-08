@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -101,8 +93,10 @@ export const getValuesToDeploy = async ({
       const index = idToIndex[instance.value[identifier]]
       if (index !== undefined) {
         log.error('Should never happened, newly created uuid exists in the service')
+        const message = 'Instance already exists in the service'
         errors.push({
-          message: 'Instance already exists in the service',
+          message,
+          detailedMessage: message,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })
@@ -123,9 +117,11 @@ export const getValuesToDeploy = async ({
         valuesToDeploy[index] = instance.value
         appliedChanges.push(change)
       } else {
+        const message = 'Instance does not exist in the service'
         errors.push({
           severity: 'Error',
-          message: 'Instance does not exist in the service',
+          message,
+          detailedMessage: message,
           elemID: instance.elemID,
         })
       }
@@ -143,9 +139,11 @@ export const getValuesToDeploy = async ({
         valuesToDeploy.splice(index, 1)
         appliedChanges.push(change)
       } else {
+        const message = 'Instance does not exist in the service'
         errors.push({
           severity: 'Error',
-          message: 'Instance does not exist in the service',
+          message,
+          detailedMessage: message,
           elemID: instance.elemID,
         })
       }
@@ -185,12 +183,14 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
       }
       valuesFromService = response.data.values
     } catch (e) {
+      const message = 'Error getting other script-listeners information from the service'
       return {
         leftoverChanges,
         deployResult: {
           errors: relevantChanges.map(getChangeData).map(instance => ({
             severity: 'Error' as SeverityLevel,
-            message: 'Error getting other script-listeners information from the service',
+            message,
+            detailedMessage: message,
             elemID: instance.elemID,
           })),
           appliedChanges: [],
@@ -215,6 +215,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         ...appliedChanges.map(getChangeData).map(instance => ({
           severity: 'Error' as SeverityLevel,
           message: `${errorMessage}`,
+          detailedMessage: `${errorMessage}`,
           elemID: instance.elemID,
         })),
       )

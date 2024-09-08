@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
@@ -99,11 +91,19 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES: Record<string, COMPOUND_FIELD_TYPE
   // name is handled differently with nameField
 }
 
-// target types for creating / updating custom fields:
-export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
+// target types for creating / updating custom fields
+// we can create fields of these types or update the types of existing fields to these types
+export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: (string | undefined)[] = [
   ...Object.values(FIELD_TYPE_NAMES),
   COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
+]
+
+export const CUSTOM_FIELD_DEPLOYABLE_TYPES: (string | undefined)[] = [
+  ...CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
+  // We cannot create new fields with an unknown type or modify a field to have an unknown type
+  // but if a field is already of an unknown type, we can deploy it as long as we do not specify the type explicitly
+  undefined,
 ]
 
 export const FIELD_SOAP_TYPE_NAMES: Record<string, ALL_FIELD_TYPE_NAMES> = {
@@ -617,6 +617,7 @@ export const INVALID_GRANT = 'invalid_grant'
 export const ENOTFOUND = 'ENOTFOUND'
 export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
 
+export const ACTIVITY_CUSTOM_OBJECT = 'Activity'
 export const TASK_CUSTOM_OBJECT = 'Task'
 export const EVENT_CUSTOM_OBJECT = 'Event'
 
@@ -691,3 +692,10 @@ export const PROFILE_RELATED_METADATA_TYPES = [
   LAYOUT_TYPE_ID_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
 ] as const
+
+export const ProgressReporterSuffix = {
+  QuickDeploy: 'Attempting quick deploy',
+  QuickDeployFailed: 'Quick deploy failed. Attempting regular deploy',
+}
+
+export const METADATA_DEPLOY_PENDING_STATUS = 'Pending'

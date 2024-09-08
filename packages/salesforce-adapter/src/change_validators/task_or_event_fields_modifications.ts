@@ -1,33 +1,58 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeValidator, isFieldChange, Field, getChangeData, ChangeError } from '@salto-io/adapter-api'
-import { EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../constants'
-import { apiNameSync, isCustomObjectSync } from '../filters/utils'
+import {
+  ChangeValidator,
+  isFieldChange,
+  Field,
+  getChangeData,
+  ChangeError,
+  isModificationChange,
+  Change,
+} from '@salto-io/adapter-api'
+import { ACTIVITY_CUSTOM_OBJECT } from '../constants'
+import { apiNameSync, isFieldOfTaskOrEvent } from '../filters/utils'
 
-const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
-  isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+const isFieldOfActivity = ({ parent }: Field): boolean => apiNameSync(parent) === ACTIVITY_CUSTOM_OBJECT
 
 const createFieldOfTaskOrEventChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Modifying a field of Task or Event is not allowed',
-  detailedMessage: `Modifying the field ${field.name} of the ${apiNameSync(field.parent)} object directly is forbidden. Instead, modify the corresponding field in the Activity Object`,
+  detailedMessage: `Modifying the field ${field.name} of the ${apiNameSync(field.parent)} object directly is forbidden. Instead, modify the corresponding field in the Activity Object.`,
 })
 
+export const findMatchingActivityChange = (
+  taskOrEventChange: Change,
+  changes: readonly Change[],
+): Change | undefined => {
+  const activityChange = changes.find(
+    change =>
+      isFieldChange(change) &&
+      isFieldOfActivity(getChangeData(change)) &&
+      apiNameSync(getChangeData(change), true) === apiNameSync(getChangeData(taskOrEventChange), true) &&
+      change.action === taskOrEventChange.action,
+  )
+  if (activityChange === undefined || isModificationChange(taskOrEventChange)) {
+    return undefined
+  }
+  return activityChange
+}
+
 const changeValidator: ChangeValidator = async changes =>
-  changes.filter(isFieldChange).map(getChangeData).filter(isFieldOfTaskOrEvent).map(createFieldOfTaskOrEventChangeError)
+  changes
+    .filter(isFieldChange)
+    .filter(change => isFieldOfTaskOrEvent(getChangeData(change)))
+    .map((fieldChange): ChangeError | undefined => {
+      if (!findMatchingActivityChange(fieldChange, changes)) {
+        return createFieldOfTaskOrEventChangeError(getChangeData(fieldChange))
+      }
+      return undefined
+    })
+    .filter(change => change !== undefined) as ChangeError[]
 
 export default changeValidator

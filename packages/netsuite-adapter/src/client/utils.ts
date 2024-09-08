@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { X2jOptions, XMLBuilder, XmlBuilderOptions, XMLParser } from 'fast-xml-parser'
@@ -106,19 +98,30 @@ export const sliceMessagesByRegex = (
 export const getConfigRecordsFieldValue = (configRecord: ConfigRecord | undefined, field: string): unknown =>
   configRecord?.data?.fields?.[field]
 
-export const toElementError = (elemID: ElemID, message: string): SaltoElementError => ({
+export const toElementError = ({
   elemID,
   message,
+  detailedMessage,
+}: {
+  elemID: ElemID
+  message: string
+  detailedMessage: string
+}): SaltoElementError => ({
+  elemID,
+  message,
+  detailedMessage,
   severity: 'Error',
 })
 
 export const toDependencyError = (dependency: { elemId: ElemID; dependOn: ElemID[] }): SaltoElementError => {
   const dependencies = _.uniq(dependency.dependOn)
+  const message = `Element cannot be deployed due to an error in its ${
+    dependencies.length > 1 ? 'dependencies' : 'dependency'
+  }: ${dependencies.map(id => id.getFullName()).join(', ')}`
   return {
     elemID: dependency.elemId,
-    message: `Element cannot be deployed due to an error in its ${
-      dependencies.length > 1 ? 'dependencies' : 'dependency'
-    }: ${dependencies.map(id => id.getFullName()).join(', ')}`,
+    message,
+    detailedMessage: message,
     severity: 'Error',
   }
 }
@@ -146,7 +149,7 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
       appliedChanges.push(change)
       elemIdToInternalId[elemID.getFullName()] = result.internalId
     } else {
-      errors.push(toElementError(elemID, result.errorMessage))
+      errors.push(toElementError({ elemID, message: result.errorMessage, detailedMessage: result.errorMessage }))
     }
   })
 

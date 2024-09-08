@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _, { isString } from 'lodash'
 import {
@@ -95,6 +87,7 @@ import slaPolicyOrderFilter from './filters/reorder/sla_policy'
 import automationOrderFilter from './filters/reorder/automation'
 import triggerOrderFilter from './filters/reorder/trigger'
 import viewOrderFilter from './filters/reorder/view'
+import queueOrderFilter from './filters/reorder/queue'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import omitCollisionFilter from './filters/omit_collision'
 import accountSettingsFilter from './filters/account_settings'
@@ -204,6 +197,7 @@ export const DEFAULT_FILTERS = [
   automationOrderFilter,
   triggerOrderFilter,
   viewOrderFilter,
+  queueOrderFilter,
   businessHoursScheduleFilter,
   accountSettingsFilter,
   dynamicContentFilter,
@@ -469,6 +463,7 @@ export interface ZendeskAdapterParams {
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   configInstance?: InstanceElement
+  accountName?: string
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
@@ -486,6 +481,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private brandsList: Promise<InstanceElement[]> | undefined
   private adapterDefinitions: definitions.RequiredDefinitions<ZendeskFetchOptions>
+  private accountName?: string
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -504,6 +500,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     config,
     configInstance,
     elementsSource,
+    accountName,
   }: ZendeskAdapterParams) {
     const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
@@ -518,6 +515,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
+    this.accountName = accountName
 
     this.createClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       const clientConfig = { ...this.userConfig[CLIENT_CONFIG] }
@@ -534,17 +532,20 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     const typesToOmit = this.getNonSupportedTypesToOmit()
 
-    this.adapterDefinitions = {
-      // we can't add guide client at this point
-      clients: createClientDefinitions({ main: this.client, guide: this.client }),
-      pagination: PAGINATION,
-      fetch: definitions.mergeWithUserElemIDDefinitions({
-        userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions(this.userConfig, {
-          typesToOmit,
+    this.adapterDefinitions = definitions.mergeDefinitionsWithOverrides(
+      {
+        // we can't add guide client at this point
+        clients: createClientDefinitions({ main: this.client, guide: this.client }),
+        pagination: PAGINATION,
+        fetch: definitions.mergeWithUserElemIDDefinitions({
+          userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
+          fetchConfig: createFetchDefinitions(this.userConfig, {
+            typesToOmit,
+          }),
         }),
-      }),
-    }
+      },
+      this.accountName,
+    )
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       if (clientsBySubdomain[subdomain] === undefined) {
@@ -673,6 +674,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       combinedRes.errors = combinedRes.errors.concat([
         {
           message,
+          detailedMessage: message,
           severity: 'Warning',
         },
       ])
@@ -749,9 +751,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       ).data
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
+          const message =
+            "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support"
           return {
-            message:
-              "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support",
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           }
         }

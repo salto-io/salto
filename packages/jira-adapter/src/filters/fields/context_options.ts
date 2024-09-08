@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AdditionChange,
@@ -45,8 +37,8 @@ const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
 const { awu } = collections.asynciterable
 
-const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
-const PUBLIC_API_OPTIONS_LIMIT = 10000
+export const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
+export const PUBLIC_API_OPTIONS_LIMIT = 10000
 export const convertOptionsToList = (options: Values): Values[] =>
   _(options)
     .values()
@@ -102,7 +94,7 @@ const getOptionChanges = (
 }
 
 // Transform option back to the format expected by Jira API
-const transformOption = (option: Values): Values => ({
+export const transformOption = (option: Values): Values => ({
   ..._.omit(option, ['position', 'parentValue', 'cascadingOptions']),
 })
 
@@ -118,7 +110,7 @@ type UpdateContextOptionsParams = {
   numberOfAlreadyAddedOptions: number
 }
 
-type Option = {
+export type Option = {
   id: string
   value: string
   optionId?: string
@@ -129,7 +121,7 @@ const EXPECTED_OPTION_SCHEMA = Joi.object({
   value: Joi.string().required(),
 }).unknown(true)
 
-const isOption = createSchemeGuard<Option>(EXPECTED_OPTION_SCHEMA, 'Received invalid response from private API')
+export const isOption = createSchemeGuard<Option>(EXPECTED_OPTION_SCHEMA, 'Received invalid response from private API')
 
 const proccessContextOptionsPrivateApiResponse = (
   resp: Option[],
@@ -150,7 +142,7 @@ const proccessContextOptionsPrivateApiResponse = (
     }
   })
 }
-const getAllOptionPaginator = async (paginator: clientUtils.Paginator, baseUrl: string): Promise<Option[]> => {
+export const getAllOptionPaginator = async (paginator: clientUtils.Paginator, baseUrl: string): Promise<Option[]> => {
   const paginationArgs: clientUtils.ClientGetWithPaginationParams = {
     url: baseUrl,
     paginationField: 'startAt',
@@ -263,25 +255,8 @@ const updateContextOptions = async ({
   }
 }
 
-const reorderContextOptions = async (
-  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: JiraClient,
-  baseUrl: string,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<void> => {
-  const afterOptions = getOptionsFromContext(
-    await resolveValues(contextChange.data.after, getLookUpName, elementsSource),
-  )
-
-  const beforeOptions = isModificationChange(contextChange)
-    ? getOptionsFromContext(await resolveValues(contextChange.data.before, getLookUpName, elementsSource))
-    : []
-
-  if (isEqualValues(beforeOptions, afterOptions)) {
-    return
-  }
-
-  const optionsGroups = _(afterOptions)
+export const deployOptionsOrder = async (options: Value[], client: JiraClient, baseUrl: string): Promise<void> => {
+  const optionsGroups = _(options)
     .groupBy(option => option.optionId)
     .values()
     .value()
@@ -308,6 +283,26 @@ const reorderContextOptions = async (
   await awu(requestBodies)
     .flat()
     .forEach(async body => client.put(body))
+}
+
+const checkAndDeployOptionsOrderChanges = async (
+  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  client: JiraClient,
+  baseUrl: string,
+  elementsSource?: ReadOnlyElementsSource,
+): Promise<void> => {
+  const afterOptions = getOptionsFromContext(
+    await resolveValues(contextChange.data.after, getLookUpName, elementsSource),
+  )
+
+  const beforeOptions = isModificationChange(contextChange)
+    ? getOptionsFromContext(await resolveValues(contextChange.data.before, getLookUpName, elementsSource))
+    : []
+
+  if (isEqualValues(beforeOptions, afterOptions)) {
+    return
+  }
+  await deployOptionsOrder(afterOptions, client, baseUrl)
 }
 
 export const setContextOptions = async (
@@ -363,7 +358,7 @@ export const setContextOptions = async (
     numberOfAlreadyAddedOptions: addedWithoutParentId.length,
   })
 
-  await reorderContextOptions(contextChange, client, url, elementsSource)
+  await checkAndDeployOptionsOrderChanges(contextChange, client, url, elementsSource)
 }
 
 export const setOptionTypeDeploymentAnnotations = async (fieldContextType: ObjectType): Promise<void> => {

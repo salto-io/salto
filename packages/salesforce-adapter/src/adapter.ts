@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   TypeElement,
@@ -26,12 +18,10 @@ import {
   AdapterOperations,
   DeployResult,
   FetchOptions,
-  DeployOptions,
   ReadOnlyElementsSource,
   ElemID,
   PartialFetchData,
   Element,
-  ProgressReporter,
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { filter, inspectValue, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -116,6 +106,8 @@ import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
+import flowCoordinatesFilter from './filters/flow_coordinates'
+import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import { getConfigFromConfigChanges } from './config_change'
 import {
   LocalFilterCreator,
@@ -170,6 +162,7 @@ import {
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef } from './client/custom_list_funcs'
+import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -257,6 +250,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: installedPackageGeneratedDependencies },
   { creator: omitStandardFieldsNonDeployableValuesFilter },
+  // taskAndEventCustomFields should run before customTypeSplit
+  { creator: taskAndEventCustomFields },
   // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
   { creator: customTypeSplit },
   { creator: mergeProfilesWithSourceValuesFilter },
@@ -268,6 +263,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: importantValuesFilter },
   { creator: hideTypesFolder },
   { creator: generatedDependenciesFilter },
+  { creator: flowCoordinatesFilter },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]
@@ -433,7 +429,12 @@ type CreateFiltersRunnerParams = {
   contextOverrides?: Partial<FilterContext>
 }
 
-export default class SalesforceAdapter implements AdapterOperations {
+type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
+  deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
+  validate: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
+}
+
+export default class SalesforceAdapter implements SalesforceAdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
@@ -631,7 +632,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async deployOrValidate(
-    { changeGroup, progressReporter }: DeployOptions,
+    { changeGroup, progressReporter }: SalesforceAdapterDeployOptions,
     checkOnly: boolean,
   ): Promise<DeployResult> {
     const fetchParams = this.userConfig.fetch ?? {}
@@ -661,11 +662,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     let deployResult: DeployResult
     if (isDataDeployGroup) {
       if (checkOnly) {
+        const message = 'Cannot deploy CustomObject Records as part of check-only deployment'
         return {
           appliedChanges: [],
           errors: [
             {
-              message: 'Cannot deploy CustomObject Records as part of check-only deployment',
+              message,
+              detailedMessage: message,
               severity: 'Error',
             },
           ],
@@ -677,15 +680,13 @@ export default class SalesforceAdapter implements AdapterOperations {
         changeGroup.groupID,
         fetchProfile.dataManagement,
       )
+      progressReporter.reportDataProgress(deployResult.appliedChanges.length)
     } else {
-      const nullProgressReporter: ProgressReporter = {
-        reportProgress: () => {},
-      }
       deployResult = await deployMetadata(
         resolvedChanges,
         this.client,
         this.nestedMetadataTypes,
-        progressReporter ?? nullProgressReporter,
+        progressReporter,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,
@@ -709,7 +710,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  async deploy(deployOptions: DeployOptions): Promise<DeployResult> {
+  async deploy(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     // Check old configuration flag for backwards compatibility (SALTO-2700)
     const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
     const result = await this.deployOrValidate(deployOptions, checkOnly)
@@ -724,7 +725,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     return result
   }
 
-  async validate(deployOptions: DeployOptions): Promise<DeployResult> {
+  async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
   }
 

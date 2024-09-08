@@ -1,27 +1,23 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
+  cloneDeepWithoutRefs,
   CORE_ANNOTATIONS,
   Element,
   ElemID,
   Field,
   getAllChangeData,
   InstanceElement,
+  isAdditionChange,
   isField,
+  isFieldChange,
+  isObjectTypeChange,
   ObjectType,
   ReferenceExpression,
   toChange,
@@ -36,7 +32,7 @@ import { makeFilter, STANDARD_VALUE, STANDARD_VALUE_SET } from '../../src/filter
 import SalesforceClient from '../../src/client/client'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { extractFullNamesFromValueList } from '../../src/filters/utils'
-import { defaultFilterContext } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { mockInstances, mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -260,42 +256,88 @@ describe('Standard Value Sets filter', () => {
   })
 
   describe('deploy flow', () => {
-    let originalChange: Change<Field>
-    let afterPreDeployChanges: Change<Field>[]
-    let afterOnDeployChanges: Change<Field>[]
+    describe('with modification of existing field', () => {
+      let originalChange: Change<Field>
+      let afterPreDeployChanges: Change<Field>[]
+      let afterOnDeployChanges: Change<Field>[]
 
-    beforeEach(async () => {
-      const beforePicklistStandardField = new Field(
-        mockTypes.Profile,
-        'StandardPicklist',
-        Types.primitiveDataTypes.Picklist,
-        {
-          [API_NAME]: 'Profile.StandardPicklist',
+      beforeEach(async () => {
+        const beforePicklistStandardField = new Field(
+          mockTypes.Account,
+          'StandardPicklist',
+          Types.primitiveDataTypes.Picklist,
+          {
+            [API_NAME]: 'Account.StandardPicklist',
+            [VALUE_SET_FIELDS.VALUE_SET_NAME]: 'StandardPicklistValueSet',
+            description: 'before',
+          },
+        )
+        const afterPicklistStandardField = beforePicklistStandardField.clone({
+          ...beforePicklistStandardField.annotations,
+          description: 'after',
+        })
+        originalChange = toChange({
+          before: beforePicklistStandardField,
+          after: afterPicklistStandardField,
+        })
+        afterPreDeployChanges = [cloneDeepWithoutRefs(originalChange)]
+        await filter.preDeploy(afterPreDeployChanges)
+        afterOnDeployChanges = cloneDeepWithoutRefs(afterPreDeployChanges)
+        await filter.onDeploy(afterOnDeployChanges)
+      })
+      it('should omit the valueSetName annotation on preDeploy', () => {
+        expect(afterPreDeployChanges).toHaveLength(1)
+        expect(getAllChangeData(afterPreDeployChanges[0])).toSatisfyAll(field =>
+          _.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]),
+        )
+      })
+      it('should restore to original change on onDeploy', () => {
+        expect(afterOnDeployChanges).toEqual([originalChange])
+      })
+    })
+    describe('with addition of field or standard object', () => {
+      // This case is relevant mostly for the flow of dumpElementsToFolder since there is no way
+      // to actually deploy an addition of a standard object
+      let originalChanges: Change[]
+      let afterPreDeployChanges: Change[]
+      let afterOnDeployChanges: Change[]
+      beforeEach(async () => {
+        const newField = new Field(mockTypes.Account, 'StandardPicklist', Types.primitiveDataTypes.Picklist, {
+          [API_NAME]: 'Account.StandardPicklist',
           [VALUE_SET_FIELDS.VALUE_SET_NAME]: 'StandardPicklistValueSet',
-          description: 'before',
-        },
-      )
-      const afterPicklistStandardField = beforePicklistStandardField.clone({
-        ...beforePicklistStandardField.annotations,
-        description: 'after',
+        })
+        const newObject = createCustomObjectType('Case', {
+          fields: {
+            StandardPicklist: {
+              refType: Types.primitiveDataTypes.Picklist,
+              annotations: {
+                [API_NAME]: 'Case.StandardPicklist',
+                [VALUE_SET_FIELDS.VALUE_SET_NAME]: 'StandardPicklistValueSet',
+              },
+            },
+          },
+        })
+        originalChanges = [toChange({ after: newField }), toChange({ after: newObject })]
+        afterPreDeployChanges = cloneDeepWithoutRefs(originalChanges)
+        await filter.preDeploy(afterPreDeployChanges)
+        afterOnDeployChanges = cloneDeepWithoutRefs(afterPreDeployChanges)
+        await filter.onDeploy(afterOnDeployChanges)
       })
-      originalChange = toChange({
-        before: beforePicklistStandardField,
-        after: afterPicklistStandardField,
+      it('should omit the valueSetName annotation from field addition on preDeploy', () => {
+        const fieldAddition = afterPreDeployChanges.filter(isAdditionChange).find(isFieldChange)
+        expect(fieldAddition).toBeDefined()
+        expect(fieldAddition?.data.after.annotations).not.toHaveProperty(VALUE_SET_FIELDS.VALUE_SET_NAME)
       })
-      afterPreDeployChanges = [originalChange]
-      await filter.preDeploy(afterPreDeployChanges)
-      afterOnDeployChanges = [...afterPreDeployChanges]
-      await filter.onDeploy(afterOnDeployChanges)
-    })
-    it('should omit the valueSetName annotation on preDeploy', () => {
-      expect(afterPreDeployChanges).toHaveLength(1)
-      expect(getAllChangeData(afterPreDeployChanges[0])).toSatisfyAll(field =>
-        _.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]),
-      )
-    })
-    it('should restore to original change on onDeploy', () => {
-      expect(afterOnDeployChanges).toEqual([originalChange])
+      it('should omit the valueSetName annotation from fields inside the added object type', () => {
+        const objAddtion = afterPreDeployChanges.filter(isAdditionChange).find(isObjectTypeChange)
+        expect(objAddtion).toBeDefined()
+        expect(objAddtion?.data.after.fields.StandardPicklist.annotations).not.toHaveProperty(
+          VALUE_SET_FIELDS.VALUE_SET_NAME,
+        )
+      })
+      it('should restore to original change on onDeploy', () => {
+        expect(afterOnDeployChanges).toEqual(originalChanges)
+      })
     })
   })
 })

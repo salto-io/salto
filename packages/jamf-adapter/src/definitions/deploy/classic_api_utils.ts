@@ -1,31 +1,32 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { ActionName } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { values } from '@salto-io/lowerdash'
+import { values, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import xmljs from 'xml-js'
+import { UserConfig } from '../../config'
 import { AdditionalAction, ClientOptions } from '../types'
+
+const { timeout } = promises
+const DEFAULT_POST_DEPLOY_DELAY = 50 * 1000 // 50 seconds in ms
+
+// we use a delay to handle the delay of the service to be updated after addition and deletion
+// https://community.jamf.com/t5/jamf-pro/delay-time-after-post-or-delete-api-calls/m-p/323383/emcs_t/S2h8ZW1haWx8dG9waWNfc3Vic2NyaXB0aW9ufE0wM1dLNk4xNU4yMlBFfDMyMzM4M3xTVUJTQ1JJUFRJT05TfGhL#M278490
+const postDeployDelay = (delay = DEFAULT_POST_DEPLOY_DELAY): Promise<void> => timeout.sleep(delay)
 
 /*
  * Util function to create deploy definitions for classic Jamf api given a type.
  * Classic Jamf api uses XML for requests and responses, this definition handle it correctly.
  */
 export const createClassicApiDefinitionsForType = (
+  userConfig: UserConfig,
   typeName: string,
   plural: string,
   adjustFunctions?: Partial<
@@ -45,6 +46,7 @@ export const createClassicApiDefinitionsForType = (
                 }
                 const parsedXML = xmljs.xml2js(value, { compact: true })
                 const id = _.get(parsedXML, `${typeName}.id._text`)
+                await postDeployDelay(userConfig.deploy?.delayAfterDeploy)
                 return { value: { id: Number(id) } }
               },
             },
@@ -107,6 +109,16 @@ export const createClassicApiDefinitionsForType = (
               adjust: async item => {
                 await adjustFunctions?.remove?.(item)
                 return item
+              },
+            },
+          },
+          copyFromResponse: {
+            additional: {
+              adjust: async () => {
+                // We do not really copy from response
+                // This is a hack to run postDeployDelay function after the API call
+                await postDeployDelay(userConfig.deploy?.delayAfterDeploy)
+                return { value: {} }
               },
             },
           },

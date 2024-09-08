@@ -1,21 +1,20 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import {
+  toChange,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { uniqueFieldsChangeValidatorCreator } from '../../../src/deployment/change_validators/unique_fields'
+import { SCOPE, uniqueFieldsChangeValidatorCreator } from '../../../src/deployment/change_validators/unique_fields'
 
 describe('unique fields', () => {
   let relevantInstance1: InstanceElement
@@ -31,17 +30,22 @@ describe('unique fields', () => {
   let uniqueInnerFieldInstance1: InstanceElement
   let uniqueInnerFieldInstance2: InstanceElement
 
+  let parentScopeInstance1: InstanceElement
+  let parentScopeInstance2: InstanceElement
+
   const relevantObjectType = new ObjectType({ elemID: new ElemID('adapter', 'relevantType') })
   const irrelevantObjectType = new ObjectType({ elemID: new ElemID('adapter', 'irrelevantType') })
   const otherRelevantObjectType = new ObjectType({ elemID: new ElemID('adapter', 'otherRelevantType') })
   const uniqueInnerFieldObjectType = new ObjectType({ elemID: new ElemID('adapter', 'uniqueInnerField') })
   const multiFieldsObjectType = new ObjectType({ elemID: new ElemID('adapter', 'multiFieldsType') })
+  const parentScopeObjectType = new ObjectType({ elemID: new ElemID('adapter', 'parentScopeType') })
 
   const changeValidator = uniqueFieldsChangeValidatorCreator({
-    [relevantObjectType.elemID.typeName]: ['uniqueField'],
-    [otherRelevantObjectType.elemID.typeName]: ['otherUniqueField'],
-    [uniqueInnerFieldObjectType.elemID.typeName]: ['field.uniqueInnerField'],
-    [multiFieldsObjectType.elemID.typeName]: ['uniqueField1', 'uniqueField2'],
+    [relevantObjectType.elemID.typeName]: { scope: SCOPE.global, uniqueFields: ['uniqueField'] },
+    [otherRelevantObjectType.elemID.typeName]: { scope: SCOPE.global, uniqueFields: ['otherUniqueField'] },
+    [uniqueInnerFieldObjectType.elemID.typeName]: { scope: SCOPE.global, uniqueFields: ['field.uniqueInnerField'] },
+    [multiFieldsObjectType.elemID.typeName]: { scope: SCOPE.global, uniqueFields: ['uniqueField1', 'uniqueField2'] },
+    [parentScopeObjectType.elemID.typeName]: { scope: SCOPE.parent, uniqueFields: ['uniqueField'] },
   })
 
   beforeEach(() => {
@@ -78,6 +82,12 @@ describe('unique fields', () => {
       field: {
         uniqueInnerField: 'same',
       },
+    })
+    parentScopeInstance1 = new InstanceElement('parentScopeInstance1', parentScopeObjectType, {
+      uniqueField: 'same',
+    })
+    parentScopeInstance2 = new InstanceElement('parentScopeInstance2', parentScopeObjectType, {
+      uniqueField: 'same',
     })
   })
 
@@ -135,7 +145,7 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'uniqueField'.",
     })
   })
   it('should return an error for multiple changes with the same field', async () => {
@@ -159,14 +169,14 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'uniqueField'.",
     })
     expect(changeErrors[1]).toEqual({
       elemID: relevantInstance2After.elemID,
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'uniqueField'.",
     })
   })
   it('should return errors for multiple relevant types and reference them correctly', async () => {
@@ -186,14 +196,14 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'uniqueField' in type relevantType must have a unique value",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'uniqueField'.",
     })
     expect(changeErrors[1]).toEqual({
       elemID: otherRelevantInstance2.elemID,
       severity: 'Error',
       message: "The field 'otherUniqueField' in type otherRelevantType must have a unique value",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'otherUniqueField'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'otherUniqueField'.",
     })
   })
   it('should return an error for the same unique inner field value', async () => {
@@ -205,7 +215,7 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The field 'field.uniqueInnerField' in type uniqueInnerField must have a unique value",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'field.uniqueInnerField'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'field.uniqueInnerField'.",
     })
   })
   it('should return an error for the same unique values in multiple fields', async () => {
@@ -226,7 +236,7 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The fields 'uniqueField1', 'uniqueField2' in type multiFieldsType must have unique values",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField1', 'uniqueField2'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'uniqueField1', 'uniqueField2'.",
     })
   })
   it('should return an error for multiple fields type with only one non unique value', async () => {
@@ -247,11 +257,77 @@ describe('unique fields', () => {
       severity: 'Error',
       message: "The fields 'uniqueField1', 'uniqueField2' in type multiFieldsType must have unique values",
       detailedMessage:
-        "This instance cannot be deployed due to non unique values in the following fields: 'uniqueField1'.",
+        "This instance cannot be deployed due to non-unique values within the entire environment in the following fields: 'uniqueField1'.",
     })
   })
   it('should not return an error when the elementsSource is undefined', async () => {
-    const changeErrors = await changeValidator([toChange({ after: relevantInstance1 })], undefined)
+    const changeErrors = await changeValidator(
+      [toChange({ after: relevantInstance1 }), toChange({ after: relevantInstance2 })],
+      undefined,
+    )
     expect(changeErrors).toHaveLength(0)
+  })
+  describe('parent scope', () => {
+    const parentInstance1 = new InstanceElement('parentInstance1', irrelevantObjectType, {})
+    const parentInstance2 = new InstanceElement('parentInstance2', irrelevantObjectType, {})
+    it('should return an error for the same unique values in the same parent', async () => {
+      parentScopeInstance1.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parentInstance1.elemID)
+      parentScopeInstance2.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parentInstance1.elemID)
+      const elementSource = buildElementsSourceFromElements([parentScopeInstance1, parentScopeInstance2])
+      const changeErrors = await changeValidator([toChange({ after: parentScopeInstance1 })], elementSource)
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0]).toEqual({
+        elemID: parentScopeInstance1.elemID,
+        severity: 'Error',
+        message: "The field 'uniqueField' in type parentScopeType must have a unique value",
+        detailedMessage:
+          "This instance cannot be deployed due to non-unique values within the children of the same parent in the following fields: 'uniqueField'.",
+      })
+    })
+    it('should not return an error for the same unique values in different parents', async () => {
+      parentScopeInstance1.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parentInstance1.elemID)
+      parentScopeInstance2.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parentInstance2.elemID)
+      const elementSource = buildElementsSourceFromElements([parentScopeInstance1, parentScopeInstance2])
+      const changeErrors = await changeValidator(
+        [toChange({ before: parentScopeInstance1, after: parentScopeInstance1 })],
+        elementSource,
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
+    it('should not return an error for different unique values in the same parent', async () => {
+      parentScopeInstance1.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parentInstance1.elemID)
+      parentScopeInstance2.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(parentInstance1.elemID)
+      parentScopeInstance2.value.uniqueField = 'other'
+      const elementSource = buildElementsSourceFromElements([parentScopeInstance1, parentScopeInstance2])
+      const changeErrors = await changeValidator(
+        [toChange({ before: parentScopeInstance1, after: parentScopeInstance2 })],
+        elementSource,
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
+    it('should throw an error when the parent is not a reference expression', async () => {
+      parentScopeInstance1.annotations[CORE_ANNOTATIONS.PARENT] = 'some string'
+      const elementSource = buildElementsSourceFromElements([parentScopeInstance1])
+      await expect(changeValidator([toChange({ after: parentScopeInstance1 })], elementSource)).rejects.toThrow(
+        'Expected adapter.parentScopeType.instance.parentScopeInstance1 parent to be a reference expression',
+      )
+    })
+    it('should throw an error when there is no parent', async () => {
+      const elementSource = buildElementsSourceFromElements([parentScopeInstance1])
+      await expect(changeValidator([toChange({ after: parentScopeInstance1 })], elementSource)).rejects.toThrow(
+        'Expected adapter.parentScopeType.instance.parentScopeInstance1 to have exactly one parent, found 0',
+      )
+    })
+    it('should not return an error if the field is undefined or is not a string', async () => {
+      parentScopeInstance1.value.uniqueField = undefined
+      parentScopeInstance2.value.uniqueField = [1, 2, 3]
+
+      const elementSource = buildElementsSourceFromElements([parentScopeInstance1, parentScopeInstance2])
+      const changeErrors = await changeValidator(
+        [toChange({ after: relevantInstance1 }), toChange({ after: relevantInstance2 })],
+        elementSource,
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
   })
 })

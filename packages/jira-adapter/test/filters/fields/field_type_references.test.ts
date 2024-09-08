@@ -1,19 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { getFilterParams } from '../../utils'
@@ -102,7 +94,6 @@ describe('fields_references', () => {
       'jira.CustomFieldContext.instance.instance.options.b1',
     )
   })
-
   it('should only change optionId if cascadingOptionId cannot be found', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -142,7 +133,6 @@ describe('fields_references', () => {
     expect(instance.value.defaultValue.optionId).toBe('1')
     expect(instance.value.defaultValue.cascadingOptionId).toBe('3')
   })
-
   it('should do nothing if all the optionIds references cannot be found - multiple options', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -158,7 +148,6 @@ describe('fields_references', () => {
     expect(instance.value.defaultValue.optionIds[0]).toBe('3')
     expect(instance.value.defaultValue.optionIds[1]).toBe('2')
   })
-
   it('should convert only the optionIds that found to references - multiple options', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -183,7 +172,6 @@ describe('fields_references', () => {
     )
     expect(instance.value.defaultValue.optionIds[1]).toBe('2')
   })
-
   it('should do nothing if there is no options - multiple options', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -196,7 +184,6 @@ describe('fields_references', () => {
 
     expect(instance.value.defaultValue.optionIds).toBeUndefined()
   })
-
   it('should do nothing if there is no default optionsIds - multiple options', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -215,7 +202,6 @@ describe('fields_references', () => {
 
     expect(instance.value.defaultValue.optionIds).toBeUndefined()
   })
-
   it('should do nothing if there is no default optionsIds - cascading options', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -253,7 +239,6 @@ describe('fields_references', () => {
       value: 'a1',
     })
   })
-
   it('Should do nothing when there are no contexts', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {})
 
@@ -261,7 +246,6 @@ describe('fields_references', () => {
 
     expect(instance.value).toEqual({})
   })
-
   it('Should do nothing when there are no options', async () => {
     const instance = new InstanceElement('instance', fieldContextType, {
       name: 'name',
@@ -273,7 +257,41 @@ describe('fields_references', () => {
       name: 'name',
     })
   })
+  it('should only change the type if splitFieldContextOptions is true', async () => {
+    const instance = new InstanceElement('instance', fieldContextType, {
+      name: 'name',
+      options: {
+        a1: {
+          id: '1',
+          value: 'a1',
+          cascadingOptions: {
+            c1: {
+              id: '3',
+              value: 'c1',
+            },
+          },
+        },
+      },
+      defaultValue: {
+        type: 'option.cascading',
+        optionId: '1',
+        cascadingOptionId: '3',
+      },
+    })
+    const optionType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextOption') })
+    const defaultValueType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextDefaultValue') })
 
+    config.fetch.splitFieldContextOptions = true
+    filter = fieldsTypeReferencesFilter(getFilterParams({ config })) as typeof filter
+
+    await filter.onFetch([instance, optionType, defaultValueType])
+
+    expect(instance.value.defaultValue.optionId).toEqual('1')
+    expect(instance.value.defaultValue.cascadingOptionId).toEqual('3')
+    expect(await defaultValueType.fields.optionId.getType()).toEqual(optionType)
+    expect(await defaultValueType.fields.optionIds.getType()).toEqual(new ListType(optionType))
+    expect(await defaultValueType.fields.cascadingOptionId.getType()).toEqual(optionType)
+  })
   it('should replace the reference field context types', async () => {
     const optionType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextOption') })
     const defaultValueType = new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContextDefaultValue') })
@@ -283,7 +301,6 @@ describe('fields_references', () => {
     expect(await defaultValueType.fields.optionId.getType()).toBe(optionType)
     expect(await defaultValueType.fields.cascadingOptionId.getType()).toBe(optionType)
   })
-
   it('getFieldsLookUpName should resolve the references', async () => {
     expect(
       await getFieldsLookUpName({

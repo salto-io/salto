@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
@@ -68,6 +60,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
+  parseAdditionalAutomationExpressions?: boolean
   enableScriptRunnerAddon?: boolean
   enableJSM?: boolean
   enableJsmExperimental?: boolean
@@ -78,6 +71,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
+  allowUserCallFailure?: boolean
   enableAssetsObjectFieldConfiguration?: boolean
   automationPageSize?: number
   splitFieldContextOptions?: boolean
@@ -155,6 +149,14 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     fieldConfigurationItemsDeploymentLimit: 100,
     usePrivateAPI: true,
     boardColumnRetry: 5,
+    logging: {
+      responseStrategies: [
+        { pattern: '^\\/rest\\/greenhopper\\/1.0\\/rapidviewconfig\\/estimation', numItems: 1, strategy: 'omit' },
+        { pattern: '^\\/rest\\/agile\\/1.0\\/board/.*\\/configuration', numItems: 50, strategy: 'omit' },
+        { pattern: '^\\/rest\\/api\\/2\\/user\\/search', numItems: 10, strategy: 'truncate' },
+        { size: 100000, strategy: 'truncate' },
+      ],
+    },
   },
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
@@ -164,6 +166,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     addAlias: true,
     enableIssueLayouts: true,
     enableNewWorkflowAPI: true,
+    allowUserCallFailure: false,
     enableAssetsObjectFieldConfiguration: false,
   },
   deploy: {
@@ -266,6 +269,10 @@ export type ChangeValidatorName =
   | 'fieldContextOptions'
   | 'uniqueFields'
   | 'assetsObjectFieldConfigurationAql'
+  | 'projectAssigneeType'
+  | 'fieldContextDefaultValue'
+  | 'fieldContextOrderRemoval'
+  | 'optionValue'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -331,6 +338,10 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
     assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
+    projectAssigneeType: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextDefaultValue: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextOrderRemoval: { refType: BuiltinTypes.BOOLEAN },
+    optionValue: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -368,8 +379,10 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableJsmExperimental: { refType: BuiltinTypes.BOOLEAN },
     enableJSMPremium: { refType: BuiltinTypes.BOOLEAN },
     removeDuplicateProjectRoles: { refType: BuiltinTypes.BOOLEAN },
+    allowUserCallFailure: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
+    parseAdditionalAutomationExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
@@ -429,8 +442,10 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableIssueLayouts',
       'fetch.removeDuplicateProjectRoles',
       'fetch.enableNewWorkflowAPI',
+      'fetch.allowUserCallFailure',
       'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
+      'fetch.parseAdditionalAutomationExpressions',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       'deploy.ignoreMissingExtensions',

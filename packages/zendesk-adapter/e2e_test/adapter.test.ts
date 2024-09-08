@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _, { isArray } from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -94,6 +86,7 @@ import {
   USER_FIELD_CUSTOM_FIELD_OPTIONS,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
+  GROUP_TYPE_NAME,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -395,7 +388,11 @@ describe('Zendesk adapter E2E', () => {
         .filter(isInstanceElement)
         .find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
       expect(brandInstanceE2eHelpCenter).toBeDefined()
-      if (brandInstanceE2eHelpCenter === undefined) {
+      const defaultGroup = firstFetchResult.elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === GROUP_TYPE_NAME && e.value.default === true)
+      expect(defaultGroup).toBeDefined()
+      if (brandInstanceE2eHelpCenter === undefined || defaultGroup === undefined) {
         return
       }
       adapterAttr = realAdapter(
@@ -439,6 +436,13 @@ describe('Zendesk adapter E2E', () => {
       const groupInstance = createInstanceElement({
         type: 'group',
         valuesOverride: { name: createName('group') },
+      })
+      const queueInstance = createInstanceElement({
+        type: 'queue',
+        valuesOverride: {
+          name: createName('queue'),
+          primary_groups_id: [new ReferenceExpression(defaultGroup.elemID, defaultGroup)],
+        },
       })
       const macroInstance = createInstanceElement({
         type: 'macro',
@@ -1160,6 +1164,7 @@ describe('Zendesk adapter E2E', () => {
         scheduleInstance,
         customRoleInstance,
         groupInstance,
+        queueInstance,
         macroInstance,
         slaPolicyInstance,
         viewInstance,
@@ -1226,6 +1231,7 @@ describe('Zendesk adapter E2E', () => {
         'oauth_global_client',
         'organization',
         'organization_field',
+        'queue',
         'routing_attribute',
         'sharing_agreement',
         'sla_policy',
@@ -1256,6 +1262,7 @@ describe('Zendesk adapter E2E', () => {
         'organization_field_order',
         'ticket_form_order',
         'sla_policy_order',
+        'queue_order',
       ]
       const orderElementsElemIDs = orderElements.map(name => ({
         type: new ElemID(ZENDESK, name),

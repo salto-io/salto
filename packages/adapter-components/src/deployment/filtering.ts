@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -78,11 +70,17 @@ export const filterIgnoredValues = async (
 /**
  * Transform removed change values to null, for APIs that require explicit null values
  */
-export const transformRemovedValuesToNull = (
-  change: ModificationChange<InstanceElement>,
-  applyToPath?: string[],
-): ModificationChange<InstanceElement> => {
-  const { before, after } = change.data
+export const transformRemovedValuesToNull = ({
+  change,
+  applyToPath,
+  skipSubFields = false,
+}: {
+  change: ModificationChange<InstanceElement>
+  applyToPath?: string[]
+  skipSubFields?: boolean
+}): ModificationChange<InstanceElement> => {
+  const { before, after: afterOriginal } = change.data
+  const after = afterOriginal.clone()
   const elemId = applyToPath
     ? getChangeData(change).elemID.createNestedID(...applyToPath)
     : getChangeData(change).elemID
@@ -92,7 +90,7 @@ export const transformRemovedValuesToNull = (
     func: ({ value, path }) => {
       const valueInAfter = resolvePath(after, path)
       if (valueInAfter === undefined) {
-        if (!_.isPlainObject(value)) {
+        if (!_.isPlainObject(value) || skipSubFields) {
           setPath(after, path, null)
           return WALK_NEXT_STEP.SKIP
         }
@@ -106,5 +104,11 @@ export const transformRemovedValuesToNull = (
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return change
+  return {
+    ...change,
+    data: {
+      before,
+      after,
+    },
+  }
 }

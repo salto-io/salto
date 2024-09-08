@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
@@ -35,13 +27,22 @@ describe('fetch utils', () => {
               },
             ],
           },
+          moveMe: {
+            val: 'val',
+          },
           other: 'other',
         },
       }
     })
     describe('when def combines multiple args', () => {
       it('should transform values based on the provided definitions', async () => {
-        const func = createValueTransformer({ root: 'a', nestUnderField: 'b', pick: ['x', 'y', 'z'], omit: ['z'] })
+        const func = createValueTransformer({
+          root: 'a',
+          nestUnderField: 'b',
+          pick: ['x', 'y', 'z', 'moved'],
+          omit: ['z'],
+          rename: [{ from: 'moveMe', to: 'a.moved', onConflict: 'override' }],
+        })
         expect(await func(item)).toEqual([
           {
             context: {},
@@ -49,6 +50,9 @@ describe('fetch utils', () => {
             value: {
               b: {
                 x: 'X',
+                moved: {
+                  val: 'val',
+                },
               },
             },
           },
@@ -84,6 +88,50 @@ describe('fetch utils', () => {
           },
         ])
       })
+      it('should not override value on rename if onConflict = skip', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'skip' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              a: 'a',
+              b: 'b',
+            },
+          },
+        ])
+      })
+      it('should override value on rename if onConflict = override', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'override' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              b: 'a',
+            },
+          },
+        ])
+      })
+      it('should omit "from" value on rename if onConflict = omit', async () => {
+        const func = createValueTransformer({
+          rename: [{ from: 'a', to: 'b', onConflict: 'omit' }],
+        })
+        expect(await func({ value: { a: 'a', b: 'b' }, typeName: 'a', context: {} })).toEqual([
+          {
+            context: {},
+            typeName: 'a',
+            value: {
+              b: 'b',
+            },
+          },
+        ])
+      })
+
       it('should give precedence to properties returned from adjust', async () => {
         const func = createValueTransformer({
           adjust: async ({ value, context, typeName }) => ({
@@ -106,6 +154,9 @@ describe('fetch utils', () => {
                 ],
               },
               OTHER: 'other',
+              MOVEME: {
+                val: 'val',
+              },
             },
           },
         ])

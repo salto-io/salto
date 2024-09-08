@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
@@ -69,12 +61,14 @@ const filter: FilterCreator = ({ config }) => ({
         .flatMap(instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})`),
     )
     if (!config.fetch.fallbackToInternalId) {
+      const message = `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
+${duplicateInstanceNames.join(',\n')}`
       return {
         errors: [
           {
-            message: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
-If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
-${duplicateInstanceNames.join(',\n')}`,
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           },
         ],
@@ -100,12 +94,14 @@ ${duplicateInstanceNames.join(',\n')}`,
     log.debug(`Replaced duplicate names with: ${newNames.join(', ')}`)
     elements.push(...newInstances)
 
+    const message = `The following elements had duplicate names in Jira and therefore their internal id was added to their names.
+It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.
+${newNames.join(',\n')}`
     return {
       errors: [
         {
-          message: `The following elements had duplicate names in Jira and therefore their internal id was added to their names.
-It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.
-${newNames.join(',\n')}`,
+          message,
+          detailedMessage: message,
           severity: 'Warning',
         },
       ],

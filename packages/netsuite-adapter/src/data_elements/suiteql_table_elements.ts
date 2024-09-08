@@ -1,20 +1,12 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import Ajv from 'ajv'
+import Ajv, { Schema } from 'ajv'
 import { logger } from '@salto-io/logging'
 import {
   CORE_ANNOTATIONS,
@@ -28,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { NetsuiteConfig } from '../config/types'
-import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, TAX_SCHEDULE } from '../constants'
+import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, SUPPORT_CASE_PROFILE, TAX_SCHEDULE } from '../constants'
 import { SuiteQLTableName } from './types'
 
 const log = logger(module)
@@ -36,13 +28,19 @@ const log = logger(module)
 export const SUITEQL_TABLE = 'suiteql_table'
 export const INTERNAL_IDS_MAP = 'internalIdsMap'
 
-const ALLOCATION_TYPE_QUERY_LIMIT = 50
+const COLUMN_QUERY_LIMIT = 50
 const ITEMS_PER_QUERY_LIMIT = 200
 
 export type MissingInternalId = {
   tableName: string
   name: string
 }
+
+export type AdditionalQueryName =
+  | typeof TAX_SCHEDULE
+  | typeof PROJECT_EXPENSE_TYPE
+  | typeof ALLOCATION_TYPE
+  | typeof SUPPORT_CASE_PROFILE
 
 type InternalIdsMap = Record<string, { name: string }>
 
@@ -62,14 +60,15 @@ type SavedSearchInternalIdsResult = {
   name: string
 }
 
-type AllocationTypeSearchResult = {
-  [ALLOCATION_TYPE]: [
+type ColumnSearchResult = Record<
+  string,
+  [
     {
       value: string
       text: string
     },
   ]
-}
+>
 
 const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
   type: 'array',
@@ -98,13 +97,13 @@ const SAVED_SEARCH_INTERNAL_IDS_RESULT_SCHEMA = {
   },
 }
 
-const ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA = {
+const getColumnSearchResultSchema = (searchColumn: string): Schema => ({
   type: 'array',
   items: {
     type: 'object',
-    required: [ALLOCATION_TYPE],
+    required: [searchColumn],
     properties: {
-      [ALLOCATION_TYPE]: {
+      [searchColumn]: {
         type: 'array',
         maxItems: 1,
         minItems: 1,
@@ -123,7 +122,7 @@ const ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA = {
       },
     },
   },
-}
+})
 
 export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undefined> = {
   item: {
@@ -374,6 +373,34 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
     internalIdField: 'id',
     nameField: 'description',
   },
+  revenueRecognitionRule: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  incoterm: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  approvalStatus: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  accountingBook: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  shipItem: {
+    internalIdField: 'id',
+    nameField: 'itemid',
+  },
+  employeeStatus: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
+  jobResourceRole: {
+    internalIdField: 'id',
+    nameField: 'name',
+  },
 
   // could not find table
   address: undefined,
@@ -433,7 +460,7 @@ export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): Intern
   return instance.value[INTERNAL_IDS_MAP]
 }
 
-const getSavedSearchInternlIdsMap =
+const getSavedSearchInternalIdsMap =
   (searchType: string) =>
   async (client: NetsuiteClient, queryBy: QueryBy, items: string[]): Promise<InternalIdsMap> => {
     const result = await Promise.all(
@@ -465,54 +492,62 @@ const getSavedSearchInternlIdsMap =
     return Object.fromEntries(result.map(res => [res.internalid[0].value, { name: res.name }]))
   }
 
-const getAllocationTypeInternalIdsMap = async (
-  client: NetsuiteClient,
-  queryBy: QueryBy,
-  items: string[],
-): Promise<InternalIdsMap> => {
-  const ajv = new Ajv({ allErrors: true, strict: false })
-  const getAllocationTypes = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
-    const anyOfFilter = [[ALLOCATION_TYPE, 'anyof', ..._.difference(items, exclude)]]
-    const noneOfFilter = exclude.length > 0 ? [[ALLOCATION_TYPE, 'noneof', ...exclude]] : []
-    const result = await client.runSavedSearchQuery(
-      {
-        type: 'resourceAllocation',
-        columns: [ALLOCATION_TYPE],
-        // we can't filter by name, so we query all allocation types when queryBy='name'
-        filters: queryBy === 'internalId' ? anyOfFilter : noneOfFilter,
-      },
-      ALLOCATION_TYPE_QUERY_LIMIT,
-    )
-    if (result === undefined) {
-      log.warn('failed to search %s using saved search query', ALLOCATION_TYPE)
-      return {}
+const getSavedSearchInternalIdsMapFromColumn =
+  (searchType: string, searchColumn: string) =>
+  async (client: NetsuiteClient, queryBy: QueryBy, items: string[]): Promise<InternalIdsMap> => {
+    const ajv = new Ajv({ allErrors: true, strict: false })
+    const getColumnValues = async (exclude: string[] = []): Promise<Record<string, { name: string }>> => {
+      const include = _.difference(items, exclude)
+      const anyOfFilter = include.length > 0 ? [[searchColumn, 'anyof', ...include]] : undefined
+      const noneOfFilter = exclude.length > 0 ? [[searchColumn, 'noneof', ...exclude]] : []
+      // we can't filter by name, so we query all column values when queryBy='name'
+      const queryFilters = queryBy === 'internalId' ? anyOfFilter : noneOfFilter
+      if (queryFilters === undefined) {
+        return {}
+      }
+      const result = await client.runSavedSearchQuery(
+        {
+          type: searchType,
+          columns: [searchColumn],
+          filters: queryFilters,
+        },
+        COLUMN_QUERY_LIMIT,
+      )
+      if (result === undefined) {
+        log.warn('failed to search %s using saved search query', searchColumn)
+        return {}
+      }
+      if (!ajv.validate<ColumnSearchResult[]>(getColumnSearchResultSchema(searchColumn), result)) {
+        log.error(
+          'Got invalid results from %s saved search query: %s',
+          `${searchType}.${searchColumn}`,
+          ajv.errorsText(),
+        )
+        return {}
+      }
+      const internalIdToName = Object.fromEntries(
+        result.map(row => [row[searchColumn][0].value, { name: row[searchColumn][0].text }]),
+      )
+      if (result.length < COLUMN_QUERY_LIMIT) {
+        return internalIdToName
+      }
+      return {
+        ...internalIdToName,
+        ...(await getColumnValues(Object.keys(internalIdToName).concat(exclude))),
+      }
     }
-    if (!ajv.validate<AllocationTypeSearchResult[]>(ALLOCATION_TYPE_SEARCH_RESULT_SCHEMA, result)) {
-      log.error('Got invalid results from %s saved search query: %s', ALLOCATION_TYPE, ajv.errorsText())
-      return {}
+    const internalIdsMap = await getColumnValues()
+    if (queryBy === 'name') {
+      return _.pickBy(internalIdsMap, row => items.includes(row.name))
     }
-    const internalIdToName = Object.fromEntries(
-      result.map(row => [row[ALLOCATION_TYPE][0].value, { name: row[ALLOCATION_TYPE][0].text }]),
-    )
-    if (result.length < ALLOCATION_TYPE_QUERY_LIMIT) {
-      return internalIdToName
-    }
-    return {
-      ...internalIdToName,
-      ...(await getAllocationTypes(Object.keys(internalIdToName).concat(exclude))),
-    }
+    return internalIdsMap
   }
-  const internalIdsMap = await getAllocationTypes()
-  if (queryBy === 'name') {
-    return _.pickBy(internalIdsMap, row => items.includes(row.name))
-  }
-  return internalIdsMap
-}
 
-const ADDITIONAL_QUERIES: Record<string, ReturnType<typeof getSavedSearchInternlIdsMap>> = {
-  [TAX_SCHEDULE]: getSavedSearchInternlIdsMap(TAX_SCHEDULE),
-  [PROJECT_EXPENSE_TYPE]: getSavedSearchInternlIdsMap(PROJECT_EXPENSE_TYPE),
-  [ALLOCATION_TYPE]: getAllocationTypeInternalIdsMap,
+export const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof getSavedSearchInternalIdsMap>> = {
+  [TAX_SCHEDULE]: getSavedSearchInternalIdsMap(TAX_SCHEDULE),
+  [PROJECT_EXPENSE_TYPE]: getSavedSearchInternalIdsMap(PROJECT_EXPENSE_TYPE),
+  [ALLOCATION_TYPE]: getSavedSearchInternalIdsMapFromColumn('resourceAllocation', ALLOCATION_TYPE),
+  [SUPPORT_CASE_PROFILE]: getSavedSearchInternalIdsMapFromColumn('supportCase', 'profile'),
 }
 
 const getInternalIdsMap = async (
@@ -521,8 +556,9 @@ const getInternalIdsMap = async (
   tableName: string,
   items: string[],
 ): Promise<InternalIdsMap> => {
-  if (ADDITIONAL_QUERIES[tableName] !== undefined) {
-    return ADDITIONAL_QUERIES[tableName](client, queryBy, items)
+  const additionalQuery = ADDITIONAL_QUERIES[tableName as AdditionalQueryName]
+  if (additionalQuery !== undefined) {
+    return additionalQuery(client, queryBy, items)
   }
   const queryParams = QUERIES_BY_TABLE_NAME[tableName as SuiteQLTableName]
   if (queryParams === undefined) {

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -370,8 +362,10 @@ const removeFieldsWithNoPermission = async (
       type.fields[fieldName]?.annotations[permissionAnnotation],
       fieldValue,
     )
+    const message = `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`
     return {
-      message: `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`,
+      message,
+      detailedMessage: message,
       severity: 'Warning',
       elemID: instanceId,
     }
@@ -626,11 +620,15 @@ const deployModifyChanges = async (
     successInstances.find(instance => instance.isEqual(changeData.after)),
   )
   const diffApiNameErrors: SaltoElementError[] = await awu(diffApiNameData)
-    .map(async data => ({
-      elemID: data.before.elemID,
-      message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
-      severity: 'Error' as SeverityLevel,
-    }))
+    .map(async data => {
+      const message = `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`
+      return {
+        elemID: data.before.elemID,
+        message,
+        detailedMessage: message,
+        severity: 'Error' as SeverityLevel,
+      }
+    })
     .toArray()
   const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors, ...invalidFieldsWarnings]
   return {
@@ -679,6 +677,7 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
     appliedChanges: [],
     errors: changes.map(change => ({
       message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })),
@@ -686,11 +685,15 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   const [changesWithMissingFields, validChanges] = _.partition(changes, change => getMissingFields(change).length > 0)
   const missingFieldValuesWarnings: SaltoElementError[] = changesWithMissingFields
     .map(change => ({ change, missingFields: getMissingFields(change) }))
-    .map(({ change, missingFields }) => ({
-      severity: 'Warning',
-      elemID: getChangeData(change).elemID,
-      message: `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`,
-    }))
+    .map(({ change, missingFields }) => {
+      const message = `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`
+      return {
+        severity: 'Warning',
+        elemID: getChangeData(change).elemID,
+        message,
+        detailedMessage: message,
+      }
+    })
   const withMissingFieldValuesErrors = (deployResult: DeployResult): DeployResult => {
     const appliedChangesElemIds = new Set(
       deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
@@ -787,11 +790,15 @@ const deployRulesAndConditionsGroup = async (
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
 ): Promise<DeployResult> => {
-  const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
-    message: `Cannot deploy ${conditionTypeName} instance ${getChangeData(change).elemID.getFullName()} since it depends on an ${ruleTypeName} instance that was not deployed successfully`,
-    severity: 'Error',
-    elemID: getChangeData(change).elemID,
-  })
+  const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => {
+    const message = `Cannot deploy ${conditionTypeName} instance ${getChangeData(change).elemID.getFullName()} since it depends on an ${ruleTypeName} instance that was not deployed successfully`
+    return {
+      message,
+      detailedMessage: message,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    }
+  }
 
   const ruleChanges = changes.filter(isInstanceOfTypeChangeSync(ruleTypeName))
 

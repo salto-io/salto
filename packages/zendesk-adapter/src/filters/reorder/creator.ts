@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -151,17 +143,21 @@ export const createReorderFilterCreator =
       }
       try {
         if (relevantChanges.length > 1) {
+          const message = `${orderTypeName} element is a singleton and should have only on instance. Found multiple: ${relevantChanges.length}`
           const saltoError: SaltoError = {
-            message: `${orderTypeName} element is a singleton and should have only on instance. Found multiple: ${relevantChanges.length}`,
+            message,
+            detailedMessage: message,
             severity: 'Error',
           }
           throw saltoError // in try block
         }
         const [change] = relevantChanges
         if (!isModificationChange(change)) {
+          const message = `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`
           throw createSaltoElementError({
             // in try block
-            message: `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`,
+            message,
+            detailedMessage: message,
             severity: 'Error',
             elemID: getChangeData(change).elemID,
           })
@@ -192,9 +188,11 @@ export const deployFuncCreator =
     const instance = getChangeData(clonedChange)
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
+      const message = `Not all the ids are numbers: ${inspectValue(ids, { maxArrayLength: null })}`
       throw createSaltoElementError({
         // caught in try block
-        message: `Not all the ids are numbers: ${inspectValue(ids, { maxArrayLength: null })}`,
+        message,
+        detailedMessage: message,
         severity: 'Error',
         elemID: getChangeData(change).elemID,
       })

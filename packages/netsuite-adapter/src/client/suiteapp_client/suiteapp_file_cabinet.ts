@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Element,
@@ -635,7 +627,9 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     } catch (e) {
       const { message } = toError(e)
       return {
-        errors: changes.map(change => toElementError(getChangeData(change).elemID, message)),
+        errors: changes.map(change =>
+          toElementError({ elemID: getChangeData(change).elemID, message, detailedMessage: message }),
+        ),
         appliedChanges: [],
         elemIdToInternalId: {},
       }
@@ -713,7 +707,7 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     const dependencyErrors = [...changesToSkip].map(id => {
       const elemID = ElemID.fromFullName(id)
       const message = `Cannot deploy this ${elemID.typeName} because its parent folder deploy failed`
-      return toElementError(elemID, message)
+      return toElementError({ elemID, message, detailedMessage: message })
     })
 
     return {

@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -39,6 +31,8 @@ import { annotationsFileName, customFieldsFileName, standardFieldsFileName } fro
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
+import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
+import { SalesforceClient } from '../index'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
   const expectedElemId =
@@ -53,13 +47,14 @@ export const createField = (
   fieldType: TypeElement,
   fieldApiName: string,
   additionalAnnotations?: Values,
+  fieldName = 'field',
 ): Field => {
-  const newField = new Field(parent, 'field', fieldType, {
+  const newField = new Field(parent, fieldName, fieldType, {
     [constants.API_NAME]: fieldApiName,
     modifyMe: 'modifyMe',
     ...additionalAnnotations,
   })
-  parent.fields.field = newField
+  parent.fields[fieldName] = newField
   return newField
 }
 
@@ -403,6 +398,23 @@ export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateO
   CustomLabels: '2023-11-06T00:00:00.000Z',
 })
 
-export const nullProgressReporter: ProgressReporter = {
+export const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => {},
+  reportDataProgress: () => {},
+  reportMetadataProgress: () => {},
+}
+
+export type MockDeployProgressReporter = DeployProgressReporter & { getReportedMessages: () => string[] }
+
+export const createMockProgressReporter = async (client: SalesforceClient): Promise<MockDeployProgressReporter> => {
+  const reportedMessages: string[] = []
+  const mockProgressReporter: ProgressReporter = {
+    reportProgress: args => {
+      reportedMessages.push(args.message)
+    },
+  }
+  return {
+    ...(await createDeployProgressReporter(mockProgressReporter, client)),
+    getReportedMessages: () => reportedMessages,
+  }
 }

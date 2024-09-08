@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import Joi from 'joi'
@@ -100,9 +92,11 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${inspectValue(attachments)}`)
+    const message = 'Macro attachment field has an invalid format'
     throw createSaltoElementError({
       // caught in try block
-      message: 'Macro attachment field has an invalid format',
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: parentInstance.elemID,
     })
@@ -178,11 +172,15 @@ const createAttachmentType = (): ObjectType =>
     path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
-const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => ({
-  message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
-  severity: 'Warning',
-  elemID: attachmentInstance.elemID,
-})
+const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => {
+  const message = `could not add content to attachment ${attachment.filename} with id ${attachment.id}`
+  return {
+    message,
+    detailedMessage: message,
+    severity: 'Warning',
+    elemID: attachmentInstance.elemID,
+  }
+}
 
 const getAttachmentContent = async ({
   client,
@@ -296,12 +294,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         ? await createAdditionalParentChanges(childrenChanges, false)
         : []
     if (additionalParentChanges === undefined) {
+      const message = 'Attachment is not linked to a valid macro'
       return {
         deployResult: {
           appliedChanges: [],
           errors: childrenChanges.map(getChangeData).map(e =>
             createSaltoElementError({
-              message: 'Attachment is not linked to a valid macro',
+              message,
+              detailedMessage: message,
               severity: 'Error',
               elemID: e.elemID,
             }),
@@ -336,13 +336,15 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         deployResult: {
           appliedChanges: [],
           errors: [
-            ...parentChanges.map(getChangeData).map(e =>
-              createSaltoElementError({
-                message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
+            ...parentChanges.map(getChangeData).map(e => {
+              const message = `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`
+              return createSaltoElementError({
+                message,
+                detailedMessage: message,
                 severity: 'Error',
                 elemID: e.elemID,
-              }),
-            ),
+              })
+            }),
             ...attachmentDeployResult.errors,
           ],
         },

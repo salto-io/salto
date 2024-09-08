@@ -1,4 +1,4 @@
-# Salto OSS monorepo
+# Salto Monorepo
 [![Knuckles](bnw-face.png)](https://github.com/salto-io/salto/blob/main/docs/faq.md#why-did-we-choose-knuckles-as-our-mascot)
 ---
 
@@ -113,4 +113,4 @@ Once the PR is merged, the version will be published and a git tag will be creat
 See READMEs of individual packages under the `packages` directory.
 
 ### License
-[Apache License 2.0](LICENSE)
+[Licensed under the Salto Terms of Use](LICENSE)

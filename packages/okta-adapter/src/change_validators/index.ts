@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
@@ -40,6 +32,9 @@ import { domainModificationValidator } from './domain_modification'
 import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
 import { brandThemeRemovalValidator } from './brand_theme_removal'
 import { userStatusValidator } from './user_status'
+import { disabledAuthenticatorsInMfaPolicyValidator } from './disabled_authenticators_in_mfa'
+import { oidcIdentityProviderValidator } from './oidc_idp'
+import { everyoneGroupAssignments } from './everyone_group_assignments'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -114,6 +109,9 @@ export default ({
     domainAddition: domainAdditionValidator,
     domainModification: domainModificationValidator,
     userStatusChanges: userStatusValidator,
+    disabledAuthenticatorsInMfaPolicy: disabledAuthenticatorsInMfaPolicyValidator,
+    oidcIdentityProvider: oidcIdentityProviderValidator,
+    everyoneGroupAssignments,
   }
 
   return createChangeValidator({

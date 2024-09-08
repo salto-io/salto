@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import { createSaltoElementError, createSaltoElementErrorFromError, isSaltoError } from '../src/error'
@@ -30,6 +22,7 @@ describe('create saltoElementError', () => {
       }),
     ).toEqual({
       message: 'test',
+      detailedMessage: 'test',
       severity: 'Error',
       elemID: elemId,
     })
@@ -38,11 +31,13 @@ describe('create saltoElementError', () => {
     expect(
       createSaltoElementError({
         message: 'test',
+        detailedMessage: 'test',
         severity: 'Error',
         elemID: elemId,
       }),
     ).toEqual({
       message: 'test',
+      detailedMessage: 'test',
       severity: 'Error',
       elemID: elemId,
     })
@@ -59,7 +54,9 @@ describe('isSaltoError', () => {
     expect(isSaltoError(change)).toBeFalsy()
   })
   it('should return true for saltoErrors', () => {
-    expect(isSaltoError(createSaltoElementError({ message: 'test', severity: 'Error', elemID }))).toBeTruthy()
+    expect(
+      isSaltoError(createSaltoElementError({ message: 'test', detailedMessage: 'test', severity: 'Error', elemID })),
+    ).toBeTruthy()
   })
   it('should return false for Errors', () => {
     expect(isSaltoError(new Error('test'))).toBeFalsy()

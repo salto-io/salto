@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
 import {
@@ -28,7 +20,7 @@ import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployChanges } from '../deployment/standard_deployment'
 import { FilterCreator } from '../filter'
-import { PORTAL_SETTINGS_TYPE_NAME } from '../constants'
+import { CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE, PORTAL_SETTINGS_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 
 const deployPortalSettings = async (
@@ -59,13 +51,13 @@ const deployPortalSettings = async (
       await client.put({
         url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/enable`,
         data: null,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
       })
     } else {
       await client.put({
         url: `/rest/servicedesk/1/${parent.value.key}/settings/agent-announcements/disable`,
         data: null,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE },
       })
     }
   }

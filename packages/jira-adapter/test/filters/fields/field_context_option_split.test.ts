@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   BuiltinTypes,
@@ -235,13 +227,13 @@ describe('fieldContextOptionSplitFilter', () => {
                 value: 'cascadingOption1',
                 disabled: false,
                 id: '3',
-                position: 1,
+                position: 2,
               },
               cascadingOption2: {
                 value: 'cascadingOption2',
                 disabled: false,
                 id: '4',
-                position: 2,
+                position: 1,
               },
             },
             position: 1,
@@ -260,7 +252,7 @@ describe('fieldContextOptionSplitFilter', () => {
     await filter.onFetch(elements)
     // 3 types, 1 context, 2 options, 2 cascading options, 2 orders
     expect(elements).toHaveLength(10)
-    const [orderContext, orderCascade, option1, option2, cascadingOption1, cascadingOption2] = elements.slice(
+    const [orderContext, orderCascade, option1, option2, firstCascadingOption, secondCascadingOption] = elements.slice(
       4,
     ) as InstanceElement[]
 
@@ -282,24 +274,24 @@ describe('fieldContextOptionSplitFilter', () => {
     })
     expect(option2.path).toEqual(['Jira', 'Records', 'Field', 'FieldName', 'contextName', 'contextName_Options'])
 
-    // cascadingOption1
-    expect(cascadingOption1.elemID).toEqual(
-      new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option1_cascadingOption1'),
-    )
-    expect(cascadingOption1.value).toEqual({
-      value: 'cascadingOption1',
-      disabled: false,
-      id: '3',
-    })
-
     // cascadingOption2
-    expect(cascadingOption2.elemID).toEqual(
+    expect(firstCascadingOption.elemID).toEqual(
       new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option1_cascadingOption2'),
     )
-    expect(cascadingOption2.value).toEqual({
+    expect(firstCascadingOption.value).toEqual({
       value: 'cascadingOption2',
       disabled: false,
       id: '4',
+    })
+
+    // cascadingOption1
+    expect(secondCascadingOption.elemID).toEqual(
+      new ElemID(JIRA, FIELD_CONTEXT_OPTION_TYPE_NAME, 'instance', 'contextName_option1_cascadingOption1'),
+    )
+    expect(secondCascadingOption.value).toEqual({
+      value: 'cascadingOption1',
+      disabled: false,
+      id: '3',
     })
 
     // orderContext
@@ -316,44 +308,39 @@ describe('fieldContextOptionSplitFilter', () => {
     )
     expect(orderCascade.value).toEqual({
       options: [
-        new ReferenceExpression(cascadingOption1.elemID, cascadingOption1),
-        new ReferenceExpression(cascadingOption2.elemID, cascadingOption2),
+        new ReferenceExpression(firstCascadingOption.elemID, firstCascadingOption),
+        new ReferenceExpression(secondCascadingOption.elemID, secondCascadingOption),
       ],
     })
   })
   describe('editDefaultValue', () => {
-    it('should edit defaultValue to include references', async () => {
-      const context = new InstanceElement(
-        'contextName',
-        contextType,
-        {
-          options: {
-            option1: {
-              value: 'option1',
-              disabled: false,
-              id: '1',
-              position: 1,
-            },
-            option2: {
-              value: 'option2',
-              disabled: false,
-              id: '2',
-              position: 2,
-            },
-            option3: {
-              value: 'option3',
-              disabled: false,
-              id: '3',
-              position: 3,
-            },
+    it('should edit defaultValue to include references in a sorted array', async () => {
+      const context = new InstanceElement('contextName', contextType, {
+        options: {
+          option1: {
+            value: 'option1',
+            disabled: false,
+            id: '1',
+            position: 1,
           },
-          defaultValue: {
-            type: 'option.multiple',
-            optionIds: ['1', '3'],
+          option2: {
+            value: 'option2',
+            disabled: false,
+            id: '2',
+            position: 2,
+          },
+          option3: {
+            value: 'option3',
+            disabled: false,
+            id: '3',
+            position: 3,
           },
         },
-        ['Jira', 'Records', 'Field', 'FieldName', 'contextName'],
-      )
+        defaultValue: {
+          type: 'option.multiple',
+          optionIds: ['3', '1'],
+        },
+      })
       const elements = [contextType, optionType, context]
       await filter.onFetch(elements)
       // 3 types, 1 context, 3 options, 1 orders

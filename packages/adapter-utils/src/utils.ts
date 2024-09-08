@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import os from 'os'
 import wu from 'wu'
@@ -588,7 +580,7 @@ export const findInstances = (elements: Iterable<Element>, typeID: ElemID): Iter
   return instances.filter(e => e.refType.elemID.isEqual(typeID))
 }
 
-export const getPath = (rootElement: Element, fullElemID: ElemID): string[] | undefined => {
+export const getPath = (rootElement: Readonly<Element>, fullElemID: ElemID): string[] | undefined => {
   // If rootElement is an objectType or an instance (i.e., a top level element),
   // we want to compare the top level id of fullElemID.
   // If it is a field we want to compare the base id.
@@ -640,7 +632,7 @@ export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value):
   }
 }
 
-export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+export const resolvePath = (rootElement: Readonly<Element>, fullElemID: ElemID): Value => {
   const path = getPath(rootElement, fullElemID)
   if (path === undefined) return undefined
   if (_.isEmpty(path)) return rootElement
@@ -932,7 +924,7 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) =>
     : value
 
 // WARNING: using safeJsonStringify with a customizer is inefficient and should not be done at a large scale.
-// prefer inspect / safeStringifyWithInspect (which allow limiting depth / max array length / max string length)
+// prefer inspect / inspectValue (which allows limiting depth / max array length / max string length)
 // where applicable
 export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: string | number): string =>
   safeStringify(value, replacer, space)
@@ -954,6 +946,19 @@ export const getParent = (instance: Element): InstanceElement => {
   }
 
   return parents[0].value
+}
+
+// This method is used to get the parent's elemID when the references are not neccessarily resolved
+export const getParentElemID = (instance: Element): ElemID => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parent = parents[0]
+  if (!isReferenceExpression(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
+  }
+  return parent.elemID
 }
 
 export const hasValidParent = (element: Element): boolean => {
@@ -1107,6 +1112,24 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
  */
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression =>
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
+
+export const getParentAsyncWithElementsSource = async (
+  instance: Element,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<InstanceElement> => {
+  const parents = getParents(instance)
+  if (parents.length !== 1) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+  }
+  const parentReference = parents[0]
+  const parent = isResolvedReferenceExpression(parentReference)
+    ? parentReference.value
+    : await elementsSource.get(parentReference.elemID)
+  if (!isInstanceElement(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+  return parent
+}
 
 export const getInstancesFromElementSource = async (
   elementSource: ReadOnlyElementsSource,

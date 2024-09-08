@@ -25,8 +25,7 @@
       }
     },
     "body": {
-      "name": "my_zone",
-      "status": "ACTIVE"
+      "name": "my_zone"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "100",

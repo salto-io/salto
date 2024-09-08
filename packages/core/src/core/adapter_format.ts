@@ -1,26 +1,19 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Adapter, AdapterOperationsContext, ChangeDataType, Element, SaltoError, toChange } from '@salto-io/adapter-api'
+import { Adapter, AdapterOperationsContext, Element, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource } from '@salto-io/workspace'
 import { FetchResult } from '../types'
 import { adapterCreators } from './adapters'
 import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
+import { getPlan } from './plan'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -178,7 +171,11 @@ export const syncWorkspaceToFolder = ({
 }: SyncWorkspaceToFolderArgs): Promise<SyncWorkspaceToFolderResult> =>
   log.time(
     async () => {
-      const { resolvedElements, adapter, adapterContext } = await getAdapterAndContext({
+      const {
+        resolvedElements: workspaceElements,
+        adapter,
+        adapterContext,
+      } = await getAdapterAndContext({
         workspace,
         accountName,
         ignoreStateElemIdMapping,
@@ -186,45 +183,60 @@ export const syncWorkspaceToFolder = ({
       })
       const { loadElementsFromFolder, dumpElementsToFolder } = adapter
       if (loadElementsFromFolder === undefined) {
-        throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
+        const message = `Account ${accountName}'s adapter does not support loading a non-nacl format`
+        return {
+          errors: [
+            {
+              severity: 'Error' as const,
+              message,
+              detailedMessage: message,
+            },
+          ],
+        }
       }
       if (dumpElementsToFolder === undefined) {
-        throw new Error(`Account ${accountName}'s adapter does not support writing a non-nacl format`)
-      }
-
-      const loadResult = await loadElementsAndMerge(baseDir, loadElementsFromFolder, adapterContext)
-      if (!_.isEmpty(loadResult.loadErrors) || !_.isEmpty(loadResult.mergeErrors)) {
+        const message = `Account ${accountName}'s adapter does not support writing a non-nacl format`
         return {
-          errors: makeArray(loadResult.loadErrors).concat(loadResult.mergeErrors.map(mergeError => mergeError.error)),
+          errors: [
+            {
+              severity: 'Error' as const,
+              message,
+              detailedMessage: message,
+            },
+          ],
         }
       }
 
-      const workspaceElementIDs = new Set(resolvedElements.map(elem => elem.elemID.getFullName()))
+      const {
+        mergedElements: folderElements,
+        mergeErrors,
+        loadErrors,
+      } = await loadElementsAndMerge(baseDir, loadElementsFromFolder, adapterContext)
+      if (!_.isEmpty(loadErrors) || !_.isEmpty(mergeErrors)) {
+        return {
+          errors: makeArray(loadErrors).concat(mergeErrors.map(mergeError => mergeError.error)),
+        }
+      }
 
-      const deleteChanges = loadResult.elements
-        .filter(elem => !workspaceElementIDs.has(elem.elemID.getFullName()))
-        .map(elem => toChange({ before: elem as ChangeDataType }))
-
-      const folderElementsByID = _.keyBy(loadResult.elements, elem => elem.elemID.getFullName())
-
-      const changes = deleteChanges.concat(
-        resolvedElements.map(elem =>
-          toChange({
-            before: folderElementsByID[elem.elemID.getFullName()] as ChangeDataType,
-            after: elem as ChangeDataType,
-          }),
-        ),
-      )
+      // We know this is not accurate - we will get false modify changes here because we are directly comparing
+      // salto elements to folder elements and we know salto elements have more information in them.
+      // This should hopefully be ok because the effect of this incorrect comparison is that we will potentially
+      // re-dump elements that are equal, so even though we do redundant work, the end result should be correct
+      const plan = await getPlan({
+        before: elementSource.createInMemoryElementSource(folderElements),
+        after: elementSource.createInMemoryElementSource(workspaceElements),
+        dependencyChangers: [],
+      })
+      const changes = Array.from(plan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
+      const changeCounts = _.countBy(changes, change => change.action)
 
       log.debug(
-        'Loaded %d elements from folder %s and %d elements from workspace, applying %d changes (%d delete, %d modify, %d add) to folder',
-        loadResult.elements.length,
+        'Loaded %d elements from folder %s and %d elements from workspace, applying %d changes (%o) to folder',
+        folderElements.length,
         baseDir,
-        resolvedElements.length,
+        workspaceElements.length,
         changes.length,
-        deleteChanges.length,
-        loadResult.elements.length - deleteChanges.length,
-        resolvedElements.length - (loadResult.elements.length - deleteChanges.length),
+        changeCounts,
       )
       return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
     },

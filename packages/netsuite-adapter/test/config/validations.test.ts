@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Values } from '@salto-io/adapter-api'
 import { fetchDefault } from '../../src/config/types'
@@ -401,6 +393,49 @@ describe('netsuite config validations', () => {
           maxInstancesPerType: [{ name: 'not_supported_type', limit: 3 }],
         }
         expect(() => validateConfig(config)).toThrow()
+      })
+    })
+  })
+
+  describe('suiteAppClient config', () => {
+    describe('validate suiteAppConcurrencyLimit', () => {
+      it('should validate that suiteAppConcurrencyLimit is a number', () => {
+        config.suiteAppClient = { suiteAppConcurrencyLimit: 5 }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw when suiteAppConcurrencyLimit is not a number', () => {
+        config.suiteAppClient = { suiteAppConcurrencyLimit: '5' }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected "suiteAppClient.suiteAppConcurrencyLimit" to be a number',
+        )
+      })
+    })
+    describe('validate httpTimeoutLimitInMinutes', () => {
+      it('should validate that httpTimeoutLimitInMinutes is a number', () => {
+        config.suiteAppClient = { httpTimeoutLimitInMinutes: 5 }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw when httpTimeoutLimitInMinutes is not a number', () => {
+        config.suiteAppClient = { httpTimeoutLimitInMinutes: '5' }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected "suiteAppClient.httpTimeoutLimitInMinutes" to be a number',
+        )
+      })
+    })
+    describe('validate wsdlVersion', () => {
+      it('should validate that wsdlVersion is a valid enum value', () => {
+        config.suiteAppClient = { wsdlVersion: '2024_1' }
+        expect(() => validateConfig(config)).not.toThrow()
+      })
+      it('should throw when wsdlVersion is not a string', () => {
+        config.suiteAppClient = { wsdlVersion: true }
+        expect(() => validateConfig(config)).toThrow('Expected "suiteAppClient.wsdlVersion" to be a string')
+      })
+      it('should throw when wsdlVersion is not a valid enum value', () => {
+        config.suiteAppClient = { wsdlVersion: 'invalid' }
+        expect(() => validateConfig(config)).toThrow(
+          'Expected "suiteAppClient.wsdlVersion" to be one of: "2020_2", "2023_1", "2023_2", "2024_1"',
+        )
       })
     })
   })

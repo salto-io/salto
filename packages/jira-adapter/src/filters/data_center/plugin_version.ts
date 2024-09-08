@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import Joi from 'joi'
 import semver from 'semver'
@@ -20,7 +12,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 
 const log = logger(module)
-export const PLUGIN_VERSION_NUMBER = '1.0.4'
+export const PLUGIN_VERSION_NUMBER = '1.0.6'
 
 type InfoResponse = {
   version: string
@@ -51,10 +43,12 @@ const filter: FilterCreator = ({ client }) => ({
         throw new Error('Invalid pluginInfo response')
       }
       if (semver.lt(response.data.version, PLUGIN_VERSION_NUMBER)) {
+        const message = `Your Jira instance is running an old version ${response.data.version} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`
         return {
           errors: [
             {
-              message: `Your Jira instance is running an old version ${response.data.version} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`,
+              message,
+              detailedMessage: message,
               severity: 'Warning',
             },
           ],
@@ -63,11 +57,13 @@ const filter: FilterCreator = ({ client }) => ({
       return undefined
     } catch (e) {
       log.error('Failed to verify plugin version number, error is %o', e)
+      const message =
+        'Could not verify version number for Salto for Jira DC addon. Please make sure you are using the latest version of Salto Configuration Manager for Jira Data Center. You can download it from the Jira Marketplace: https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira?tab=overview&hosting=datacenter'
       return {
         errors: [
           {
-            message:
-              'Could not verify version number for Salto for Jira DC addon. Please make sure you are using the latest version of Salto Configuration Manager for Jira Data Center. You can download it from the Jira Marketplace: https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira?tab=overview&hosting=datacenter',
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           },
         ],

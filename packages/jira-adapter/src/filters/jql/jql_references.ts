@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ElemID,
@@ -19,10 +11,11 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
+  isReferenceExpression,
   isTemplateExpression,
   TemplateExpression,
 } from '@salto-io/adapter-api'
-import { setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -145,7 +138,7 @@ const getJqls = (instance: InstanceElement): JqlDetails[] => {
     .filter(({ jql }) => jql !== undefined)
 }
 
-const filter: FilterCreator = ({ config }) => {
+const filter: FilterCreator = ({ config, elementsSource }) => {
   const jqlToTemplateExpression: Record<string, TemplateExpression> = {}
 
   return {
@@ -180,8 +173,10 @@ const filter: FilterCreator = ({ config }) => {
           }
 
           if (ambiguousTokens.size !== 0) {
+            const message = `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`
             return {
-              message: `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`,
+              message,
+              detailedMessage: message,
               severity: 'Warning' as const,
             }
           }
@@ -202,20 +197,22 @@ const filter: FilterCreator = ({ config }) => {
         .forEach(async instance => {
           getJqls(instance)
             .filter((jql): jql is TemplateJqlDetails => isTemplateExpression(jql.jql))
-            .forEach(jql => {
-              const resolvedJql = jql.jql.parts
-                .map(part => {
-                  if (!isResolvedReferenceExpression(part)) {
-                    return part
-                  }
+            .forEach(async jql => {
+              const resolvedJql = (
+                await Promise.all(
+                  jql.jql.parts.map(async part => {
+                    if (!isReferenceExpression(part)) {
+                      return part
+                    }
+                    const refValue = part.value !== undefined ? part.value : await part.getResolvedValue(elementsSource)
+                    if (part.elemID.isTopLevel()) {
+                      return removeCustomFieldPrefix(refValue.value.id)
+                    }
 
-                  if (part.elemID.isTopLevel()) {
-                    return removeCustomFieldPrefix(part.value.value.id)
-                  }
-
-                  return part.value
-                })
-                .join('')
+                    return refValue
+                  }),
+                )
+              ).join('')
 
               jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
 

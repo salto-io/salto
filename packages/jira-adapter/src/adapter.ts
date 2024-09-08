@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import {
@@ -209,6 +201,7 @@ import fieldContextOptionsSplitFilter from './filters/fields/field_context_optio
 import fieldContextOptionsDeploymentFilter from './filters/fields/context_options_deployment_filter'
 import fieldContextOptionsDeploymentOrderFilter from './filters/fields/context_options_order_deployment_filter'
 import contextDefaultValueDeploymentFilter from './filters/fields/context_default_value_deployment_filter'
+import statusPropertiesReferencesFilter from './filters/workflowV2/status_properties_references'
 
 const { getAllElements, addRemainingTypes } = elementUtils.ducktype
 const { findDataField } = elementUtils
@@ -279,6 +272,8 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
   scriptRunnerWorkflowReferencesFilter,
+  // must run before workflowTransitionIdsFilter
+  statusPropertiesReferencesFilter,
   // must run after scriptRunnerWorkflowReferencesFilter
   workflowTransitionIdsFilter,
   transitionIdsFilter,
@@ -467,7 +462,11 @@ export default class JiraAdapter implements AdapterOperations {
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
-    this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
+    this.getUserMapFunc = getUserMapFuncCreator(
+      paginator,
+      client.isDataCenter,
+      config.fetch.allowUserCallFailure ?? false,
+    )
 
     const filterContext = {}
     this.createFiltersRunner = () =>
@@ -628,11 +627,13 @@ export default class JiraAdapter implements AdapterOperations {
     const isJsmEnabled = await isJsmEnabledInService(this.client)
     if (!isJsmEnabled) {
       log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
+      const message = 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.'
       return {
         elements: [],
         errors: [
           {
-            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           },
         ],

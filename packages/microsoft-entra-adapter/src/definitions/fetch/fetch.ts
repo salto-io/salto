@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
@@ -59,6 +51,7 @@ import {
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../requests/clients'
 import { FetchCustomizations } from './types'
 import {
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
   DEFAULT_FIELD_CUSTOMIZATIONS,
   DEFAULT_ID_PARTS,
   DEFAULT_TRANSFORMATION,
@@ -111,6 +104,17 @@ const graphV1Customizations: FetchCustomizations = {
           }
         },
       },
+      context: {
+        // We only need this dependency for the conditions under the group life cycle policy recurse definition
+        dependsOn: {
+          [CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES]: {
+            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
+            transformation: {
+              root: 'managedGroupTypes',
+            },
+          },
+        },
+      },
       recurseInto: {
         [GROUP_ADDITIONAL_DATA_FIELD_NAME]: {
           typeName: GROUP_ADDITIONAL_DATA_TYPE_NAME,
@@ -141,6 +145,12 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromContext: CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+              match: ['Selected'],
+            },
+          ],
         },
       },
     },
@@ -210,23 +220,6 @@ const graphV1Customizations: FetchCustomizations = {
   [GROUP_LIFE_CYCLE_POLICY_TYPE_NAME]: {
     resource: {
       directFetch: false,
-      context: {
-        dependsOn: {
-          [LIFE_CYCLE_POLICY_TYPE_NAME]: {
-            parentTypeName: LIFE_CYCLE_POLICY_TYPE_NAME,
-            transformation: {
-              pick: ['managedGroupTypes'],
-            },
-          },
-        },
-        // TODO SALTO-6077: we currently overlook this definition. We should validate this definition after fixing the issue
-        conditions: [
-          {
-            fromContext: LIFE_CYCLE_POLICY_TYPE_NAME,
-            match: ['Selected'],
-          },
-        ],
-      },
     },
     requests: [
       {
@@ -402,6 +395,9 @@ const graphV1Customizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/oauth2PermissionGrants',
+          queryArgs: {
+            $filter: "consentType eq 'AllPrincipals'",
+          },
         },
         transformation: DEFAULT_TRANSFORMATION,
       },
@@ -413,7 +409,6 @@ const graphV1Customizations: FetchCustomizations = {
           parts: [
             { fieldName: 'clientId', isReference: true },
             { fieldName: 'resourceId', isReference: true },
-            { fieldName: 'consentType' },
           ],
         },
       },
@@ -604,6 +599,13 @@ const graphV1Customizations: FetchCustomizations = {
               },
             },
           },
+          conditions: [
+            {
+              fromField: 'authenticationType',
+              // Exclude federated domains, as this api call does not support them
+              match: ['Managed'],
+            },
+          ],
         },
       },
       mergeAndTransform: {

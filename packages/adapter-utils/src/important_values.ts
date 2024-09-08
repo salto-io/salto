@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -22,6 +14,7 @@ import {
   isField,
   isInstanceElement,
   isObjectType,
+  isPlaceholderObjectType,
   isPrimitiveValue,
   isReferenceExpression,
   ObjectType,
@@ -135,9 +128,19 @@ export const getImportantValues = async ({
     return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
   }
   if (isField(element) || isInstanceElement(element)) {
-    try {
+    const getTypeObj = async (): Promise<ObjectType> => {
       const typeObj = await element.getType(elementSource)
-      const importantValues = typeObj?.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
+      return isPlaceholderObjectType(typeObj) ? elementSource?.get(typeObj.elemID) : typeObj
+    }
+    try {
+      const typeObj = await getTypeObj()
+      if (typeObj === undefined) {
+        log.trace(
+          `could not get important values as type is undefined returning [] for element ${element.elemID.getFullName()}`,
+        )
+        return []
+      }
+      const importantValues = typeObj.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES]
       return extractImportantValuesFromElement({ importantValues, element, indexedOnly, highlightedOnly })
     } catch (e) {
       // getType throws an error when the type calculated is not a valid type, or when

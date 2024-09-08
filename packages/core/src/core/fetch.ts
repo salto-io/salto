@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
 import _ from 'lodash'
@@ -96,7 +88,7 @@ import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
-import { mergeStaticFiles, mergeStrings } from './merge_content'
+import { mergeLists, mergeStaticFiles, mergeStrings } from './merge_content'
 import { FetchChange, FetchChangeMetadata } from '../types'
 
 const { awu, groupByAsync } = collections.asynciterable
@@ -239,7 +231,7 @@ const isMergeableDiffChange = (change: FetchChange): change is MergeableDiffChan
   isAdditionOrModificationChange(change.serviceChanges[0]) &&
   isAdditionOrModificationChange(change.pendingChanges[0])
 
-const toMergedTextChange = (change: FetchChange, after: string | StaticFile): FetchChange => ({
+const toMergedChange = (change: FetchChange, after: Value): FetchChange => ({
   ...change,
   change: {
     ...change.change,
@@ -251,7 +243,7 @@ const toMergedTextChange = (change: FetchChange, after: string | StaticFile): Fe
   pendingChanges: [],
 })
 
-const autoMergeTextChange: ChangeTransformFunction = async change => {
+const autoMergeChange: ChangeTransformFunction = async change => {
   if (getCoreFlagBool(CORE_FLAGS.autoMergeDisabled) || !isMergeableDiffChange(change)) {
     return [change]
   }
@@ -263,11 +255,19 @@ const autoMergeTextChange: ChangeTransformFunction = async change => {
 
   if (isStaticFile(current) && isStaticFile(incoming) && isTypeOfOrUndefined(base, isStaticFile)) {
     const merged = await mergeStaticFiles(changeId, { current, base, incoming })
-    return [merged !== undefined ? toMergedTextChange(change, merged) : change]
+    return [merged !== undefined ? toMergedChange(change, merged) : change]
   }
   if (_.isString(current) && _.isString(incoming) && isTypeOfOrUndefined(base, _.isString)) {
     const merged = mergeStrings(changeId, { current, base, incoming })
-    return [merged !== undefined ? toMergedTextChange(change, merged) : change]
+    return [merged !== undefined ? toMergedChange(change, merged) : change]
+  }
+  if (_.isArray(current) && _.isArray(incoming) && isTypeOfOrUndefined(base, _.isArray)) {
+    if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+      log.debug('skipping list auto merge since the autoMergeListsDisabled core flag is true')
+      return [change]
+    }
+    const merged = mergeLists(changeId, { current, base, incoming })
+    return [merged !== undefined ? toMergedChange(change, merged) : change]
   }
   return [change]
 }
@@ -284,6 +284,77 @@ const omitNoConflictCoreAnnotationsPendingChanges: ChangeTransformFunction = asy
     return [{ ...change, pendingChanges: [] }]
   }
   return [change]
+}
+
+/**
+ * Creates a list modification change in a given id, when there's a list in that id in all sources.
+ * This is required because that when the list in two of the sources have the same length, then one
+ * of `wsChanges`/`serviceChanges`/`pendingChanges` will have changes on the list items, instead of the
+ * whole list, that we need in order to auto-merge the list later.
+ * This logic is skipped when the list's length is the same in all sources (so there will be changes on
+ * each list item separately) or when `pendingChanges` is empty (and there's no conflict to auto-merge).
+ */
+const toListModificationChange = ({
+  elemId,
+  wsChanges,
+  serviceChanges,
+  pendingChanges,
+}: {
+  elemId: ElemID
+  wsChanges: types.NonEmptyArray<DetailedChangeWithBaseChange>
+  serviceChanges: types.NonEmptyArray<DetailedChangeWithBaseChange>
+  pendingChanges: DetailedChangeWithBaseChange[]
+}): FetchChange | undefined => {
+  if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+    log.debug('skip creating list modification change since the autoMergeListsDisabled core flag is true')
+    return undefined
+  }
+
+  if (!types.isNonEmptyArray(pendingChanges)) {
+    return undefined
+  }
+
+  const { baseChange } = wsChanges[0]
+  const baseServiceChange = serviceChanges[0].baseChange
+  const basePendingChange = pendingChanges[0].baseChange
+
+  if (!isAdditionOrModificationChange(baseServiceChange) || !isAdditionOrModificationChange(basePendingChange)) {
+    return undefined
+  }
+
+  const serviceElement = baseServiceChange.data.after
+  const stateElement = isModificationChange(baseServiceChange) ? baseServiceChange.data.before : undefined
+  const workspaceElement = basePendingChange.data.after
+
+  const serviceValue = resolvePath(serviceElement, elemId)
+  const stateValue = stateElement ? resolvePath(stateElement, elemId) : undefined
+  const workspaceValue = resolvePath(workspaceElement, elemId)
+
+  if (!_.isArray(workspaceValue) || !_.isArray(serviceValue) || !isTypeOfOrUndefined(stateValue, _.isArray)) {
+    return undefined
+  }
+
+  return {
+    change: {
+      id: elemId,
+      baseChange,
+      ...toChange({ before: workspaceValue, after: serviceValue }),
+    },
+    serviceChanges: [
+      {
+        id: elemId,
+        baseChange: baseServiceChange,
+        ...toChange({ before: stateValue, after: serviceValue }),
+      },
+    ],
+    pendingChanges: [
+      {
+        id: elemId,
+        baseChange: basePendingChange,
+        ...toChange({ before: stateValue, after: workspaceValue }),
+      },
+    ],
+  }
 }
 
 const getChangesNestedUnderID = (
@@ -311,7 +382,7 @@ const toFetchChanges = (
 
       const elemId = ElemID.fromFullName(id)
       const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
-      if (wsChanges.length === 0) {
+      if (!types.isNonEmptyArray(wsChanges)) {
         // If we get here it means there is a difference between the account and the state
         // but there is no difference between the account and the workspace. this can happen
         // when the nacl files are updated externally (from git usually) with the change that
@@ -329,7 +400,7 @@ const toFetchChanges = (
         changeList => changeList.map(change => change.change),
       )
 
-      if (serviceChanges.length === 0) {
+      if (!types.isNonEmptyArray(serviceChanges)) {
         // If nothing changed in the account, we don't want to do anything
         return undefined
       }
@@ -343,6 +414,11 @@ const toFetchChanges = (
           serviceChanges.map(change => `${change.action} ${change.id.getFullName()}`),
           pendingChanges.map(change => `${change.action} ${change.id.getFullName()}`),
         )
+      }
+
+      const listModificationChange = toListModificationChange({ elemId, wsChanges, serviceChanges, pendingChanges })
+      if (listModificationChange !== undefined) {
+        return [listModificationChange]
       }
 
       const createFetchChange = (change: DetailedChangeWithBaseChange): FetchChange => {
@@ -831,7 +907,7 @@ export const calcFetchChanges = async (
 
   const changes = await awu(fetchChanges)
     .flatMap(omitNoConflictCoreAnnotationsPendingChanges)
-    .flatMap(autoMergeTextChange)
+    .flatMap(autoMergeChange)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
@@ -998,6 +1074,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
     errors: [
       {
         message: errMsg,
+        detailedMessage: errMsg,
         severity: 'Error',
       },
     ],
@@ -1043,7 +1120,7 @@ const fixStaticFilesForFromStateChanges = async (
         env,
         isTemplate: staticFile.isTemplate,
       })
-      if (!actualStaticFile?.isEqual(staticFile)) {
+      if (!isStaticFile(actualStaticFile) || !actualStaticFile.isEqual(staticFile)) {
         invalidChangeIDs.add(change.id.getFullName())
         log.warn(
           'Static files mismatch in fetch from state for change in elemID %s. (stateHash=%s naclHash=%s)',
@@ -1070,10 +1147,14 @@ const fixStaticFilesForFromStateChanges = async (
     ...fetchChangesResult,
     changes: fetchChangesResult.changes.filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
     errors: fetchChangesResult.errors.concat(
-      Array.from(invalidChangeIDs).map(invalidChangeElemID => ({
-        message: `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`,
-        severity: 'Error',
-      })),
+      Array.from(invalidChangeIDs).map(invalidChangeElemID => {
+        const message = `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`
+        return {
+          message,
+          detailedMessage: message,
+          severity: 'Error',
+        }
+      }),
     ),
   }
 }

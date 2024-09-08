@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   ChangeError,
@@ -20,6 +12,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
+  isField,
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
@@ -29,6 +22,7 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../constants'
 import { Types } from '../transformers/transformer'
+import { apiNameSync } from '../filters/utils'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
@@ -84,6 +78,20 @@ const createUnknownPicklistValueChangeError = (
   severity: 'Warning',
 })
 
+const resolveFieldValue = (value: unknown): string | undefined => {
+  if (_.isString(value)) {
+    return value
+  }
+  // Handle case where the Lookup Field Value is a Reference to a CustomField. e.g. SBQQ__LookupField__c values
+  if (isReferenceExpression(value)) {
+    const valueRef: unknown = value.value
+    if (isField(valueRef)) {
+      return apiNameSync(valueRef, true)
+    }
+  }
+  return undefined
+}
+
 const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement): Promise<ChangeError[]> => {
   const { fields } = await instance.getType()
   const picklistFieldNames = Object.values(fields)
@@ -94,7 +102,7 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
   return picklistFieldNames
     .map(picklistFieldName => {
       const field = fields[picklistFieldName]
-      const fieldValue = instance.value[picklistFieldName]
+      const fieldValue = resolveFieldValue(instance.value[picklistFieldName])
       if (fieldValue === undefined) {
         return undefined
       }

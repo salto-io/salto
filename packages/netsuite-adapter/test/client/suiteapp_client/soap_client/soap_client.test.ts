@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
@@ -91,6 +83,7 @@ describe('soap_client', () => {
         suiteAppTokenId: 'tokenId',
         suiteAppTokenSecret: 'tokenSecret',
       },
+      {},
       fn => fn(),
       (_t: string, _c: number) => false,
       defaultSoapTimeOut,
@@ -633,7 +626,22 @@ describe('soap_client', () => {
     })
   })
 
-  describe('getAllRecords', () => {
+  describe.each(['default', '2023_1', '2024_1'] as const)('getAllRecords with version %s', inputWsdlVersion => {
+    const wsdlVersion = inputWsdlVersion === 'default' ? undefined : inputWsdlVersion
+    beforeEach(() => {
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        { wsdlVersion },
+        fn => fn(),
+        (_t: string, _c: number) => false,
+        defaultSoapTimeOut,
+      )
+    })
+
     it('Should return record using search', async () => {
       searchAsyncMock.mockResolvedValue([
         {
@@ -703,6 +711,7 @@ describe('soap_client', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
         },
+        {},
         fn => fn(),
         (_type: string, count: number) => count > 1,
         defaultSoapTimeOut,
@@ -787,8 +796,8 @@ describe('soap_client', () => {
           },
           'q1:basic': {
             attributes: {
-              'xmlns:platformCommon': 'urn:common_2020_2.platform.webservices.netsuite.com',
-              'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
+              'xmlns:platformCommon': `urn:common_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
+              'xmlns:platformCore': `urn:core_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
             },
             'platformCommon:type': {
               attributes: {
@@ -1108,6 +1117,7 @@ describe('soap_client', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
         },
+        {},
         fn => fn(),
         (_type: string, count: number) => count > 1,
         defaultSoapTimeOut,
@@ -1421,7 +1431,23 @@ describe('soap_client', () => {
     })
   })
 
-  describe('getSelectValue', () => {
+  describe.each(['default', '2023_1', '2024_1'] as const)('getSelectValuewith version %s', inputWsdlVersion => {
+    const wsdlVersion = inputWsdlVersion === 'default' ? undefined : inputWsdlVersion
+
+    beforeEach(() => {
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        { wsdlVersion },
+        fn => fn(),
+        (_t: string, _c: number) => false,
+        defaultSoapTimeOut,
+      )
+    })
+
     it('should make one request and return result', async () => {
       getSelectValueAsyncMock.mockResolvedValue([
         {
@@ -1467,11 +1493,15 @@ describe('soap_client', () => {
         pageIndex: 1,
         fieldDescription: {
           recordType: {
-            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            attributes: {
+              xmlns: `urn:core_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
+            },
             $value: 'account',
           },
           field: {
-            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            attributes: {
+              xmlns: `urn:core_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
+            },
             $value: 'unitstype',
           },
         },
@@ -1617,15 +1647,21 @@ describe('soap_client', () => {
         pageIndex: 1,
         fieldDescription: {
           recordType: {
-            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            attributes: {
+              xmlns: `urn:core_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
+            },
             $value: 'account',
           },
           field: {
-            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            attributes: {
+              xmlns: `urn:core_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
+            },
             $value: 'unit',
           },
           filterByValueList: {
-            attributes: { xmlns: 'urn:core_2020_2.platform.webservices.netsuite.com' },
+            attributes: {
+              xmlns: `urn:core_${wsdlVersion ?? soapClientUtils.DEFAULT_WSDL_VERSION}.platform.webservices.netsuite.com`,
+            },
             filterBy: [
               {
                 field: 'unitstype',
@@ -1850,6 +1886,7 @@ describe('soap_client', () => {
           suiteAppTokenId: 'tokenId',
           suiteAppTokenSecret: 'tokenSecret',
         },
+        {},
         fn => fn(),
         (_type: string, count: number) => count > 1,
         timeout,

@@ -1,24 +1,15 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { client as clientUtils, definitions } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
@@ -239,7 +230,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       return undefined
     }
     const URL_TO_OMIT_FUNC: Record<string, (key: string, val: unknown) => unknown> = {
-      '/api/v1/idps': key => (key === 'credentials' ? OMITTED_PLACEHODLER : undefined),
+      '/api/v1/idps': key => (key === 'client_secret' ? OMITTED_PLACEHODLER : undefined),
       '/api/v1/authenticators': key => (['sharedSecret', 'secretKey'].includes(key) ? OMITTED_PLACEHODLER : undefined),
       '/api/v1/users': cleanUsersData,
     }
@@ -264,7 +255,6 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       : undefined
   }
 
-  // eslint-disable-next-line class-methods-use-this
   @throttle<definitions.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
   @logDecorator(['url'])
   // We use this function without client instance because we don't need it
@@ -277,17 +267,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<Credential
       const httpClient = axios.create({ url })
       const response = await httpClient.get(url, { responseType })
       const { data, status } = response
-      log.trace(
-        'Full HTTP response for GET on %s: %s',
-        url,
-        safeJsonStringify({
-          url,
-          method: 'GET',
-          status,
-          responseType,
-          response: Buffer.isBuffer(data) ? `<omitted buffer of length ${data.length}>` : data,
-        }),
-      )
+      this.logResponse({ method: 'get', params: args, response })
       return {
         data,
         status,

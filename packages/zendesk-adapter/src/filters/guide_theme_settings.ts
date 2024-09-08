@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   Change,
@@ -104,6 +96,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             errors: publishErrors.map(e => ({
               elemID: getChangeData(change).elemID,
               message: e,
+              detailedMessage: e,
               severity: 'Error' as SeverityLevel,
             })),
           }
@@ -111,9 +104,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         return { appliedChange: change, errors: [] }
       }),
     )
+    const message = 'Theme_settings instances cannot be added or removed'
     const errorsOtherChanges = otherChanges.map(change => ({
       elemID: getChangeData(change).elemID,
-      message: 'Theme_settings instances cannot be added or removed',
+      message,
+      detailedMessage: message,
       severity: 'Error' as SeverityLevel,
     }))
     const errors = processedModificationChanges.flatMap(change => change.errors)

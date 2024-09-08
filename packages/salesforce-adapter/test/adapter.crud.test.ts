@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -52,20 +44,29 @@ import {
 import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
-import { createValueSetEntry, createCustomObjectType, nullProgressReporter } from './utils'
+import {
+  createValueSetEntry,
+  createCustomObjectType,
+  nullProgressReporter,
+  MockDeployProgressReporter,
+  createMockProgressReporter,
+} from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
-import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
+import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
+import { SalesforceClient } from '../index'
 
 const { makeArray } = collections.array
 
 describe('SalesforceAdapter CRUD', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
+  let progressReporter: MockDeployProgressReporter
+  let client: SalesforceClient
 
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
@@ -96,8 +97,8 @@ describe('SalesforceAdapter CRUD', () => {
     }
   }
 
-  beforeEach(() => {
-    ;({ connection, adapter } = mockAdapter({
+  beforeEach(async () => {
+    ;({ connection, adapter, client } = mockAdapter({
       adapterParams: {
         config: {
           fetch: {
@@ -111,6 +112,7 @@ describe('SalesforceAdapter CRUD', () => {
         },
       },
     }))
+    progressReporter = await createMockProgressReporter(client)
 
     connection.metadata.upsert.mockImplementation(async (_type, objects) =>
       makeArray(objects).map(({ fullName }) => ({
@@ -252,6 +254,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors).toHaveLength(3)
 
           expect(result.errors[0].message).toContain('Some profile error')
+          expect(result.errors[0].detailedMessage).toContain('Some profile error')
           expect(isSaltoElementError(result.errors[0])).toBeTruthy()
           if (isSaltoElementError(result.errors[0])) {
             expect(result.errors[0].elemID).toEqual(profileInstance.elemID)
@@ -260,6 +263,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           // BusinessProposal will not have a correct ElemID, should point to its parent (Account)
           expect(result.errors[1].message).toContain('Picklist value: Follow Up Meeting not found')
+          expect(result.errors[1].detailedMessage).toContain('Picklist value: Follow Up Meeting not found')
           expect(isSaltoElementError(result.errors[1])).toBeTruthy()
           if (isSaltoElementError(result.errors[1])) {
             expect(result.errors[1].elemID).not.toEqual(businessProcessInstance.elemID)
@@ -269,6 +273,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           expect(result.errors[2]).toEqual({
             message: expect.stringContaining('Some workflow field update error'),
+            detailedMessage: expect.stringContaining('Some workflow field update error'),
             severity: 'Error',
             elemID: workflowFieldUpdate.elemID,
           })
@@ -306,6 +311,9 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return an error with user friendly message', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toContain(MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM])
+          expect(result.errors[0].detailedMessage).toContain(
+            MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM],
+          )
         })
       })
 
@@ -451,6 +459,8 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when preforming quick deploy', () => {
+        const POLLING_INTERVAL = 10
+
         let result: DeployResult
         describe('when the received hash is corresponding with the calculated hash', () => {
           beforeEach(async () => {
@@ -458,6 +468,9 @@ describe('SalesforceAdapter CRUD', () => {
               adapterParams: {
                 config: {
                   client: {
+                    polling: {
+                      interval: POLLING_INTERVAL,
+                    },
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
@@ -469,23 +482,29 @@ describe('SalesforceAdapter CRUD', () => {
               },
             }))
             connection.metadata.deployRecentValidation.mockReturnValue(
-              mockDeployResult({
-                success: true,
-                componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
-                checkOnly: true,
-              }),
+              mockDeployResult(
+                {
+                  success: true,
+                  componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+                  checkOnly: true,
+                },
+                POLLING_INTERVAL * 2,
+              ),
             )
             result = await adapter.deploy({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
-              progressReporter: nullProgressReporter,
+              progressReporter,
             })
           })
           it('should deploy', () => {
             expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
+            expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
+              message.endsWith(ProgressReporterSuffix.QuickDeploy),
+            )
           })
         })
 
@@ -524,6 +543,9 @@ describe('SalesforceAdapter CRUD', () => {
               adapterParams: {
                 config: {
                   client: {
+                    polling: {
+                      interval: POLLING_INTERVAL,
+                    },
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
@@ -537,17 +559,30 @@ describe('SalesforceAdapter CRUD', () => {
             connection.metadata.deployRecentValidation.mockImplementation(() => {
               throw new Error('INVALID_TOKEN')
             })
+            connection.metadata.deploy.mockReturnValue(
+              mockDeployResult(
+                {
+                  success: true,
+                  componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+                  checkOnly: true,
+                },
+                POLLING_INTERVAL * 2,
+              ),
+            )
             const { errors } = await adapter.deploy({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
-              progressReporter: nullProgressReporter,
+              progressReporter,
             })
             expect(errors).toBeEmpty()
           })
           it('should fallback to the regular deploy', () => {
             expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
+              message.endsWith(ProgressReporterSuffix.QuickDeployFailed),
+            )
           })
         })
       })
@@ -960,10 +995,12 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors).toEqual([
             expect.objectContaining({
               message: expect.stringContaining('Test failed'),
+              detailedMessage: expect.stringContaining('Test failed'), // ??
             }),
             expect.objectContaining({
               elemID: instance.elemID,
               message: expect.stringContaining('rollbackOnError'),
+              detailedMessage: expect.stringContaining('rollbackOnError'),
               severity: 'Warning',
             }),
           ])
@@ -989,6 +1026,7 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return the test errors', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toMatch(/.*Test failed.*/)
+          expect(result.errors[0].detailedMessage).toMatch(/.*Test failed.*/)
         })
       })
     })
@@ -1051,11 +1089,13 @@ describe('SalesforceAdapter CRUD', () => {
             expect.objectContaining({
               elemID: failureElement.elemID,
               message: expect.stringContaining('Failed to deploy'),
+              detailedMessage: expect.stringContaining('Failed to deploy'),
               severity: 'Error',
             }),
             expect.objectContaining({
               elemID: successElement.elemID,
               message: expect.stringContaining('rollbackOnError'),
+              detailedMessage: expect.stringContaining('rollbackOnError'),
               severity: 'Warning',
             }),
           ])
@@ -1102,6 +1142,7 @@ describe('SalesforceAdapter CRUD', () => {
               elemID: successElement.elemID,
               severity: 'Info',
               message: 'Something happened',
+              detailedMessage: 'Something happened',
             },
           ])
         })
@@ -1155,9 +1196,54 @@ describe('SalesforceAdapter CRUD', () => {
               elemID: element.elemID,
               severity: 'Warning',
               message: 'Something happened',
+              detailedMessage: 'Something happened',
             },
           ])
         })
+      })
+    })
+
+    describe('when the deploy gets canceled', () => {
+      let element: InstanceElement
+      let deployChangeGroup: ChangeGroup
+      let result: DeployResult
+      beforeEach(async () => {})
+      beforeEach(async () => {
+        element = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'SuccessElement',
+          },
+          mockTypes.ApexClass,
+        )
+
+        deployChangeGroup = {
+          groupID: 'ChangeGroup',
+          changes: [toChange({ after: element })],
+        }
+        const deployResultParams = {
+          success: false,
+          canceled: true,
+        }
+        connection.metadata.deploy.mockReturnValue(
+          mockDeployResult({
+            ...deployResultParams,
+            rollbackOnError: true,
+          }),
+        )
+        result = await adapter.deploy({
+          changeGroup: deployChangeGroup,
+          progressReporter: nullProgressReporter,
+        })
+      })
+      it('Should return the correct error and no applied changes', () => {
+        expect(result.errors).toEqual([
+          {
+            severity: 'Error',
+            message: 'Deployment was canceled.',
+            detailedMessage: 'Deployment was canceled.',
+          },
+        ])
+        expect(result.appliedChanges).toBeEmpty()
       })
     })
   })
@@ -1452,10 +1538,12 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.errors).toEqual([
             expect.objectContaining({
               message: expect.stringContaining('UNKNOWN_EXCEPTION'),
+              detailedMessage: expect.stringContaining('UNKNOWN_EXCEPTION'),
             }),
             expect.objectContaining({
               elemID: afterInstance.elemID,
               message: expect.stringContaining('rollbackOnError'),
+              detailedMessage: expect.stringContaining('rollbackOnError'),
             }),
           ])
         })
@@ -2132,6 +2220,7 @@ describe('SalesforceAdapter CRUD', () => {
       it('should return an error', () => {
         expect(result.errors).toHaveLength(1)
         expect(result.errors[0].message).toContain('some error')
+        expect(result.errors[0].detailedMessage).toContain('some error')
       })
     })
 

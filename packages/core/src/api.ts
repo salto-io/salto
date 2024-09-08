@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
   AccountInfo,
@@ -55,6 +47,7 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
@@ -600,19 +593,18 @@ export const rename = async (
 }
 
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
-  adapterCreators[adapterName].configCreator?.optionsType
+  adapterCreators[adapterName]?.configCreator?.optionsType
 
 /**
  * @deprecated
  */
 export const getAdditionalReferences = async (workspace: Workspace, changes: Change[]): Promise<ReferenceMapping[]> => {
   const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
-
+  log.debug('accountToServiceMap: %s', inspectValue(accountToService))
   const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
-
   const referenceGroups = await Promise.all(
     Object.entries(changeGroups).map(([account, changeGroup]) =>
-      adapterCreators[accountToService[account]].getAdditionalReferences?.(changeGroup),
+      adapterCreators[accountToService[account]]?.getAdditionalReferences?.(changeGroup),
     ),
   )
   return referenceGroups.flat().filter(values.isDefined)

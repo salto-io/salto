@@ -1,17 +1,9 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -63,6 +55,8 @@ import {
   toCustomField,
   toCustomProperties,
   isCustomMetadataRecordTypeSync,
+  isCustomField,
+  isFieldOfTaskOrEvent,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -1062,6 +1056,18 @@ describe('filter utils', () => {
         expect(customField[FIELD_ANNOTATIONS.METADATA_RELATIONSHIP_CONTROLLING_FIELD]).toEqual(CONTROLLING_FIELD)
       })
     })
+    describe('with unknown field type', () => {
+      it('should keep the type attribute undefined', async () => {
+        const unknownField = new Field(
+          new ObjectType({ elemID: new ElemID('salesforce', 'test__c') }),
+          'unknwon__c',
+          Types.primitiveDataTypes.Unknown,
+          { [API_NAME]: 'test__c.unknown__c' },
+        )
+        const customField = await toCustomField(unknownField)
+        expect(customField.type).toBeUndefined()
+      })
+    })
   })
 
   describe('await toCustomProperties', () => {
@@ -1411,6 +1417,30 @@ describe('filter utils', () => {
         expect(_.get(rollupSummaryInfo, 'summaryOperation')).toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })
+    })
+  })
+
+  describe('isCustomField', () => {
+    it('should return true for custom fields', () => {
+      expect(mockTypes.User.fields.Manager__c).toSatisfy(isCustomField)
+    })
+    it('should return false for non custom fields', () => {
+      expect(mockTypes.AssignmentRules.fields.assignmentRule).not.toSatisfy(isCustomField)
+    })
+  })
+
+  describe('isFieldOfTaskOrEvent', () => {
+    const activity = createCustomObjectType('Activity', {})
+    const task = createCustomObjectType('Task', {})
+    const event = createCustomObjectType('Event', {})
+
+    it('should return true for fields of Task or Event', () => {
+      expect(task.fields.Name).toSatisfy(isFieldOfTaskOrEvent)
+      expect(event.fields.Name).toSatisfy(isFieldOfTaskOrEvent)
+    })
+    it('should return false for fields of other types', () => {
+      expect(activity.fields.Name).not.toSatisfy(isFieldOfTaskOrEvent)
+      expect(mockTypes.User.fields.Manager__c).not.toSatisfy(isFieldOfTaskOrEvent)
     })
   })
 })

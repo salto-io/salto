@@ -1,18 +1,11 @@
 /*
- *                      Copyright 2024 Salto Labs Ltd.
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import {
   ElemID,
   GetCustomReferencesFunc,
@@ -22,9 +15,7 @@ import {
   ReferenceInfo,
 } from '@salto-io/adapter-api'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../constants'
 import { WeakReferencesHandler } from './weak_references_handler'
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
@@ -34,60 +25,52 @@ const { pickAsync } = promises.object
 
 const log = logger(module)
 
-export type FieldItem = {
-  description?: string
-  isHidden?: boolean
-  isRequired?: boolean
-  renderer?: string
-}
-
-type FieldConfigurationItems = {
-  [key: string]: FieldItem
-}
-
-const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
-  description: Joi.optional(),
-  isHidden: Joi.boolean().optional(),
-  isRequired: Joi.boolean().optional(),
-  renderer: Joi.optional(),
-})
-
-const FIELD_CONFIGURATION_ITEMS_SCHEME = Joi.object().pattern(/.*/, FIELD_CONFIGURATION_ITEM_SCHEME)
-
-export const isFieldConfigurationItems = createSchemeGuard<FieldConfigurationItems>(FIELD_CONFIGURATION_ITEMS_SCHEME)
-
-const getFieldReferences = (instance: InstanceElement): ReferenceInfo[] => {
+const getFieldReferences = (instance: InstanceElement, fieldElemIdsMap: Record<string, ElemID>): ReferenceInfo[] => {
   const fieldConfigurationItems = instance.value.fields
-  if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+  if (fieldConfigurationItems === undefined) {
     log.warn(
-      `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not calculating fields weak references`,
+      'fields value is missing in instance %s, hence not calculating fields weak references',
+      instance.elemID.getFullName(),
     )
     return []
   }
-  return Object.keys(fieldConfigurationItems)
-    .map(fieldName => {
-      const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
-      return {
-        source: instance.elemID.createNestedID('fields', fieldName),
-        target: elemId,
-        type: 'weak' as const,
-      }
-    })
-    .filter(values.isDefined)
+  if (!_.isPlainObject(fieldConfigurationItems)) {
+    log.warn(
+      'fields value is corrupted in instance %s, hence not calculating fields weak references: %o',
+      instance.elemID.getFullName(),
+      fieldConfigurationItems,
+    )
+    return []
+  }
+  return Object.keys(fieldConfigurationItems).map(fieldName => {
+    fieldElemIdsMap[fieldName] = fieldElemIdsMap[fieldName] ?? new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
+    return {
+      source: instance.elemID.createNestedID('fields', fieldName),
+      target: fieldElemIdsMap[fieldName],
+      type: 'weak' as const,
+    }
+  })
 }
 
 /**
  * Marks each field reference in field configuration as a weak reference.
  */
 const getFieldConfigurationItemsReferences: GetCustomReferencesFunc = async elements =>
-  log.timeDebug(
-    () =>
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .flatMap(getFieldReferences),
-    'getFieldConfigurationItemsReferences',
-  )
+  log.timeDebug(() => {
+    const fieldConfigurationInstances = elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+    log.debug('going to create references from %d FieldConfiguration instances', fieldConfigurationInstances.length)
+    const fieldElemIdsMap: Record<string, ElemID> = {}
+    const references = fieldConfigurationInstances.flatMap(instance => getFieldReferences(instance, fieldElemIdsMap))
+    log.debug(
+      'created %d references to %d Field instances from %d FieldConfiguration instances',
+      references.length,
+      Object.keys(fieldElemIdsMap).length,
+      fieldConfigurationInstances.length,
+    )
+    return references
+  }, 'getFieldConfigurationItemsReferences')
 
 const fieldExists = async (fieldName: string, elementSource: ReadOnlyElementsSource): Promise<boolean> => {
   const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', fieldName)
@@ -106,9 +89,18 @@ const removeMissingFields: WeakReferencesHandler['removeWeakReferences'] =
         .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
         .map(async instance => {
           const fieldConfigurationItems = instance.value.fields
-          if (fieldConfigurationItems === undefined || !isFieldConfigurationItems(fieldConfigurationItems)) {
+          if (fieldConfigurationItems === undefined) {
             log.warn(
-              `fields value is corrupted in instance ${instance.elemID.getFullName()}, hence not omitting missing fields`,
+              'fields value is missing in instance %s, hence not omitting missing fields',
+              instance.elemID.getFullName(),
+            )
+            return undefined
+          }
+          if (!_.isPlainObject(fieldConfigurationItems)) {
+            log.warn(
+              'fields value is corrupted in instance %s, hence not omitting missing fields: %o',
+              instance.elemID.getFullName(),
+              fieldConfigurationItems,
             )
             return undefined
           }

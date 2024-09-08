@@ -12,11 +12,15 @@ export type UserFetchConfig = definitions.UserFetchConfig<{
   fetchCriteria: definitions.DefaultFetchCriteria
 }>
 
+export type UserDeployConfig = definitions.UserDeployConfig & {
+  delayAfterDeploy?: number
+}
+
 export type UserConfig = definitions.UserConfig<
   never,
   definitions.ClientBaseConfig<definitions.ClientRateLimitConfig>,
   UserFetchConfig,
-  definitions.UserDeployConfig
+  UserDeployConfig
 >
 
 export const DEFAULT_CONFIG: UserConfig = {

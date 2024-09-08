@@ -740,9 +740,7 @@ describe('Nacl Files Source', () => {
       delete afterElem.value.remove
 
       const staticFilesIndex = {
-        get: jest
-          .fn()
-          .mockImplementation((path: string) => Promise.resolve(path !== 'path7' ? [path] : ['path7', 'path8'])),
+        get: async (staticFile: string) => (staticFile !== 'path7' ? ['singleNaclPath'] : ['multi', 'naclPaths']),
       }
       result = await getDanglingStaticFiles(detailedCompare(beforeElem, afterElem), staticFilesIndex)
       expect(result).toHaveLength(4)

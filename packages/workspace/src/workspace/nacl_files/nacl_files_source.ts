@@ -574,22 +574,22 @@ const logNaclFileUpdateErrorContext = (
 }
 
 const filterStaticFilesByIndex = async (
-  danglingStaticFiles: { name: string; staticFile: StaticFile }[],
+  danglingStaticFiles: StaticFile[],
   staticFileIndex: Pick<RemoteMap<string[]>, 'get'>,
 ): Promise<StaticFile[]> => {
-  const elementsByFilePaths = _.groupBy(danglingStaticFiles, file => file.staticFile.filepath)
+  const elementsByFilePaths = _.groupBy(danglingStaticFiles, file => file.filepath)
   const files = await Promise.all(
     _.flatMap(elementsByFilePaths, async (staticFiles, filePath) => {
-      const indexedStaticFileFullNames = await staticFileIndex.get(filePath)
-      if (
-        !_.isEqual(
-          indexedStaticFileFullNames,
-          staticFiles.map(({ staticFile }) => staticFile.filepath),
-        )
-      )
+      const indexedStaticFileAmount = (await staticFileIndex.get(filePath))?.length
+      if (indexedStaticFileAmount && staticFiles.length < indexedStaticFileAmount) {
         // There are additional static files in the index that are not in the changes
+        log.debug(
+          `For static file ${filePath}: Trying to remove ${staticFiles.length} while there are ${indexedStaticFileAmount} files in the index.`,
+        )
         return []
-      return staticFiles.map(({ staticFile }) => staticFile)
+      }
+      // All static files were removed
+      return staticFiles
     }),
   )
   return files.flat()
@@ -613,19 +613,13 @@ export const getDanglingStaticFiles = async (
       .flatMap(getNestedStaticFiles)
       .map(file => file.filepath),
   )
-  const danglingStaticFiles: { name: string; staticFile: StaticFile }[] = fileChanges
+  const danglingStaticFiles = fileChanges
     .filter(isRemovalOrModificationChange)
     .map(({ id, data }) => ({ id, data: data.before }))
-    .flatMap(element =>
-      getNestedStaticFiles(element.data)
-        .map(staticFile => ({
-          name: element.id.getFullName(),
-          staticFile,
-        }))
-        .filter(({ staticFile }) => !afterFilePaths.has(staticFile.filepath)),
-    )
+    .flatMap(getNestedStaticFiles)
+    .filter(staticFile => !afterFilePaths.has(staticFile.filepath))
   return staticFileIndex === undefined
-    ? danglingStaticFiles.flatMap(danglingStaticFile => danglingStaticFile.staticFile)
+    ? danglingStaticFiles
     : filterStaticFilesByIndex(danglingStaticFiles, staticFileIndex)
 }
 

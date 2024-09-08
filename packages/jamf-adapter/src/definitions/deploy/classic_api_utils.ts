@@ -12,10 +12,11 @@ import { values, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import xmljs from 'xml-js'
 import { UserConfig } from '../../config'
-import { DEFAULT_POST_DEPLOY_DELAY } from '../../constants'
 import { AdditionalAction, ClientOptions } from '../types'
 
 const { timeout } = promises
+const DEFAULT_POST_DEPLOY_DELAY = 50 * 1000 // 50 seconds in ms
+
 // we use a delay to handle the delay of the service to be updated after addition and deletion
 // https://community.jamf.com/t5/jamf-pro/delay-time-after-post-or-delete-api-calls/m-p/323383/emcs_t/S2h8ZW1haWx8dG9waWNfc3Vic2NyaXB0aW9ufE0wM1dLNk4xNU4yMlBFfDMyMzM4M3xTVUJTQ1JJUFRJT05TfGhL#M278490
 const postDeployDelay = (delay = DEFAULT_POST_DEPLOY_DELAY): Promise<void> => timeout.sleep(delay)

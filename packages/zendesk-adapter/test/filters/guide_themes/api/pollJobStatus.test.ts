@@ -48,6 +48,23 @@ describe('pollJobStatus', () => {
         success: false,
         errors: ['code1 - message1'],
       })
+
+      // Also if the error meta is null
+      mockGet.mockResolvedValue({
+        status: 202,
+        data: {
+          job: {
+            id: '1',
+            status: 'failed',
+            errors: [{ message: 'message2', code: 'code2', meta: null }],
+            data: null,
+          },
+        },
+      })
+      expect(await pollJobStatus('11', client, 200, 1)).toEqual({
+        success: false,
+        errors: ['code2 - message2'],
+      })
     })
 
     it('returns false on wrong response structure', async () => {

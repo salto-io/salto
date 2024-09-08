@@ -19,7 +19,7 @@ const JOB_ERROR_SCHEMA = Joi.object({
   title: Joi.string(),
   code: Joi.string().required(),
   message: Joi.string(),
-  meta: Joi.object(),
+  meta: Joi.object().allow(null),
 })
 
 export type UploadJobData = {

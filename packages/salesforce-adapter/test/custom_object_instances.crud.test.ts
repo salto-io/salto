@@ -43,12 +43,21 @@ import {
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
   DefaultSoqlQueryLimits,
-  CPQ_PRICE_RULE,
   CPQ_CONDITIONS_MET,
   CPQ_PRICE_CONDITION,
   CPQ_PRICE_CONDITION_RULE_FIELD,
   ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
   REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  CPQ_PRICE_RULE,
+  CPQ_PRODUCT_RULE,
+  CPQ_RULE_FIELD,
+  REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+  CPQ_QUOTE_TERM,
+  CPQ_QUOTE_TERM_FIELD,
+  CPQ_TERM_CONDITION,
+  CPQ_ERROR_CONDITION,
 } from '../src/constants'
 import { mockTypes } from './mock_elements'
 
@@ -1735,24 +1744,51 @@ describe('Custom Object Instances CRUD', () => {
       })
     })
 
-    describe('when group is REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP', () => {
+    describe.each([
+      {
+        groupID: REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+        ruleTypeName: SBAA_APPROVAL_RULE,
+        conditionTypeName: SBAA_APPROVAL_CONDITION,
+        ruleFieldInCondition: SBAA_APPROVAL_RULE,
+      },
+      {
+        groupID: REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+        ruleTypeName: CPQ_PRICE_RULE,
+        conditionTypeName: CPQ_PRICE_CONDITION,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
+      },
+      {
+        groupID: REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+        ruleTypeName: CPQ_PRODUCT_RULE,
+        conditionTypeName: CPQ_ERROR_CONDITION,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
+      },
+      {
+        groupID: REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+        ruleTypeName: CPQ_QUOTE_TERM,
+        conditionTypeName: CPQ_TERM_CONDITION,
+        ruleFieldInCondition: CPQ_QUOTE_TERM_FIELD,
+      },
+    ])('when group is $groupID', ({ groupID, ruleTypeName, conditionTypeName, ruleFieldInCondition }) => {
       let rule: InstanceElement
       let condition: InstanceElement
       let changeGroup: ChangeGroup
+
       beforeEach(() => {
-        rule = new InstanceElement('customApprovalRule', mockTypes.ApprovalRule, {
-          [SBAA_CONDITIONS_MET]: 'Custom',
+        rule = new InstanceElement('customRule', createCustomObjectType(ruleTypeName, {}), {
+          [ruleFieldInCondition]: 'Custom',
           [CUSTOM_OBJECT_ID_FIELD]: '000',
         })
-        condition = new InstanceElement('customApprovalCondition', mockTypes.ApprovalCondition, {
-          [SBAA_APPROVAL_RULE]: new ReferenceExpression(rule.elemID, rule),
+        condition = new InstanceElement('customCondition', createCustomObjectType(conditionTypeName, {}), {
+          [ruleFieldInCondition]: new ReferenceExpression(rule.elemID, rule),
           [CUSTOM_OBJECT_ID_FIELD]: '111',
         })
         changeGroup = {
-          groupID: REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+          groupID,
           changes: [rule, condition].map(instance => toChange({ before: instance })),
         }
       })
+
       describe('when no Errors occur during the deploy', () => {
         beforeEach(async () => {
           result = await adapter.deploy({

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/workspace",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto workspace",
   "repository": {
@@ -29,11 +29,11 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.4.0",
-    "@salto-io/adapter-utils": "0.4.0",
-    "@salto-io/logging": "0.4.0",
-    "@salto-io/lowerdash": "0.4.0",
-    "@salto-io/parser": "0.4.0",
+    "@salto-io/adapter-api": "0.4.1",
+    "@salto-io/adapter-utils": "0.4.1",
+    "@salto-io/logging": "0.4.1",
+    "@salto-io/lowerdash": "0.4.1",
+    "@salto-io/parser": "0.4.1",
     "async-lock": "^1.2.4",
     "is-promise": "4.0.0",
     "lodash": "^4.17.21",
@@ -45,8 +45,8 @@
     "@eslint/compat": "^1.1.0",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.6.0",
-    "@salto-io/dag": "0.4.0",
-    "@salto-io/test-utils": "0.4.0",
+    "@salto-io/dag": "0.4.1",
+    "@salto-io/test-utils": "0.4.1",
     "@tony.ganchev/eslint-plugin-header": "^3.1.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",

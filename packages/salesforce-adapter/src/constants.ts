@@ -642,6 +642,7 @@ export const INVALID_GRANT = 'invalid_grant'
 export const ENOTFOUND = 'ENOTFOUND'
 export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
 
+export const ACTIVITY_CUSTOM_OBJECT = 'Activity'
 export const TASK_CUSTOM_OBJECT = 'Task'
 export const EVENT_CUSTOM_OBJECT = 'Event'
 

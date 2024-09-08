@@ -120,6 +120,7 @@ export type OptionalFeatures = {
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
   improvedDataBrokenReferences?: boolean
+  taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
 }
 
@@ -817,6 +818,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
     flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
     improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
+    taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

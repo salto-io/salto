@@ -15,8 +15,8 @@ export const everyoneGroupAssignments: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
     .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === GROUP_MEMBERSHIP_TYPE_NAME)
     .filter(instance => instance.elemID.name === 'Everyone')
     .map(instance => ({
       elemID: instance.elemID,

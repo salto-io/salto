@@ -516,6 +516,7 @@ describe('adapter', () => {
   })
   describe('deploy', () => {
     let operations: AdapterOperations
+    let createOperations: (elements: Element[] = []) => AdapterOperations
 
     let brandType: ObjectType
     let brand1: InstanceElement
@@ -533,14 +534,17 @@ describe('adapter', () => {
       })
       const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
 
-      operations = adapter.operations({
-        credentials: new InstanceElement('config', accessTokenCredentialsType, {
-          baseUrl: 'https://test.okta.com',
-          token: 't',
-        }),
-        config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-        elementsSource: buildElementsSourceFromElements([orgSetting]),
-      })
+      createOperations = (elements: Element[] = []) =>
+        adapter.operations({
+          credentials: new InstanceElement('config', accessTokenCredentialsType, {
+            baseUrl: 'https://test.okta.com',
+            token: 't',
+          }),
+          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+          elementsSource: buildElementsSourceFromElements([orgSetting, ...elements]),
+        })
+
+      operations = createOperations()
 
       brandType = new ObjectType({
         elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
@@ -2762,16 +2766,17 @@ describe('adapter', () => {
           userName: 'sender',
         })
         // An email domain may only be added if at least one brand uses it.
-        const brandBefore = new InstanceElement('brand1', brandType, {
-          name: 'subdomain.example.com',
-        })
-        const brandAfter = brandBefore.clone()
-        brandAfter.value.emailDomainId = new ReferenceExpression(emailDomain.elemID, emailDomain)
+        const brand = brand1.clone()
+        brand.value.emailDomainId = new ReferenceExpression(emailDomain.elemID, emailDomain)
 
+        // In production, pending changes are added to elementSource so they are available for deploy transformations.
+        // In these tests, we call the adapter's `deploy` function directly, so we manually add the `brand` here to
+        // replicate this behavior.
+        operations = createOperations([brand])
         const result = await operations.deploy({
           changeGroup: {
-            groupID: 'brand',
-            changes: [toChange({ after: emailDomain }), toChange({ before: brandBefore, after: brandAfter })],
+            groupID: 'emaildomain',
+            changes: [toChange({ after: emailDomain })],
           },
           progressReporter: nullProgressReporter,
         })
@@ -2783,37 +2788,39 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify a brand', async () => {
-        loadMockReplies('brand_modify.json')
-        const updatedBrand1 = brand1.clone()
-        updatedBrand1.value.removePoweredByOkta = true
+      it('should successfully modify an email domain', async () => {
+        loadMockReplies('email_domain_modify.json')
+        const emailDomain = new InstanceElement('emailDomain', emailDomainType, {
+          domain: 'example.com',
+          displayName: 'My Email Domain',
+          userName: 'sender',
+          id: 'emaildomain-fakeid1',
+        })
+        const updatedEmailDomain = emailDomain.clone()
+        updatedEmailDomain.value.userName = 'support'
         const result = await operations.deploy({
           changeGroup: {
-            groupID: 'brand',
-            changes: [
-              toChange({
-                before: brand1,
-                after: updatedBrand1,
-              }),
-            ],
+            groupID: 'emaildomain',
+            changes: [toChange({ before: emailDomain, after: updatedEmailDomain })],
           },
           progressReporter: nullProgressReporter,
         })
 
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
-        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.removePoweredByOkta).toEqual(
-          true,
-        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.userName).toEqual('support')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully remove a brand', async () => {
-        loadMockReplies('brand_remove.json')
+      it('should successfully remove an email domain', async () => {
+        loadMockReplies('email_domain_remove.json')
+        const emailDomain = new InstanceElement('emailDomain', emailDomainType, {
+          id: 'emaildomain-fakeid1',
+        })
         const result = await operations.deploy({
           changeGroup: {
-            groupID: 'brand',
-            changes: [toChange({ before: brand1 })],
+            groupID: 'emaildomain',
+            changes: [toChange({ before: emailDomain })],
           },
           progressReporter: nullProgressReporter,
         })

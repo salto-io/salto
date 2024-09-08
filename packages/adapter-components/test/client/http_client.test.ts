@@ -72,20 +72,27 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      mockAxiosAdapter.onGet('/ep2', { a: ['AAA', 'BBB'] }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+      mockAxiosAdapter.onGet('/ep2', { a: ['AAA', 'BBB'], c: '' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
+      mockAxiosAdapter.onGet('/ep3', { a: 'A' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const getRes = await client.get({ url: '/ep' })
       const getRes2 = await client.get({
         url: '/ep2',
-        queryParams: { a: ['AAA', 'BBB'] },
+        queryParams: { a: ['AAA', 'BBB'], c: '' },
         queryParamsSerializer: { indexes: null },
+      })
+      const getRes3 = await client.get({
+        url: '/ep3',
+        queryParams: { a: 'A', b: '' },
+        queryParamsSerializer: { omitEmpty: true },
       })
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
-      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      expect(getRes3).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(3)
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
-      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(6)
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(
         1,
         new AxiosHeaders({ h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' }),
@@ -96,6 +103,8 @@ describe('client_http_client', () => {
       )
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, new AxiosHeaders({ hh: 'header' }))
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, new AxiosHeaders({ hh: 'header' }))
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(5, new AxiosHeaders({ hh: 'header' }))
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(6, new AxiosHeaders({ hh: 'header' }))
       const request = mockAxiosAdapter.history.get[2]
       expect(request.url).toEqual('/ep2')
       expect(request.paramsSerializer).toEqual({ indexes: null })

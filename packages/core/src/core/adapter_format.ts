@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Adapter, AdapterOperationsContext, Element, SaltoError } from '@salto-io/adapter-api'
+import { Adapter, AdapterOperationsContext, Change, Element, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource } from '@salto-io/workspace'
@@ -183,25 +183,23 @@ export const syncWorkspaceToFolder = ({
       })
       const { loadElementsFromFolder, dumpElementsToFolder } = adapter
       if (loadElementsFromFolder === undefined) {
-        const message = `Account ${accountName}'s adapter does not support loading a non-nacl format`
         return {
           errors: [
             {
               severity: 'Error' as const,
-              message,
-              detailedMessage: message,
+              message: 'Format not supported',
+              detailedMessage: `Account ${accountName}'s adapter does not support loading a non-nacl format`,
             },
           ],
         }
       }
       if (dumpElementsToFolder === undefined) {
-        const message = `Account ${accountName}'s adapter does not support writing a non-nacl format`
         return {
           errors: [
             {
               severity: 'Error' as const,
-              message,
-              detailedMessage: message,
+              message: 'Format not supported',
+              detailedMessage: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
             },
           ],
         }
@@ -241,5 +239,46 @@ export const syncWorkspaceToFolder = ({
       return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
     },
     'syncWorkspaceToFolder %s',
+    baseDir,
+  )
+
+type UpdateElementFolderArgs = {
+  workspace: Workspace
+  baseDir: string
+  accountName: string
+  changes: ReadonlyArray<Change>
+}
+
+export type UpdateElementFolderResult = {
+  errors: ReadonlyArray<SaltoError>
+}
+
+export const updateElementFolder = async ({
+  workspace,
+  baseDir,
+  changes,
+  accountName,
+}: UpdateElementFolderArgs): Promise<UpdateElementFolderResult> =>
+  log.time(
+    async () => {
+      const { adapter, adapterContext } = await getAdapterAndContext({
+        workspace,
+        accountName,
+      })
+      const { dumpElementsToFolder } = adapter
+      if (dumpElementsToFolder === undefined) {
+        return {
+          errors: [
+            {
+              severity: 'Error' as const,
+              message: 'Format not supported',
+              detailedMessage: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
+            },
+          ],
+        }
+      }
+      return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
+    },
+    'updateElementFolder %s',
     baseDir,
   )

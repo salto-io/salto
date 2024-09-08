@@ -101,6 +101,7 @@ describe('profile paths filter', () => {
       expect(err[0]).toEqual({
         severity: 'Warning',
         message: WARNING_MESSAGE,
+        detailedMessage: WARNING_MESSAGE,
       })
     })
   })

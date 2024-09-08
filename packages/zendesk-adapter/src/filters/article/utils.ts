@@ -130,6 +130,7 @@ const getAttachmentContent = async ({
 }): Promise<SaltoElementError | undefined> => {
   const contentWarning = (error: string): SaltoElementError => ({
     message: error,
+    detailedMessage: error,
     severity: 'Warning',
     elemID: attachment.elemID,
   })
@@ -330,9 +331,11 @@ export const updateArticleTranslationBody = async ({
         log.error(
           `Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
         )
+        const message = `Error serializing article translation body in Deployment: ${e}, stack: ${e.stack}`
         throw createSaltoElementError({
           // caught in adapter.ts
-          message: `Error serializing article translation body in Deployment: ${e}, stack: ${e.stack}`,
+          message,
+          detailedMessage: message,
           severity: 'Error',
           elemID: translationInstance.elemID,
         })

@@ -86,7 +86,13 @@ describe('config elements', () => {
     describe('getConfigDeployResult', () => {
       it('should return error on error results', () => {
         expect(unit.toConfigDeployResult(changes, { errorMessage: 'error' })).toEqual({
-          errors: [{ message: 'error', severity: 'Error' }],
+          errors: [
+            {
+              message: 'error',
+              detailedMessage: 'error',
+              severity: 'Error',
+            },
+          ],
           appliedChanges: [],
         })
       })
@@ -96,6 +102,7 @@ describe('config elements', () => {
             {
               elemID: getChangeData(changes[0]).elemID,
               message: 'Failed to deploy instance due to internal server error',
+              detailedMessage: 'Failed to deploy instance due to internal server error',
               severity: 'Error',
             },
           ],
@@ -108,6 +115,7 @@ describe('config elements', () => {
             {
               elemID: getChangeData(changes[0]).elemID,
               message: `${configType}: fail`,
+              detailedMessage: `${configType}: fail`,
               severity: 'Error',
             },
           ],

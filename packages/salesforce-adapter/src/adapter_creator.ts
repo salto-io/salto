@@ -13,8 +13,13 @@ import {
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
+  ProgressReporter,
+  DeployOptions,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
+import { DeployResult } from '@salto-io/jsforce-types'
+import { values } from '@salto-io/lowerdash'
+import { inspectValue } from '@salto-io/adapter-utils'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -47,10 +52,12 @@ import { dumpElementsToFolder } from './sfdx_parser/sfdx_dump'
 import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
+import { METADATA_DEPLOY_PENDING_STATUS } from './constants'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
 const log = logger(module)
+const { isDefined } = values
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
@@ -214,6 +221,66 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
+export type DeployProgressReporter = ProgressReporter & {
+  reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
+  reportDataProgress: (successInstances: number) => void
+}
+
+export type SalesforceAdapterDeployOptions = DeployOptions & {
+  progressReporter: DeployProgressReporter
+}
+
+export const createDeployProgressReporter = async (
+  progressReporter: ProgressReporter,
+  client: SalesforceClient,
+): Promise<DeployProgressReporter> => {
+  let deployResult: DeployResult | undefined
+  let suffix: string | undefined
+  let deployedDataInstances = 0
+  const baseUrl = await client.getUrl()
+
+  const linkToSalesforce = ({ id, checkOnly }: DeployResult): string => {
+    if (!baseUrl) {
+      return ''
+    }
+    const deploymentUrl = `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
+    const deploymentOrValidation = checkOnly ? 'validation' : 'deployment'
+    return ` View ${deploymentOrValidation} status [in Salesforce](${deploymentUrl})`
+  }
+
+  const reportProgress = (): void => {
+    let metadataProgress: string | undefined
+    let dataProgress: string | undefined
+    if (deployResult) {
+      metadataProgress =
+        deployResult.status === METADATA_DEPLOY_PENDING_STATUS
+          ? 'Metadata: Waiting on another deploy or automated process to finish in Salesforce'
+          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests.${linkToSalesforce(deployResult)}`
+    }
+    if (deployedDataInstances > 0) {
+      dataProgress = `${deployedDataInstances} Data Instances`
+    }
+    if (metadataProgress || dataProgress) {
+      const message = [dataProgress, metadataProgress, suffix].filter(isDefined).join(', ')
+      log.trace('reported message is: %s for deploy result: %s', message, inspectValue(deployResult))
+      progressReporter.reportProgress({ message })
+    }
+  }
+
+  return {
+    ...progressReporter,
+    reportMetadataProgress: args => {
+      deployResult = args.result
+      suffix = args.suffix
+      reportProgress()
+    },
+    reportDataProgress: successInstances => {
+      deployedDataInstances += successInstances
+      reportProgress()
+    },
+  }
+}
+
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
@@ -223,6 +290,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
+    let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -250,12 +318,22 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        return salesforceAdapter.deploy(opts)
+        deployProgressReporterPromise =
+          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        return salesforceAdapter.deploy({
+          ...opts,
+          progressReporter: await deployProgressReporterPromise,
+        })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        return salesforceAdapter.validate(opts)
+        deployProgressReporterPromise =
+          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        return salesforceAdapter.validate({
+          ...opts,
+          progressReporter: await deployProgressReporterPromise,
+        })
       },
 
       deployModifiers: {

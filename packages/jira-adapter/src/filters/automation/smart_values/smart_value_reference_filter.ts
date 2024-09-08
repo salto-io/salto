@@ -38,6 +38,7 @@ const log = logger(module)
 type Component = {
   value?: Values | boolean
   rawValue?: unknown
+  children?: Component[]
 }
 
 type AutomationInstance = InstanceElement & {
@@ -50,6 +51,7 @@ type AutomationInstance = InstanceElement & {
 const COMPONENT_SCHEME = Joi.object({
   value: Joi.alternatives(Joi.object(), Joi.boolean()).optional(),
   rawValue: Joi.optional(),
+  children: Joi.array().optional(),
 }).unknown(true)
 
 const AUTOMATION_INSTANCE_SCHEME = Joi.object({
@@ -69,31 +71,45 @@ const filterAutomations = (instances: InstanceElement[]): AutomationInstance[] =
 
 type SmartValueContainer = { obj: Values; key: string }
 
-const getPossibleSmartValues = (automation: AutomationInstance): SmartValueContainer[] =>
-  _(automation.value.components ?? [])
-    .concat(automation.value.trigger)
-    .flatMap(component => {
-      const containers: SmartValueContainer[] = []
+const getPossibleSmartValues = (
+  automation: AutomationInstance,
+  parseAdditionalAutomationExpressions?: boolean,
+): SmartValueContainer[] => {
+  const containers: SmartValueContainer[] = []
 
-      if (component.value !== undefined && !_.isBoolean(component.value)) {
-        const { value } = component
-        Object.keys(component.value)
-          .filter(key => _.isString(value[key]) || isTemplateExpression(value[key]))
-          .map(key => ({
-            key,
-            obj: value,
-          }))
-          .forEach(container => containers.push(container))
+  const findSmartValues = (component: Component): void => {
+    if (component.value !== undefined && !_.isBoolean(component.value)) {
+      const { value } = component
+      if (parseAdditionalAutomationExpressions === true && Array.isArray(value?.operations)) {
+        value.operations.forEach(findSmartValues)
       }
+      Object.keys(value)
+        .filter(key => _.isString(value[key]) || isTemplateExpression(value[key]))
+        .map(key => ({ key, obj: value }))
+        .forEach(container => containers.push(container))
+    }
 
-      if (_.isString(component.rawValue) || isTemplateExpression(component.rawValue)) {
-        containers.push({ key: 'rawValue', obj: component })
-      }
-      return containers
-    })
-    .value()
+    if (_.isString(component.rawValue) || isTemplateExpression(component.rawValue)) {
+      containers.push({ key: 'rawValue', obj: component })
+    }
 
-const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<SaltoError[]> => {
+    if (
+      parseAdditionalAutomationExpressions === true &&
+      Array.isArray(component.children) &&
+      component.children.length > 0
+    ) {
+      component.children.forEach(findSmartValues)
+    }
+  }
+
+  ;(automation.value.components ?? []).concat(automation.value.trigger).forEach(component => findSmartValues(component))
+  return containers
+}
+
+const replaceFormulasWithTemplates = async (
+  instances: InstanceElement[],
+  parseAdditionalAutomationExpressions?: boolean,
+): Promise<SaltoError[]> => {
   const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
   const fieldInstancesByName = _(fieldInstances)
     .filter(instance => _.isString(instance.value.name))
@@ -108,7 +124,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
   const ambiguousTokensWarnings = filterAutomations(instances)
     .map(instance => {
       const allAmbiguousTokens = new Set<string>()
-      getPossibleSmartValues(instance)
+      getPossibleSmartValues(instance, parseAdditionalAutomationExpressions)
         .filter(({ obj, key }) => {
           if (!_.isString(obj[key])) {
             log.debug(`'${key}' in ${instance.elemID.getFullName()} key is not a string`)
@@ -134,8 +150,10 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
         return undefined
       }
 
+      const message = `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`
       return {
-        message: `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`,
+        message,
+        detailedMessage: message,
         severity: 'Warning' as const,
       }
     })
@@ -164,11 +182,15 @@ const filterCreator: FilterCreator = ({ config }) => {
   return {
     name: 'smartValueReferenceFilter',
     onFetch: async (elements: Element[]) => {
-      if (config.fetch.parseTemplateExpressions === false) {
+      const { parseTemplateExpressions, parseAdditionalAutomationExpressions } = config.fetch
+      if (parseTemplateExpressions === false) {
         log.debug('Parsing smart values template expressions was disabled')
         return {}
       }
-      const warnings = await replaceFormulasWithTemplates(elements.filter(isInstanceElement))
+      const warnings = await replaceFormulasWithTemplates(
+        elements.filter(isInstanceElement),
+        parseAdditionalAutomationExpressions,
+      )
       return {
         errors: warnings,
       }

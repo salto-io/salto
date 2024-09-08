@@ -62,6 +62,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         throw createSaltoElementError({
           // caught by deployChanges
           message: errorMsg,
+          detailedMessage: errorMsg,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

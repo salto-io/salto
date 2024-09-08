@@ -10,7 +10,7 @@ import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { EVERYONE_USER_TYPE } from '../../constants'
-import { transformGuideItem, transformSectionItem } from './transforms'
+import { transformGuideItem, transformQueueItem, transformSectionItem } from './transforms'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -889,6 +889,29 @@ const createCustomizations = (): Record<
       },
     },
   },
+
+  queue: {
+    requests: [
+      {
+        endpoint: { path: '/api/v2/queues' },
+        transformation: { root: 'queues', adjust: transformQueueItem },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+      },
+      fieldCustomizations: {
+        id: { hide: true, fieldType: 'string' },
+        order: { hide: true, fieldType: 'number' },
+      },
+    },
+  },
+  // placeholder for order nacls
+  queue_order: {},
 
   monitored_twitter_handle: {
     requests: [
@@ -1838,7 +1861,7 @@ export const createFetchDefinitions = (
       default: {
         resource: {
           serviceIDFields: ['id'],
-          onError: fetchUtils.errors.getInsufficientPermissionsError,
+          onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
           topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },

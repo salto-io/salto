@@ -87,6 +87,7 @@ import slaPolicyOrderFilter from './filters/reorder/sla_policy'
 import automationOrderFilter from './filters/reorder/automation'
 import triggerOrderFilter from './filters/reorder/trigger'
 import viewOrderFilter from './filters/reorder/view'
+import queueOrderFilter from './filters/reorder/queue'
 import businessHoursScheduleFilter from './filters/business_hours_schedule'
 import omitCollisionFilter from './filters/omit_collision'
 import accountSettingsFilter from './filters/account_settings'
@@ -196,6 +197,7 @@ export const DEFAULT_FILTERS = [
   automationOrderFilter,
   triggerOrderFilter,
   viewOrderFilter,
+  queueOrderFilter,
   businessHoursScheduleFilter,
   accountSettingsFilter,
   dynamicContentFilter,
@@ -672,6 +674,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       combinedRes.errors = combinedRes.errors.concat([
         {
           message,
+          detailedMessage: message,
           severity: 'Warning',
         },
       ])
@@ -748,9 +751,11 @@ export default class ZendeskAdapter implements AdapterOperations {
       ).data
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
+          const message =
+            "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support"
           return {
-            message:
-              "You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto's behavior in some cases. Therefore, it is highly recommended to set the user's language to \"English (United States)\" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user's language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support",
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           }
         }

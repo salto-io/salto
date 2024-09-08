@@ -281,6 +281,7 @@ const getScope = (resource: string): { projectId?: string; projectTypeKey?: stri
   return undefined
 }
 
+// should be used in Jira Cloud only since Automation structure is different in Jira DC
 export const convertRuleScopeValueToProjects = (
   values: Values,
 ):

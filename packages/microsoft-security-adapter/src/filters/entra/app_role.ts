@@ -96,9 +96,11 @@ const extractUniqueParentsFromAppRoleChanges = (
         'App role %s has no parent or its parent is not an instance element',
         getChangeData(change).elemID.getFullName(),
       )
+      const message = 'Expected app role to have an application or service principal parent'
       return {
         elemID: getChangeData(change).elemID,
-        message: 'Expected app role to have an application or service principal parent',
+        message,
+        detailedMessage: message,
         severity: 'Error',
       }
     }
@@ -298,13 +300,15 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
     const { deploy, ...otherDefs } = definitions
     if (deploy === undefined) {
       log.error('deploy definitions not found')
+      const message = 'Deploy not supported'
       return {
         deployResult: {
           appliedChanges: [],
           errors: [
             {
               severity: 'Error',
-              message: 'Deploy not supported',
+              message,
+              detailedMessage: message,
             },
           ],
         },
@@ -313,13 +317,15 @@ export const appRolesFilter: FilterCreator = ({ definitions, elementSource, shar
     }
     if (changeGroup === undefined) {
       log.error('change group not provided')
+      const message = 'Deploy not supported'
       return {
         deployResult: {
           appliedChanges: [],
           errors: [
             {
               severity: 'Error',
-              message: 'Deploy not supported',
+              message,
+              detailedMessage: message,
             },
           ],
         },

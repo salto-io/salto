@@ -1074,6 +1074,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
     errors: [
       {
         message: errMsg,
+        detailedMessage: errMsg,
         severity: 'Error',
       },
     ],
@@ -1146,10 +1147,14 @@ const fixStaticFilesForFromStateChanges = async (
     ...fetchChangesResult,
     changes: fetchChangesResult.changes.filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
     errors: fetchChangesResult.errors.concat(
-      Array.from(invalidChangeIDs).map(invalidChangeElemID => ({
-        message: `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`,
-        severity: 'Error',
-      })),
+      Array.from(invalidChangeIDs).map(invalidChangeElemID => {
+        const message = `Dropping changes in element: ${invalidChangeElemID} due to static files hashes mismatch`
+        return {
+          message,
+          detailedMessage: message,
+          severity: 'Error',
+        }
+      }),
     ),
   }
 }

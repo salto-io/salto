@@ -96,6 +96,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             errors: publishErrors.map(e => ({
               elemID: getChangeData(change).elemID,
               message: e,
+              detailedMessage: e,
               severity: 'Error' as SeverityLevel,
             })),
           }
@@ -103,9 +104,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         return { appliedChange: change, errors: [] }
       }),
     )
+    const message = 'Theme_settings instances cannot be added or removed'
     const errorsOtherChanges = otherChanges.map(change => ({
       elemID: getChangeData(change).elemID,
-      message: 'Theme_settings instances cannot be added or removed',
+      message,
+      detailedMessage: message,
       severity: 'Error' as SeverityLevel,
     }))
     const errors = processedModificationChanges.flatMap(change => change.errors)

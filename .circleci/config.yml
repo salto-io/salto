@@ -32,7 +32,7 @@ jobs:
             - .circleci/continue_config.yml  
 
 workflows:
-  commit:
+  prepare:
     jobs:
       - find_changed_packages
       - continuation/continue:

@@ -22,6 +22,7 @@ describe('create saltoElementError', () => {
       }),
     ).toEqual({
       message: 'test',
+      detailedMessage: 'test',
       severity: 'Error',
       elemID: elemId,
     })
@@ -30,11 +31,13 @@ describe('create saltoElementError', () => {
     expect(
       createSaltoElementError({
         message: 'test',
+        detailedMessage: 'test',
         severity: 'Error',
         elemID: elemId,
       }),
     ).toEqual({
       message: 'test',
+      detailedMessage: 'test',
       severity: 'Error',
       elemID: elemId,
     })
@@ -51,7 +54,9 @@ describe('isSaltoError', () => {
     expect(isSaltoError(change)).toBeFalsy()
   })
   it('should return true for saltoErrors', () => {
-    expect(isSaltoError(createSaltoElementError({ message: 'test', severity: 'Error', elemID }))).toBeTruthy()
+    expect(
+      isSaltoError(createSaltoElementError({ message: 'test', detailedMessage: 'test', severity: 'Error', elemID })),
+    ).toBeTruthy()
   })
   it('should return false for Errors', () => {
     expect(isSaltoError(new Error('test'))).toBeFalsy()

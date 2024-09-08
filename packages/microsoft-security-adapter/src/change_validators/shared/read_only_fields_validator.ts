@@ -16,7 +16,6 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { entraConstants, intuneConstants } from '../../constants'
-import { APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, PACKAGE_ID_FIELD_NAME } from '../../constants/intune'
 
 const { isDefined } = values
 
@@ -70,9 +69,10 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
 
   /* Intune instances */
   [intuneConstants.APPLICATION_TYPE_NAME]: [
-    { fieldName: PACKAGE_ID_FIELD_NAME },
-    { fieldName: APP_IDENTIFIER_FIELD_NAME },
-    { fieldName: APP_STORE_URL_FIELD_NAME },
+    { fieldName: intuneConstants.PACKAGE_ID_FIELD_NAME },
+    { fieldName: intuneConstants.APP_IDENTIFIER_FIELD_NAME },
+    { fieldName: intuneConstants.APP_STORE_URL_FIELD_NAME },
+    { fieldName: intuneConstants.BUNDLE_ID_FIELD_NAME },
   ],
 }
 

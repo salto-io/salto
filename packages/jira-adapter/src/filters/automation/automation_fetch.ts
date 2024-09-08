@@ -157,6 +157,7 @@ const createInstance = (
   type: ObjectType,
   idToProject: Record<string, InstanceElement>,
   config: JiraConfig,
+  isDataCenter: boolean,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
   const serviceIds = elementUtils.createServiceIds({ entry: values, serviceIDFields: ['id'], typeID: type.elemID })
@@ -167,11 +168,12 @@ const createInstance = (
   )
   const idFields = TypeTransformationConfig.idFields ?? ['name']
   const idFieldsWithoutProjects = idFields.filter(field => field !== PROJECTS_FIELD)
+  const automationProjects = isDataCenter ? values.projects : convertRuleScopeValueToProjects(values)
   const defaultName = naclCase(
     [
       getInstanceName(values, idFieldsWithoutProjects, AUTOMATION_TYPE) ?? '',
       ...(idFields.includes(PROJECTS_FIELD)
-        ? (convertRuleScopeValueToProjects(values) ?? [])
+        ? (automationProjects ?? [])
             .map((project: Values) => idToProject[project.projectId]?.value.name)
             .filter(lowerdashValues.isDefined)
             .sort()
@@ -266,7 +268,9 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       const { automationType, subTypes } = createAutomationTypes()
 
       automations.forEach(automation =>
-        elements.push(createInstance(automation, automationType, idToProject, config, getElemIdFunc)),
+        elements.push(
+          createInstance(automation, automationType, idToProject, config, client.isDataCenter, getElemIdFunc),
+        ),
       )
       if (config.fetch.enableJSM && (config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
         elements
@@ -285,10 +289,12 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
         log.error(
           `Received a ${e.response.status} error when fetching automations. Please make sure you have the "Automation" permission enabled in Jira.`,
         )
+        const message = fetchFailedWarnings(AUTOMATION_TYPE)
         return {
           errors: [
             {
-              message: fetchFailedWarnings(AUTOMATION_TYPE),
+              message,
+              detailedMessage: message,
               severity: 'Warning',
             },
           ],

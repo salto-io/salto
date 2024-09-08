@@ -58,6 +58,7 @@ netsuite {
   suiteAppClient = {
    suiteAppConcurrencyLimit = 4
    httpTimeoutLimitInMinutes = 20
+   wsdlVersion = "2024_1"
   }
 }
 ```
@@ -143,6 +144,7 @@ netsuite {
 | ------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | suiteAppConcurrencyLimit  | 4                      | Limits the max number of concurrent Salto SuiteApp API calls. The number should not exceed the concurrency limit enforced by the upstream service. |
 | httpTimeoutLimitInMinutes | 20                     | Set a timeout, in minutes, for HTTP calls. Restricted to a value greater than 1.                                                                   |
+| wsdlVersion               | "2020_2"               | SOAP WSDL version to use. Should be a valid WSDL version (e.g 2023_2, 2024_1)                                                                      |
 
 ### Skip list configuration options
 

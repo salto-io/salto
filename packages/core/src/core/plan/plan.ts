@@ -33,6 +33,7 @@ import {
   isTemplateExpression,
   areReferencesEqual,
   CompareOptions,
+  compareElementIDs,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -326,15 +327,7 @@ const addDifferentElements =
                 .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
                 .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
 
-        const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => {
-          if (e1.elemID.getFullName() < e2.elemID.getFullName()) {
-            return -1
-          }
-          if (e1.elemID.getFullName() > e2.elemID.getFullName()) {
-            return 1
-          }
-          return 0
-        }
+        const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => compareElementIDs(e1.elemID, e2.elemID)
 
         await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after), cmp))
           .map(handleSpecialIds)

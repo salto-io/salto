@@ -41,6 +41,14 @@ const log = logger(module)
 const { getTransformationConfigByType } = configUtils
 const { toBasicInstance } = adapterElements
 
+const adjustPath = (context: InstanceElement, fileName: string): string[] | undefined => {
+  if (context.path === undefined) {
+    log.error('Context path is undefined, creating options without path')
+    return undefined
+  }
+  return [...context.path, pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${fileName}`))]
+}
+
 const getOptionsInstances = async ({
   context,
   parent,
@@ -68,10 +76,7 @@ const getOptionsInstances = async ({
           parent,
         })
         delete optionInstance.value[PARENT_NAME_FIELD] // It was added to create the name properly
-        optionInstance.path = context.path && [
-          ...context.path,
-          pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${FIELD_CONTEXT_OPTIONS_FILE_NAME}`)),
-        ]
+        optionInstance.path = adjustPath(context, FIELD_CONTEXT_OPTIONS_FILE_NAME) ?? optionInstance.path
         return optionInstance
       }),
     )
@@ -101,10 +106,7 @@ const getOrderInstance = async ({
     getElemIdFunc,
     parent,
   })
-  instance.path = context.path && [
-    ...context.path,
-    pathNaclCase(naclCase(`${invertNaclCase(context.elemID.name)}_${FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME}`)),
-  ]
+  instance.path = adjustPath(context, FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME) ?? instance.path
   return instance
 }
 
@@ -117,14 +119,18 @@ const editDefaultValue = (context: InstanceElement, idToOptionRecord: Record<str
     const optionInstance = idToOptionRecord[optionId]
     context.value.defaultValue.optionId = new ReferenceExpression(optionInstance.elemID, optionInstance)
   }
-  if (Array.isArray(optionIds)) {
-    context.value.defaultValue.optionIds = optionIds
-      .filter(_.isString)
-      .filter(id => Object.prototype.hasOwnProperty.call(idToOptionRecord, id))
-      .map((id: string) => {
+  if (
+    Array.isArray(optionIds) &&
+    optionIds.find(option => !_.isString(option)) === undefined &&
+    optionIds.find(id => !Object.prototype.hasOwnProperty.call(idToOptionRecord, id)) === undefined
+  ) {
+    context.value.defaultValue.optionIds = _.sortBy(
+      optionIds.map((id: string) => {
         const optionInstance = idToOptionRecord[id]
         return new ReferenceExpression(optionInstance.elemID, optionInstance)
-      })
+      }),
+      ref => ref.elemID.getFullName(),
+    )
   }
   if (_.isString(cascadingOptionId) && Object.prototype.hasOwnProperty.call(idToOptionRecord, cascadingOptionId)) {
     const optionInstance = idToOptionRecord[cascadingOptionId]
@@ -132,6 +138,33 @@ const editDefaultValue = (context: InstanceElement, idToOptionRecord: Record<str
   }
 }
 
+/**
+ * This filter splits the field context options into separate instances and organizes them into a structured hierarchy.
+ * We define two new types:
+ *
+ * 1. `FieldContextOptionType` - Represents individual options within the context.
+ * 2. `FieldContextOptionsOrderType` - Represents the order of the options, including a list of references to these options.
+ *
+ * The new structure is as follows:
+ *
+ * 1. Context
+ *    - **Parent**: Field
+ *    - **Description**: References only the default options.
+ *
+ * 2. Option
+ *    - Parent: Context
+ *    - Description: Represents an individual option within the context.
+ *
+ * 3. CascadingOption (same type as a regular `Option`)
+ *    - Parent: Option
+ *    - Description: Represents a cascading option, inheriting properties from its parent `Option`.
+ *
+ * 4. Order
+ *    - Parent: Depends on the type of options it organizes
+ *      - If the order is for regular Options, the parent is their Context.
+ *      - If the order is for CascadingOptions within an Option, the parent is that Option.
+ *    - Description: Contains references to all Options / CascadingOptions under its parent.
+ */
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   name: 'fieldContextOptionsSplitFilter',
   onFetch: async elements => {
@@ -169,7 +202,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
             const orderedOptions = await getOptionsInstances({
               context,
               parent: context,
-              optionList: convertOptionsToList(context.value.options ?? {}),
+              optionList: convertOptionsToList(context.value.options),
               optionType: fieldContextOptionType,
               getElemIdFunc,
             })
@@ -196,7 +229,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
             const orderedOptions = await getOptionsInstances({
               context,
               parent: option,
-              optionList: convertOptionsToList(option.value.cascadingOptions ?? {}),
+              optionList: convertOptionsToList(option.value.cascadingOptions),
               optionType: fieldContextOptionType,
               getElemIdFunc,
             })

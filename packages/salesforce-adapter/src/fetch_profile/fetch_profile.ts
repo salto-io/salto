@@ -40,6 +40,8 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   metaTypes: false,
   cpqRulesAndConditionsRefs: true,
   flowCoordinates: false,
+  improvedDataBrokenReferences: false,
+  sharingRulesMaps: false,
 }
 
 type BuildFetchProfileParams = {

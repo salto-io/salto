@@ -16,6 +16,7 @@ import {
   ReadOnlyElementsSource,
   ContainerTypeName,
   TypeElement,
+  compareElementIDs,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -158,3 +159,39 @@ export const mapReadOnlyElementsSource = (
   has: id => source.has(id),
   list: () => source.list(),
 })
+
+export const createOverrideReadOnlyElementsSource = (
+  source: ReadOnlyElementsSource,
+  overrideElements: Record<string, Element | undefined>,
+): ReadOnlyElementsSource => {
+  const isOmittedByOverride = (id: string | undefined): boolean =>
+    id !== undefined && id in overrideElements && overrideElements[id] === undefined
+
+  const list: ReadOnlyElementsSource['list'] = async () =>
+    awu(
+      collections.asynciterable.iterateTogether(
+        await source.list(),
+        awu(
+          Object.values(overrideElements)
+            .filter(values.isDefined)
+            .map(elem => elem.elemID)
+            .sort(compareElementIDs),
+        ),
+        compareElementIDs,
+      ),
+    )
+      .filter(({ after: idFromOverride }) => !isOmittedByOverride(idFromOverride?.getFullName()))
+      .map(({ before: idFromSource, after: idFromOverride }) => idFromOverride ?? idFromSource)
+      .filter(values.isDefined)
+
+  const get: ReadOnlyElementsSource['get'] = async id =>
+    id.getFullName() in overrideElements ? overrideElements[id.getFullName()] : source.get(id)
+
+  return {
+    get,
+    getAll: async () => awu(await list()).map(get),
+    has: async id =>
+      id.getFullName() in overrideElements ? overrideElements[id.getFullName()] !== undefined : source.has(id),
+    list,
+  }
+}

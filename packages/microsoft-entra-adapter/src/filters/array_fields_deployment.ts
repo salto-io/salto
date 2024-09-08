@@ -201,6 +201,7 @@ const deployArrayField = async <Options extends definitionsUtils.APIDefinitionsO
           elemID: topLevelChangeData.elemID,
           severity: 'Error',
           message: e.message,
+          detailedMessage: e.message,
         },
       ],
     }
@@ -262,13 +263,15 @@ export const deployArrayFieldsFilterCreator =
       const { topLevelTypeName } = arrayFieldDefinition
       if (deploy === undefined) {
         log.error('could not find deploy definitions')
+        const message = 'Deploy not supported'
         return {
           deployResult: {
             appliedChanges: [],
             errors: [
               {
                 severity: 'Error',
-                message: 'Deploy not supported',
+                message,
+                detailedMessage: message,
               },
             ],
           },
@@ -277,13 +280,15 @@ export const deployArrayFieldsFilterCreator =
       }
       if (changeGroup === undefined) {
         log.error('change group not provided')
+        const message = 'Deploy not supported'
         return {
           deployResult: {
             appliedChanges: [],
             errors: [
               {
                 severity: 'Error',
-                message: 'Deploy not supported',
+                message,
+                detailedMessage: message,
               },
             ],
           },

@@ -262,8 +262,10 @@ const getClonedElements = (elements: Element[]): Element[] => {
     clonedRestOfElements.filter(isObjectType).map(type => [type.elemID.getFullName(), type]),
   )
   const clonedMissingParentsMap = new Map(
-    fields
-      .map(field => field.parent)
+    _.uniqBy(
+      fields.map(field => field.parent),
+      parent => parent.elemID.getFullName(),
+    )
       .filter(parent => !clonedTypesMap.has(parent.elemID.getFullName()))
       .map(parent => [parent.elemID.getFullName(), parent.clone()]),
   )

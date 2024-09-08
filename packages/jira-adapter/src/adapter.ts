@@ -462,7 +462,11 @@ export default class JiraAdapter implements AdapterOperations {
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig.fetch, fetchCriteria)
 
     this.paginator = paginator
-    this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
+    this.getUserMapFunc = getUserMapFuncCreator(
+      paginator,
+      client.isDataCenter,
+      config.fetch.allowUserCallFailure ?? false,
+    )
 
     const filterContext = {}
     this.createFiltersRunner = () =>
@@ -623,11 +627,13 @@ export default class JiraAdapter implements AdapterOperations {
     const isJsmEnabled = await isJsmEnabledInService(this.client)
     if (!isJsmEnabled) {
       log.debug('enableJSM set to true, but JSM is not enabled in the service, skipping fetching JSM elements')
+      const message = 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.'
       return {
         elements: [],
         errors: [
           {
-            message: 'Jira Service Management is not enabled in this Jira instance. Skipping fetch of JSM elements.',
+            message,
+            detailedMessage: message,
             severity: 'Warning',
           },
         ],

@@ -279,7 +279,7 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       } else if (strategy === 'truncate') {
         const truncatedResponseText = safeJsonStringify(responseObj, truncateReplacer)
         log.trace(
-          'Truncated HTTP response for %s on %s (original size %d, truncated dize %d): %s',
+          'Truncated HTTP response for %s on %s (original size %d, truncated size %d): %s',
           method.toUpperCase(),
           url,
           responseText.length,
@@ -340,17 +340,17 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
         params,
       })
       if (e.code === 'ETIMEDOUT') {
-        throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
+        throw new TimeoutError(`Failed to ${method} ${url} with error: ${e.message ?? e}`)
       }
       if (e.response !== undefined) {
-        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, {
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e.message ?? e}`, {
           status: e.response.status,
           data: e.response.data,
           headers: this.extractHeaders(e.response.headers),
           requestPath: e.response.request?.path,
         })
       }
-      throw new Error(`Failed to ${method} ${url} with error: ${e}`)
+      throw new Error(`Failed to ${method} ${url} with error: ${e.message ?? e}`)
     }
   }
 }

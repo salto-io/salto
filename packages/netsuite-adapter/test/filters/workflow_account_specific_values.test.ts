@@ -86,6 +86,11 @@ describe('workflow account specific values filter', () => {
         },
       }),
       new InstanceElement('partner', suiteQLTableType),
+      new InstanceElement('entityStatus', suiteQLTableType, {
+        [INTERNAL_IDS_MAP]: {
+          1: { name: 'Entity Status 1' },
+        },
+      }),
     ]
     customRecordType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord123'),
@@ -128,7 +133,7 @@ describe('workflow account specific values filter', () => {
         [NAME_FIELD]: 'Custom workflow 1',
         [INIT_CONDITION]: {
           formula:
-            '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1")',
+            '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1","Role2")',
           parameters: {
             parameter: {
               'Subsidiary__Main__Default_Account_for_Corporate_Card_Expenses@sjkfsssss': {
@@ -181,7 +186,12 @@ describe('workflow account specific values filter', () => {
               Role1: {
                 name: 'Role1',
                 [SELECT_RECORD_TYPE]: '-118',
-                value: '[scriptid=customrole123]',
+                value: new ReferenceExpression(new ElemID(NETSUITE, 'role', 'instance', 'customrole123')),
+              },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
               },
             },
           },
@@ -193,6 +203,11 @@ describe('workflow account specific values filter', () => {
               [SELECT_RECORD_TYPE]: new ReferenceExpression(
                 customRecordType.elemID.createNestedID('field', 'custom_field', SCRIPT_ID),
               ),
+              defaultvalue: ACCOUNT_SPECIFIC_VALUE,
+            },
+            custworkflow2: {
+              [SCRIPT_ID]: 'custworkflow2',
+              [SELECT_RECORD_TYPE]: '-104',
               defaultvalue: ACCOUNT_SPECIFIC_VALUE,
             },
           },
@@ -359,13 +374,21 @@ describe('workflow account specific values filter', () => {
           {
             body: {
               [SCRIPT_ID]: 'customworkflow1',
-              initconditionformula: '{subsidiary} in (1,2,3,4,5,6) AND {employee}=-1 or {role}=4',
+              initconditionformula:
+                '{subsidiary} in (1,2,3,4,5,6) AND {employee}=-1 or {role} in (4,3) or {custom_123}="1"',
             },
             sublists: [
               {
                 body: {
                   [SCRIPT_ID]: 'custworkflow1',
                   defaultvalue: '5',
+                },
+                sublists: [],
+              },
+              {
+                body: {
+                  [SCRIPT_ID]: 'custworkflow2',
+                  defaultvalue: '1',
                 },
                 sublists: [],
               },
@@ -487,7 +510,7 @@ describe('workflow account specific values filter', () => {
               fields: ['scriptid', 'defaultvalue'],
               filter: {
                 fieldId: 'scriptid',
-                in: ['custworkflow1'],
+                in: ['custworkflow1', 'custworkflow2'],
               },
             },
           ],
@@ -499,7 +522,7 @@ describe('workflow account specific values filter', () => {
           [NAME_FIELD]: 'Custom workflow 1',
           [INIT_CONDITION]: {
             formula:
-              '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1")',
+              '"Subsidiary (Main):Default Account for Corporate Card Expenses" IN ("Account1","Account2","Account3","Account4","Account5","Account6") AND "Employee" IN ("Employee1") OR "User Role" IN ("Role1","Role2")',
             parameters: {
               parameter: {
                 'Subsidiary__Main__Default_Account_for_Corporate_Card_Expenses@sjkfsssss': {
@@ -553,7 +576,12 @@ describe('workflow account specific values filter', () => {
                 Role1: {
                   name: 'Role1',
                   [SELECT_RECORD_TYPE]: '-118',
-                  value: '[scriptid=customrole123]',
+                  value: new ReferenceExpression(new ElemID(NETSUITE, 'role', 'instance', 'customrole123')),
+                },
+                Role2: {
+                  name: 'Role2',
+                  [SELECT_RECORD_TYPE]: '-118',
+                  value: 'ADMINISTRATOR',
                 },
               },
             },
@@ -566,6 +594,11 @@ describe('workflow account specific values filter', () => {
                   customRecordType.elemID.createNestedID('field', 'custom_field', SCRIPT_ID),
                 ),
                 defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Account 5)`,
+              },
+              custworkflow2: {
+                [SCRIPT_ID]: 'custworkflow2',
+                [SELECT_RECORD_TYPE]: '-104',
+                defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Entity Status 1)`,
               },
             },
           },
@@ -832,6 +865,11 @@ describe('workflow account specific values filter', () => {
                 [SELECT_RECORD_TYPE]: '-118',
                 value: '[scriptid=customrole123]',
               },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
+              },
             },
           },
         },
@@ -845,6 +883,11 @@ describe('workflow account specific values filter', () => {
                 customRecordType,
               ),
               defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Account 5)`,
+            },
+            custworkflow2: {
+              [SCRIPT_ID]: 'custworkflow2',
+              [SELECT_RECORD_TYPE]: '-104',
+              defaultvalue: `${ACCOUNT_SPECIFIC_VALUE} (Entity Status 1)`,
             },
           },
         },
@@ -1074,6 +1117,11 @@ describe('workflow account specific values filter', () => {
                 [SELECT_RECORD_TYPE]: '-118',
                 value: '[scriptid=customrole123]',
               },
+              Role2: {
+                name: 'Role2',
+                [SELECT_RECORD_TYPE]: '-118',
+                value: 'ADMINISTRATOR',
+              },
             },
           },
         },
@@ -1087,6 +1135,11 @@ describe('workflow account specific values filter', () => {
                 customRecordType,
               ),
               defaultvalue: '5',
+            },
+            custworkflow2: {
+              [SCRIPT_ID]: 'custworkflow2',
+              [SELECT_RECORD_TYPE]: '-104',
+              defaultvalue: '1',
             },
           },
         },

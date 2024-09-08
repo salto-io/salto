@@ -37,7 +37,7 @@ describe('automationFetchFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
   let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
-  const automationResponse = {
+  const automationResponseCloud = {
     status: 200,
     data: {
       total: 1,
@@ -64,9 +64,30 @@ describe('automationFetchFilter', () => {
       ],
     },
   }
+
+  const automationResponseDC = {
+    status: 200,
+    data: {
+      total: 1,
+      values: [
+        {
+          id: '1',
+          name: 'automationName',
+          projects: [
+            {
+              projectId: '2',
+            },
+            {
+              projectId: '3',
+            },
+          ],
+        },
+      ],
+    },
+  }
   const mockPostResponse = (url: string): Value => {
     if (url === DEFAULT_URL) {
-      return automationResponse
+      return automationResponseCloud
     }
 
     throw new Error(`Unexpected url ${url}`)
@@ -159,7 +180,7 @@ describe('automationFetchFilter', () => {
         if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
           return {
             status: 200,
-            data: automationResponse.data.values,
+            data: automationResponseDC.data.values,
           }
         }
 
@@ -198,12 +219,6 @@ describe('automationFetchFilter', () => {
             projectId: '3',
           },
         ],
-        ruleScope: {
-          resources: [
-            'ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/2',
-            'ari:cloud:jira:a35ab846-aa6a-41c1-b9ca-40eb4e260dd8:project/3',
-          ],
-        },
       })
 
       expect(connection.post).not.toHaveBeenCalled()
@@ -436,6 +451,8 @@ describe('automationFetchFilter', () => {
         {
           message:
             "Salto could not access the Automation resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          detailedMessage:
+            "Salto could not access the Automation resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
           severity: 'Warning',
         },
       ],
@@ -465,6 +482,8 @@ describe('automationFetchFilter', () => {
         {
           message:
             "Salto could not access the Automation resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+          detailedMessage:
+            "Salto could not access the Automation resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
           severity: 'Warning',
         },
       ],
@@ -478,7 +497,7 @@ describe('automationFetchFilter', () => {
       if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
         return {
           status: 200,
-          data: automationResponse.data.values,
+          data: automationResponseCloud.data.values,
         }
       }
 
@@ -509,7 +528,7 @@ describe('automationFetchFilter', () => {
       if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
         return {
           status: 200,
-          data: automationResponse.data.values,
+          data: automationResponseCloud.data.values,
         }
       }
 

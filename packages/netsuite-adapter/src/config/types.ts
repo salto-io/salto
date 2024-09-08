@@ -30,6 +30,7 @@ import {
 } from '../constants'
 import { netsuiteSupportedTypes } from '../types'
 import { ITEM_TYPE_TO_SEARCH_STRING } from '../data_elements/types'
+import { SUPPORTED_WSDL_VERSIONS, WSDLVersion } from '../client/suiteapp_client/soap_client/types'
 import {
   ALL_TYPES_REGEX,
   GROUPS_TO_DATA_FILE_TYPES,
@@ -111,6 +112,8 @@ export type FetchParams = {
   resolveAccountSpecificValues?: boolean
   // SALTO-6145: should be removed
   forceFileCabinetExclude?: boolean
+  calculateNewReferencesInSuiteScripts?: boolean
+  findReferencesInFilesWithExtension?: string[]
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -126,6 +129,8 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
   forceFileCabinetExclude: 'forceFileCabinetExclude',
+  calculateNewReferencesInSuiteScripts: 'calculateNewReferencesInSuiteScripts',
+  findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -192,11 +197,13 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
   httpTimeoutLimitInMinutes?: number
+  wsdlVersion?: WSDLVersion
 }
 
 export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
   suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
   httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
+  wsdlVersion: 'wsdlVersion',
 }
 
 export type NetsuiteConfig = {
@@ -376,6 +383,14 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_AXIOS_TIMEOUT_IN_MINUTES,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
+        }),
+      },
+    },
+    wsdlVersion: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: SUPPORTED_WSDL_VERSIONS,
         }),
       },
     },
@@ -568,6 +583,8 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
     forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
+    calculateNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
+    findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

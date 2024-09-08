@@ -98,7 +98,6 @@ class PromisesQueue {
     }
     const promise = singlePagePagination(pageArgs, additionalArgs)
     this.promises.push(promise)
-    log.trace(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
   }
 
   async dequeue(): Promise<PaginationResult> {
@@ -108,7 +107,6 @@ class PromisesQueue {
       log.error('No promises to dequeue from pagination queue')
       throw new Error('No promises to dequeue from pagination queue')
     }
-    log.trace(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
     return settledPromise
   }
 
@@ -175,6 +173,7 @@ export const traverseRequestsAsync: (
   customEntryExtractor?: PageEntriesExtractor,
 ) => GetAllItemsFunc = (paginationFunc, extractPageEntries, customEntryExtractor) =>
   async function* getPages({ client, pageSize, getParams }) {
+    const isAllowedFailure = getParams.allowFailure ?? false
     const usedParams = new Set<string>()
     const promisesQueue: PromisesQueue = new PromisesQueue()
     let numResults = 0
@@ -201,6 +200,12 @@ export const traverseRequestsAsync: (
         // avoid leaking promises
         // eslint-disable-next-line no-await-in-loop
         await promisesQueue.clear()
+        if (isAllowedFailure) {
+          log.error(
+            `Failed to get the page starting at ${numResults} for endpoint ${getParams.url} with error: ${e.message}`,
+          )
+          return
+        }
         throw e
       }
     }

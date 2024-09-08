@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { inspect } from 'util'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { AdjustFunctionSingle } from '../../definitions/fetch/shared/types'
+import { definitions } from '@salto-io/adapter-components'
 import { ODATA_PREFIX, ODATA_TYPE_FIELD } from '../../constants'
 
 const log = logger(module)
@@ -42,7 +42,9 @@ export const getAdjustedOdataTypeFieldName = (typeName: string): string => `${ty
  *  We want to transform these to more user-friendly values, and vice versa.
  *  We don't simply omit this field since it's used for directory structure, deployment, etc.
  */
-export const transformOdataTypeField: (operation: 'fetch' | 'deploy') => AdjustFunctionSingle =
+export const transformOdataTypeField: <TContext = definitions.ContextParams>(
+  operation: 'fetch' | 'deploy',
+) => definitions.AdjustFunctionSingle<TContext> =
   operation =>
   async ({ value, typeName }) => {
     validatePlainObject(value, typeName)

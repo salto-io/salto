@@ -269,6 +269,8 @@ describe('workflowModificationFilter', () => {
         {
           message:
             'Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
+          detailedMessage:
+            'Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
           severity: 'Error',
           elemID: workflowInstance.elemID,
         },
@@ -330,6 +332,8 @@ describe('workflowModificationFilter', () => {
       expect(res.deployResult.errors).toEqual([
         {
           message:
+            'Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
+          detailedMessage:
             'Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
           severity: 'Error',
           elemID: workflowInstance.elemID,

@@ -370,8 +370,10 @@ const removeFieldsWithNoPermission = async (
       type.fields[fieldName]?.annotations[permissionAnnotation],
       fieldValue,
     )
+    const message = `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`
     return {
-      message: `The field ${fieldName} will not be deployed because it lacks the '${permissionAnnotation}' permission`,
+      message,
+      detailedMessage: message,
       severity: 'Warning',
       elemID: instanceId,
     }
@@ -626,11 +628,15 @@ const deployModifyChanges = async (
     successInstances.find(instance => instance.isEqual(changeData.after)),
   )
   const diffApiNameErrors: SaltoElementError[] = await awu(diffApiNameData)
-    .map(async data => ({
-      elemID: data.before.elemID,
-      message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
-      severity: 'Error' as SeverityLevel,
-    }))
+    .map(async data => {
+      const message = `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`
+      return {
+        elemID: data.before.elemID,
+        message,
+        detailedMessage: message,
+        severity: 'Error' as SeverityLevel,
+      }
+    })
     .toArray()
   const errors = errorInstances.concat(diffApiNameErrors).concat(invalidFieldsWarnings)
   return {
@@ -679,6 +685,7 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
     appliedChanges: [],
     errors: changes.map(change => ({
       message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
     })),
@@ -686,11 +693,15 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   const [changesWithMissingFields, validChanges] = _.partition(changes, change => getMissingFields(change).length > 0)
   const missingFieldValuesWarnings: SaltoElementError[] = changesWithMissingFields
     .map(change => ({ change, missingFields: getMissingFields(change) }))
-    .map(({ change, missingFields }) => ({
-      severity: 'Warning',
-      elemID: getChangeData(change).elemID,
-      message: `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`,
-    }))
+    .map(({ change, missingFields }) => {
+      const message = `The values of the following fields were not deployed since they are not defined in the type: [${missingFields.join(', ')}]`
+      return {
+        severity: 'Warning',
+        elemID: getChangeData(change).elemID,
+        message,
+        detailedMessage: message,
+      }
+    })
   const withMissingFieldValuesErrors = (deployResult: SalesforceDataDeployResult): SalesforceDataDeployResult => {
     const appliedChangesElemIds = new Set(
       deployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
@@ -787,11 +798,15 @@ const deployRulesAndConditionsGroup = async (
   client: SalesforceClient,
   dataManagement: DataManagement | undefined,
 ): Promise<SalesforceDataDeployResult> => {
-  const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
-    message: `Cannot deploy ${conditionTypeName} instance ${getChangeData(change).elemID.getFullName()} since it depends on an ${ruleTypeName} instance that was not deployed successfully`,
-    severity: 'Error',
-    elemID: getChangeData(change).elemID,
-  })
+  const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => {
+    const message = `Cannot deploy ${conditionTypeName} instance ${getChangeData(change).elemID.getFullName()} since it depends on an ${ruleTypeName} instance that was not deployed successfully`
+    return {
+      message,
+      detailedMessage: message,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    }
+  }
 
   const ruleChanges = changes.filter(isInstanceOfTypeChangeSync(ruleTypeName))
 
@@ -1001,11 +1016,16 @@ const deployRemoveCustomRulesAndConditions = async ({
   })
   const conditionErrors = conditionChanges
     .filter(change => !appliedConditionChanges.includes(change))
-    .map<SaltoElementError>(change => ({
-      elemID: getChangeData(change).elemID,
-      message: 'Condition Instance was not removed due to error when attempting to remove its parent Rule Instance',
-      severity: 'Error',
-    }))
+    .map<SaltoElementError>(change => {
+      const message =
+        'Condition Instance was not removed due to error when attempting to remove its parent Rule Instance'
+      return {
+        elemID: getChangeData(change).elemID,
+        message,
+        detailedMessage: message,
+        severity: 'Error',
+      }
+    })
   return {
     appliedChanges: appliedRuleChanges.concat(appliedConditionChanges),
     errors: ruleErrors.concat(conditionErrors),

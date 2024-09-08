@@ -237,35 +237,39 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
-  log.debug('closing all remote maps of location %s', location)
-  const persistentConnection = persistentDBConnections[location]
-  if (await persistentConnection) {
-    await closeConnection(location, persistentConnection, persistentDBConnections)
-  }
-  const tmpConnections = tmpDBConnections[location]
-  if (tmpConnections) {
-    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
-      await closeTmpConnection(location, tmpLoc, tmpCon)
-    })
-    delete tmpDBConnections[location]
-  }
-  const readOnlyConnection = readonlyDBConnections[location]
-  if (await readOnlyConnection) {
-    await closeConnection(location, readOnlyConnection, readonlyDBConnections)
-  }
-  const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]
-  if (roConnectionsPerMap) {
-    await awu(Object.values(roConnectionsPerMap)).forEach(async conn => {
-      await closeDanglingConnection(conn)
-    })
-    delete readonlyDBConnectionsPerRemoteMap[location]
-    log.debug('closed read-only connections per remote map of location %s', location)
-  }
-  const locationResources = remoteMapLocations.get(location)
-  locationResources.counters.dump()
-  remoteMapLocations.return(locationResources)
-}
+export const closeRemoteMapsOfLocation = async (location: string): Promise<void> =>
+  log.timeDebug(
+    async () => {
+      const persistentConnection = persistentDBConnections[location]
+      if (await persistentConnection) {
+        await closeConnection(location, persistentConnection, persistentDBConnections)
+      }
+      const tmpConnections = tmpDBConnections[location]
+      if (tmpConnections) {
+        await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
+          await closeTmpConnection(location, tmpLoc, tmpCon)
+        })
+        delete tmpDBConnections[location]
+      }
+      const readOnlyConnection = readonlyDBConnections[location]
+      if (await readOnlyConnection) {
+        await closeConnection(location, readOnlyConnection, readonlyDBConnections)
+      }
+      const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]
+      if (roConnectionsPerMap) {
+        await awu(Object.values(roConnectionsPerMap)).forEach(async conn => {
+          await closeDanglingConnection(conn)
+        })
+        delete readonlyDBConnectionsPerRemoteMap[location]
+        log.debug('closed read-only connections per remote map of location %s', location)
+      }
+      const locationResources = remoteMapLocations.get(location)
+      locationResources.counters.dump()
+      remoteMapLocations.return(locationResources)
+    },
+    'closeRemoteMapsOfLocation with location %s',
+    location,
+  )
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
   log.debug('closing all remote maps')

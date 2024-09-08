@@ -68,7 +68,10 @@ import { fieldContextOptionsValidator } from './field_contexts/field_context_opt
 import { ISSUE_TYPE_NAME, PORTAL_GROUP_TYPE, PROJECT_TYPE, SLA_TYPE_NAME } from '../constants'
 import { assetsObjectFieldConfigurationAqlValidator } from './field_contexts/assets_object_field_configuration_aql'
 import { projectAssigneeTypeValidator } from './projects/project_assignee_type'
-import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
+import { fieldContextDefaultValueValidator } from './field_contexts/field_context_default_value'
+import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
+import { optionValueValidator } from './field_contexts/option_value'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -79,6 +82,7 @@ const TYPE_TO_UNIQUE_FIELD: Record<string, deployment.changeValidators.ScopeAndU
   [SLA_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
   [PROJECT_TYPE]: { scope: SCOPE.global, uniqueFields: ['name', 'key'] },
   [FIELD_CONTEXT_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['name'] },
+  [FIELD_CONTEXT_OPTION_TYPE_NAME]: { scope: SCOPE.parent, uniqueFields: ['value'] },
 }
 
 export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator): ChangeValidator => {
@@ -142,9 +146,12 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     addJsmProject: addJsmProjectValidator,
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
-    fieldContextOptions: fieldContextOptionsValidator,
     assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),
     projectAssigneeType: projectAssigneeTypeValidator,
+    fieldContextOptions: fieldContextOptionsValidator(config),
+    fieldContextDefaultValue: fieldContextDefaultValueValidator(config),
+    fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
+    optionValue: optionValueValidator(config),
   }
 
   return createChangeValidator({

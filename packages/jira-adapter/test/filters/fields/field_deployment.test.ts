@@ -188,6 +188,7 @@ describe('fields_deployment', () => {
       expect(res.deployResult.errors[0]).toEqual({
         elemID: instance.elemID,
         message: 'Error: error',
+        detailedMessage: 'Error: error',
         severity: 'Error',
       })
     })
@@ -204,6 +205,7 @@ describe('fields_deployment', () => {
       expect(res.deployResult.errors[0]).toEqual({
         elemID: instance.elemID,
         message: 'Error: error',
+        detailedMessage: 'Error: error',
         severity: 'Error',
       })
     })

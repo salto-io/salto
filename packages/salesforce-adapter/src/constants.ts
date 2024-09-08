@@ -716,3 +716,10 @@ export const PROFILE_RELATED_METADATA_TYPES = [
   LAYOUT_TYPE_ID_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
 ] as const
+
+export const ProgressReporterSuffix = {
+  QuickDeploy: 'Attempting quick deploy',
+  QuickDeployFailed: 'Quick deploy failed. Attempting regular deploy',
+}
+
+export const METADATA_DEPLOY_PENDING_STATUS = 'Pending'

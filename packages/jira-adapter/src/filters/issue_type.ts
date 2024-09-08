@@ -22,7 +22,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { ISSUE_TYPE_NAME } from '../constants'
+import { CONTENT_TYPE_HEADER, ISSUE_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { PRIVATE_API_HEADERS } from '../client/headers'
@@ -42,7 +42,7 @@ const deployIcon = async (
 ): Promise<number> => {
   const instance = getChangeData(change)
   try {
-    const headers = { ...PRIVATE_API_HEADERS, 'Content-Type': 'image/png' }
+    const headers = { ...PRIVATE_API_HEADERS, [CONTENT_TYPE_HEADER]: 'image/png' }
     const url = `/rest/api/3/universal_avatar/type/issuetype/owner/${instance.value.id}`
     const resp = await sendIconRequest({ client, change, url, fieldName: 'avatar', headers })
     if (!isIconResponse(resp)) {
@@ -87,7 +87,7 @@ const filter: FilterCreator = ({ client, config }) => ({
           const link = `/rest/api/3/universal_avatar/view/type/issuetype/avatar/${issueType.value.avatarId}`
           await setIconContent({ client, instance: issueType, link, fieldName: 'avatar' })
         } catch (e) {
-          errors.push({ message: e.message, severity: 'Warning' })
+          errors.push({ message: e.message, detailedMessage: e.message, severity: 'Warning' })
         }
       }),
     )

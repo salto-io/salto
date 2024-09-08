@@ -135,7 +135,11 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5842)
         if (e instanceof InvalidSingletonType) {
-          return { instances: [], types: [], errors: [{ message: e.message, severity: 'Warning' as SeverityLevel }] }
+          return {
+            instances: [],
+            types: [],
+            errors: [{ message: e.message, detailedMessage: e.message, severity: 'Warning' as SeverityLevel }],
+          }
         }
         throw e
       }

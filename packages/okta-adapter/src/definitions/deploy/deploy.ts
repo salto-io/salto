@@ -335,7 +335,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 additional: {
                   adjust: async ({ value, context }) => {
                     const subdomain = await getSubdomainFromElementsSource(context.elementSource)
-                    if (subdomain !== undefined && isCustomApp(value as Values, subdomain)) {
+                    if (isCustomApp(value as Values, subdomain)) {
                       const createdAppName = _.get(value, NAME_FIELD)
                       return {
                         value: {
@@ -373,7 +373,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                       throw new Error('Change is not a modification change')
                     }
                     const transformed = getChangeData(
-                      deployment.transformRemovedValuesToNull(context.change, ['settings']),
+                      deployment.transformRemovedValuesToNull({ change: context.change, applyToPath: ['settings'] }),
                     ).value
                     return {
                       value: {
@@ -798,6 +798,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/idps/credentials/keys/{kid}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+    OAuth2Scope: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
+                  method: 'delete',
+                },
               },
             },
           ],

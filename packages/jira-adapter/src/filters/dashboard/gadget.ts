@@ -26,10 +26,12 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import {
+  CONTENT_TYPE_HEADER,
   DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE,
   DASHBOARD_GADGET_PROPERTIES_TYPE,
   DASHBOARD_GADGET_TYPE,
   JIRA,
+  JSON_CONTENT_TYPE,
 } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
@@ -78,7 +80,7 @@ const deployGadgetProperties = async (instance: InstanceElement, client: JiraCli
         headers: {
           // value can be a string and in that case axios won't send
           // this header so we need to add it
-          'Content-Type': 'application/json',
+          [CONTENT_TYPE_HEADER]: JSON_CONTENT_TYPE,
         },
       }),
     ),

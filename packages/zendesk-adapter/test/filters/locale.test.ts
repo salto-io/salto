@@ -51,6 +51,7 @@ describe('locale filter', () => {
       expect(res.errors).toEqual([
         {
           message: warningMsg,
+          detailedMessage: warningMsg,
           severity: 'Warning',
         },
       ])
@@ -129,6 +130,7 @@ describe('locale filter', () => {
       expect(res.deployResult.errors).toEqual([
         {
           message: `Failed to update ${frLocaleInstance.elemID.getFullName()} since modification of locale is not supported by Zendesk`,
+          detailedMessage: `Failed to update ${frLocaleInstance.elemID.getFullName()} since modification of locale is not supported by Zendesk`,
           severity: 'Error',
           elemID: frLocaleInstance.elemID,
         },
@@ -159,11 +161,13 @@ describe('locale filter', () => {
       expect(res.deployResult.errors).toEqual([
         {
           message: 'err',
+          detailedMessage: 'err',
           severity: 'Error',
           elemID: frLocaleInstance.elemID,
         },
         {
           message: 'err',
+          detailedMessage: 'err',
           severity: 'Error',
           elemID: heLocaleInstance.elemID,
         },

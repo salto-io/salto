@@ -73,6 +73,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
       expect(errors[0]).toEqual({
         severity: 'Warning',
         message: baseExpectedWarningMessage,
+        detailedMessage: baseExpectedWarningMessage,
       })
     })
 
@@ -92,6 +93,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
       expect(errors[0]).toEqual({
         severity: 'Warning',
         message: `${baseExpectedWarningMessage}\n\nLearn more at: ${docsUrl}`,
+        detailedMessage: `${baseExpectedWarningMessage}\n\nLearn more at: ${docsUrl}`,
       })
     })
 
@@ -127,6 +129,9 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
         expect.objectContaining({
           severity: 'Warning',
           message: expect.stringContaining(
+            'Instances with empty name (Due to no values in any of the provided ID fields)',
+          ),
+          detailedMessage: expect.stringContaining(
             'Instances with empty name (Due to no values in any of the provided ID fields)',
           ),
         }),

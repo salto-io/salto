@@ -32,19 +32,21 @@ describe('app logo filter', () => {
   const appLogoType = new ObjectType({ elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME) })
   const fileName = 'app1_logo.png'
   const content = Buffer.from('test')
-  const appInstance = new InstanceElement('app1', appType, {
-    id: '11',
-    label: 'app1',
-    [LINKS_FIELD]: {
-      logo: [
-        {
-          name: 'fileName',
-          href: 'https://ok12static.oktacdn.com/fs/bco/4/111',
-          type: 'image/png',
-        },
-      ],
-    },
-  })
+  const createAppInstance = (name: string): InstanceElement =>
+    new InstanceElement(name, appType, {
+      id: '11',
+      label: name,
+      [LINKS_FIELD]: {
+        logo: [
+          {
+            name: 'file_Name',
+            href: 'https://ok12static.oktacdn.com/fs/bco/4/111',
+            type: 'image/png',
+          },
+        ],
+      },
+    })
+  const appInstance = createAppInstance('app1')
   beforeEach(async () => {
     const mockCli = mockClient()
     client = mockCli.client
@@ -100,6 +102,17 @@ describe('app logo filter', () => {
       expect(logo).toBeUndefined()
       expect(res.errors).toHaveLength(1)
       expect(res.errors?.[0].message).toEqual('Failed to fetch App logo. Failed to find content type for app1')
+    })
+    // Reproduce an issue where the filter does not give unique file names to AppLogo instances if their names only
+    // differed by underscores.
+    it('should give AppLogo instances unique file names', async () => {
+      // Same name, but with underscore.
+      const anotherAppInstance = createAppInstance('app_1')
+      const elements = [appType, appInstance, anotherAppInstance].map(e => e.clone())
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const fileNames = instances.filter(e => e.elemID.typeName === APP_LOGO_TYPE_NAME).map(e => e.value.fileName)
+      expect(fileNames).toEqual(['app1.png', 'app_1.png'])
     })
   })
   describe('deploy', () => {

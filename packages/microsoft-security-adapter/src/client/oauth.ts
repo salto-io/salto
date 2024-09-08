@@ -37,7 +37,11 @@ const ENTRA_OAUTH_REQUIRED_SCOPES = [
   'UserAuthenticationMethod.ReadWrite.All',
 ]
 
-export const INTUNE_OAUTH_REQUIRED_SCOPES = ['User.Read', 'DeviceManagementConfiguration.ReadWrite.All']
+export const INTUNE_OAUTH_REQUIRED_SCOPES = [
+  'DeviceManagementApps.ReadWrite.All',
+  'DeviceManagementConfiguration.ReadWrite.All',
+  'User.Read',
+]
 
 export const OAUTH_REQUIRED_SCOPES = [...new Set([...ENTRA_OAUTH_REQUIRED_SCOPES, ...INTUNE_OAUTH_REQUIRED_SCOPES])]
 

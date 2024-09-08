@@ -10,10 +10,27 @@ import _ from 'lodash'
 import { inspect } from 'util'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { APP_IDENTIFIER_FIELD_NAME, APPLICATION_TYPE_NAME } from '../../../../constants/intune'
+import { intuneConstants } from '../../../../constants'
 import { intuneUtils } from '../../../../utils'
 
-const { isManagedGooglePlayApp } = intuneUtils
+const { APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } =
+  intuneConstants
+
+const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application
+
+/**
+ * Omit redundant fields from application based on its type.
+ * These omitted fields are not needed and will fail the deployment if included.
+ */
+export const omitApplicationRedundantFields: AdjustFunctionSingle = async ({ value }) => {
+  validatePlainObject(value, APPLICATION_TYPE_NAME)
+  if (isAndroidEnterpriseSystemApp(value)) {
+    return {
+      value: _.omit(value, [PACKAGE_ID_FIELD_NAME, APP_STORE_URL_FIELD_NAME]),
+    }
+  }
+  return { value }
+}
 
 /**
  * Addition of 'Managed Google Play' apps is done by specifying the productIds field

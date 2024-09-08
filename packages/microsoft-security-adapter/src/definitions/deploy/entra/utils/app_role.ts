@@ -8,7 +8,7 @@
 
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { omitReadOnlyFieldsWrapper } from '../../shared/utils'
+import { adjustWrapper } from '../../shared/utils'
 import { entraConstants, PARENT_ID_FIELD_NAME } from '../../../../constants'
 import { AdjustFunctionSingle } from '../../shared/types'
 
@@ -35,4 +35,4 @@ const adjustParentWithAppRoles: AdjustFunctionSingle = async ({ value, typeName 
   }
 }
 
-export const adjustParentWithAppRolesWrapped = omitReadOnlyFieldsWrapper(adjustParentWithAppRoles)
+export const adjustParentWithAppRolesWrapped = adjustWrapper(adjustParentWithAppRoles)

@@ -132,8 +132,10 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
                 elemID: getChangeData(change).elemID,
               })
             } else {
+              const message = `${err}`
               errors.push({
-                message: `${err}`,
+                message,
+                detailedMessage: message,
                 severity: 'Error',
                 elemID: getChangeData(change).elemID,
               })

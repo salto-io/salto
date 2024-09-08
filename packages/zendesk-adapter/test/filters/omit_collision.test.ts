@@ -54,6 +54,21 @@ To resolve these collisions please take one of the following actions and fetch a
 Alternatively, you can exclude obj from the service configuration in zendesk.nacl
 
 Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
+        detailedMessage: `Omitted 2 instances and all their child instances of obj due to Salto ID collisions.
+Current Salto ID configuration for obj is defined as [name].
+
+Breakdown per colliding Salto ID:
+- inst1:
+\t* Instance with Id - inst1
+\t* Instance with Id - inst1. View in the service - someUrl
+
+To resolve these collisions please take one of the following actions and fetch again:
+\t1. Change obj's idFields to include all fields that uniquely identify the type's instances.
+\t2. Delete duplicate instances from your zendesk account.
+
+Alternatively, you can exclude obj from the service configuration in zendesk.nacl
+
+Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
       })
     })
     it('should return no errors if there were no collisions', async () => {

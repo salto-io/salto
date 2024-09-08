@@ -19,6 +19,7 @@ import { fieldConfigurationDependencyChanger } from './field_configuration'
 import { rootObjectTypeToObjectSchemaDependencyChanger } from './root_object_type_to_schema'
 import { issueLayoutDependencyChanger } from './issue_layout_dependency'
 import { objectTypeParentDependencyChanger } from './object_type_parent'
+import { objectTypeOrderToSchemaDependencyChanger } from './object_type_order_to_schema'
 
 const { awu } = collections.asynciterable
 
@@ -35,6 +36,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   fieldContextDependencyChanger,
   fieldConfigurationDependencyChanger,
   issueLayoutDependencyChanger,
+  objectTypeOrderToSchemaDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (changes, deps) =>

@@ -174,11 +174,13 @@ describe('filterCreator', () => {
         {
           elemID: themeSettingsInstance.elemID,
           message: 'Theme_settings instances cannot be added or removed',
+          detailedMessage: 'Theme_settings instances cannot be added or removed',
           severity: 'Error',
         },
         {
           elemID: themeSettingsInstance2.elemID,
           message: 'Theme_settings instances cannot be added or removed',
+          detailedMessage: 'Theme_settings instances cannot be added or removed',
           severity: 'Error',
         },
       ])
@@ -197,6 +199,7 @@ describe('filterCreator', () => {
         {
           elemID: afterSetting.elemID,
           message: 'err',
+          detailedMessage: 'err',
           severity: 'Error',
         },
       ])

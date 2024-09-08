@@ -5,35 +5,15 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  Change,
-  InstanceElement,
-  ReferenceExpression,
-  // SaltoElementError,
-  // SeverityLevel,
-  getChangeData,
-  // isAdditionChange,
-  isInstanceChange,
-  isRemovalChange,
-  // isModificationChange,
-  // isRemovalChange,
-  // isSaltoError,
-} from '@salto-io/adapter-api'
-// import { logger } from '@salto-io/logging'
+import { Change, InstanceElement, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-// import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import {
-  // FIELD_CONTEXT_OPTION_TYPE_NAME,
-  // FIELD_CONTEXT_OPTIONS_ORDER_FILE_NAME,
-  OPTIONS_ORDER_TYPE_NAME,
-} from './constants'
-// import { setContextOptionsSplitted } from './context_options_splitted'
+import { OPTIONS_ORDER_TYPE_NAME } from './constants'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { getContextAndFieldIds } from '../../common/fields'
-import { reorderContextOptions } from './context_options_splitted'
-
-// const log = logger(module)
+import { deployOptionsOrder } from './context_options'
 
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'fieldContextOptionsOrderDeploymentFilter',
@@ -43,7 +23,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === OPTIONS_ORDER_TYPE_NAME,
     ) as [Change<InstanceElement>[], Change[]]
     if (!config.fetch.splitFieldContextOptions || relevantChanges.length === 0) {
-      return { leftoverChanges, deployResult: { errors: [], appliedChanges: [] } }
+      return { leftoverChanges: changes, deployResult: { errors: [], appliedChanges: [] } }
     }
 
     const deployResult = await deployChanges(relevantChanges, async change => {
@@ -53,10 +33,12 @@ const filter: FilterCreator = ({ config, client }) => ({
       }
       const { contextId, fieldId } = getContextAndFieldIds(change)
       const baseUrl = `/rest/api/3/field/${fieldId}/context/${contextId}/option`
-      const optionsValues = getChangeData(change).value.options?.map(
-        (optionRef: ReferenceExpression) => optionRef.value.value,
-      )
-      await reorderContextOptions(optionsValues, client, baseUrl)
+      const optionsValues = collections.array
+        .makeArray(getChangeData(change).value.options)
+        .filter(isResolvedReferenceExpression)
+        .map(optionRef => optionRef.value.value)
+
+      await deployOptionsOrder(optionsValues, client, baseUrl)
     })
 
     return {

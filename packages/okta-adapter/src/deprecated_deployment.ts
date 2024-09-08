@@ -259,6 +259,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
       } catch (err) {
         return createSaltoElementError({
           message: err.message,
+          detailedMessage: err.message,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

@@ -147,7 +147,7 @@ describe('Nacl Files Source', () => {
         ({
           ...change,
           location: {
-            filename: 'file',
+            filename: 'file3',
             start: { line: 0, row: 0, byte: 0 },
             end: { line: 0, row: 0, byte: 0 },
           },
@@ -435,6 +435,65 @@ describe('Nacl Files Source', () => {
         path: ['new', 'file'],
       } as DetailedChange
       await src.updateNaclFiles([change])
+      expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
+    })
+    it('should not delete static file if there are multiple appearances of it (in different files)', async () => {
+      getChangeLocationsMock.mockImplementationOnce(
+        (change: DetailedChange) =>
+          ({
+            ...change,
+            location: {
+              filename: 'file1',
+              start: { line: 0, row: 0, byte: 0 },
+              end: { line: 0, row: 0, byte: 0 },
+            },
+          }) as unknown as DetailedChangeWithSource[],
+      )
+      getChangeLocationsMock.mockImplementationOnce(
+        (change: DetailedChange) =>
+          ({
+            ...change,
+            location: {
+              filename: 'file2',
+              start: { line: 0, row: 0, byte: 0 },
+              end: { line: 0, row: 0, byte: 0 },
+            },
+          }) as unknown as DetailedChangeWithSource[],
+      )
+
+      const newInstanceElement1 = new InstanceElement(
+        'inst1',
+        new ObjectType({ elemID: new ElemID('dummy', 'type') }),
+        {
+          file2: sfile,
+        },
+      )
+      const newInstanceElement2 = new InstanceElement(
+        'inst2',
+        new ObjectType({ elemID: new ElemID('dummy', 'type') }),
+        {
+          file2: sfile,
+        },
+      )
+      const detailedChange1 = {
+        action: 'add',
+        id: newInstanceElement1.elemID,
+        data: { after: newInstanceElement1 },
+      } as DetailedChange
+      const detailedChange2 = {
+        action: 'add',
+        id: newInstanceElement2.elemID,
+        data: { after: newInstanceElement2 },
+      } as DetailedChange
+
+      await src.updateNaclFiles([detailedChange1, detailedChange2])
+
+      const removal = {
+        id: newInstanceElement1.elemID.createNestedID('file'),
+        action: 'remove',
+        data: { before: sfile },
+      } as DetailedChange
+      await src.updateNaclFiles([removal])
       expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
     })
     it('should not delete static file if the file was both added and deleted', async () => {

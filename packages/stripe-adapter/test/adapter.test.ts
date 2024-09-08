@@ -132,6 +132,7 @@ describe('adapter', () => {
         errors: [
           {
             message: 'no deploy definitions found, cannot deploy changes',
+            detailedMessage: 'no deploy definitions found, cannot deploy changes',
             severity: 'Error',
           },
         ],

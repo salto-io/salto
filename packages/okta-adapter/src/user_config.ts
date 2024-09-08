@@ -66,6 +66,7 @@ const changeValidatorNames = [
   'userStatusChanges',
   'disabledAuthenticatorsInMfaPolicy',
   'oidcIdentityProvider',
+  'everyoneGroupAssignments',
   'emailDomainAddition',
 ] as const
 

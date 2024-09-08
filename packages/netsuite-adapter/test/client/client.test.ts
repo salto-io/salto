@@ -153,6 +153,7 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: objectsDeployError.message,
+              detailedMessage: objectsDeployError.message,
               severity: 'Error',
             },
           ],
@@ -179,7 +180,9 @@ describe('NetsuiteClient', () => {
             async () => true,
           ),
         ).toEqual({
-          errors: [{ message: objectsDeployError.message, severity: 'Error' }],
+          errors: [
+            { message: objectsDeployError.message, detailedMessage: objectsDeployError.message, severity: 'Error' },
+          ],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -208,6 +211,7 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: settingsDeployError.message,
+              detailedMessage: settingsDeployError.message,
               severity: 'Error',
             },
           ],
@@ -225,7 +229,9 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy([change], SDF_CREATE_OR_UPDATE_GROUP_ID, ...deployParams, async () => true)).toEqual(
           {
-            errors: [{ message: settingsDeployError.message, severity: 'Error' }],
+            errors: [
+              { message: settingsDeployError.message, detailedMessage: settingsDeployError.message, severity: 'Error' },
+            ],
             appliedChanges: [],
           },
         )
@@ -260,6 +266,7 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
               severity: 'Error',
             },
           ],
@@ -297,6 +304,7 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
               severity: 'Error',
             },
           ],
@@ -329,7 +337,13 @@ describe('NetsuiteClient', () => {
             async () => true,
           ),
         ).toEqual({
-          errors: [{ message: manifestValidationError.message, severity: 'Error' }],
+          errors: [
+            {
+              message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
+              severity: 'Error',
+            },
+          ],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -369,11 +383,13 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
               severity: 'Error',
             },
             {
               elemID: getChangeData(failedChangeDependency).elemID,
               message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
+              detailedMessage: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
               severity: 'Error',
             },
           ],
@@ -422,6 +438,7 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
               severity: 'Error',
             },
           ],
@@ -477,11 +494,13 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
               severity: 'Error',
             },
             {
               elemID: getChangeData(failedChangeInnerDependency).elemID,
               message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
+              detailedMessage: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
               severity: 'Error',
             },
           ],
@@ -560,11 +579,13 @@ describe('NetsuiteClient', () => {
             {
               elemID: getChangeData(failedChange).elemID,
               message: manifestValidationError.message,
+              detailedMessage: manifestValidationError.message,
               severity: 'Error',
             },
             {
               elemID: getChangeData(failedChangeAddedFieldDependency).elemID,
               message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
+              detailedMessage: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
               severity: 'Error',
             },
           ],
@@ -661,9 +682,14 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           ),
         ).toEqual({
           errors: [
-            { message: missingManifestFeaturesError.message, severity: 'Error' },
+            {
+              message: missingManifestFeaturesError.message,
+              detailedMessage: missingManifestFeaturesError.message,
+              severity: 'Error',
+            },
             {
               message: 'The following features are required but they are excluded: SUBSCRIPTIONBILLING.',
+              detailedMessage: 'The following features are required but they are excluded: SUBSCRIPTIONBILLING.',
               severity: 'Error',
             },
           ],
@@ -728,7 +754,13 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         ])
         expect(await client.deploy([change], SDF_CREATE_OR_UPDATE_GROUP_ID, ...deployParams, async () => true)).toEqual(
           {
-            errors: [{ message: missingManifestFeaturesError.message, severity: 'Error' }],
+            errors: [
+              {
+                message: missingManifestFeaturesError.message,
+                detailedMessage: missingManifestFeaturesError.message,
+                severity: 'Error',
+              },
+            ],
             appliedChanges: [],
           },
         )
@@ -870,6 +902,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               {
                 elemID: getChangeData(failedChange).elemID,
                 message: objectsDeployError.message,
+                detailedMessage: objectsDeployError.message,
                 severity: 'Error',
               },
             ],
@@ -905,6 +938,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               {
                 elemID: after.elemID,
                 message: featuresDeployError.message,
+                detailedMessage: featuresDeployError.message,
                 severity: 'Error',
               },
             ],
@@ -933,6 +967,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               {
                 elemID: after.elemID,
                 message: featuresDeployError.message,
+                detailedMessage: featuresDeployError.message,
                 severity: 'Error',
               },
             ],
@@ -1046,6 +1081,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           errors: [
             {
               message: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`,
+              detailedMessage: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`,
               severity: 'Error',
             },
           ],
@@ -1062,6 +1098,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           errors: [
             {
               message: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`,
+              detailedMessage: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`,
               severity: 'Error',
             },
           ],
@@ -1078,6 +1115,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           errors: [
             {
               message: `Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`,
+              detailedMessage: `Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`,
               severity: 'Error',
             },
           ],
@@ -1096,7 +1134,14 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([change1])
-        expect(results.errors).toEqual([{ elemID: getChangeData(change2).elemID, message: 'error', severity: 'Error' }])
+        expect(results.errors).toEqual([
+          {
+            elemID: getChangeData(change2).elemID,
+            message: 'error',
+            detailedMessage: 'error',
+            severity: 'Error',
+          },
+        ])
         expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
       })
 
@@ -1112,7 +1157,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
-        expect(results.errors).toEqual([{ elemID: instance2.elemID, message: 'error', severity: 'Error' }])
+        expect(results.errors).toEqual([
+          { elemID: instance2.elemID, message: 'error', detailedMessage: 'error', severity: 'Error' },
+        ])
         expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
       })
 
@@ -1128,7 +1175,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
-        expect(results.errors).toEqual([{ elemID: instance2.elemID, message: 'error', severity: 'Error' }])
+        expect(results.errors).toEqual([
+          { elemID: instance2.elemID, message: 'error', detailedMessage: 'error', severity: 'Error' },
+        ])
       })
 
       it('should use deployConfigChanges for config instances', async () => {
@@ -1168,7 +1217,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
-        expect(results.errors).toEqual([{ elemID: instance2.elemID, message: 'error', severity: 'Error' }])
+        expect(results.errors).toEqual([
+          { elemID: instance2.elemID, message: 'error', detailedMessage: 'error', severity: 'Error' },
+        ])
       })
     })
   })

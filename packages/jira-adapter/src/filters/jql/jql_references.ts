@@ -11,10 +11,11 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
+  isReferenceExpression,
   isTemplateExpression,
   TemplateExpression,
 } from '@salto-io/adapter-api'
-import { setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -137,7 +138,7 @@ const getJqls = (instance: InstanceElement): JqlDetails[] => {
     .filter(({ jql }) => jql !== undefined)
 }
 
-const filter: FilterCreator = ({ config }) => {
+const filter: FilterCreator = ({ config, elementsSource }) => {
   const jqlToTemplateExpression: Record<string, TemplateExpression> = {}
 
   return {
@@ -172,8 +173,10 @@ const filter: FilterCreator = ({ config }) => {
           }
 
           if (ambiguousTokens.size !== 0) {
+            const message = `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`
             return {
-              message: `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`,
+              message,
+              detailedMessage: message,
               severity: 'Warning' as const,
             }
           }
@@ -194,20 +197,22 @@ const filter: FilterCreator = ({ config }) => {
         .forEach(async instance => {
           getJqls(instance)
             .filter((jql): jql is TemplateJqlDetails => isTemplateExpression(jql.jql))
-            .forEach(jql => {
-              const resolvedJql = jql.jql.parts
-                .map(part => {
-                  if (!isResolvedReferenceExpression(part)) {
-                    return part
-                  }
+            .forEach(async jql => {
+              const resolvedJql = (
+                await Promise.all(
+                  jql.jql.parts.map(async part => {
+                    if (!isReferenceExpression(part)) {
+                      return part
+                    }
+                    const refValue = part.value !== undefined ? part.value : await part.getResolvedValue(elementsSource)
+                    if (part.elemID.isTopLevel()) {
+                      return removeCustomFieldPrefix(refValue.value.id)
+                    }
 
-                  if (part.elemID.isTopLevel()) {
-                    return removeCustomFieldPrefix(part.value.value.id)
-                  }
-
-                  return part.value
-                })
-                .join('')
+                    return refValue
+                  }),
+                )
+              ).join('')
 
               jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
 

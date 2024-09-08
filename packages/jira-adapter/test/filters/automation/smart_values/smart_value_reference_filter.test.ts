@@ -30,6 +30,7 @@ describe('smart_value_reference_filter', () => {
   let fieldInstance: InstanceElement
   let automationInstance: InstanceElement
   let emptyAutomationInstance: InstanceElement
+  let complexAutomationInstance: InstanceElement
   let config: JiraConfig
 
   beforeEach(() => {
@@ -66,14 +67,39 @@ describe('smart_value_reference_filter', () => {
         },
       ],
     })
+    complexAutomationInstance = new InstanceElement('complexAutom', automationType, {
+      trigger: {},
+      components: [
+        {
+          component: 'BRANCH',
+          children: [
+            {
+              component: 'CONDITION',
+              value: {
+                first: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+              },
+            },
+          ],
+        },
+        {
+          component: 'ACTION',
+          value: { operations: [{ rawValue: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending' }] },
+        },
+      ],
+    })
 
     emptyAutomationInstance = new InstanceElement('emptyAutom', automationType)
   })
 
   const generateElements = (): (InstanceElement | ObjectType)[] =>
-    [fieldInstance, automationInstance, fieldType, automationType, emptyAutomationInstance].map(element =>
-      element.clone(),
-    )
+    [
+      fieldInstance,
+      automationInstance,
+      fieldType,
+      automationType,
+      emptyAutomationInstance,
+      complexAutomationInstance,
+    ].map(element => element.clone())
 
   describe('on fetch successful', () => {
     let elements: (InstanceElement | ObjectType)[]
@@ -120,6 +146,76 @@ describe('smart_value_reference_filter', () => {
         }),
       )
     })
+
+    describe('nested smart values', () => {
+      beforeEach(async () => {
+        jest.clearAllMocks()
+      })
+      describe('when parseAdditionalAutomationExpressions is false', () => {
+        beforeEach(async () => {
+          filter = filterCreator(
+            getFilterParams({
+              config: { ...config, fetch: { ...config.fetch, parseAdditionalAutomationExpressions: false } },
+            }),
+          ) as FilterType
+          elements = generateElements()
+          await filter.onFetch(elements)
+          const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
+          expect(automationResult).toBeDefined()
+          automation = automationResult as InstanceElement
+        })
+
+        it('should not resolve templates in array', () => {
+          expect(automation.value.components[0].children[0].value.first).toEqual(
+            'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+          )
+          expect(automation.value.components[1].value.operations[0].rawValue).toEqual(
+            'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+          )
+        })
+      })
+
+      describe('when parseAdditionalAutomationExpressions is true', () => {
+        beforeEach(async () => {
+          filter = filterCreator(
+            getFilterParams({
+              config: { ...config, fetch: { ...config.fetch, parseAdditionalAutomationExpressions: true } },
+            }),
+          ) as FilterType
+          elements = generateElements()
+          await filter.onFetch(elements)
+          const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
+          expect(automationResult).toBeDefined()
+          automation = automationResult as InstanceElement
+        })
+        it('should resolve templates in array', () => {
+          expect(automation.value.components[0].children[0].value.first).toEqual(
+            new TemplateExpression({
+              parts: [
+                'Field is: {{issue.',
+                new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                '}} {{issue.',
+                new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                '}} ending',
+              ],
+            }),
+          )
+
+          expect(automation.value.components[1].value.operations[0].rawValue).toEqual(
+            new TemplateExpression({
+              parts: [
+                'Field is: {{issue.',
+                new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                '}} {{issue.',
+                new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                '}} ending',
+              ],
+            }),
+          )
+        })
+      })
+    })
+
     it('should not fail if value is boolean', async () => {
       const automation2 = new InstanceElement('autom2', automationType, {
         trigger: { value: true },

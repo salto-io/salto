@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  AdditionChange,
   ChangeError,
   ChangeValidator,
   getChangeData,
@@ -18,19 +19,31 @@ import {
   isReferenceExpression,
   isRemovalChange,
   ModificationChange,
+  ReadOnlyElementsSource,
+  RemovalChange,
 } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, getParent, getParentElemID } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { JiraConfig } from '../../config/config'
 import { getOrderNameFromOption } from '../../common/fields'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from '../../filters/fields/constants'
+
+const log = logger(module)
 
 const getNotInOrderError = (option: InstanceElement): ChangeError => ({
   elemID: option.elemID,
   severity: 'Error',
   message: "This option is not being referenced by it's corresponding order",
   detailedMessage: `The order instance ${getOrderNameFromOption(option)} should reference all it's options`,
+})
+
+const getOrderNotExistsError = (option: InstanceElement): ChangeError => ({
+  elemID: option.elemID,
+  severity: 'Error',
+  message: "There is no order instance for this option's scope",
+  detailedMessage: "There should be an order instance related to this option's parent",
 })
 
 const getDeletedOptionsFromOrderModificationChange = (change: ModificationChange<InstanceElement>): string[] => {
@@ -73,45 +86,77 @@ const getDeletedOptionsNotInRemovalChanges = (
   return deletedOptionsFromOrder.filter(option => !removedOptions.has(option))
 }
 
-/**
- * Verify that the orders reference all the added options, and that all options removed from orders are removed
- */
-export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidator = config => async changes => {
-  if (!config.fetch.splitFieldContextOptions) {
-    return []
-  }
-  const orderChanges = changes
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
-
-  const orderByParent = _.keyBy(orderChanges.map(getChangeData), instance => getParent(instance).elemID.getFullName())
-
-  const optionChanges = changes
-    .filter(isAdditionOrRemovalChange)
-    .filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME)
-
-  const addedOptionsByParent = _.groupBy(optionChanges.filter(isAdditionChange).map(getChangeData), instance =>
-    getParent(instance).elemID.getFullName(),
+const getChangedAndUnchangedOrdersByParent = async (
+  orderChanges: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[],
+  parentsOfAddedOptions: string[],
+  elementsSource: ReadOnlyElementsSource | undefined,
+): Promise<{
+  changedOrdersByParent: Record<string, InstanceElement>
+  unchangedOrdersByParent: Record<string, InstanceElement>
+}> => {
+  const changedOrdersByParent = _.keyBy(orderChanges.map(getChangeData), instance =>
+    getParentElemID(instance).getFullName(),
   )
 
+  const parentsWithoutChangedOrder = new Set<string>(
+    parentsOfAddedOptions.filter(parent => changedOrdersByParent[parent] === undefined),
+  )
+  if (parentsWithoutChangedOrder.size > 0 && elementsSource === undefined) {
+    log.warn('fieldContextOptions validator not fully ran due to missing elementsSource')
+    return { changedOrdersByParent, unchangedOrdersByParent: {} }
+  }
+  const unchangedOrdersByParent =
+    parentsWithoutChangedOrder.size > 0 && elementsSource !== undefined
+      ? _.keyBy(
+          (await getInstancesFromElementSource(elementsSource, [OPTIONS_ORDER_TYPE_NAME])).filter(order =>
+            parentsWithoutChangedOrder.has(getParentElemID(order).getFullName()),
+          ),
+          instance => getParentElemID(instance).getFullName(),
+        )
+      : {}
+  return { changedOrdersByParent, unchangedOrdersByParent }
+}
+
+const getOptionErrors = async (
+  orderChanges: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[],
+  additionOptionChanges: AdditionChange<InstanceElement>[],
+  elementsSource: ReadOnlyElementsSource | undefined,
+): Promise<ChangeError[]> => {
+  const addedOptionsByParent = _.groupBy(additionOptionChanges.map(getChangeData), instance =>
+    getParentElemID(instance).getFullName(),
+  )
+
+  const { changedOrdersByParent, unchangedOrdersByParent } = await getChangedAndUnchangedOrdersByParent(
+    orderChanges,
+    Object.keys(addedOptionsByParent),
+    elementsSource,
+  )
   // We group the added options by their parent and check they are referenced by the corresponding order
-  const addedOptionsErrors = _.flatMap(addedOptionsByParent, (options, parentFullName) => {
-    const order = orderByParent[parentFullName]
-    if (!Array.isArray(order?.value.options)) {
-      return options.map(getNotInOrderError)
+  return _.flatMap(addedOptionsByParent, (options, parentFullName) => {
+    const changedOrder = changedOrdersByParent[parentFullName]
+    if (changedOrder === undefined) {
+      // If the order is not changed, the new options of this parent cannot be referenced by it and should have errors
+      const unchangedOrder = unchangedOrdersByParent[parentFullName]
+      return unchangedOrder === undefined ? options.map(getOrderNotExistsError) : options.map(getNotInOrderError)
     }
     const orderOptionsSet = new Set<string>(
-      order.value.options.filter(isReferenceExpression).map(option => option.elemID.getFullName()),
+      collections.array
+        .makeArray(changedOrder.value.options)
+        .filter(isReferenceExpression)
+        .map(option => option.elemID.getFullName()),
     )
     return options.filter(option => !orderOptionsSet.has(option.elemID.getFullName())).map(getNotInOrderError)
   })
+}
 
-  const removedOptionsByParent = _.groupBy(optionChanges.filter(isRemovalChange).map(getChangeData), instance =>
-    getParent(instance).elemID.getFullName(),
+const getOrderErrors = (
+  orderChanges: (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)[],
+  removalOptionChanges: RemovalChange<InstanceElement>[],
+): ChangeError[] => {
+  const removedOptionsByParent = _.groupBy(removalOptionChanges.map(getChangeData), instance =>
+    getParentElemID(instance).getFullName(),
   )
-  const orderErrors = orderChanges
+  return orderChanges
     .filter(isModificationChange)
     .map(orderChange => ({
       orderChange,
@@ -121,5 +166,29 @@ export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidat
     .map(({ orderChange, deletedOptionsNotInRemovalChanges }) =>
       getOrderError(orderChange, deletedOptionsNotInRemovalChanges),
     )
-  return [...addedOptionsErrors, ...orderErrors]
 }
+
+/**
+ * Verify that the orders reference all the added options, and that all options deleted from orders are removed.
+ * In addition, verify that there is an order instance for each option's parent.
+ */
+export const fieldContextOptionsValidator: (config: JiraConfig) => ChangeValidator =
+  config => async (changes, elementsSource) => {
+    if (!config.fetch.splitFieldContextOptions) {
+      return []
+    }
+    const orderChanges = changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
+
+    const optionChanges = changes
+      .filter(isAdditionOrRemovalChange)
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME)
+
+    return [
+      ...(await getOptionErrors(orderChanges, optionChanges.filter(isAdditionChange), elementsSource)),
+      ...getOrderErrors(orderChanges, optionChanges.filter(isRemovalChange)),
+    ]
+  }

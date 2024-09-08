@@ -193,10 +193,12 @@ const verifyDeployment = async (
 
     return false
   })
+  const message = 'Failed to deploy change'
   deployResult.errors = [
     ...deployResult.errors,
     ...invalidChanges.map(change => ({
-      message: 'Failed to deploy change',
+      message,
+      detailedMessage: message,
       severity: 'Error' as SeverityLevel,
       elemID: getChangeData(change).elemID,
     })),
@@ -239,10 +241,12 @@ export const deployWithJspEndpoints = async ({
       await verifyDeployment(serviceValues, deployResult, serviceValuesTransformer, fieldsToIgnore)
     } catch (err) {
       log.error(`Failed to query service values: ${err}`)
+      const message = 'Failed to deploy change'
       deployResult.errors = [
         ...deployResult.errors,
         ...deployResult.appliedChanges.map(change => ({
-          message: 'Failed to deploy change',
+          message,
+          detailedMessage: message,
           severity: 'Error' as SeverityLevel,
           elemID: getChangeData(change).elemID,
         })),

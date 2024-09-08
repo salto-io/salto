@@ -23,6 +23,7 @@ describe('errors', () => {
       ).toEqual(
         createSaltoElementError({
           message: 'Error: err',
+          detailedMessage: 'Error: err',
           severity: 'Error',
           elemID: elemId,
         }),
@@ -33,6 +34,7 @@ describe('errors', () => {
       expect(getZendeskError(elemId, new clientUtils.HTTPError('err', { data, status: 400 }))).toEqual(
         createSaltoElementError({
           message: `Error: err${EOL}{${EOL}  "error": "err"${EOL}}`,
+          detailedMessage: `Error: err${EOL}{${EOL}  "error": "err"${EOL}}`,
           severity: 'Error',
           elemID: elemId,
         }),
@@ -48,6 +50,7 @@ describe('errors', () => {
       expect(getZendeskError(elemId, new clientUtils.HTTPError('err', { data, status: 403 }))).toEqual(
         createSaltoElementError({
           message: `${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`,
+          detailedMessage: `${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`,
           severity: 'Error',
           elemID: elemId,
         }),
@@ -64,6 +67,7 @@ describe('errors', () => {
       expect(getZendeskError(elemId, new clientUtils.HTTPError('err', { data, status: 422 }))).toEqual(
         createSaltoElementError({
           message: `${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`,
+          detailedMessage: `${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`,
           severity: 'Error',
           elemID: elemId,
         }),
@@ -74,6 +78,7 @@ describe('errors', () => {
       expect(getZendeskError(elemId, new clientUtils.HTTPError('err', { data, status: 400 }))).toEqual(
         createSaltoElementError({
           message: `${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`,
+          detailedMessage: `${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`,
           severity: 'Error',
           elemID: elemId,
         }),

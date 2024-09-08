@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import fetchDef from './fetch'
-import applyPatchDef from './apply_patch'
+import { adapterFormatGroupDef } from './adapter_format'
 import envGroupDef from './env'
 import { accountGroupDef, serviceGroupDef } from './account'
 import deployDef from './deploy'
@@ -22,7 +22,7 @@ export default [
   accountGroupDef,
   serviceGroupDef, // Deprecated. Maintained for backward compatibility.
   fetchDef,
-  applyPatchDef,
+  adapterFormatGroupDef,
   deployDef,
   restoreDef,
   elementGroupDef,

@@ -58,10 +58,12 @@ export const getWorkspaceId = async (client: JiraClient, config: JiraConfig): Pr
 }
 
 export const getWorkspaceIdMissingErrors = (changes: Change[]): (SaltoError | SaltoElementError)[] =>
-  changes.map(change =>
-    createSaltoElementError({
-      message: `The following changes were not deployed, due to error with the workspaceId: ${changes.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
+  changes.map(change => {
+    const message = `The following changes were not deployed, due to error with the workspaceId: ${changes.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`
+    return createSaltoElementError({
+      message,
+      detailedMessage: message,
       severity: 'Error',
       elemID: getChangeData(change).elemID,
-    }),
-  )
+    })
+  })

@@ -141,6 +141,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
           )
           errors.push({
             message: err.message,
+            detailedMessage: err.message,
             severity: err.severity,
             elemID: getChangeData(change).elemID,
           })
@@ -149,6 +150,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)
         errors.push({
           message: `${err}`,
+          detailedMessage: `${err}`,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
         })

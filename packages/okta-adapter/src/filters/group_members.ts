@@ -96,17 +96,27 @@ const deployGroupMembershipChange = async (
       getChangeData(change).elemID.getFullName(),
       safeJsonStringify(getChangeData(change)),
     )
-    return { error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Failed to get group ID' } }
+    const message = 'Failed to get group ID'
+    return {
+      error: {
+        elemID: getChangeData(change).elemID,
+        severity: 'Error',
+        message,
+        detailedMessage: message,
+      },
+    }
   }
 
   if (isAdditionChange(change)) {
     const instance = getChangeData(change)
     if (!isValidGroupMembershipInstance(instance)) {
+      const message = 'Invalid group membership instance'
       return {
         error: {
           elemID: getChangeData(change).elemID,
           severity: 'Error',
-          message: 'Invalid group membership instance',
+          message,
+          detailedMessage: message,
         },
       }
     }
@@ -123,8 +133,14 @@ const deployGroupMembershipChange = async (
 
   const [before, after] = [change.data.before, change.data.after]
   if (!isValidGroupMembershipInstance(before) || !isValidGroupMembershipInstance(after)) {
+    const message = 'Invalid group membership instance'
     return {
-      error: { elemID: getChangeData(change).elemID, severity: 'Error', message: 'Invalid group membership instance' },
+      error: {
+        elemID: getChangeData(change).elemID,
+        severity: 'Error',
+        message,
+        detailedMessage: message,
+      },
     }
   }
   const [membersBefore, membersAfter] = [before.value.members, after.value.members]
@@ -136,13 +152,25 @@ const deployGroupMembershipChange = async (
     additions.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'add', client })),
   )
   const failedAdditions = additionsResult.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
-  log.error('failed to add the following group assignments: %s', failedAdditions.join(', '))
+  if (failedAdditions.length > 0) {
+    log.error(
+      'failed to add the following group assignments for group %s: %s',
+      getChangeData(change).elemID.getFullName(),
+      failedAdditions.join(', '),
+    )
+  }
 
   const removalResult = await Promise.all(
     removals.map(member => deployGroupAssignment({ groupId: parentGroupId, userId: member, action: 'remove', client })),
   )
   const failedRemovals = removalResult.filter(({ result }) => result === 'failure').map(({ userId }) => userId)
-  log.error('failed to remove the following group assignments: %s', failedRemovals.join(', '))
+  if (failedRemovals.length > 0) {
+    log.error(
+      'failed to remove the following group assignments for group %s: %s',
+      getChangeData(change).elemID.getFullName(),
+      failedRemovals.join(', '),
+    )
+  }
 
   return { appliedChange: await updateChangeWithFailedAssignments(change, failedAdditions, failedRemovals) }
 }
@@ -165,6 +193,8 @@ const groupMembersFilter: FilterCreator = ({ definitions, config }) => ({
     const { includeGroupMemberships } = config[FETCH_CONFIG]
     if (!includeGroupMemberships && relevantChanges.length > 0) {
       log.error('group memberships flag is disabled')
+      const message =
+        'Group membership is disabled. To apply this change, change fetch.includeGroupMemberships flag to “true” in your Okta environment configuration.'
       return {
         leftoverChanges,
         deployResult: {
@@ -172,8 +202,8 @@ const groupMembersFilter: FilterCreator = ({ definitions, config }) => ({
           errors: relevantChanges.map(change => ({
             elemID: getChangeData(change).elemID,
             severity: 'Error',
-            message:
-              'Group membership is disabled. To apply this change, change fetch.includeGroupMemberships flag to “true” in your Okta environment configuration.',
+            message,
+            detailedMessage: message,
           })),
         },
       }

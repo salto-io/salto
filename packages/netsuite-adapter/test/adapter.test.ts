@@ -984,7 +984,9 @@ describe('Adapter', () => {
         ])
         expect(client.deploy).toHaveBeenCalledWith(undefined, DEFAULT_SDF_DEPLOY_PARAMS, testGraph)
         expect(result.errors).toHaveLength(1)
-        expect(result.errors).toEqual([{ message: clientError.message, severity: 'Error' }])
+        expect(result.errors).toEqual([
+          { message: clientError.message, detailedMessage: clientError.message, severity: 'Error' },
+        ])
         expect(result.appliedChanges).toHaveLength(0)
       })
     })
@@ -1278,24 +1280,28 @@ describe('Adapter', () => {
           // general SaltoError
           {
             message: 'General error',
+            detailedMessage: 'General error',
             severity: 'Error',
           },
           // field SaltoElementError
           {
             elemID: customRecordType.fields.custom_field.elemID,
             message: 'Custom Field Error',
+            detailedMessage: 'Custom Field Error',
             severity: 'Error',
           },
           // should be ignored (duplicates the field error)
           {
             elemID: customRecordType.elemID,
             message: 'Custom Field Error',
+            detailedMessage: 'Custom Field Error',
             severity: 'Error',
           },
           // should be transformed to a SaltoError
           {
             elemID: customSegment.elemID,
             message: 'Custom Segment Error',
+            detailedMessage: 'Custom Segment Error',
             severity: 'Error',
           },
         ]
@@ -1313,14 +1319,17 @@ describe('Adapter', () => {
             {
               elemID: customRecordType.fields.custom_field.elemID,
               message: 'Custom Field Error',
+              detailedMessage: 'Custom Field Error',
               severity: 'Error',
             },
             {
               message: 'General error',
+              detailedMessage: 'General error',
               severity: 'Error',
             },
             {
               message: 'Custom Segment Error',
+              detailedMessage: 'Custom Segment Error',
               severity: 'Error',
             },
           ],

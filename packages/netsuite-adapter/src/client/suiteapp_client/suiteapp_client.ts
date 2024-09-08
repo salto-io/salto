@@ -158,7 +158,13 @@ export default class SuiteAppClient {
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
     const timeout = (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000
-    this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter, timeout)
+    this.soapClient = new SoapClient(
+      this.credentials,
+      params.config,
+      this.callsLimiter,
+      params.instanceLimiter,
+      timeout,
+    )
     this.axiosClient = this.createAxiosClient({ timeout })
     this.versionFeatures = undefined
     this.setVersionFeaturesLock = new AsyncLock()

@@ -475,6 +475,8 @@ describe('adapter', () => {
           {
             message:
               'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
+            detailedMessage:
+              'Salto could not access private API when connecting with OAuth. Group Push and Settings types could not be fetched',
             severity: 'Warning',
           },
         ])
@@ -2499,6 +2501,7 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(1)
         expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
+        expect(result.errors[0].detailedMessage).toEqual('Expected BrandTheme to be deleted')
         expect(result.appliedChanges).toHaveLength(0)
         expect(nock.pendingMocks()).toHaveLength(0)
       })

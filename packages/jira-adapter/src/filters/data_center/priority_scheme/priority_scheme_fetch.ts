@@ -80,10 +80,12 @@ const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc })
         log.error(
           `Received a ${e.response.status} error when fetching priority schemes. You need an admin user to fetch them.`,
         )
+        const message = fetchFailedWarnings(PRIORITY_SCHEME_TYPE_NAME)
         return {
           errors: [
             {
-              message: fetchFailedWarnings(PRIORITY_SCHEME_TYPE_NAME),
+              message,
+              detailedMessage: message,
               severity: 'Warning',
             },
           ],

@@ -203,10 +203,14 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
   getUnFoundDeleteName(message, deletionsPackageName) !== undefined
 
-const canceledDeployError = (isCheckOnly: boolean): SaltoError => ({
-  message: `${isCheckOnly ? 'Validation' : 'Deployment'} was canceled.`,
-  severity: 'Error',
-})
+const canceledDeployError = (isCheckOnly: boolean): SaltoError => {
+  const message = `${isCheckOnly ? 'Validation' : 'Deployment'} was canceled.`
+  return {
+    message,
+    detailedMessage: message,
+    severity: 'Error',
+  }
+}
 
 const processDeployResponse = (
   result: SFDeployResult,
@@ -262,6 +266,7 @@ const processDeployResponse = (
     .map(failure => ({
       elemID: getElemIdForDeployError(failure),
       message: failure.problem,
+      detailedMessage: failure.problem,
       severity: 'Error' as SeverityLevel,
     }))
 
@@ -278,6 +283,7 @@ const processDeployResponse = (
     .map(message => ({
       elemID: getElemIdForDeployError(message),
       message: message.problem,
+      detailedMessage: message.problem,
       severity: problemTypeToSeverity(message.problemType),
     }))
 
@@ -291,27 +297,32 @@ const processDeployResponse = (
   const testFailures = makeArray(result.details).flatMap(detail =>
     makeArray((detail.runTestResult as RunTestsResult)?.failures),
   )
-  const testErrors: SaltoError[] = testFailures.map(failure => ({
-    message: util.format(
+  const testErrors: SaltoError[] = testFailures.map(failure => {
+    const message = util.format(
       'Test failed for class %s method %s with error:\n%s\n%s',
       failure.name,
       failure.methodName,
       failure.message,
       failure.stackTrace,
-    ),
-    severity: 'Error' as SeverityLevel,
-  }))
+    )
+    return {
+      message,
+      detailedMessage: message,
+      severity: 'Error' as SeverityLevel,
+    }
+  })
   const codeCoverageWarningErrors = makeArray(result.details)
     .map(detail => detail.runTestResult as RunTestsResult | undefined)
     .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
     .map(codeCoverageWarning => codeCoverageWarning.message)
-    .map(message => ({ message, severity: 'Error' as SeverityLevel }))
+    .map(message => ({ message, detailedMessage: message, severity: 'Error' as SeverityLevel }))
 
   const errors = [...testErrors, ...failedComponentErrors, ...successfulComponentProblems, ...codeCoverageWarningErrors]
 
   if (isDefined(result.errorMessage)) {
     errors.push({
       message: result.errorMessage,
+      detailedMessage: result.errorMessage,
       severity: 'Error' as SeverityLevel,
     })
   }
@@ -321,12 +332,14 @@ const processDeployResponse = (
     // If we deployed with 'rollbackOnError' (the default) and any component in the group fails to deploy, then every
     // component in the group will not deploy. Let's create an explicit error for the components that did not have
     // errors to make it clear that they didn't deploy either.
+    const message =
+      "Element was not deployed because other elements had errors and the 'rollbackOnError' option is enabled (or not set)."
     makeArray(result.details)
       .flatMap(detail => makeArray(detail.componentSuccesses))
       .map(component => ({
         elemID: typeAndNameToElemId[component.componentType]?.[component.fullName],
-        message:
-          "Element was not deployed because other elements had errors and the 'rollbackOnError' option is enabled (or not set).",
+        message,
+        detailedMessage: message,
         severity: 'Warning' as const,
         type: 'dependency',
       }))
@@ -360,9 +373,11 @@ const processDeployResponse = (
 const getChangeError = async (change: Change): Promise<SaltoElementError | undefined> => {
   const changeElem = getChangeData(change)
   if ((await apiName(changeElem)) === undefined) {
+    const message = `Cannot ${change.action} element because it has no api name`
     return {
       elemID: changeElem.elemID,
-      message: `Cannot ${change.action} element because it has no api name`,
+      message,
+      detailedMessage: message,
       severity: 'Error',
     }
   }
@@ -370,17 +385,21 @@ const getChangeError = async (change: Change): Promise<SaltoElementError | undef
     const beforeName = await apiName(change.data.before)
     const afterName = await apiName(change.data.after)
     if (beforeName !== afterName) {
+      const message = `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`
       return {
         elemID: changeElem.elemID,
-        message: `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`,
+        message,
+        detailedMessage: message,
         severity: 'Error',
       }
     }
   }
   if (!isInstanceChange(change) || !(await isMetadataInstanceElement(changeElem))) {
+    const message = 'Cannot deploy because it is not a metadata instance'
     return {
       elemID: changeElem.elemID,
-      message: 'Cannot deploy because it is not a metadata instance',
+      message,
+      detailedMessage: message,
       severity: 'Error',
     }
   }
@@ -547,12 +566,14 @@ export const deployMetadata = async (
   const planHash = hashUtils.toMD5(pkgData)
   if (quickDeployParams !== undefined) {
     if (quickDeployParams.hash !== planHash) {
+      const message =
+        'Quick deploy option is not available because the current deploy plan is different than the validated one'
       return {
         appliedChanges: [],
         errors: [
           {
-            message:
-              'Quick deploy option is not available because the current deploy plan is different than the validated one',
+            message,
+            detailedMessage: message,
             severity: 'Error',
           },
         ],

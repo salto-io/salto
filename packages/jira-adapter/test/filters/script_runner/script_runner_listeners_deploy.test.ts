@@ -238,6 +238,7 @@ describe('script_runner_listeners_deploy', () => {
           {
             severity: 'Error',
             message: 'Error getting other script-listeners information from the service',
+            detailedMessage: 'Error getting other script-listeners information from the service',
             elemID: scriptInstanceAdd.elemID,
           },
         ],
@@ -301,11 +302,13 @@ describe('script_runner_listeners_deploy', () => {
           {
             severity: 'Error',
             message: 'error',
+            detailedMessage: 'error',
             elemID: scriptInstanceAdd.elemID,
           },
           {
             severity: 'Error',
             message: 'error',
+            detailedMessage: 'error',
             elemID: scriptInstanceModify.elemID,
           },
         ],
@@ -327,11 +330,13 @@ describe('script_runner_listeners_deploy', () => {
           {
             severity: 'Error',
             message: '1',
+            detailedMessage: '1',
             elemID: scriptInstanceAdd.elemID,
           },
           {
             severity: 'Error',
             message: '1',
+            detailedMessage: '1',
             elemID: scriptInstanceModify.elemID,
           },
         ],
@@ -359,16 +364,19 @@ describe('script_runner_listeners_deploy', () => {
     expect(res.deployResult.errors[0]).toEqual({
       severity: 'Error',
       message: 'Instance already exists in the service',
+      detailedMessage: 'Instance already exists in the service',
       elemID: scriptInstanceModify.elemID,
     })
     expect(res.deployResult.errors[1]).toEqual({
       severity: 'Error',
       message: 'Instance does not exist in the service',
+      detailedMessage: 'Instance does not exist in the service',
       elemID: scriptInstanceAdd.elemID,
     })
     expect(res.deployResult.errors[2]).toEqual({
       severity: 'Error',
       message: 'Instance does not exist in the service',
+      detailedMessage: 'Instance does not exist in the service',
       elemID: removalInstance.elemID,
     })
   })

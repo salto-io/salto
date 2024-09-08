@@ -64,10 +64,12 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
       const response = await client.get({ url })
       if (!isLabelsGetResponse(response.data)) {
         log.error('Failed to get automation labels, received invalid response')
+        const message = 'Unable to fetch automation labels due to invalid response'
         return {
           errors: [
             {
-              message: 'Unable to fetch automation labels due to invalid response',
+              message,
+              detailedMessage: message,
               severity: 'Warning',
             },
           ],
@@ -89,10 +91,12 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
         log.error(
           `Received a ${e.response.status} error when fetching automation labels. Please make sure you have the "Automation" permission enabled in Jira.`,
         )
+        const message = fetchFailedWarnings(AUTOMATION_LABEL_TYPE)
         return {
           errors: [
             {
-              message: fetchFailedWarnings(AUTOMATION_LABEL_TYPE),
+              message,
+              detailedMessage: message,
               severity: 'Warning',
             },
           ],

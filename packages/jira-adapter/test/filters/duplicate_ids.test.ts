@@ -56,6 +56,8 @@ describe('duplicateIdsFilter', () => {
           {
             message:
               'The following elements had duplicate names in Jira and therefore their internal id was added to their names.\nIt is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.\ndup_1,\ndup_2',
+            detailedMessage:
+              'The following elements had duplicate names in Jira and therefore their internal id was added to their names.\nIt is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.\ndup_1,\ndup_2',
             severity: 'Warning',
           },
         ],
@@ -153,6 +155,11 @@ describe('duplicateIdsFilter', () => {
       errors: [
         {
           message: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
+dup (jira.Status.instance.dup),
+instance alias (jira.Status.instance.dup),
+another instance alias (jira.Status.instance.dup)`,
+          detailedMessage: `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
 If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions
 dup (jira.Status.instance.dup),
 instance alias (jira.Status.instance.dup),

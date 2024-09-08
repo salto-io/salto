@@ -128,12 +128,14 @@ export const transformTransitions = (value: Value, statuses?: Pick<Status, 'id' 
     .filter(([, count]) => count > 1)
     .map(([key]) => invertNaclCase(key).split(TRANSITION_PARTS_SEPARATOR)[0])
 
+  const message = `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
+It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`
   return errorKeyNames.length === 0
     ? []
     : [
         {
-          message: `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
-It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
+          message,
+          detailedMessage: message,
           severity: 'Warning',
         },
       ]

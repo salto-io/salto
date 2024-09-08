@@ -627,7 +627,9 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     } catch (e) {
       const { message } = toError(e)
       return {
-        errors: changes.map(change => toElementError(getChangeData(change).elemID, message)),
+        errors: changes.map(change =>
+          toElementError({ elemID: getChangeData(change).elemID, message, detailedMessage: message }),
+        ),
         appliedChanges: [],
         elemIdToInternalId: {},
       }
@@ -705,7 +707,7 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
     const dependencyErrors = [...changesToSkip].map(id => {
       const elemID = ElemID.fromFullName(id)
       const message = `Cannot deploy this ${elemID.typeName} because its parent folder deploy failed`
-      return toElementError(elemID, message)
+      return toElementError({ elemID, message, detailedMessage: message })
     })
 
     return {

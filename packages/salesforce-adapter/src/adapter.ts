@@ -108,6 +108,7 @@ import generatedDependenciesFilter from './filters/generated_dependencies'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
+import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import { getConfigFromConfigChanges } from './config_change'
 import {
   LocalFilterCreator,
@@ -250,6 +251,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: installedPackageGeneratedDependencies },
   { creator: omitStandardFieldsNonDeployableValuesFilter },
+  // taskAndEventCustomFields should run before customTypeSplit
+  { creator: taskAndEventCustomFields },
   // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
   { creator: customTypeSplit },
   { creator: mergeProfilesWithSourceValuesFilter },
@@ -658,11 +661,13 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     let deployResult: DeployResult
     if (isDataDeployGroup) {
       if (checkOnly) {
+        const message = 'Cannot deploy CustomObject Records as part of check-only deployment'
         return {
           appliedChanges: [],
           errors: [
             {
-              message: 'Cannot deploy CustomObject Records as part of check-only deployment',
+              message,
+              detailedMessage: message,
               severity: 'Error',
             },
           ],

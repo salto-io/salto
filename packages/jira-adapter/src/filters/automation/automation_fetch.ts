@@ -289,10 +289,12 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
         log.error(
           `Received a ${e.response.status} error when fetching automations. Please make sure you have the "Automation" permission enabled in Jira.`,
         )
+        const message = fetchFailedWarnings(AUTOMATION_TYPE)
         return {
           errors: [
             {
-              message: fetchFailedWarnings(AUTOMATION_TYPE),
+              message,
+              detailedMessage: message,
               severity: 'Warning',
             },
           ],

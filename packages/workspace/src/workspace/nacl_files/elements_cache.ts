@@ -26,7 +26,7 @@ import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asyncitera
 import _ from 'lodash'
 import AsyncLock from 'async-lock'
 import { MergeError, MergeResult } from '../../merger'
-import { ElementsSource, mapReadOnlyElementsSource } from '../elements_source'
+import { ElementsSource, createOverrideReadOnlyElementsSource } from '../elements_source'
 import { RemoteMap, RemoteMapEntry, RemoteMapCreator } from '../remote_map'
 
 const { awu } = collections.asynciterable
@@ -61,17 +61,17 @@ export type CacheUpdate = {
 }
 
 export type RecoveryOverrideFunc = (
-  src1RecElements: AsyncIterable<Element>,
-  src2RecElements: AsyncIterable<Element>,
+  src1RecElements: AsyncIterable<ElemID>,
+  src2RecElements: AsyncIterable<ElemID>,
+  src2: ReadOnlyElementsSource,
 ) => Promise<{
-  src1ElementsToMerge: AsyncIterable<Element>
-  src2ElementsToMerge: AsyncIterable<Element>
+  src1ElementsToMerge: AsyncIterable<ElemID>
+  src2ElementsToMerge: AsyncIterable<ElemID>
 }>
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
-  src1Overrides?: Record<string, Element>
-  src2Overrides?: Record<string, Element>
+  src2Overrides?: Record<string, Element | undefined>
   recoveryOverride?: RecoveryOverrideFunc
   src1Prefix: string
   src2Prefix: string
@@ -163,11 +163,11 @@ const createFreshChangeSet = async (
   noErrorMergeIds: [],
 })
 
-export const getContainerTypeChanges = async (changes: Change<Element>[]): Promise<Element[]> =>
-  awu(changes)
-    .map(change => getChangeData(change))
-    .filter(element => isContainerType(element))
-    .toArray()
+const getContainerTypeChangeIDs = (changes: Change<Element>[]): ElemID[] =>
+  changes
+    .map(getChangeData)
+    .filter(isContainerType)
+    .map(elem => elem.elemID)
 
 export interface Flushable {
   flush: () => Promise<boolean | void>
@@ -217,17 +217,9 @@ export const createMergeManager = async (
     noErrorMergeIds: string[]
   }> => {
     const { src1Changes: possibleSrc1Changes, src2Changes: possibleSrc2Changes } = cacheUpdate
-    const src1 = values.isDefined(cacheUpdate.src1Overrides)
-      ? mapReadOnlyElementsSource(
-          sources[cacheUpdate.src1Prefix],
-          async elem => elem && (cacheUpdate.src1Overrides?.[elem.elemID.getFullName()] ?? elem),
-        )
-      : sources[cacheUpdate.src1Prefix]
+    const src1 = sources[cacheUpdate.src1Prefix]
     const src2 = values.isDefined(cacheUpdate.src2Overrides)
-      ? mapReadOnlyElementsSource(
-          sources[cacheUpdate.src2Prefix],
-          async elem => elem && (cacheUpdate.src2Overrides?.[elem.elemID.getFullName()] ?? elem),
-        )
+      ? createOverrideReadOnlyElementsSource(sources[cacheUpdate.src2Prefix], cacheUpdate.src2Overrides)
       : sources[cacheUpdate.src2Prefix]
     const src1Changes =
       possibleSrc1Changes ?? createEmptyChangeSet(await hashes.get(getSourceHashKey(cacheUpdate.src1Prefix)))
@@ -274,18 +266,12 @@ export const createMergeManager = async (
         return { changeIds, potentialDeletedIds }
       }
 
-      const getRecoveryElements = async (
+      const getRecoveryElementIDs = async (
         src: ReadOnlyElementsSource,
-        srcOverrides: Record<string, Element>,
         srcChanges: Change<Element>[],
-      ): Promise<AsyncIterable<Element>> =>
+      ): Promise<AsyncIterable<ElemID>> =>
         src && recoveryOperation === REBUILD_ON_RECOVERY
-          ? awu(await src.getAll())
-              // using the 'in' notation here since undefined for an existing key is different
-              // then an undefined key (overriding a key with undefined value)
-              .map(elem => (elem.elemID.getFullName() in srcOverrides ? srcOverrides[elem.elemID.getFullName()] : elem))
-              .filter(values.isDefined)
-              .concat(await getContainerTypeChanges(srcChanges))
+          ? awu(await src.list()).concat(getContainerTypeChangeIDs(srcChanges))
           : awu([])
 
       const potentialDeletedIds = new Set<string>()
@@ -299,17 +285,29 @@ export const createMergeManager = async (
         return { src1ElementsToMerge, src2ElementsToMerge, potentialDeletedIds }
       }
       log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)
-      const src1Overrides = cacheUpdate.src1Overrides ?? {}
-      const src2Overrides = cacheUpdate.src2Overrides ?? {}
-      const src1ElementsToMerge = await getRecoveryElements(src1, src1Overrides, src1Changes.changes)
-      const src2ElementsToMerge = await getRecoveryElements(src2, src2Overrides, src2Changes.changes)
+      const src1ElementsToMerge = await getRecoveryElementIDs(src1, src1Changes.changes)
+      const src2ElementsToMerge = await getRecoveryElementIDs(src2, src2Changes.changes)
 
       const elementsToMerge = cacheUpdate.recoveryOverride
-        ? await cacheUpdate.recoveryOverride(src1ElementsToMerge, src2ElementsToMerge)
+        ? await cacheUpdate.recoveryOverride(src1ElementsToMerge, src2ElementsToMerge, src2)
         : { src1ElementsToMerge, src2ElementsToMerge }
 
+      const src1AfterElements = _.keyBy(
+        src1Changes.changes.filter(isAdditionOrModificationChange).map(getChangeData),
+        elem => elem.elemID.getFullName(),
+      )
+      const src2AfterElements = _.keyBy(
+        src2Changes.changes.filter(isAdditionOrModificationChange).map(getChangeData),
+        elem => elem.elemID.getFullName(),
+      )
+
       return {
-        ...elementsToMerge,
+        src1ElementsToMerge: awu(elementsToMerge.src1ElementsToMerge).map(
+          elemID => src1AfterElements[elemID.getFullName()] ?? src1.get(elemID),
+        ),
+        src2ElementsToMerge: awu(elementsToMerge.src2ElementsToMerge).map(
+          elemID => src2AfterElements[elemID.getFullName()] ?? src2.get(elemID),
+        ),
         potentialDeletedIds,
       }
     }

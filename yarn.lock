@@ -3897,16 +3897,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/adapter-api@0.4.0, @salto-io/adapter-api@workspace:packages/adapter-api":
+"@salto-io/adapter-api@0.4.1, @salto-io/adapter-api@workspace:packages/adapter-api":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-api@workspace:packages/adapter-api"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
+    "@salto-io/dag": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -3937,7 +3937,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/adapter-components@0.4.0, @salto-io/adapter-components@workspace:packages/adapter-components":
+"@salto-io/adapter-components@0.4.1, @salto-io/adapter-components@workspace:packages/adapter-components":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-components@workspace:packages/adapter-components"
   dependencies:
@@ -3945,13 +3945,13 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -3999,18 +3999,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/adapter-utils@0.4.0, @salto-io/adapter-utils@workspace:packages/adapter-utils":
+"@salto-io/adapter-utils@0.4.1, @salto-io/adapter-utils@workspace:packages/adapter-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/adapter-utils@workspace:packages/adapter-utils"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4049,7 +4049,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/aws-utils@0.4.0, @salto-io/aws-utils@workspace:packages/aws-utils":
+"@salto-io/aws-utils@0.4.1, @salto-io/aws-utils@workspace:packages/aws-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/aws-utils@workspace:packages/aws-utils"
   dependencies:
@@ -4058,8 +4058,8 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/logging": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4093,18 +4093,18 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/core": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/file": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/salesforce-adapter": 0.4.0
-    "@salto-io/test-utils": 0.4.0
-    "@salto-io/workspace": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/core": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/file": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/salesforce-adapter": 0.4.1
+    "@salto-io/test-utils": 0.4.1
+    "@salto-io/workspace": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/express": ^4.17.7
     "@types/inquirer": 7.3.1
@@ -4163,20 +4163,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/confluence-adapter@0.4.0, @salto-io/confluence-adapter@workspace:packages/confluence-adapter":
+"@salto-io/confluence-adapter@0.4.1, @salto-io/confluence-adapter@workspace:packages/confluence-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/confluence-adapter@workspace:packages/confluence-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4208,7 +4208,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/core@0.4.0, @salto-io/core@workspace:packages/core":
+"@salto-io/core@0.4.1, @salto-io/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@salto-io/core@workspace:packages/core"
   dependencies:
@@ -4217,37 +4217,37 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/aws-utils": 0.4.0
-    "@salto-io/confluence-adapter": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/dummy-adapter": 0.4.0
-    "@salto-io/file": 0.4.0
-    "@salto-io/google-workspace-adapter": 0.4.0
-    "@salto-io/intercom-adapter": 0.4.0
-    "@salto-io/jamf-adapter": 0.4.0
-    "@salto-io/jira-adapter": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/microsoft-entra-adapter": 0.4.0
-    "@salto-io/microsoft-security-adapter": 0.4.0
-    "@salto-io/netsuite-adapter": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/aws-utils": 0.4.1
+    "@salto-io/confluence-adapter": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/dummy-adapter": 0.4.1
+    "@salto-io/file": 0.4.1
+    "@salto-io/google-workspace-adapter": 0.4.1
+    "@salto-io/intercom-adapter": 0.4.1
+    "@salto-io/jamf-adapter": 0.4.1
+    "@salto-io/jira-adapter": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/microsoft-entra-adapter": 0.4.1
+    "@salto-io/microsoft-security-adapter": 0.4.1
+    "@salto-io/netsuite-adapter": 0.4.1
     "@salto-io/node-diff3": 3.1.0-salto.1
-    "@salto-io/okta-adapter": 0.4.0
-    "@salto-io/pagerduty-adapter": 0.4.0
-    "@salto-io/parser": 0.4.0
+    "@salto-io/okta-adapter": 0.4.1
+    "@salto-io/pagerduty-adapter": 0.4.1
+    "@salto-io/parser": 0.4.1
     "@salto-io/rocksdb": 5.1.1-salto-18
-    "@salto-io/salesforce-adapter": 0.4.0
-    "@salto-io/sap-adapter": 0.4.0
-    "@salto-io/serviceplaceholder-adapter": 0.4.0
-    "@salto-io/stripe-adapter": 0.4.0
-    "@salto-io/test-utils": 0.4.0
-    "@salto-io/workato-adapter": 0.4.0
-    "@salto-io/workspace": 0.4.0
-    "@salto-io/zendesk-adapter": 0.4.0
-    "@salto-io/zuora-billing-adapter": 0.4.0
+    "@salto-io/salesforce-adapter": 0.4.1
+    "@salto-io/sap-adapter": 0.4.1
+    "@salto-io/serviceplaceholder-adapter": 0.4.1
+    "@salto-io/stripe-adapter": 0.4.1
+    "@salto-io/test-utils": 0.4.1
+    "@salto-io/workato-adapter": 0.4.1
+    "@salto-io/workspace": 0.4.1
+    "@salto-io/zendesk-adapter": 0.4.1
+    "@salto-io/zuora-billing-adapter": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/async-lock": ^1.1.2
     "@types/fs-extra": ^9.0.8
@@ -4308,15 +4308,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/dag@0.4.0, @salto-io/dag@workspace:packages/dag":
+"@salto-io/dag@0.4.1, @salto-io/dag@workspace:packages/dag":
   version: 0.0.0-use.local
   resolution: "@salto-io/dag@workspace:packages/dag"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@typescript-eslint/eslint-plugin": ^7.16.0
@@ -4342,20 +4342,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/dummy-adapter@0.4.0, @salto-io/dummy-adapter@workspace:packages/dummy-adapter":
+"@salto-io/dummy-adapter@0.4.1, @salto-io/dummy-adapter@workspace:packages/dummy-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/dummy-adapter@workspace:packages/dummy-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/workspace": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/workspace": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/seedrandom": ^2.4.28
@@ -4384,16 +4384,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/e2e-credentials-store@0.4.0, @salto-io/e2e-credentials-store@workspace:packages/e2e-credentials-store":
+"@salto-io/e2e-credentials-store@0.4.1, @salto-io/e2e-credentials-store@workspace:packages/e2e-credentials-store":
   version: 0.0.0-use.local
   resolution: "@salto-io/e2e-credentials-store@workspace:packages/e2e-credentials-store"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/persistent-pool": 0.4.0
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/persistent-pool": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/easy-table": ^0.0.32
     "@types/humanize-duration": ^3.18.0
@@ -4427,15 +4427,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/file@0.4.0, @salto-io/file@workspace:packages/file":
+"@salto-io/file@0.4.1, @salto-io/file@workspace:packages/file":
   version: 0.0.0-use.local
   resolution: "@salto-io/file@workspace:packages/file"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/mkdirp": ^0.5.2
@@ -4468,21 +4468,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/google-workspace-adapter@0.4.0, @salto-io/google-workspace-adapter@workspace:packages/google-workspace-adapter":
+"@salto-io/google-workspace-adapter@0.4.1, @salto-io/google-workspace-adapter@workspace:packages/google-workspace-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/google-workspace-adapter@workspace:packages/google-workspace-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
-    "@salto-io/workspace": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
+    "@salto-io/workspace": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4516,19 +4516,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/intercom-adapter@0.4.0, @salto-io/intercom-adapter@workspace:packages/intercom-adapter":
+"@salto-io/intercom-adapter@0.4.1, @salto-io/intercom-adapter@workspace:packages/intercom-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/intercom-adapter@workspace:packages/intercom-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4559,19 +4559,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/jamf-adapter@0.4.0, @salto-io/jamf-adapter@workspace:packages/jamf-adapter":
+"@salto-io/jamf-adapter@0.4.1, @salto-io/jamf-adapter@workspace:packages/jamf-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/jamf-adapter@workspace:packages/jamf-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4604,7 +4604,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/jira-adapter@0.4.0, @salto-io/jira-adapter@workspace:packages/jira-adapter":
+"@salto-io/jira-adapter@0.4.1, @salto-io/jira-adapter@workspace:packages/jira-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/jira-adapter@workspace:packages/jira-adapter"
   dependencies:
@@ -4612,14 +4612,14 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4694,19 +4694,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/lang-server@0.4.0, @salto-io/lang-server@workspace:packages/lang-server":
+"@salto-io/lang-server@0.4.1, @salto-io/lang-server@workspace:packages/lang-server":
   version: 0.0.0-use.local
   resolution: "@salto-io/lang-server@workspace:packages/lang-server"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/test-utils": 0.4.0
-    "@salto-io/workspace": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/test-utils": 0.4.1
+    "@salto-io/workspace": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/node": ^18.9.0
@@ -4734,14 +4734,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/logging@0.4.0, @salto-io/logging@workspace:packages/logging":
+"@salto-io/logging@0.4.1, @salto-io/logging@workspace:packages/logging":
   version: 0.0.0-use.local
   resolution: "@salto-io/logging@workspace:packages/logging"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/lowerdash": 0.4.0
+    "@salto-io/lowerdash": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4779,11 +4779,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/logging@npm:<0.4.0":
-  version: 0.3.61
-  resolution: "@salto-io/logging@npm:0.3.61"
+"@salto-io/logging@npm:latest":
+  version: 0.4.0
+  resolution: "@salto-io/logging@npm:0.4.0"
   dependencies:
-    "@salto-io/lowerdash": 0.3.61
+    "@salto-io/lowerdash": 0.4.0
     chalk: ^2.4.2
     fast-safe-stringify: ^2.0.7
     lodash: ^4.17.21
@@ -4791,18 +4791,18 @@ __metadata:
     pino: ^6.14.0
     uuid: ^10.0.0
     wu: ^2.1.0
-  checksum: 05b43ef4847ac89bd256de7fc1f62b943909ddf777ade589f42fb18be96837484e51db2dd65a13276d5059d17927af8ac1852824ce8fd6d16a051f2c7842bbc7
+  checksum: e3c25edd7b54059b57a870ba50417a73d1941be53f820b59c2f2a319879373f48f509d258f1866fd7049cd4ebca571fa48360a5a92a32d4402a9b73742f6d24b
   languageName: node
   linkType: hard
 
-"@salto-io/lowerdash@0.4.0, @salto-io/lowerdash@workspace:packages/lowerdash":
+"@salto-io/lowerdash@0.4.1, @salto-io/lowerdash@workspace:packages/lowerdash":
   version: 0.0.0-use.local
   resolution: "@salto-io/lowerdash@workspace:packages/lowerdash"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4832,30 +4832,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/lowerdash@npm:0.3.61":
-  version: 0.3.61
-  resolution: "@salto-io/lowerdash@npm:0.3.61"
+"@salto-io/lowerdash@npm:0.4.0":
+  version: 0.4.0
+  resolution: "@salto-io/lowerdash@npm:0.4.0"
   dependencies:
     lodash: ^4.17.21
     stacktrace-parser: ^0.1.9
     wu: ^2.1.0
-  checksum: 68e48363c1aed88eeadacfec4499117a60d4337bca5612c6166e57ea732ba4ff3e1cbd8cbf527718145ef4c9dc806be71564e694d756857af37ad7186dd4f52f
+  checksum: a3a499c91c02620a2d0fe405aa10243c00991c339bec9ceb74c3f85127c73a9f71e9eb6a948772db4f1ec574d8b47394f84776f52aec352035ee1069b1afe0ec
   languageName: node
   linkType: hard
 
-"@salto-io/microsoft-entra-adapter@0.4.0, @salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter":
+"@salto-io/microsoft-entra-adapter@0.4.1, @salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/microsoft-entra-adapter@workspace:packages/microsoft-entra-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4887,19 +4887,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/microsoft-security-adapter@0.4.0, @salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter":
+"@salto-io/microsoft-security-adapter@0.4.1, @salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/microsoft-security-adapter@workspace:packages/microsoft-security-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4932,22 +4932,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/netsuite-adapter@0.4.0, @salto-io/netsuite-adapter@workspace:packages/netsuite-adapter":
+"@salto-io/netsuite-adapter@0.4.1, @salto-io/netsuite-adapter@workspace:packages/netsuite-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/netsuite-adapter@workspace:packages/netsuite-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/file": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/suitecloud-cli": 1.9.0-salto-2
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/file": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/suitecloud-cli": 1.9.0-salto-3
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/async-lock": ^1.1.2
     "@types/he": ^1.1.1
@@ -5009,20 +5009,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/okta-adapter@0.4.0, @salto-io/okta-adapter@workspace:packages/okta-adapter":
+"@salto-io/okta-adapter@0.4.1, @salto-io/okta-adapter@workspace:packages/okta-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/okta-adapter@workspace:packages/okta-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5062,19 +5062,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/pagerduty-adapter@0.4.0, @salto-io/pagerduty-adapter@workspace:packages/pagerduty-adapter":
+"@salto-io/pagerduty-adapter@0.4.1, @salto-io/pagerduty-adapter@workspace:packages/pagerduty-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/pagerduty-adapter@workspace:packages/pagerduty-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5105,19 +5105,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/parser@0.4.0, @salto-io/parser@workspace:packages/parser":
+"@salto-io/parser@0.4.1, @salto-io/parser@workspace:packages/parser":
   version: 0.0.0-use.local
   resolution: "@salto-io/parser@workspace:packages/parser"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5148,7 +5148,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/persistent-pool@0.4.0, @salto-io/persistent-pool@workspace:packages/persistent-pool":
+"@salto-io/persistent-pool@0.4.1, @salto-io/persistent-pool@workspace:packages/persistent-pool":
   version: 0.0.0-use.local
   resolution: "@salto-io/persistent-pool@workspace:packages/persistent-pool"
   dependencies:
@@ -5158,9 +5158,9 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5201,7 +5201,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/salesforce-adapter@0.4.0, @salto-io/salesforce-adapter@workspace:packages/salesforce-adapter":
+"@salto-io/salesforce-adapter@0.4.1, @salto-io/salesforce-adapter@workspace:packages/salesforce-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/salesforce-adapter@workspace:packages/salesforce-adapter"
   dependencies:
@@ -5210,17 +5210,17 @@ __metadata:
     "@eslint/js": ^9.6.0
     "@salesforce/core": ^8.1.1
     "@salesforce/source-deploy-retrieve": ^12.1.4
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/file": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/file": 0.4.1
     "@salto-io/jsforce": ^1.9.4
     "@salto-io/jsforce-types": ^0.1.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
     "@salto-io/salesforce-formula-parser": 0.1.5
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/jszip": ^3.4.0
@@ -5273,19 +5273,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@salto-io/sap-adapter@0.4.0, @salto-io/sap-adapter@workspace:packages/sap-adapter":
+"@salto-io/sap-adapter@0.4.1, @salto-io/sap-adapter@workspace:packages/sap-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/sap-adapter@workspace:packages/sap-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5314,19 +5314,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/serviceplaceholder-adapter@0.4.0, @salto-io/serviceplaceholder-adapter@workspace:packages/serviceplaceholder-adapter":
+"@salto-io/serviceplaceholder-adapter@0.4.1, @salto-io/serviceplaceholder-adapter@workspace:packages/serviceplaceholder-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/serviceplaceholder-adapter@workspace:packages/serviceplaceholder-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5357,18 +5357,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/stripe-adapter@0.4.0, @salto-io/stripe-adapter@workspace:packages/stripe-adapter":
+"@salto-io/stripe-adapter@0.4.1, @salto-io/stripe-adapter@workspace:packages/stripe-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/stripe-adapter@workspace:packages/stripe-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5399,11 +5399,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/suitecloud-cli@npm:1.9.0-salto-2":
-  version: 1.9.0-salto-2
-  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-2"
+"@salto-io/suitecloud-cli@npm:1.9.0-salto-3":
+  version: 1.9.0-salto-3
+  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-3"
   dependencies:
-    "@salto-io/logging": <0.4.0
+    "@salto-io/logging": latest
     chalk: 4.1.2
     cli-spinner: 0.2.10
     commander: 10.0.0
@@ -5411,11 +5411,11 @@ __metadata:
     xml2js: 0.6.2
   bin:
     suitecloud: src/suitecloud.js
-  checksum: 46b4170aa1323361def39c90c8f1a8394d844f73431ad6f9cbb6c603c1026487de2038303767b3eea00efd19bd36a76b67b42bde75f089570c2798d0e7ac4ae5
+  checksum: dcd126a8e26922854e186e4e3a965d92dc8033168d068de1f985dd33e673c3b723d8004a98e3f6c3c31dcf4bc848dd5b4708b2e49931a1ac1489598dffa03262
   languageName: node
   linkType: hard
 
-"@salto-io/test-utils@0.4.0, @salto-io/test-utils@workspace:packages/test-utils":
+"@salto-io/test-utils@0.4.1, @salto-io/test-utils@workspace:packages/test-utils":
   version: 0.0.0-use.local
   resolution: "@salto-io/test-utils@workspace:packages/test-utils"
   dependencies:
@@ -5450,19 +5450,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/workato-adapter@0.4.0, @salto-io/workato-adapter@workspace:packages/workato-adapter":
+"@salto-io/workato-adapter@0.4.1, @salto-io/workato-adapter@workspace:packages/workato-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/workato-adapter@workspace:packages/workato-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5494,20 +5494,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/workspace@0.4.0, @salto-io/workspace@workspace:packages/workspace":
+"@salto-io/workspace@0.4.1, @salto-io/workspace@workspace:packages/workspace":
   version: 0.0.0-use.local
   resolution: "@salto-io/workspace@workspace:packages/workspace"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -5546,7 +5546,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/zendesk-adapter@0.4.0, @salto-io/zendesk-adapter@workspace:packages/zendesk-adapter":
+"@salto-io/zendesk-adapter@0.4.1, @salto-io/zendesk-adapter@workspace:packages/zendesk-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/zendesk-adapter@workspace:packages/zendesk-adapter"
   dependencies:
@@ -5554,17 +5554,17 @@ __metadata:
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
     "@handlebars/parser": ^2.1.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/dag": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/file": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/test-utils": 0.4.0
-    "@salto-io/workspace": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/dag": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/file": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/test-utils": 0.4.1
+    "@salto-io/workspace": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/jszip": ^3.4.0
@@ -5607,20 +5607,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/zuora-billing-adapter@0.4.0, @salto-io/zuora-billing-adapter@workspace:packages/zuora-billing-adapter":
+"@salto-io/zuora-billing-adapter@0.4.1, @salto-io/zuora-billing-adapter@workspace:packages/zuora-billing-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/zuora-billing-adapter@workspace:packages/zuora-billing-adapter"
   dependencies:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/adapter-api": 0.4.0
-    "@salto-io/adapter-components": 0.4.0
-    "@salto-io/adapter-utils": 0.4.0
-    "@salto-io/e2e-credentials-store": 0.4.0
-    "@salto-io/logging": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/test-utils": 0.4.0
+    "@salto-io/adapter-api": 0.4.1
+    "@salto-io/adapter-components": 0.4.1
+    "@salto-io/adapter-utils": 0.4.1
+    "@salto-io/e2e-credentials-store": 0.4.1
+    "@salto-io/logging": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/test-utils": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -18413,12 +18413,12 @@ __metadata:
     "@eslint/compat": ^1.1.0
     "@eslint/eslintrc": ^3.1.0
     "@eslint/js": ^9.6.0
-    "@salto-io/core": 0.4.0
-    "@salto-io/file": 0.4.0
-    "@salto-io/lang-server": 0.4.0
-    "@salto-io/lowerdash": 0.4.0
-    "@salto-io/parser": 0.4.0
-    "@salto-io/workspace": 0.4.0
+    "@salto-io/core": 0.4.1
+    "@salto-io/file": 0.4.1
+    "@salto-io/lang-server": 0.4.1
+    "@salto-io/lowerdash": 0.4.1
+    "@salto-io/parser": 0.4.1
+    "@salto-io/workspace": 0.4.1
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/jest": ^29.5.12
     "@types/vscode": ^1.36

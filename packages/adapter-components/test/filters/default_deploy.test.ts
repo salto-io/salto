@@ -131,6 +131,7 @@ describe('default deploy filter', () => {
         {
           elemID: new ElemID('myAdapter', 'myType', 'instance', 'name'),
           message: 'Error: something bad happened',
+          detailedMessage: 'Error: something bad happened',
           severity: 'Error',
         },
       ])

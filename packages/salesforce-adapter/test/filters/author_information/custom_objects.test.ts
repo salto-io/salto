@@ -159,6 +159,7 @@ describe('custom objects author information test', () => {
       expect(err[0]).toEqual({
         severity: 'Warning',
         message: WARNING_MESSAGE,
+        detailedMessage: WARNING_MESSAGE,
       })
     })
   })

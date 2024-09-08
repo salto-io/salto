@@ -304,7 +304,8 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
 
     const { url, queryParams, headers, responseType, queryParamsSerializer } = params
     const data = isMethodWithData(params) ? params.data : undefined
-    const paramsSerializer = _.omit(queryParamsSerializer, 'omitEmpty')
+    const paramsSerializerObj = _.omit(queryParamsSerializer, 'omitEmpty')
+    const paramsSerializer = _.isEmpty(paramsSerializerObj) ? undefined : paramsSerializerObj
     const filteredQueryParams = queryParamsSerializer?.omitEmpty ? _.omitBy(queryParams, _.isEmpty) : queryParams
 
     try {

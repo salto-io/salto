@@ -33,7 +33,7 @@ const {
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
-  PLATFORM_SCRIPT_SETTINGS_TYPE_NAME,
+  PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
 
   // Field names
   SETTINGS_FIELD_NAME,
@@ -347,7 +347,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       directFetch: true,
       recurseInto: {
         [SETTINGS_FIELD_NAME]: {
-          typeName: PLATFORM_SCRIPT_SETTINGS_TYPE_NAME,
+          typeName: PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
           context: {
             args: {
               id: {
@@ -376,7 +376,8 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
-  [PLATFORM_SCRIPT_SETTINGS_TYPE_NAME]: deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_FETCH_DEFINITION,
+  [PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME]:
+    deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_FETCH_DEFINITION,
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
       resource: {

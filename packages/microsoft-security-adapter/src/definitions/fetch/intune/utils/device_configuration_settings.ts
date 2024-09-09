@@ -15,7 +15,7 @@ import { ADAPTER_NAME, intuneConstants } from '../../../../constants'
 
 const {
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-  PLATFORM_SCRIPT_SETTINGS_TYPE_NAME,
+  PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
   SCRIPT_VALUE_FIELD_NAME,
   SETTING_DEFINITION_ID_FIELD_NAME,
   SETTING_INSTANCE_FIELD_NAME,
@@ -53,10 +53,10 @@ export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async
   if (!settings) {
     return { value }
   }
-  validateArray(settings, PLATFORM_SCRIPT_SETTINGS_TYPE_NAME)
+  validateArray(settings, PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME)
 
   const mappedSettings = settings.map(setting => {
-    validatePlainObject(setting, PLATFORM_SCRIPT_SETTINGS_TYPE_NAME)
+    validatePlainObject(setting, PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME)
     const fileContent = _.get(setting, [
       SETTING_INSTANCE_FIELD_NAME,
       SIMPLE_SETTING_VALUE_FIELD_NAME,

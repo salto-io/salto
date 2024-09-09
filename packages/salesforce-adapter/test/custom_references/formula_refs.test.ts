@@ -83,7 +83,6 @@ describe('formulaRefs', () => {
           ],
         })
 
-
         describe('when there is a valid reference', () => {
           const elements = [referringInstance, referredInstance].map(element => element.clone())
 
@@ -182,13 +181,7 @@ describe('formulaRefs', () => {
             expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
             expect(refs[0].source).toSatisfy(e =>
               e.isEqual(
-                referringInstance.elemID.createNestedID(
-                  'testPoints',
-                  '0',
-                  'parameters',
-                  '0',
-                  'leftValueReference',
-                ),
+                referringInstance.elemID.createNestedID('testPoints', '0', 'parameters', '0', 'leftValueReference'),
               ),
             )
             expect(refs[0].type).toEqual('weak')

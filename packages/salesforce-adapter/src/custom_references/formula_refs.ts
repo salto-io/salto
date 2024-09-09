@@ -5,43 +5,27 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
 import { Element, ElemID, InstanceElement, ReferenceInfo, Value } from '@salto-io/adapter-api'
 import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { values } from '@salto-io/lowerdash'
 import { WeakReferencesHandler } from '../types'
-import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
-import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } from '../filters/formula_utils'
+import { isInstanceOfTypeSync } from '../filters/utils'
+import { referencesFromIdentifiers } from '../filters/formula_utils'
 
 const { isDefined } = values
 
-type ReferenceExtractor = (
-  instance: InstanceElement,
-  potentialReferenceTargets: Map<string, Element>,
-) => ReferenceInfo[]
+type ReferenceExtractor = (instance: InstanceElement) => ReferenceInfo[]
 
 const referenceInfoFromFieldValue = (
   instance: InstanceElement,
   path: ElemID,
   value: Value,
-  potentialReferenceTargets: Map<string, Element>,
 ): ReferenceInfo | undefined => {
   const topLevelParentInstanceElemId = instance.elemID
   const identifierInfo = parseFormulaIdentifier(value, topLevelParentInstanceElemId.typeName)
   const referenceElemIds = referencesFromIdentifiers(identifierInfo)
-  const referencesWithValidity = _.groupBy(referenceElemIds, refElemId =>
-    referenceValidity(refElemId, topLevelParentInstanceElemId, potentialReferenceTargets),
-  )
 
-  logInvalidReferences(topLevelParentInstanceElemId, referencesWithValidity.invalid ?? [], value, [identifierInfo])
-
-  if (referencesWithValidity.valid === undefined) {
-    return undefined
-  }
-
-  const referencesToOtherTypes = referencesWithValidity.valid.filter(
-    ref => ref.typeName !== apiNameSync(instance.getTypeSync()),
-  )
+  const referencesToOtherTypes = referenceElemIds.filter(ref => ref.typeName !== instance.elemID.typeName)
 
   if (referencesToOtherTypes.length === 0) {
     return undefined
@@ -53,10 +37,7 @@ const referenceInfoFromFieldValue = (
   }
 }
 
-const flowCondition: ReferenceExtractor = (
-  instance: InstanceElement,
-  potentialReferenceTargets: Map<string, Element>,
-) =>
+const flowCondition: ReferenceExtractor = (instance: InstanceElement) =>
   instance.value.decisions?.flatMap((flowDecision: Value, decisionIdx: number) =>
     flowDecision.rules?.flatMap((flowRule: Value, ruleIdx: number) =>
       flowRule.conditions?.flatMap((flowCond: Value, conditionIdx: number) =>
@@ -72,16 +53,12 @@ const flowCondition: ReferenceExtractor = (
             'leftValueReference',
           ),
           flowCond.leftValueReference,
-          potentialReferenceTargets,
         ),
       ),
     ),
   ) ?? []
 
-const flowAssignmentItem: ReferenceExtractor = (
-  instance: InstanceElement,
-  potentialReferenceTargets: Map<string, Element>,
-) =>
+const flowAssignmentItem: ReferenceExtractor = (instance: InstanceElement) =>
   // FlowAssignmentItem.assignToReference
   instance.value.assignments?.flatMap((assignment: Value, assignmentIdx: number) =>
     assignment.assignmentItems?.flatMap((assignmentItem: Value, itemIdx: number) =>
@@ -95,15 +72,11 @@ const flowAssignmentItem: ReferenceExtractor = (
           'assignToReference',
         ),
         assignmentItem.assignToReference,
-        potentialReferenceTargets,
       ),
     ),
   ) ?? []
 
-const flowTestCondition: ReferenceExtractor = (
-  instance: InstanceElement,
-  potentialReferenceTargets: Map<string, Element>,
-) =>
+const flowTestCondition: ReferenceExtractor = (instance: InstanceElement) =>
   instance.value.testPoints?.flatMap((testPoint: Value, pointIdx: number) =>
     testPoint.assertions?.flatMap((assertion: Value, assertionIdx: number) =>
       assertion.conditions?.flatMap((condition: Value, conditionIdx: number) =>
@@ -119,16 +92,12 @@ const flowTestCondition: ReferenceExtractor = (
             'leftValueReference',
           ),
           condition.leftValueReference,
-          potentialReferenceTargets,
         ),
       ),
     ),
   ) ?? []
 
-const flowTestParameter: ReferenceExtractor = (
-  instance: InstanceElement,
-  potentialReferenceTargets: Map<string, Element>,
-) =>
+const flowTestParameter: ReferenceExtractor = (instance: InstanceElement) =>
   // FlowTestParameter.leftValueReference
   instance.value.testPoints?.flatMap((testPoint: Value, pointIdx: number) =>
     testPoint.parameters?.flatMap((parameter: Value, parameterIdx: number) =>
@@ -142,7 +111,6 @@ const flowTestParameter: ReferenceExtractor = (
           'leftValueReference',
         ),
         parameter.leftValueReference,
-        potentialReferenceTargets,
       ),
     ),
   ) ?? []
@@ -155,13 +123,9 @@ const referenceExtractors: Record<string, ReadonlyArray<ReferenceExtractor>> = {
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
-  const potentialReferenceTargets = new Map<string, Element>(elements.map(e => [e.elemID.getFullName(), e]))
-
   const fetchedInstances = elements.filter(isInstanceOfTypeSync(...Object.keys(referenceExtractors)))
   return fetchedInstances.flatMap(instance =>
-    referenceExtractors[instance.elemID.typeName].flatMap(refExtractor =>
-      refExtractor(instance, potentialReferenceTargets).filter(isDefined),
-    ),
+    referenceExtractors[instance.elemID.typeName].flatMap(refExtractor => refExtractor(instance).filter(isDefined)),
   )
 }
 

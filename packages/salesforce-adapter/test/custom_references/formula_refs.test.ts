@@ -55,7 +55,7 @@ describe('formulaRefs', () => {
                 ),
               ),
             )
-            expect(refs[0].type).toEqual('weak')
+            expect(refs[0].type).toEqual('strong')
           })
         })
         describe('when the reference is not valid', () => {
@@ -65,8 +65,23 @@ describe('formulaRefs', () => {
             refs = await formulaRefsHandler.findWeakReferences(elements)
           })
 
-          it('should not generate a reference', () => {
-            expect(refs).toBeEmpty()
+          it('should still generate a reference', () => {
+            expect(refs).toHaveLength(1)
+            expect(refs[0].target).toSatisfy(e => e.isEqual(referredInstance.elemID))
+            expect(refs[0].source).toSatisfy(e =>
+              e.isEqual(
+                referringInstance.elemID.createNestedID(
+                  'decisions',
+                  '0',
+                  'rules',
+                  '0',
+                  'conditions',
+                  '0',
+                  'leftValueReference',
+                ),
+              ),
+            )
+            expect(refs[0].type).toEqual('strong')
           })
         })
       })
@@ -104,7 +119,7 @@ describe('formulaRefs', () => {
                 ),
               ),
             )
-            expect(refs[0].type).toEqual('weak')
+            expect(refs[0].type).toEqual('strong')
           })
         })
       })
@@ -153,7 +168,7 @@ describe('formulaRefs', () => {
                 ),
               ),
             )
-            expect(refs[0].type).toEqual('weak')
+            expect(refs[0].type).toEqual('strong')
           })
         })
       })
@@ -184,7 +199,7 @@ describe('formulaRefs', () => {
                 referringInstance.elemID.createNestedID('testPoints', '0', 'parameters', '0', 'leftValueReference'),
               ),
             )
-            expect(refs[0].type).toEqual('weak')
+            expect(refs[0].type).toEqual('strong')
           })
         })
       })

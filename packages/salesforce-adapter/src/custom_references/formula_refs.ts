@@ -20,21 +20,17 @@ const referenceInfoFromFieldValue = (
   instance: InstanceElement,
   path: ElemID,
   value: Value,
-): ReferenceInfo | undefined => {
-  const topLevelParentInstanceElemId = instance.elemID
-  const identifierInfo = parseFormulaIdentifier(value, topLevelParentInstanceElemId.typeName)
+): ReferenceInfo[] => {
+  const identifierInfo = parseFormulaIdentifier(value, instance.elemID.typeName)
   const referenceElemIds = referencesFromIdentifiers(identifierInfo)
 
   const referencesToOtherTypes = referenceElemIds.filter(ref => ref.typeName !== instance.elemID.typeName)
 
-  if (referencesToOtherTypes.length === 0) {
-    return undefined
-  }
-  return {
+  return referencesToOtherTypes.map(ref => ({
     source: path,
-    target: referencesToOtherTypes[0],
+    target: ref,
     type: 'strong',
-  }
+  }))
 }
 
 const flowCondition: ReferenceExtractor = (instance: InstanceElement) =>

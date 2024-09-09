@@ -102,6 +102,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceConfigurationSettingCatalog',
           'IntuneFilter',
           'IntunePlatformScriptLinux',
+          'IntunePlatformScriptWindows',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -537,6 +538,43 @@ describe('Microsoft Security adapter', () => {
               const { assignments } = platformScriptLinux.value
               expect(assignments).toHaveLength(1)
               expect(Object.keys(assignments[0])).toEqual(['source', 'target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+          })
+
+          describe('platform script windows', () => {
+            let platformScriptsWindows: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsWindows = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptWindows')
+            })
+
+            it('should create the correct instances for platform script windows', async () => {
+              expect(platformScriptsWindows).toHaveLength(1)
+
+              const platformScriptWindowsNames = platformScriptsWindows.map(e => e.elemID.name)
+              expect(platformScriptWindowsNames).toEqual(['test_windows_platform_script@s'])
+            })
+
+            it('should include scriptContent field as a static file', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { scriptContent } = platformScriptWindows.value
+              expect(scriptContent).toBeInstanceOf(StaticFile)
+              const content = await scriptContent.getContent()
+              expect(content).toBeInstanceOf(Buffer)
+              expect(content.toString()).toEqual('echo "Hello, World!"')
+              expect((scriptContent as StaticFile).encoding).toEqual('base64')
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { assignments } = platformScriptWindows.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',

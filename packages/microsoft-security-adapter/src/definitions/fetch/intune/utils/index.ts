@@ -8,3 +8,4 @@
 
 export * as application from './application'
 export * as deviceConfigurationSettings from './device_configuration_settings'
+export * as platformScript from './platform_script'

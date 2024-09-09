@@ -208,7 +208,7 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
-const changeValidatorNames = [
+const CHANGE_VALIDATOR_NAMES = [
   'unresolvedReference',
   'brokenReferences',
   'deployTypesNotSupported',
@@ -275,11 +275,11 @@ const changeValidatorNames = [
   'enhancedSearchDeployment',
 ]
 
-export type ChangeValidatorName = (typeof changeValidatorNames)[number]
+export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]
 
 const changeValidatorConfigType = definitions.createChangeValidatorConfigType({
   adapterName: JIRA,
-  changeValidatorNames,
+  changeValidatorNames: CHANGE_VALIDATOR_NAMES,
 })
 
 const jiraDeployConfigType = definitions.createUserDeployConfigType(JIRA, changeValidatorConfigType, {

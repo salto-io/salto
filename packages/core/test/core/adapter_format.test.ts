@@ -389,10 +389,10 @@ describe('updateElementFolder', () => {
     })
 
     const instance = new InstanceElement('instance', type, { f: 'v' })
-    changes = [toChange({ after: instance })]
+    changes = [toChange({ after: instance }), toChange({ after: type })]
     workspace = mockWorkspace({
       name: 'workspace',
-      elements: [],
+      elements: [instance, type],
       accountToServiceName: { [mockAdapterName]: mockAdapterName },
     })
   })

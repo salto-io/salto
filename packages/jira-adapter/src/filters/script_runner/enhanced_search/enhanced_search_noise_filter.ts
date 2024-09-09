@@ -18,7 +18,7 @@ const filter: FilterCreator = () => ({
     elements
       .filter(isInstanceElement)
       .filter(isEnhancedSearchInstance)
-      .filter(instance => instance.value.jql?.includes('issue in (') === true)
+      .filter(instance => instance.value.jql?.includes('issue in ('))
       .forEach(instance => {
         // replace 'issue in (' until the end of the bracket with 'ENHANCED_SEARCH_ISSUE_TERMS'
         // the replace is lazy, so it will fail for things like 'issue in (a, (b,c))'

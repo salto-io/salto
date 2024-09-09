@@ -39,7 +39,7 @@ import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
-import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
+import { PlanItem, addPlanItemAccessors, PlanItemId, ChangeWithDetails, toChangeWithDetails } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
 import {
@@ -51,6 +51,7 @@ import {
   addInstanceToFieldsDependency,
 } from './dependency'
 import { PlanTransformer } from './common'
+import { getCoreFlagBool } from '../flags'
 
 const { awu, iterateTogether } = collections.asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
@@ -391,13 +392,20 @@ export type Plan = GroupDAG<Change> & {
   getItem: (id: PlanItemId) => PlanItem
   changeErrors: ReadonlyArray<ChangeError>
 }
+export type PlanWithAllChanges = Plan & { all: Iterable<ChangeWithDetails> }
 
 const addPlanFunctions = (
   groupGraph: GroupDAG<Change>,
   changeErrors: ReadonlyArray<ChangeError>,
+  diffGraph: DataNodeMap<Change>,
   compareOptions?: CompareOptions,
-): Plan =>
+): PlanWithAllChanges =>
   Object.assign(groupGraph, {
+    all: getCoreFlagBool('RETURN_ALL_CHANGES_IN_PLAN_DISABLED')
+      ? []
+      : wu(diffGraph.keys())
+          .map(diffGraph.getData)
+          .map(change => toChangeWithDetails(change, compareOptions)),
     itemsByEvalOrder(): Iterable<PlanItem> {
       return wu(groupGraph.evaluationOrder())
         .map(group => groupGraph.getData(group))
@@ -447,7 +455,7 @@ export const getPlan = async ({
   customGroupIdFunctions = {},
   topLevelFilters = [],
   compareOptions,
-}: GetPlanParameters): Promise<Plan> => {
+}: GetPlanParameters): Promise<PlanWithAllChanges> => {
   const numBeforeElements = await awu(await before.list()).length()
   const numAfterElements = await awu(await after.list()).length()
   return log.timeDebug(
@@ -474,7 +482,7 @@ export const getPlan = async ({
       // build graph
       const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, changeGroupIdMap, disjointGroups)
       // build plan
-      return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
+      return addPlanFunctions(groupedGraph, filterResult.changeErrors, diffGraph, compareOptions)
     },
     'get plan with %o -> %o elements',
     numBeforeElements,

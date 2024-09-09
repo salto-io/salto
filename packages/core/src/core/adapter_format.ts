@@ -253,7 +253,7 @@ export type UpdateElementFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
 
-export const updateElementFolder = async ({
+export const updateElementFolder = ({
   workspace,
   baseDir,
   changes,

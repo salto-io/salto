@@ -371,6 +371,7 @@ const graphBetaCustomizations: FetchCustomizations = {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/templateId/{templateReference.templateId}/platformName/Linux/policyId/{id}',
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },

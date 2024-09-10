@@ -168,8 +168,8 @@ describe('Microsoft Security adapter', () => {
               expect(filterRefs.every((f: unknown) => f instanceof ReferenceExpression)).toBeTruthy()
               expect(filterRefs.map((f: ReferenceExpression) => f.elemID.getFullName())).toEqual(
                 expect.arrayContaining([
-                  'microsoft_security.IntuneFilter.instance.test_filter_android@s',
-                  'microsoft_security.IntuneFilter.instance.test_filter_IOS@s',
+                  'microsoft_security.IntuneFilter.instance.test_filter_IOS_iOSMobileApplicationManagement@ssu',
+                  'microsoft_security.IntuneFilter.instance.test_filter_android_androidMobileApplicationManagement@ssu',
                 ]),
               )
             })
@@ -484,7 +484,12 @@ describe('Microsoft Security adapter', () => {
               expect(intuneFilters).toHaveLength(2)
 
               const intuneFilterNames = intuneFilters.map(e => e.elemID.name)
-              expect(intuneFilterNames).toEqual(expect.arrayContaining(['test_filter_IOS@s', 'test_filter_android@s']))
+              expect(intuneFilterNames).toEqual(
+                expect.arrayContaining([
+                  'test_filter_android_androidMobileApplicationManagement@ssu',
+                  'test_filter_IOS_iOSMobileApplicationManagement@ssu',
+                ]),
+              )
             })
 
             it("should not include 'payloads' field", async () => {

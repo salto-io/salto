@@ -34,6 +34,7 @@ import {
   areReferencesEqual,
   CompareOptions,
   compareElementIDs,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -429,16 +430,88 @@ export type AdditionalResolveContext = {
   after: ReadonlyArray<Element>
 }
 
-type GetPlanParameters = {
+type GetDiffChangesParameters = {
   before: ReadOnlyElementsSource
   after: ReadOnlyElementsSource
+  topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
+}
+
+const getDiffChanges = async ({
+  before,
+  after,
+  topLevelFilters = [],
+  compareOptions,
+}: GetDiffChangesParameters): Promise<Iterable<Change>> => {
+  const numBeforeElements = await awu(await before.list()).length()
+  const numAfterElements = await awu(await after.list()).length()
+  return log.timeDebug(
+    async () => {
+      const diffGraph = await buildDiffGraph(
+        addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements, compareOptions),
+        resolveNodeElements(before, after),
+      )
+      return wu(diffGraph.keys()).map(key => diffGraph.getData(key))
+    },
+    'get diff changes with %o -> %o elements',
+    numBeforeElements,
+    numAfterElements,
+  )
+}
+
+type GetPlanParameters = {
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
   additionalResolveContext?: ReadonlyArray<Element>
-  topLevelFilters?: IDFilter[]
-  compareOptions?: CompareOptions
+} & GetDiffChangesParameters
+
+type BuildPlanParameters = GetPlanParameters & { diffChanges: Iterable<Change> }
+
+const toGraph = async (changes: Iterable<Change>): Promise<DiffGraph<ChangeDataType>> => {
+  const graph = new DataNodeMap<DiffNode<ChangeDataType>>()
+  await wu(changes).forEach(change => {
+    graph.addNode(
+      changeId(change),
+      [],
+      Object.assign(change, { originalId: getChangeData(change).elemID.getFullName() }),
+    )
+  })
+  return graph
 }
+
+const buildPlan = async ({
+  before,
+  after,
+  changeValidators = {},
+  dependencyChangers = defaultDependencyChangers,
+  customGroupIdFunctions = {},
+  compareOptions,
+  diffChanges,
+}: BuildPlanParameters): Promise<Plan> =>
+  log.timeDebug(async () => {
+    const diffGraphFromChanges = await toGraph(diffChanges)
+    const diffGraph = await addNodeDependencies(dependencyChangers)(diffGraphFromChanges)
+    const filterResult = await filterInvalidChanges(before, after, diffGraph, changeValidators)
+
+    // If the graph was replaced during filtering we need to resolve the graph again to account
+    // for nodes that may have changed during the filter.
+    if (filterResult.replacedGraph) {
+      // Note - using "after" here may be incorrect because filtering could create different
+      // "after" elements
+      await resolveNodeElements(before, after)(filterResult.validDiffGraph)
+    }
+
+    const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(
+      filterResult.validDiffGraph,
+      customGroupIdFunctions,
+    )
+    // build graph
+    const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, changeGroupIdMap, disjointGroups)
+    // build plan
+    return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
+  }, 'buildPlan')
+
 export const getPlan = async ({
   before,
   after,
@@ -448,36 +521,14 @@ export const getPlan = async ({
   topLevelFilters = [],
   compareOptions,
 }: GetPlanParameters): Promise<Plan> => {
-  const numBeforeElements = await awu(await before.list()).length()
-  const numAfterElements = await awu(await after.list()).length()
-  return log.timeDebug(
-    async () => {
-      const diffGraph = await buildDiffGraph(
-        addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements, compareOptions),
-        resolveNodeElements(before, after),
-        addNodeDependencies(dependencyChangers),
-      )
-      const filterResult = await filterInvalidChanges(before, after, diffGraph, changeValidators)
-
-      // If the graph was replaced during filtering we need to resolve the graph again to account
-      // for nodes that may have changed during the filter.
-      if (filterResult.replacedGraph) {
-        // Note - using "after" here may be incorrect because filtering could create different
-        // "after" elements
-        await resolveNodeElements(before, after)(filterResult.validDiffGraph)
-      }
-
-      const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(
-        filterResult.validDiffGraph,
-        customGroupIdFunctions,
-      )
-      // build graph
-      const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, changeGroupIdMap, disjointGroups)
-      // build plan
-      return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
-    },
-    'get plan with %o -> %o elements',
-    numBeforeElements,
-    numAfterElements,
-  )
+  const diffChanges = await getDiffChanges({ before, after, topLevelFilters, compareOptions })
+  return buildPlan({
+    before,
+    after,
+    changeValidators,
+    dependencyChangers,
+    customGroupIdFunctions,
+    compareOptions,
+    diffChanges,
+  })
 }

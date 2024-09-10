@@ -25,7 +25,7 @@ import {
   definitions as definitionsUtils,
   resolveChangeElement,
 } from '@salto-io/adapter-components'
-import { getParent, hasValidParent, logDuration } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getParent, hasValidParent, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import WorkatoClient from './client/client'
@@ -169,15 +169,22 @@ export default class WorkatoAdapter implements AdapterOperations {
       throw new Error('Not implemented')
     }
 
-    // resolving workato references
-    const resolvedChanges = await awu(changeGroup.changes)
+    const instanceChanges = await awu(changeGroup.changes)
+      .filter(isInstanceChange)
+      // resolving workato references
       .map(async change => resolveChangeElement(change, workatoLookUpName, resolveWorkatoValues))
+      // revert nacl case applied during fetch
+      .map(change =>
+        applyFunctionToChangeData(change, instance => {
+          instance.value = fetchUtils.element.recursiveNaclCase(instance.value, true)
+          return instance
+        }),
+      )
       .toArray()
 
     const runner = this.createFiltersRunner()
-    await runner.preDeploy(resolvedChanges)
+    await runner.preDeploy(instanceChanges)
 
-    const instanceChanges = resolvedChanges.filter(isInstanceChange)
     const deployResult = await RLMDeploy(instanceChanges, this.client)
 
     const appliedChangesBeforeRestore: Change[] = [...deployResult.appliedChanges]

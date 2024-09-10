@@ -102,6 +102,7 @@ jest.mock('../src/core/restore', () => ({
 }))
 
 jest.mock('../src/core/diff', () => ({
+  ...jest.requireActual<{}>('../src/core/diff'),
   createDiffChanges: jest.fn(args => {
     const detailedChanges = [
       {

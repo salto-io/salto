@@ -36,15 +36,17 @@ const getGroupAction = (group: Group<Change>): ActionName => {
 const getGroupAccount = (group: Group<Change>): string =>
   getChangeData(wu(group.items.values()).toArray()[0]).elemID.adapter
 
+export const toChangeWithDetails = (change: Change, compareOptions?: CompareOptions): ChangeWithDetails => ({
+  ...change,
+  detailedChanges: () => getDetailedChanges(change, compareOptions),
+})
+
 export const addPlanItemAccessors = (group: Group<Change>, compareOptions?: CompareOptions): PlanItem =>
   Object.assign(group, {
     action: getGroupAction(group),
     account: getGroupAccount(group),
     changes() {
-      return wu(group.items.values()).map(change => ({
-        ...change,
-        detailedChanges: () => getDetailedChanges(change, compareOptions),
-      }))
+      return wu(group.items.values()).map(change => toChangeWithDetails(change, compareOptions))
     },
     detailedChanges() {
       return wu(group.items.values())

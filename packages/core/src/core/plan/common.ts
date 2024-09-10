@@ -5,7 +5,20 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { DiffGraphTransformer } from '@salto-io/dag'
-import { ChangeDataType } from '@salto-io/adapter-api'
+import { DataNodeMap, DiffGraph, DiffGraphTransformer, DiffNode } from '@salto-io/dag'
+import { Change, ChangeDataType, changeId, getChangeData } from '@salto-io/adapter-api'
+import wu from 'wu'
 
 export type PlanTransformer = DiffGraphTransformer<ChangeDataType>
+
+export const buildGraphFromChanges = (changes: Iterable<Change>): DiffGraph<ChangeDataType> => {
+  const graph = new DataNodeMap<DiffNode<ChangeDataType>>()
+  wu(changes).forEach(change => {
+    graph.addNode(
+      changeId(change),
+      [],
+      Object.assign(change, { originalId: getChangeData(change).elemID.getFullName() }),
+    )
+  })
+  return graph
+}

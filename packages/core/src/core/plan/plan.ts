@@ -6,40 +6,18 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import wu from 'wu'
-import _ from 'lodash'
 import {
   Element,
-  isObjectType,
-  isInstanceElement,
-  ChangeDataType,
-  isField,
-  isPrimitiveType,
   ChangeValidator,
   Change,
   ChangeError,
   DependencyChanger,
   ChangeGroupIdFunction,
-  ReadOnlyElementsSource,
   ElemID,
-  isVariable,
-  Value,
-  isReferenceExpression,
-  compareSpecialValues,
-  BuiltinTypesByFullName,
-  isAdditionChange,
-  isModificationChange,
-  isRemovalChange,
-  changeId,
-  isTemplateExpression,
-  areReferencesEqual,
   CompareOptions,
-  compareElementIDs,
-  getChangeData,
 } from '@salto-io/adapter-api'
-import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
+import { GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { expressions } from '@salto-io/workspace'
-import { collections, values } from '@salto-io/lowerdash'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
@@ -51,341 +29,12 @@ import {
   addReferencesDependency,
   addInstanceToFieldsDependency,
 } from './dependency'
-import { PlanTransformer } from './common'
-
-const { awu, iterateTogether } = collections.asynciterable
-type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
-const { resolve } = expressions
+import { buildGraphFromChanges } from './common'
+import { getDiffChanges, GetDiffChangesParameters, resolveNodeElements } from '../diff'
 
 const log = logger(module)
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
-
-/**
- * Check if 2 nodes in the DAG are equals or not
- */
-const compareValuesAndLazyResolveRefs = async (
-  first: Value,
-  second: Value,
-  firstSrc: ReadOnlyElementsSource,
-  secondSrc: ReadOnlyElementsSource,
-  compareOptions?: CompareOptions,
-  firstVisitedReferences = new Set<string>(),
-  secondVisitedReferences = new Set<string>(),
-): Promise<boolean> => {
-  // compareSpecialValues doesn't compare nested references right if they are not recursively
-  // resolved. We are using here lazy resolving so we can't use compareSpecialValues to compare
-  // references
-  if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    // The following call to areReferencesEqual will potentially modify the visited sets.
-    // we want to avoid affecting the visited sets above this recursion level so we have
-    // to make a copy here
-    const firstVisited = new Set(firstVisitedReferences)
-    const secondVisited = new Set(secondVisitedReferences)
-    const referencesCompareResult = areReferencesEqual({
-      first,
-      second,
-      firstSrc,
-      secondSrc,
-      firstVisitedReferences: firstVisited,
-      secondVisitedReferences: secondVisited,
-      compareOptions,
-    })
-    if (referencesCompareResult.returnCode === 'return') {
-      return referencesCompareResult.returnValue
-    }
-    const { firstValue, secondValue } = referencesCompareResult.returnValue
-    return compareValuesAndLazyResolveRefs(
-      await firstValue,
-      await secondValue,
-      firstSrc,
-      secondSrc,
-      compareOptions,
-      firstVisited,
-      secondVisited,
-    )
-  }
-
-  const specialCompareRes = compareSpecialValues(first, second, compareOptions)
-  if (values.isDefined(specialCompareRes)) {
-    return specialCompareRes
-  }
-
-  if (_.isArray(first) && _.isArray(second)) {
-    if (first.length !== second.length) {
-      return false
-    }
-    // The double negation and the double await might seem like this was created using a random
-    // code generator, but its here in order for the method to "fail fast" as some
-    // can stop when the first non equal values are encountered.
-    return !(await awu(first).some(
-      async (value, index) =>
-        !(await compareValuesAndLazyResolveRefs(
-          value,
-          second[index],
-          firstSrc,
-          secondSrc,
-          compareOptions,
-          firstVisitedReferences,
-          secondVisitedReferences,
-        )),
-    ))
-  }
-
-  if (_.isPlainObject(first) && _.isPlainObject(second)) {
-    const firstKeys = Object.keys(first)
-    const secondKeys = Object.keys(second)
-    if (firstKeys.length !== secondKeys.length) {
-      return false
-    }
-    const secondKeysSet = new Set(secondKeys)
-    if (firstKeys.some(k => !secondKeysSet.has(k))) {
-      return false
-    }
-    return !(await awu(firstKeys).some(
-      async key =>
-        !(await compareValuesAndLazyResolveRefs(
-          first[key],
-          second[key],
-          firstSrc,
-          secondSrc,
-          compareOptions,
-          firstVisitedReferences,
-          secondVisitedReferences,
-        )),
-    ))
-  }
-
-  if (isTemplateExpression(first) && isTemplateExpression(second)) {
-    return compareValuesAndLazyResolveRefs(
-      first.parts,
-      second.parts,
-      firstSrc,
-      secondSrc,
-      compareOptions,
-      firstVisitedReferences,
-      secondVisitedReferences,
-    )
-  }
-
-  return _.isEqual(first, second)
-}
-/**
- * Check if 2 nodes in the DAG are equals or not
- */
-const isEqualsNode = async (
-  node1: ChangeDataType | undefined,
-  node2: ChangeDataType | undefined,
-  src1: ReadOnlyElementsSource,
-  src2: ReadOnlyElementsSource,
-  compareOptions?: CompareOptions,
-): Promise<boolean> => {
-  if (!values.isDefined(node1) || !values.isDefined(node2)) {
-    // Theoretically we should return true if both are undefined, but practically
-    // this makes no sense, so we return false,
-    return false
-  }
-
-  if (!node1.elemID.isEqual(node2.elemID)) {
-    log.warn(
-      'attempted to compare the values of two elements with different elemID (%o and %o)',
-      node1.elemID.getFullName(),
-      node2.elemID.getFullName(),
-    )
-    return false
-  }
-
-  if (!node1.isAnnotationsTypesEqual(node2)) {
-    return false
-  }
-  if (!(await compareValuesAndLazyResolveRefs(node1.annotations, node2.annotations, src1, src2, compareOptions))) {
-    return false
-  }
-
-  if (isObjectType(node1) && isObjectType(node2)) {
-    // We don't check fields for object types since they have their own nodes.
-    return node1.isMetaTypeEqual(node2)
-  }
-
-  if (isPrimitiveType(node1) && isPrimitiveType(node2)) {
-    return node1.primitive === node2.primitive
-  }
-  if (isInstanceElement(node1) && isInstanceElement(node2)) {
-    return (
-      node1.refType.elemID.isEqual(node2.refType.elemID) &&
-      compareValuesAndLazyResolveRefs(node1.value, node2.value, src1, src2, compareOptions)
-    )
-  }
-  if (isField(node1) && isField(node2)) {
-    return node1.refType.elemID.isEqual(node2.refType.elemID)
-  }
-  return _.isEqual(node1, node2)
-}
-
-const addDifferentElements =
-  (
-    before: ReadOnlyElementsSource,
-    after: ReadOnlyElementsSource,
-    topLevelFilters: IDFilter[],
-    numElements: number,
-    compareOptions?: CompareOptions,
-  ): PlanTransformer =>
-  graph =>
-    log.timeDebug(
-      async () => {
-        const outputGraph = graph.clone()
-        const sieve = new Set<string>()
-
-        const toChange = (beforeElem?: ChangeDataType, afterElem?: ChangeDataType): DiffNode<ChangeDataType> => {
-          if (beforeElem !== undefined && afterElem !== undefined) {
-            if (!beforeElem.elemID.isEqual(afterElem.elemID)) {
-              throw new Error('Can not compare elements with different Elem Ids')
-            }
-            return {
-              originalId: beforeElem.elemID.getFullName(),
-              action: 'modify',
-              data: { before: beforeElem, after: afterElem },
-            }
-          }
-          if (beforeElem !== undefined) {
-            return {
-              originalId: beforeElem.elemID.getFullName(),
-              action: 'remove',
-              data: { before: beforeElem },
-            }
-          }
-          if (afterElem !== undefined) {
-            return {
-              originalId: afterElem.elemID.getFullName(),
-              action: 'add',
-              data: { after: afterElem },
-            }
-          }
-          throw new Error('either before or after needs to be defined')
-        }
-
-        const addElemToOutputGraph = (beforeElem?: ChangeDataType, afterElem?: ChangeDataType): void => {
-          const change = toChange(beforeElem, afterElem)
-          outputGraph.addNode(changeId(change), [], change)
-        }
-
-        const addNodeIfDifferent = async (beforeNode?: ChangeDataType, afterNode?: ChangeDataType): Promise<void> => {
-          // We can cast to string, at least one of the nodes should be defined.
-          const fullName = beforeNode?.elemID.getFullName() ?? (afterNode?.elemID.getFullName() as string)
-          if (!sieve.has(fullName)) {
-            sieve.add(fullName)
-            if (!(await isEqualsNode(beforeNode, afterNode, before, after, compareOptions))) {
-              addElemToOutputGraph(beforeNode, afterNode)
-            }
-          }
-        }
-
-        const addElementsNodes = async (comparison: BeforeAfter<ChangeDataType>): Promise<void> => {
-          const beforeElement = comparison.before
-          const afterElement = comparison.after
-          if (!isVariable(beforeElement) && !isVariable(afterElement)) {
-            await addNodeIfDifferent(beforeElement, afterElement)
-          }
-          const beforeFields = isObjectType(beforeElement) ? beforeElement.fields : {}
-          const afterFields = isObjectType(afterElement) ? afterElement.fields : {}
-          const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
-          await Promise.all(
-            allFieldNames.map(fieldName =>
-              addNodeIfDifferent(
-                // We check `hasOwnProperty` and don't just do `beforeFields[fieldName]`
-                // because fieldName might be a builtin function name such as
-                // `toString` and in that case `beforeFields[fieldName]` will
-                // unexpectedly return a function
-                Object.prototype.hasOwnProperty.call(beforeFields, fieldName) ? beforeFields[fieldName] : undefined,
-                Object.prototype.hasOwnProperty.call(afterFields, fieldName) ? afterFields[fieldName] : undefined,
-              ),
-            ),
-          )
-        }
-
-        const isSpecialId = (id: ElemID): boolean =>
-          BuiltinTypesByFullName[id.getFullName()] !== undefined || id.getContainerPrefixAndInnerType() !== undefined
-        /**
-         * Ids that represent types or containers need to be handled separately,
-         * because they would not necessary be included in getAll.
-         */
-        const handleSpecialIds = async (
-          elementPair: BeforeAfter<ChangeDataType>,
-        ): Promise<BeforeAfter<ChangeDataType>> => {
-          const id = elementPair.before?.elemID ?? elementPair.after?.elemID
-          if (id !== undefined && isSpecialId(id)) {
-            return {
-              before: elementPair.before ?? (await before.get(id)),
-              after: elementPair.after ?? (await after.get(id)),
-            }
-          }
-          return elementPair
-        }
-        const getFilteredElements = async (source: ReadOnlyElementsSource): Promise<AsyncIterable<ChangeDataType>> =>
-          (topLevelFilters.length === 0
-            ? await source.getAll()
-            : awu(await source.list())
-                .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
-                .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
-
-        const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => compareElementIDs(e1.elemID, e2.elemID)
-
-        await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after), cmp))
-          .map(handleSpecialIds)
-          .forEach(addElementsNodes)
-        return outputGraph
-      },
-      'add nodes to graph with for %d elements',
-      numElements,
-    )
-
-const resolveNodeElements =
-  (before: ReadOnlyElementsSource, after: ReadOnlyElementsSource): PlanTransformer =>
-  graph =>
-    log.timeDebug(
-      async () => {
-        const beforeItemsToResolve: ChangeDataType[] = []
-        const afterItemsToResolve: ChangeDataType[] = []
-        wu(graph.keys()).forEach(id => {
-          const change = graph.getData(id)
-          if (change.action !== 'add') {
-            beforeItemsToResolve.push(change.data.before)
-          }
-          if (change.action !== 'remove') {
-            afterItemsToResolve.push(change.data.after)
-          }
-        })
-
-        const resolvedBefore = _.keyBy(
-          await log.timeDebug(() => resolve(beforeItemsToResolve, before), 'Resolving before items'),
-          e => e.elemID.getFullName(),
-        ) as Record<string, ChangeDataType>
-
-        const resolvedAfter = _.keyBy(
-          await log.timeDebug(() => resolve(afterItemsToResolve, after), 'Resolving after items'),
-          e => e.elemID.getFullName(),
-        ) as Record<string, ChangeDataType>
-
-        wu(graph.keys()).forEach(id => {
-          const change = graph.getData(id)
-          if (isAdditionChange(change)) {
-            change.data.after = resolvedAfter[change.data.after.elemID.getFullName()]
-          }
-          if (isModificationChange(change)) {
-            change.data.after = resolvedAfter[change.data.after.elemID.getFullName()]
-            change.data.before = resolvedBefore[change.data.before.elemID.getFullName()]
-          }
-          if (isRemovalChange(change)) {
-            change.data.before = resolvedBefore[change.data.before.elemID.getFullName()]
-          }
-          graph.setData(id, change)
-        })
-
-        return graph
-      },
-      'resolve node elements for %d nodes',
-      graph.size,
-    )
 
 export type Plan = GroupDAG<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
@@ -411,12 +60,6 @@ const addPlanFunctions = (
     changeErrors,
   })
 
-const buildDiffGraph = (...transforms: ReadonlyArray<PlanTransformer>): Promise<DiffGraph<ChangeDataType>> =>
-  transforms.reduce(
-    async (graph, transform) => transform(await graph),
-    Promise.resolve(new DataNodeMap<DiffNode<ChangeDataType>>()),
-  )
-
 export const defaultDependencyChangers = [
   addAfterRemoveDependency,
   addTypeDependency,
@@ -430,35 +73,6 @@ export type AdditionalResolveContext = {
   after: ReadonlyArray<Element>
 }
 
-type GetDiffChangesParameters = {
-  before: ReadOnlyElementsSource
-  after: ReadOnlyElementsSource
-  topLevelFilters?: IDFilter[]
-  compareOptions?: CompareOptions
-}
-
-const getDiffChanges = async ({
-  before,
-  after,
-  topLevelFilters = [],
-  compareOptions,
-}: GetDiffChangesParameters): Promise<Iterable<Change>> => {
-  const numBeforeElements = await awu(await before.list()).length()
-  const numAfterElements = await awu(await after.list()).length()
-  return log.timeDebug(
-    async () => {
-      const diffGraph = await buildDiffGraph(
-        addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements, compareOptions),
-        resolveNodeElements(before, after),
-      )
-      return wu(diffGraph.keys()).map(key => diffGraph.getData(key))
-    },
-    'get diff changes with %o -> %o elements',
-    numBeforeElements,
-    numAfterElements,
-  )
-}
-
 type GetPlanParameters = {
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
@@ -467,18 +81,6 @@ type GetPlanParameters = {
 } & GetDiffChangesParameters
 
 type BuildPlanParameters = GetPlanParameters & { diffChanges: Iterable<Change> }
-
-const toGraph = async (changes: Iterable<Change>): Promise<DiffGraph<ChangeDataType>> => {
-  const graph = new DataNodeMap<DiffNode<ChangeDataType>>()
-  await wu(changes).forEach(change => {
-    graph.addNode(
-      changeId(change),
-      [],
-      Object.assign(change, { originalId: getChangeData(change).elemID.getFullName() }),
-    )
-  })
-  return graph
-}
 
 const buildPlan = async ({
   before,
@@ -490,7 +92,7 @@ const buildPlan = async ({
   diffChanges,
 }: BuildPlanParameters): Promise<Plan> =>
   log.timeDebug(async () => {
-    const diffGraphFromChanges = await toGraph(diffChanges)
+    const diffGraphFromChanges = buildGraphFromChanges(diffChanges)
     const diffGraph = await addNodeDependencies(dependencyChangers)(diffGraphFromChanges)
     const filterResult = await filterInvalidChanges(before, after, diffGraph, changeValidators)
 

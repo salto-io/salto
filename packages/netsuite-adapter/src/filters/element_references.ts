@@ -251,7 +251,7 @@ const getSuiteScriptReferences = async (
         customRecordFieldsToServiceIds,
       })
     } catch (e) {
-      log.error('Failed extracting references from file %s with error %s', element.value[PATH], e)
+      log.error('Failed extracting references from file %s with error: %o', element.value[PATH], e)
     }
   }
 

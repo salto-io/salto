@@ -60,11 +60,11 @@ export const transformManagedGooglePlayApp: AdjustFunctionSingle = async ({ valu
   }
 }
 
-const ASSIGNMENT_ROOT_FIELD_NAME = 'mobileAppAssignments'
+const ASSIGNMENTS_ROOT_FIELD_NAME = 'mobileAppAssignments'
 /**
  * Creates a request to assign a resource to a group. This request is used for both addition and modification changes.
  */
-export const ASSIGNMENT_REQUEST: DeployableRequestDefinition = {
+export const ASSIGNMENTS_REQUEST: DeployableRequestDefinition = {
   request: {
     endpoint: {
       path: '/deviceAppManagement/mobileApps/{id}/assign',
@@ -74,11 +74,11 @@ export const ASSIGNMENT_REQUEST: DeployableRequestDefinition = {
       rename: [
         {
           from: ASSIGNMENTS_FIELD_NAME,
-          to: ASSIGNMENT_ROOT_FIELD_NAME,
+          to: ASSIGNMENTS_ROOT_FIELD_NAME,
           onConflict: 'skip',
         },
       ],
-      pick: [ASSIGNMENT_ROOT_FIELD_NAME],
+      pick: [ASSIGNMENTS_ROOT_FIELD_NAME],
     },
   },
   // We can't simply use transformToCheck.pick since this request is also used for addition changes,

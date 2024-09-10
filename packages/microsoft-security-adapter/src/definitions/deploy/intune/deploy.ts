@@ -23,7 +23,6 @@ const {
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
-
   // Field names
   SCHEDULED_ACTIONS_FIELD_NAME,
   ASSIGNMENTS_FIELD_NAME,
@@ -101,7 +100,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          applicationDeployUtils.ASSIGNMENT_REQUEST,
+          applicationDeployUtils.ASSIGNMENTS_REQUEST,
         ],
         modify: [
           {
@@ -120,7 +119,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          applicationDeployUtils.ASSIGNMENT_REQUEST,
+          applicationDeployUtils.ASSIGNMENTS_REQUEST,
         ],
         remove: [
           {

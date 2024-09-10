@@ -6,15 +6,24 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import WorkatoClient from './client/client'
-import { FilterContext } from './config'
+import { WorkatoFetchConfig, WorkatoUserConfig } from './user_config'
+import { WorkatoOptions } from './definitions/types'
 
-export const { filtersRunner } = filterUtils
+export const { filterRunner } = filterUtils
+
+export type Filter = filterUtils.Filter<filterUtils.FilterResult>
 
 export type FilterAdditionalParams = {
   fetchQuery: elementUtils.query.ElementQuery
 }
 
-export type Filter = filterUtils.Filter
+export type FilterContext = {
+  fetch: WorkatoFetchConfig
+}
 
-export type FilterCreator = filterUtils.FilterCreator<WorkatoClient, FilterContext>
+export type FilterCreator = filterUtils.AdapterFilterCreator<
+  WorkatoUserConfig,
+  filterUtils.FilterResult,
+  FilterAdditionalParams,
+  WorkatoOptions
+>

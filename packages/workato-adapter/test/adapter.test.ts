@@ -25,7 +25,6 @@ import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType, getDefaultConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
 import {
   CONNECTION_TYPE,
   DEPLOY_USING_RLM_GROUP,
@@ -36,6 +35,7 @@ import {
   WORKATO,
 } from '../src/constants'
 import { RLMDeploy } from '../src/rlm'
+import { DEFAULT_CONFIG, ENABLE_DEPLOY_SUPPORT_FLAG, configType } from '../src/user_config'
 
 type MockReply = {
   url: string
@@ -76,7 +76,10 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
-            config: new InstanceElement('config', configType, getDefaultConfig()),
+            config: new InstanceElement('config', configType, {
+              ...DEFAULT_CONFIG,
+              fetch: { ...DEFAULT_CONFIG.fetch, hideTypes: false },
+            }),
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
@@ -253,9 +256,9 @@ describe('adapter', () => {
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
             config: new InstanceElement('config', configType, {
-              ...getDefaultConfig(),
+              ...DEFAULT_CONFIG,
               fetch: {
-                ...getDefaultConfig().fetch,
+                ...DEFAULT_CONFIG.fetch,
                 include: [{ type: '(?!recipe$).*' }, { type: 'recipe', criteria: { name: 'test.*' } }],
               },
             }),
@@ -297,18 +300,9 @@ describe('adapter', () => {
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
             config: new InstanceElement('config', configType, {
-              [FETCH_CONFIG]: {
+              fetch: {
                 include: [{ type: 'connection' }],
                 exclude: [],
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                types: {
-                  connection: {
-                    request: {
-                      url: '/connections',
-                    },
-                  },
-                },
               },
             }),
             elementsSource: buildElementsSourceFromElements([]),
@@ -338,18 +332,9 @@ describe('adapter', () => {
         const operations = adapter.operations({
           credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
           config: new InstanceElement('config', configType, {
-            [FETCH_CONFIG]: {
+            fetch: {
               include: [{ type: 'connection' }],
               exclude: [],
-            },
-            [API_DEFINITIONS_CONFIG]: {
-              types: {
-                connection: {
-                  request: {
-                    url: '/connections',
-                  },
-                },
-              },
             },
           }),
           elementsSource: buildElementsSourceFromElements([]),
@@ -408,8 +393,8 @@ describe('adapter', () => {
         const adapterOperations = adapter.operations({
           credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
           config: new InstanceElement('config', configType, {
-            [FETCH_CONFIG]: {
-              ...getDefaultConfig()[FETCH_CONFIG],
+            fetch: {
+              ...DEFAULT_CONFIG.fetch,
               serviceConnectionNames: {
                 salesforce: ['sfdev1'],
                 salesforce2: ['dev2 sfdc account'],
@@ -526,7 +511,7 @@ describe('adapter', () => {
 
       operations = adapter.operations({
         credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
-        config: new InstanceElement('config', configType, getDefaultConfig(true)),
+        config: new InstanceElement('config', configType, { ...DEFAULT_CONFIG, [ENABLE_DEPLOY_SUPPORT_FLAG]: true }),
         elementsSource: buildElementsSourceFromElements([]),
       })
       rootFolder = new InstanceElement('rootFolder', folderType, { id: 98 })

@@ -36,7 +36,7 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
 > {
   constructor(clientOpts: clientUtils.ClientOpts<Credentials, definitions.ClientRateLimitConfig>) {
     super(WORKATO, clientOpts, createConnection, {
-      pageSize: DEFAULT_PAGE_SIZE,
+      pageSize: DEFAULT_PAGE_SIZE, // TODOS deprecated ? ask neta
       rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
       maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       delayPerRequestMS: RATE_LIMIT_DEFAULT_OPTIONS.delayMS,

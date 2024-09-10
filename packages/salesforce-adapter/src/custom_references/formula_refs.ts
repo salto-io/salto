@@ -8,19 +8,17 @@
 import { Element, ElemID, InstanceElement, ReferenceInfo, Value } from '@salto-io/adapter-api'
 import { parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { WeakReferencesHandler } from '../types'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { referencesFromIdentifiers } from '../filters/formula_utils'
 
+const log = logger(module)
 const { isDefined } = values
 
 type ReferenceExtractor = (instance: InstanceElement) => ReferenceInfo[]
 
-const referenceInfoFromFieldValue = (
-  instance: InstanceElement,
-  path: ElemID,
-  value: Value,
-): ReferenceInfo[] => {
+const referenceInfoFromFieldValue = (instance: InstanceElement, path: ElemID, value: Value): ReferenceInfo[] => {
   const identifierInfo = parseFormulaIdentifier(value, instance.elemID.typeName)
   const referenceElemIds = referencesFromIdentifiers(identifierInfo)
 
@@ -120,9 +118,14 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
 ): Promise<ReferenceInfo[]> => {
   const fetchedInstances = elements.filter(isInstanceOfTypeSync(...Object.keys(referenceExtractors)))
-  return fetchedInstances.flatMap(instance =>
-    referenceExtractors[instance.elemID.typeName].flatMap(refExtractor => refExtractor(instance).filter(isDefined)),
-  )
+  try {
+    return fetchedInstances.flatMap(instance =>
+      referenceExtractors[instance.elemID.typeName].flatMap(refExtractor => refExtractor(instance).filter(isDefined)),
+    )
+  } catch (error) {
+    log.error('Failed to generate custom references from formula fields: %s', error)
+    return []
+  }
 }
 
 export const formulaRefsHandler: WeakReferencesHandler = {

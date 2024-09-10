@@ -42,6 +42,7 @@ import {
   ConflictingFieldTypesError,
   ConflictingSettingError,
   DuplicateAnnotationTypeError,
+  ConflictingMetaTypeError,
 } from '../merger/internal/object_types'
 import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
@@ -108,6 +109,7 @@ const NameToType = {
   ConflictingFieldTypesError: ConflictingFieldTypesError,
   ConflictingSettingError: ConflictingSettingError,
   DuplicateAnnotationTypeError: DuplicateAnnotationTypeError,
+  ConflictingMetaTypeError: ConflictingMetaTypeError,
   DuplicateVariableNameError: DuplicateVariableNameError,
   MultiplePrimitiveTypesError: MultiplePrimitiveTypesError,
   InvalidValueValidationError: InvalidValueValidationError,
@@ -393,6 +395,10 @@ const generalDeserializeParsed = async <T>(parsed: unknown, staticFileReviver?: 
         new DuplicateAnnotationTypeError({
           elemID: reviveElemID(v.elemID),
           key: v.key,
+        }),
+      ConflictingMetaTypeError: v =>
+        new ConflictingMetaTypeError({
+          elemID: reviveElemID(v.elemID),
         }),
       DuplicateVariableNameError: v => new DuplicateVariableNameError({ elemID: reviveElemID(v.elemID) }),
       MultiplePrimitiveTypesError: v =>

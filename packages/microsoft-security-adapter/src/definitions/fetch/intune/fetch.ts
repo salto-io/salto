@@ -325,6 +325,9 @@ const graphBetaCustomizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        elemID: {
+          parts: [NAME_ID_FIELD, { fieldName: 'platform' }],
+        },
         serviceUrl: {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_DeviceSettings/AssignmentFilterSummaryBlade/assignmentFilterId/{id}/filterType~/0',

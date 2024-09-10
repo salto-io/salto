@@ -86,7 +86,7 @@ export const createStandardItemDeployDefinition = <AdditionalAction extends stri
 /**
  * helper for creating one of the common REST patterns for a type -
  * - create: POST on <path>
- * - update: PUT on <path>/<:id_field>
+ * - update: PUT (default) or PATCH on <path>/<:id_field>
  * - remove: DELETE on <path>/<:id_field>
  * and potentially nest the value under a specified field
  */
@@ -98,7 +98,7 @@ export const createStandardDeployDefinitions = <AdditionalAction extends string,
 /**
  * helper for creating a common REST pattern -
  * - create: POST on <base_path>/<typename>
- * - update: PUT on <base_path>/<typename>/<:id_field>
+ * - update: PUT (default) or PATCH on <base_path>/<typename>/<:id_field>
  * - remove: DELETE on <base_path>/<typename>/<:id_field>
  * with an option to specify nesting under the type field
  */

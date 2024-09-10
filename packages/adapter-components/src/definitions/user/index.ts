@@ -24,6 +24,7 @@ export {
 } from './fetch_config'
 export {
   UserDeployConfig,
+  createChangeValidatorConfigType,
   createUserDeployConfigType,
   validateDefaultMissingUserFallbackConfig,
   DefaultMissingUserFallbackConfig,

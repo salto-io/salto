@@ -6,10 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce'
 import {
+  buildElemIDMetadataQuery,
   buildFilePropsMetadataQuery,
   buildMetadataQuery,
   buildMetadataQueryForFetchWithChangesDetection,
@@ -836,5 +837,89 @@ describe('buildMetadataQuery', () => {
         })
       })
     })
+  })
+  describe('buildElemIDMetadataQuery', () => {
+    let metadataQuery: jest.Mocked<MetadataQuery>
+    let elemIDMetadataQuery: MetadataQuery<ElemID>
+
+    beforeEach(() => {
+      metadataQuery = {
+        isInstanceIncluded: jest.fn(),
+        isInstanceMatch: jest.fn(),
+        isTypeMatch: jest.fn(),
+        isFetchWithChangesDetection: jest.fn(),
+        isPartialFetch: jest.fn(),
+        isTargetedFetch: jest.fn(),
+        getFolderPathsByName: jest.fn(),
+        logData: jest.fn(),
+      }
+      elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+    })
+
+    const testCases = [
+      // Custom Object
+      {
+        elemFullName: 'salesforce.Account',
+        expectedMetadataInstance: {
+          namespace: 'standard',
+          metadataType: 'CustomObject',
+          name: 'Account',
+          changedAt: undefined,
+          isFolderType: false,
+        },
+      },
+      // Custom Object Field
+      {
+        elemFullName: 'salesforce.Account.field.sbaa__AccountField__c',
+        expectedMetadataInstance: {
+          namespace: 'standard',
+          metadataType: 'CustomObject',
+          name: 'Account',
+          changedAt: undefined,
+          isFolderType: false,
+        },
+      },
+      // Instance with standard namespace
+      {
+        elemFullName: 'salesforce.ApexClass.instance.standard__AccessTestingUtil',
+        expectedMetadataInstance: {
+          namespace: 'standard',
+          metadataType: 'ApexClass',
+          name: 'standard__AccessTestingUtil',
+          changedAt: undefined,
+          isFolderType: false,
+        },
+      },
+      // Managed Instances should be queried for their InstalledPackage metadata instance
+      ...[
+        'salesforce.ApexClass.instance.sbaa__AccessTestingUtil',
+        'salesforce.WebLink.instance.sbaa__Approval__c_sbaa__Approve',
+      ].map(elemFullName => ({
+        elemFullName,
+        expectedMetadataInstance: {
+          namespace: 'standard',
+          metadataType: 'InstalledPackage',
+          name: 'sbaa',
+          changedAt: undefined,
+          isFolderType: false,
+        },
+      })),
+    ]
+
+    describe.each(testCases)(
+      'isInstanceMatch & isInstanceIncluded on "$elemFullName"',
+      ({ elemFullName, expectedMetadataInstance }) => {
+        let elemID: ElemID
+        beforeEach(() => {
+          elemID = ElemID.fromFullName(elemFullName)
+        })
+        it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
+          elemIDMetadataQuery.isInstanceMatch(elemID)
+          expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith(expectedMetadataInstance)
+          elemIDMetadataQuery.isInstanceIncluded(elemID)
+          expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith(expectedMetadataInstance)
+        })
+      },
+    )
   })
 })

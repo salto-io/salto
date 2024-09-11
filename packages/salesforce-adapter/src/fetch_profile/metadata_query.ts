@@ -7,16 +7,18 @@
  */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { invertNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  INSTALLED_PACKAGE_METADATA,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
+  SALESFORCE,
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
@@ -34,7 +36,7 @@ import {
   TypeWithNestedInstances,
   TypeWithNestedInstancesPerParent,
 } from '../types'
-import { getChangedAtSingletonInstance } from '../filters/utils'
+import { getChangedAtSingletonInstance, getNamespaceFromString } from '../filters/utils'
 import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
@@ -316,5 +318,35 @@ export const buildFilePropsMetadataQuery = (metadataQuery: MetadataQuery): Metad
     ...metadataQuery,
     isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
     isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
+  }
+}
+
+type TopLevelElemID = Omit<ElemID, 'idType'> & {
+  idType: 'type' | 'instance'
+}
+export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): MetadataQuery<ElemID> => {
+  const getTopLevelElemID = (elemID: ElemID): TopLevelElemID => elemID.createTopLevelParentID().parent as TopLevelElemID
+  const elemIDToMetadataInstance = (id: TopLevelElemID): MetadataInstance => {
+    const fullName = invertNaclCase(id.name)
+    const namespacePrefix = getNamespaceFromString(fullName)
+    if (namespacePrefix && namespacePrefix !== 'standard') {
+      const installedPackageId = getTopLevelElemID(
+        new ElemID(SALESFORCE, INSTALLED_PACKAGE_METADATA, 'instance', namespacePrefix),
+      )
+      return elemIDToMetadataInstance(installedPackageId)
+    }
+    const namespace = namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix
+    return {
+      namespace,
+      metadataType: id.idType === 'instance' ? id.typeName : CUSTOM_OBJECT,
+      name: fullName,
+      changedAt: undefined,
+      isFolderType: false,
+    }
+  }
+  return {
+    ...metadataQuery,
+    isInstanceIncluded: id => metadataQuery.isInstanceIncluded(elemIDToMetadataInstance(getTopLevelElemID(id))),
+    isInstanceMatch: id => metadataQuery.isInstanceMatch(elemIDToMetadataInstance(getTopLevelElemID(id))),
   }
 }

@@ -799,6 +799,7 @@ describe('Profiles And Permission Sets Custom References', () => {
         const elementsSource = buildElementsSourceFromElements([])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
+          config: {},
         })
       })
 
@@ -855,6 +856,7 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
+          config: {},
         })
       })
 
@@ -875,6 +877,7 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
+          config: {},
         })
       })
 

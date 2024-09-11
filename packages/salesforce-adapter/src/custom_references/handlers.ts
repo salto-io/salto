@@ -59,6 +59,6 @@ export const fixElementsFunc = ({
   config: SalesforceConfig
 }): FixElementsFunc =>
   combineElementFixers(
-    _.mapValues(handlers, handler => handler.removeWeakReferences({ elementsSource })),
+    _.mapValues(handlers, handler => handler.removeWeakReferences({ elementsSource, config })),
     fixElementsConfiguration(config),
   )

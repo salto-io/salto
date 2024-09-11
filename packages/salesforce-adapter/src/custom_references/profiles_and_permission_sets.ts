@@ -10,7 +10,7 @@ import _, { Dictionary } from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, InstanceElement, ReferenceInfo, Values } from '@salto-io/adapter-api'
-import { WeakReferencesHandler } from '../types'
+import { MetadataQuery, WeakReferencesHandler } from '../types'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -26,6 +26,7 @@ import {
 } from '../constants'
 import { Types } from '../transformers/transformer'
 import { ENDS_WITH_CUSTOM_SUFFIX_REGEX, extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
+import { buildElemIDMetadataQuery, buildMetadataQuery } from '../fetch_profile/metadata_query'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -239,13 +240,14 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   return refs
 }
 
-const instanceEntriesTargets = (instance: InstanceElement): Dictionary<ElemID> =>
+const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: MetadataQuery<ElemID>): Dictionary<ElemID> =>
   _(
     mapInstanceSections(instance, (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
       [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
       target,
     ]),
   )
+    .filter(([, target]) => metadataQuery?.isInstanceMatch(target) ?? true)
     .fromPairs()
     .value()
 
@@ -253,10 +255,14 @@ const isStandardFieldPermissionsPath = (path: string): boolean =>
   path.startsWith('fieldPermissions') && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
 
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
-  ({ elementsSource }) =>
+  ({ elementsSource, config }) =>
   async elements => {
+    const metadataQuery = buildElemIDMetadataQuery(buildMetadataQuery({ fetchParams: config.fetch ?? {} }))
     const instances = elements.filter(isProfileOrPermissionSetInstance)
-    const entriesTargets: Dictionary<ElemID> = _.merge({}, ...instances.map(instanceEntriesTargets))
+    const entriesTargets: Dictionary<ElemID> = _.merge(
+      {},
+      ...instances.map(instance => instanceEntriesTargets(instance, metadataQuery)),
+    )
     const elementNames = new Set(
       await awu(await elementsSource.getAll())
         .flatMap(extractFlatCustomObjectFields)

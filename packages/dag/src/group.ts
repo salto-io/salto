@@ -217,9 +217,8 @@ const buildAcyclicGroupedGraphImpl = <T>(
         'detected circular dependency in group graph, removing the following nodes: %s',
         causingNodeIds.join(', '),
       )
-      causingNodeIds.forEach(nodeId => source.deleteNode(nodeId))
       return buildAcyclicGroupedGraphImpl(
-        source,
+        source.cloneWithout(new Set(causingNodeIds)),
         groupKey,
         origGroupKey,
         removedCycles.concat([causingNodeIds]),

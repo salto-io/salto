@@ -49,7 +49,7 @@ import {
 import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
-import { findReferencingBrands } from './types/email_domain'
+import { addBrandIdToRequest } from './types/email_domain'
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -585,23 +585,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
                 transformation: {
-                  // TODO: extract to email domain utils file
-                  adjust: async ({ value, context }) => {
-                    validatePlainObject(value, EMAIL_DOMAIN_TYPE_NAME)
-                    const emailDomainElemId = getChangeData(context.change).elemID
-                    const [brand] = (await findReferencingBrands(emailDomainElemId, context.elementSource)) ?? []
-
-                    if (brand === undefined) {
-                      throw new Error(`Brand not found for email domain ${emailDomainElemId.getFullName()}`)
-                    }
-                    // Use the ID directly instead of a reference value to avoid circular references.
-                    return {
-                      value: {
-                        ...value,
-                        brandId: brand.value.id,
-                      },
-                    }
-                  },
+                  adjust: addBrandIdToRequest,
                 },
               },
             },

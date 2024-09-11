@@ -122,6 +122,7 @@ export type OptionalFeatures = {
   improvedDataBrokenReferences?: boolean
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
+  excludeNonRetrievedProfilesRelatedInstances?: boolean
 }
 
 export type ChangeValidatorName =
@@ -820,6 +821,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
+    excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -466,6 +466,25 @@ export const retrieveMetadataInstances = async ({
       typesWithContent,
       fetchProfile.isFeatureEnabled('fixRetrieveFilePaths'),
     )
+    // Exclude Profile related instances we fail to retrieve for envs that manage Profiles to improve performance
+    // in subsequent fetches and avoid broken references in the Profiles.
+    if (
+      metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE) &&
+      fetchProfile.isFeatureEnabled('excludeNonRetrievedProfilesRelatedInstances')
+    ) {
+      const retrievedFileNames = allValues.map(({ file }) => file.fileName)
+      allFileProps
+        .filter(fileProp => isProfileRelatedMetadataType(fileProp.type))
+        .filter(fileProp => !retrievedFileNames.includes(fileProp.fileName))
+        .map(fileProp =>
+          createSkippedListConfigChange({
+            type: fileProp.type,
+            instance: fileProp.fullName,
+            reason: `Excluding non retrievable Profile related instance of type ${fileProp.type} and fullName ${fileProp.fullName}`,
+          }),
+        )
+        .forEach(configChange => configChanges.push(configChange))
+    }
     return allValues.map(({ file, values }) =>
       createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
     )

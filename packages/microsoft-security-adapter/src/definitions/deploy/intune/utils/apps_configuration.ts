@@ -6,10 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import _ from 'lodash'
 import { getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
 import { definitions as definitionUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
 import { DeployableRequestDefinition } from '../../shared/types'
+import { intuneConstants } from '../../../../constants'
+
+const { APPS_FIELD_NAME } = intuneConstants
 
 /**
  * Utilities for deploying application configurations [managed apps].
@@ -44,7 +47,7 @@ export const TARGET_APP_DEPLOY_DEFINITION: DeployableRequestDefinition = {
       method: 'post',
     },
     transformation: {
-      pick: ['apps'],
+      pick: [APPS_FIELD_NAME],
     },
   },
   condition: targetAppsChangeCondition,

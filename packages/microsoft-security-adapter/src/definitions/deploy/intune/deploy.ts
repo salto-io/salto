@@ -16,13 +16,16 @@ import { application as applicationDeployUtils, appsConfiguration } from './util
 import { application, applicationConfiguration } from '../../../utils/intune'
 
 const {
+  // Type names
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
+  // Field names
   SCHEDULED_ACTIONS_FIELD_NAME,
+  ASSIGNMENTS_FIELD_NAME,
 } = intuneConstants
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
@@ -46,6 +49,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceAppManagement/mobileApps',
                 method: 'post',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
             condition: {
               custom:
@@ -61,6 +67,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
                 adjust: adjustWrapper(applicationDeployUtils.transformManagedGooglePlayApp),
               },
             },
@@ -71,6 +78,29 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                   application.isManagedGooglePlayApp(getChangeData(change).value),
             },
           },
+          // The id of the newly created app is not returned in the response of the managedGooglePlayApp endpoint,
+          // so we manually fetch it after the app is created.
+          {
+            request: {
+              endpoint: {
+                path: applicationDeployUtils.GET_MANAGED_STORE_APP_POST_DEPLOY_PATH,
+                method: 'get',
+              },
+            },
+            condition: {
+              custom:
+                () =>
+                ({ change }) =>
+                  application.isManagedGooglePlayApp(getChangeData(change).value),
+            },
+            copyFromResponse: {
+              additional: {
+                root: 'value',
+                pick: ['id'],
+              },
+            },
+          },
+          applicationDeployUtils.ASSIGNMENTS_REQUEST,
         ],
         modify: [
           {
@@ -79,8 +109,17 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceAppManagement/mobileApps/{id}',
                 method: 'patch',
               },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
             },
           },
+          applicationDeployUtils.ASSIGNMENTS_REQUEST,
         ],
         remove: [
           {

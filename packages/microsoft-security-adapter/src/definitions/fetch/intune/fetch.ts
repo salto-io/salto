@@ -28,6 +28,7 @@ const {
 
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+  APPLICATION_ASSIGNMENTS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
@@ -45,11 +46,14 @@ const graphBetaCustomizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/deviceAppManagement/mobileApps',
+          queryArgs: {
+            $expand: 'assignments',
+          },
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           // TODO SALTO-6483: We need to store the largeIcon as a static file, for now we omit it
-          omit: ['largeIcon'],
+          omit: ['largeIcon', 'assignments@odata.context'],
           adjust: odataType.transformOdataTypeField('fetch'),
         },
       },
@@ -71,10 +75,23 @@ const graphBetaCustomizations: FetchCustomizations = {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Apps/SettingsMenu/~/2/appId/{id}',
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
         ...application.APPLICATION_FIELDS_TO_OMIT,
+      },
+    },
+  },
+  [APPLICATION_ASSIGNMENTS_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        id: {
+          omit: true,
+        },
       },
     },
   },

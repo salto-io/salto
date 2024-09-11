@@ -8,3 +8,4 @@
 
 export * as application from './application'
 export * as appsConfiguration from './apps_configuration'
+export * as groupAssignments from './group_assignments'

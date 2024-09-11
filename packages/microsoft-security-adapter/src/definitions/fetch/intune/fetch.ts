@@ -28,7 +28,6 @@ const {
 
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
-  APPLICATION_ASSIGNMENTS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
@@ -36,8 +35,10 @@ const {
   // Field names
   SETTINGS_FIELD_NAME,
 
-  // Urls
+  // Other
   SERVICE_BASE_URL,
+  ASSIGNMENTS_ODATA_CONTEXT,
+  TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS,
 } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -53,7 +54,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           // TODO SALTO-6483: We need to store the largeIcon as a static file, for now we omit it
-          omit: ['largeIcon', 'assignments@odata.context'],
+          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT],
           adjust: odataType.transformOdataTypeField('fetch'),
         },
       },
@@ -83,30 +84,18 @@ const graphBetaCustomizations: FetchCustomizations = {
       },
     },
   },
-  [APPLICATION_ASSIGNMENTS_TYPE_NAME]: {
-    resource: {
-      directFetch: false,
-    },
-    element: {
-      fieldCustomizations: {
-        id: {
-          omit: true,
-        },
-      },
-    },
-  },
   [APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME]: {
     requests: [
       {
         endpoint: {
           path: '/deviceAppManagement/targetedManagedAppConfigurations',
           queryArgs: {
-            $expand: 'apps',
+            $expand: 'apps, assignments',
           },
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context'],
+          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
         },
       },
     ],
@@ -120,6 +109,7 @@ const graphBetaCustomizations: FetchCustomizations = {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune/TargetedAppConfigInstanceBlade/~/fullscreensummary/id/{id}/odataType/undefined',
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -144,10 +134,13 @@ const graphBetaCustomizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/deviceAppManagement/mobileAppConfigurations',
+          queryArgs: {
+            $expand: 'assignments',
+          },
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          omit: ['version'],
+          omit: ['version', ASSIGNMENTS_ODATA_CONTEXT],
           adjust: applicationConfiguration.parseApplicationConfigurationBinaryFields('fetch'),
         },
       },
@@ -159,6 +152,7 @@ const graphBetaCustomizations: FetchCustomizations = {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Apps/AppConfigPolicySettingsMenu/~/2/appConfigPolicyId/{id}',
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -168,10 +162,13 @@ const graphBetaCustomizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/deviceManagement/deviceConfigurations',
+          queryArgs: {
+            $expand: 'assignments',
+          },
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          omit: ['version', 'supportsScopeTags'],
+          omit: ['version', 'supportsScopeTags', ASSIGNMENTS_ODATA_CONTEXT],
         },
       },
     ],
@@ -185,6 +182,7 @@ const graphBetaCustomizations: FetchCustomizations = {
           baseUrl: SERVICE_BASE_URL,
           path: `/#view/Microsoft_Intune_DeviceSettings/PolicySummaryReportBlade/policyId/{id}/policyName/${NAME_ID_FIELD.fieldName}/policyJourneyState~/0/policyType~/90/isAssigned~/{isAssigned}`,
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -194,10 +192,13 @@ const graphBetaCustomizations: FetchCustomizations = {
       {
         endpoint: {
           path: '/deviceManagement/configurationPolicies',
+          queryArgs: {
+            $expand: 'assignments',
+          },
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          omit: ['settingCount'],
+          omit: ['settingCount', ASSIGNMENTS_ODATA_CONTEXT],
         },
       },
     ],
@@ -226,6 +227,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         elemID: {
           parts: [{ fieldName: 'name' }],
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -253,12 +255,12 @@ const graphBetaCustomizations: FetchCustomizations = {
         endpoint: {
           path: '/deviceManagement/deviceCompliancePolicies',
           queryArgs: {
-            $expand: 'scheduledActionsForRule($expand=scheduledActionConfigurations)',
+            $expand: 'scheduledActionsForRule($expand=scheduledActionConfigurations), assignments',
           },
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          omit: ['version', 'scheduledActionsForRule@odata.context'],
+          omit: ['version', 'scheduledActionsForRule@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
         },
       },
     ],
@@ -272,6 +274,7 @@ const graphBetaCustomizations: FetchCustomizations = {
           baseUrl: SERVICE_BASE_URL,
           path: `/#view/Microsoft_Intune_DeviceSettings/CompliancePolicyOverview.ReactView/policyId/{id}/policyName/{${NAME_ID_FIELD.fieldName}}/platform~/0/policyType~/0`,
         },
+        allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -303,6 +306,23 @@ const graphBetaCustomizations: FetchCustomizations = {
       },
     },
   },
+  ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
+    [typeName]: {
+      resource: {
+        directFetch: false,
+      },
+      element: {
+        fieldCustomizations: {
+          id: {
+            omit: true,
+          },
+          sourceId: {
+            omit: true,
+          },
+        },
+      },
+    },
+  })).reduce((acc, curr) => ({ ...acc, ...curr }), {}),
 }
 
 export const createIntuneCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> =>

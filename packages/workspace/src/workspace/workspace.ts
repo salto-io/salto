@@ -1096,7 +1096,6 @@ export const loadWorkspace = async (
 
     return {
       ...saltoElemErr,
-      message: saltoElemErr.message,
       sourceLocations,
     }
   }

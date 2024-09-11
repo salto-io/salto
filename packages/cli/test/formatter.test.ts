@@ -58,10 +58,12 @@ describe('formatter', () => {
       },
     ],
     message: 'This is my error',
+    detailedMessage: 'This is my error detailed message',
     severity: 'Error',
   }
   const workspaceErrorWithoutSourceFragments: wsErrors.WorkspaceError<SaltoError> = {
     message: 'This is my error',
+    detailedMessage: 'This is my error detailed message',
     sourceLocations: [],
     severity: 'Error',
   }
@@ -87,24 +89,28 @@ describe('formatter', () => {
     {
       elemID: new ElemID('salesforce', 'TestType1'),
       message: 'my error message 1',
+      detailedMessage: 'my error detailed message 1',
       severity: 'Error',
       groupId: 'test group',
     },
     {
       elemID: new ElemID('salesforce', 'TestType2'),
       message: 'my error message 2',
+      detailedMessage: 'my error detailed message 2',
       severity: 'Error',
       groupId: 'test group',
     },
     {
       elemID: new ElemID('salesforce', 'TestType3'),
       message: 'my warning message',
+      detailedMessage: 'my warning detailed message',
       severity: 'Warning',
       groupId: 'test group',
     },
     {
       elemID: new ElemID('salesforce', 'TestType4'),
       message: 'my info message',
+      detailedMessage: 'my info detailed message',
       severity: 'Info',
       groupId: 'test group',
     },
@@ -596,10 +602,10 @@ describe('formatter', () => {
       formattedErrors = deployErrorsOutput(workspaceDeployProblems)
     })
     it('should have both error messages', () => {
-      expect(formattedErrors).toContain('my error message 1')
-      expect(formattedErrors).toContain('my error message 2')
-      expect(formattedErrors).toContain('my warning message')
-      expect(formattedErrors).toContain('my info message')
+      expect(formattedErrors).toContain('my error detailed message 1')
+      expect(formattedErrors).toContain('my error detailed message 2')
+      expect(formattedErrors).toContain('my warning detailed message')
+      expect(formattedErrors).toContain('my info detailed message')
     })
     it('should contain element ID for salto element errors', () => {
       expect(formattedErrors).toContain('salesforce.TestType1')

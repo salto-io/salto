@@ -62,6 +62,7 @@ describe('client validation', () => {
       {
         elemID: getChangeData(changes[0]).elemID,
         message: 'Some Error',
+        detailedMessage: 'Some detailed Error',
         severity: 'Error',
       },
     ])
@@ -75,7 +76,7 @@ describe('client validation', () => {
       {
         elemID: getChangeData(changes[0]).elemID,
         message: 'SDF validation error',
-        detailedMessage: 'Some Error',
+        detailedMessage: 'Some detailed Error',
         severity: 'Error',
       },
     ])
@@ -84,6 +85,7 @@ describe('client validation', () => {
     mockValidate.mockResolvedValue([
       {
         message: 'Some Error',
+        detailedMessage: 'Some detailed Error',
         severity: 'Error',
       },
     ])
@@ -99,7 +101,7 @@ describe('client validation', () => {
         changes.map(change => ({
           elemID: getChangeData(change).elemID,
           message: 'SDF validation error',
-          detailedMessage: 'Some Error',
+          detailedMessage: 'Some detailed Error',
           severity: 'Error',
         })),
       ),
@@ -126,16 +128,19 @@ describe('client validation', () => {
       {
         elemID: getChangeData(changes[0]).elemID,
         message: 'Details: The manifest contains a dependency on customlist1',
+        detailedMessage: 'detailed Details: The manifest contains a dependency on customlist1',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[0]).elemID,
         message: 'Details: The manifest contains a dependency on customworkflow2.workflowstate1',
+        detailedMessage: 'detailed Details: The manifest contains a dependency on customworkflow2.workflowstate1',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[1]).elemID,
         message: "D.tails: Le manifeste comporte une d.pendance sur l'objet customlist1",
+        detailedMessage: "detailed D.tails: Le manifeste comporte une d.pendance sur l'objet customlist1",
         severity: 'Error',
       },
     ])
@@ -173,18 +178,24 @@ describe('client validation', () => {
         elemID: getChangeData(changes[0]).elemID,
         message:
           'Details: To install this SuiteCloud project, the ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)) feature must be enabled in the account.',
+        detailedMessage:
+          'detailed Details: To install this SuiteCloud project, the ADVANCEDREVENUERECOGNITION(Advanced Revenue Management (Essentials)) feature must be enabled in the account.',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[0]).elemID,
         message:
           'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        detailedMessage:
+          'detailed Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[1]).elemID,
         message:
           'Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
+        detailedMessage:
+          'detailed Details: To install this SuiteCloud project, the MULTIBOOK(Adjustment Only Books) feature must be enabled in the account.',
         severity: 'Error',
       },
     ])
@@ -256,15 +267,18 @@ describe('client validation', () => {
         {
           elemID: getChangeData(fileChange).elemID,
           message: 'File Error',
+          detailedMessage: 'detailed File Error',
           severity: 'Error',
         },
         {
           elemID: getChangeData(changes[0]).elemID,
           message: 'SDF Change Error',
+          detailedMessage: 'detailed SDF Change Error',
           severity: 'Error',
         },
         {
           message: 'General Error',
+          detailedMessage: 'detailed General Error',
           severity: 'Error',
         },
       ])
@@ -282,13 +296,13 @@ describe('client validation', () => {
             .map(change => ({
               elemID: getChangeData(change).elemID,
               message: 'SDF validation error',
-              detailedMessage: 'General Error',
+              detailedMessage: 'detailed General Error',
               severity: 'Error',
             }))
             .concat({
               elemID: getChangeData(changes[0]).elemID,
               message: 'SDF validation error',
-              detailedMessage: 'SDF Change Error',
+              detailedMessage: 'detailed SDF Change Error',
               severity: 'Error',
             }),
         ),

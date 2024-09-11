@@ -68,7 +68,9 @@ describe('fetch command', () => {
     describe('with errored workspace', () => {
       beforeEach(async () => {
         const workspace = mocks.mockWorkspace({})
-        workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+        workspace.errors.mockResolvedValue(
+          mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some detailed error' }]),
+        )
         result = await action({
           ...cliCommandArgs,
           input: {
@@ -572,7 +574,11 @@ describe('fetch command', () => {
               const workspace = mocks.mockWorkspace({})
               workspace.updateNaclFiles.mockImplementation(async () => {
                 // Make the workspace errored after updateNaclFiles is called
-                workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'BLA Error' }]))
+                workspace.errors.mockResolvedValue(
+                  mocks.mockErrors([
+                    { severity: 'Error', message: 'BLA Error', detailedMessage: 'detailed BLA Error' },
+                  ]),
+                )
                 return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
               })
 
@@ -600,7 +606,11 @@ describe('fetch command', () => {
               const workspace = mocks.mockWorkspace({})
               workspace.updateNaclFiles.mockImplementation(async () => {
                 // Make the workspace errored after updateNaclFiles is called
-                workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Warning', message: 'BLA Error' }]))
+                workspace.errors.mockResolvedValue(
+                  mocks.mockErrors([
+                    { severity: 'Warning', message: 'BLA Error', detailedMessage: 'detailed BLA Error' },
+                  ]),
+                )
                 return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
               })
 
@@ -636,6 +646,7 @@ describe('fetch command', () => {
                 elemID: mocks.elements()[0].elemID,
                 error: 'test',
                 message: 'test merge error',
+                detailedMessage: 'detailed test merge error',
                 severity: 'Warning',
               },
             },

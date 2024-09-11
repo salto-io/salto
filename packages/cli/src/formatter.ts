@@ -370,7 +370,7 @@ export const cancelDeployOutput = (checkOnly: boolean): string =>
 
 export const deployErrorsOutput = (allErrors: DeployError[]): string => {
   const getErrorMessage = (err: DeployError): string =>
-    formatListRecord(`${isSaltoElementError(err) ? `${err.elemID.getFullName()}: ` : ''}${err.message}`, 1)
+    formatListRecord(`${isSaltoElementError(err) ? `${err.elemID.getFullName()}: ` : ''}${err.detailedMessage}`, 1)
   const errorOutputLines = [emptyLine()]
   if (allErrors.length > 0) {
     const warnings = allErrors.filter(warning => warning.severity === 'Warning')
@@ -495,7 +495,7 @@ export const formatFetchWarnings = (warnings: string[]): string =>
 export const formatSyncToWorkspaceErrors = (syncErrors: ReadonlyArray<SaltoError | SaltoElementError>): string =>
   [
     emptyLine(),
-    `${Prompts.SYNC_TO_WORKSPACE_ERRORS}\n${syncErrors.map(err => `${err.severity} ${err.message}${isSaltoElementError(err) ? ` (${err.elemID.getFullName()})` : ''}`).join('\n')}`,
+    `${Prompts.SYNC_TO_WORKSPACE_ERRORS}\n${syncErrors.map(err => `${err.severity} ${err.detailedMessage}${isSaltoElementError(err) ? ` (${err.elemID.getFullName()})` : ''}`).join('\n')}`,
   ].join('\n')
 
 export const formatWorkspaceLoadFailed = (numErrors: number): string =>

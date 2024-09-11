@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -472,10 +472,10 @@ export const retrieveMetadataInstances = async ({
       metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE) &&
       fetchProfile.isFeatureEnabled('excludeNonRetrievedProfilesRelatedInstances')
     ) {
-      const retrievedFileNames = allValues.map(({ file }) => file.fileName)
+      const retrievedFileNames = new Set(allValues.map(({ file }) => file.fileName))
       allFileProps
         .filter(fileProp => isProfileRelatedMetadataType(fileProp.type))
-        .filter(fileProp => !retrievedFileNames.includes(fileProp.fileName))
+        .filter(fileProp => !retrievedFileNames.has(fileProp.fileName))
         .map(fileProp =>
           createSkippedListConfigChange({
             type: fileProp.type,
@@ -534,7 +534,9 @@ export const retrieveMetadataInstances = async ({
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
-
+  if (configChanges.length > 0) {
+    log.debug('config changes (first 10): %s', inspectValue(configChanges, { maxArrayLength: 10 }))
+  }
   return {
     elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
     configChanges,

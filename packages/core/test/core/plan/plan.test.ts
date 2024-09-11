@@ -140,31 +140,71 @@ describe('getPlan', () => {
     expect(splitElemChanges[1].action).toEqual('modify')
   })
 
-  it('should omit fields from plan they create a dependency cycle on addition', async () => {
-    const plan = await planWithFieldDependencyCycle(true)
-    const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(6)
-    const [dependencyErrors, otherErrors] = _.partition(plan.changeErrors, isDependencyError)
-    expect(otherErrors).toHaveLength(2)
-    expect(dependencyErrors).toHaveLength(1)
-  })
+  describe('getPlan with dependency cycle', () => {
+    describe('when SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY is enabled', () => {
+      beforeAll(() => {
+        process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY = '1'
+      })
 
-  it('should omit fields from plan they create a dependency cycle on', async () => {
-    const plan = await planWithFieldDependencyCycle(false)
-    const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(6)
-    const [dependencyErrors, otherErrors] = _.partition(plan.changeErrors, isDependencyError)
-    expect(otherErrors).toHaveLength(2)
-    expect(dependencyErrors).toHaveLength(0)
-  })
+      it('should fail on addition if fields create a dependency cycle', async () => {
+        await expect(planWithFieldDependencyCycle(true)).rejects.toThrow()
+      })
 
-  it('should fail when plan has dependency cycle', async () => {
-    // Without change validators
-    const planWithNoValidators = await planWithDependencyCycle(false)
-    const planWithNoValidatorsItems = [...planWithNoValidators.itemsByEvalOrder()]
-    expect(planWithNoValidatorsItems).toHaveLength(6)
-    // With change validators
-    // await expect(planWithDependencyCycle(true)).rejects.toThrow()
+      it('should fail on removal if fields create a dependency cycle', async () => {
+        await expect(planWithFieldDependencyCycle(false)).rejects.toThrow()
+      })
+
+      it('should fail when plan has dependency cycle', async () => {
+        // Without change validators
+        await expect(planWithDependencyCycle(false)).rejects.toThrow()
+        // With change validators
+        await expect(planWithDependencyCycle(true)).rejects.toThrow()
+      })
+
+      afterAll(() => {
+        delete process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY
+      })
+    })
+
+    describe('when SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY is disabled', () => {
+      beforeAll(() => {
+        process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY = '0'
+      })
+
+      it('should omit fields from plan they create a dependency cycle on addition', async () => {
+        const plan = await planWithFieldDependencyCycle(true)
+        const planItems = [...plan.itemsByEvalOrder()]
+        expect(planItems).toHaveLength(6)
+        const [dependencyErrors, otherErrors] = _.partition(plan.changeErrors, isDependencyError)
+        expect(otherErrors).toHaveLength(2)
+        expect(dependencyErrors).toHaveLength(1)
+      })
+
+      it('should omit fields from plan they create a dependency cycle on', async () => {
+        const plan = await planWithFieldDependencyCycle(false)
+        const planItems = [...plan.itemsByEvalOrder()]
+        expect(planItems).toHaveLength(6)
+        const [dependencyErrors, otherErrors] = _.partition(plan.changeErrors, isDependencyError)
+        expect(otherErrors).toHaveLength(2)
+        expect(dependencyErrors).toHaveLength(0)
+      })
+
+      it('should create plan and omit and dependency cycle from it', async () => {
+        // Without change validators
+        const planWithNoValidators = await planWithDependencyCycle(false)
+        const planWithNoValidatorsItems = [...planWithNoValidators.itemsByEvalOrder()]
+        expect(planWithNoValidatorsItems).toHaveLength(6)
+
+        // With change validators
+        const plainWithValidators = await planWithDependencyCycle(true)
+        const planWithValidatorsItems = [...plainWithValidators.itemsByEvalOrder()]
+        expect(planWithValidatorsItems).toHaveLength(6)
+      })
+
+      afterAll(() => {
+        delete process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY
+      })
+    })
   })
 
   it('should ignore cycles within a group', async () => {

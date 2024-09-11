@@ -15,6 +15,7 @@ const { intersection } = collections.set
 const { DefaultMap } = collections.map
 
 const log = logger(module)
+const FAIL_ON_CIRCULAR_DEPENDENCY = 'SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY'
 
 export interface Group<T> {
   groupKey: string
@@ -192,6 +193,7 @@ const buildAcyclicGroupedGraphImpl = <T>(
   groupKey: GroupKeyFunc,
   origGroupKey: GroupKeyFunc,
   removedCycles: collections.set.SetId[][] = [],
+  shouldFailOnCircularDependency = true,
 ): { graph: GroupDAG<T>; removedCycles: collections.set.SetId[][] } => {
   // Build group graph
   const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
@@ -201,16 +203,28 @@ const buildAcyclicGroupedGraphImpl = <T>(
   }
   try {
     const updatedGroupKey = modifyGroupKeyToRemoveCycle(groupGraph, groupKey, source, possibleCycle)
-    return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, origGroupKey, removedCycles)
+    return buildAcyclicGroupedGraphImpl(
+      source,
+      updatedGroupKey,
+      origGroupKey,
+      removedCycles,
+      shouldFailOnCircularDependency,
+    )
   } catch (error) {
-    if (error instanceof CircularDependencyError) {
+    if (!shouldFailOnCircularDependency && error instanceof CircularDependencyError) {
       const { causingNodeIds } = error
       log.debug(
         'detected circular dependency in group graph, removing the following nodes: %s',
-        causingNodeIds.map(toString).join(', '),
+        causingNodeIds.join(', '),
       )
       causingNodeIds.forEach(nodeId => source.deleteNode(nodeId))
-      return buildAcyclicGroupedGraphImpl(source, groupKey, origGroupKey, removedCycles.concat([causingNodeIds]))
+      return buildAcyclicGroupedGraphImpl(
+        source,
+        groupKey,
+        origGroupKey,
+        removedCycles.concat([causingNodeIds]),
+        shouldFailOnCircularDependency,
+      )
     }
     throw error
   }
@@ -223,8 +237,15 @@ export const buildAcyclicGroupedGraph = <T>(
 ): { graph: GroupDAG<T>; removedCycles: collections.set.SetId[][] } =>
   log.timeDebug(
     () => {
+      const shouldFailPlanOnCircularDependency = process.env[FAIL_ON_CIRCULAR_DEPENDENCY] !== '0'
       const updatedGroupKey = breakToDisjointGroups(source, groupKey, disjointGroups)
-      return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, groupKey)
+      return buildAcyclicGroupedGraphImpl(
+        source,
+        updatedGroupKey,
+        groupKey,
+        undefined,
+        shouldFailPlanOnCircularDependency,
+      )
     },
     'build grouped graph for %o nodes',
     source.size,

@@ -132,5 +132,6 @@ export const buildGroupedGraphFromDiffGraph = (
     return groupElement.elemID.getFullName()
   }
 
-  return buildAcyclicGroupedGraph(removeRedundantFieldNodes(diffGraph, groupKey), groupKey, disjointGroups)
+  const diffGraphWithoutRedundantFieldNodes = removeRedundantFieldNodes(diffGraph, groupKey)
+  return buildAcyclicGroupedGraph(diffGraphWithoutRedundantFieldNodes, groupKey, disjointGroups)
 }

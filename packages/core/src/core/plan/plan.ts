@@ -450,7 +450,7 @@ const createGroupedGraphAndChangeErrors = async (
   after: ReadOnlyElementsSource,
   filterResult: FilterResult,
   customGroupIdFunctions: Record<string, ChangeGroupIdFunction>,
-): Promise<{ groupGraph: GroupDAG<Change>; changeErrors: ChangeError[] }> => {
+): Promise<{ groupedGraph: GroupDAG<Change>; changeErrors: ChangeError[] }> => {
   const { groupedGraph: firstIterationGraph, removedCycles } = await buildGroupedGraphFromFilterResult(
     before,
     after,
@@ -458,10 +458,10 @@ const createGroupedGraphAndChangeErrors = async (
     customGroupIdFunctions,
   )
   if (removedCycles.length === 0) {
-    return { groupGraph: firstIterationGraph, changeErrors: filterResult.changeErrors }
+    return { groupedGraph: firstIterationGraph, changeErrors: filterResult.changeErrors }
   }
 
-  // circular dependencies detected in the first iteration, build the graph again after all cycles were removed
+  log.error('detected circular dependencies in plan, rebuilding graph after cycles were removed')
 
   const circularDependencyErrors = removedCycles.flatMap(cycle => {
     const cycleIds = cycle.map(id => getChangeData(filterResult.validDiffGraph.getData(id)).elemID)
@@ -488,7 +488,7 @@ const createGroupedGraphAndChangeErrors = async (
   }
 
   return {
-    groupGraph: secondIterationGraph,
+    groupedGraph: secondIterationGraph,
     changeErrors: filterResult.changeErrors.concat(filteredCircularNodesResult.changeErrors),
   }
 }
@@ -538,14 +538,14 @@ export const getPlan = async ({
       const filterResult = await filterInvalidChanges(before, after, diffGraph, validatorsErrors)
 
       // build graph and add additional errors
-      const { groupGraph, changeErrors } = await createGroupedGraphAndChangeErrors(
+      const { groupedGraph, changeErrors } = await createGroupedGraphAndChangeErrors(
         before,
         after,
         filterResult,
         customGroupIdFunctions,
       )
       // build plan
-      return addPlanFunctions(groupGraph, changeErrors, compareOptions)
+      return addPlanFunctions(groupedGraph, changeErrors, compareOptions)
     },
     'get plan with %o -> %o elements',
     numBeforeElements,

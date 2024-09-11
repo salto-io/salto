@@ -172,28 +172,65 @@ describe('buildGroupGraph', () => {
       verifyGroupGraphOrder(groupGraph, edges, 2)
     })
 
-    it('should remove cycle from graph when there is a cycle which can not be broken and return the removed cycle', () => {
+    describe('when there is a cycle that can not be broken', () => {
       const groups = {
         group1: ['n1', 'n2'],
         group2: ['n3', 'n4'],
         group3: ['n5', 'n6'],
+        group4: ['n7'],
+        group5: ['n8'],
       }
 
       const edges: Edge[] = [
+        // first cycle
         ['n2', 'n3'],
         ['n3', 'n4'],
         ['n4', 'n2'],
+
+        // unrelated edges
         ['n1', 'n5'],
+
+        // second cycle
+        ['n7', 'n8'],
+        ['n8', 'n7'],
       ]
 
-      const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
-      const { graph, removedCycles } = buildAcyclicGroupedGraph(srcGraph, groupKeyFunc)
-      expect(removedCycles).toHaveLength(1)
-      expect(removedCycles[0]).toEqual(['n1', 'n2', 'n3', 'n4'])
+      describe('when SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY enabled', () => {
+        beforeAll(() => {
+          process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY = '1'
+        })
 
-      expect(graph.size).toEqual(1)
-      expect(graph.nodeData.size).toEqual(1)
-      expect(graph.edges().length).toEqual(0)
+        it('should throw circular dependency error', () => {
+          const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
+          expect(() => buildAcyclicGroupedGraph(srcGraph, groupKeyFunc)).toThrow()
+        })
+
+        afterAll(() => {
+          delete process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY
+        })
+      })
+
+      describe('when SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY disabled', () => {
+        beforeAll(() => {
+          process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY = '0'
+        })
+
+        it('should remove the nodes that cause the cycle', () => {
+          const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
+          const { graph, removedCycles } = buildAcyclicGroupedGraph(srcGraph, groupKeyFunc)
+          expect(removedCycles).toHaveLength(2)
+          expect(removedCycles[0]).toEqual(['n1', 'n2', 'n3', 'n4'])
+          expect(removedCycles[1]).toEqual(['n7', 'n8'])
+
+          expect(graph.size).toEqual(1)
+          expect(graph.nodeData.size).toEqual(1)
+          expect(graph.edges().length).toEqual(0)
+        })
+
+        afterAll(() => {
+          delete process.env.SALTO_FAIL_PLAN_ON_CIRCULAR_DEPENDENCY
+        })
+      })
     })
 
     it('should ignore cycles whithin a single group', () => {

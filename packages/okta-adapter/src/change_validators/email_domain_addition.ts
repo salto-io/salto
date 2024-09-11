@@ -13,6 +13,9 @@ import { findReferencingBrands } from '../definitions/deploy/types/email_domain'
 
 const { awu } = collections.asynciterable
 
+/**
+ * Validates that an email domain cannot be added without at least one brand that uses it.
+ */
 export const emailDomainAdditionValidator: ChangeValidator = async (changes, elementsSource) => {
   if (!elementsSource) {
     return []

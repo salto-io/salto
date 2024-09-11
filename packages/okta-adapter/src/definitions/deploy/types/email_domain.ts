@@ -21,6 +21,9 @@ import { BRAND_TYPE_NAME, EMAIL_DOMAIN_TYPE_NAME } from '../../../constants'
 
 const { awu } = collections.asynciterable
 
+/**
+ * Finds all brand instances that reference a given email domain element ID.
+ */
 export const findReferencingBrands = async (
   emailDomainElemId: ElemID,
   elementsSource: ReadOnlyElementsSource,
@@ -32,6 +35,12 @@ export const findReferencingBrands = async (
     .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
     .toArray()
 
+/**
+ * Adds a single brand ID that references the added email domain to the request value as required by Okta.
+ *
+ * If there are multiple brands that reference the email domain, an arbitrary one is chosen.
+ * If no brands reference the email domain, an error is thrown.
+ */
 export const addBrandIdToRequest: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
   value,
   context,

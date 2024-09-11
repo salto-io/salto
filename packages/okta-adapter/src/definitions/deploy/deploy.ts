@@ -592,13 +592,18 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
           modify: [
             {
+              condition: {
+                transformForCheck: {
+                  // These are the only fields that can be modified.
+                  pick: ['displayName', 'userName'],
+                },
+              },
               request: {
                 endpoint: {
                   path: '/api/v1/email-domains/{id}',
                   method: 'put',
                 },
                 transformation: {
-                  // These are the only fields that can be modified.
                   pick: ['displayName', 'userName'],
                 },
               },

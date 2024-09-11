@@ -12,7 +12,7 @@ import { DeployableRequestDefinition } from '../../shared/types'
 import { createCustomConditionCheckChangesInFields } from '../../shared/utils'
 
 /**
- * Creates a request to assign a resource to a group. This request is used for both addition and modification changes.
+ * Creates a request to assign a group to a resource. This request is used for both addition and modification changes.
  */
 export const createAssignmentsRequest = ({
   resourcePath,
@@ -37,7 +37,5 @@ export const createAssignmentsRequest = ({
       pick: [rootField],
     },
   },
-  // We can't simply use transformToCheck.pick since this request is also used for addition changes,
-  // while transformToCheck is only valid for modification changes.
   condition: createCustomConditionCheckChangesInFields([ASSIGNMENTS_FIELD_NAME]),
 })

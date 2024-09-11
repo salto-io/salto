@@ -7,4 +7,3 @@
  */
 
 export * as application from './application'
-export * as groupAssignments from './group_assignments'

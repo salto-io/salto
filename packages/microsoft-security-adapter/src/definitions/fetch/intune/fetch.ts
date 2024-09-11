@@ -15,7 +15,7 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shar
 import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
-import { application, groupAssignments } from './utils'
+import { application } from './utils'
 
 const {
   // Top level types
@@ -38,6 +38,7 @@ const {
   // Other
   SERVICE_BASE_URL,
   ASSIGNMENTS_ODATA_CONTEXT,
+  TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS,
 } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -305,7 +306,23 @@ const graphBetaCustomizations: FetchCustomizations = {
       },
     },
   },
-  ...groupAssignments.GROUP_ASSIGNMENTS_FETCH_DEFINITIONS,
+  ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
+    [typeName]: {
+      resource: {
+        directFetch: false,
+      },
+      element: {
+        fieldCustomizations: {
+          id: {
+            omit: true,
+          },
+          sourceId: {
+            omit: true,
+          },
+        },
+      },
+    },
+  })).reduce((acc, curr) => ({ ...acc, ...curr }), {}),
 }
 
 export const createIntuneCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> =>

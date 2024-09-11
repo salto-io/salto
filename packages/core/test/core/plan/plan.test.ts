@@ -20,6 +20,7 @@ import {
   VariableExpression,
   TemplateExpression,
   isDependencyError,
+  isCircularDependencyChangeError,
 } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import wu from 'wu'
@@ -193,12 +194,24 @@ describe('getPlan', () => {
         // Without change validators
         const planWithNoValidators = await planWithDependencyCycle(false)
         const planWithNoValidatorsItems = [...planWithNoValidators.itemsByEvalOrder()]
-        expect(planWithNoValidatorsItems).toHaveLength(6)
-
+        expect(planWithNoValidatorsItems).toHaveLength(4)
+        const circularDependencyErrors = planWithNoValidators.changeErrors.filter(isCircularDependencyChangeError)
+        expect(circularDependencyErrors).toHaveLength(2)
+        expect(circularDependencyErrors.map(err => err.elemID.getFullName())).toEqual([
+          'salto.employee',
+          'salto.office',
+        ])
+        
         // With change validators
         const plainWithValidators = await planWithDependencyCycle(true)
         const planWithValidatorsItems = [...plainWithValidators.itemsByEvalOrder()]
-        expect(planWithValidatorsItems).toHaveLength(6)
+        expect(planWithValidatorsItems).toHaveLength(4)
+        const circularDependencyErrorsWithValidators = planWithNoValidators.changeErrors.filter(isCircularDependencyChangeError)
+        expect(circularDependencyErrorsWithValidators).toHaveLength(2)
+        expect(circularDependencyErrorsWithValidators.map(err => err.elemID.getFullName())).toEqual([
+          'salto.employee',
+          'salto.office',
+        ])
       })
 
       afterAll(() => {

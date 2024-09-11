@@ -127,20 +127,20 @@ describe('client validation', () => {
     mockValidate.mockResolvedValue([
       {
         elemID: getChangeData(changes[0]).elemID,
-        message: 'Details: The manifest contains a dependency on customlist1',
-        detailedMessage: 'detailed Details: The manifest contains a dependency on customlist1',
+        message: 'SDF Error',
+        detailedMessage: 'Details: The manifest contains a dependency on customlist1',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[0]).elemID,
-        message: 'Details: The manifest contains a dependency on customworkflow2.workflowstate1',
-        detailedMessage: 'detailed Details: The manifest contains a dependency on customworkflow2.workflowstate1',
+        message: 'SDF Error',
+        detailedMessage: 'Details: The manifest contains a dependency on customworkflow2.workflowstate1',
         severity: 'Error',
       },
       {
         elemID: getChangeData(changes[1]).elemID,
-        message: "D.tails: Le manifeste comporte une d.pendance sur l'objet customlist1",
-        detailedMessage: "detailed D.tails: Le manifeste comporte une d.pendance sur l'objet customlist1",
+        message: 'SDF Error',
+        detailedMessage: "D.tails: Le manifeste comporte une d.pendance sur l'objet customlist1",
         severity: 'Error',
       },
     ])

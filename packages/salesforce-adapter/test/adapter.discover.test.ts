@@ -2907,7 +2907,7 @@ describe('Fetch via retrieve API', () => {
             configChanges = (
               await retrieveMetadataInstances({
                 client,
-                types: [mockTypes.Profile, mockTypes.CustomObject],
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
                 fetchProfile: buildFetchProfile({
                   fetchParams: {
                     optionalFeatures: {
@@ -2934,7 +2934,7 @@ describe('Fetch via retrieve API', () => {
             configChanges = (
               await retrieveMetadataInstances({
                 client,
-                types: [mockTypes.Profile, mockTypes.CustomObject],
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
                 fetchProfile: buildFetchProfile({
                   fetchParams: {
                     metadata: {
@@ -2959,7 +2959,7 @@ describe('Fetch via retrieve API', () => {
             configChanges = (
               await retrieveMetadataInstances({
                 client,
-                types: [mockTypes.Profile, mockTypes.CustomObject],
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
                 fetchProfile: buildFetchProfile({
                   fetchParams: {
                     optionalFeatures: {
@@ -2979,7 +2979,7 @@ describe('Fetch via retrieve API', () => {
             configChanges = (
               await retrieveMetadataInstances({
                 client,
-                types: [mockTypes.Profile, mockTypes.CustomObject],
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
                 fetchProfile: buildFetchProfile({
                   fetchParams: {
                     metadata: {

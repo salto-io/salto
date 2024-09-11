@@ -467,7 +467,7 @@ export const retrieveMetadataInstances = async ({
       fetchProfile.isFeatureEnabled('fixRetrieveFilePaths'),
     )
     // Exclude Profile related instances we fail to retrieve for envs that manage Profiles to improve performance
-    // in subsequent fetches and avoid broken references in the Profiles.
+    // in subsequent fetches and avoid broken references in Profiles.
     if (
       metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE) &&
       fetchProfile.isFeatureEnabled('excludeNonRetrievedProfilesRelatedInstances')

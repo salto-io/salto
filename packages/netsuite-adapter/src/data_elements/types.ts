@@ -162,6 +162,7 @@ const MANUALLY_TABLE_TO_INTERNAL_ID = {
   vendor: '-9',
   customrecordtype: TABLE_TO_INTERNAL_ID.customRecordType,
   priceLevel: TABLE_TO_INTERNAL_ID.item,
+  emailtemplate: '-120',
 } as const
 
 const ALL_TABLE_TO_INTERNAL_ID = {

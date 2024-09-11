@@ -450,6 +450,7 @@ export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undef
   role: undefined,
   workflow: undefined,
   customrecordtype: undefined,
+  emailtemplate: undefined,
 }
 
 export const getSuiteQLTableInternalIdsMap = (instance: InstanceElement): InternalIdsMap => {

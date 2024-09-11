@@ -183,7 +183,7 @@ describe('buildGroupGraph', () => {
         ['n2', 'n3'],
         ['n3', 'n4'],
         ['n4', 'n2'],
-        ['n1', 'n5']
+        ['n1', 'n5'],
       ]
 
       const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)

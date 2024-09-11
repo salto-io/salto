@@ -205,7 +205,10 @@ const buildAcyclicGroupedGraphImpl = <T>(
   } catch (error) {
     if (error instanceof CircularDependencyError) {
       const { causingNodeIds } = error
-      log.debug('detected circular dependency in group graph, removing the following nodes: %s', causingNodeIds.map(toString).join(', ') )
+      log.debug(
+        'detected circular dependency in group graph, removing the following nodes: %s',
+        causingNodeIds.map(toString).join(', '),
+      )
       causingNodeIds.forEach(nodeId => source.deleteNode(nodeId))
       return buildAcyclicGroupedGraphImpl(source, groupKey, origGroupKey, removedCycles.concat([causingNodeIds]))
     }

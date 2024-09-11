@@ -166,9 +166,9 @@ const buildValidDiffGraph = (
 
   const nodesToOmitWithDependents = Object.values(dependenciesMap).flatMap(nodeIds => [...nodeIds])
 
-  const circularDependencyIDs = new Set(invalidChanges
-  .filter(error => isCircularDependencyChangeError(error))
-  .map(error => error.elemID.getFullName()))
+  const circularDependencyIDs = new Set(
+    invalidChanges.filter(error => isCircularDependencyChangeError(error)).map(error => error.elemID.getFullName()),
+  )
 
   const dependencyErrors = Object.entries(dependenciesMap)
     .map(

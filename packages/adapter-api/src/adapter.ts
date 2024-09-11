@@ -115,7 +115,8 @@ export type UnresolvedReferenceError = ChangeError & {
 
 export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
-export const isCircularDependencyChangeError = (err: ChangeError): err is CircularDependencyChangeError => 'cycleIDs' in err
+export const isCircularDependencyChangeError = (err: ChangeError): err is CircularDependencyChangeError =>
+  'cycleIDs' in err
 
 export const isUnresolvedReferenceError = (err: ChangeError): err is UnresolvedReferenceError =>
   err.type === 'unresolvedReferences' && 'unresolvedElemIds' in err

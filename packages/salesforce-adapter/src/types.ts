@@ -123,6 +123,7 @@ export type OptionalFeatures = {
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
   useXmlParserV2?: boolean
+  logXmlParserV2Diff?: boolean
 }
 
 export type ChangeValidatorName =
@@ -822,6 +823,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
     useXmlParserV2: { refType: BuiltinTypes.BOOLEAN },
+    logXmlParserV2Diff: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

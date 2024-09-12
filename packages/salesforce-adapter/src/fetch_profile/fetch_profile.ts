@@ -44,6 +44,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   sharingRulesMaps: false,
   excludeNonRetrievedProfilesRelatedInstances: true,
   useXmlParserV2: false,
+  logXmlParserV2Diff: true,
 }
 
 type BuildFetchProfileParams = {

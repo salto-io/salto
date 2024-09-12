@@ -14,6 +14,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
+  inspectValue,
   MapKeyFunc,
   mapKeysRecursive,
   safeJsonStringify,
@@ -360,6 +361,16 @@ const extractFileNameToData = async ({
       )
 }
 
+const getDiffValues = (oldValues: Values, newValues: Values): Values => {
+  const diff: Values = {}
+  Object.entries(newValues).forEach(([key, value]) => {
+    if (!_.isEqual(oldValues[key], value)) {
+      diff[key] = _.isObject(value) && _.isObject(oldValues[key]) ? getDiffValues(oldValues[key], value) : value
+    }
+  })
+  return diff
+}
+
 export const fromRetrieveResult = async (
   result: RetrieveResult,
   fileProps: ReadonlyArray<FileProperties>,
@@ -367,6 +378,7 @@ export const fromRetrieveResult = async (
   typesWithContent: Set<string>,
   fetchProfile: FetchProfile,
 ): Promise<{ file: FileProperties; values: MetadataValues }[]> => {
+  const typesWithDiff = new Set<string>()
   const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
     const fileNameToValuesBuffer = await extractFileNameToData({
@@ -385,8 +397,26 @@ export const fromRetrieveResult = async (
       return undefined
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
+    const xmlString = instanceValuesBuffer.toString()
+    if (
+      fetchProfile.isFeatureEnabled('logXmlParserV2Diff') &&
+      !fetchProfile.isFeatureEnabled('useXmlParserV2') &&
+      !typesWithDiff.has(file.type)
+    ) {
+      const oldResult = xmlToValues(xmlString, false)
+      const newResult = xmlToValues(xmlString, true)
+      const diffValues = getDiffValues(oldResult.values, newResult.values)
+      if (Object.keys(diffValues).length > 0) {
+        typesWithDiff.add(file.type)
+        log.debug(
+          'Found differences in the xml parsing of instance of type %s: %s',
+          file.fullName,
+          inspectValue(diffValues),
+        )
+      }
+    }
     const metadataValues = Object.assign(
-      xmlToValues(instanceValuesBuffer.toString(), fetchProfile.isFeatureEnabled('useXmlParserV2')).values,
+      xmlToValues(xmlString, fetchProfile.isFeatureEnabled('useXmlParserV2')).values,
       {
         [INSTANCE_FULL_NAME_FIELD]: file.fullName,
       },

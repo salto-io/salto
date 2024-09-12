@@ -5,7 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { getChangeData } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { intuneConstants } from '../../../constants'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
@@ -13,6 +15,7 @@ import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
 import { application as applicationDeployUtils, appsConfiguration, groupAssignments } from './utils'
 import { application, applicationConfiguration } from '../../../utils/intune'
+import { AdditionalAction, ClientOptions } from '../../types'
 
 const {
   // Type names
@@ -22,11 +25,19 @@ const {
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
+  FILTER_TYPE_NAME,
   // Field names
   APPS_FIELD_NAME,
   SCHEDULED_ACTIONS_FIELD_NAME,
   ASSIGNMENTS_FIELD_NAME,
 } = intuneConstants
+
+const graphBetaStandardDeployDefinitions = deployment.helpers.createStandardDeployDefinitions<
+  AdditionalAction,
+  ClientOptions
+>({
+  [FILTER_TYPE_NAME]: { bulkPath: '/deviceManagement/assignmentFilters', modificationMethod: 'patch' },
+})
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
   [APPLICATION_TYPE_NAME]: {
@@ -437,4 +448,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
 }
 
 export const createIntuneCustomizations = (): DeployCustomDefinitions =>
-  createCustomizationsWithBasePathForDeploy(graphBetaCustomDefinitions, GRAPH_BETA_PATH)
+  createCustomizationsWithBasePathForDeploy(
+    _.merge(graphBetaStandardDeployDefinitions, graphBetaCustomDefinitions),
+    GRAPH_BETA_PATH,
+  )

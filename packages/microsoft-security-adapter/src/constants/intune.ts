@@ -45,6 +45,7 @@ export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeNa
 export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('DeviceConfiguration')
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('DeviceConfigurationSettingCatalog')
 export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
+export const FILTER_TYPE_NAME = toIntuneTypeName('Filter')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(

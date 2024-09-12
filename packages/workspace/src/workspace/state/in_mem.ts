@@ -69,7 +69,8 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
 
   const deleteRemovedStaticFiles = async (elemChanges: DetailedChange[]): Promise<void> => {
     const { staticFilesSource } = await stateData()
-    const files = getDanglingStaticFiles(elemChanges)
+    // SALTO-5898 We don't pass a static file index here, which could wrongly require deleting static files whose one element deleted the static file
+    const files = await getDanglingStaticFiles(elemChanges)
     await Promise.all(files.map(file => staticFilesSource.delete(file)))
   }
 
@@ -109,8 +110,9 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     const state = await stateData()
     const beforeElement = await state.elements.get(element.elemID)
 
+    // SALTO-5898 We don't pass a static file index here, which could wrongly require deleting static files whose one element deleted the static file
     const filesToDelete =
-      beforeElement !== undefined ? getDanglingStaticFiles(detailedCompare(beforeElement, element)) : []
+      beforeElement !== undefined ? await getDanglingStaticFiles(detailedCompare(beforeElement, element)) : []
 
     await state.elements.set(element)
     await Promise.all(filesToDelete.map(f => state.staticFilesSource.delete(f)))

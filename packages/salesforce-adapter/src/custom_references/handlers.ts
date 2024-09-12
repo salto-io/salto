@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
 import _ from 'lodash'
 import { FixElementsFunc, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { combineCustomReferenceGetters, combineElementFixers } from '@salto-io/adapter-components'
@@ -20,20 +19,24 @@ import {
 } from '../types'
 import { profilesAndPermissionSetsHandler } from './profiles_and_permission_sets'
 import { managedElementsHandler } from './managed_elements'
+import { formulaRefsHandler } from './formula_refs'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profilesAndPermissionSets: profilesAndPermissionSetsHandler,
   managedElements: managedElementsHandler,
+  formulaRefs: formulaRefsHandler,
 }
 
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
+  formulaRefs: false,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
   profilesAndPermissionSets: false,
   managedElements: true,
+  formulaRefs: false,
 }
 
 export const customReferencesConfiguration = (

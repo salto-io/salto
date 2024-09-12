@@ -209,143 +209,78 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
-export type ChangeValidatorName =
-  | 'unresolvedReference'
-  | 'brokenReferences'
-  | 'deployTypesNotSupported'
-  | 'readOnlyProjectRoleChange'
-  | 'defaultFieldConfiguration'
-  | 'fieldConfigurationDescriptionLength'
-  | 'fieldConfigurationItemDescriptionLength'
-  | 'screen'
-  | 'issueTypeScheme'
-  | 'issueTypeSchemeDefaultType'
-  | 'teamManagedProject'
-  | 'projectDeletion'
-  | 'status'
-  | 'privateApi'
-  | 'emptyValidatorWorkflowChange'
-  | 'readOnlyWorkflow'
-  | 'dashboardGadgets'
-  | 'referencedWorkflowDeletion'
-  | 'dashboardLayout'
-  | 'issueLayouts'
-  | 'permissionType'
-  | 'automations'
-  | 'activeSchemeDeletion'
-  | 'statusMigrationChange'
-  | 'workflowSchemeMigration'
-  | 'workflowStatusMappings'
-  | 'inboundTransition'
-  | 'issueTypeSchemeMigration'
-  | 'missingExtensionsTransitionRules'
-  | 'activeSchemeChange'
-  | 'masking'
-  | 'issueTypeDeletion'
-  | 'lockedFields'
-  | 'fieldContext'
-  | 'fieldSecondGlobalContext'
-  | 'systemFields'
-  | 'workflowProperties'
-  | 'permissionScheme'
-  | 'screenSchemeDefault'
-  | 'wrongUserPermissionScheme'
-  | 'accountId'
-  | 'workflowSchemeDups'
-  | 'workflowTransitionDuplicateName'
-  | 'permissionSchemeDeployment'
-  | 'projectCategory'
-  | 'customFieldsWith10KOptions'
-  | 'issueTypeHierarchy'
-  | 'automationProjects'
-  | 'deleteLastQueueValidator'
-  | 'defaultAdditionQueueValidator'
-  | 'defaultAttributeValidator'
-  | 'boardColumnConfig'
-  | 'automationToAssets'
-  | 'addJsmProject'
-  | 'deleteLabelAtttribute'
-  | 'jsmPermissions'
-  | 'fieldContextOptions'
-  | 'uniqueFields'
-  | 'assetsObjectFieldConfigurationAql'
-  | 'projectAssigneeType'
-  | 'fieldContextDefaultValue'
-  | 'fieldContextOrderRemoval'
-  | 'optionValue'
+const CHANGE_VALIDATOR_NAMES = [
+  'unresolvedReference',
+  'brokenReferences',
+  'deployTypesNotSupported',
+  'readOnlyProjectRoleChange',
+  'defaultFieldConfiguration',
+  'fieldConfigurationDescriptionLength',
+  'fieldConfigurationItemDescriptionLength',
+  'screen',
+  'issueTypeScheme',
+  'issueTypeSchemeDefaultType',
+  'teamManagedProject',
+  'projectDeletion',
+  'status',
+  'privateApi',
+  'emptyValidatorWorkflowChange',
+  'readOnlyWorkflow',
+  'dashboardGadgets',
+  'referencedWorkflowDeletion',
+  'dashboardLayout',
+  'issueLayouts',
+  'permissionType',
+  'automations',
+  'activeSchemeDeletion',
+  'statusMigrationChange',
+  'workflowSchemeMigration',
+  'workflowStatusMappings',
+  'inboundTransition',
+  'issueTypeSchemeMigration',
+  'missingExtensionsTransitionRules',
+  'activeSchemeChange',
+  'masking',
+  'issueTypeDeletion',
+  'lockedFields',
+  'fieldContext',
+  'fieldSecondGlobalContext',
+  'systemFields',
+  'workflowProperties',
+  'permissionScheme',
+  'screenSchemeDefault',
+  'wrongUserPermissionScheme',
+  'accountId',
+  'workflowSchemeDups',
+  'workflowTransitionDuplicateName',
+  'permissionSchemeDeployment',
+  'projectCategory',
+  'customFieldsWith10KOptions',
+  'issueTypeHierarchy',
+  'automationProjects',
+  'deleteLastQueueValidator',
+  'defaultAdditionQueueValidator',
+  'defaultAttributeValidator',
+  'boardColumnConfig',
+  'automationToAssets',
+  'addJsmProject',
+  'deleteLabelAtttribute',
+  'jsmPermissions',
+  'fieldContextOptions',
+  'uniqueFields',
+  'assetsObjectFieldConfigurationAql',
+  'projectAssigneeType',
+  'fieldContextDefaultValue',
+  'fieldContextOrderRemoval',
+  'optionValue',
+  'enhancedSearchDeployment',
+]
 
-type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]
 
-const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
-  elemID: new ElemID(JIRA, 'changeValidatorConfig'),
-  fields: {
-    unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
-    boardColumnConfig: { refType: BuiltinTypes.BOOLEAN },
-    brokenReferences: { refType: BuiltinTypes.BOOLEAN },
-    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
-    readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
-    defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
-    fieldConfigurationDescriptionLength: { refType: BuiltinTypes.BOOLEAN },
-    fieldConfigurationItemDescriptionLength: { refType: BuiltinTypes.BOOLEAN },
-    screen: { refType: BuiltinTypes.BOOLEAN },
-    issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
-    issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },
-    teamManagedProject: { refType: BuiltinTypes.BOOLEAN },
-    projectDeletion: { refType: BuiltinTypes.BOOLEAN },
-    status: { refType: BuiltinTypes.BOOLEAN },
-    privateApi: { refType: BuiltinTypes.BOOLEAN },
-    emptyValidatorWorkflowChange: { refType: BuiltinTypes.BOOLEAN },
-    referencedWorkflowDeletion: { refType: BuiltinTypes.BOOLEAN },
-    readOnlyWorkflow: { refType: BuiltinTypes.BOOLEAN },
-    dashboardGadgets: { refType: BuiltinTypes.BOOLEAN },
-    dashboardLayout: { refType: BuiltinTypes.BOOLEAN },
-    issueLayouts: { refType: BuiltinTypes.BOOLEAN },
-    permissionType: { refType: BuiltinTypes.BOOLEAN },
-    automations: { refType: BuiltinTypes.BOOLEAN },
-    activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
-    workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
-    workflowStatusMappings: { refType: BuiltinTypes.BOOLEAN },
-    inboundTransition: { refType: BuiltinTypes.BOOLEAN },
-    issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
-    missingExtensionsTransitionRules: { refType: BuiltinTypes.BOOLEAN },
-    activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
-    masking: { refType: BuiltinTypes.BOOLEAN },
-    issueTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    lockedFields: { refType: BuiltinTypes.BOOLEAN },
-    fieldContext: { refType: BuiltinTypes.BOOLEAN },
-    fieldSecondGlobalContext: { refType: BuiltinTypes.BOOLEAN },
-    systemFields: { refType: BuiltinTypes.BOOLEAN },
-    workflowProperties: { refType: BuiltinTypes.BOOLEAN },
-    permissionScheme: { refType: BuiltinTypes.BOOLEAN },
-    screenSchemeDefault: { refType: BuiltinTypes.BOOLEAN },
-    wrongUserPermissionScheme: { refType: BuiltinTypes.BOOLEAN },
-    accountId: { refType: BuiltinTypes.BOOLEAN },
-    workflowSchemeDups: { refType: BuiltinTypes.BOOLEAN },
-    workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
-    permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
-    projectCategory: { refType: BuiltinTypes.BOOLEAN },
-    customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
-    issueTypeHierarchy: { refType: BuiltinTypes.BOOLEAN },
-    automationProjects: { refType: BuiltinTypes.BOOLEAN },
-    deleteLastQueueValidator: { refType: BuiltinTypes.BOOLEAN },
-    defaultAdditionQueueValidator: { refType: BuiltinTypes.BOOLEAN },
-    defaultAttributeValidator: { refType: BuiltinTypes.BOOLEAN },
-    automationToAssets: { refType: BuiltinTypes.BOOLEAN },
-    addJsmProject: { refType: BuiltinTypes.BOOLEAN },
-    deleteLabelAtttribute: { refType: BuiltinTypes.BOOLEAN },
-    jsmPermissions: { refType: BuiltinTypes.BOOLEAN },
-    fieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
-    uniqueFields: { refType: BuiltinTypes.BOOLEAN },
-    assetsObjectFieldConfigurationAql: { refType: BuiltinTypes.BOOLEAN },
-    projectAssigneeType: { refType: BuiltinTypes.BOOLEAN },
-    fieldContextDefaultValue: { refType: BuiltinTypes.BOOLEAN },
-    fieldContextOrderRemoval: { refType: BuiltinTypes.BOOLEAN },
-    optionValue: { refType: BuiltinTypes.BOOLEAN },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
+const changeValidatorConfigType = definitions.createChangeValidatorConfigType({
+  adapterName: JIRA,
+  changeValidatorNames: CHANGE_VALIDATOR_NAMES,
 })
 
 const jiraDeployConfigType = definitions.createUserDeployConfigType(JIRA, changeValidatorConfigType, {

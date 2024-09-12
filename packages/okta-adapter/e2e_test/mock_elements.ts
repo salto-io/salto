@@ -277,6 +277,7 @@ export const mockDefaultValues: Record<string, Values> = {
         matchAttribute: '',
       },
       maxClockSkew: 0,
+      transformedUsernameMatchingEnabled: false,
     },
     type: 'OIDC',
   },

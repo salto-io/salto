@@ -313,6 +313,7 @@ const accountListCommandDef: WorkspaceCommandDef<AccountListArgs> = {
     keyedOptions: [ENVIRONMENT_OPTION],
   },
   action: listAction,
+  loadWorkspaceArgs: { persistent: false },
 }
 
 const accountListDef = createWorkspaceCommand(accountListCommandDef)

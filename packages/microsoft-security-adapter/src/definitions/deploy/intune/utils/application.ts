@@ -12,11 +12,14 @@ import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
 import { intuneConstants } from '../../../../constants'
 import { intuneUtils } from '../../../../utils'
+import { EndpointPath } from '../../../types'
 
-const { APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME } =
+const { APPLICATION_TYPE_NAME, APP_IDENTIFIER_FIELD_NAME, APP_STORE_URL_FIELD_NAME, PACKAGE_ID_FIELD_NAME } =
   intuneConstants
 
 const { isManagedGooglePlayApp, isAndroidEnterpriseSystemApp } = intuneUtils.application
+
+export const GET_MANAGED_STORE_APP_POST_DEPLOY_PATH: EndpointPath = `/deviceAppManagement/mobileApps?$filter=(isof('microsoft.graph.androidManagedStoreApp') and (microsoft.graph.androidManagedStoreApp/${APP_IDENTIFIER_FIELD_NAME} eq '{${APP_IDENTIFIER_FIELD_NAME}}'))`
 
 /**
  * Omit redundant fields from application based on its type.
@@ -50,3 +53,5 @@ export const transformManagedGooglePlayApp: AdjustFunctionSingle = async ({ valu
     value: { productIds: [`app:${appId}`] },
   }
 }
+
+export const DEPLOY_ASSIGNMENTS_ROOT_FIELD_NAME = 'mobileAppAssignments'

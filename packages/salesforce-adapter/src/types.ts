@@ -122,6 +122,7 @@ export type OptionalFeatures = {
   improvedDataBrokenReferences?: boolean
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
+  excludeNonRetrievedProfilesRelatedInstances?: boolean
 }
 
 export type ChangeValidatorName =
@@ -197,7 +198,7 @@ export type BrokenOutgoingReferencesSettings = {
   perTargetTypeOverrides?: Record<string, OutgoingReferenceBehavior>
 }
 
-const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements'] as const
+const customReferencesHandlersNames = ['profilesAndPermissionSets', 'managedElements', 'formulaRefs'] as const
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
 
 export type CustomReferencesSettings = Partial<Record<CustomReferencesHandlers, boolean>>
@@ -820,6 +821,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
+    excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

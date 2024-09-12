@@ -242,6 +242,7 @@ const setOriginalFieldType = (field: Field): void => {
 }
 
 const getSuiteQLTableInstance = (
+  path: ElemID,
   field: Field | undefined,
   typeId: string | undefined,
   suiteQLTablesMap: Record<string, InstanceElement>,
@@ -257,9 +258,23 @@ const getSuiteQLTableInstance = (
   if (fieldType !== undefined && suiteQLTablesMap[fieldType.elemID.name] !== undefined) {
     return suiteQLTablesMap[fieldType.elemID.name]
   }
-  return (typeId !== undefined ? INTERNAL_ID_TO_TYPES[typeId] ?? [] : [])
+  if (typeId === undefined) {
+    log.debug('value in %s has no typeId', path.getFullName())
+    return undefined
+  }
+  const potentialTypes = INTERNAL_ID_TO_TYPES[typeId]
+  if (potentialTypes === undefined) {
+    log.warn('missing internalId to type mapping for typeId %s', typeId)
+    return undefined
+  }
+  const suiteQLTableInstance = potentialTypes
     .map(typeName => suiteQLTablesMap[typeName])
     .find(instance => instance !== undefined)
+  if (suiteQLTableInstance === undefined) {
+    log.warn('missing suiteql table instance for types: %s (typeId: %s)', potentialTypes, typeId)
+    return undefined
+  }
+  return suiteQLTableInstance
 }
 
 const getAccountSpecificValuesToTransform = (
@@ -293,7 +308,7 @@ const getAccountSpecificValuesToTransform = (
       path,
       internalId,
       fallbackName,
-      suiteQLTableInstance: getSuiteQLTableInstance(field, typeId, suiteQLTablesMap),
+      suiteQLTableInstance: getSuiteQLTableInstance(path, field, typeId, suiteQLTablesMap),
     })
 
     return value

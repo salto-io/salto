@@ -43,6 +43,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   improvedDataBrokenReferences: false,
   taskAndEventCustomFields: false,
   sharingRulesMaps: false,
+  excludeNonRetrievedProfilesRelatedInstances: true,
 }
 
 type BuildFetchProfileParams = {

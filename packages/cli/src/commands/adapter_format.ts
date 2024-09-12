@@ -202,6 +202,7 @@ const syncToWorkspaceCmd = createWorkspaceCommand({
     ],
   },
   action: syncWorkspaceToFolderAction,
+  loadWorkspaceArgs: { persistent: false },
 })
 
 export const adapterFormatGroupDef = createCommandGroupDef({

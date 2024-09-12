@@ -70,6 +70,7 @@ export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promi
 export type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>
   action: WorkspaceCommandAction<T>
+  loadWorkspaceArgs?: { persistent?: false }
   extraTelemetryTags?: (args: { workspace: Workspace; input: T }) => Tags
 }
 
@@ -211,6 +212,7 @@ export const createWorkspaceCommand = <T>(def: WorkspaceCommandDef<T>): CommandD
     const workspace = await loadLocalWorkspace({
       path: args.workspacePath,
       configOverrides: getConfigOverrideChanges(args.input),
+      ...(def.loadWorkspaceArgs ?? {}),
     })
 
     args.cliTelemetry.setTags({

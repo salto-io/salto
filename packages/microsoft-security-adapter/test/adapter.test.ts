@@ -135,6 +135,28 @@ describe('Microsoft Security adapter', () => {
                 ]),
               )
             })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const applicationWithAssignments = intuneApplications.find(
+                e => e.elemID.name === 'managedAndroidStoreApp_com_test@uv',
+              )
+              expect(applicationWithAssignments).toBeDefined()
+              const { assignments } = (applicationWithAssignments as InstanceElement).value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include assignments field as empty array when there are no assignments', async () => {
+              const applicationsWithoutAssignments = intuneApplications.filter(
+                e => e.elemID.name !== 'managedAndroidStoreApp_com_test@uv',
+              )
+              expect(applicationsWithoutAssignments).toHaveLength(5)
+              expect(applicationsWithoutAssignments.every(e => e.value.assignments?.length === 0)).toBeTruthy()
+            })
           })
 
           describe('application configurations - managed apps', () => {
@@ -173,6 +195,17 @@ describe('Microsoft Security adapter', () => {
               })
               expect(targetApps[0].mobileAppIdentifier.packageId.elemID.getFullName()).toEqual(
                 'microsoft_security.IntuneApplication.instance.managedAndroidStoreApp_com_test2@uv',
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const intuneApplicationConfiguration = intuneApplicationConfigurations[0]
+              const { assignments } = intuneApplicationConfiguration.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
             })
           })
@@ -253,6 +286,29 @@ describe('Microsoft Security adapter', () => {
                 },
               })
             })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const intuneApplicationConfigurationWithAssignments = intuneApplicationConfigurations.find(
+                e => e.elemID.name === 'test_ios@s',
+              )
+              expect(intuneApplicationConfigurationWithAssignments).toBeDefined()
+              const { assignments } = (intuneApplicationConfigurationWithAssignments as InstanceElement).value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include assignments field as empty array when there are no assignments', async () => {
+              const intuneApplicationConfigurationWithoutAssignments = intuneApplicationConfigurations.find(
+                e => e.elemID.name === 'test_android@s',
+              )
+              expect(intuneApplicationConfigurationWithoutAssignments).toBeDefined()
+              const { assignments } = (intuneApplicationConfigurationWithoutAssignments as InstanceElement).value
+              expect(assignments).toHaveLength(0)
+            })
           })
 
           describe('device configurations', () => {
@@ -275,6 +331,30 @@ describe('Microsoft Security adapter', () => {
                   'test_windows_health_monitoring@s',
                 ]),
               )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const intuneDeviceConfigurationWithAssignments = intuneDeviceConfigurations.find(
+                e => e.elemID.name === 'test_windows_health_monitoring@s',
+              )
+              expect(intuneDeviceConfigurationWithAssignments).toBeDefined()
+              const { assignments } = (intuneDeviceConfigurationWithAssignments as InstanceElement).value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include assignments field as empty array when there are no assignments', async () => {
+              const intuneDeviceConfigurationWithoutAssignments = intuneDeviceConfigurations.filter(
+                e => e.elemID.name !== 'test_windows_health_monitoring@s',
+              )
+              expect(intuneDeviceConfigurationWithoutAssignments).toHaveLength(3)
+              expect(
+                intuneDeviceConfigurationWithoutAssignments.every(e => e.value.assignments?.length === 0),
+              ).toBeTruthy()
             })
           })
 
@@ -303,6 +383,17 @@ describe('Microsoft Security adapter', () => {
               expect(Object.keys(intuneDeviceConfigurationSettingCatalog.value.settings[0])).toEqual([
                 'settingInstance',
               ])
+            })
+
+            it('should include the assignments field with references to the matching groups', async () => {
+              const intuneDeviceConfigurationSettingCatalog = intuneDeviceConfigurationSettingCatalogs[0]
+              const { assignments } = intuneDeviceConfigurationSettingCatalog.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
             })
           })
 
@@ -343,7 +434,19 @@ describe('Microsoft Security adapter', () => {
                 'gracePeriodHours',
                 'actionType',
                 'notificationTemplateId',
+                'notificationMessageCCList',
               ])
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const intuneDeviceCompliance = intuneDeviceCompliances[0]
+              const { assignments } = intuneDeviceCompliance.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
             })
           })
         })

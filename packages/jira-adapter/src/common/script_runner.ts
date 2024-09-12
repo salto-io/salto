@@ -5,5 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export { createDeployDefinitions } from './shared/deploy'
-export { GET_MANAGED_STORE_APP_POST_DEPLOY_PATH } from './intune/utils/application'
+import { InstanceElement } from '@salto-io/adapter-api'
+import { FILTER_TYPE_NAME } from '../constants'
+
+export const isEnhancedSearchInstance = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === FILTER_TYPE_NAME &&
+  instance.value.description?.startsWith('Filter managed by Enhanced Search')

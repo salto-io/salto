@@ -890,20 +890,17 @@ describe('buildMetadataQuery', () => {
           isFolderType: false,
         },
       },
-      // Managed Instances should be queried for their InstalledPackage metadata instance
-      ...[
-        'salesforce.ApexClass.instance.sbaa__AccessTestingUtil',
-        'salesforce.WebLink.instance.sbaa__Approval__c_sbaa__Approve',
-      ].map(elemFullName => ({
-        elemFullName,
+      // Managed Instance
+      {
+        elemFullName: 'salesforce.WebLink.instance.sbaa__Approval__c_sbaa__Approve',
         expectedMetadataInstance: {
-          namespace: 'standard',
-          metadataType: 'InstalledPackage',
-          name: 'sbaa',
+          namespace: 'sbaa',
+          metadataType: 'WebLink',
+          name: 'sbaa__Approval__c_sbaa__Approve',
           changedAt: undefined,
           isFolderType: false,
         },
-      })),
+      },
     ]
 
     describe.each(testCases)(

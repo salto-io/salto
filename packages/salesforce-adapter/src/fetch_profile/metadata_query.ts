@@ -16,9 +16,7 @@ import {
   DEFAULT_NAMESPACE,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
-  INSTALLED_PACKAGE_METADATA,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
-  SALESFORCE,
   SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
@@ -329,12 +327,6 @@ export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): Metadata
   const elemIDToMetadataInstance = (id: TopLevelElemID): MetadataInstance => {
     const fullName = invertNaclCase(id.name)
     const namespacePrefix = getNamespaceFromString(fullName)
-    if (namespacePrefix && namespacePrefix !== 'standard') {
-      const installedPackageId = getTopLevelElemID(
-        new ElemID(SALESFORCE, INSTALLED_PACKAGE_METADATA, 'instance', namespacePrefix),
-      )
-      return elemIDToMetadataInstance(installedPackageId)
-    }
     const namespace = namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix
     return {
       namespace,

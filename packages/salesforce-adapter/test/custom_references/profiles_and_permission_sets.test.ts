@@ -751,6 +751,11 @@ describe('Profiles And Permission Sets Custom References', () => {
           apexClass: 'SomeApexClass',
           enabled: true,
         },
+        // Make sure we don't omit values of Elements that are not managed in the environment
+        sbaa__ApexClass: {
+          apexClass: 'sbaa__ApexClass',
+          enabled: true,
+        },
       },
       flowAccesses: {
         SomeFlow: {
@@ -799,7 +804,19 @@ describe('Profiles And Permission Sets Custom References', () => {
         const elementsSource = buildElementsSourceFromElements([])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
-          config: {},
+          config: {
+            fetch: {
+              metadata: {
+                include: [
+                  {
+                    metadataType: '.*',
+                    name: '.*',
+                    namespace: '',
+                  },
+                ],
+              },
+            },
+          },
         })
       })
 
@@ -813,7 +830,12 @@ describe('Profiles And Permission Sets Custom References', () => {
               },
             },
             applicationVisibilities: {},
-            classAccesses: {},
+            classAccesses: {
+              sbaa__ApexClass: {
+                apexClass: 'sbaa__ApexClass',
+                enabled: true,
+              },
+            },
             flowAccesses: {},
             layoutAssignments: {},
             objectPermissions: {},
@@ -856,7 +878,19 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
-          config: {},
+          config: {
+            fetch: {
+              metadata: {
+                include: [
+                  {
+                    metadataType: '.*',
+                    name: '.*',
+                    namespace: '',
+                  },
+                ],
+              },
+            },
+          },
         })
       })
 

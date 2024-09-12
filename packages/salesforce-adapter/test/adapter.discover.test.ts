@@ -1378,6 +1378,7 @@ describe('SalesforceAdapter fetch', () => {
           ]),
           expect.anything(),
           expect.anything(),
+          expect.anything(),
         )
       })
     })
@@ -2532,6 +2533,7 @@ public class LargeClass${index} {
               fullName: `${INSTALLED_PACKAGE_NAMESPACE}__InstalledInstance`,
             }),
           ]),
+          expect.anything(),
           expect.anything(),
           expect.anything(),
         )

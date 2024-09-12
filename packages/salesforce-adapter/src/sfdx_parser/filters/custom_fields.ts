@@ -52,7 +52,7 @@ const getFieldsOfCustomObject = async (
         log.warn('skipping %s because we could not get its content', fileName)
         return undefined
       }
-      return xmlToValues(fileContent).values
+      return xmlToValues(fileContent, true).values
     })
     .filter(values.isDefined)
     .toArray()

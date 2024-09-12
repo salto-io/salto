@@ -23,8 +23,16 @@ import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
 import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, XML_ATTRIBUTE_PREFIX } from '../../src/constants'
+import { FetchProfile } from '../../src/types'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('XML Transformer', () => {
+  let fetchProfile: FetchProfile
+  beforeEach(() => {
+    fetchProfile = buildFetchProfile({
+      fetchParams: {},
+    })
+  })
   describe('createDeployPackage', () => {
     const xmlParser = new XMLParser()
     const getZipFiles = async (pkg: DeployPackage): Promise<Record<string, string>> => {
@@ -394,7 +402,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['ApexClass']),
           new Set(['ApexClass']),
-          false,
+          fetchProfile,
         )
         expect(values).toHaveLength(1)
         const [apex] = values
@@ -454,7 +462,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['ApexClass']),
           new Set(['ApexClass']),
-          false,
+          fetchProfile,
         )
         expect(values).toHaveLength(1)
         const [apex] = values
@@ -527,7 +535,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['EmailTemplate', 'EmailFolder']),
           new Set(['EmailTemplate']),
-          false,
+          fetchProfile,
         )
         emailFolder = values.find(value => value.file.type === 'EmailFolder')?.values
         emailTemplate = values.find(value => value.file.type === 'EmailTemplate')?.values
@@ -623,7 +631,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -639,7 +647,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -764,7 +772,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -780,7 +788,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -815,7 +823,7 @@ describe('XML Transformer', () => {
         }
       })
       it('should return empty object', async () => {
-        const values = await fromRetrieveResult(retrieveResult, fileProperties, new Set(), new Set(), false)
+        const values = await fromRetrieveResult(retrieveResult, fileProperties, new Set(), new Set(), fetchProfile)
         expect(values).toContainEqual(
           expect.objectContaining({
             values: expect.objectContaining({ fullName: 'MyReportType' }),

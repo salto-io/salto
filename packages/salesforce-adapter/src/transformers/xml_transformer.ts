@@ -43,7 +43,7 @@ import {
   toDeployableInstance,
   assertMetadataObjectType,
 } from './transformer'
-import {FetchProfile} from "../types";
+import { FetchProfile } from '../types'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -281,7 +281,7 @@ export const complexTypesMap: ComplexTypesMap = {
 export const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
-const parserOptions: X2jOptions  = {
+const parserOptions: X2jOptions = {
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreDeclaration: true,
@@ -289,10 +289,13 @@ const parserOptions: X2jOptions  = {
 }
 
 const parserV1 = new XMLParser(parserOptions)
-const parserV2 = new XMLParser({ ...parserOptions, numberParseOptions: { hex: false, leadingZeros: false, eNotation: false, skipLike: /.*/ }, })
+const parserV2 = new XMLParser({
+  ...parserOptions,
+  numberParseOptions: { hex: false, leadingZeros: false, eNotation: false, skipLike: /.*/ },
+})
 
-export const xmlToValues = (xmlAsString: string, fetchProfile: FetchProfile): { values: Values; typeName: string } => {
-  const parser = fetchProfile.isFeatureEnabled('useXmlParserV2') ? parserV2 : parserV1
+export const xmlToValues = (xmlAsString: string, useXmlParserV2: boolean): { values: Values; typeName: string } => {
+  const parser = useXmlParserV2 ? parserV2 : parserV1
   // SF do not encode their CRs and the XML parser converts them to LFs, so we preserve them.
   const parsedXml = parser.parse(xmlAsString.replace(/\r/g, '&#xD;'))
 
@@ -362,6 +365,7 @@ export const fromRetrieveResult = async (
   fileProps: ReadonlyArray<FileProperties>,
   typesWithMetaFile: Set<string>,
   typesWithContent: Set<string>,
+  fetchProfile: FetchProfile,
 ): Promise<{ file: FileProperties; values: MetadataValues }[]> => {
   const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
@@ -381,9 +385,12 @@ export const fromRetrieveResult = async (
       return undefined
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
-    const metadataValues = Object.assign(xmlToValues(instanceValuesBuffer.toString()).values, {
-      [INSTANCE_FULL_NAME_FIELD]: file.fullName,
-    })
+    const metadataValues = Object.assign(
+      xmlToValues(instanceValuesBuffer.toString(), fetchProfile.isFeatureEnabled('useXmlParserV2')).values,
+      {
+        [INSTANCE_FULL_NAME_FIELD]: file.fullName,
+      },
+    )
 
     // add content fields
     if (typesWithContent.has(file.type) || isComplexType(file.type)) {

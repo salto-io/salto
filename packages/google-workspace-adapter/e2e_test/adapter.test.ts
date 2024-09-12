@@ -128,6 +128,9 @@ const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<Dep
         changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
         progressReporter: nullProgressReporter,
       })
+      if (deployResult.errors.length) {
+        log.info('Deploy errors: %o', deployResult.errors)
+      }
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)
       deployResult.appliedChanges
@@ -154,10 +157,10 @@ const getChangesForInitialCleanup = (elements: InstanceElement[]): Change<Instan
   elements.filter(checkNameField).map(instance => toChange({ before: instance }))
 
 const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
-  log.info('Cleaning up the environment before starting e2e test')
+  log.debug('Cleaning up the environment before starting e2e test')
   const cleanupChanges = getChangesForInitialCleanup(elements)
   await deployChanges(adapterAttr, cleanupChanges)
-  log.info('Environment cleanup successful')
+  log.debug('Environment cleanup successful')
 }
 
 describe('Google Workspace adapter E2E', () => {
@@ -176,7 +179,7 @@ describe('Google Workspace adapter E2E', () => {
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
-      log.info(
+      log.debug(
         'Google WS fetch result instance elements: %o',
         fetchResult.elements.filter(isInstanceElement).map(e => e.elemID.getFullName()),
       )
@@ -263,7 +266,7 @@ describe('Google Workspace adapter E2E', () => {
         .flat()
         .map(change => getChangeData(change)) as InstanceElement[]
 
-      log.info('Deployed instances length: %d', deployInstances.length)
+      log.debug('Deployed instances length: %d', deployInstances.length)
       // TODO SALTO-6535 there is a flakiness in the fetch of the group type that we need to fix
       deployInstances
         .filter(deployInstance => deployInstance.elemID.typeName !== GROUP_TYPE_NAME)

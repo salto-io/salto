@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { SaltoError, isInstanceElement } from '@salto-io/adapter-api'
+import { SaltoError, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../src/client'
 import { createMockQuery } from '../../src/fetch/query'
 import { noPagination } from '../../src/fetch/request/pagination'
@@ -89,6 +89,7 @@ describe('fetch', () => {
     it('should generate elements correctly', async () => {
       const customSaltoError: SaltoError = {
         message: 'error fetching default option',
+        detailedMessage: 'error fetching default option',
         severity: 'Warning',
       }
       const res = await getElements<{ customNameMappingOptions: 'custom' }>({
@@ -293,12 +294,12 @@ describe('fetch', () => {
         reason: 'error fetching options',
       })
       expect(res.elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'myAdapter.default_option',
         'myAdapter.depending_option',
         'myAdapter.depending_option.instance.deps1Custom',
         'myAdapter.field',
         'myAdapter.field.instance.field1Custom',
         'myAdapter.field.instance.field2Custom',
-        'myAdapter.field__default',
         'myAdapter.group',
         'myAdapter.group.instance.group1Custom',
         'myAdapter.option',
@@ -310,6 +311,7 @@ describe('fetch', () => {
           .filter(isInstanceElement)
           .find(e => e.elemID.getFullName() === 'myAdapter.field.instance.field1Custom')?.value.default,
       ).toEqual({ name: 'opt1' })
+      expect(res.elements.filter(isObjectType).find(e => e.elemID.typeName === 'field')?.fields.default?.getTypeSync().elemID.typeName).toEqual('default_option')
       // TODO continue
     })
   })

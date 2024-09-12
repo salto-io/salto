@@ -397,14 +397,8 @@ ${Prompts.LIST_IDS(ids)}
   public static readonly CLONE_TARGET_ENV_ERROR =
     "Please specify the target environment(s) by passing exactly one of '--to-envs' and '--to-all-envs' parameters"
 
-  public static readonly UNKNOWN_STATE_SALTO_VERSION =
-    'Can not determine the Salto version that was when the state of the accounts was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
-
   public static readonly OLD_STATE_SALTO_VERSION = (stateSaltoVersion: string): string =>
     `The state of the accounts was last fetched using Salto's version ${stateSaltoVersion}. It is highly recommended to run the fetch command again before proceeding - do you want to cancel?`
-
-  public static readonly NEW_STATE_SALTO_VERSION = (stateSaltoVersion: string): string =>
-    `The state of the accounts was last fetched using Salto's version ${stateSaltoVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
 
   public static readonly CLEAN_WORKSPACE_SUMMARY = (parts: string[]): string =>
     `Going to clean the following workspace components and restore them to their initial state: ${parts.join(

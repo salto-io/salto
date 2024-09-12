@@ -16,6 +16,7 @@ import {
   createDeployPackage,
   DeployPackage,
   CONTENT_FILENAME_OVERRIDE,
+  xmlToValues,
 } from '../../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
@@ -829,6 +830,30 @@ describe('XML Transformer', () => {
             values: expect.objectContaining({ fullName: 'MyReportType' }),
           }),
         )
+      })
+    })
+    describe('with number values', () => {
+      const XML_STRING =
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<AuraDefinitionBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n' +
+        '    <apiVersion>047.0</apiVersion>\n' +
+        '    <description>myAuraDefinitionBundle description</description>\n' +
+        '</AuraDefinitionBundle>\n'
+      describe('when useXmlParserV2 is false', () => {
+        it('should attempt to convert the string to number', () => {
+          expect(xmlToValues(XML_STRING, false).values).toEqual({
+            apiVersion: 47,
+            description: 'myAuraDefinitionBundle description',
+          })
+        })
+      })
+      describe('when useXmlParserV2 is true', () => {
+        it('should not attempt to convert the string to number', () => {
+          expect(xmlToValues(XML_STRING, true).values).toEqual({
+            apiVersion: '047.0',
+            description: 'myAuraDefinitionBundle description',
+          })
+        })
       })
     })
   })

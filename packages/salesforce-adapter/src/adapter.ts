@@ -413,15 +413,19 @@ export const SYSTEM_FIELDS = [
 
 export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
-const getMetadataTypesFromElementsSource = async (elementsSource: ReadOnlyElementsSource): Promise<TypeElement[]> =>
+const getIncludedTypesFromElementsSource = async (
+  elementsSource: ReadOnlyElementsSource,
+  metadataQuery: MetadataQuery,
+): Promise<TypeElement[]> =>
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
     // standard and custom objects
     .filter(metadataType => !isCustomObjectSync(metadataType))
-    // custom types (CustomMetadata / CustomObject (non standard) / CustomSettings)
+    // custom types (CustomMetadata / CustomObject (non-standard) / CustomSettings)
     .filter(metadataType => !isCustomType(metadataType))
     // settings types
     .filter(metadataType => !metadataType.isSettings)
+    .filter(type => metadataQuery.isTypeMatch(apiNameSync(type) ?? ''))
     .toArray()
 
 type CreateFiltersRunnerParams = {
@@ -560,9 +564,9 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const metadataTypesPromise = this.fetchTypes({
       metadataQuery,
       withChangesDetection,
-      typeInfoPromise: metadataTypeInfosPromise,
-      knownMetadataTypes: hardCodedTypes,
-      metaType: metadataMetaType,
+      metadataTypeInfosPromise,
+      hardCodedTypes,
+      metadataMetaType,
     })
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
@@ -736,34 +740,32 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   private async fetchTypes({
     metadataQuery,
     withChangesDetection,
-    typeInfoPromise,
-    knownMetadataTypes,
-    metaType,
+    metadataTypeInfosPromise,
+    hardCodedTypes,
+    metadataMetaType,
   }: {
     metadataQuery: MetadataQuery
     withChangesDetection: boolean
-    typeInfoPromise: Promise<MetadataObject[]>
-    knownMetadataTypes: TypeElement[]
-    metaType?: ObjectType
+    metadataTypeInfosPromise: Promise<MetadataObject[]>
+    hardCodedTypes: TypeElement[]
+    metadataMetaType?: ObjectType
   }): Promise<TypeElement[]> {
     if (!withChangesDetection) {
-      return this.fetchMetadataTypes(typeInfoPromise, knownMetadataTypes, metaType)
+      return this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
     }
-    const metadataTypes = await typeInfoPromise
-    const typesFromSource = (await getMetadataTypesFromElementsSource(this.elementsSource)).filter(type =>
-      metadataQuery.isTypeMatch(apiNameSync(type) ?? ''),
-    )
-    const typesFromSourceNames = new Set(typesFromSource.map(metadataType => apiNameSync(metadataType)))
-    const missingTypes = metadataTypes.filter(type => !typesFromSourceNames.has(type.xmlName))
+    const metadataTypes = await metadataTypeInfosPromise
+    const includedTypesFromSource = await getIncludedTypesFromElementsSource(this.elementsSource, metadataQuery)
+    const includedTypesFromSourceNames = new Set(includedTypesFromSource.map(metadataType => apiNameSync(metadataType)))
+    const missingTypes = metadataTypes.filter(type => !includedTypesFromSourceNames.has(type.xmlName))
     if (missingTypes.length === 0) {
-      return typesFromSource
+      return includedTypesFromSource
     }
     log.debug(
       'Going to fetch the following metadata types in fetchWithChangesDetection: %s',
       inspectValue(missingTypes.map(type => type.xmlName)),
     )
-    return typesFromSource.concat(
-      await this.fetchMetadataTypes(Promise.resolve(missingTypes), knownMetadataTypes, metaType),
+    return includedTypesFromSource.concat(
+      await this.fetchMetadataTypes(Promise.resolve(missingTypes), hardCodedTypes, metadataMetaType),
     )
   }
 
@@ -864,7 +866,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const metadataElements = (await awu(await this.elementsSource.getAll()).toArray())
       .filter(element => !constants.NON_LISTED_ELEMENT_IDS.includes(element.elemID.getFullName()))
       .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
-    return _(metadataElements).groupBy(metadataTypeSync).value()
+    return _.groupBy(metadataElements, metadataTypeSync)
   }
 
   private async getDeletedMetadataForPartialFetch(
@@ -886,15 +888,14 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const metadataElementsByTypeFromSource = await this.getMetadataElementsByTypeFromSource()
     const deletedElemIds = new Set<ElemID>()
     Object.entries(metadataElementsByTypeFromSource).forEach(([typeName, elementsFromSource]) => {
-      // Instances of Type that is not part of the fetch targets should not be handled
-      if (isTargetedFetch && !fetchProfile.metadataQuery.isTypeMatch(typeName)) {
-        return
-      }
-      // Type was excluded, we should remove all of its Instances
       if (!fetchProfile.metadataQuery.isTypeMatch(typeName)) {
-        elementsFromSource.forEach(elementFromSource => {
-          deletedElemIds.add(elementFromSource.elemID)
-        })
+        // Instances of Type that is not part of the fetch targets should not be handled
+        if (!isTargetedFetch) {
+          // Type was excluded, we should remove all of its Instances
+          elementsFromSource.forEach(elementFromSource => {
+            deletedElemIds.add(elementFromSource.elemID)
+          })
+        }
         return
       }
       const metadataType = metadataTypesByName[typeName]
@@ -909,7 +910,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       }
       const listedElemIdsFullNames = new Set(
         Array.from(listedInstancesFullNames)
-          // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
+          // Create the correct elemID that we calculate in fetch
           .map(fullName => createElemId(metadataType, fullName).getFullName()),
       )
 

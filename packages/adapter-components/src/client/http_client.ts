@@ -53,6 +53,7 @@ export type ClientBaseParams = {
     // true: &arg[0]=val1&arg[1]=val2
     // null: &arg=val1&arg=val2
     indexes?: boolean | null
+    omitEmpty?: boolean
   }
 }
 
@@ -301,13 +302,16 @@ export abstract class AdapterHTTPClient<TCredentials, TRateLimitConfig extends C
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
-    const { url, queryParams, headers, responseType, queryParamsSerializer: paramsSerializer } = params
+    const { url, queryParams, headers, responseType, queryParamsSerializer } = params
     const data = isMethodWithData(params) ? params.data : undefined
+    const paramsSerializerObj = _.omit(queryParamsSerializer, 'omitEmpty')
+    const paramsSerializer = _.isEmpty(paramsSerializerObj) ? undefined : paramsSerializerObj
+    const filteredQueryParams = queryParamsSerializer?.omitEmpty ? _.omitBy(queryParams, _.isEmpty) : queryParams
 
     try {
-      const requestConfig = [queryParams, headers, responseType, paramsSerializer].some(values.isDefined)
+      const requestConfig = [filteredQueryParams, headers, responseType, paramsSerializer].some(values.isDefined)
         ? {
-            params: queryParams,
+            params: filteredQueryParams,
             headers,
             responseType,
             paramsSerializer,

@@ -437,6 +437,65 @@ describe('Nacl Files Source', () => {
       await src.updateNaclFiles([change])
       expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
     })
+    it('should not delete static file if there are multiple appearances of it (in different files)', async () => {
+      getChangeLocationsMock.mockImplementationOnce(
+        (change: DetailedChange) =>
+          ({
+            ...change,
+            location: {
+              filename: 'file1',
+              start: { line: 0, row: 0, byte: 0 },
+              end: { line: 0, row: 0, byte: 0 },
+            },
+          }) as unknown as DetailedChangeWithSource[],
+      )
+      getChangeLocationsMock.mockImplementationOnce(
+        (change: DetailedChange) =>
+          ({
+            ...change,
+            location: {
+              filename: 'file2',
+              start: { line: 0, row: 0, byte: 0 },
+              end: { line: 0, row: 0, byte: 0 },
+            },
+          }) as unknown as DetailedChangeWithSource[],
+      )
+
+      const newInstanceElement1 = new InstanceElement(
+        'inst1',
+        new ObjectType({ elemID: new ElemID('dummy', 'type') }),
+        {
+          file2: sfile,
+        },
+      )
+      const newInstanceElement2 = new InstanceElement(
+        'inst2',
+        new ObjectType({ elemID: new ElemID('dummy', 'type') }),
+        {
+          file2: sfile,
+        },
+      )
+      const detailedChange1 = {
+        action: 'add',
+        id: newInstanceElement1.elemID,
+        data: { after: newInstanceElement1 },
+      } as DetailedChange
+      const detailedChange2 = {
+        action: 'add',
+        id: newInstanceElement2.elemID,
+        data: { after: newInstanceElement2 },
+      } as DetailedChange
+
+      await src.updateNaclFiles([detailedChange1, detailedChange2])
+
+      const removal = {
+        id: newInstanceElement1.elemID.createNestedID('file'),
+        action: 'remove',
+        data: { before: sfile },
+      } as DetailedChange
+      await src.updateNaclFiles([removal])
+      expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
+    })
     it('should not delete static file if the file was both added and deleted', async () => {
       getChangeLocationsMock.mockImplementationOnce(
         (change: DetailedChange) =>
@@ -717,14 +776,17 @@ describe('Nacl Files Source', () => {
     const staticFile4 = new StaticFile({ filepath: 'path4', hash: 'hash4' })
     const staticFile5 = new StaticFile({ filepath: 'path5', hash: 'hash5' })
     const staticFile6 = new StaticFile({ filepath: 'path6', hash: 'hash6' })
+    const staticFile7 = new StaticFile({ filepath: 'path7', hash: 'hash7' })
 
-    beforeAll(() => {
+    beforeAll(async () => {
       beforeElem = new InstanceElement('elem', new ObjectType({ elemID: new ElemID('salesforce', 'type') }), {
         f1: staticFile1, // To modify
         f2: staticFile2, // To remove
         f3: staticFile5, // To change location
         a: { f3: staticFile3 }, // To modify
         b: { f4: staticFile4 }, // To remove
+        stays: staticFile7, // To stay
+        remove: staticFile7, // To remove - shouldn't be returned
       })
       afterElem = beforeElem.clone()
 
@@ -734,8 +796,12 @@ describe('Nacl Files Source', () => {
       delete afterElem.value.f3
       afterElem.value.a = 's'
       delete afterElem.value.b
+      delete afterElem.value.remove
 
-      result = getDanglingStaticFiles(detailedCompare(beforeElem, afterElem))
+      const staticFilesIndex = {
+        get: async (staticFile: string) => (staticFile !== 'path7' ? ['singleNaclPath'] : ['multi', 'naclPaths']),
+      }
+      result = await getDanglingStaticFiles(detailedCompare(beforeElem, afterElem), staticFilesIndex)
       expect(result).toHaveLength(4)
     })
     it('should return static file that was modified', () => {
@@ -752,6 +818,9 @@ describe('Nacl Files Source', () => {
     })
     it('should not return static file if the path in element has changed', () => {
       expect(result).not.toContain(staticFile5)
+    })
+    it('should not return removed static file if it is still referenced in another field', () => {
+      expect(result).not.toContain(staticFile7)
     })
   })
 })

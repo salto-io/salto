@@ -60,7 +60,7 @@ const pathPrefixRegex = new RegExp(
   'm',
 )
 // matches key strings in format of 'key': value or key: value
-const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*.+`, 'gm')
+const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*\\S`, 'gm')
 // matches comments in js files
 // \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
 // ^\\s*\\/\\/.* - matches single line comments that start with '//'
@@ -224,31 +224,35 @@ const getSuiteScriptReferences = async (
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )
   if (config.fetch.calculateNewReferencesInSuiteScripts) {
-    const foundReferences = getReferencesWithRegex(content)
-    if (!hasValidExtension(element.value[PATH], config)) {
-      const referencesToBeRemoved = getServiceElemIDsFromPaths(
-        foundReferences,
+    try {
+      const foundReferences = getReferencesWithRegex(content)
+      if (!hasValidExtension(element.value[PATH], config)) {
+        const referencesToBeRemoved = getServiceElemIDsFromPaths(
+          foundReferences,
+          serviceIdToElemID,
+          customRecordFieldsToServiceIds,
+          element,
+        )
+        if (referencesToBeRemoved.length > 0) {
+          log.info(
+            'Ignoring file with unsupported extension %s and %d references will be removed: %o',
+            element.value[PATH],
+            referencesToBeRemoved.length,
+            referencesToBeRemoved,
+          )
+        }
+        skippedFileExtensions.add(osPath.extname(element.value[PATH]))
+      }
+      getAndLogReferencesDiff({
+        newReferences: foundReferences,
+        existingReferences: semanticReferences,
+        element,
         serviceIdToElemID,
         customRecordFieldsToServiceIds,
-        element,
-      )
-      if (referencesToBeRemoved.length > 0) {
-        log.info(
-          'Ignoring file with unsupported extension %s and %d references will be removed: %o',
-          element.value[PATH],
-          referencesToBeRemoved.length,
-          referencesToBeRemoved,
-        )
-      }
-      skippedFileExtensions.add(osPath.extname(element.value[PATH]))
+      })
+    } catch (e) {
+      log.error('Failed extracting references from file %s with error: %o', element.value[PATH], e)
     }
-    getAndLogReferencesDiff({
-      newReferences: foundReferences,
-      existingReferences: semanticReferences,
-      element,
-      serviceIdToElemID,
-      customRecordFieldsToServiceIds,
-    })
   }
 
   return getServiceElemIDsFromPaths(

@@ -5,8 +5,10 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { Options } from '../types'
+import { EndpointPath, Options } from '../types'
+import { GET_MANAGED_STORE_APP_POST_DEPLOY_PATH } from '../deploy'
 
 export const GRAPH_V1_PATH = '/v1.0'
 export const GRAPH_BETA_PATH = '/beta'
@@ -41,6 +43,15 @@ export const createClientDefinitions = (
                 retries: 3,
                 checkStatus: response => response.status === 200,
                 retryOnStatus: [404],
+              },
+            },
+          },
+          [`/beta${GET_MANAGED_STORE_APP_POST_DEPLOY_PATH}` as EndpointPath]: {
+            get: {
+              polling: {
+                interval: 5000,
+                retries: 6,
+                checkStatus: response => !_.isEmpty(_.get(response.data, 'value')),
               },
             },
           },

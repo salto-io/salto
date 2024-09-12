@@ -573,10 +573,39 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data after:\n%s', naclDataAfter)
 }
 
-// Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
-export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFile[] => {
-  // Using filepath is currently enough because all implementations of static files have unique file paths
-  // The only exception is 'buildHistoryStateStaticFilesSource' but it doesn't support deletion at the moment
+const filterStaticFilesByIndex = async (
+  danglingStaticFiles: StaticFile[],
+  staticFileIndex: Pick<RemoteMap<string[]>, 'get'>,
+): Promise<StaticFile[]> => {
+  const elementsByFilePaths = _.groupBy(danglingStaticFiles, file => file.filepath)
+  const files = await Promise.all(
+    _.flatMap(elementsByFilePaths, async (staticFiles, filePath) => {
+      const indexedStaticFileAmount = (await staticFileIndex.get(filePath))?.length
+      if (indexedStaticFileAmount && staticFiles.length < indexedStaticFileAmount) {
+        // There are additional static files in the index that are not in the changes
+        log.debug(
+          `For static file ${filePath}: Trying to remove ${staticFiles.length} while there are ${indexedStaticFileAmount} files in the index.`,
+        )
+        return []
+      }
+      // All static files were removed
+      return staticFiles
+    }),
+  )
+  return files.flat()
+}
+
+/* 
+  Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
+  If staticFileIndex is defined, it also checks whether there are any other elements that still point to the specific file.
+  NOTE: Because of the current structure of the static file index, 
+  we can't recognize the case where a single file has pointers to the same static file multiple times.
+  This can be either with a single element that has multiple pointers to the same file, or multiple elements that point to the same static file.
+*/
+export const getDanglingStaticFiles = async (
+  fileChanges: DetailedChange[],
+  staticFileIndex?: Pick<RemoteMap<string[]>, 'get'>,
+): Promise<StaticFile[]> => {
   const afterFilePaths = new Set<string>(
     fileChanges
       .filter(isAdditionOrModificationChange)
@@ -584,11 +613,14 @@ export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFil
       .flatMap(getNestedStaticFiles)
       .map(file => file.filepath),
   )
-  return fileChanges
+  const danglingStaticFiles = fileChanges
     .filter(isRemovalOrModificationChange)
-    .map(change => change.data.before)
+    .map(({ id, data }) => ({ id, data: data.before }))
     .flatMap(getNestedStaticFiles)
-    .filter(file => !afterFilePaths.has(file.filepath))
+    .filter(staticFile => !afterFilePaths.has(staticFile.filepath))
+  return staticFileIndex === undefined
+    ? danglingStaticFiles
+    : filterStaticFilesByIndex(danglingStaticFiles, staticFileIndex)
 }
 
 const buildNaclFilesSource = (
@@ -834,10 +866,10 @@ const buildNaclFilesSource = (
       return naclFile ? naclFile.buffer : ''
     }
 
-    // This method was written with the assumption that each static file is pointed by no more
-    // then one value in the nacls. A ticket was open to fix that (SALTO-954)
     const removeDanglingStaticFiles = async (allChanges: DetailedChange[]): Promise<void> => {
-      await Promise.all(getDanglingStaticFiles(allChanges).map(file => staticFilesSource.delete(file)))
+      const { staticFilesIndex } = await getState()
+      const danglingStaticFiles = await getDanglingStaticFiles(allChanges, staticFilesIndex)
+      await Promise.all(danglingStaticFiles.map(file => staticFilesSource.delete(file)))
     }
     const changesByFileName = await groupChangesByFilename(changes)
     log.debug(

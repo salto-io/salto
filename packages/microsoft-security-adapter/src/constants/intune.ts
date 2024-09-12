@@ -13,6 +13,9 @@ const { recursiveNestedTypeName } = fetchUtils.element
 const toIntuneTypeName = (typeName: string): string => `Intune${typeName}`
 
 /* Field names */
+// Shared fields
+export const ASSIGNMENTS_FIELD_NAME = 'assignments'
+
 // Application fields
 export const PACKAGE_ID_FIELD_NAME = 'packageId'
 export const BUNDLE_ID_FIELD_NAME = 'bundleId'
@@ -67,3 +70,20 @@ export const DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME = recur
 
 // Urls
 export const SERVICE_BASE_URL = 'https://intune.microsoft.com'
+
+// Group assignments
+export const TYPES_WITH_GROUP_ASSIGNMENTS = [
+  APPLICATION_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  DEVICE_CONFIGURATION_TYPE_NAME,
+  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+  DEVICE_COMPLIANCE_TYPE_NAME,
+]
+export const TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS = TYPES_WITH_GROUP_ASSIGNMENTS.map(typeName =>
+  recursiveNestedTypeName(typeName, ASSIGNMENTS_FIELD_NAME),
+)
+export const TYPES_WITH_GROUP_ASSIGNMENTS_TARGET = TYPES_WITH_GROUP_ASSIGNMENTS.map(typeName =>
+  recursiveNestedTypeName(typeName, ASSIGNMENTS_FIELD_NAME, 'target'),
+)
+export const ASSIGNMENTS_ODATA_CONTEXT = 'assignments@odata.context'

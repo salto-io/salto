@@ -70,7 +70,7 @@ export const createResourceManager = <ClientOptions extends string>({
             query,
             requester,
             handleError: elementGenerator.handleError,
-            initialRequestContext: _.defaults({}, initialRequestContext, context),
+            initialRequestContext: _.defaults({}, context, initialRequestContext),
             customItemFilter,
           })
         const directFetchResourceDefs = _.pickBy(resourceDefQuery.getAll(), def => def.directFetch)

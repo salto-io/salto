@@ -110,7 +110,6 @@ export type OptionalFeatures = {
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
-  fixRetrieveFilePaths?: boolean
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
@@ -809,7 +808,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
-    fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },

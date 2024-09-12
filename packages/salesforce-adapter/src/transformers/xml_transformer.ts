@@ -7,7 +7,7 @@
  */
 import wu from 'wu'
 import _ from 'lodash'
-import { XMLBuilder, XMLParser } from 'fast-xml-parser'
+import { XMLBuilder, XMLParser, X2jOptions } from 'fast-xml-parser'
 import { RetrieveResult, FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -43,6 +43,7 @@ import {
   toDeployableInstance,
   assertMetadataObjectType,
 } from './transformer'
+import {FetchProfile} from "../types";
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -280,14 +281,18 @@ export const complexTypesMap: ComplexTypesMap = {
 export const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
-const parser = new XMLParser({
+const parserOptions: X2jOptions  = {
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreDeclaration: true,
   tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
-})
+}
 
-export const xmlToValues = (xmlAsString: string): { values: Values; typeName: string } => {
+const parserV1 = new XMLParser(parserOptions)
+const parserV2 = new XMLParser({ ...parserOptions, numberParseOptions: { hex: false, leadingZeros: false, eNotation: false, skipLike: /.*/ }, })
+
+export const xmlToValues = (xmlAsString: string, fetchProfile: FetchProfile): { values: Values; typeName: string } => {
+  const parser = fetchProfile.isFeatureEnabled('useXmlParserV2') ? parserV2 : parserV1
   // SF do not encode their CRs and the XML parser converts them to LFs, so we preserve them.
   const parsedXml = parser.parse(xmlAsString.replace(/\r/g, '&#xD;'))
 

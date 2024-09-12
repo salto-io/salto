@@ -23,7 +23,7 @@ const {
   SIMPLE_SETTING_VALUE_FIELD_NAME,
 } = intuneConstants
 
-// In the UI, some of the device configurations (setting catalog) are located in the Device Configuration settings tab
+// In the Intune admin center, some of the device configurations (setting catalog) are located in the Device Configuration settings tab
 // and some are located in the Platform Scripts tab. We align with the UI view by separating them to two different types.
 export const DEVICE_CONFIGURATION_SETTINGS_FETCH_DEFINITION: FetchApiDefinition = {
   resource: {

@@ -157,10 +157,10 @@ const getChangesForInitialCleanup = (elements: InstanceElement[]): Change<Instan
   elements.filter(checkNameField).map(instance => toChange({ before: instance }))
 
 const deployCleanup = async (adapterAttr: Reals, elements: InstanceElement[]): Promise<void> => {
-  log.debug('Cleaning up the environment before starting e2e test')
+  log.info('Cleaning up the environment before starting e2e test')
   const cleanupChanges = getChangesForInitialCleanup(elements)
   await deployChanges(adapterAttr, cleanupChanges)
-  log.debug('Environment cleanup successful')
+  log.info('Environment cleanup successful')
 }
 
 describe('Google Workspace adapter E2E', () => {
@@ -179,7 +179,7 @@ describe('Google Workspace adapter E2E', () => {
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
-      log.debug(
+      log.info(
         'Google WS fetch result instance elements: %o',
         fetchResult.elements.filter(isInstanceElement).map(e => e.elemID.getFullName()),
       )
@@ -266,7 +266,7 @@ describe('Google Workspace adapter E2E', () => {
         .flat()
         .map(change => getChangeData(change)) as InstanceElement[]
 
-      log.debug('Deployed instances length: %d', deployInstances.length)
+      log.info('Deployed instances length: %d', deployInstances.length)
       // TODO SALTO-6535 there is a flakiness in the fetch of the group type that we need to fix
       deployInstances
         .filter(deployInstance => deployInstance.elemID.typeName !== GROUP_TYPE_NAME)

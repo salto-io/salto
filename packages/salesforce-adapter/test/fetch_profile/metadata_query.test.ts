@@ -892,7 +892,7 @@ describe('buildMetadataQuery', () => {
       },
       // Managed Instance
       // Known issue: Sub-instances of CustomObjects (WebLinks, CompactLayouts etc...) name is not their actual
-      // fullName but instead CustomObjectApiName_InstanceName instead of CustomObjectApiName.instanceName.
+      // fullName but instead CustomObjectApiName_InstanceName when it's supposed to be CustomObjectApiName.instanceName.
       {
         elemFullName: 'salesforce.WebLink.instance.sbaa__Approval__c_sbaa__Approve',
         expectedMetadataInstance: {

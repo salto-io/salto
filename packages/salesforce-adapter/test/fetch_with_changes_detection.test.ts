@@ -9,7 +9,7 @@
 import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceAdapter from '../index'
@@ -22,6 +22,7 @@ import {
   CUSTOM_FIELD,
   CUSTOM_OBJECT,
   FIELD_ANNOTATIONS,
+  PROFILE_METADATA_TYPE,
   UNIX_TIME_ZERO_STRING,
 } from '../src/constants'
 import { mockDefaultValues, mockInstances, mockTypes } from './mock_elements'
@@ -40,7 +41,142 @@ describe('Salesforce Fetch With Changes Detection', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let changedAtSingleton: InstanceElement
-  let deletedApexClasss: InstanceElement
+  let deletedApexClasses: InstanceElement
+  let elementsSource: ReadOnlyElementsSource
+  let retrieveRequest: RetrieveRequest
+
+  const RELATED_TYPES = [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD, CUSTOM_OBJECT, PROFILE_METADATA_TYPE] as const
+  type RelatedType = (typeof RELATED_TYPES)[number]
+  // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
+  const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
+
+  const setupMocks = ({ shouldIncludeProfiles }: { shouldIncludeProfiles: boolean }): void => {
+    ;({ connection, adapter } = mockAdapter({
+      adapterParams: {
+        config: {
+          fetch: {
+            metadata: {
+              include: [
+                {
+                  metadataType: '.*',
+                },
+              ],
+              exclude: shouldIncludeProfiles ? [] : [{ metadataType: PROFILE_METADATA_TYPE }],
+            },
+          },
+        },
+        elementsSource,
+      },
+    }))
+    const filePropByRelatedType: Record<RelatedType, FileProperties[]> = {
+      BusinessProcess: [
+        // Latest related property for Updated__c
+        mockFileProperties({
+          fullName: `${UPDATED_OBJECT_NAME}.TestBusinessProcess`,
+          type: 'BusinessProcess',
+          lastModifiedDate: '2023-11-07T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: `${NON_UPDATED_OBJECT_NAME}.TestBusinessProcess`,
+          type: 'BusinessProcess',
+          lastModifiedDate: '2023-10-01T00:00:00.000Z',
+        }),
+      ],
+      CompactLayout: [
+        mockFileProperties({
+          fullName: `${UPDATED_OBJECT_NAME}.TestCompactLayout`,
+          type: 'CompactLayout',
+          lastModifiedDate: '2023-11-05T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: `${NON_UPDATED_OBJECT_NAME}.TestCompactLayout`,
+          type: 'CompactLayout',
+          lastModifiedDate: '2023-10-03T00:00:00.000Z',
+        }),
+      ],
+      CustomField: [
+        mockFileProperties({
+          fullName: `${UPDATED_OBJECT_NAME}.TestField__c`,
+          type: CUSTOM_FIELD,
+          lastModifiedDate: '2023-11-02T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: `${NON_UPDATED_OBJECT_NAME}.TestField__c`,
+          type: CUSTOM_FIELD,
+          lastModifiedDate: '2023-11-01T00:00:00.000Z',
+        }),
+      ],
+      CustomObject: [
+        mockFileProperties({
+          fullName: UPDATED_OBJECT_NAME,
+          type: CUSTOM_OBJECT,
+          lastModifiedDate: '2023-11-01T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: NON_UPDATED_OBJECT_NAME,
+          type: CUSTOM_OBJECT,
+          lastModifiedDate: '2023-11-01T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: OBJECT_WITH_DELETED_FIELD_NAME,
+          type: CUSTOM_OBJECT,
+          lastModifiedDate: '2023-11-01T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: NON_UPDATED_STANDARD_OBJECT,
+          type: CUSTOM_OBJECT,
+          lastModifiedDate: UNIX_TIME_ZERO_STRING,
+        }),
+      ],
+      FieldSet: [],
+      Index: [],
+      ListView: [
+        mockFileProperties({
+          fullName: `${UPDATED_OBJECT_NAME}.TestListView`,
+          type: 'ListView',
+          lastModifiedDate: '2023-11-06T00:00:00.000Z',
+        }),
+        // Latest related property for NonUpdated__c
+        mockFileProperties({
+          fullName: `${NON_UPDATED_OBJECT_NAME}.TestListView`,
+          type: 'ListView',
+          lastModifiedDate: '2023-11-02T00:00:00.000Z',
+        }),
+      ],
+      RecordType: [],
+      SharingReason: [],
+      ValidationRule: [],
+      WebLink: [],
+      Profile: [
+        mockFileProperties({
+          fullName: 'Admin',
+          type: PROFILE_METADATA_TYPE,
+          lastModifiedDate: '2023-11-01T00:00:00.000Z',
+        }),
+        mockFileProperties({
+          fullName: 'Custom Profile',
+          type: PROFILE_METADATA_TYPE,
+          lastModifiedDate: '2023-11-01T00:00:00.000Z',
+        }),
+      ],
+    }
+
+    connection.metadata.describe.mockResolvedValue(mockDescribeResult(RELATED_TYPES.map(type => ({ xmlName: type }))))
+    connection.metadata.list.mockImplementation(async queries =>
+      makeArray(queries).flatMap(({ type }) => filePropByRelatedType[type as RelatedType] ?? []),
+    )
+    connection.metadata.retrieve.mockImplementation(request => {
+      retrieveRequest = request
+      return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
+    })
+
+    changedAtSingleton.value[CUSTOM_OBJECT] = {
+      [UPDATED_OBJECT_NAME]: '2023-11-06T00:00:00.000Z',
+      [NON_UPDATED_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
+      [OBJECT_WITH_DELETED_FIELD_NAME]: '2023-11-02T00:00:00.000Z',
+    }
+  }
+
   beforeEach(async () => {
     changedAtSingleton = mockInstances()[CHANGED_AT_SINGLETON]
     const objectWithDeletedField = createCustomObjectType(OBJECT_WITH_DELETED_FIELD_NAME, {
@@ -90,7 +226,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
       { ...mockDefaultValues.ApexClass, fullName: 'ApexClass2' },
       mockTypes.ApexClass,
     )
-    deletedApexClasss = createInstanceElement(
+    deletedApexClasses = createInstanceElement(
       { ...mockDefaultValues.ApexClass, fullName: 'DeletedApex' },
       mockTypes.ApexClass,
     )
@@ -104,130 +240,14 @@ describe('Salesforce Fetch With Changes Detection', () => {
       updatedObject,
       apexClass1,
       apexClass2,
-      deletedApexClasss,
-    ]
-    const elementsSource = buildElementsSourceFromElements(sourceElements)
-    ;({ connection, adapter } = mockAdapter({
-      adapterParams: {
-        config: {
-          fetch: {
-            metadata: {
-              include: [
-                {
-                  metadataType: '.*',
-                },
-              ],
-            },
-          },
-        },
-        elementsSource,
-      },
-    }))
+      deletedApexClasses,
+      // Profile excluded by default
+    ].filter(type => type.elemID.name !== PROFILE_METADATA_TYPE)
+    elementsSource = buildElementsSourceFromElements(sourceElements)
   })
   describe('fetch with changes detection for types with nested instances', () => {
-    const RELATED_TYPES = [...CUSTOM_OBJECT_FIELDS, CUSTOM_FIELD, CUSTOM_OBJECT] as const
-    type RelatedType = (typeof RELATED_TYPES)[number]
-    // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
-    const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
-
-    let retrieveRequest: RetrieveRequest
-
     beforeEach(() => {
-      const filePropByRelatedType: Record<RelatedType, FileProperties[]> = {
-        BusinessProcess: [
-          // Latest related property for Updated__c
-          mockFileProperties({
-            fullName: `${UPDATED_OBJECT_NAME}.TestBusinessProcess`,
-            type: 'BusinessProcess',
-            lastModifiedDate: '2023-11-07T00:00:00.000Z',
-          }),
-          mockFileProperties({
-            fullName: `${NON_UPDATED_OBJECT_NAME}.TestBusinessProcess`,
-            type: 'BusinessProcess',
-            lastModifiedDate: '2023-10-01T00:00:00.000Z',
-          }),
-        ],
-        CompactLayout: [
-          mockFileProperties({
-            fullName: `${UPDATED_OBJECT_NAME}.TestCompactLayout`,
-            type: 'CompactLayout',
-            lastModifiedDate: '2023-11-05T00:00:00.000Z',
-          }),
-          mockFileProperties({
-            fullName: `${NON_UPDATED_OBJECT_NAME}.TestCompactLayout`,
-            type: 'CompactLayout',
-            lastModifiedDate: '2023-10-03T00:00:00.000Z',
-          }),
-        ],
-        CustomField: [
-          mockFileProperties({
-            fullName: `${UPDATED_OBJECT_NAME}.TestField__c`,
-            type: CUSTOM_FIELD,
-            lastModifiedDate: '2023-11-02T00:00:00.000Z',
-          }),
-          mockFileProperties({
-            fullName: `${NON_UPDATED_OBJECT_NAME}.TestField__c`,
-            type: CUSTOM_FIELD,
-            lastModifiedDate: '2023-11-01T00:00:00.000Z',
-          }),
-        ],
-        CustomObject: [
-          mockFileProperties({
-            fullName: UPDATED_OBJECT_NAME,
-            type: CUSTOM_OBJECT,
-            lastModifiedDate: '2023-11-01T00:00:00.000Z',
-          }),
-          mockFileProperties({
-            fullName: NON_UPDATED_OBJECT_NAME,
-            type: CUSTOM_OBJECT,
-            lastModifiedDate: '2023-11-01T00:00:00.000Z',
-          }),
-          mockFileProperties({
-            fullName: OBJECT_WITH_DELETED_FIELD_NAME,
-            type: CUSTOM_OBJECT,
-            lastModifiedDate: '2023-11-01T00:00:00.000Z',
-          }),
-          mockFileProperties({
-            fullName: NON_UPDATED_STANDARD_OBJECT,
-            type: CUSTOM_OBJECT,
-            lastModifiedDate: UNIX_TIME_ZERO_STRING,
-          }),
-        ],
-        FieldSet: [],
-        Index: [],
-        ListView: [
-          mockFileProperties({
-            fullName: `${UPDATED_OBJECT_NAME}.TestListView`,
-            type: 'ListView',
-            lastModifiedDate: '2023-11-06T00:00:00.000Z',
-          }),
-          // Latest related property for NonUpdated__c
-          mockFileProperties({
-            fullName: `${NON_UPDATED_OBJECT_NAME}.TestListView`,
-            type: 'ListView',
-            lastModifiedDate: '2023-11-02T00:00:00.000Z',
-          }),
-        ],
-        RecordType: [],
-        SharingReason: [],
-        ValidationRule: [],
-        WebLink: [],
-      }
-
-      connection.metadata.describe.mockResolvedValue(mockDescribeResult(RELATED_TYPES.map(type => ({ xmlName: type }))))
-      connection.metadata.list.mockImplementation(async queries =>
-        makeArray(queries).flatMap(({ type }) => filePropByRelatedType[type as RelatedType] ?? []),
-      )
-      connection.metadata.retrieve.mockImplementation(request => {
-        retrieveRequest = request
-        return mockRetrieveLocator(mockRetrieveResult({ zipFiles: [] }))
-      })
-
-      changedAtSingleton.value[CUSTOM_OBJECT] = {
-        [UPDATED_OBJECT_NAME]: '2023-11-06T00:00:00.000Z',
-        [NON_UPDATED_OBJECT_NAME]: '2023-11-02T00:00:00.000Z',
-        [OBJECT_WITH_DELETED_FIELD_NAME]: '2023-11-02T00:00:00.000Z',
-      }
+      setupMocks({ shouldIncludeProfiles: false })
     })
     it('should fetch only the updated CustomObject instances', async () => {
       await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
@@ -242,6 +262,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
   describe('custom list functions', () => {
     describe('type with partial custom list function', () => {
       beforeEach(() => {
+        setupMocks({ shouldIncludeProfiles: false })
         connection.metadata.describe.mockResolvedValue(mockDescribeResult([{ xmlName: APEX_CLASS_METADATA_TYPE }]))
         connection.metadata.list.mockResolvedValue([
           mockFileProperties({
@@ -268,7 +289,24 @@ describe('Salesforce Fetch With Changes Detection', () => {
       })
       it('should return correct deleted elements of type that was listed partially', async () => {
         const result = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
-        expect(result.partialFetchData?.deletedElements).toEqual([deletedApexClasss.elemID])
+        expect(result.partialFetchData?.deletedElements).toEqual([deletedApexClasses.elemID])
+      })
+    })
+  })
+  describe('Type Inclusion & Exclusion', () => {
+    describe('when including a type that was previously excluded', () => {
+      beforeEach(() => {
+        setupMocks({ shouldIncludeProfiles: true })
+      })
+      it('should fetch the type and its instances', async () => {
+        const result = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(result.elements).toSatisfyAny(element => element.elemID.name === PROFILE_METADATA_TYPE)
+        expect(retrieveRequest.unpackaged?.types).toSatisfyAny(
+          entry =>
+            entry.name === PROFILE_METADATA_TYPE &&
+            entry.members.includes('Admin') &&
+            entry.members.includes('Custom Profile'),
+        )
       })
     })
   })

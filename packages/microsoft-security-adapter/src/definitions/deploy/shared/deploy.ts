@@ -13,17 +13,8 @@ import { createEntraCustomizations } from '../entra/deploy'
 import { defaultAdjust, omitReadOnlyFields } from './utils'
 import { createIntuneCustomizations } from '../intune/deploy'
 
-const createCustomizations = (): DeployCustomDefinitions => {
-  const standardRequestDefinitions = deployment.helpers.createStandardDeployDefinitions<
-    AdditionalAction,
-    ClientOptions
-  >({})
-
-  return _.merge(standardRequestDefinitions, {
-    ...createEntraCustomizations(),
-    ...createIntuneCustomizations(),
-  })
-}
+const createCustomizations = (): DeployCustomDefinitions =>
+  _.merge(createEntraCustomizations(), createIntuneCustomizations())
 
 export const createDeployDefinitions = (): definitions.deploy.DeployApiDefinitions<
   AdditionalAction,

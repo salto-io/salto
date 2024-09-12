@@ -259,7 +259,9 @@ describe('sync-to-workspace command', () => {
   describe('when core sync returns with errors', () => {
     let result: CliExitCode
     beforeEach(async () => {
-      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [{ severity: 'Error', message: 'Not supported' }] })
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({
+        errors: [{ severity: 'Error', message: 'Not supported', detailedMessage: 'detailed Not Supported' }],
+      })
       result = await syncWorkspaceToFolderAction({
         ...cliCommandArgs,
         workspace,

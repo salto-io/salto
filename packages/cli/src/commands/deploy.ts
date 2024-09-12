@@ -175,7 +175,7 @@ const deployPlan = async (
   )
   outputLine(deployErrorsOutput(result.errors), output)
   outputLine(deployPhaseEpilogue(nonErroredActions.length, result.errors.length, checkOnly), output)
-  log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.message).join('\n')}`)
+  log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.detailedMessage).join('\n')}`)
 
   if (executingDeploy) {
     cliTelemetry.actionsSuccess(nonErroredActions.length)

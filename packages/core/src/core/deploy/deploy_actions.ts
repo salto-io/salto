@@ -161,12 +161,16 @@ export const deployActions = async (
           log.warn(
             'Deploy of %s encountered non-fatal issues: %s',
             item.groupKey,
-            nonFatalErrors.map(err => err.message).join('\n\n'),
+            nonFatalErrors.map(err => err.detailedMessage).join('\n\n'),
           )
           accumulatedNonFatalErrors.push(...nonFatalErrors.map(err => ({ ...err, groupId: item.groupKey })))
         }
         if (fatalErrors.length > 0) {
-          log.warn('Failed to deploy %s, errors: %s', item.groupKey, fatalErrors.map(err => err.message).join('\n\n'))
+          log.warn(
+            'Failed to deploy %s, errors: %s',
+            item.groupKey,
+            fatalErrors.map(err => err.detailedMessage).join('\n\n'),
+          )
           throw new WalkDeployError(fatalErrors)
         }
         reportProgress(item, 'finished')

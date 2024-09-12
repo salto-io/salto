@@ -50,7 +50,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
   // This standard object has no custom fields or sub instances, and will have no lastChangeDate value
   const NON_UPDATED_STANDARD_OBJECT = 'NonUpdatedStandardObject'
 
-  const setupMocks = ({ shouldIncludeProfiles }: { shouldIncludeProfiles: boolean }): void => {
+  const setupMocks = (metadataExclude = [{ metadataType: PROFILE_METADATA_TYPE }]): void => {
     ;({ connection, adapter } = mockAdapter({
       adapterParams: {
         config: {
@@ -61,7 +61,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
                   metadataType: '.*',
                 },
               ],
-              exclude: shouldIncludeProfiles ? [] : [{ metadataType: PROFILE_METADATA_TYPE }],
+              exclude: metadataExclude,
             },
           },
         },
@@ -247,7 +247,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
   })
   describe('fetch with changes detection for types with nested instances', () => {
     beforeEach(() => {
-      setupMocks({ shouldIncludeProfiles: false })
+      setupMocks()
     })
     it('should fetch only the updated CustomObject instances', async () => {
       await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
@@ -262,7 +262,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
   describe('custom list functions', () => {
     describe('type with partial custom list function', () => {
       beforeEach(() => {
-        setupMocks({ shouldIncludeProfiles: false })
+        setupMocks()
         connection.metadata.describe.mockResolvedValue(mockDescribeResult([{ xmlName: APEX_CLASS_METADATA_TYPE }]))
         connection.metadata.list.mockResolvedValue([
           mockFileProperties({
@@ -296,7 +296,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
   describe('Type Inclusion & Exclusion', () => {
     describe('when including a type that was previously excluded', () => {
       beforeEach(() => {
-        setupMocks({ shouldIncludeProfiles: true })
+        setupMocks([])
       })
       it('should fetch the type and its instances', async () => {
         const result = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
@@ -307,6 +307,17 @@ describe('Salesforce Fetch With Changes Detection', () => {
             entry.members.includes('Admin') &&
             entry.members.includes('Custom Profile'),
         )
+      })
+    })
+    describe('when excluding a type that was previously included', () => {
+      beforeEach(() => {
+        setupMocks([{ metadataType: PROFILE_METADATA_TYPE }, { metadataType: APEX_CLASS_METADATA_TYPE }])
+      })
+      it('should delete all of its instances', async () => {
+        const result = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(
+          result.partialFetchData?.deletedElements?.filter(elemID => elemID.typeName === 'ApexClass'),
+        ).not.toBeEmpty()
       })
     })
   })

@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -466,6 +466,25 @@ export const retrieveMetadataInstances = async ({
       typesWithContent,
       fetchProfile.isFeatureEnabled('fixRetrieveFilePaths'),
     )
+    // Exclude Profile related instances we fail to retrieve for envs that manage Profiles to improve performance
+    // in subsequent fetches and avoid broken references in Profiles.
+    if (
+      metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE) &&
+      fetchProfile.isFeatureEnabled('excludeNonRetrievedProfilesRelatedInstances')
+    ) {
+      const retrievedFileNames = new Set(allValues.map(({ file }) => file.fileName))
+      allFileProps
+        .filter(fileProp => isProfileRelatedMetadataType(fileProp.type))
+        .filter(fileProp => !retrievedFileNames.has(fileProp.fileName))
+        .map(fileProp =>
+          createSkippedListConfigChange({
+            type: fileProp.type,
+            instance: fileProp.fullName,
+            reason: `Excluding non retrievable Profile related instance of type ${fileProp.type} and fullName ${fileProp.fullName}`,
+          }),
+        )
+        .forEach(configChange => configChanges.push(configChange))
+    }
     return allValues.map(({ file, values }) =>
       createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
     )
@@ -515,7 +534,9 @@ export const retrieveMetadataInstances = async ({
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
-
+  if (configChanges.length > 0) {
+    log.debug('config changes (first 10): %s', inspectValue(configChanges, { maxArrayLength: 10 }))
+  }
   return {
     elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
     configChanges,

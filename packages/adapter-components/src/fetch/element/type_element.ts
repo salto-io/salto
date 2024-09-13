@@ -34,7 +34,7 @@ const log = logger(module)
 const generateNestedType = <Options extends FetchApiDefinitionsOptions>(
   args: lowerdashTypes.PickyRequired<GenerateTypeArgs<Options>, 'parentName'>,
 ): NestedTypeWithNestedTypes => {
-  const { typeName, parentName, entries, isUnknownEntry, isMapWithDynamicType } = args
+  const { typeName, parentName, entries, isUnknownEntry, isMapWithDynamicType, defQuery } = args
 
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
 
@@ -78,10 +78,13 @@ const generateNestedType = <Options extends FetchApiDefinitionsOptions>(
   }
 
   if (validEntries.every(entry => _.isObjectLike(entry))) {
+    // if a specific type name was defined, use it instead of the default ducktype name
+    const nestedTypeName =
+      defQuery.query(parentName)?.resource?.recurseInto?.[typeName]?.typeName ?? toNestedTypeName(parentName, typeName)
     // eslint-disable-next-line no-use-before-define
     return generateType({
       ...args,
-      typeName: toNestedTypeName(parentName, typeName),
+      typeName: nestedTypeName,
       entries: validEntries,
       isSubType: true,
     })

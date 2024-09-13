@@ -311,7 +311,12 @@ describe('fetch', () => {
           .filter(isInstanceElement)
           .find(e => e.elemID.getFullName() === 'myAdapter.field.instance.field1Custom')?.value.default,
       ).toEqual({ name: 'opt1' })
-      expect(res.elements.filter(isObjectType).find(e => e.elemID.typeName === 'field')?.fields.default?.getTypeSync().elemID.typeName).toEqual('default_option')
+      expect(
+        res.elements
+          .filter(isObjectType)
+          .find(e => e.elemID.typeName === 'field')
+          ?.fields.default?.getTypeSync().elemID.typeName,
+      ).toEqual('default_option')
       // TODO continue
     })
   })

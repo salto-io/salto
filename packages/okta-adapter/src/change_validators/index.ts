@@ -30,7 +30,7 @@ import { appUserSchemaRemovalValidator } from './app_user_schema_removal'
 import { domainAdditionValidator } from './domain_addition'
 import { domainModificationValidator } from './domain_modification'
 import { dynamicOSVersionFeatureValidator } from './dynamic_os_version_feature'
-import { brandThemeRemovalValidator } from './brand_theme_removal'
+import { brandDependentElementRemovalValidator } from './brand_dependent_element_removal'
 import { userStatusValidator } from './user_status'
 import { disabledAuthenticatorsInMfaPolicyValidator } from './disabled_authenticators_in_mfa'
 import { oidcIdentityProviderValidator } from './oidc_idp'
@@ -104,7 +104,7 @@ export default ({
     profileMappingRemoval: profileMappingRemovalValidator,
     brandRemoval: brandRemovalValidator,
     dynamicOSVersion: dynamicOSVersionFeatureValidator,
-    brandThemeRemoval: brandThemeRemovalValidator,
+    brandDependentElementRemoval: brandDependentElementRemovalValidator,
     appUserSchemaRemoval: appUserSchemaRemovalValidator,
     domainAddition: domainAdditionValidator,
     domainModification: domainModificationValidator,

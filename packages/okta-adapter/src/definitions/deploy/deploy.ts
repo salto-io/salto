@@ -8,6 +8,7 @@
 
 import _ from 'lodash'
 import { definitions, deployment } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import {
   getChangeData,
   isAdditionChange,
@@ -16,7 +17,7 @@ import {
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
-import { validatePlainObject } from '@salto-io/adapter-utils'
+import { getParents, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -38,6 +39,7 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   IDENTITY_PROVIDER_TYPE_NAME,
   JWK_TYPE_NAME,
+  EMAIL_TEMPLATE,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -48,6 +50,8 @@ import {
 import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
+
+const log = logger(module)
 
 type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>
 export type DeployApiDefinitions = definitions.deploy.DeployApiDefinitions<AdditionalAction, ClientOptions>
@@ -833,6 +837,106 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 endpoint: {
                   path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
                   method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [EMAIL_TEMPLATE]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              // EmailTemplates are created automatically by Okta when a Brand is created,
+              // we send GET request to the EmailTemplate to verify it was created.
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{parent_id}/templates/email/{name}',
+                  method: 'get',
+                },
+              },
+              copyFromResponse: {
+                additional: {
+                  // assign brandId to the element, to be used by following EmailCustomization requests
+                  adjust: async ({ context: { change } }) => {
+                    const brandId = getParents(getChangeData(change))?.[0]?.id // parent is already resolved
+                    if (!_.isString(brandId)) {
+                      log.warn(
+                        'failed to assign brandId to EmailTemplate: %s',
+                        getChangeData(change).elemID.getFullName(),
+                      )
+                    }
+                    return { value: { brandId } }
+                  },
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{parent_id}/templates/email/{name}/settings',
+                  method: 'put',
+                },
+                transformation: {
+                  root: 'settings',
+                },
+              },
+              condition: { skipIfIdentical: true, transformForCheck: { root: 'settings' } },
+            },
+          ],
+          // EmailTemplates are removed automatically by Okta when the Brand is removed.
+          // A separate Change Validator ensures that templates aren't removed by themselves.
+          remove: [{ request: { earlySuccess: true } }],
+        },
+      },
+      toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
+      actionDependencies: [{ first: 'add', second: 'modify' }],
+    },
+    EmailCustomization: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/templates/email/{templateName}/customizations',
+                  method: 'post',
+                },
+                context: {
+                  brandId: '{_parent.0.brandId}',
+                  templateName: '{_parent.0.name}',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/templates/email/{templateName}/customizations/{id}',
+                  method: 'put',
+                },
+                context: {
+                  brandId: '{_parent.0.brandId}',
+                  templateName: '{_parent.0.name}',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/templates/email/{templateName}/customizations/{id}',
+                  method: 'delete',
+                },
+                context: {
+                  brandId: '{_parent.0.brandId}',
+                  templateName: '{_parent.0.name}',
                 },
               },
             },

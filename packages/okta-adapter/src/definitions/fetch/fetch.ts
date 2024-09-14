@@ -30,6 +30,7 @@ import {
   GROUP_MEMBERSHIP_TYPE_NAME,
   JWK_TYPE_NAME,
   EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
+  EMAIL_TEMPLATE,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -667,6 +668,10 @@ const createCustomizations = ({
           typeName: 'BrandTheme',
           context: { args: { brandId: { root: 'id' } } },
         },
+        EmailTemplate: {
+          typeName: 'EmailTemplate',
+          context: { args: { brandId: { root: 'id' } } },
+        },
       },
     },
     element: {
@@ -680,6 +685,14 @@ const createCustomizations = ({
         BrandTheme: {
           standalone: {
             typeName: 'BrandTheme',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
+          },
+        },
+        EmailTemplate: {
+          standalone: {
+            typeName: 'EmailTemplate',
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: true,
@@ -702,6 +715,83 @@ const createCustomizations = ({
         _links: { hide: true },
         logo: { hide: true },
         favicon: { hide: true },
+      },
+    },
+  },
+  [EMAIL_TEMPLATE]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/brands/{brandId}/templates/email',
+          queryArgs: { expand: 'settings' },
+        },
+        transformation: {
+          rename: [{ from: '_embedded.settings', to: 'settings', onConflict: 'override' }],
+          adjust: async ({ value, context }) => ({
+            value: {
+              ...(_.isObject(value)
+                ? {
+                    ...value,
+                    // assign brand id from context to value to be used as service id
+                    brandId: context.brandId,
+                  }
+                : {}),
+            },
+          }),
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+      serviceIDFields: ['name', 'brandId'],
+      recurseInto: {
+        EmailCustomization: {
+          typeName: 'EmailCustomization',
+          context: { args: { templateName: { root: 'name' } } },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'name' }], extendsParent: true },
+        alias: { aliasComponents: [{ fieldName: 'name' }] },
+        serviceUrl: { path: '/admin/customizations/brands/{brandId}/emails/{name}' },
+      },
+      fieldCustomizations: {
+        _links: { omit: true },
+        settings: { fieldType: 'EmailSettings' },
+        brandId: { hide: true },
+        EmailCustomization: {
+          standalone: {
+            typeName: 'EmailCustomization',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  EmailSettings: {
+    element: {
+      fieldCustomizations: {
+        _links: { omit: true },
+      },
+    },
+  },
+  EmailCustomization: {
+    requests: [{ endpoint: { path: '/api/v1/brands/{brandId}/templates/email/{templateName}/customizations' } }],
+    resource: { directFetch: false },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'language' }], extendsParent: true },
+        serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/emails/{_parent.0.name}' },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        _links: { omit: true },
       },
     },
   },

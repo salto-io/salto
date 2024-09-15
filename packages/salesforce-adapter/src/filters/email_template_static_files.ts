@@ -25,6 +25,7 @@ import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../constants'
 import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
+import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -55,7 +56,7 @@ const createStaticFile = (folderName: string, name: string, content: string): St
 const findFolderPath = (instance: InstanceElement): string =>
   `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
 
-const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
+const organizeStaticFiles = async (instance: InstanceElement, fetchProfile: FetchProfile): Promise<void> => {
   const folderPath = findFolderPath(instance)
   if (_.isUndefined(folderPath)) {
     const instApiName = await apiName(instance)
@@ -69,11 +70,11 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
     try {
       instance.value.attachments = makeArray(instance.value.attachments)
       if (isEmailAttachmentsArray(instance.value.attachments)) {
-        instance.value.attachments.forEach(attachment => {
+        instance.value.attachments.forEach((attachment, index) => {
           attachment.content = createStaticFile(
             // attachment.content type is a string before the creation of the static file
             folderPath,
-            attachment.name,
+            fetchProfile.isFeatureEnabled('indexedEmailTemplateAttachments') ? `attachment${index}` : attachment.name,
             attachment.content as string,
           )
         })
@@ -111,13 +112,13 @@ const getAttachmentsFromChanges = async (changes: Change[]): Promise<Attachment[
 /**
  * Extract emailTemplate with attachments and save their content in a static file.
  */
-const filter: LocalFilterCreator = () => ({
+const filter: LocalFilterCreator = ({ config }) => ({
   name: 'emailTemplateFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)
       .filter(isInstanceOfType(EMAIL_TEMPLATE_METADATA_TYPE))
-      .forEach(organizeStaticFiles)
+      .forEach(instance => organizeStaticFiles(instance, config.fetchProfile))
   },
   // Convert EmailTemplate attachments content from Buffer to base64 string
   preDeploy: async changes => {

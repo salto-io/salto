@@ -45,6 +45,7 @@ import {
 import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_segment'
 import ZendeskAdapter from '../src/adapter'
 import { createFilterCreatorParams } from './utils'
+import { shortElemIdHash } from '../src/filters/utils'
 
 type MockReply = {
   url: string
@@ -2574,7 +2575,7 @@ describe('adapter', () => {
         ])
         expect(themeElements[0].value.root.files['hello_txt@v'].content).toEqual(
           new StaticFile({
-            filepath: 'zendesk/themes/brands/myBrand/Copenhagen/hello.txt',
+            filepath: `zendesk/themes/brands/myBrand/${shortElemIdHash(themeElements[0].elemID)}_Copenhagen/hello.txt`,
             content: Buffer.from('Hello World\n'),
           }),
         )

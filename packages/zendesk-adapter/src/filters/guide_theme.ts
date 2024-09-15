@@ -59,7 +59,7 @@ import {
   createJavascriptTemplateExpression,
   TemplateEngineCreator,
 } from './template_engines/creator'
-import { getBrandsForGuideThemes, matchBrandSubdomainFunc } from './utils'
+import { getBrandsForGuideThemes, matchBrandSubdomainFunc, shortElemIdHash } from './utils'
 import { prepRef } from './article/utils'
 
 const READ_CONCURRENCY = 100
@@ -122,14 +122,14 @@ const createTemplateExpression = ({
 export const unzipFolderToElements = async ({
   buffer,
   currentBrandName,
-  name,
+  folderName,
   idsToElements,
   matchBrandSubdomain,
   config,
 }: {
   buffer: Buffer
   currentBrandName: string
-  name: string
+  folderName: string
   idsToElements: Record<string, InstanceElement>
   matchBrandSubdomain: (url: string) => InstanceElement | undefined
   config: Themes
@@ -153,7 +153,7 @@ export const unzipFolderToElements = async ({
 
     if (pathParts.length === 1) {
       // It's a file
-      const filepath = `${ZENDESK}/themes/brands/${currentBrandName}/${name}/${fullPath}`
+      const filepath = `${ZENDESK}/themes/brands/${currentBrandName}/${folderName}/${fullPath}`
       const content = await file.async('nodebuffer')
       const templateExpression = createTemplateExpression({
         filePath: fullPath,
@@ -396,7 +396,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
           const themeElements = await unzipFolderToElements({
             buffer: themeZip,
             currentBrandName,
-            name: theme.value.name,
+            folderName: `${shortElemIdHash(theme.elemID)}_${theme.value.name}`, // This creates a unique folder name for each theme
             idsToElements,
             matchBrandSubdomain,
             config: config[FETCH_CONFIG].guide?.themes || {

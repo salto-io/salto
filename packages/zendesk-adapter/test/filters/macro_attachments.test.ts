@@ -24,6 +24,7 @@ import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK, MACRO_TYPE_NAME } from '../../src/constants'
 import filterCreator, { ATTACHMENTS_FIELD_NAME, MACRO_ATTACHMENT_TYPE_NAME } from '../../src/filters/macro_attachments'
+import { shortElemIdHash } from '../../src/filters/utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -123,7 +124,7 @@ describe('macro attachment filter', () => {
         filename,
         contentType: 'text/plain',
         content: new StaticFile({
-          filepath: 'zendesk/macro_attachment/test__test.txt',
+          filepath: `zendesk/macro_attachment/${attachment && shortElemIdHash(attachment.elemID)}_test__test.txt`,
           encoding: 'binary',
           content,
         }),

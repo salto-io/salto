@@ -849,5 +849,5 @@ export const createEntraCustomizations = ({
   }
   return entraExtended
     ? customizations
-    : _.pickBy(customizations, (_customization, typeName) => !BASIC_ENTRA_TYPES.includes(typeName))
+    : _.pickBy(customizations, (_customization, typeName) => BASIC_ENTRA_TYPES.includes(typeName))
 }

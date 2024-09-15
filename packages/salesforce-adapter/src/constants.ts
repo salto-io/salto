@@ -419,6 +419,12 @@ export const ESCALATION_RULE_TYPE = 'EscalationRule'
 export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
 export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
 
+// Wave Metadata Types
+export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'
+export const WAVE_DATAFLOW_METADATA_TYPE = 'WaveDataflow'
+export const WAVE_RECIPE_FILE_EXTENSION = '.wdpr'
+export const WAVE_DATAFLOW_FILE_EXTENSION = '.wdf'
+
 // Meta Types
 export const METADATA_META_TYPE = 'Metadata'
 export const STANDARD_OBJECT_META_TYPE = 'StandardObject'

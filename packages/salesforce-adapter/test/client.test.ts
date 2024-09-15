@@ -1393,7 +1393,7 @@ describe('salesforce client', () => {
       beforeEach(() => {
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
-            isPartial: true,
+            mode: 'partial',
             func: async _client => ({ errors: [], result: [] }),
           },
         })
@@ -1421,13 +1421,13 @@ describe('salesforce client', () => {
       })
     })
 
-    describe('when invoked on type with non-partial Custom List Function', () => {
+    describe('when invoked on type with Full Custom List Function', () => {
       let result: FileProperties[]
       beforeEach(() => {
         result = [mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1' })]
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
-            isPartial: false,
+            mode: 'full',
             func: async _client => ({ errors: [], result }),
           },
         })
@@ -1442,7 +1442,7 @@ describe('salesforce client', () => {
       beforeEach(() => {
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
-            isPartial: true,
+            mode: 'partial',
             func: async _client => {
               throw new Error('Custom List Function Error')
             },

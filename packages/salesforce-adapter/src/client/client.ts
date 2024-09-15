@@ -573,9 +573,11 @@ interface ISalesforceClient {
 type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
 export type CustomListFunc = (client: ISalesforceClient) => ListMetadataObjectsResult
 
+type CustomListFuncMode = 'partial' | 'full' | 'extendsOriginal'
+
 export type CustomListFuncDef = {
   func: CustomListFunc
-  isPartial: boolean
+  mode: CustomListFuncMode
 }
 
 export default class SalesforceClient implements ISalesforceClient {
@@ -629,12 +631,13 @@ export default class SalesforceClient implements ISalesforceClient {
 
   public setCustomListFuncDefByType(customListFuncDefByType: typeof this.customListFuncDefByType): void {
     this.customListFuncDefByType = _.mapValues(customListFuncDefByType, def => ({
-      func: def.isPartial
-        ? def.func
-        : // Populate the listedInstancesByType for non-partial custom list functions
-          async (client: ISalesforceClient) =>
-            def.func(client).then(result => this.populateListedInstancesByType(result)),
-      isPartial: def.isPartial,
+      func:
+        def.mode !== 'full'
+          ? def.func
+          : // Populate the listedInstancesByType for non-partial custom list functions
+            async (client: ISalesforceClient) =>
+              def.func(client).then(result => this.populateListedInstancesByType(result)),
+      mode: def.mode,
     }))
   }
 
@@ -721,19 +724,32 @@ export default class SalesforceClient implements ISalesforceClient {
       return existingRequest
     }
     const customListFuncDef: CustomListFuncDef | undefined = this.customListFuncDefByType[type]
-    // For partial custom list functions we run an additional full list request
-    if (customListFuncDef?.isPartial) {
-      this.fullListPromisesByType[type] = this.sendChunkedList([{ type }], isUnhandledError)
-    }
-    const request =
-      customListFuncDef?.func(this).catch(e => {
+    let request: Promise<SendChunkedResult<ListMetadataQuery, FileProperties>>
+    if (customListFuncDef !== undefined) {
+      // For partial custom list functions we run an additional full list request
+      if (customListFuncDef.mode === 'partial') {
+        this.fullListPromisesByType[type] = this.sendChunkedList([{ type }], isUnhandledError)
+      }
+      request = customListFuncDef.func(this).catch(e => {
         log.error(
           'Failed to run custom list function for type %s. Falling back to full list. Error: %s',
           type,
           inspectValue(e),
         )
         return this.fullListPromisesByType[type] ?? this.sendChunkedList([{ type }], isUnhandledError)
-      }) ?? this.sendChunkedList([{ type }], isUnhandledError)
+      })
+      // In this mode, we run the custom list function and then extend the result with the full list
+      if (customListFuncDef.mode === 'extendsOriginal') {
+        const customListResult = await request
+        const sendChunkedResult = await this.sendChunkedList([{ type }], isUnhandledError)
+        return {
+          result: customListResult.result.concat(sendChunkedResult.result),
+          errors: customListResult.errors.concat(sendChunkedResult.errors),
+        }
+      }
+    } else {
+      request = this.sendChunkedList([{ type }], isUnhandledError)
+    }
     this.listMetadataObjectsOfTypePromises[type] = request
     return request
   }

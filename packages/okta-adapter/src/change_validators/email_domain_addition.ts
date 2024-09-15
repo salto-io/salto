@@ -34,7 +34,7 @@ export const emailDomainAdditionValidator: ChangeValidator = async (changes, ele
       elemID: instance.elemID,
       severity: 'Error' as const,
       message: 'Cannot add email domain without at least one brand that uses it',
-      detailedMessage: 'Cannot add email domain without at least one brand that uses it',
+      detailedMessage: 'To deploy this email domain, add a brand or modify an existing one to use it',
     }))
     .toArray()
 }

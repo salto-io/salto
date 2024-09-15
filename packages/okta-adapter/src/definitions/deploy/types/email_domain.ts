@@ -10,16 +10,15 @@ import {
   ElemID,
   getChangeData,
   InstanceElement,
-  isInstanceElement,
   isReferenceExpression,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { definitions } from '@salto-io/adapter-components'
-import { validatePlainObject } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, validatePlainObject } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { BRAND_TYPE_NAME, EMAIL_DOMAIN_TYPE_NAME } from '../../../constants'
 
-const { awu } = collections.asynciterable
+const log = logger(module)
 
 /**
  * Finds all brand instances that reference a given email domain element ID.
@@ -28,12 +27,9 @@ export const findReferencingBrands = async (
   emailDomainElemId: ElemID,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<InstanceElement[]> =>
-  awu(await elementsSource.getAll())
-    .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+  (await getInstancesFromElementSource(elementsSource, [BRAND_TYPE_NAME]))
     .filter(brandInstance => isReferenceExpression(brandInstance.value.emailDomainId))
     .filter(brandInstance => brandInstance.value.emailDomainId.elemID.isEqual(emailDomainElemId))
-    .toArray()
 
 /**
  * Adds a single brand ID that references the added email domain to the request value as required by Okta.
@@ -50,7 +46,9 @@ export const addBrandIdToRequest: definitions.AdjustFunction<definitions.deploy.
   const [brand] = (await findReferencingBrands(emailDomainElemId, context.elementSource)) ?? []
 
   if (brand === undefined) {
-    throw new Error(`Brand not found for email domain ${emailDomainElemId.getFullName()}`)
+    const msg = `Brand not found for email domain ${emailDomainElemId.getFullName()}`
+    log.error(msg)
+    throw new Error(msg)
   }
   // Use the ID directly instead of a reference value to avoid circular references.
   return {

@@ -122,7 +122,7 @@ describe('Custom List Functions', () => {
       })
     })
   })
-  describe('createListMissingDataflowsDef', () => {
+  describe('createListMissingWaveDataflowsDef', () => {
     beforeEach(() => {
       connection.metadata.list.mockResolvedValue([
         mockFileProperties({
@@ -137,7 +137,7 @@ describe('Custom List Functions', () => {
         }),
       ])
     })
-    it('should create WaveDataflow FileProperties from WaveRecipe properties', async () => {
+    it('should create missing WaveDataflow FileProperties from WaveRecipe properties', async () => {
       const result = await createListMissingWaveDataflowsDef().func(client)
       expect(result).toEqual({
         errors: [],

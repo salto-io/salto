@@ -135,7 +135,7 @@ describe('Intune platform script fetch utils', () => {
         expect(
           (adjustedScript.value.settings[3].settingInstance.simpleSettingValue.value as StaticFile).filepath,
         ).toEqual(
-          'microsoft_security/IntunePlatformScriptLinux/test_linux_platform_script-s/linux_customconfig_script.sh',
+          'microsoft_security/IntunePlatformScriptLinux/test_linux_platform_script.s/linux_customconfig_script.sh',
         )
       })
     })
@@ -201,7 +201,7 @@ describe('Intune platform script fetch utils', () => {
           },
         })
         expect((adjustedScript.value.scriptContent as StaticFile).filepath).toEqual(
-          'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script-s.ps1',
+          'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s.ps1',
         )
       })
     })

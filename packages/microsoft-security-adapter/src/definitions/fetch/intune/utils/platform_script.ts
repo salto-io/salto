@@ -41,7 +41,7 @@ const createStaticFileFromScript = ({
   const formattedUniquePath = uniquePath
     .split('/')
     .map(naclCase)
-    .map(name => name.replace('@', '-'))
+    .map(name => name.replace('@', '.'))
     .join('/')
 
   return new StaticFile({

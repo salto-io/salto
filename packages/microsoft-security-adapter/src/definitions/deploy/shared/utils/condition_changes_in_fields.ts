@@ -23,8 +23,8 @@ export const createCustomConditionCheckChangesInFields = (
     () =>
     ({ change }) => {
       if (isAdditionChange(change)) {
-        return Object.entries(_.pick(getChangeData(change).value, fieldNames)).some(
-          ([_fieldName, value]) => !(Array.isArray(value) && _.isEmpty(value)),
+        return Object.values(_.pick(getChangeData(change).value, fieldNames)).some(
+          value => !(Array.isArray(value) && _.isEmpty(value)),
         )
       }
       if (isModificationChange(change)) {

@@ -19,7 +19,17 @@ describe(`${createCustomConditionCheckChangesInFields.name}`, () => {
 
     it('should return a condition with a custom function that returns false when all fields are empty', () => {
       const { custom } = createCustomConditionCheckChangesInFields(['randomField1', 'randomField2'])
-      expect(custom?.({})(additionContextMock)).toEqual(false)
+      expect(
+        custom?.({})({
+          ...additionContextMock,
+          change: {
+            action: 'add',
+            data: {
+              after: new InstanceElement('testInstance', objectTypeMock, { randomField1: [] }),
+            },
+          },
+        }),
+      ).toEqual(false)
     })
 
     it('should return a condition with a custom function that returns true when at least one field is not empty', () => {

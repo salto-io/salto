@@ -474,8 +474,8 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true, useOldFormat: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true, useOldFormat: true }] },
+        elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },

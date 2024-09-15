@@ -32,6 +32,7 @@ const {
   DEVICE_COMPLIANCE_TYPE_NAME,
   FILTER_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   // Field names
   APPS_FIELD_NAME,
   SCHEDULED_ACTIONS_FIELD_NAME,
@@ -401,6 +402,61 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
     },
   },
   [PLATFORM_SCRIPT_LINUX_TYPE_NAME]: deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
+  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceManagementScripts',
+                method: 'post',
+              },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+          },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceManagementScripts',
+            rootField: 'deviceManagementScriptAssignments',
+          }),
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceManagementScripts/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+          },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceManagementScripts',
+            rootField: 'deviceManagementScriptAssignments',
+          }),
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceManagementScripts/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
 }
 
 export const createIntuneCustomizations = (): DeployCustomDefinitions =>

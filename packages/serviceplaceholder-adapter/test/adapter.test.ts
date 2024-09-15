@@ -27,13 +27,25 @@ import { credentialsType } from '../src/auth'
 import { DEFAULT_CONFIG } from '../src/config'
 import { ADAPTER_NAME } from '../src/constants'
 // TODO update mock file -
-// for fetch: run fetch with trace-level logs:
-// [Please make sure to first set the strategy to 'full' in the DEFAULT_LOGGING_CONFIG under logging.utils.ts]
-//  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
-// then run
-//  > python3 <path-to-repo>/packages/adapter-components/scripts/client/mock_replies.py <log file> fetch_mock_replies.json
-// for deploy: same as above, replace fetch with deploy
-// make sure to minimize and sanitize the mocks - they may contain sensitive information!
+/** 
+ For fetch:
+ Add the following to your adapter.nacl file to capture full logs of the responses:
+ client = {
+   logging = {
+     responseStrategies = [
+       {
+         strategy = "full"
+       },
+     ]
+    }
+ } 
+ then run fetch with trace-level logs:
+  > SALTO_LOG_FILE=log.txt SALTO_LOG_LEVEL=trace salto fetch
+ then run
+  > python3 <path-to-repo>/packages/adapter-components/scripts/client/mock_replies.py <log file> fetch_mock_replies.json
+ for deploy: same as above, replace fetch with deploy
+ make sure to minimize and sanitize the mocks - they may contain sensitive information!
+ */
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 

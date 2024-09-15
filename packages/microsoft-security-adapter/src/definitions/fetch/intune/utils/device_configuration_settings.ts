@@ -9,9 +9,10 @@
 import _ from 'lodash'
 import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { StaticFile } from '@salto-io/adapter-api'
-import { DEFAULT_TRANSFORMATION } from '../../shared/defaults'
-import { AdjustFunctionMergeAndTransform, FetchApiDefinition } from '../../shared/types'
+import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../../shared/defaults'
+import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shared/types'
 import { ADAPTER_NAME, intuneConstants } from '../../../../constants'
+import { EndpointPath } from '../../../types'
 
 const {
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
@@ -20,31 +21,97 @@ const {
   SETTING_DEFINITION_ID_FIELD_NAME,
   SETTING_INSTANCE_FIELD_NAME,
   SETTINGS_FIELD_NAME,
+  SETTING_COUNT_FIELD_NAME,
   SIMPLE_SETTING_VALUE_FIELD_NAME,
+  ASSIGNMENTS_ODATA_CONTEXT,
+  SERVICE_BASE_URL,
 } = intuneConstants
 
 // In the Intune admin center, some of the device configurations (setting catalog) are located in the Device Configuration settings tab
 // and some are located in the Platform Scripts tab. We align with the UI view by separating them to two different types.
-export const DEVICE_CONFIGURATION_SETTINGS_FETCH_DEFINITION: FetchApiDefinition = {
-  resource: {
-    directFetch: false,
-  },
-  requests: [
-    {
-      endpoint: {
-        path: '/deviceManagement/configurationPolicies/{id}/settings',
+export const createDeviceConfigurationSettingsFetchDefinition = ({
+  typeName,
+  settingsTypeName,
+  filter,
+  serviceUrlPath,
+  adjust,
+}: {
+  typeName: string
+  settingsTypeName: string
+  filter: string
+  serviceUrlPath: EndpointPath
+  adjust?: AdjustFunctionMergeAndTransform
+}): FetchCustomizations => ({
+  [typeName]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/configurationPolicies',
+          queryArgs: {
+            $filter: filter,
+            $expand: 'assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: [SETTING_COUNT_FIELD_NAME, ASSIGNMENTS_ODATA_CONTEXT],
+        },
       },
-      transformation: DEFAULT_TRANSFORMATION,
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        [SETTINGS_FIELD_NAME]: {
+          typeName: settingsTypeName,
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+      mergeAndTransform: {
+        adjust,
+      },
     },
-  ],
-  element: {
-    fieldCustomizations: {
-      id: {
-        omit: true,
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [{ fieldName: 'name' }],
+        },
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: serviceUrlPath,
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [settingsTypeName]: {
+    resource: {
+      directFetch: false,
+    },
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/configurationPolicies/{id}/settings',
+        },
+        transformation: DEFAULT_TRANSFORMATION,
+      },
+    ],
+    element: {
+      fieldCustomizations: {
+        id: {
+          omit: true,
+        },
       },
     },
   },
-}
+})
 
 export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value }) => {
   validatePlainObject(value, PLATFORM_SCRIPT_LINUX_TYPE_NAME)

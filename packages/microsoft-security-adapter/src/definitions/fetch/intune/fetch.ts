@@ -35,10 +35,6 @@ const {
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
 
-  // Field names
-  SETTINGS_FIELD_NAME,
-  SETTING_COUNT_FIELD_NAME,
-
   // Other
   SERVICE_BASE_URL,
   ASSIGNMENTS_ODATA_CONTEXT,
@@ -191,56 +187,15 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
-  [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/deviceManagement/configurationPolicies',
-          queryArgs: {
-            $filter:
-              // We align with the ui behavior, which shows only the following types
-              "(platforms eq 'windows10' or platforms eq 'macOS' or platforms eq 'iOS') and (technologies has 'mdm' or technologies has 'windows10XManagement' or technologies has 'appleRemoteManagement') and (templateReference/templateFamily eq 'none')",
-            $expand: 'assignments',
-          },
-        },
-        transformation: {
-          ...DEFAULT_TRANSFORMATION,
-          omit: [SETTING_COUNT_FIELD_NAME, ASSIGNMENTS_ODATA_CONTEXT],
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-      recurseInto: {
-        [SETTINGS_FIELD_NAME]: {
-          typeName: DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
-          context: {
-            args: {
-              id: {
-                root: 'id',
-              },
-            },
-          },
-        },
-      },
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        serviceUrl: {
-          baseUrl: SERVICE_BASE_URL,
-          path: '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/policyId/{id}/isAssigned~/{isAssigned}/technology/mdm/templateId//platformName/{platforms}',
-        },
-        elemID: {
-          parts: [{ fieldName: 'name' }],
-        },
-        allowEmptyArrays: true,
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
-  [DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME]:
-    deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_FETCH_DEFINITION,
+  ...deviceConfigurationSettings.createDeviceConfigurationSettingsFetchDefinition({
+    typeName: DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+    settingsTypeName: DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
+    // We align with the Intune admin center behavior, which shows only the following types
+    filter:
+      "(platforms eq 'windows10' or platforms eq 'macOS' or platforms eq 'iOS') and (technologies has 'mdm' or technologies has 'windows10XManagement' or technologies has 'appleRemoteManagement') and (templateReference/templateFamily eq 'none')",
+    serviceUrlPath:
+      '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/policyId/{id}/isAssigned~/{isAssigned}/technology/mdm/templateId//platformName/{platforms}',
+  }),
   [DEVICE_COMPLIANCE_TYPE_NAME]: {
     requests: [
       {
@@ -327,57 +282,14 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
-  [PLATFORM_SCRIPT_LINUX_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/deviceManagement/configurationPolicies',
-          queryArgs: {
-            $filter: "templateReference/TemplateFamily eq 'deviceConfigurationScripts'",
-            $expand: 'assignments',
-          },
-        },
-        transformation: {
-          ...DEFAULT_TRANSFORMATION,
-          omit: [SETTING_COUNT_FIELD_NAME, ASSIGNMENTS_ODATA_CONTEXT],
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-      recurseInto: {
-        [SETTINGS_FIELD_NAME]: {
-          typeName: PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
-          context: {
-            args: {
-              id: {
-                root: 'id',
-              },
-            },
-          },
-        },
-      },
-      mergeAndTransform: {
-        adjust: deviceConfigurationSettings.setScriptValueAsStaticFile,
-      },
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        elemID: {
-          parts: [{ fieldName: 'name' }],
-        },
-        serviceUrl: {
-          baseUrl: SERVICE_BASE_URL,
-          path: '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/templateId/{templateReference.templateId}/platformName/Linux/policyId/{id}',
-        },
-        allowEmptyArrays: true,
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
-  [PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME]:
-    deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_FETCH_DEFINITION,
+  ...deviceConfigurationSettings.createDeviceConfigurationSettingsFetchDefinition({
+    typeName: PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+    settingsTypeName: PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
+    filter: "templateReference/TemplateFamily eq 'deviceConfigurationScripts'",
+    serviceUrlPath:
+      '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/templateId/{templateReference.templateId}/platformName/Linux/policyId/{id}',
+    adjust: deviceConfigurationSettings.setScriptValueAsStaticFile,
+  }),
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
       resource: {

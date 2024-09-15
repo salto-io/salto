@@ -1466,5 +1466,41 @@ describe('salesforce client', () => {
         expect(dodoScope.isDone()).toBeTrue()
       })
     })
+    describe('when invoked on type with extendsOriginal custom list function', () => {
+      let resultFromCustomListFunc: FileProperties[]
+      let resultFromListMetadata: FileProperties[]
+      beforeEach(() => {
+        resultFromCustomListFunc = [mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1' })]
+        resultFromListMetadata = [mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex2' })]
+        client.setCustomListFuncDefByType({
+          [APEX_CLASS_METADATA_TYPE]: {
+            mode: 'extendsOriginal',
+            func: async _client => ({
+              errors: [],
+              result: resultFromCustomListFunc,
+            }),
+          },
+        })
+      })
+      it('should extend the custom list function result with the original list result', async () => {
+        const dodoScope = nock('http://dodo22')
+          .post(/.*/, /.*<listMetadata>.*/)
+          .delay(100)
+          .reply(200, {
+            'a:Envelope': {
+              'a:Body': {
+                a: {
+                  result: resultFromListMetadata,
+                },
+              },
+            },
+          })
+        expect(await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })).toEqual({
+          errors: [],
+          result: [...resultFromCustomListFunc, ...resultFromListMetadata],
+        })
+        expect(dodoScope.isDone()).toBeTrue()
+      })
+    })
   })
 })

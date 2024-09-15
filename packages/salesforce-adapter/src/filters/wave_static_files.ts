@@ -6,23 +6,24 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  getChangeData,
-  InstanceElement,
-  isAdditionOrModificationChange,
-  StaticFile
-} from '@salto-io/adapter-api'
+import { InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
+import { apiNameSync, ensureSafeFilterFetch, isInstanceOfTypeSync, metadataTypeSync } from './utils'
 import {
-  apiNameSync,
-  ensureSafeFilterFetch,
-  isInstanceOfTypeChangeSync,
-  isInstanceOfTypeSync,
-  metadataTypeSync
-} from './utils'
-import { RECORDS_PATH, SALESFORCE } from '../constants'
+  RECORDS_PATH,
+  SALESFORCE,
+  WAVE_DASHBOARD_METADATA_TYPE,
+  WAVE_DATAFLOW_METADATA_TYPE,
+  WAVE_LENS_METADATA_TYPE,
+  WAVE_RECIPE_METADATA_TYPE,
+} from '../constants'
 
-const WAVE_TYPES_WITH_STATIC_FILES = ['WaveLens', 'WaveDataflow', 'WaveRecipe', 'WaveDashboard']
+const WAVE_TYPES_WITH_STATIC_FILES = [
+  WAVE_RECIPE_METADATA_TYPE,
+  WAVE_DATAFLOW_METADATA_TYPE,
+  WAVE_DASHBOARD_METADATA_TYPE,
+  WAVE_LENS_METADATA_TYPE,
+]
 
 const convertContentToStaticFile = (instance: InstanceElement): void => {
   const typeName = metadataTypeSync(instance)
@@ -37,13 +38,10 @@ const convertContentToStaticFile = (instance: InstanceElement): void => {
   })
 }
 
-const convertStaticFileContentToString = (instance: InstanceElement): void => {
-  const content = _.get(instance.value, 'content')
-  if (_.isBuffer(content)) {
-    instance.value.content = content.toString('base64')
-  }
-}
-
+// This filter converts the content of Wave Metadata instances to static files.
+// Oddly enough, the API expects the decoded Base64 content as input for deploy, so no transformation
+// is need before deploying back to the service. The transformation in fetch
+// should allow deploying these instances successfully.
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'waveStaticFiles',
   onFetch: ensureSafeFilterFetch({
@@ -51,27 +49,9 @@ const filter: LocalFilterCreator = ({ config }) => ({
     config,
     filterName: 'waveMetadataSupport',
     fetchFilterFunc: async elements => {
-      elements
-        .filter(isInstanceOfTypeSync(...WAVE_TYPES_WITH_STATIC_FILES))
-        .forEach(convertContentToStaticFile)
+      elements.filter(isInstanceOfTypeSync(...WAVE_TYPES_WITH_STATIC_FILES)).forEach(convertContentToStaticFile)
     },
   }),
-  preDeploy: async changes => {
-    changes
-      .filter(isInstanceOfTypeChangeSync(...WAVE_TYPES_WITH_STATIC_FILES))
-      .filter(isAdditionOrModificationChange)
-      .forEach(change => {
-        convertStaticFileContentToString(getChangeData(change))
-      })
-  },
-  onDeploy: async changes => {
-    changes
-      .filter(isInstanceOfTypeChangeSync(...WAVE_TYPES_WITH_STATIC_FILES))
-      .filter(isAdditionOrModificationChange)
-      .forEach(change => {
-        convertContentToStaticFile(getChangeData(change))
-      })
-  },
 })
 
 export default filter

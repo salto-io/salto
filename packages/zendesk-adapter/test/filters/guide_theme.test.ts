@@ -30,6 +30,7 @@ import * as CreateModule from '../../src/filters/guide_themes/create'
 import * as DeleteModule from '../../src/filters/guide_themes/delete'
 import * as PublishModule from '../../src/filters/guide_themes/publish'
 import { createFilterCreatorParams } from '../utils'
+import { shortElemIdHash } from '../../src/filters/utils'
 
 jest.mock('jszip', () =>
   jest.fn().mockImplementation(() => {
@@ -238,7 +239,7 @@ describe('filterCreator', () => {
           expect(liveThemeWithId.value.root.files['file1_txt@v'].filename).toEqual('file1.txt')
           expect(liveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(
             new StaticFile({
-              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
+              filepath: `${ZENDESK}/themes/brands/oneTwo/${shortElemIdHash(liveThemeWithId.elemID)}_SixFlags/file1.txt`,
               content: Buffer.from('file1content'),
             }),
           )
@@ -247,7 +248,7 @@ describe('filterCreator', () => {
           )
           expect(liveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(
             new StaticFile({
-              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
+              filepath: `${ZENDESK}/themes/brands/oneTwo/${shortElemIdHash(liveThemeWithId.elemID)}_SixFlags/subfolder.dot/file2.txt`,
               content: Buffer.from('file2content'),
             }),
           )
@@ -261,13 +262,13 @@ describe('filterCreator', () => {
           expect(Object.keys(nonLiveThemeWithId.value.root)).toHaveLength(2)
           expect(nonLiveThemeWithId.value.root.files['file1_txt@v'].content).toEqual(
             new StaticFile({
-              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/file1.txt`,
+              filepath: `${ZENDESK}/themes/brands/oneTwo/${shortElemIdHash(nonLiveThemeWithId.elemID)}_SixFlags/file1.txt`,
               content: Buffer.from('file1content'),
             }),
           )
           expect(nonLiveThemeWithId.value.root.folders['subfolder_dot@v'].files['file2_txt@v'].content).toEqual(
             new StaticFile({
-              filepath: `${ZENDESK}/themes/brands/oneTwo/SixFlags/subfolder.dot/file2.txt`,
+              filepath: `${ZENDESK}/themes/brands/oneTwo/${shortElemIdHash(nonLiveThemeWithId.elemID)}_SixFlags/subfolder.dot/file2.txt`,
               content: Buffer.from('file2content'),
             }),
           )

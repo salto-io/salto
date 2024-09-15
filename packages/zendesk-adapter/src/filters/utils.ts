@@ -10,6 +10,7 @@ import Joi from 'joi'
 import {
   Change,
   ChangeDataType,
+  ElemID,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -21,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, createSchemeGuard, getParents, references } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues, hash as hashUtils } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { references as referencesUtils, resolveChangeElement } from '@salto-io/adapter-components'
 import { lookupFunc } from './field_references'
@@ -301,3 +302,5 @@ export const transformReferenceUrls = ({
   // If nothing matched, return the original url
   return result ?? [urlPart]
 }
+
+export const shortElemIdHash = (elemID: ElemID): string => hashUtils.toMD5(elemID.getFullName()).slice(0, 10)

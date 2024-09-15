@@ -518,6 +518,7 @@ describe('workspace', () => {
       const wsErrors = workspaceErrors[0]
       expect(wsErrors.sourceLocations).toHaveLength(2)
       expect(wsErrors.message).toMatch(mergeError)
+      expect(wsErrors.detailedMessage).toMatch(mergeError)
       expect(wsErrors.severity).toBe('Error')
       const firstSourceLocation = wsErrors.sourceLocations[0]
       expect(firstSourceLocation.sourceRange.filename).toBe('file.nacl')
@@ -562,7 +563,7 @@ describe('workspace', () => {
     describe('when no source is available', () => {
       it('should return empty source fragments', async () => {
         const ws = await createWorkspace()
-        const wsError = await ws.transformError({ severity: 'Warning', message: '' })
+        const wsError = await ws.transformError({ severity: 'Warning', message: '', detailedMessage: '' })
         expect(wsError.sourceLocations).toHaveLength(0)
       })
     })

@@ -194,6 +194,7 @@ export const createAutomationTypes = (): {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: componentValueType },
       hasAttachmentsValue: { refType: BuiltinTypes.BOOLEAN },
+      rawValue: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_TYPE],
   })

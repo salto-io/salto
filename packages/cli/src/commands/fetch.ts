@@ -247,7 +247,7 @@ export const fetchCommand = async ({
   if (!_.isEmpty(fetchResult.fetchErrors)) {
     // We currently assume all fetchErrors are warnings
     log.debug(`fetch had ${fetchResult.fetchErrors.length} warnings`)
-    bindedOutputline(formatFetchWarnings(fetchResult.fetchErrors.map(fetchError => fetchError.message)))
+    bindedOutputline(formatFetchWarnings(fetchResult.fetchErrors.map(fetchError => fetchError.detailedMessage)))
   }
   if (updatingWsSucceeded) {
     bindedOutputline(formatFetchFinish())

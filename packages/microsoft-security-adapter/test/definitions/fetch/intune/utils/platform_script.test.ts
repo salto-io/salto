@@ -141,10 +141,11 @@ describe('Intune platform script fetch utils', () => {
     })
   })
 
-  describe(`${platformScript.setWindowsScriptValueAsStaticFile.name}`, () => {
+  describe(`${platformScript.setScriptValueAsStaticFile.name}`, () => {
     const WINDOWS_PLATFORM_SCRIPT_VALUE = {
       displayName: 'test windows platform script',
       platforms: 'windows',
+      fileName: 'simple_script.ps1',
       scriptContent: null,
       [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]: [
         {
@@ -158,12 +159,12 @@ describe('Intune platform script fetch utils', () => {
       it('should throw an error', async () => {
         const value = _.omit(WINDOWS_PLATFORM_SCRIPT_VALUE, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
         await expect(
-          platformScript.setWindowsScriptValueAsStaticFile({
+          platformScript.setScriptValueAsStaticFile({
             value,
             typeName: 'testPlatformScript',
             context: { ...contextMock, fragments: [] },
           }),
-        ).rejects.toThrow('Expected IntunePlatformScriptWindows.scriptContent to be an array, but got undefined')
+        ).rejects.toThrow('Expected testPlatformScript.scriptContent to be an array, but got undefined')
       })
     })
 
@@ -177,7 +178,7 @@ describe('Intune platform script fetch utils', () => {
           ],
         }
         await expect(
-          platformScript.setWindowsScriptValueAsStaticFile({
+          platformScript.setScriptValueAsStaticFile({
             value,
             typeName: 'testPlatformScript',
             context: { ...contextMock, fragments: [] },
@@ -189,7 +190,7 @@ describe('Intune platform script fetch utils', () => {
     describe('when the instance has script content', () => {
       it('should set the script content as a static file', async () => {
         const value = WINDOWS_PLATFORM_SCRIPT_VALUE
-        const adjustedScript = await platformScript.setWindowsScriptValueAsStaticFile({
+        const adjustedScript = await platformScript.setScriptValueAsStaticFile({
           value,
           typeName: 'testPlatformScript',
           context: { ...contextMock, fragments: [] },
@@ -201,8 +202,86 @@ describe('Intune platform script fetch utils', () => {
           },
         })
         expect((adjustedScript.value.scriptContent as StaticFile).filepath).toEqual(
-          'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s.ps1',
+          'microsoft_security/testPlatformScript/test_windows_platform_script.s/simple_script.ps1',
         )
+      })
+    })
+  })
+
+  describe(`${platformScript.createPlatformScriptFetchDefinition.name}`, () => {
+    it('should return the correct fetch definition for Windows Script', () => {
+      const fetchDefinition = platformScript.createPlatformScriptFetchDefinition({
+        typeName: 'testPlatformScript',
+        path: '/testPath',
+        platform: 'Windows',
+      })
+      expect(fetchDefinition).toEqual({
+        testPlatformScript: {
+          requests: [
+            {
+              endpoint: {
+                path: '/testPath',
+                queryArgs: {
+                  $expand: 'assignments',
+                },
+              },
+              transformation: {
+                root: 'value',
+                omit: ['assignments@odata.context'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: true,
+            recurseInto: {
+              // For some reason the script content is returned as null when listing the scripts,
+              // so we need to fetch it separately by making another request for each script
+              scriptContentRecurseInto: {
+                typeName: 'testPlatformScript__scriptContentRecurseInto',
+                context: {
+                  args: {
+                    id: {
+                      root: 'id',
+                    },
+                  },
+                },
+              },
+            },
+            mergeAndTransform: {
+              adjust: expect.any(Function),
+            },
+          },
+          element: {
+            topLevel: {
+              isTopLevel: true,
+              serviceUrl: {
+                baseUrl: 'https://intune.microsoft.com',
+                path: '/#view/Microsoft_Intune_DeviceSettings/ConfigureWMPolicyMenuBlade/~/properties/policyId/{id}/policyType~/0',
+              },
+              allowEmptyArrays: true,
+            },
+            fieldCustomizations: {
+              id: {
+                hide: true,
+              },
+            },
+          },
+        },
+        testPlatformScript__scriptContentRecurseInto: {
+          requests: [
+            {
+              endpoint: {
+                path: '/testPath/{id}',
+                queryArgs: {
+                  $select: 'scriptContent',
+                },
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
       })
     })
   })

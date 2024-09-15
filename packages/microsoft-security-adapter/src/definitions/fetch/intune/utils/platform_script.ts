@@ -8,15 +8,18 @@
 
 import _ from 'lodash'
 import { naclCase, validateArray, validatePlainObject } from '@salto-io/adapter-utils'
+import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { StaticFile } from '@salto-io/adapter-api'
-import { NAME_ID_FIELD } from '../../shared/defaults'
-import { AdjustFunctionMergeAndTransform } from '../../shared/types'
+import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../../shared/defaults'
+import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shared/types'
 import { ADAPTER_NAME, intuneConstants } from '../../../../constants'
-import { EndpointPath as FilePath } from '../../../types'
+import { EndpointPath } from '../../../types'
+import { SERVICE_BASE_URL } from '../../../../constants/intune'
+
+const { recursiveNestedTypeName } = fetchUtils.element
 
 const {
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
   SCRIPT_VALUE_FIELD_NAME,
   SCRIPT_CONTENT_FIELD_NAME,
@@ -25,32 +28,32 @@ const {
   SETTING_INSTANCE_FIELD_NAME,
   SETTINGS_FIELD_NAME,
   SIMPLE_SETTING_VALUE_FIELD_NAME,
+  ASSIGNMENTS_ODATA_CONTEXT,
 } = intuneConstants
 
 const createStaticFileFromScript = ({
   typeName,
-  uniquePath,
-  fileExtension,
+  fullName,
+  fileName,
   content,
 }: {
   typeName: string
-  uniquePath: FilePath
-  fileExtension: 'sh' | 'ps1'
+  fullName: string
+  fileName: string
   content: string
 }): StaticFile => {
-  const formattedUniquePath = uniquePath
-    .split('/')
-    .map(naclCase)
-    .map(name => name.replace('@', '.'))
-    .join('/')
+  const formattedFullName = naclCase(fullName).replace('@', '.')
 
   return new StaticFile({
-    filepath: `${ADAPTER_NAME}/${typeName}/${formattedUniquePath}.${fileExtension}`,
+    filepath: `${ADAPTER_NAME}/${typeName}/${formattedFullName}/${fileName}`,
     content: Buffer.from(content, 'base64'),
     encoding: 'base64',
   })
 }
 
+/**
+ * Creates a static file from the binary content of each setting that has a script value in the given instance.
+ */
 export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value }) => {
   validatePlainObject(value, PLATFORM_SCRIPT_LINUX_TYPE_NAME)
 
@@ -76,8 +79,8 @@ export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = 
       [SETTING_INSTANCE_FIELD_NAME, SIMPLE_SETTING_VALUE_FIELD_NAME, SCRIPT_VALUE_FIELD_NAME],
       createStaticFileFromScript({
         typeName: PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-        uniquePath: `/${value.name}/${_.get(setting, [SETTING_INSTANCE_FIELD_NAME, SETTING_DEFINITION_ID_FIELD_NAME])}`,
-        fileExtension: 'sh',
+        fullName: value.name,
+        fileName: `${_.get(setting, [SETTING_INSTANCE_FIELD_NAME, SETTING_DEFINITION_ID_FIELD_NAME])}.sh`,
         content: fileContent,
       }),
     )
@@ -92,10 +95,14 @@ export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = 
   }
 }
 
-export const setWindowsScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value }) => {
-  validatePlainObject(value, PLATFORM_SCRIPT_WINDOWS_TYPE_NAME)
+/**
+ * Creates a static file from the binary content of the field scriptContent in the given script instance.
+ * The script instance is either Windows or MacOS.
+ */
+export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value, typeName }) => {
+  validatePlainObject(value, typeName)
   const scriptContent = _.get(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
-  validateArray(scriptContent, `${PLATFORM_SCRIPT_WINDOWS_TYPE_NAME}.${SCRIPT_CONTENT_FIELD_NAME}`)
+  validateArray(scriptContent, `${typeName}.${SCRIPT_CONTENT_FIELD_NAME}`)
   if (scriptContent.length !== 1) {
     throw new Error(`Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}`)
   }
@@ -104,11 +111,87 @@ export const setWindowsScriptValueAsStaticFile: AdjustFunctionMergeAndTransform 
     value: {
       ..._.omit(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
       [SCRIPT_CONTENT_FIELD_NAME]: createStaticFileFromScript({
-        typeName: PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
-        uniquePath: value[NAME_ID_FIELD.fieldName],
-        fileExtension: 'ps1',
+        typeName,
+        fullName: value[NAME_ID_FIELD.fieldName],
+        fileName: value.fileName,
         content: _.get(scriptContent[0], SCRIPT_CONTENT_FIELD_NAME),
       }),
     },
   }
 }
+/**
+ * Creates a fetch definition for fetching macOS or windows platform scripts.
+ * Includes fetching the script content separately for each script, and transforming it into a static file.
+ */
+export const createPlatformScriptFetchDefinition = ({
+  typeName,
+  path,
+  platform,
+}: {
+  typeName: string
+  path: EndpointPath
+  platform: 'Windows' | 'MacOS'
+}): FetchCustomizations => ({
+  [typeName]: {
+    requests: [
+      {
+        endpoint: {
+          path,
+          queryArgs: {
+            $expand: 'assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: [ASSIGNMENTS_ODATA_CONTEXT],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        // For some reason the script content is returned as null when listing the scripts,
+        // so we need to fetch it separately by making another request for each script
+        [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]: {
+          typeName: recursiveNestedTypeName(typeName, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+      mergeAndTransform: {
+        adjust: setScriptValueAsStaticFile,
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: `/#view/Microsoft_Intune_DeviceSettings/ConfigureWMPolicyMenuBlade/~/properties/policyId/{id}/policyType~/${platform === 'Windows' ? 0 : 1}`,
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [recursiveNestedTypeName(typeName, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)]: {
+    requests: [
+      {
+        endpoint: {
+          path: `${path}/{id}`,
+          queryArgs: {
+            $select: SCRIPT_CONTENT_FIELD_NAME,
+          },
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+  },
+})

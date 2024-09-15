@@ -7,10 +7,21 @@
  */
 
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  FieldDefinition,
+  InstanceElement,
+  ListType,
+  ObjectType,
+  Values,
+  Element,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { FilterContext, RemoteFilterCreator } from '../filter'
-import { ensureSafeFilterFetch, queryClient, safeApiName } from './utils'
+import { apiNameSync, ensureSafeFilterFetch, isCustomObjectSync, queryClient, safeApiName } from './utils'
 import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
 import {
   API_NAME,
@@ -24,12 +35,16 @@ import SalesforceClient from '../client/client'
 import { FetchProfile } from '../types'
 
 const log = logger(module)
+const { isDefined } = values
 
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
 export const LATEST_SUPPORTED_API_VERSION_FIELD = 'LatestSupportedApiVersion'
+export const CUSTOM_OBJECTS_FIELD = 'customObjects'
+
+export const ORG_SETTINGS_INSTANCE_ELEM_ID = new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance')
 
 /*
- * These fields are not multienv friendly
+ * These fields are not multi env friendly
  * */
 const FIELDS_TO_IGNORE = [
   'DailyWebToCaseCount',
@@ -97,19 +112,26 @@ const enrichTypeWithFields = async (
   }
 }
 
-const createOrganizationType = (config: FilterContext): ObjectType =>
-  new ObjectType({
+const createOrganizationType = (config: FilterContext): ObjectType => {
+  const fieldDefinitions: Record<string, FieldDefinition> = {
+    [CUSTOM_OBJECTS_FIELD]: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+    },
+  }
+  if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
+    fieldDefinitions[LATEST_SUPPORTED_API_VERSION_FIELD] = {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+    }
+  }
+  return new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')
-      ? {
-          [LATEST_SUPPORTED_API_VERSION_FIELD]: {
-            refType: BuiltinTypes.NUMBER,
-            annotations: {
-              [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-            },
-          },
-        }
-      : {},
+    fields: fieldDefinitions,
     annotations: {
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
@@ -119,6 +141,7 @@ const createOrganizationType = (config: FilterContext): ObjectType =>
     isSettings: true,
     path: getTypePath(ORGANIZATION_SETTINGS),
   })
+}
 
 const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, objectType, _.pick(fieldValues, Object.keys(objectType.fields)), [
@@ -185,6 +208,19 @@ const addLatestSupportedAPIVersion = async ({
   }
 }
 
+const populateCustomObjects = ({
+  elements,
+  organizationInstance,
+}: {
+  elements: Element[]
+  organizationInstance: InstanceElement
+}): void => {
+  organizationInstance.value[CUSTOM_OBJECTS_FIELD] = elements
+    .filter(isCustomObjectSync)
+    .map(type => apiNameSync(type))
+    .filter<string>(isDefined)
+}
+
 const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
@@ -222,6 +258,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         addLatestSupportedAPIVersionParams.organizationInstance = organizationInstance
       }
       await addLatestSupportedAPIVersion(addLatestSupportedAPIVersionParams)
+      populateCustomObjects({ elements, organizationInstance })
 
       elements.push(objectType, organizationInstance, apiVersionType, apiVersionInstance)
     },

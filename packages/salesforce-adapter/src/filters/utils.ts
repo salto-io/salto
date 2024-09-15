@@ -109,6 +109,8 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
+import { CUSTOM_OBJECTS_FIELD, ORG_SETTINGS_INSTANCE_ELEM_ID } from './organization_settings'
+import { SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -954,3 +956,33 @@ export const isCustomField = (field: Field): boolean => field.name.endsWith(SALE
 
 export const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+
+type SalesforceFetchTargets = {
+  metadataTypes: readonly string[]
+  customObjects: readonly string[]
+}
+
+export const getOrgFetchTargets = async (elementsSource: ReadOnlyElementsSource): Promise<SalesforceFetchTargets> => {
+  const orgSettings = elementsSource.get(ORG_SETTINGS_INSTANCE_ELEM_ID)
+  if (!isInstanceElement(orgSettings)) {
+    log.warn('Expected org settings Instance to be in elements source. Fetch targets will only include metadata types')
+    return {
+      metadataTypes: SUPPORTED_METADATA_TYPES,
+      customObjects: [],
+    }
+  }
+  const customObjects: unknown = orgSettings.value[CUSTOM_OBJECTS_FIELD]
+  if (!_.isArray(customObjects) || !customObjects.every(_.isString)) {
+    log.warn(
+      'Expected custom objects field in org settings to be an array of strings. Fetch targets will only include metadata types',
+    )
+    return {
+      metadataTypes: SUPPORTED_METADATA_TYPES,
+      customObjects: [],
+    }
+  }
+  return {
+    metadataTypes: SUPPORTED_METADATA_TYPES,
+    customObjects,
+  }
+}

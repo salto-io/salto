@@ -187,10 +187,11 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
-  { creator: organizationWideDefaults, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },
+  // organizationWideDefaults depends on customObjectsToObjectTypeFilter
+  { creator: organizationWideDefaults, addsNewInformation: true },
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   { creator: customObjectsInstancesFilter, addsNewInformation: true },
   { creator: removeFieldsAndValuesFilter },

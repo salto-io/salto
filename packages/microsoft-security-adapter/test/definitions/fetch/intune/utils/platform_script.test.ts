@@ -89,6 +89,7 @@ describe('Intune platform script fetch utils', () => {
     ]
 
     const LINUX_PLATFORM_SCRIPT_VALUE_WITH_SETTINGS = {
+      name: 'test linux platform script',
       platforms: 'linux',
       settings: [...SETTINGS_WITHOUT_A_SCRIPT, SETTING_WITH_A_SCRIPT],
     }
@@ -125,20 +126,24 @@ describe('Intune platform script fetch utils', () => {
           ...value,
           settings: expectedSettings,
         }
+        const adjustedScript = await platformScript.setLinuxScriptValueAsStaticFile({
+          value,
+          typeName: 'testPlatformScript',
+          context: { ...contextMock, fragments: [] },
+        })
+        expect(adjustedScript).toEqual({ value: expectedValue })
         expect(
-          await platformScript.setLinuxScriptValueAsStaticFile({
-            value,
-            typeName: 'testPlatformScript',
-            context: { ...contextMock, fragments: [] },
-          }),
-        ).toEqual({ value: expectedValue })
+          (adjustedScript.value.settings[3].settingInstance.simpleSettingValue.value as StaticFile).filepath,
+        ).toEqual(
+          'microsoft_security/IntunePlatformScriptLinux/test_linux_platform_script-s/linux_customconfig_script.sh',
+        )
       })
     })
   })
 
   describe(`${platformScript.setWindowsScriptValueAsStaticFile.name}`, () => {
     const WINDOWS_PLATFORM_SCRIPT_VALUE = {
-      displayName: 'testPlatformScript',
+      displayName: 'test windows platform script',
       platforms: 'windows',
       scriptContent: null,
       [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]: [
@@ -177,25 +182,27 @@ describe('Intune platform script fetch utils', () => {
             typeName: 'testPlatformScript',
             context: { ...contextMock, fragments: [] },
           }),
-        ).rejects.toThrow('Expected exactly one script content for script testPlatformScript')
+        ).rejects.toThrow('Expected exactly one script content for script test windows platform script')
       })
     })
 
     describe('when the instance has script content', () => {
       it('should set the script content as a static file', async () => {
         const value = WINDOWS_PLATFORM_SCRIPT_VALUE
-        expect(
-          await platformScript.setWindowsScriptValueAsStaticFile({
-            value,
-            typeName: 'testPlatformScript',
-            context: { ...contextMock, fragments: [] },
-          }),
-        ).toEqual({
+        const adjustedScript = await platformScript.setWindowsScriptValueAsStaticFile({
+          value,
+          typeName: 'testPlatformScript',
+          context: { ...contextMock, fragments: [] },
+        })
+        expect(adjustedScript).toEqual({
           value: {
             ..._.omit(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
             scriptContent: expect.any(StaticFile),
           },
         })
+        expect((adjustedScript.value.scriptContent as StaticFile).filepath).toEqual(
+          'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script-s.ps1',
+        )
       })
     })
   })

@@ -738,7 +738,7 @@ export default class SalesforceClient implements ISalesforceClient {
         )
         return this.fullListPromisesByType[type] ?? this.sendChunkedList([{ type }], isUnhandledError)
       })
-      // In this mode, we run the custom list function and then extend the result with the full list
+      // In this mode, we run the custom list function and then extend the result with the original list call
       if (customListFuncDef.mode === 'extendsOriginal') {
         const customListResult = await request
         const sendChunkedResult = await this.sendChunkedList([{ type }], isUnhandledError)

@@ -31,6 +31,7 @@ import {
   JWK_TYPE_NAME,
   EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
   EMAIL_TEMPLATE,
+  EMAIL_CUSTOMIZATION,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -780,7 +781,7 @@ const createCustomizations = ({
       },
     },
   },
-  EmailCustomization: {
+  [EMAIL_CUSTOMIZATION]: {
     requests: [{ endpoint: { path: '/api/v1/brands/{brandId}/templates/email/{templateName}/customizations' } }],
     resource: { directFetch: false },
     element: {

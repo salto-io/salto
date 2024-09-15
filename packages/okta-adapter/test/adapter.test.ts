@@ -65,6 +65,8 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   USER_SCHEMA_TYPE_NAME,
+  EMAIL_TEMPLATE,
+  EMAIL_CUSTOMIZATION,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -518,13 +520,35 @@ describe('adapter', () => {
   describe('deploy', () => {
     let operations: AdapterOperations
 
-    let brandType: ObjectType
-    let brand1: InstanceElement
     let appType: ObjectType
     let groupType: ObjectType
     let orgSettingType: ObjectType
     let userTypeType: ObjectType
     let userSchemaType: ObjectType
+    const emailTemplateType = new ObjectType({
+      elemID: new ElemID(OKTA, EMAIL_TEMPLATE),
+      fields: {
+        name: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+        brandId: {
+          refType: BuiltinTypes.SERVICE_ID,
+        }
+      },
+    })
+    const brandType = new ObjectType({
+      elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+      fields: {
+        id: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+      },
+    })
+    const brand1 = new InstanceElement('brand1', brandType, {
+      id: 'brand-fakeid1',
+      name: 'subdomain.example.com',
+      removePoweredByOkta: false,
+    })
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -541,20 +565,6 @@ describe('adapter', () => {
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
         elementsSource: buildElementsSourceFromElements([orgSetting]),
-      })
-
-      brandType = new ObjectType({
-        elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
-        fields: {
-          id: {
-            refType: BuiltinTypes.SERVICE_ID,
-          },
-        },
-      })
-      brand1 = new InstanceElement('brand1', brandType, {
-        id: 'brand-fakeid1',
-        name: 'subdomain.example.com',
-        removePoweredByOkta: false,
       })
       appType = new ObjectType({
         elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
@@ -2652,6 +2662,173 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy email template', () => {
+      it('should successfully add an email template', async () => {
+        loadMockReplies('email_template_add.json')
+        const emailTemplate = new InstanceElement(
+          'emailTemplate',
+          emailTemplateType,
+          {
+            name: 'ForgotPassword',
+            settings: {
+              recipients: 'ADMIN_ONLY',
+            }
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: emailTemplate.elemID.getFullName(),
+            changes: [toChange({ after: emailTemplate })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'emailtemplate-fakeid1',
+        )
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.brandId).toEqual(
+          'brand-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an email template', async () => {
+        loadMockReplies('email_template_modify.json')
+        const emailTemplate = new InstanceElement(
+          'emailTemplate',
+          emailTemplateType,
+          {
+            name: 'ForgotPassword',
+            settings: { recipients: 'ALL_USERS' }
+          },
+          undefined,
+          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)] },
+        )
+        const updatedEmailTemplate = emailTemplate.clone()
+        updatedEmailTemplate.value.settings.recipients = 'ADMIN_ONLY'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: emailTemplate.elemID.getFullName(),
+            changes: [toChange({ before: emailTemplate, after: updatedEmailTemplate })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.settings.recipients).toEqual(
+          'ADMIN_ONLY',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy email customization', () => {
+      const emailCustomizationType = new ObjectType({
+        elemID: new ElemID(OKTA, EMAIL_CUSTOMIZATION),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      const emailTemplateParent = new InstanceElement(
+        'FORGOT_PASSWORD',
+        emailTemplateType,
+        {
+          id: 'emailtemplate-fakeid1',
+          brandId: 'brand-fakeid1',
+          name: 'ForgotPassword',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)] },
+      )
+
+      it('should successfully add an email customization', async () => {
+        loadMockReplies('email_customization_add.json')
+        const emailCustomization = new InstanceElement(
+          'emailCustomization',
+          emailCustomizationType,
+          {
+            language: 'ja',
+            isDefault: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(emailTemplateParent.elemID, emailTemplateParent)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: emailCustomization.elemID.getFullName(),
+            changes: [toChange({ after: emailCustomization })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'emailcustomization-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify an email customization', async () => {
+        loadMockReplies('email_customization_modify.json')
+        const emailCustomization = new InstanceElement(
+          'emailCustomization',
+          emailCustomizationType,
+          {
+            id: 'emailcustomization-fakeid1',
+            subject: 'Konichiwa',
+            language: 'ja',
+            isDefault: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(emailTemplateParent.elemID, emailTemplateParent)],
+          },
+        )
+        const updatedEmailCustomization = emailCustomization.clone()
+        updatedEmailCustomization.value.subject = 'Hello'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emailCustomization',
+            changes: [toChange({ before: emailCustomization, after: updatedEmailCustomization })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.subject).toEqual('Hello')
+      })
+      it('should successfully remove an email customization', async () => {
+        loadMockReplies('email_customization_remove.json')
+        const emailCustomization = new InstanceElement(
+          'emailCustomization',
+          emailCustomizationType,
+          {
+            id: 'emailcustomization-fakeid1',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(emailTemplateParent.elemID, emailTemplateParent)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emailCustomization',
+            changes: [toChange({ before: emailCustomization })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

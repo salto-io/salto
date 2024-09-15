@@ -1,0 +1,38 @@
+[
+    {
+      "path": "/api/v1/brands/brand-fakeid1/templates/email/ForgotPassword/settings",
+      "scope": "",
+      "method": "PUT",
+      "status": 200,
+      "response": {
+        "recipients": "ADMINS_ONLY",
+        "_links": {
+          "template": {
+            "href": "https://test.okta.com/api/v1/brands/brand-fakeid1/templates/email/ForgotPassword",
+            "hints": {
+              "allow": [
+                "GET"
+              ]
+            }
+          },
+          "self": {
+            "href": "https://test.okta.com/api/v1/brands/brand-fakeid1/templates/email/ForgotPassword/settings",
+            "hints": {
+              "allow": [
+                "GET",
+                "PUT"
+              ]
+            }
+          }
+        }
+      },
+      "body": {
+        "recipients": "ADMINS_ONLY"
+      },
+      "reqHeaders": {
+        "x-rate-limit-limit": "500",
+        "x-rate-limit-remaining": "495",
+        "x-rate-limit-reset": "1726425566"
+      }
+    }
+]

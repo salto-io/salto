@@ -1,0 +1,14 @@
+[
+   {
+      "path": "/api/v1/brands/brand-fakeid1/templates/email/ForgotPassword/customizations/emailcustomization-fakeid1",
+      "scope": "",
+      "method": "DELETE",
+      "status": 204,
+      "response": "",
+      "reqHeaders": {
+        "x-rate-limit-limit": "500",
+        "x-rate-limit-remaining": "497",
+        "x-rate-limit-reset": "1726428394"
+      }
+    }
+]

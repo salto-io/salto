@@ -40,6 +40,7 @@ import {
   IDENTITY_PROVIDER_TYPE_NAME,
   JWK_TYPE_NAME,
   EMAIL_TEMPLATE,
+  EMAIL_CUSTOMIZATION,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -896,7 +897,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
-    EmailCustomization: {
+    [EMAIL_CUSTOMIZATION]: {
       requestsByAction: {
         customizations: {
           add: [

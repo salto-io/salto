@@ -915,6 +915,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'description', fieldType: 'string' }),
       serviceUrl: '/agent/admin/user_fields/{id}',
+      nameMapping: 'lowercase',
     },
     deployRequests: {
       add: {

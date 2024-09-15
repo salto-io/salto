@@ -3716,7 +3716,7 @@
           "url": "https://myBrand.zendesk.com/api/v2/user_fields/1900000026405.json",
           "id": 1900000026405,
           "type": "text",
-          "key": "another_text_3425",
+          "key": "another_Text_3425",
           "title": "another text 3425",
           "description": "",
           "raw_title": "another text 3425",

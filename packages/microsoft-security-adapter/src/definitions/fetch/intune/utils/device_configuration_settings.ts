@@ -92,9 +92,6 @@ export const createDeviceConfigurationSettingsFetchDefinition = ({
     },
   },
   [settingsTypeName]: {
-    resource: {
-      directFetch: false,
-    },
     requests: [
       {
         endpoint: {
@@ -103,6 +100,9 @@ export const createDeviceConfigurationSettingsFetchDefinition = ({
         transformation: DEFAULT_TRANSFORMATION,
       },
     ],
+    resource: {
+      directFetch: false,
+    },
     element: {
       fieldCustomizations: {
         id: {

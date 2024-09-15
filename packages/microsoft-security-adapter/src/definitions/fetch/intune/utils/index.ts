@@ -7,3 +7,4 @@
  */
 
 export * as application from './application'
+export * as deviceConfigurationSettings from './device_configuration_settings'

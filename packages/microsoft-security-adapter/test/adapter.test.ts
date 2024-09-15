@@ -833,6 +833,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',
           'IntuneFilter',
+          'IntunePlatformScriptLinux',
         ])
       })
     })

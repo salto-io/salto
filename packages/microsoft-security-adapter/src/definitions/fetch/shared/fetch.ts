@@ -11,7 +11,7 @@ import { Options } from '../../types'
 import { DEFAULT_FIELD_CUSTOMIZATIONS, DEFAULT_ID_PARTS } from './defaults'
 import { createEntraCustomizations } from '../entra/fetch'
 import { createIntuneCustomizations } from '../intune/fetch'
-import { AvailableMicrosoftSecurityServices } from '../../../client'
+import { AvailableMicrosoftSecurityServices } from '../../../auth'
 
 const createCustomizations = (
   servicesToManage: AvailableMicrosoftSecurityServices[],

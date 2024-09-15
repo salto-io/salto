@@ -22,7 +22,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
-import { credentialsType } from '../src/client'
+import { credentialsType } from '../src/auth'
 
 type MockReply = {
   url: string

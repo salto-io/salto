@@ -13,8 +13,7 @@ import {
   OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import { AvailableMicrosoftSecurityServices, Credentials } from './types'
-import { BASIC_OAUTH_REQUIRED_SCOPES, SCOPE_MAPPING } from './constants'
+import { AvailableMicrosoftSecurityServices, BASIC_OAUTH_REQUIRED_SCOPES, Credentials, SCOPE_MAPPING } from '../auth'
 
 export const getOAuthRequiredScopes = (servicesToManage: AvailableMicrosoftSecurityServices[]): string => {
   const scopes = servicesToManage.flatMap(service => SCOPE_MAPPING[service])

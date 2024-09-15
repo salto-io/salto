@@ -7,8 +7,22 @@
  */
 import { BuiltinTypes, ElemID, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ADAPTER_NAME } from '../constants'
-import { AvailableMicrosoftSecurityServices, Credentials, OauthRequestParameters } from './types'
+import { ADAPTER_NAME } from './constants'
+
+export const AVAILABLE_MICROSOFT_SECURITY_SERVICES = ['Entra', 'Intune'] as const
+export type AvailableMicrosoftSecurityServices = (typeof AVAILABLE_MICROSOFT_SECURITY_SERVICES)[number]
+
+export type OauthRequestParameters = {
+  tenantId: string
+  clientId: string
+  clientSecret: string
+  port: number
+} & Record<AvailableMicrosoftSecurityServices, boolean>
+
+export type Credentials = Omit<OauthRequestParameters, 'port' | AvailableMicrosoftSecurityServices> & {
+  refreshToken: string
+  servicesToManage: AvailableMicrosoftSecurityServices[]
+}
 
 export const BASIC_OAUTH_REQUIRED_SCOPES = ['Group.ReadWrite.All']
 export const SCOPE_MAPPING: Record<AvailableMicrosoftSecurityServices, string[]> = {

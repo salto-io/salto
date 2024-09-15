@@ -17,7 +17,7 @@ import { REFERENCES } from './definitions/references/references'
 import { createFromOauthResponse, createOAuthRequest } from './client/oauth'
 import { appRolesFilter, deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
 import { customConvertError } from './error_utils'
-import { Credentials, credentialsType, oauthRequestParameters } from './client'
+import { Credentials, credentialsType, oauthRequestParameters } from './auth'
 
 const { defaultCredentialsFromConfig } = credentialsUtils
 

@@ -400,7 +400,7 @@ export const fromRetrieveResult = async (
     ) {
       const resultWithNonParsedXmlNumbers = xmlToValues(xmlString, true)
       const detailedChanges = getValuesChanges({
-        id: new ElemID(SALESFORCE, resultWithNonParsedXmlNumbers.typeName, 'instance', file.fullName),
+        id: new ElemID(SALESFORCE, file.type, 'instance', file.fullName),
         before: resultWithNonParsedXmlNumbers.values,
         after: valuesFromXml,
         beforeId: undefined,

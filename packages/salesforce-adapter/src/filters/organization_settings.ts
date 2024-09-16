@@ -17,11 +17,20 @@ import {
   ObjectType,
   Values,
   Element,
+  MapType,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
 import { FilterContext, RemoteFilterCreator } from '../filter'
-import { apiNameSync, ensureSafeFilterFetch, isCustomObjectSync, queryClient, safeApiName } from './utils'
+import {
+  apiNameSync,
+  buildElementsSourceForFetch,
+  ensureSafeFilterFetch,
+  isCustomObjectSync,
+  queryClient,
+  referenceFieldTargetTypes,
+  safeApiName,
+} from './utils'
 import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
 import {
   API_NAME,
@@ -35,11 +44,12 @@ import SalesforceClient from '../client/client'
 import { FetchProfile } from '../types'
 
 const log = logger(module)
-const { isDefined } = values
+const { toArrayAsync } = collections.asynciterable
 
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
 export const LATEST_SUPPORTED_API_VERSION_FIELD = 'LatestSupportedApiVersion'
 export const CUSTOM_OBJECTS_FIELD = 'customObjects'
+export const CUSTOM_OBJECTS_LOOKUPS_FIELD = 'customObjectsLookups'
 
 export const ORG_SETTINGS_INSTANCE_ELEM_ID = new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance')
 
@@ -116,6 +126,12 @@ const createOrganizationType = (config: FilterContext): ObjectType => {
   const fieldDefinitions: Record<string, FieldDefinition> = {
     [CUSTOM_OBJECTS_FIELD]: {
       refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+    },
+    [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
+      refType: new MapType(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
       },
@@ -208,6 +224,9 @@ const addLatestSupportedAPIVersion = async ({
   }
 }
 
+const getCustomObjectLookupTypes = (customObject: ObjectType): string[] =>
+  _.uniq(Object.values(customObject.fields).flatMap(referenceFieldTargetTypes))
+
 const populateCustomObjects = ({
   elements,
   organizationInstance,
@@ -215,10 +234,22 @@ const populateCustomObjects = ({
   elements: Element[]
   organizationInstance: InstanceElement
 }): void => {
-  organizationInstance.value[CUSTOM_OBJECTS_FIELD] = elements
-    .filter(isCustomObjectSync)
-    .map(type => apiNameSync(type))
-    .filter<string>(isDefined)
+  const customObjects = elements.filter(isCustomObjectSync)
+  const customObjectNames: string[] = []
+  const customObjectsLookups: Record<string, string[]> = {}
+  customObjects.forEach(customObject => {
+    const objectApiName = apiNameSync(customObject)
+    if (objectApiName === undefined) {
+      return
+    }
+    customObjectNames.push(objectApiName)
+    const customObjectLookupTypes = getCustomObjectLookupTypes(customObject)
+    if (customObjectLookupTypes.length > 0) {
+      customObjectsLookups[objectApiName] = customObjectLookupTypes
+    }
+  })
+  organizationInstance.value[CUSTOM_OBJECTS_FIELD] = customObjectNames
+  organizationInstance.value[CUSTOM_OBJECTS_LOOKUPS_FIELD] = customObjectsLookups
 }
 
 const FILTER_NAME = 'organizationSettings'
@@ -254,7 +285,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         addLatestSupportedAPIVersionParams.organizationInstance = organizationInstance
       }
       await addLatestSupportedAPIVersion(addLatestSupportedAPIVersionParams)
-      populateCustomObjects({ elements, organizationInstance })
+      populateCustomObjects({
+        elements: await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
+        organizationInstance,
+      })
 
       elements.push(objectType, organizationInstance, apiVersionType, apiVersionInstance)
     },

@@ -425,6 +425,9 @@ export const WAVE_DATAFLOW_METADATA_TYPE = 'WaveDataflow'
 export const WAVE_DASHBOARD_METADATA_TYPE = 'WaveDashboard'
 export const WAVE_LENS_METADATA_TYPE = 'WaveLens'
 
+export const WAVE_RECIPE_FILE_EXTENSION = '.wdpr'
+export const WAVE_DATAFLOW_FILE_EXTENSION = '.wdf'
+
 // Meta Types
 export const METADATA_META_TYPE = 'Metadata'
 export const STANDARD_OBJECT_META_TYPE = 'StandardObject'

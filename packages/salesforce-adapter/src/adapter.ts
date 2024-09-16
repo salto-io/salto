@@ -30,7 +30,7 @@ import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
-import SalesforceClient from './client/client'
+import SalesforceClient, { CustomListFuncDef } from './client/client'
 import * as constants from './constants'
 import {
   apiName,
@@ -155,6 +155,7 @@ import {
   LAST_MODIFIED_DATE,
   OWNER_ID,
   PROFILE_METADATA_TYPE,
+  WAVE_DATAFLOW_METADATA_TYPE,
 } from './constants'
 import {
   buildFilePropsMetadataQuery,
@@ -163,7 +164,7 @@ import {
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
-import { createListApexClassesDef } from './client/custom_list_funcs'
+import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
@@ -511,20 +512,30 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     )
   }
 
+  private initializeCustomListFunctions(fetchProfile: FetchProfile, withChangesDetection: boolean): void {
+    const commonListFunctions: Record<string, CustomListFuncDef> = fetchProfile.isFeatureEnabled('waveMetadataSupport')
+      ? {
+          [WAVE_DATAFLOW_METADATA_TYPE]: createListMissingWaveDataflowsDef(),
+        }
+      : {}
+    this.client.setCustomListFuncDefByType(
+      withChangesDetection
+        ? {
+            ...commonListFunctions,
+            [APEX_CLASS_METADATA_TYPE]: createListApexClassesDef(this.elementsSource),
+          }
+        : commonListFunctions,
+    )
+  }
+
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    this.client.setCustomListFuncDefByType(
-      withChangesDetection
-        ? {
-            [APEX_CLASS_METADATA_TYPE]: createListApexClassesDef(this.elementsSource),
-          }
-        : {},
-    )
     const fetchParams = this.userConfig.fetch ?? {}
+    this.initializeCustomListFunctions(buildFetchProfile({ fetchParams }), withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,

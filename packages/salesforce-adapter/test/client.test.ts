@@ -1393,7 +1393,7 @@ describe('salesforce client', () => {
       beforeEach(() => {
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
-            isPartial: true,
+            mode: 'partial',
             func: async _client => ({ errors: [], result: [] }),
           },
         })
@@ -1421,13 +1421,13 @@ describe('salesforce client', () => {
       })
     })
 
-    describe('when invoked on type with non-partial Custom List Function', () => {
+    describe('when invoked on type with Full Custom List Function', () => {
       let result: FileProperties[]
       beforeEach(() => {
         result = [mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1' })]
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
-            isPartial: false,
+            mode: 'full',
             func: async _client => ({ errors: [], result }),
           },
         })
@@ -1442,7 +1442,7 @@ describe('salesforce client', () => {
       beforeEach(() => {
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
-            isPartial: true,
+            mode: 'partial',
             func: async _client => {
               throw new Error('Custom List Function Error')
             },
@@ -1463,6 +1463,54 @@ describe('salesforce client', () => {
         expect(await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })).toEqual({ errors: [], result })
         await client.awaitCompletionOfAllListRequests()
         expect(Array.from(client.listedInstancesByType.get(APEX_CLASS_METADATA_TYPE))).toEqual(['Apex1', 'Apex2'])
+        expect(dodoScope.isDone()).toBeTrue()
+      })
+    })
+    describe('when invoked on type with extendsOriginal custom list function', () => {
+      let resultFromListMetadata: FileProperties[]
+      let resultFromCustomListFunc: FileProperties[]
+      beforeEach(() => {
+        resultFromListMetadata = [
+          mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1', id: 'original list' }),
+        ]
+        resultFromCustomListFunc = [
+          // Make sure we prefer the result from the original list in case of duplicates
+          mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1', id: '' }),
+          mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex2', id: '' }),
+        ]
+        client.setCustomListFuncDefByType({
+          [APEX_CLASS_METADATA_TYPE]: {
+            mode: 'extendsOriginal',
+            func: async _client => ({
+              errors: [],
+              result: resultFromCustomListFunc,
+            }),
+          },
+        })
+      })
+      it('should extend the original list result with the custom list function result', async () => {
+        const dodoScope = nock('http://dodo22')
+          .post(/.*/, /.*<listMetadata>.*/)
+          .delay(100)
+          .reply(200, {
+            'a:Envelope': {
+              'a:Body': {
+                a: {
+                  result: resultFromListMetadata,
+                },
+              },
+            },
+          })
+        const listResult = await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })
+        expect(listResult).toEqual({
+          errors: [],
+          result: [
+            mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1', id: 'original list' }),
+            mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex2', id: '' }),
+          ],
+        })
+        // Make sure caching works and no further requests are made. nock would throw error for any further requests
+        expect(await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })).toEqual(listResult)
         expect(dodoScope.isDone()).toBeTrue()
       })
     })

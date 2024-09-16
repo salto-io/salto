@@ -15,7 +15,7 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shar
 import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
-import { application, deviceConfigurationSettings } from './utils'
+import { application, deviceConfigurationSettings, platformScript } from './utils'
 
 const {
   // Top level types
@@ -27,6 +27,7 @@ const {
   DEVICE_COMPLIANCE_TYPE_NAME,
   FILTER_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
 
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
@@ -34,6 +35,9 @@ const {
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_SCRIPT_CONTENT_TYPE_NAME,
+  SCRIPT_CONTENT_FIELD_NAME,
+  SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,
 
   // Other
   SERVICE_BASE_URL,
@@ -288,8 +292,70 @@ const graphBetaCustomizations: FetchCustomizations = {
     filter: "templateReference/TemplateFamily eq 'deviceConfigurationScripts'",
     serviceUrlPath:
       '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/templateId/{templateReference.templateId}/platformName/Linux/policyId/{id}',
-    adjust: deviceConfigurationSettings.setScriptValueAsStaticFile,
+    adjust: platformScript.setLinuxScriptValueAsStaticFile,
   }),
+  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/deviceManagementScripts',
+          queryArgs: {
+            $expand: 'assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: [ASSIGNMENTS_ODATA_CONTEXT],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        // For some reason the script content is returned as null when listing the scripts,
+        // so we need to fetch it separately by making another request for each script
+        [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]: {
+          typeName: PLATFORM_SCRIPT_WINDOWS_SCRIPT_CONTENT_TYPE_NAME,
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+      mergeAndTransform: {
+        adjust: platformScript.setWindowsScriptValueAsStaticFile,
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune_DeviceSettings/ConfigureWMPolicyMenuBlade/~/properties/policyId/{id}/policyType~/0',
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [PLATFORM_SCRIPT_WINDOWS_SCRIPT_CONTENT_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/deviceManagementScripts/{id}',
+          queryArgs: {
+            $select: SCRIPT_CONTENT_FIELD_NAME,
+          },
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+  },
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
       resource: {

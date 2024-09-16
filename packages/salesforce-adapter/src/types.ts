@@ -95,10 +95,6 @@ export type MetadataParams = {
   objectsToSeperateFieldsToFiles?: string[]
 }
 
-export type OptionalDefaults = {
-  extraDependenciesChunkSize?: number
-}
-
 export type OptionalFeatures = {
   extraDependencies?: boolean
   extraDependenciesV2?: boolean
@@ -356,14 +352,19 @@ export type DataManagementConfig = {
   regenerateSaltoIds?: boolean
 }
 
+export type FetchLimits = {
+  maxExtraDependenciesQuerySize?: number
+  maxExtraDependenciesResoponseSize?: number
+}
+
 export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
   fetchAllCustomSettings?: boolean // TODO - move this into optional features
   optionalFeatures?: OptionalFeatures
-  optionalDefaults?: OptionalDefaults
   target?: string[]
-  maxInstancesPerType?: number
+  limits?: FetchLimits
+  maxInstancesPerType?: number // TODO - move this into fetchLimits
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
@@ -835,16 +836,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   },
 })
 
-const optionalDefaultsType = createMatchingObjectType<OptionalDefaults>({
-  elemID: new ElemID(constants.SALESFORCE, 'optionalDefaults'),
-  fields: {
-    extraDependenciesChunkSize: { refType: BuiltinTypes.NUMBER },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
-})
-
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
   fields: {
@@ -892,13 +883,23 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
+const limitsType = createMatchingObjectType<FetchLimits>({
+  elemID: new ElemID(constants.SALESFORCE, 'limits'),
+  fields: {
+    maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
+    maxExtraDependenciesResoponseSize: { refType: BuiltinTypes.NUMBER },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
     metadata: { refType: metadataConfigType },
     data: { refType: dataManagementType },
     optionalFeatures: { refType: optionalFeaturesType },
-    optionalDefaults: { refType: optionalDefaultsType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
     target: {
       refType: new ListType(BuiltinTypes.STRING),
@@ -917,6 +918,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       // Exported type is downcast to TypeElement
       refType: new ListType(importantValueType),
     },
+    limits: { refType: limitsType },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1055,7 +1057,6 @@ export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
-  readonly optionalDefaults: OptionalDefaults
   readonly isCustomReferencesHandlerEnabled: (name: CustomReferencesHandlers) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
@@ -1064,6 +1065,7 @@ export type FetchProfile = {
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
   readonly importantValues: ImportantValues
+  readonly limits?: FetchLimits
 }
 
 export type TypeWithNestedInstances = (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]

@@ -8,7 +8,7 @@
 
 import { validateFetchParameters, buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mergeWithDefaultImportantValues } from '../../src/fetch_profile/important_values'
-import { FetchParameters, OptionalDefaults } from '../../src/types'
+import { FetchParameters } from '../../src/types'
 
 describe('Fetch Profile', () => {
   describe('validateFetchParameters', () => {
@@ -37,16 +37,12 @@ describe('Fetch Profile', () => {
   })
   describe('buildFetchProfile', () => {
     it('should build a fetch profile with the correct values', () => {
-      const optionalDefaults: OptionalDefaults = {
-        extraDependenciesChunkSize: 10,
-      }
       const fetchParams: FetchParameters = {
         metadata: { include: [{ metadataType: 'CustomObject' }], exclude: [] },
         additionalImportantValues: [
           { value: 'fullName', highlighted: true, indexed: false },
           { value: 'label', highlighted: true, indexed: true },
         ],
-        optionalDefaults,
       }
       const maxItemsInRetrieveRequest = 10
       const fetchProfile = buildFetchProfile({
@@ -57,7 +53,6 @@ describe('Fetch Profile', () => {
       expect(fetchProfile.importantValues).toEqual(
         mergeWithDefaultImportantValues(fetchParams.additionalImportantValues),
       )
-      expect(fetchProfile.optionalDefaults).toEqual(optionalDefaults)
       expect(fetchProfile.preferActiveFlowVersions).toEqual(false)
     })
   })

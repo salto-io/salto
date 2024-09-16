@@ -157,7 +157,7 @@ salesforce {
 | [data](#data-management-configuration-options) | {} (do not manage data) | Data management configuration object names will not be fetched in case they are matched in includeObjects                                                                                                             |
 | fetchAllCustomSettings                         | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                               |
 | [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved |
-| [optionalDefaults](#optional-defaults)         | {} (no overrides)       | Granular control over which defaults are used by the adapter in some filters, by default all options are optimized to get the most information for the general case. Can be used to configure features that cause problems until they are solved |
+| [limits](#limits)                              | {} (no overrides)       | Granular control over which limits are used by the adapter in some filters, by default all options are optimized to get the most information for the general case. Can be used to configure features that cause problems until they are solved |
 | maxInstancesPerType                            | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                 |
 | preferActiveFlowVersions                       | false                   | When set to false, flows' latest version will be fetched. Otherwise, flows' active version will be fetched if exists                                                                                                  |
 | addNamespacePrefixToFullName                   | true                    | When set to true, namespace prefix will be added to instances in a namespace whose fullName does not begin with the namespace. Otherwise, there will be no change to fullName                                         |
@@ -194,6 +194,13 @@ salesforce {
 | fetchProfilesUsingReadApi         | false                  | Use the Salesforce Metadata Read API to fetch Profile instances. This will reduce the accuracy of the data and may result in crashes, but may be needed for debugging |
 | generateRefsInProfiles            | false                  | Generate references from profiles. This will have a significant performance impact, but will provide references from profiles to fields and elements.                 |
 | skipAliases                       | false                  | Do not create aliases for Metadata Elements                                                                                                                           |
+
+### Limits
+
+| Name                              | Default when undefined | Description                                                        |
+| --------------------------------- | ---------------------- | ------------------------------------------------------------------ |
+| maxExtraDependenciesQuerySize     | 500                    | Max size of each individual request in the extra depencies filter  |
+| maxExtraDependenciesResoponseSize | 1950                   | Max size of each individual response in the extra depencies filter |
 
 ### Warning settings
 

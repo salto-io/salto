@@ -12,6 +12,7 @@ import { logger } from '@salto-io/logging'
 import {
   buildElementsSourceFromElements,
   extendGeneratedDependencies,
+  inspectValue,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { getAllReferencedIds } from '@salto-io/adapter-components'
@@ -40,7 +41,7 @@ const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 'ApexPage', 'CustomField']
 
 // The current limit for using Bulk API V1 to query Tooling Records
-const TOOLING_QUERY_MAX_RECORDS = 2000
+const TOOLING_QUERY_MAX_RECORDS = 1950
 const INITIAL_QUERY_CHUNK_SIZE = 500
 
 type DependencyDetails = {
@@ -62,7 +63,8 @@ type Dependency = {
 type QueryDepsParams = {
   client: SalesforceClient
   elements: Element[]
-  initialChunkSize?: number
+  initialChunkSize: number
+  maxResponseSize: number
 }
 
 /**
@@ -136,7 +138,12 @@ const getDependencies = async (
   }))
 }
 
-const queryDeps = async ({ client, elements, initialChunkSize }: QueryDepsParams): Promise<Dependency[]> => {
+const queryDeps = async ({
+  client,
+  elements,
+  initialChunkSize,
+  maxResponseSize,
+}: QueryDepsParams): Promise<Dependency[]> => {
   log.debug('about to query dependencies for %d elements with %d initialChunkSize', elements.length, initialChunkSize)
   const elementsByMetadataComponentId = _.keyBy(elements.filter(hasInternalId), getInternalId)
   // The MetadataComponentId of standard objects is the object name
@@ -165,11 +172,11 @@ const queryDeps = async ({ client, elements, initialChunkSize }: QueryDepsParams
             'Queried %d dependencies for %d elements, the last 3 elements are',
             allRecords.length,
             idsChunk.length,
-            idsChunk.slice(-3),
+            inspectValue(idsChunk.slice(-3)),
           )
           queriesExecuted += 1
-          if (allRecords.length === TOOLING_QUERY_MAX_RECORDS) {
-            // A single Element has more than 2000 dependencies
+          if (allRecords.length >= maxResponseSize) {
+            // A single Element has more than TOOLING_QUERY_MAX_RECORDS dependencies
             if (chunkSize === 1) {
               errorIds.add(idsChunk[0])
             } else {
@@ -191,13 +198,11 @@ const queryDeps = async ({ client, elements, initialChunkSize }: QueryDepsParams
         }),
       )
     ).flat()
-  const deps = await chunkedQuery(
-    Object.keys(elementsByMetadataComponentId),
-    initialChunkSize ?? INITIAL_QUERY_CHUNK_SIZE,
-  )
+  const deps = await chunkedQuery(Object.keys(elementsByMetadataComponentId).sort(), initialChunkSize)
   if (errorIds.size > 0) {
     log.error(
-      'Could not add all the dependencies on the following elements since they have more than 2000 dependencies: %s',
+      'Could not add all the dependencies on the following elements since they have more than %d dependencies: %s',
+      TOOLING_QUERY_MAX_RECORDS,
       Array.from(errorIds)
         .map(id => elementsByMetadataComponentId[id]?.elemID.getFullName())
         .join(', '),
@@ -337,7 +342,8 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
         ? await getDependenciesV2({
             client,
             elements,
-            initialChunkSize: config.fetchProfile.optionalDefaults.extraDependenciesChunkSize,
+            initialChunkSize: config.fetchProfile.limits?.maxExtraDependenciesQuerySize ?? INITIAL_QUERY_CHUNK_SIZE,
+            maxResponseSize: config.fetchProfile.limits?.maxExtraDependenciesResoponseSize ?? TOOLING_QUERY_MAX_RECORDS,
           })
         : await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
       const fetchedElements = buildElementsSourceFromElements(elements)

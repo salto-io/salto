@@ -16,7 +16,6 @@ import {
   CORE_ANNOTATIONS,
   Change,
   ReferenceExpression,
-  ChangeGroupIdFunctionReturn,
 } from '@salto-io/adapter-api'
 import {
   SALESFORCE,
@@ -27,26 +26,28 @@ import {
   OBJECTS_PATH,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
-  ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   CPQ_PRICE_RULE,
   CPQ_CONDITIONS_MET,
   CPQ_PRICE_CONDITION,
   CPQ_PRICE_CONDITION_RULE_FIELD,
-  ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
   CPQ_PRODUCT_RULE,
   CPQ_ERROR_CONDITION,
-  ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
   CPQ_ERROR_CONDITION_RULE_FIELD,
   CPQ_QUOTE_TERM,
   CPQ_TERM_CONDITION,
-  ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+  CUSTOM_APPROVAL_RULE_AND_CONDITION,
+  CUSTOM_PRICE_RULE_AND_CONDITION,
+  CUSTOM_PRODUCT_RULE_AND_CONDITION,
+  CUSTOM_QUOTE_TERM_AND_CONDITION,
+  SBAA_APPROVAL_CONDITION,
+  groupIdForInstanceChangeGroup,
 } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
 import { mockDefaultValues, mockTypes } from './mock_elements'
 
 describe('Group changes function', () => {
-  describe('when changes are not additions of sbaa__ApprovalRule__c and sbaa__ApprovalCondition__c', () => {
+  describe('when changes are not additions or removals of sbaa__ApprovalRule__c and sbaa__ApprovalCondition__c', () => {
     const customObjectName = 'objectName'
     const customObject = new ObjectType({
       elemID: new ElemID(SALESFORCE, customObjectName),
@@ -59,7 +60,7 @@ describe('Group changes function', () => {
           refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [LABEL]: 'description label',
+            [LABEL]: 'groupName label',
             [API_NAME]: 'Name',
           },
         },
@@ -85,7 +86,7 @@ describe('Group changes function', () => {
           refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [LABEL]: 'description label',
+            [LABEL]: 'groupName label',
             [API_NAME]: 'Name',
           },
         },
@@ -206,141 +207,101 @@ describe('Group changes function', () => {
       })
     })
   })
-  describe('when changes are additions of sbaa__ApprovalRule__c and sbaa__ApprovalCondition__c', () => {
-    let result: ChangeGroupIdFunctionReturn
-    beforeEach(async () => {
-      const customApprovalRule = new InstanceElement('CustomApprovalRule', mockTypes.ApprovalRule, {
-        [SBAA_CONDITIONS_MET]: 'Custom',
-      })
-      const approvalRule = new InstanceElement('ApprovalRule', mockTypes.ApprovalRule, {
-        [SBAA_CONDITIONS_MET]: 'All',
-      })
-      const customApprovalCondition = new InstanceElement('CustomApprovalCondition', mockTypes.ApprovalCondition, {
-        [SBAA_APPROVAL_RULE]: new ReferenceExpression(customApprovalRule.elemID, customApprovalRule),
-      })
-      const approvalCondition = new InstanceElement('ApprovalCondition', mockTypes.ApprovalCondition, {
-        [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
-      })
-      const addedInstances = [customApprovalRule, approvalRule, customApprovalCondition, approvalCondition]
+  describe('Custom Rules And Condition Groups', () => {
+    const createChangeMap = (instances: InstanceElement[], action: 'add' | 'remove'): Map<string, Change> => {
       const changeMap = new Map<string, Change>()
-      addedInstances.forEach(instance => {
-        changeMap.set(instance.elemID.name, toChange({ after: instance }))
+      instances.forEach(instance => {
+        changeMap.set(instance.elemID.name, toChange(action === 'add' ? { after: instance } : { before: instance }))
       })
-      result = await getChangeGroupIds(changeMap)
-    })
-    it('should create correct groups', () => {
-      expect(result.changeGroupIdMap.get('CustomApprovalRule')).toEqual(
-        ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-      )
-      expect(result.changeGroupIdMap.get('CustomApprovalCondition')).toEqual(
-        ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-      )
-      expect(result.changeGroupIdMap.get('ApprovalRule')).toEqual(
-        "Addition of data instances of type 'sbaa__ApprovalRule__c'",
-      )
-      expect(result.changeGroupIdMap.get('ApprovalCondition')).toEqual(
-        "Addition of data instances of type 'sbaa__ApprovalCondition__c'",
-      )
-    })
-  })
-  describe('when changes are additions of SBQQ__PriceRule__c and SBQQ__PriceCondition__c', () => {
-    let result: ChangeGroupIdFunctionReturn
-    beforeEach(async () => {
-      const customPriceRule = new InstanceElement('CustomPriceRule', mockTypes[CPQ_PRICE_RULE], {
-        [CPQ_CONDITIONS_MET]: 'Custom',
-      })
-      const priceRule = new InstanceElement('PriceRule', mockTypes[CPQ_PRICE_RULE], {
-        [CPQ_CONDITIONS_MET]: 'All',
-      })
-      const customPriceCondition = new InstanceElement('CustomPriceCondition', mockTypes[CPQ_PRICE_CONDITION], {
-        [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(customPriceRule.elemID, customPriceRule),
-      })
-      const priceCondition = new InstanceElement('PriceCondition', mockTypes[CPQ_PRICE_CONDITION], {
-        [CPQ_PRICE_CONDITION_RULE_FIELD]: new ReferenceExpression(priceRule.elemID, priceRule),
-      })
-      const addedInstances = [customPriceRule, priceRule, customPriceCondition, priceCondition]
-      const changeMap = new Map<string, Change>()
-      addedInstances.forEach(instance => {
-        changeMap.set(instance.elemID.name, toChange({ after: instance }))
-      })
-      result = await getChangeGroupIds(changeMap)
-    })
-    it('should create correct groups', () => {
-      expect(result.changeGroupIdMap.get('CustomPriceRule')).toEqual(ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('CustomPriceCondition')).toEqual(ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('PriceRule')).toEqual(
-        "Addition of data instances of type 'SBQQ__PriceRule__c'",
-      )
-      expect(result.changeGroupIdMap.get('PriceCondition')).toEqual(
-        "Addition of data instances of type 'SBQQ__PriceCondition__c'",
-      )
-    })
-  })
-  describe('when changes are additions of SBQQ__ProductRule__c and SBQQ__ProductCondition__c', () => {
-    let result: ChangeGroupIdFunctionReturn
-    beforeEach(async () => {
-      const customProductRule = new InstanceElement('CustomProductRule', mockTypes[CPQ_PRODUCT_RULE], {
-        [CPQ_CONDITIONS_MET]: 'Custom',
-      })
-      const productRule = new InstanceElement('ProductRule', mockTypes[CPQ_PRODUCT_RULE], {
-        [CPQ_CONDITIONS_MET]: 'All',
-      })
-      const customProductCondition = new InstanceElement('CustomErrorCondition', mockTypes[CPQ_ERROR_CONDITION], {
-        [CPQ_ERROR_CONDITION_RULE_FIELD]: new ReferenceExpression(customProductRule.elemID, customProductRule),
-      })
-      const productCondition = new InstanceElement('ErrorCondition', mockTypes[CPQ_ERROR_CONDITION], {
-        [CPQ_ERROR_CONDITION_RULE_FIELD]: new ReferenceExpression(productRule.elemID, productRule),
-      })
-      const addedInstances = [customProductRule, productRule, customProductCondition, productCondition]
-      const changeMap = new Map<string, Change>()
-      addedInstances.forEach(instance => {
-        changeMap.set(instance.elemID.name, toChange({ after: instance }))
-      })
-      result = await getChangeGroupIds(changeMap)
-    })
-    it('should create correct groups', () => {
-      expect(result.changeGroupIdMap.get('CustomProductRule')).toEqual(ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('CustomErrorCondition')).toEqual(
-        ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
-      )
-      expect(result.changeGroupIdMap.get('ProductRule')).toEqual(
-        "Addition of data instances of type 'SBQQ__ProductRule__c'",
-      )
-      expect(result.changeGroupIdMap.get('ErrorCondition')).toEqual(
-        "Addition of data instances of type 'SBQQ__ErrorCondition__c'",
-      )
-    })
-  })
+      return changeMap
+    }
 
-  describe('when changes are additions of SBQQ__QuoteTerm__c and SBQQ__TermCondition__c', () => {
-    let result: ChangeGroupIdFunctionReturn
-    beforeEach(async () => {
-      const customRule = new InstanceElement('CustomRule', mockTypes[CPQ_QUOTE_TERM], {
-        [CPQ_CONDITIONS_MET]: 'Custom',
-      })
-      const rule = new InstanceElement('Rule', mockTypes[CPQ_QUOTE_TERM], {
-        [CPQ_CONDITIONS_MET]: 'All',
-      })
-      const customCondition = new InstanceElement('CustomCondition', mockTypes[CPQ_TERM_CONDITION], {
-        [CPQ_QUOTE_TERM]: new ReferenceExpression(customRule.elemID, customRule),
-      })
-      const condition = new InstanceElement('Condition', mockTypes[CPQ_TERM_CONDITION], {
-        [CPQ_QUOTE_TERM]: new ReferenceExpression(rule.elemID, rule),
-      })
-      const addedInstances = [customRule, rule, customCondition, condition]
-      const changeMap = new Map<string, Change>()
-      addedInstances.forEach(instance => {
-        changeMap.set(instance.elemID.name, toChange({ after: instance }))
-      })
-      result = await getChangeGroupIds(changeMap)
-    })
-    it('should create correct groups', () => {
-      expect(result.changeGroupIdMap.get('CustomRule')).toEqual(ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('CustomCondition')).toEqual(ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP)
-      expect(result.changeGroupIdMap.get('Rule')).toEqual("Addition of data instances of type 'SBQQ__QuoteTerm__c'")
-      expect(result.changeGroupIdMap.get('Condition')).toEqual(
-        "Addition of data instances of type 'SBQQ__TermCondition__c'",
-      )
-    })
+    const testCases = [
+      {
+        groupName: CUSTOM_APPROVAL_RULE_AND_CONDITION,
+        ruleType: mockTypes.ApprovalRule,
+        conditionType: mockTypes.ApprovalCondition,
+        typeName: SBAA_APPROVAL_RULE,
+        conditionName: SBAA_APPROVAL_CONDITION,
+        customRuleField: SBAA_CONDITIONS_MET,
+        customConditionField: SBAA_APPROVAL_RULE,
+      },
+      {
+        groupName: CUSTOM_PRICE_RULE_AND_CONDITION,
+        ruleType: mockTypes[CPQ_PRICE_RULE],
+        conditionType: mockTypes[CPQ_PRICE_CONDITION],
+        typeName: CPQ_PRICE_RULE,
+        conditionName: CPQ_PRICE_CONDITION,
+        customRuleField: CPQ_CONDITIONS_MET,
+        customConditionField: CPQ_PRICE_CONDITION_RULE_FIELD,
+      },
+      {
+        groupName: CUSTOM_PRODUCT_RULE_AND_CONDITION,
+        ruleType: mockTypes[CPQ_PRODUCT_RULE],
+        conditionType: mockTypes[CPQ_ERROR_CONDITION],
+        typeName: CPQ_PRODUCT_RULE,
+        conditionName: CPQ_ERROR_CONDITION,
+        customRuleField: CPQ_CONDITIONS_MET,
+        customConditionField: CPQ_ERROR_CONDITION_RULE_FIELD,
+      },
+      {
+        groupName: CUSTOM_QUOTE_TERM_AND_CONDITION,
+        ruleType: mockTypes[CPQ_QUOTE_TERM],
+        conditionType: mockTypes[CPQ_TERM_CONDITION],
+        typeName: CPQ_QUOTE_TERM,
+        conditionName: CPQ_TERM_CONDITION,
+        customRuleField: CPQ_CONDITIONS_MET,
+        customConditionField: CPQ_QUOTE_TERM,
+      },
+    ]
+
+    describe.each(testCases)(
+      '$groupName',
+      ({ groupName, ruleType, conditionType, typeName, conditionName, customRuleField, customConditionField }) => {
+        let instances: InstanceElement[]
+        let exptectedRemovalGroupName: string
+        let expectedAdditionGroupName: string
+        beforeEach(() => {
+          const customRule = new InstanceElement('CustomRule', ruleType, {
+            [customRuleField]: 'Custom',
+          })
+          const rule = new InstanceElement('Rule', ruleType, {
+            [customRuleField]: 'All',
+          })
+          const customCondition = new InstanceElement('CustomCondition', conditionType, {
+            [customConditionField]: new ReferenceExpression(customRule.elemID, customRule),
+          })
+          const condition = new InstanceElement('Condition', conditionType, {
+            [customConditionField]: new ReferenceExpression(rule.elemID, rule),
+          })
+          instances = [customRule, rule, customCondition, condition]
+          exptectedRemovalGroupName = groupIdForInstanceChangeGroup('remove', groupName)
+          expectedAdditionGroupName = groupIdForInstanceChangeGroup('add', groupName)
+        })
+        describe('additions', () => {
+          it('should create correct groups for additions', async () => {
+            const result = await getChangeGroupIds(createChangeMap(instances, 'add'))
+            expect(result.changeGroupIdMap.get('CustomRule')).toEqual(expectedAdditionGroupName)
+            expect(result.changeGroupIdMap.get('CustomCondition')).toEqual(expectedAdditionGroupName)
+            expect(result.changeGroupIdMap.get('Rule')).toEqual(`Addition of data instances of type '${typeName}'`)
+            expect(result.changeGroupIdMap.get('Condition')).toEqual(
+              `Addition of data instances of type '${conditionName}'`,
+            )
+          })
+        })
+
+        describe('removals', () => {
+          it('should create correct groups for removals', async () => {
+            const result = await getChangeGroupIds(createChangeMap(instances, 'remove'))
+            expect(result.changeGroupIdMap.get('CustomRule')).toEqual(exptectedRemovalGroupName)
+            expect(result.changeGroupIdMap.get('CustomCondition')).toEqual(exptectedRemovalGroupName)
+            expect(result.changeGroupIdMap.get('Rule')).toEqual(`Removal of data instances of type '${typeName}'`)
+            expect(result.changeGroupIdMap.get('Condition')).toEqual(
+              `Removal of data instances of type '${conditionName}'`,
+            )
+          })
+        })
+      },
+    )
   })
 })

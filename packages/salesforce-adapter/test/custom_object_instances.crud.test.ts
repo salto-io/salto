@@ -43,11 +43,21 @@ import {
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
   DefaultSoqlQueryLimits,
-  CPQ_PRICE_RULE,
   CPQ_CONDITIONS_MET,
   CPQ_PRICE_CONDITION,
   CPQ_PRICE_CONDITION_RULE_FIELD,
   ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+  CPQ_PRICE_RULE,
+  CPQ_PRODUCT_RULE,
+  CPQ_RULE_FIELD,
+  REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+  REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+  CPQ_QUOTE_TERM,
+  CPQ_QUOTE_TERM_FIELD,
+  CPQ_TERM_CONDITION,
+  CPQ_ERROR_CONDITION,
 } from '../src/constants'
 import { mockTypes } from './mock_elements'
 
@@ -1730,6 +1740,104 @@ describe('Custom Object Instances CRUD', () => {
               progressReporter: nullProgressReporter,
             }),
           ).rejects.toThrow()
+        })
+      })
+    })
+
+    describe.each([
+      {
+        groupID: REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+        ruleTypeName: SBAA_APPROVAL_RULE,
+        conditionTypeName: SBAA_APPROVAL_CONDITION,
+        ruleFieldInCondition: SBAA_APPROVAL_RULE,
+      },
+      {
+        groupID: REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP,
+        ruleTypeName: CPQ_PRICE_RULE,
+        conditionTypeName: CPQ_PRICE_CONDITION,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
+      },
+      {
+        groupID: REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP,
+        ruleTypeName: CPQ_PRODUCT_RULE,
+        conditionTypeName: CPQ_ERROR_CONDITION,
+        ruleFieldInCondition: CPQ_RULE_FIELD,
+      },
+      {
+        groupID: REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP,
+        ruleTypeName: CPQ_QUOTE_TERM,
+        conditionTypeName: CPQ_TERM_CONDITION,
+        ruleFieldInCondition: CPQ_QUOTE_TERM_FIELD,
+      },
+    ])('when group is $groupID', ({ groupID, ruleTypeName, conditionTypeName, ruleFieldInCondition }) => {
+      let rule: InstanceElement
+      let condition: InstanceElement
+      let changeGroup: ChangeGroup
+
+      beforeEach(() => {
+        rule = new InstanceElement('customRule', createCustomObjectType(ruleTypeName, {}), {
+          [ruleFieldInCondition]: 'Custom',
+          [CUSTOM_OBJECT_ID_FIELD]: '000',
+        })
+        condition = new InstanceElement('customCondition', createCustomObjectType(conditionTypeName, {}), {
+          [ruleFieldInCondition]: new ReferenceExpression(rule.elemID, rule),
+          [CUSTOM_OBJECT_ID_FIELD]: '111',
+        })
+        changeGroup = {
+          groupID,
+          changes: [rule, condition].map(instance => toChange({ before: instance })),
+        }
+      })
+
+      describe('when no Errors occur during the deploy', () => {
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            changeGroup,
+            progressReporter: nullProgressReporter,
+          })
+        })
+        it('should deploy successfully', () => {
+          expect(result.errors).toBeEmpty()
+          expect(result.appliedChanges).toEqual(changeGroup.changes)
+        })
+      })
+
+      describe('when the Rule instance fails to deploy', () => {
+        beforeEach(async () => {
+          connection.bulk.load = jest
+            .fn()
+            .mockImplementation(
+              (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+                const loadEmitter = new EventEmitter()
+                loadEmitter.on('newListener', (_event, _listener) => {
+                  setTimeout(() => loadEmitter.emit('close'), 0)
+                })
+                return {
+                  then: () =>
+                    Promise.resolve(
+                      input?.map((res, index) => ({
+                        id: res.Id || `newId${index}`,
+                        success: false,
+                        errors: ['Failed to deploy Rule'],
+                      })),
+                    ),
+                  job: loadEmitter,
+                }
+              },
+            )
+
+          result = await adapter.deploy({
+            changeGroup,
+            progressReporter: nullProgressReporter,
+          })
+        })
+
+        it('should have Error on the Rule and the Condition', () => {
+          expect(result.errors).toIncludeSameMembers([
+            expect.objectContaining({ elemID: rule.elemID }),
+            expect.objectContaining({ elemID: condition.elemID }),
+          ])
+          expect(result.appliedChanges).toBeEmpty()
         })
       })
     })

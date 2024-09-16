@@ -43,6 +43,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   taskAndEventCustomFields: false,
   sharingRulesMaps: false,
   excludeNonRetrievedProfilesRelatedInstances: true,
+  waveMetadataSupport: false,
   indexedEmailTemplateAttachments: false,
 }
 

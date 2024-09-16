@@ -122,6 +122,7 @@ export type OptionalFeatures = {
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
+  waveMetadataSupport?: boolean
   indexedEmailTemplateAttachments?: boolean
 }
 
@@ -821,6 +822,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
+    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
     indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

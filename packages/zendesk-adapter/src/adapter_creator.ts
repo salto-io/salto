@@ -114,7 +114,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
   const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
   const useNewInfra = configValue.fetch?.useNewInfra
-  if (useNewInfra === true) {
+  if (useNewInfra !== false) {
     const configForNewInfra = config?.clone()
     const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)
     if (updatedElemIDs?.elemID !== undefined) {

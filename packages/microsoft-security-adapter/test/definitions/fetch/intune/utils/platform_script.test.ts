@@ -234,8 +234,6 @@ describe('Intune platform script fetch utils', () => {
           resource: {
             directFetch: true,
             recurseInto: {
-              // For some reason the script content is returned as null when listing the scripts,
-              // so we need to fetch it separately by making another request for each script
               scriptContentRecurseInto: {
                 typeName: 'testPlatformScript__scriptContentRecurseInto',
                 context: {

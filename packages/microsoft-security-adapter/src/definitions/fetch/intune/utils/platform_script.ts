@@ -7,6 +7,7 @@
  */
 
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { naclCase, validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
 import { StaticFile } from '@salto-io/adapter-api'
@@ -16,6 +17,7 @@ import { ADAPTER_NAME, intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { SERVICE_BASE_URL } from '../../../../constants/intune'
 
+const log = logger(module)
 const { recursiveNestedTypeName } = fetchUtils.element
 
 const {
@@ -104,7 +106,10 @@ export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async
   const scriptContent = _.get(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
   validateArray(scriptContent, `${typeName}.${SCRIPT_CONTENT_FIELD_NAME}`)
   if (scriptContent.length !== 1) {
-    throw new Error(`Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}`)
+    log.error(
+      `Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}: ${value.id}. Found ${scriptContent.length}`,
+    )
+    throw new Error(`Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}: ${value.id}`)
   }
 
   return {
@@ -150,8 +155,7 @@ export const createPlatformScriptFetchDefinition = ({
     resource: {
       directFetch: true,
       recurseInto: {
-        // For some reason the script content is returned as null when listing the scripts,
-        // so we need to fetch it separately by making another request for each script
+        // Additional request to get script's content - for some reason it's returned as null in the main request
         [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]: {
           typeName: recursiveNestedTypeName(typeName, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
           context: {

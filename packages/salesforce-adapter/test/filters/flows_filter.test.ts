@@ -94,7 +94,7 @@ describe('flows filter', () => {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               fetchParams: {
-                target: ['Flow'],
+                target: [FLOW_METADATA_TYPE],
               },
             }),
           },

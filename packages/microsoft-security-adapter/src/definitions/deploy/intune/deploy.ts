@@ -34,6 +34,7 @@ const {
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
   PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+  SCOPE_TAG_TYPE_NAME,
   // Field names
   APPS_FIELD_NAME,
   SCHEDULED_ACTIONS_FIELD_NAME,
@@ -360,6 +361,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
   [PLATFORM_SCRIPT_MAC_OS_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
     resourcePath: '/deviceManagement/deviceShellScripts',
     assignmentRootField: 'deviceManagementScriptAssignments',
+  }),
+  [SCOPE_TAG_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+    resourcePath: '/deviceManagement/roleScopeTags',
   }),
 }
 

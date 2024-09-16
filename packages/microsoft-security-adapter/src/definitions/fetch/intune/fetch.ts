@@ -6,8 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions } from '@salto-io/adapter-components'
-import { naclCase } from '@salto-io/adapter-utils'
-import { Options } from '../../types'
+import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
+import { EndpointPath, Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { intuneConstants } from '../../../constants'
@@ -29,14 +29,16 @@ const {
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
   PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
-
+  SCOPE_TAG_TYPE_NAME,
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
-
+  SCOPE_TAG_ASSIGNMENTS_TYPE_NAME,
+  // Field names
+  ASSIGNMENTS_FIELD_NAME,
   // Other
   SERVICE_BASE_URL,
   ASSIGNMENTS_ODATA_CONTEXT,
@@ -302,8 +304,68 @@ const graphBetaCustomizations: FetchCustomizations = {
     path: '/deviceManagement/deviceShellScripts',
     platform: 'MacOS',
   }),
+  [SCOPE_TAG_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceManagement/roleScopeTags',
+        },
+        transformation: DEFAULT_TRANSFORMATION,
+      },
+    ],
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        [ASSIGNMENTS_FIELD_NAME]: {
+          typeName: SCOPE_TAG_ASSIGNMENTS_TYPE_NAME,
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+      mergeAndTransform: {
+        adjust: async ({ value }) => {
+          validatePlainObject(value, SCOPE_TAG_TYPE_NAME)
+          return {
+            value: {
+              ...value,
+              // Workaround to allow empty arrays for a recurseInto field
+              [ASSIGNMENTS_FIELD_NAME]: value[ASSIGNMENTS_FIELD_NAME] ?? [],
+            },
+          }
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune_DeviceSettings/ScopeTagSummaryBlade/roleScopeTagId/{id}/roleScopeTagDisplayName/{displayName}',
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
+      ...(typeName === SCOPE_TAG_ASSIGNMENTS_TYPE_NAME
+        ? {
+            requests: [
+              {
+                endpoint: {
+                  path: '/deviceManagement/roleScopeTags/{id}/assignments' as EndpointPath,
+                },
+                transformation: DEFAULT_TRANSFORMATION,
+              },
+            ],
+          }
+        : {}),
       resource: {
         directFetch: false,
       },

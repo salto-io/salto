@@ -8,7 +8,7 @@
 
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { BRAND_THEME_TYPE_NAME, EMAIL_TEMPLATE } from '../constants'
+import { BRAND_THEME_TYPE_NAME, EMAIL_TEMPLATE_TYPE_NAME } from '../constants'
 
 /**
  * When removing a BrandTheme or EmailTemplate, validate that its Brand is also removed.
@@ -19,7 +19,7 @@ export const brandDependentElementRemovalValidator: ChangeValidator = async chan
   const removeInstanceChanges = changes.filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
 
   const removedDependentInstances = removeInstanceChanges.filter(instance =>
-    [BRAND_THEME_TYPE_NAME, EMAIL_TEMPLATE].includes(instance.elemID.typeName),
+    [BRAND_THEME_TYPE_NAME, EMAIL_TEMPLATE_TYPE_NAME].includes(instance.elemID.typeName),
   )
 
   const removedNames = new Set(removeInstanceChanges.map(instance => instance.elemID.getFullName()))

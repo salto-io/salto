@@ -39,8 +39,8 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   IDENTITY_PROVIDER_TYPE_NAME,
   JWK_TYPE_NAME,
-  EMAIL_TEMPLATE,
-  EMAIL_CUSTOMIZATION,
+  EMAIL_TEMPLATE_TYPE_NAME,
+  EMAIL_CUSTOMIZATION_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -845,7 +845,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
-    [EMAIL_TEMPLATE]: {
+    [EMAIL_TEMPLATE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [
@@ -897,7 +897,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
-    [EMAIL_CUSTOMIZATION]: {
+    [EMAIL_CUSTOMIZATION_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
           add: [

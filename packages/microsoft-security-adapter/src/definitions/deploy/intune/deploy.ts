@@ -15,7 +15,7 @@ import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
 import {
   application as applicationDeployUtils,
-  appsConfiguration,
+  targetApps,
   deviceConfigurationSettings,
   groupAssignments,
 } from './utils'
@@ -27,6 +27,7 @@ const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -175,7 +176,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          appsConfiguration.TARGET_APP_DEPLOY_DEFINITION,
+          targetApps.createTargetAppsDeployDefinition({
+            resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
+            targetTypeFieldName: 'targetedManagedAppGroupType',
+          }),
           groupAssignments.createAssignmentsRequest({
             resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
           }),
@@ -187,6 +191,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 path: '/deviceAppManagement/targetedManagedAppConfigurations/{id}',
                 method: 'patch',
               },
+              transformation: {
+                omit: [APPS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
+              },
             },
             condition: {
               transformForCheck: {
@@ -194,7 +201,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
               },
             },
           },
-          appsConfiguration.TARGET_APP_DEPLOY_DEFINITION,
+          targetApps.createTargetAppsDeployDefinition({
+            resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
+            targetTypeFieldName: 'targetedManagedAppGroupType',
+          }),
           groupAssignments.createAssignmentsRequest({
             resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
           }),
@@ -264,6 +274,67 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/deviceAppManagement/mobileAppConfigurations/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [APPLICATION_PROTECTION_ANDROID_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceAppManagement/androidManagedAppProtections',
+                method: 'post',
+              },
+              transformation: {
+                omit: [APPS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+          },
+          targetApps.createTargetAppsDeployDefinition({
+            resourcePath: '/deviceAppManagement/androidManagedAppProtections',
+            targetTypeFieldName: 'appGroupType',
+          }),
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/androidManagedAppProtections',
+          }),
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceAppManagement/androidManagedAppProtections/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                omit: [APPS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [APPS_FIELD_NAME, ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+          },
+          targetApps.createTargetAppsDeployDefinition({
+            resourcePath: '/deviceAppManagement/androidManagedAppProtections',
+            targetTypeFieldName: 'appGroupType',
+          }),
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceAppManagement/androidManagedAppProtections',
+          }),
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceAppManagement/androidManagedAppProtections/{id}',
                 method: 'delete',
               },
             },

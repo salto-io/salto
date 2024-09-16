@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { references as referenceUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
+import { references as referenceUtils } from '@salto-io/adapter-components'
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from '../types'
 import { intuneConstants } from '../../constants'
 
@@ -14,6 +14,7 @@ const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
@@ -24,11 +25,10 @@ const {
   SCOPE_TAG_TYPE_NAME,
   TYPES_WITH_GROUP_ASSIGNMENTS_TARGET,
   // Nested types
-  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_COMPLIANCE_RESTRICTED_APPS_TYPE_NAME,
+  // OTHER
+  TYPES_WITH_TARGET_APPS_MOBILE_APP_IDENTIFIER,
 } = intuneConstants
-
-const { recursiveNestedTypeName } = fetchUtils.element
 
 export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategies,
@@ -37,9 +37,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   {
     src: {
       field: 'bundleId',
-      parentTypes: [
-        recursiveNestedTypeName(APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME, 'mobileAppIdentifier'),
-      ],
+      parentTypes: TYPES_WITH_TARGET_APPS_MOBILE_APP_IDENTIFIER,
     },
     target: { type: APPLICATION_TYPE_NAME },
     serializationStrategy: 'bundleId',
@@ -49,9 +47,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   {
     src: {
       field: 'packageId',
-      parentTypes: [
-        recursiveNestedTypeName(APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME, 'mobileAppIdentifier'),
-      ],
+      parentTypes: TYPES_WITH_TARGET_APPS_MOBILE_APP_IDENTIFIER,
     },
     target: { type: APPLICATION_TYPE_NAME },
     serializationStrategy: 'packageId',
@@ -93,6 +89,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
         APPLICATION_TYPE_NAME,
         APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
         APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+        APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
         DEVICE_COMPLIANCE_TYPE_NAME,
         DEVICE_CONFIGURATION_TYPE_NAME,
         DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,

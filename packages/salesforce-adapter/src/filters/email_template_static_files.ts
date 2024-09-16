@@ -75,7 +75,7 @@ const organizeStaticFiles = async (instance: InstanceElement, fetchProfile: Fetc
             // attachment.content type is a string before the creation of the static file
             folderPath,
             fetchProfile.isFeatureEnabled('indexedEmailTemplateAttachments')
-              ? `${attachment.name}.${index}`
+              ? `${index}_${attachment.name}`
               : attachment.name,
             attachment.content as string,
           )

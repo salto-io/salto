@@ -33,7 +33,7 @@ describe('emailTemplate static files filter', () => {
   })
 
   const attachmentWithIndexAsName = new StaticFile({
-    filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/attachment.txt.0',
+    filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/0_attachment.txt',
     content: Buffer.from(ATTACHMENT_AS_STRING, 'base64'),
   })
 

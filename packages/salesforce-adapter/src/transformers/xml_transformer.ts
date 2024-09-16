@@ -11,9 +11,10 @@ import { XMLBuilder, XMLParser, X2jOptions } from 'fast-xml-parser'
 import { RetrieveResult, FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
+import { Values, StaticFile, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
+  getValuesChanges,
   inspectValue,
   MapKeyFunc,
   mapKeysRecursive,
@@ -295,8 +296,11 @@ const parserV2 = new XMLParser({
   numberParseOptions: { hex: false, leadingZeros: false, eNotation: false, skipLike: /.*/ },
 })
 
-export const xmlToValues = (xmlAsString: string, useXmlParserV2: boolean): { values: Values; typeName: string } => {
-  const parser = useXmlParserV2 ? parserV2 : parserV1
+export const xmlToValues = (
+  xmlAsString: string,
+  skipParsingXmlNumbers: boolean,
+): { values: Values; typeName: string } => {
+  const parser = skipParsingXmlNumbers ? parserV2 : parserV1
   // SF do not encode their CRs and the XML parser converts them to LFs, so we preserve them.
   const parsedXml = parser.parse(xmlAsString.replace(/\r/g, '&#xD;'))
 
@@ -361,16 +365,6 @@ const extractFileNameToData = async ({
       )
 }
 
-const getDiffValues = (oldValues: Values, newValues: Values): Values => {
-  const diff: Values = {}
-  Object.entries(newValues).forEach(([key, value]) => {
-    if (!_.isEqual(oldValues[key], value)) {
-      diff[key] = _.isObject(value) && _.isObject(oldValues[key]) ? getDiffValues(oldValues[key], value) : value
-    }
-  })
-  return diff
-}
-
 export const fromRetrieveResult = async (
   result: RetrieveResult,
   fileProps: ReadonlyArray<FileProperties>,
@@ -398,29 +392,32 @@ export const fromRetrieveResult = async (
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
     const xmlString = instanceValuesBuffer.toString()
+    const valuesFromXml = xmlToValues(xmlString, fetchProfile.isFeatureEnabled('skipParsingXmlNumbers')).values
     if (
-      fetchProfile.isFeatureEnabled('logXmlParserV2Diff') &&
-      !fetchProfile.isFeatureEnabled('useXmlParserV2') &&
+      fetchProfile.isFeatureEnabled('logDiffsFromParsingXmlNumbers') &&
+      !fetchProfile.isFeatureEnabled('skipParsingXmlNumbers') &&
       !typesWithDiff.has(file.type)
     ) {
-      const oldResult = xmlToValues(xmlString, false)
-      const newResult = xmlToValues(xmlString, true)
-      const diffValues = getDiffValues(oldResult.values, newResult.values)
-      if (Object.keys(diffValues).length > 0) {
+      const resultWithNonParsedXmlNumbers = xmlToValues(xmlString, true)
+      const detailedChanges = getValuesChanges({
+        id: new ElemID(SALESFORCE, resultWithNonParsedXmlNumbers.typeName, 'instance', 'compare'),
+        before: resultWithNonParsedXmlNumbers.values,
+        after: valuesFromXml,
+        beforeId: undefined,
+        afterId: undefined,
+      })
+      if (detailedChanges.length > 0) {
         typesWithDiff.add(file.type)
-        log.debug(
+        log.trace(
           'Found differences in the xml parsing of instance of type %s: %s',
           file.fullName,
-          inspectValue(diffValues),
+          inspectValue(detailedChanges),
         )
       }
     }
-    const metadataValues = Object.assign(
-      xmlToValues(xmlString, fetchProfile.isFeatureEnabled('useXmlParserV2')).values,
-      {
-        [INSTANCE_FULL_NAME_FIELD]: file.fullName,
-      },
-    )
+    const metadataValues = Object.assign(valuesFromXml, {
+      [INSTANCE_FULL_NAME_FIELD]: file.fullName,
+    })
 
     // add content fields
     if (typesWithContent.has(file.type) || isComplexType(file.type)) {

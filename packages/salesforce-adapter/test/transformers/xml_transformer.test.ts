@@ -839,7 +839,7 @@ describe('XML Transformer', () => {
         '    <apiVersion>047.0</apiVersion>\n' +
         '    <description>myAuraDefinitionBundle description</description>\n' +
         '</AuraDefinitionBundle>\n'
-      describe('when useXmlParserV2 is false', () => {
+      describe('when skipParsingXmlNumbers is false', () => {
         it('should attempt to convert the string to number', () => {
           expect(xmlToValues(XML_STRING, false).values).toEqual({
             apiVersion: 47,
@@ -847,7 +847,7 @@ describe('XML Transformer', () => {
           })
         })
       })
-      describe('when useXmlParserV2 is true', () => {
+      describe('when skipParsingXmlNumbers is true', () => {
         it('should not attempt to convert the string to number', () => {
           expect(xmlToValues(XML_STRING, true).values).toEqual({
             apiVersion: '047.0',

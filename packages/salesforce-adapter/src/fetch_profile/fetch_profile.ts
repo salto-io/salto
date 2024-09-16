@@ -44,8 +44,8 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   sharingRulesMaps: false,
   excludeNonRetrievedProfilesRelatedInstances: true,
   waveMetadataSupport: false,
-  useXmlParserV2: false,
-  logXmlParserV2Diff: true,
+  skipParsingXmlNumbers: false,
+  logDiffsFromParsingXmlNumbers: true,
 }
 
 type BuildFetchProfileParams = {

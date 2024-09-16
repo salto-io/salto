@@ -1467,11 +1467,17 @@ describe('salesforce client', () => {
       })
     })
     describe('when invoked on type with extendsOriginal custom list function', () => {
-      let resultFromCustomListFunc: FileProperties[]
       let resultFromListMetadata: FileProperties[]
+      let resultFromCustomListFunc: FileProperties[]
       beforeEach(() => {
-        resultFromCustomListFunc = [mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1' })]
-        resultFromListMetadata = [mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex2' })]
+        resultFromListMetadata = [
+          mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1', id: 'original list' }),
+        ]
+        resultFromCustomListFunc = [
+          // Make sure we prefer the result from the original list in case of duplicates
+          mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1', id: '' }),
+          mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex2', id: '' }),
+        ]
         client.setCustomListFuncDefByType({
           [APEX_CLASS_METADATA_TYPE]: {
             mode: 'extendsOriginal',
@@ -1482,7 +1488,7 @@ describe('salesforce client', () => {
           },
         })
       })
-      it('should extend the custom list function result with the original list result', async () => {
+      it('should extend the original list result with the custom list function result', async () => {
         const dodoScope = nock('http://dodo22')
           .post(/.*/, /.*<listMetadata>.*/)
           .delay(100)
@@ -1495,10 +1501,16 @@ describe('salesforce client', () => {
               },
             },
           })
-        expect(await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })).toEqual({
+        const listResult = await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })
+        expect(listResult).toEqual({
           errors: [],
-          result: [...resultFromCustomListFunc, ...resultFromListMetadata],
+          result: [
+            mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex1', id: 'original list' }),
+            mockFileProperties({ type: APEX_CLASS_METADATA_TYPE, fullName: 'Apex2', id: '' }),
+          ],
         })
+        // Make sure caching works and no further requests are made. nock would throw error for any further requests
+        expect(await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })).toEqual(listResult)
         expect(dodoScope.isDone()).toBeTrue()
       })
     })

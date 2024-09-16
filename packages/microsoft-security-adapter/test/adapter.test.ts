@@ -102,6 +102,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceConfigurationSettingCatalog',
           'IntuneFilter',
           'IntunePlatformScriptLinux',
+          'IntunePlatformScriptMacOS',
           'IntunePlatformScriptWindows',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
@@ -530,7 +531,10 @@ describe('Microsoft Security adapter', () => {
               expect(scriptContent.toString()).toEqual(
                 '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
               )
-              expect((linuxScript as StaticFile).encoding).toEqual('base64')
+              expect(linuxScript.encoding).toEqual('base64')
+              expect(linuxScript.filepath).toEqual(
+                'microsoft_security/IntunePlatformScriptLinux/test_linux_script.s/linux_customconfig_script.sh',
+              )
             })
 
             it('should include assignments field with references to the matching groups', async () => {
@@ -567,12 +571,55 @@ describe('Microsoft Security adapter', () => {
               const content = await scriptContent.getContent()
               expect(content).toBeInstanceOf(Buffer)
               expect(content.toString()).toEqual('echo "Hello, World!"')
-              expect((scriptContent as StaticFile).encoding).toEqual('base64')
+              expect(scriptContent.encoding).toEqual('base64')
+              expect(scriptContent.filepath).toEqual(
+                'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s/simple_powershell_script.ps1',
+              )
             })
 
             it('should include assignments field with references to the matching groups', async () => {
               const platformScriptWindows = platformScriptsWindows[0]
               const { assignments } = platformScriptWindows.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+          })
+
+          describe('platform script macOS', () => {
+            let platformScriptsMacOS: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsMacOS = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptMacOS')
+            })
+
+            it('should create the correct instances for platform script macOS', async () => {
+              expect(platformScriptsMacOS).toHaveLength(1)
+
+              const platformScriptMacOSNames = platformScriptsMacOS.map(e => e.elemID.name)
+              expect(platformScriptMacOSNames).toEqual(['test_script_macOS@s'])
+            })
+
+            it('should include scriptContent field as a static file', async () => {
+              const platformScriptMacOS = platformScriptsMacOS[0]
+              const { scriptContent } = platformScriptMacOS.value
+              expect(scriptContent).toBeInstanceOf(StaticFile)
+              const content = await scriptContent.getContent()
+              expect(content).toBeInstanceOf(Buffer)
+              expect(content.toString()).toEqual('echo "Hello, World! This is macOS test"')
+              expect(scriptContent.encoding).toEqual('base64')
+              expect(scriptContent.filepath).toEqual(
+                'microsoft_security/IntunePlatformScriptMacOS/test_script_macOS.s/intune-macOS-script-example.sh',
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptMacOS = platformScriptsMacOS[0]
+              const { assignments } = platformScriptMacOS.value
               expect(assignments).toHaveLength(1)
               expect(Object.keys(assignments[0])).toEqual(['target'])
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)

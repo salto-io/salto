@@ -8,7 +8,7 @@
 
 import { ASSIGNMENTS_FIELD_NAME } from '../../../../constants/intune'
 import { EndpointPath } from '../../../types'
-import { DeployableRequestDefinition } from '../../shared/types'
+import { DeployableRequestDefinition, InstanceDeployApiDefinitions } from '../../shared/types'
 import { createCustomConditionCheckChangesInFields } from '../../shared/utils'
 
 /**
@@ -38,4 +38,64 @@ export const createAssignmentsRequest = ({
     },
   },
   condition: createCustomConditionCheckChangesInFields([ASSIGNMENTS_FIELD_NAME]),
+})
+
+/**
+ * Creates a basic deploy definition for a type with assignments.
+ * This definition includes requests for adding, modifying and removing the resource, as well as assigning groups to the resource.
+ */
+export const createBasicDeployDefinitionForTypeWithAssignments = ({
+  resourcePath,
+  assignmentRootField,
+}: {
+  resourcePath: EndpointPath
+  assignmentRootField?: string
+}): InstanceDeployApiDefinitions => ({
+  requestsByAction: {
+    customizations: {
+      add: [
+        {
+          request: {
+            endpoint: {
+              path: resourcePath,
+              method: 'post',
+            },
+            transformation: {
+              omit: [ASSIGNMENTS_FIELD_NAME],
+            },
+          },
+        },
+        createAssignmentsRequest({ resourcePath, rootField: assignmentRootField }),
+      ],
+      modify: [
+        {
+          request: {
+            endpoint: {
+              path: `${resourcePath}/{id}`,
+              method: 'patch',
+            },
+            transformation: {
+              omit: [ASSIGNMENTS_FIELD_NAME],
+            },
+          },
+          condition: {
+            transformForCheck: {
+              omit: [ASSIGNMENTS_FIELD_NAME],
+            },
+          },
+        },
+        createAssignmentsRequest({ resourcePath, rootField: assignmentRootField }),
+      ],
+      remove: [
+        {
+          request: {
+            endpoint: {
+              path: `${resourcePath}/{id}`,
+              method: 'delete',
+            },
+          },
+        },
+      ],
+    },
+  },
 })

@@ -1065,4 +1065,5 @@ export type ProfileRelatedMetadataType = (typeof constants.PROFILE_RELATED_METAD
 
 export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
+  config: SalesforceConfig
 }>

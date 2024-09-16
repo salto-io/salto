@@ -87,7 +87,7 @@ const getElementsFromFile = async (
     log.warn('skipping %s because we could not get its content', fileName)
     return []
   }
-  const { typeName, values } = xmlToValues(fileContent)
+  const { typeName, values } = xmlToValues(fileContent, true)
   const fullNameWithSuffix = path.basename(fileName).slice(0, -'-meta.xml'.length) as string
   const fullName = fullNameWithSuffix.split('.').slice(0, -1).join('.')
   values.fullName = fullName

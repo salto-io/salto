@@ -124,6 +124,8 @@ export type OptionalFeatures = {
   excludeNonRetrievedProfilesRelatedInstances?: boolean
   waveMetadataSupport?: boolean
   indexedEmailTemplateAttachments?: boolean
+  skipParsingXmlNumbers?: boolean
+  logDiffsFromParsingXmlNumbers?: boolean
 }
 
 export type ChangeValidatorName =
@@ -824,6 +826,8 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
     waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
     indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
+    skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
+    logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

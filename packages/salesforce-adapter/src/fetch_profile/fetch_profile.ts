@@ -45,6 +45,8 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   excludeNonRetrievedProfilesRelatedInstances: true,
   waveMetadataSupport: false,
   indexedEmailTemplateAttachments: false,
+  skipParsingXmlNumbers: false,
+  logDiffsFromParsingXmlNumbers: true,
 }
 
 type BuildFetchProfileParams = {

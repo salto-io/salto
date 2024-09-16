@@ -53,7 +53,7 @@ import {
   ProfileInfo,
   TopicsForObjectsInfo,
 } from '../src/client/types'
-import { UsernamePasswordCredentials } from '../src/types'
+import { FetchProfile, UsernamePasswordCredentials } from '../src/types'
 import {
   Types,
   metadataType,
@@ -101,6 +101,7 @@ import {
   verifyElementsExist,
 } from './setup'
 import { testHelpers } from './jest_environment'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -113,6 +114,7 @@ describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
   let adapter: SalesforceAdapter
   let credLease: CredsLease<UsernamePasswordCredentials>
+  let fetchProfile: FetchProfile
   beforeAll(async () => {
     log.resetLogCount()
     credLease = await testHelpers().credentials()
@@ -137,6 +139,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const apiNameAnno = (object: string, field: string): string => [object, field].join(constants.API_NAME_SEPARATOR)
 
   beforeAll(async () => {
+    fetchProfile = buildFetchProfile({ fetchParams: {} })
     const mockReportProgress = mockFunction<ProgressReporter['reportProgress']>()
     const mockFetchOpts: MockInterface<FetchOptions> = {
       progressReporter: { reportProgress: mockReportProgress },
@@ -2646,7 +2649,7 @@ describe('Salesforce adapter E2E with real account', () => {
             fileProps,
             new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
             new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
-            false,
+            fetchProfile,
           )
           return awu(instances)
             .filter(async ({ file }) => file.fullName === (await apiName(instance)))

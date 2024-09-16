@@ -104,6 +104,7 @@ import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
+import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
@@ -175,6 +176,7 @@ const { isDefined } = values
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
+  { creator: waveStaticFilesFilter },
   {
     creator: createMissingInstalledPackagesInstancesFilter,
     addsNewInformation: true,

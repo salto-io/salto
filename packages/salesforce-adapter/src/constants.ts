@@ -422,6 +422,9 @@ export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'
 export const WAVE_DATAFLOW_METADATA_TYPE = 'WaveDataflow'
+export const WAVE_DASHBOARD_METADATA_TYPE = 'WaveDashboard'
+export const WAVE_LENS_METADATA_TYPE = 'WaveLens'
+
 export const WAVE_RECIPE_FILE_EXTENSION = '.wdpr'
 export const WAVE_DATAFLOW_FILE_EXTENSION = '.wdf'
 

@@ -6,7 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions, references as referenceUtils } from '@salto-io/adapter-components'
-import { GROUP_TYPE_NAME, LABEL_TYPE_NAME, PAGE_TYPE_NAME, SPACE_TYPE_NAME, TEMPLATE_TYPE_NAMES } from '../constants'
+import {
+  GROUP_TYPE_NAME,
+  LABEL_TYPE_NAME,
+  PAGE_TYPE_NAME,
+  PERMISSION_TYPE_NAME,
+  SPACE_TYPE_NAME,
+  TEMPLATE_TYPE_NAMES,
+} from '../constants'
 
 const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
@@ -37,7 +44,7 @@ const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<never>[] = [
     target: { type: PAGE_TYPE_NAME },
   },
   {
-    src: { field: 'principalId', parentTypes: ['space__permissions'] },
+    src: { field: 'principalId', parentTypes: [PERMISSION_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },

@@ -122,6 +122,10 @@ export type OptionalFeatures = {
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
+  waveMetadataSupport?: boolean
+  indexedEmailTemplateAttachments?: boolean
+  skipParsingXmlNumbers?: boolean
+  logDiffsFromParsingXmlNumbers?: boolean
 }
 
 export type ChangeValidatorName =
@@ -820,6 +824,10 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
+    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
+    indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
+    skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
+    logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1057,4 +1065,5 @@ export type ProfileRelatedMetadataType = (typeof constants.PROFILE_RELATED_METAD
 
 export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
+  config: SalesforceConfig
 }>

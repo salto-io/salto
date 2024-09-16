@@ -15,7 +15,7 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shar
 import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
-import { application, deviceConfigurationSettings } from './utils'
+import { application, deviceConfigurationSettings, platformScript } from './utils'
 
 const {
   // Top level types
@@ -27,6 +27,8 @@ const {
   DEVICE_COMPLIANCE_TYPE_NAME,
   FILTER_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
 
   // Nested types
   APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
@@ -288,7 +290,17 @@ const graphBetaCustomizations: FetchCustomizations = {
     filter: "templateReference/TemplateFamily eq 'deviceConfigurationScripts'",
     serviceUrlPath:
       '/#view/Microsoft_Intune_Workflows/PolicySummaryBlade/templateId/{templateReference.templateId}/platformName/Linux/policyId/{id}',
-    adjust: deviceConfigurationSettings.setScriptValueAsStaticFile,
+    adjust: platformScript.setLinuxScriptValueAsStaticFile,
+  }),
+  ...platformScript.createPlatformScriptFetchDefinition({
+    typeName: PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+    path: '/deviceManagement/deviceManagementScripts',
+    platform: 'Windows',
+  }),
+  ...platformScript.createPlatformScriptFetchDefinition({
+    typeName: PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+    path: '/deviceManagement/deviceShellScripts',
+    platform: 'MacOS',
   }),
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {

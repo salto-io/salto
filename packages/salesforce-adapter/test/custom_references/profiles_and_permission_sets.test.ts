@@ -33,7 +33,12 @@ import {
 } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement } from '../utils'
-import { profilesAndPermissionSetsHandler } from '../../src/custom_references/profiles_and_permission_sets'
+import {
+  buildElemIDMetadataQuery,
+  profilesAndPermissionSetsHandler,
+} from '../../src/custom_references/profiles_and_permission_sets'
+import { MetadataQuery } from '../../src/types'
+import { buildMetadataQuery } from '../../src/fetch_profile/metadata_query'
 
 const HANDLED_TYPES = [
   PROFILE_METADATA_TYPE,
@@ -751,6 +756,11 @@ describe('Profiles And Permission Sets Custom References', () => {
           apexClass: 'SomeApexClass',
           enabled: true,
         },
+        // Make sure we don't omit values of Elements that are not managed in the environment
+        sbaa__ApexClass: {
+          apexClass: 'sbaa__ApexClass',
+          enabled: true,
+        },
       },
       flowAccesses: {
         SomeFlow: {
@@ -799,6 +809,19 @@ describe('Profiles And Permission Sets Custom References', () => {
         const elementsSource = buildElementsSourceFromElements([])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
+          config: {
+            fetch: {
+              metadata: {
+                include: [
+                  {
+                    metadataType: '.*',
+                    name: '.*',
+                    namespace: '',
+                  },
+                ],
+              },
+            },
+          },
         })
       })
 
@@ -812,7 +835,12 @@ describe('Profiles And Permission Sets Custom References', () => {
               },
             },
             applicationVisibilities: {},
-            classAccesses: {},
+            classAccesses: {
+              sbaa__ApexClass: {
+                apexClass: 'sbaa__ApexClass',
+                enabled: true,
+              },
+            },
             flowAccesses: {},
             layoutAssignments: {},
             objectPermissions: {},
@@ -855,6 +883,19 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
+          config: {
+            fetch: {
+              metadata: {
+                include: [
+                  {
+                    metadataType: '.*',
+                    name: '.*',
+                    namespace: '',
+                  },
+                ],
+              },
+            },
+          },
         })
       })
 
@@ -875,6 +916,7 @@ describe('Profiles And Permission Sets Custom References', () => {
         ])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,
+          config: {},
         })
       })
 
@@ -933,6 +975,87 @@ describe('Profiles And Permission Sets Custom References', () => {
             detailedMessage: `The ${typeName} has entries which reference types which are not available in the environment and will not be deployed. You can learn more about this message here: https://help.salto.io/en/articles/9546243-omitting-profile-entries-which-reference-unavailable-types`,
           },
         ])
+      })
+    })
+  })
+
+  describe('buildElemIDMetadataQuery', () => {
+    let metadataQuery: MetadataQuery
+    let elemIDMetadataQuery: MetadataQuery<ElemID>
+    describe('CustomObjects', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: 'CustomObject', namespace: '' }],
+            },
+          },
+        })
+        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+      })
+      it('should return true for included CustomObject', () => {
+        expect(new ElemID('salesforce', 'Account')).toSatisfy(elemIDMetadataQuery.isInstanceIncluded)
+        expect(new ElemID('salesforce', 'Account')).toSatisfy(elemIDMetadataQuery.isInstanceMatch)
+      })
+      it('should return false for excluded CustomObject from namespace', () => {
+        expect(new ElemID('salesforce', 'sbaa__Account__c')).not.toSatisfy(elemIDMetadataQuery.isInstanceIncluded)
+        expect(new ElemID('salesforce', 'sbaa__Account__c')).not.toSatisfy(elemIDMetadataQuery.isInstanceMatch)
+      })
+    })
+    describe('Instances', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: 'ApexClass', namespace: '', name: 'Apex1' }],
+            },
+          },
+        })
+        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+      })
+      it('should return true for included instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+      it('should return false for excluded instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+    })
+    describe('Instances from standard namespace', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: 'ApexClass', namespace: '' }],
+            },
+          },
+        })
+        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+      })
+      it('should return true for included instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'standard__Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'standard__Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+      it('should return false for excluded instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'sbaa__Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'sbaa__Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
       })
     })
   })

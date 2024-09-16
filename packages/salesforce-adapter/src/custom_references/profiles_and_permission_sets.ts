@@ -10,7 +10,8 @@ import _, { Dictionary } from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, InstanceElement, ReferenceInfo, Values } from '@salto-io/adapter-api'
-import { WeakReferencesHandler } from '../types'
+import { invertNaclCase } from '@salto-io/adapter-utils'
+import { MetadataInstance, MetadataQuery, WeakReferencesHandler } from '../types'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -23,9 +24,17 @@ import {
   RECORD_TYPE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
   MUTING_PERMISSION_SET_METADATA_TYPE,
+  DEFAULT_NAMESPACE,
+  CUSTOM_OBJECT,
 } from '../constants'
 import { Types } from '../transformers/transformer'
-import { ENDS_WITH_CUSTOM_SUFFIX_REGEX, extractFlatCustomObjectFields, isInstanceOfTypeSync } from '../filters/utils'
+import {
+  ENDS_WITH_CUSTOM_SUFFIX_REGEX,
+  extractFlatCustomObjectFields,
+  getNamespaceFromString,
+  isInstanceOfTypeSync,
+} from '../filters/utils'
+import { buildMetadataQuery } from '../fetch_profile/metadata_query'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -239,24 +248,57 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   return refs
 }
 
-const instanceEntriesTargets = (instance: InstanceElement): Dictionary<ElemID> =>
+const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: MetadataQuery<ElemID>): Dictionary<ElemID> =>
   _(
     mapInstanceSections(instance, (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
       [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
       target,
     ]),
   )
+    .filter(([, target]) => metadataQuery?.isInstanceMatch(target) ?? true)
     .fromPairs()
     .value()
 
 const isStandardFieldPermissionsPath = (path: string): boolean =>
   path.startsWith('fieldPermissions') && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
 
+type TopLevelElemID = Omit<ElemID, 'idType'> & {
+  idType: 'type' | 'instance'
+}
+/**
+ * This implementation should cover most of the use-cases but shouldn't be used as a general solution.
+ * Use this implementation only if you have no access to the actual metadata instances and the list results (FileProperties).
+ */
+export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): MetadataQuery<ElemID> => {
+  const getTopLevelElemID = (elemID: ElemID): TopLevelElemID => elemID.createTopLevelParentID().parent as TopLevelElemID
+  const elemIDToMetadataInstance = (id: TopLevelElemID): MetadataInstance => {
+    const fullName = invertNaclCase(id.name)
+    const namespacePrefix = getNamespaceFromString(fullName)
+    const namespace = namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix
+    return {
+      namespace,
+      metadataType: id.idType === 'instance' ? id.typeName : CUSTOM_OBJECT,
+      name: fullName,
+      changedAt: undefined,
+      isFolderType: false,
+    }
+  }
+  return {
+    ...metadataQuery,
+    isInstanceIncluded: id => metadataQuery.isInstanceIncluded(elemIDToMetadataInstance(getTopLevelElemID(id))),
+    isInstanceMatch: id => metadataQuery.isInstanceMatch(elemIDToMetadataInstance(getTopLevelElemID(id))),
+  }
+}
+
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
-  ({ elementsSource }) =>
+  ({ elementsSource, config }) =>
   async elements => {
+    const metadataQuery = buildElemIDMetadataQuery(buildMetadataQuery({ fetchParams: config.fetch ?? {} }))
     const instances = elements.filter(isProfileOrPermissionSetInstance)
-    const entriesTargets: Dictionary<ElemID> = _.merge({}, ...instances.map(instanceEntriesTargets))
+    const entriesTargets: Dictionary<ElemID> = _.merge(
+      {},
+      ...instances.map(instance => instanceEntriesTargets(instance, metadataQuery)),
+    )
     const elementNames = new Set(
       await awu(await elementsSource.getAll())
         .flatMap(extractFlatCustomObjectFields)

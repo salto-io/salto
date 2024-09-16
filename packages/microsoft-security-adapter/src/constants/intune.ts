@@ -37,10 +37,14 @@ export const SCHEDULED_ACTIONS_FIELD_NAME = 'scheduledActionsForRule'
 export const SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME = 'scheduledActionConfigurations'
 
 // Platform script fields
+// Linux
 export const SCRIPT_VALUE_FIELD_NAME = 'value'
 export const SETTING_INSTANCE_FIELD_NAME = 'settingInstance'
 export const SIMPLE_SETTING_VALUE_FIELD_NAME = 'simpleSettingValue'
 export const SETTING_DEFINITION_ID_FIELD_NAME = 'settingDefinitionId'
+// Windows
+export const SCRIPT_CONTENT_FIELD_NAME = 'scriptContent'
+export const SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME = 'scriptContentRecurseInto'
 
 /* Type names */
 // Top level
@@ -54,6 +58,8 @@ export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('
 export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
 export const FILTER_TYPE_NAME = toIntuneTypeName('Filter')
 export const PLATFORM_SCRIPT_LINUX_TYPE_NAME = toIntuneTypeName('PlatformScriptLinux')
+export const PLATFORM_SCRIPT_MAC_OS_TYPE_NAME = toIntuneTypeName('PlatformScriptMacOS')
+export const PLATFORM_SCRIPT_WINDOWS_TYPE_NAME = toIntuneTypeName('PlatformScriptWindows')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
@@ -93,6 +99,8 @@ export const TYPES_WITH_GROUP_ASSIGNMENTS = [
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
 ]
 export const TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS = TYPES_WITH_GROUP_ASSIGNMENTS.map(typeName =>
   recursiveNestedTypeName(typeName, ASSIGNMENTS_FIELD_NAME),

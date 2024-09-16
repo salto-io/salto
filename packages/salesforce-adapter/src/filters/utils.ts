@@ -330,7 +330,7 @@ export const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.
 export const removeCustomSuffix = (elementApiName: string): string =>
   elementApiName.replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
 
-const getNamespaceFromString = (relativeApiName: string): string | undefined => {
+export const getNamespaceFromString = (relativeApiName: string): string | undefined => {
   const parts = removeCustomSuffix(relativeApiName).split(NAMESPACE_SEPARATOR)
   return parts.length !== 1 ? parts[0] : undefined
 }

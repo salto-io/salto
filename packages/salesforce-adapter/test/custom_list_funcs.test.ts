@@ -10,16 +10,26 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../src/client/jsforce'
 import { mockInstances } from './mock_elements'
-import { APEX_CLASS_METADATA_TYPE, CHANGED_AT_SINGLETON } from '../src/constants'
-import { createListApexClassesDef } from '../src/client/custom_list_funcs'
+import {
+  APEX_CLASS_METADATA_TYPE,
+  CHANGED_AT_SINGLETON,
+  WAVE_DATAFLOW_FILE_EXTENSION,
+  WAVE_DATAFLOW_METADATA_TYPE,
+  WAVE_RECIPE_FILE_EXTENSION,
+  WAVE_RECIPE_METADATA_TYPE,
+} from '../src/constants'
+import { createListApexClassesDef, createListMissingWaveDataflowsDef } from '../src/client/custom_list_funcs'
 import { SalesforceClient } from '../index'
 import mockClient from './client'
+import { mockFileProperties } from './connection'
 
 describe('Custom List Functions', () => {
   let client: SalesforceClient
   let connection: MockInterface<Connection>
-  describe('createListApexClassesDef', () => {
+  beforeEach(() => {
     ;({ client, connection } = mockClient())
+  })
+  describe('createListApexClassesDef', () => {
     const LATEST_CHANGED_AT = '2024-01-03T00:00:00.000Z'
     const createElementsSource = ({
       withLatestChangedAt,
@@ -109,6 +119,42 @@ describe('Custom List Functions', () => {
         expect(connection.query).toHaveBeenCalledWith(
           `SELECT Id, NamespacePrefix, Name, CreatedDate, CreatedBy.Name, LastModifiedDate, LastModifiedBy.Name FROM ApexClass WHERE LastModifiedDate > ${LATEST_CHANGED_AT}`,
         )
+      })
+    })
+  })
+  describe('createListMissingWaveDataflowsDef', () => {
+    beforeEach(() => {
+      connection.metadata.list.mockResolvedValue([
+        mockFileProperties({
+          type: WAVE_RECIPE_METADATA_TYPE,
+          fullName: 'Test1',
+          fileName: `wave/Test1${WAVE_RECIPE_FILE_EXTENSION}`,
+        }),
+        mockFileProperties({
+          type: WAVE_RECIPE_METADATA_TYPE,
+          fullName: 'Test2',
+          fileName: `wave/Test2${WAVE_RECIPE_FILE_EXTENSION}`,
+        }),
+      ])
+    })
+    it('should create missing WaveDataflow FileProperties from WaveRecipe properties', async () => {
+      const result = await createListMissingWaveDataflowsDef().func(client)
+      expect(result).toEqual({
+        errors: [],
+        result: [
+          mockFileProperties({
+            type: WAVE_DATAFLOW_METADATA_TYPE,
+            fullName: 'Test1',
+            fileName: `wave/Test1${WAVE_DATAFLOW_FILE_EXTENSION}`,
+            id: '',
+          }),
+          mockFileProperties({
+            type: WAVE_DATAFLOW_METADATA_TYPE,
+            fullName: 'Test2',
+            fileName: `wave/Test2${WAVE_DATAFLOW_FILE_EXTENSION}`,
+            id: '',
+          }),
+        ],
       })
     })
   })

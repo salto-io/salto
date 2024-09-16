@@ -124,7 +124,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)
-    if (flowType === undefined) {
+    if (!config.fetchProfile.metadataQuery.isTypeMatch(FLOW_METADATA_TYPE) || flowType === undefined) {
       return {}
     }
     const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE_ID)

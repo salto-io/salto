@@ -16,6 +16,7 @@ import {
   createDeployPackage,
   DeployPackage,
   CONTENT_FILENAME_OVERRIDE,
+  xmlToValues,
 } from '../../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
@@ -23,8 +24,16 @@ import { createEncodedZipContent } from '../utils'
 import { mockFileProperties } from '../connection'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
 import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, XML_ATTRIBUTE_PREFIX } from '../../src/constants'
+import { FetchProfile } from '../../src/types'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('XML Transformer', () => {
+  let fetchProfile: FetchProfile
+  beforeEach(() => {
+    fetchProfile = buildFetchProfile({
+      fetchParams: {},
+    })
+  })
   describe('createDeployPackage', () => {
     const xmlParser = new XMLParser()
     const getZipFiles = async (pkg: DeployPackage): Promise<Record<string, string>> => {
@@ -394,7 +403,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['ApexClass']),
           new Set(['ApexClass']),
-          false,
+          fetchProfile,
         )
         expect(values).toHaveLength(1)
         const [apex] = values
@@ -454,7 +463,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['ApexClass']),
           new Set(['ApexClass']),
-          false,
+          fetchProfile,
         )
         expect(values).toHaveLength(1)
         const [apex] = values
@@ -527,7 +536,7 @@ describe('XML Transformer', () => {
           fileProperties,
           new Set(['EmailTemplate', 'EmailFolder']),
           new Set(['EmailTemplate']),
-          false,
+          fetchProfile,
         )
         emailFolder = values.find(value => value.file.type === 'EmailFolder')?.values
         emailTemplate = values.find(value => value.file.type === 'EmailTemplate')?.values
@@ -623,7 +632,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -639,7 +648,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -764,7 +773,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -780,7 +789,7 @@ describe('XML Transformer', () => {
             [fileProperties],
             new Set(),
             new Set(),
-            false,
+            fetchProfile,
           )
           await verifyMetadataValues(
             values,
@@ -815,12 +824,37 @@ describe('XML Transformer', () => {
         }
       })
       it('should return empty object', async () => {
-        const values = await fromRetrieveResult(retrieveResult, fileProperties, new Set(), new Set(), false)
+        const values = await fromRetrieveResult(retrieveResult, fileProperties, new Set(), new Set(), fetchProfile)
         expect(values).toContainEqual(
           expect.objectContaining({
             values: expect.objectContaining({ fullName: 'MyReportType' }),
           }),
         )
+      })
+    })
+    describe('with number values', () => {
+      const XML_STRING =
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<InstalledPackage xmlns="http://soap.sforce.com/2006/04/metadata">\n' +
+        '    <version>47.0</version>\n' +
+        '    <fullName>SBQQ</fullName>\n' +
+        '</AuraDefinitionBundle>\n'
+      // This is actually a bug and the current behavior in the adapter.
+      describe('when skipParsingXmlNumbers is false', () => {
+        it('should attempt to convert the string to number', () => {
+          expect(xmlToValues(XML_STRING, false).values).toEqual({
+            version: 47,
+            fullName: 'SBQQ',
+          })
+        })
+      })
+      describe('when skipParsingXmlNumbers is true', () => {
+        it('should not attempt to convert the string to number', () => {
+          expect(xmlToValues(XML_STRING, true).values).toEqual({
+            version: '47.0',
+            fullName: 'SBQQ',
+          })
+        })
       })
     })
   })

@@ -43,6 +43,10 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   taskAndEventCustomFields: false,
   sharingRulesMaps: false,
   excludeNonRetrievedProfilesRelatedInstances: true,
+  waveMetadataSupport: false,
+  indexedEmailTemplateAttachments: false,
+  skipParsingXmlNumbers: false,
+  logDiffsFromParsingXmlNumbers: true,
 }
 
 type BuildFetchProfileParams = {

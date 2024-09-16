@@ -30,7 +30,7 @@ import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
-import SalesforceClient from './client/client'
+import SalesforceClient, { CustomListFuncDef } from './client/client'
 import * as constants from './constants'
 import {
   apiName,
@@ -104,6 +104,7 @@ import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
+import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
@@ -154,6 +155,7 @@ import {
   LAST_MODIFIED_DATE,
   OWNER_ID,
   PROFILE_METADATA_TYPE,
+  WAVE_DATAFLOW_METADATA_TYPE,
 } from './constants'
 import {
   buildFilePropsMetadataQuery,
@@ -162,7 +164,7 @@ import {
 } from './fetch_profile/metadata_query'
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
-import { createListApexClassesDef } from './client/custom_list_funcs'
+import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
@@ -174,6 +176,7 @@ const { isDefined } = values
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
+  { creator: waveStaticFilesFilter },
   {
     creator: createMissingInstalledPackagesInstancesFilter,
     addsNewInformation: true,
@@ -510,20 +513,30 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     )
   }
 
+  private initializeCustomListFunctions(fetchProfile: FetchProfile, withChangesDetection: boolean): void {
+    const commonListFunctions: Record<string, CustomListFuncDef> = fetchProfile.isFeatureEnabled('waveMetadataSupport')
+      ? {
+          [WAVE_DATAFLOW_METADATA_TYPE]: createListMissingWaveDataflowsDef(),
+        }
+      : {}
+    this.client.setCustomListFuncDefByType(
+      withChangesDetection
+        ? {
+            ...commonListFunctions,
+            [APEX_CLASS_METADATA_TYPE]: createListApexClassesDef(this.elementsSource),
+          }
+        : commonListFunctions,
+    )
+  }
+
   /**
    * Fetch configuration elements (types and instances in the given salesforce account)
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    this.client.setCustomListFuncDefByType(
-      withChangesDetection
-        ? {
-            [APEX_CLASS_METADATA_TYPE]: createListApexClassesDef(this.elementsSource),
-          }
-        : {},
-    )
     const fetchParams = this.userConfig.fetch ?? {}
+    this.initializeCustomListFunctions(buildFetchProfile({ fetchParams }), withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,

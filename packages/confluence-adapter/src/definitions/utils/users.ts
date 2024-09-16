@@ -33,7 +33,7 @@ export const createAdjustUserReferences: (typeName: string) => definitions.Adjus
  */
 export const createAdjustUserReferencesReverse: (
   typeName: string,
-) => definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = typeName => async args => {
+) => definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = typeName => async args => {
   const value = validateValue(args.value)
   const userFields = TYPE_NAME_TO_USER_FIELDS[typeName]
   userFields.forEach(field => {

@@ -204,6 +204,9 @@ describe('DeployRequester', () => {
                       },
                     },
                     {
+                      condition: {
+                        failIfChangeHasErrors: false,
+                      },
                       request: {
                         endpoint: {
                           path: '/ep2',
@@ -272,6 +275,7 @@ describe('DeployRequester', () => {
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       }),
     ).rejects.toThrow('Could not find requests for change adapter.test.instance.instance action modify')
   })
@@ -294,6 +298,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(instance.value.obj.id).toBe(1)
     expect(client.delete).toHaveBeenCalledWith(
@@ -326,6 +331,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.put).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -371,6 +377,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
 
     expect(client.post).toHaveBeenCalledWith({
@@ -400,6 +407,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
 
     expect(getChangeData(change).value.id).toEqual(1234)
@@ -451,6 +459,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
 
     expect(getChangeData(change).value).toEqual({
@@ -508,6 +517,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext,
+      errors: {},
     })
 
     expect(getChangeData(change).value).toEqual({
@@ -567,6 +577,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext,
+      errors: {},
     })
 
     expect(sharedContext).toEqual({ stop: true })
@@ -601,6 +612,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
@@ -638,6 +650,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
@@ -676,6 +689,7 @@ describe('DeployRequester', () => {
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       }),
     ).resolves.not.toThrow()
   })
@@ -710,6 +724,7 @@ describe('DeployRequester', () => {
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       })
     }).rejects.toThrow('Something went wrong')
   })
@@ -756,6 +771,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.delete).toHaveBeenCalledTimes(3)
   })
@@ -795,6 +811,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(getChangeData(change).value.id).toBe('NEW')
     expect(client.post).toHaveBeenCalledWith(
@@ -850,6 +867,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(getChangeData(change).value.stop).toBe(true)
     expect(client.post).toHaveBeenCalledWith(
@@ -898,6 +916,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.post).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -915,5 +934,121 @@ describe('DeployRequester', () => {
         url: '/ep4',
       }),
     )
+  })
+
+  describe('failIfChangeHasErrors when there are existing errors with Error severity on the change', () => {
+    beforeEach(async () => {
+      client.post.mockResolvedValue({
+        status: 200,
+        data: {},
+      })
+      client.patch.mockResolvedValue({
+        status: 200,
+        data: {},
+      })
+
+      const requester = getRequester<{ additionalAction: AdditionalAction }>({
+        clients: definitions.clients,
+        deployDefQuery: queryWithDefault(definitions.deploy.instances),
+        changeResolver: async change => change,
+      })
+      const inst = new InstanceElement(
+        'bla',
+        new ObjectType({
+          elemID: new ElemID('bla', 'multi_test'),
+          fields: { id: { refType: BuiltinTypes.SERVICE_ID } },
+        }),
+      )
+      const beforeInst = inst.clone()
+      beforeInst.value.aaa = 'a'
+      const change = toChange({
+        before: beforeInst,
+        after: inst,
+      })
+      await requester.requestAllForChangeAndAction({
+        action: change.action,
+        change,
+        changeGroup: { changes: [change], groupID: 'abc' },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
+        errors: {
+          [getChangeData(change).elemID.getFullName()]: [
+            { elemID: getChangeData(change).elemID, detailedMessage: '', message: '', severity: 'Error' },
+          ],
+        },
+      })
+    })
+    it('should skip request if failIfChangeHasErrors is true (= default)', () => {
+      expect(client.post).not.toHaveBeenCalled()
+    })
+    it('should not skip request if failIfChangeHasErrors is false', () => {
+      expect(client.patch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/ep2',
+        }),
+      )
+    })
+  })
+  describe('failIfChangeHasErrors when there are existing errors on the change, but not with Error severity', () => {
+    beforeEach(async () => {
+      client.post.mockResolvedValue({
+        status: 200,
+        data: {},
+      })
+      client.patch.mockResolvedValue({
+        status: 200,
+        data: {},
+      })
+
+      const requester = getRequester<{ additionalAction: AdditionalAction }>({
+        clients: definitions.clients,
+        deployDefQuery: queryWithDefault(definitions.deploy.instances),
+        changeResolver: async change => change,
+      })
+      const inst = new InstanceElement(
+        'bla',
+        new ObjectType({
+          elemID: new ElemID('bla', 'multi_test'),
+          fields: { id: { refType: BuiltinTypes.SERVICE_ID } },
+        }),
+      )
+      const beforeInst = inst.clone()
+      beforeInst.value.aaa = 'a'
+      const change = toChange({
+        before: beforeInst,
+        after: inst,
+      })
+      await requester.requestAllForChangeAndAction({
+        action: change.action,
+        change,
+        changeGroup: { changes: [change], groupID: 'abc' },
+        elementSource: buildElementsSourceFromElements([]),
+        sharedContext: {},
+        errors: {
+          [getChangeData(change).elemID.getFullName()]: [
+            { elemID: getChangeData(change).elemID, detailedMessage: '', message: '', severity: 'Warning' },
+          ],
+        },
+      })
+    })
+    it('should not skip request if failIfChangeHasErrors is true (= default)', () => {
+      expect(client.post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/ep1',
+        }),
+      )
+      expect(client.post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/ep3',
+        }),
+      )
+    })
+    it('should not skip request if failIfChangeHasErrors is false', () => {
+      expect(client.patch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/ep2',
+        }),
+      )
+    })
   })
 })

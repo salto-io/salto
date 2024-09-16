@@ -25,7 +25,7 @@ import { ChangeAndContext } from '../../definitions/system/deploy'
 import { getRequester } from './requester'
 import { RateLimiter } from '../../client'
 import { createDependencyGraph } from './graph'
-import { DeployChangeInput } from '../../definitions/system/deploy/types'
+import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
 
@@ -97,7 +97,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
 
   const graph = createDependencyGraph({ defQuery, dependencies, changes, ...changeContext })
 
-  const errors: SaltoElementError[] = []
+  const errors: Record<string, SaltoElementError[]> = {}
   const appliedChanges: Change<InstanceElement>[] = []
 
   const deploySingleChange =
@@ -122,18 +122,28 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       await Promise.all(
         typeActionChanges.map(async change => {
           try {
-            await limitedDeployChange({ ...changeContext, change, action })
+            await limitedDeployChange({
+              ...changeContext,
+              change,
+              action,
+              errors,
+            })
             return change
           } catch (err) {
-            log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)
+            const { elemID } = getChangeData(change)
+            if (errors[elemID.getFullName()] === undefined) {
+              errors[elemID.getFullName()] = []
+            }
+            log.error('Deployment of %s failed: %o', elemID.getFullName(), err)
             if (isSaltoError(err)) {
-              errors.push({
+              errors[elemID.getFullName()].push({
+                // TODON index errors by elem id so that it's easier to look up?
                 ...err,
-                elemID: getChangeData(change).elemID,
+                elemID,
               })
             } else {
               const message = `${err}`
-              errors.push({
+              errors[elemID.getFullName()].push({
                 message,
                 detailedMessage: message,
                 severity: 'Error',
@@ -149,7 +159,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   })
 
   return {
-    errors,
+    errors: Object.values(errors).flat(),
     // TODO SALTO-5557 decide if change should be marked as applied if one of the actions failed
     appliedChanges: _.uniqBy(appliedChanges, changeId),
   }
@@ -163,4 +173,4 @@ export type SingleChangeDeployCreator<
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   convertError: ConvertError
-}) => (args: ChangeAndContext) => Promise<void>
+}) => (args: ChangeAndExtendedContext) => Promise<void>

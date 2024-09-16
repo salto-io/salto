@@ -25,14 +25,13 @@ import { APIDefinitionsOptions, DeployHTTPEndpointDetails } from '../../definiti
 import {
   DeployRequestDefinition,
   DeployRequestEndpointDefinition,
-  ChangeAndContext,
   InstanceDeployApiDefinitions,
 } from '../../definitions/system/deploy'
 import { createValueTransformer } from '../../fetch/utils'
 import { replaceAllArgs } from '../../fetch/request/utils'
 import { TransformDefinition } from '../../definitions/system/shared'
 import { DeployRequestCondition, DeployableRequestDefinition } from '../../definitions/system/deploy/deploy'
-import { DeployChangeInput } from '../../definitions/system/deploy/types'
+import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
 import { recursiveNaclCase } from '../../fetch/element/instance_utils'
@@ -45,13 +44,13 @@ export type DeployRequester<AdditionalAction extends string> = {
 }
 
 type ItemExtractor = (
-  args: ChangeAndContext & {
+  args: ChangeAndExtendedContext & {
     value: Values
     additionalContext?: Record<string, unknown>
   },
 ) => unknown
 
-const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContext>): ItemExtractor => {
+const createExtractor = (transformationDef?: TransformDefinition<ChangeAndExtendedContext>): ItemExtractor => {
   // default single to true for deploy if not explicitly specified
   const transform = createValueTransformer(_.defaults({}, transformationDef, { single: true }))
   return async ({ value, ...args }) => {
@@ -67,19 +66,25 @@ const createExtractor = (transformationDef?: TransformDefinition<ChangeAndContex
   }
 }
 
-const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndContext) => Promise<boolean>) => {
-  const { custom, transformForCheck, skipIfIdentical } = conditionDef ?? {}
+const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndExtendedContext) => Promise<boolean>) => {
+  const { custom, transformForCheck, skipIfIdentical, failIfChangeHasErrors } = conditionDef ?? {}
   if (custom !== undefined) {
-    return async input => custom({ skipIfIdentical, transformForCheck })(input)
-  }
-  if (skipIfIdentical === false) {
-    return async () => true
+    return async input => custom({ skipIfIdentical, transformForCheck, failIfChangeHasErrors })(input)
   }
   // note: no need to add a default for the value of single,
   // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
   return async args => {
-    const { change } = args
+    const { change, errors } = args
+    if (
+      failIfChangeHasErrors !== false &&
+      !_.isEmpty(errors[getChangeData(change).elemID.getFullName()]?.filter(e => e.severity === 'Error'))
+    ) {
+      return false
+    }
+    if (skipIfIdentical === false) {
+      return true
+    }
     if (!isModificationChange(change)) {
       return true
     }
@@ -96,8 +101,8 @@ const extractDataToApply = async ({
   changeAndContext,
   response,
 }: {
-  definition: TransformDefinition<ChangeAndContext, Values>
-  changeAndContext: ChangeAndContext
+  definition: TransformDefinition<ChangeAndExtendedContext, Values>
+  changeAndContext: ChangeAndExtendedContext
   response: Response<ResponseValue | ResponseValue[]>
 }): Promise<Values | undefined> => {
   const { change } = changeAndContext
@@ -128,7 +133,7 @@ const extractResponseDataToApply = async <ClientOptions extends string>({
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
-} & ChangeAndContext): Promise<Values | undefined> => {
+} & ChangeAndExtendedContext): Promise<Values | undefined> => {
   const { copyFromResponse } = requestDef
   const dataToApply = {}
   if (copyFromResponse?.additional !== undefined) {
@@ -175,7 +180,7 @@ const extractExtraContextToApply = async <ClientOptions extends string>({
 }: {
   requestDef: DeployableRequestDefinition<ClientOptions>
   response: Response<ResponseValue | ResponseValue[]>
-} & ChangeAndContext): Promise<Values | undefined> => {
+} & ChangeAndExtendedContext): Promise<Values | undefined> => {
   const { toSharedContext } = requestDef.copyFromResponse ?? {}
   if (toSharedContext !== undefined) {
     const dataToApply = await extractDataToApply({
@@ -239,7 +244,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     requestDef,
     change,
     ...changeContext
-  }: ChangeAndContext & {
+  }: ChangeAndExtendedContext & {
     requestDef: DeployRequestEndpointDefinition<ResolveClientOptionsType<TOptions>>
   }): Promise<Response<ResponseValue | ResponseValue[]>> => {
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)

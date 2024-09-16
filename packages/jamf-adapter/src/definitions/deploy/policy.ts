@@ -21,7 +21,7 @@ const adjustScriptStructureBeforeDeploy = (value: Record<string, unknown>): void
   }
 }
 
-export const adjustPolicyOnDeploy: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
+export const adjustPolicyOnDeploy: definitions.AdjustFunction<definitions.deploy.ChangeAndExtendedContext> = async ({
   value,
 }) => {
   if (!values.isPlainRecord(value)) {

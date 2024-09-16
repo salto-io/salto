@@ -25,7 +25,7 @@ import { ACTIVE_STATUS, INACTIVE_STATUS } from '../../../constants'
  *
  */
 
-export const toSharedContext: definitionUtils.TransformDefinition<definitionUtils.deploy.ChangeAndContext> & {
+export const toSharedContext: definitionUtils.TransformDefinition<definitionUtils.deploy.ChangeAndExtendedContext> & {
   nestUnderElemId?: boolean
 } = {
   pick: ['status'],

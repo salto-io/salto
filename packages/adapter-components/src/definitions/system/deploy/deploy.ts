@@ -9,7 +9,7 @@ import { ActionName, Values } from '@salto-io/adapter-api'
 import { ArgsWithCustomizer, DefaultWithCustomizations, TransformDefinition } from '../shared'
 import { DeployRequestDefinition } from './request'
 import { ChangeIdFunction } from '../../../deployment/grouping'
-import { ChangeAndContext } from './types'
+import { ChangeAndContext, ChangeAndExtendedContext } from './types'
 
 export type ValueReferenceResolver = (args: { value: Values }) => Values
 
@@ -20,9 +20,12 @@ export type DeployRequestCondition = ArgsWithCustomizer<
     // default: true
     skipIfIdentical?: boolean
     // transformation to use on before and after of the change when comparing the values
-    transformForCheck?: TransformDefinition<ChangeAndContext>
+    transformForCheck?: TransformDefinition<ChangeAndExtendedContext>
+    // fail if the change already has (error-level) errors from previous actions
+    // default: true
+    failIfChangeHasErrors?: boolean
   },
-  ChangeAndContext
+  ChangeAndExtendedContext
 >
 
 export type DeployableRequestDefinition<ClientOptions extends string> = {
@@ -38,10 +41,10 @@ export type DeployableRequestDefinition<ClientOptions extends string> = {
     // note: if the request's transformation defines nestUnderField, it is used as the root when extracting service ids
     updateServiceIDs?: boolean
     // default: nothing
-    additional?: TransformDefinition<ChangeAndContext>
+    additional?: TransformDefinition<ChangeAndExtendedContext>
     // values that should be available as extra context to other requests within the deployment
     // default: nothing
-    toSharedContext?: TransformDefinition<ChangeAndContext> & {
+    toSharedContext?: TransformDefinition<ChangeAndExtendedContext> & {
       // when true, the transformation result will be stored under a path based on the elem id, to avoid unintentional overlaps
       // default: true
       nestUnderElemID?: boolean

@@ -7,13 +7,13 @@
  */
 import { types } from '@salto-io/lowerdash'
 import { ArgsWithCustomizer, ContextParams, EndpointExtractionParams } from '../shared'
-import { ChangeAndContext } from './types'
+import { ChangeAndExtendedContext } from './types'
 
 export type ContextParamDefinitions = ArgsWithCustomizer<ContextParams, { args: ContextParams }>
 
 export type DeployRequestEndpointDefinition<ClientOptions extends string = 'main'> = EndpointExtractionParams<
-  ChangeAndContext,
-  ChangeAndContext,
+  ChangeAndExtendedContext,
+  ChangeAndExtendedContext,
   ClientOptions
 >
 

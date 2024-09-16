@@ -21,7 +21,7 @@ const addStartTime = (value: unknown): Record<string, unknown> => {
   return { ...value, start: value.rotation_virtual_start }
 }
 
-export const addStartToLayers: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async ({
+export const addStartToLayers: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = async ({
   value,
 }) => {
   if (!lowerdashValues.isPlainRecord(value)) {
@@ -35,7 +35,7 @@ export const addStartToLayers: definitions.AdjustFunctionSingle<definitions.depl
   return { value: _.set(value, 'schedule.schedule_layers', layers.map(addStartTime)) }
 }
 
-export const addTimeZone: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async ({
+export const addTimeZone: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = async ({
   value,
   context,
 }) => ({

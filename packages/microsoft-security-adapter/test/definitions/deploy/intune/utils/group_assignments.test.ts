@@ -64,4 +64,102 @@ describe('Intune group assignments deploy utils', () => {
       })
     })
   })
+
+  describe(`${groupAssignments.createBasicDeployDefinitionForTypeWithAssignments.name} function`, () => {
+    it('should return a correct deploy definition', () => {
+      const definition = groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+        resourcePath: '/test',
+        assignmentRootField: 'testField',
+      })
+      expect(definition).toEqual({
+        requestsByAction: {
+          customizations: {
+            add: [
+              {
+                request: {
+                  endpoint: {
+                    path: '/test',
+                    method: 'post',
+                  },
+                  transformation: {
+                    omit: ['assignments'],
+                  },
+                },
+              },
+              {
+                request: {
+                  endpoint: {
+                    path: '/test/{id}/assign',
+                    method: 'post',
+                  },
+                  transformation: {
+                    rename: [
+                      {
+                        from: 'assignments',
+                        to: 'testField',
+                        onConflict: 'skip',
+                      },
+                    ],
+                    pick: ['testField'],
+                  },
+                },
+                condition: {
+                  custom: expect.any(Function),
+                },
+              },
+            ],
+            modify: [
+              {
+                request: {
+                  endpoint: {
+                    path: '/test/{id}',
+                    method: 'patch',
+                  },
+                  transformation: {
+                    omit: ['assignments'],
+                  },
+                },
+                condition: {
+                  transformForCheck: {
+                    omit: ['assignments'],
+                  },
+                },
+              },
+              {
+                request: {
+                  endpoint: {
+                    path: '/test/{id}/assign',
+                    method: 'post',
+                  },
+                  transformation: {
+                    rename: [
+                      {
+                        from: 'assignments',
+                        to: 'testField',
+                        onConflict: 'skip',
+                      },
+                    ],
+                    pick: ['testField'],
+                  },
+                },
+                condition: {
+                  custom: expect.any(Function),
+                },
+              },
+            ],
+            remove: [
+              {
+                request: {
+                  endpoint: {
+                    path: '/test/{id}',
+                    method: 'delete',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      })
+    })
+  })
 })

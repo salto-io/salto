@@ -835,23 +835,23 @@ describe('XML Transformer', () => {
     describe('with number values', () => {
       const XML_STRING =
         '<?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<AuraDefinitionBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n' +
-        '    <apiVersion>047.0</apiVersion>\n' +
-        '    <description>myAuraDefinitionBundle description</description>\n' +
+        '<InstalledPackage xmlns="http://soap.sforce.com/2006/04/metadata">\n' +
+        '    <version>47.0</version>\n' +
+        '    <fullName>SBQQ</fullName>\n' +
         '</AuraDefinitionBundle>\n'
       describe('when skipParsingXmlNumbers is false', () => {
         it('should attempt to convert the string to number', () => {
           expect(xmlToValues(XML_STRING, false).values).toEqual({
-            apiVersion: 47,
-            description: 'myAuraDefinitionBundle description',
+            version: 47,
+            fullName: 'SBQQ',
           })
         })
       })
       describe('when skipParsingXmlNumbers is true', () => {
         it('should not attempt to convert the string to number', () => {
           expect(xmlToValues(XML_STRING, true).values).toEqual({
-            apiVersion: '047.0',
-            description: 'myAuraDefinitionBundle description',
+            version: '47.0',
+            fullName: 'SBQQ',
           })
         })
       })

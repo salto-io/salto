@@ -43,6 +43,7 @@ describe('Fetch Profile', () => {
           { value: 'fullName', highlighted: true, indexed: false },
           { value: 'label', highlighted: true, indexed: true },
         ],
+        limits: { maxExtraDependenciesQuerySize: 10, maxExtraDependenciesResponseSize: 10 },
       }
       const maxItemsInRetrieveRequest = 10
       const fetchProfile = buildFetchProfile({
@@ -54,6 +55,7 @@ describe('Fetch Profile', () => {
         mergeWithDefaultImportantValues(fetchParams.additionalImportantValues),
       )
       expect(fetchProfile.preferActiveFlowVersions).toEqual(false)
+      expect(fetchProfile.limits).toEqual(fetchParams.limits)
     })
   })
 })

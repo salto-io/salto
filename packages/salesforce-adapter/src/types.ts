@@ -354,7 +354,7 @@ export type DataManagementConfig = {
 
 export type FetchLimits = {
   maxExtraDependenciesQuerySize?: number
-  maxExtraDependenciesResoponseSize?: number
+  maxExtraDependenciesResponseSize?: number
 }
 
 export type FetchParameters = {
@@ -887,7 +887,7 @@ const limitsType = createMatchingObjectType<FetchLimits>({
   elemID: new ElemID(constants.SALESFORCE, 'limits'),
   fields: {
     maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
-    maxExtraDependenciesResoponseSize: { refType: BuiltinTypes.NUMBER },
+    maxExtraDependenciesResponseSize: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

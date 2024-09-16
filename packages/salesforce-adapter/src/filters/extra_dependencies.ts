@@ -343,7 +343,7 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
             client,
             elements,
             initialChunkSize: config.fetchProfile.limits?.maxExtraDependenciesQuerySize ?? INITIAL_QUERY_CHUNK_SIZE,
-            maxResponseSize: config.fetchProfile.limits?.maxExtraDependenciesResoponseSize ?? TOOLING_QUERY_MAX_RECORDS,
+            maxResponseSize: config.fetchProfile.limits?.maxExtraDependenciesResponseSize ?? TOOLING_QUERY_MAX_RECORDS,
           })
         : await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
       const fetchedElements = buildElementsSourceFromElements(elements)

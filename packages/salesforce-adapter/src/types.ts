@@ -123,6 +123,7 @@ export type OptionalFeatures = {
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
   waveMetadataSupport?: boolean
+  indexedEmailTemplateAttachments?: boolean
 }
 
 export type ChangeValidatorName =
@@ -822,6 +823,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
     waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
+    indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

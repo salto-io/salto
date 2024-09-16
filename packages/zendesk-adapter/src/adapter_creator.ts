@@ -103,7 +103,6 @@ const isValidUser = (user: string): boolean => EMAIL_REGEX.test(user)
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
-  const useNewInfra = configValue.fetch?.useNewInfra
   const isGuideDisabled = config?.value.fetch.guide === undefined
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
     ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
@@ -114,6 +113,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   ) as configUtils.AdapterDuckTypeApiConfig
 
   const fetch = mergeWithDefaultConfig(DEFAULT_CONFIG.fetch, config?.value.fetch) as ZendeskFetchConfig
+  const useNewInfra = configValue.fetch?.useNewInfra
   if (useNewInfra === true) {
     const configForNewInfra = config?.clone()
     const updatedElemIDs = updateElemIDDefinitions(configForNewInfra?.value?.apiDefinitions)

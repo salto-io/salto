@@ -956,6 +956,7 @@ describe('api.ts', () => {
   })
 
   describe('calculatePatchFromChanges', () => {
+    let ws: workspace.Workspace
     const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
     const modifiedInstance = toChange({
       before: new InstanceElement('modified', type, { name: 'before', label: 'before' }),
@@ -1004,7 +1005,7 @@ describe('api.ts', () => {
         new InstanceElement('existingAdded', type, { name: 'other' }),
         new InstanceElement('deleted', type, { name: 'other' }),
       ]
-      const ws = mockWorkspace({
+      ws = mockWorkspace({
         elements,
         elementsWithoutHidden,
         name: 'workspace',
@@ -1155,6 +1156,35 @@ describe('api.ts', () => {
           }),
         ]),
       )
+    })
+    describe('when there are only addition changes', () => {
+      it('should calculate pending changes', async () => {
+        patchChanges = await api.calculatePatchFromChanges({
+          workspace: ws,
+          changes: [existingAddedInstance],
+          pathIndex,
+        })
+        expect(patchChanges).toEqual([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              id: new ElemID('salto', 'type', 'instance', 'existingAdded', 'name'),
+              data: { before: 'other', after: 'after' },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
+                data: { after: expect.any(InstanceElement) },
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: new ElemID('salto', 'type', 'instance', 'existingAdded'),
+                data: { after: expect.any(InstanceElement) },
+              }),
+            ],
+          }),
+        ])
+      })
     })
   })
 

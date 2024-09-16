@@ -2322,14 +2322,15 @@ describe('calc fetch changes', () => {
   const instanceA = new InstanceElement('instanceA', existingElement)
   const instanceB = new InstanceElement('instanceB', existingElement)
   it('should calculate a remove change when instanceA was deleted in service', async () => {
-    const { changes, serviceToStateChanges } = await calcFetchChanges(
-      [existingElement],
-      [existingElement],
-      createInMemoryElementSource([existingElement, instanceA, instanceB]),
-      createInMemoryElementSource([existingElement, instanceA, instanceB]),
-      new Map([['salto', { deletedElements: new Set([instanceA.elemID.getFullName()]) }]]),
-      new Set(['salto']),
-    )
+    const { changes, serviceToStateChanges } = await calcFetchChanges({
+      accountElements: [existingElement],
+      mergedAccountElements: [existingElement],
+      stateElements: createInMemoryElementSource([existingElement, instanceA, instanceB]),
+      workspaceElements: createInMemoryElementSource([existingElement, instanceA, instanceB]),
+      partiallyFetchedAccounts: new Map([['salto', { deletedElements: new Set([instanceA.elemID.getFullName()]) }]]),
+      allFetchedAccounts: new Set(['salto']),
+      calculatePendingChanges: true,
+    })
 
     expect(changes).toHaveLength(1)
     expect(changes[0].change.action).toEqual('remove')

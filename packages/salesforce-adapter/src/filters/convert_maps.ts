@@ -45,6 +45,7 @@ import {
   INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
+import { isCustomObjectSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -144,19 +145,38 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
   [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
+  StandardValueSet: {
+    standardValue: {
+      key: 'fullName',
+    }
+  },
+  GlobalValueSet: {
+    customValue: {
+      key: 'fullName',
+    }
+  }
 }
 
+export const fieldTypeToAnnotationToMapDef: Record<string, Record<string, MapDef>> = {
+  Picklist: {
+    valueSet: { key: 'fullName' },
+  },
+}
+
+export const getElementValueOrAnnotations = (element: Element): Values =>
+  isInstanceElement(element) ? element.value : element.annotations
+
 /**
- * Convert the specified instance fields into maps.
+ * Convert the specified element fields into maps.
  * Choose between unique maps and lists based on each field's conversion definition. If a field
  * should use a unique map but fails due to conflicts, convert it to a list map, and include it
  * in the returned list so that it can be converted across the board.
  *
- * @param instance             The instance to modify
- * @param instanceMapFieldDef  The definitions of the fields to covert
+ * @param element             The instance to modify
+ * @param mapFieldDef         The definitions of the fields to covert
  * @returns                   The list of fields that were converted to non-unique due to duplicates
  */
-const convertArraysToMaps = (instance: InstanceElement, instanceMapFieldDef: Record<string, MapDef>): string[] => {
+const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDef>): string[] => {
   // fields that were intended to be unique, but have multiple values under to the same map key
   const nonUniqueMapFields: string[] = []
 
@@ -171,17 +191,17 @@ const convertArraysToMaps = (instance: InstanceElement, instanceMapFieldDef: Rec
     return _.groupBy(values, item => keyFunc(item))
   }
 
-  Object.entries(instanceMapFieldDef)
-    .filter(([fieldName]) => _.get(instance.value, fieldName) !== undefined)
+  Object.entries(mapFieldDef)
+    .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
     .forEach(([fieldName, mapDef]) => {
       const mapper = mapDef.mapper ?? defaultMapper
       if (mapDef.nested) {
         const firstLevelGroups = _.groupBy(
-          makeArray(_.get(instance.value, fieldName)),
+          makeArray(_.get(getElementValueOrAnnotations(element), fieldName)),
           item => mapper(item[mapDef.key])[0],
         )
         _.set(
-          instance.value,
+          getElementValueOrAnnotations(element),
           fieldName,
           _.mapValues(firstLevelGroups, firstLevelValues =>
             convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
@@ -189,10 +209,10 @@ const convertArraysToMaps = (instance: InstanceElement, instanceMapFieldDef: Rec
         )
       } else {
         _.set(
-          instance.value,
+          getElementValueOrAnnotations(element),
           fieldName,
           convertField(
-            makeArray(_.get(instance.value, fieldName)),
+            makeArray(_.get(getElementValueOrAnnotations(element), fieldName)),
             item => mapper(item[mapDef.key])[0],
             !!mapDef.mapToList,
             fieldName,
@@ -206,24 +226,24 @@ const convertArraysToMaps = (instance: InstanceElement, instanceMapFieldDef: Rec
 /**
  * Make sure all values in the specified non-unique fields are arrays.
  *
- * @param instance             The instance instance to update
+ * @param element             The element to update
  * @param nonUniqueMapFields  The list of fields to convert to arrays
- * @param instanceMapFieldDef  The original field mapping definition
+ * @param mapFieldDef         The original field mapping definition
  */
 const convertValuesToMapArrays = (
-  instance: InstanceElement,
+  element: Element,
   nonUniqueMapFields: string[],
-  instanceMapFieldDef: Record<string, MapDef>,
+  mapFieldDef: Record<string, MapDef>,
 ): void => {
   nonUniqueMapFields.forEach(fieldName => {
-    if (instanceMapFieldDef[fieldName]?.nested) {
+    if (mapFieldDef[fieldName]?.nested) {
       _.set(
-        instance.value,
+        getElementValueOrAnnotations(element),
         fieldName,
-        _.mapValues(_.get(instance.value, fieldName), val => _.mapValues(val, makeArray)),
+        _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), val => _.mapValues(val, makeArray)),
       )
     } else {
-      _.set(instance.value, fieldName, _.mapValues(_.get(instance.value, fieldName), makeArray))
+      _.set(getElementValueOrAnnotations(element), fieldName, _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), makeArray))
     }
   })
 }
@@ -271,22 +291,22 @@ const updateFieldTypes = async (
   })
 }
 
-const convertInstanceFieldsToMaps = async (
-  instancesToConvert: InstanceElement[],
-  instanceMapFieldDef: Record<string, MapDef>,
+const convertElementFieldsToMaps = async (
+  elementsToConvert: Element[],
+  mapFieldDef: Record<string, MapDef>,
 ): Promise<string[]> => {
   const nonUniqueMapFields = _.uniq(
-    instancesToConvert.flatMap(instance => {
-      const nonUniqueFields = convertArraysToMaps(instance, instanceMapFieldDef)
+    elementsToConvert.flatMap(element => {
+      const nonUniqueFields = convertArraysToMaps(element, mapFieldDef)
       if (nonUniqueFields.length > 0) {
-        log.info(`Instance ${instance.elemID.getFullName()} has non-unique map fields: ${nonUniqueFields}`)
+        log.info(`Instance ${element.elemID.getFullName()} has non-unique map fields: ${nonUniqueFields}`)
       }
       return nonUniqueFields
     }),
   )
   if (nonUniqueMapFields.length > 0) {
-    instancesToConvert.forEach(instance => {
-      convertValuesToMapArrays(instance, nonUniqueMapFields, instanceMapFieldDef)
+    elementsToConvert.forEach(element => {
+      convertValuesToMapArrays(element, nonUniqueMapFields, mapFieldDef)
     })
   }
   return nonUniqueMapFields
@@ -416,10 +436,23 @@ const filter: LocalFilterCreator = ({ config }) => ({
         if (instancesToConvert.length === 0) {
           await updateFieldTypes(typeToConvert, [], mapFieldDef)
         } else {
-          const nonUniqueMapFields = await convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
+          const nonUniqueMapFields = await convertElementFieldsToMaps(instancesToConvert, mapFieldDef)
           await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
         }
       }
+    })
+
+    const fields = elements.filter(isCustomObjectSync).flatMap(obj => Object.values(obj.fields))
+    await awu(Object.entries(fieldTypeToAnnotationToMapDef)).forEach(async ([fieldType, annotationToMapDef]) => {
+      const fieldsToConvert = fields.filter(field => field.elemID.typeName === fieldType)
+      if (fieldsToConvert.length === 0) {
+        return
+      }
+      const nonUniqueMapFields = await convertElementFieldsToMaps(
+        fieldsToConvert.map(field => field.parent),
+        annotationToMapDef,
+      )
+      log.debug('converted fields to maps: %s', nonUniqueMapFields)
     })
   },
 

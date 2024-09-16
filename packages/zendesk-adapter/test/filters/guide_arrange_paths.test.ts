@@ -36,6 +36,7 @@ import {
 } from '../../src/constants'
 import filterCreator, { GUIDE_ELEMENT_DIRECTORY, GUIDE_PATH, UNSORTED } from '../../src/filters/guide_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
+import { shortElemIdHash } from '../../src/filters/utils'
 
 describe('guide arrange paths', () => {
   let client: ZendeskClient
@@ -415,7 +416,7 @@ describe('guide arrange paths', () => {
           'article_name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_ATTACHMENT_TYPE_NAME],
           'attachment',
-          `${staticFile.hash.slice(0, 10)}_attachment`,
+          `${shortElemIdHash(elements[3].elemID)}_${staticFile.hash.slice(0, 10)}_attachment`,
         ].join('/'),
       )
       expect(staticFile.isEqual(articleAttachmentInstance.value.content)).toBeTruthy()

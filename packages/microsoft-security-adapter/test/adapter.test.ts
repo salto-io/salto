@@ -8,7 +8,15 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { Element, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  Element,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  StaticFile,
+  Values,
+} from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
@@ -92,6 +100,9 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceCompliance',
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',
+          'IntuneFilter',
+          'IntunePlatformScriptLinux',
+          'IntunePlatformScriptWindows',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -136,17 +147,33 @@ describe('Microsoft Security adapter', () => {
               )
             })
 
-            it('should include assignments field with references to the matching groups', async () => {
+            it('should include assignments field with references to the matching groups and filters', async () => {
               const applicationWithAssignments = intuneApplications.find(
                 e => e.elemID.name === 'managedAndroidStoreApp_com_test@uv',
               )
               expect(applicationWithAssignments).toBeDefined()
               const { assignments } = (applicationWithAssignments as InstanceElement).value
-              expect(assignments).toHaveLength(1)
-              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments).toHaveLength(2)
+              expect(
+                assignments.every((a: Values) => Object.keys(a).length === 2 && 'target' in a && 'source' in a),
+              ).toBeTruthy()
+              // group reference
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+              expect(assignments[1].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[1].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.another_test_group@s',
+              )
+              // filter reference
+              const filterRefs = assignments.map((a: Values) => a.target?.deviceAndAppManagementAssignmentFilterId)
+              expect(filterRefs.every((f: unknown) => f instanceof ReferenceExpression)).toBeTruthy()
+              expect(filterRefs.map((f: ReferenceExpression) => f.elemID.getFullName())).toEqual(
+                expect.arrayContaining([
+                  'microsoft_security.IntuneFilter.instance.test_filter_IOS_iOSMobileApplicationManagement@ssu',
+                  'microsoft_security.IntuneFilter.instance.test_filter_android_androidMobileApplicationManagement@ssu',
+                ]),
               )
             })
 
@@ -443,6 +470,111 @@ describe('Microsoft Security adapter', () => {
               const { assignments } = intuneDeviceCompliance.value
               expect(assignments).toHaveLength(1)
               expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+          })
+
+          describe('filter', () => {
+            let intuneFilters: InstanceElement[]
+            beforeEach(async () => {
+              intuneFilters = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'IntuneFilter')
+            })
+
+            it('should create the correct instances for Intune filters', async () => {
+              expect(intuneFilters).toHaveLength(2)
+
+              const intuneFilterNames = intuneFilters.map(e => e.elemID.name)
+              expect(intuneFilterNames).toEqual(
+                expect.arrayContaining([
+                  'test_filter_android_androidMobileApplicationManagement@ssu',
+                  'test_filter_IOS_iOSMobileApplicationManagement@ssu',
+                ]),
+              )
+            })
+
+            it("should not include 'payloads' field", async () => {
+              expect(intuneFilters.every(e => !('payloads' in e.value))).toBeTruthy()
+            })
+          })
+
+          describe('platform script linux', () => {
+            let platformScriptsLinux: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsLinux = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptLinux')
+            })
+
+            it('should create the correct instances for platform script linux', async () => {
+              expect(platformScriptsLinux).toHaveLength(1)
+
+              const platformScriptLinuxNames = platformScriptsLinux.map(e => e.elemID.name)
+              expect(platformScriptLinuxNames).toEqual(['test_linux_script@s'])
+            })
+
+            it('should include settings field with the correct values', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              expect(platformScriptLinux.value.settings).toHaveLength(4)
+              expect(Object.keys(platformScriptLinux.value.settings[0])).toEqual(['settingInstance'])
+              const linuxScript = _.get(platformScriptLinux.value.settings[3], [
+                'settingInstance',
+                'simpleSettingValue',
+                'value',
+              ])
+              expect(linuxScript).toBeInstanceOf(StaticFile)
+              const scriptContent = await linuxScript.getContent()
+              expect(scriptContent).toBeInstanceOf(Buffer)
+              expect(scriptContent.toString()).toEqual(
+                '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
+              )
+              expect((linuxScript as StaticFile).encoding).toEqual('base64')
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              const { assignments } = platformScriptLinux.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['source', 'target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+          })
+
+          describe('platform script windows', () => {
+            let platformScriptsWindows: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsWindows = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptWindows')
+            })
+
+            it('should create the correct instances for platform script windows', async () => {
+              expect(platformScriptsWindows).toHaveLength(1)
+
+              const platformScriptWindowsNames = platformScriptsWindows.map(e => e.elemID.name)
+              expect(platformScriptWindowsNames).toEqual(['test_windows_platform_script@s'])
+            })
+
+            it('should include scriptContent field as a static file', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { scriptContent } = platformScriptWindows.value
+              expect(scriptContent).toBeInstanceOf(StaticFile)
+              const content = await scriptContent.getContent()
+              expect(content).toBeInstanceOf(Buffer)
+              expect(content.toString()).toEqual('echo "Hello, World!"')
+              expect((scriptContent as StaticFile).encoding).toEqual('base64')
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { assignments } = platformScriptWindows.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',

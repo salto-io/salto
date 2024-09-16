@@ -110,7 +110,6 @@ export type OptionalFeatures = {
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
-  fixRetrieveFilePaths?: boolean
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
@@ -122,6 +121,8 @@ export type OptionalFeatures = {
   improvedDataBrokenReferences?: boolean
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
+  excludeNonRetrievedProfilesRelatedInstances?: boolean
+  waveMetadataSupport?: boolean
 }
 
 export type ChangeValidatorName =
@@ -808,7 +809,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
-    fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
@@ -820,6 +820,8 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
+    excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
+    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

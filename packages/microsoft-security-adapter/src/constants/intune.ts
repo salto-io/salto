@@ -29,11 +29,22 @@ export const PAYLOAD_JSON_FIELD_NAME = 'payloadJson'
 
 // DeviceConfigurationSettingCatalog fields
 export const SETTINGS_FIELD_NAME = 'settings'
+export const SETTING_COUNT_FIELD_NAME = 'settingCount'
 
 // DeviceCompliance fields
 export const RESTRICTED_APPS_FIELD_NAME = 'restrictedApps'
 export const SCHEDULED_ACTIONS_FIELD_NAME = 'scheduledActionsForRule'
 export const SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME = 'scheduledActionConfigurations'
+
+// Platform script fields
+// Linux
+export const SCRIPT_VALUE_FIELD_NAME = 'value'
+export const SETTING_INSTANCE_FIELD_NAME = 'settingInstance'
+export const SIMPLE_SETTING_VALUE_FIELD_NAME = 'simpleSettingValue'
+export const SETTING_DEFINITION_ID_FIELD_NAME = 'settingDefinitionId'
+// Windows
+export const SCRIPT_CONTENT_FIELD_NAME = 'scriptContent'
+export const SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME = 'scriptContentRecurseInto'
 
 /* Type names */
 // Top level
@@ -45,6 +56,9 @@ export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeNa
 export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('DeviceConfiguration')
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('DeviceConfigurationSettingCatalog')
 export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
+export const FILTER_TYPE_NAME = toIntuneTypeName('Filter')
+export const PLATFORM_SCRIPT_LINUX_TYPE_NAME = toIntuneTypeName('PlatformScriptLinux')
+export const PLATFORM_SCRIPT_WINDOWS_TYPE_NAME = toIntuneTypeName('PlatformScriptWindows')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
@@ -67,6 +81,14 @@ export const DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME = recur
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   SCHEDULED_ACTION_CONFIGURATIONS_FIELD_NAME,
 )
+export const PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME = recursiveNestedTypeName(
+  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  SETTINGS_FIELD_NAME,
+)
+export const PLATFORM_SCRIPT_WINDOWS_SCRIPT_CONTENT_TYPE_NAME = recursiveNestedTypeName(
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+  SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,
+)
 
 // Urls
 export const SERVICE_BASE_URL = 'https://intune.microsoft.com'
@@ -79,6 +101,8 @@ export const TYPES_WITH_GROUP_ASSIGNMENTS = [
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
+  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
 ]
 export const TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS = TYPES_WITH_GROUP_ASSIGNMENTS.map(typeName =>
   recursiveNestedTypeName(typeName, ASSIGNMENTS_FIELD_NAME),

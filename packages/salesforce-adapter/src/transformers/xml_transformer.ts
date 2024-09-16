@@ -314,7 +314,6 @@ type ExtractFileNameToDataParams = {
   withMetadataSuffix: boolean
   complexType: boolean
   namespacePrefix?: string
-  fixRetrieveFilePaths: boolean
 }
 
 const fixPath = (path: string): string =>
@@ -328,12 +327,11 @@ const extractFileNameToData = async ({
   withMetadataSuffix,
   complexType,
   namespacePrefix,
-  fixRetrieveFilePaths,
 }: ExtractFileNameToDataParams): Promise<Record<string, Buffer>> => {
   if (!complexType) {
     // this is a single file
     const path = `${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`
-    const fixedFilePath = fixRetrieveFilePaths ? fixPath(path) : path
+    const fixedFilePath = fixPath(path)
     const zipFile = zip.file(fixedFilePath)
     if (zipFile === null) {
       log.warn('Could not find file %s in zip', fixedFilePath)
@@ -359,7 +357,6 @@ export const fromRetrieveResult = async (
   fileProps: ReadonlyArray<FileProperties>,
   typesWithMetaFile: Set<string>,
   typesWithContent: Set<string>,
-  fixRetrieveFilePaths: boolean,
 ): Promise<{ file: FileProperties; values: MetadataValues }[]> => {
   const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
@@ -369,7 +366,6 @@ export const fromRetrieveResult = async (
       withMetadataSuffix: typesWithMetaFile.has(file.type) || isComplexType(file.type),
       complexType: isComplexType(file.type),
       namespacePrefix: file.namespacePrefix,
-      fixRetrieveFilePaths,
     })
     if (Object.values(fileNameToValuesBuffer).length !== 1) {
       if (file.fullName !== UNFILED_PUBLIC_FOLDER) {
@@ -392,7 +388,6 @@ export const fromRetrieveResult = async (
         withMetadataSuffix: false,
         complexType: isComplexType(file.type),
         namespacePrefix: file.namespacePrefix,
-        fixRetrieveFilePaths,
       })
       if (_.isEmpty(fileNameToContent)) {
         log.warn(`Could not find content files for instance (type:${file.type}, fullName:${file.fullName})`)

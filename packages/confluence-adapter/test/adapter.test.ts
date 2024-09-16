@@ -118,15 +118,15 @@ describe('adapter', () => {
           'confluence.page__authorId',
           'confluence.page__body',
           'confluence.page__ownerId',
-          'confluence.page__restriction',
-          'confluence.page__restriction__restrictions',
           'confluence.page__version',
+          'confluence.permission',
+          'confluence.restriction',
+          'confluence.restriction__restrictions',
           'confluence.space',
           'confluence.space.instance.My_first_space@s',
           'confluence.space.instance.Omri_Farkash@s',
           'confluence.space__authorId',
           'confluence.space__permissionInternalIdMap',
-          'confluence.space__permissions',
         ])
         expect(
           Object.fromEntries(

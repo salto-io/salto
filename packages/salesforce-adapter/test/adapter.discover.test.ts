@@ -78,6 +78,7 @@ import * as customListFuncsModule from '../src/client/custom_list_funcs'
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
+const { isDefined } = values
 
 const createCustomObject = (name: string, additionalFields?: Record<string, FieldDefinition>): ObjectType => {
   const stringType = new PrimitiveType({
@@ -696,9 +697,6 @@ describe('SalesforceAdapter fetch', () => {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
-                optionalFeatures: {
-                  fixRetrieveFilePaths: true,
-                },
                 metadata: {
                   include: [
                     { metadataType: '.*' },
@@ -1380,7 +1378,6 @@ describe('SalesforceAdapter fetch', () => {
           ]),
           expect.anything(),
           expect.anything(),
-          true,
         )
       })
     })
@@ -2183,9 +2180,6 @@ public class LargeClass${index} {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
-                optionalFeatures: {
-                  fixRetrieveFilePaths: true,
-                },
                 metadata: {
                   include: [
                     { metadataType: '.*' },
@@ -2300,9 +2294,6 @@ public class LargeClass${index} {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
-                optionalFeatures: {
-                  fixRetrieveFilePaths: true,
-                },
                 metadata: {
                   include: [{ metadataType: '.*' }],
                 },
@@ -2543,7 +2534,6 @@ public class LargeClass${index} {
           ]),
           expect.anything(),
           expect.anything(),
-          true,
         )
       })
     })
@@ -2558,6 +2548,7 @@ describe('Fetch via retrieve API', () => {
     type: MetadataObjectType
     instanceName: string
     failRetrieve?: boolean
+    excludeFromResult?: boolean
   }
 
   const updateProfileZipFileContents = (zipFile: ZipFile, fileProps: FileProperties[]): void => {
@@ -2589,19 +2580,24 @@ describe('Fetch via retrieve API', () => {
       }),
     )
 
-    const zipFiles = _.zip(fileProps, instanceDefs).map(([fileProp, instanceDef]) => {
-      if (fileProp === undefined || instanceDef === undefined) {
-        // can't happen
-        return { path: '', content: '' }
-      }
-      return {
-        path: createFilePath(fileProp.fileName, instanceDef.type),
-        content: `<?xml version="1.0" encoding="UTF-8"?>
+    const zipFiles = _.zip(fileProps, instanceDefs)
+      .map(([fileProp, instanceDef]) => {
+        if (instanceDef?.excludeFromResult) {
+          return undefined
+        }
+        if (fileProp === undefined || instanceDef === undefined) {
+          // can't happen
+          return { path: '', content: '' }
+        }
+        return {
+          path: createFilePath(fileProp.fileName, instanceDef.type),
+          content: `<?xml version="1.0" encoding="UTF-8"?>
           <${fileProp.type} xmlns="http://soap.sforce.com/2006/04/metadata">
               <apiVersion>57.0</apiVersion>
           </${fileProp.type}>`,
-      }
-    })
+        }
+      })
+      .filter(isDefined)
     return {
       fileProps,
       zipFiles,
@@ -2881,6 +2877,115 @@ describe('Fetch via retrieve API', () => {
             },
           }),
         ])
+      })
+    })
+    describe('When we fail to retrieve a Profile related instance', () => {
+      const NON_RETRIEVABLE_OBJECT_NAME = 'NonRetrievableObject'
+      beforeEach(async () => {
+        await setupMocks([
+          { type: mockTypes.Profile, instanceName: 'Admin' },
+          { type: mockTypes.CustomObject, instanceName: 'Account' },
+          { type: mockTypes.CustomObject, instanceName: NON_RETRIEVABLE_OBJECT_NAME, excludeFromResult: true },
+          // Make sure we only create config suggestions for Profile related instances
+          { type: mockTypes.BusinessProcess, instanceName: 'NonRelatedProfileInstance', excludeFromResult: true },
+        ])
+      })
+      describe('When feature is enabled', () => {
+        describe('When Profiles are included', () => {
+          beforeEach(async () => {
+            configChanges = (
+              await retrieveMetadataInstances({
+                client,
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    optionalFeatures: {
+                      excludeNonRetrievedProfilesRelatedInstances: true,
+                    },
+                  },
+                }),
+              })
+            ).configChanges
+          })
+          it('Should create a metadataExclude config change', () => {
+            expect(configChanges).toEqual([
+              {
+                type: 'metadataExclude',
+                value: { metadataType: CUSTOM_OBJECT, name: NON_RETRIEVABLE_OBJECT_NAME },
+                reason:
+                  'Excluding non retrievable Profile related instance of type CustomObject and fullName NonRetrievableObject',
+              },
+            ])
+          })
+        })
+        describe('When Profiles are excluded', () => {
+          beforeEach(async () => {
+            configChanges = (
+              await retrieveMetadataInstances({
+                client,
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    metadata: {
+                      exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+                    },
+                    optionalFeatures: {
+                      excludeNonRetrievedProfilesRelatedInstances: true,
+                    },
+                  },
+                }),
+              })
+            ).configChanges
+          })
+          it('Should not create config change', () => {
+            expect(configChanges).toBeEmpty()
+          })
+        })
+      })
+      describe('When feature is disabled', () => {
+        describe('When Profiles are included', () => {
+          beforeEach(async () => {
+            configChanges = (
+              await retrieveMetadataInstances({
+                client,
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    optionalFeatures: {
+                      excludeNonRetrievedProfilesRelatedInstances: false,
+                    },
+                  },
+                }),
+              })
+            ).configChanges
+          })
+          it('Should not create a config change', () => {
+            expect(configChanges).toBeEmpty()
+          })
+        })
+        describe('When Profiles are excluded', () => {
+          beforeEach(async () => {
+            configChanges = (
+              await retrieveMetadataInstances({
+                client,
+                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    metadata: {
+                      exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
+                    },
+                    optionalFeatures: {
+                      excludeNonRetrievedProfilesRelatedInstances: false,
+                    },
+                  },
+                }),
+              })
+            ).configChanges
+          })
+          it('Should not create config change', () => {
+            expect(configChanges).toBeEmpty()
+          })
+        })
       })
     })
   })

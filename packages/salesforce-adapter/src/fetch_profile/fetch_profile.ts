@@ -30,7 +30,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   generateRefsInProfiles: false,
   skipAliases: false,
   toolingDepsOfCurrentNamespace: false,
-  fixRetrieveFilePaths: true,
   extraDependenciesV2: true,
   extendedCustomFieldInformation: false,
   importantValues: true,
@@ -43,6 +42,8 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   improvedDataBrokenReferences: false,
   taskAndEventCustomFields: false,
   sharingRulesMaps: false,
+  excludeNonRetrievedProfilesRelatedInstances: true,
+  waveMetadataSupport: false,
 }
 
 type BuildFetchProfileParams = {

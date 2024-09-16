@@ -19,6 +19,7 @@ import {
   AUTOMATION_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
+  BUSINESS_HOUR_SCHEDULE_HOLIDAY,
   CATEGORY_ORDER_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
@@ -102,7 +103,7 @@ const aliasMap: Record<string, AliasData> = {
       },
     ],
   },
-  business_hours_schedule_holiday: {
+  [BUSINESS_HOUR_SCHEDULE_HOLIDAY]: {
     aliasComponents: [
       {
         fieldName: 'name',

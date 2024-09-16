@@ -56,7 +56,7 @@ export const AUTOMATION_TYPE_NAME = 'automation'
 export const TICKET_FIELD_CUSTOM_FIELD_OPTION = 'ticket_field__custom_field_options'
 export const TAG_TYPE_NAME = 'tag'
 export const BUSINESS_HOUR_SCHEDULE = 'business_hours_schedule'
-export const BUSINESS_HOUR_SCHEDULE_HOLIDAY = 'business_hours_schedule_holiday'
+export const BUSINESS_HOUR_SCHEDULE_HOLIDAY = 'business_hours_schedule__holiday'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

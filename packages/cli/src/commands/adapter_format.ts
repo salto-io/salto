@@ -66,7 +66,7 @@ const applyPatchToWorkspace = async (
   if (fetchErrors.length > 0) {
     // We currently assume all fetchErrors are warnings
     log.debug(`apply-patch had ${fetchErrors.length} warnings`)
-    outputLine(formatFetchWarnings(fetchErrors.map(fetchError => fetchError.message)), output)
+    outputLine(formatFetchWarnings(fetchErrors.map(fetchError => fetchError.detailedMessage)), output)
   }
   if (updateState) {
     outputLine(`Updating state for environment ${workspace.currentEnv()}`, output)

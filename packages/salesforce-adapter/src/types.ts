@@ -122,6 +122,7 @@ export type OptionalFeatures = {
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
+  waveMetadataSupport?: boolean
   useXmlParserV2?: boolean
   logXmlParserV2Diff?: boolean
 }
@@ -822,6 +823,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
+    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
     useXmlParserV2: { refType: BuiltinTypes.BOOLEAN },
     logXmlParserV2Diff: { refType: BuiltinTypes.BOOLEAN },
   },

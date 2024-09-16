@@ -13,7 +13,12 @@ import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { odataType } from '../../../utils'
 import { DeployCustomDefinitions } from '../shared/types'
 import { createCustomizationsWithBasePathForDeploy, adjustWrapper } from '../shared/utils'
-import { application as applicationDeployUtils, appsConfiguration, groupAssignments } from './utils'
+import {
+  application as applicationDeployUtils,
+  appsConfiguration,
+  deviceConfigurationSettings,
+  groupAssignments,
+} from './utils'
 import { application, applicationConfiguration } from '../../../utils/intune'
 import { AdditionalAction, ClientOptions } from '../../types'
 
@@ -26,6 +31,8 @@ const {
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
   FILTER_TYPE_NAME,
+  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   // Field names
   APPS_FIELD_NAME,
   SCHEDULED_ACTIONS_FIELD_NAME,
@@ -316,59 +323,8 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       },
     },
   },
-  [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]: {
-    requestsByAction: {
-      customizations: {
-        add: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/configurationPolicies',
-                method: 'post',
-              },
-              transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-          },
-          groupAssignments.createAssignmentsRequest({
-            resourcePath: '/deviceManagement/configurationPolicies',
-          }),
-        ],
-        modify: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/configurationPolicies/{id}',
-                method: 'put',
-              },
-              transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-            condition: {
-              transformForCheck: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-          },
-          groupAssignments.createAssignmentsRequest({
-            resourcePath: '/deviceManagement/configurationPolicies',
-          }),
-        ],
-        remove: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/configurationPolicies/{id}',
-                method: 'delete',
-              },
-            },
-          },
-        ],
-      },
-    },
-  },
+  [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]:
+    deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
   [DEVICE_COMPLIANCE_TYPE_NAME]: {
     requestsByAction: {
       customizations: {
@@ -437,6 +393,62 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
             request: {
               endpoint: {
                 path: '/deviceManagement/deviceCompliancePolicies/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  [PLATFORM_SCRIPT_LINUX_TYPE_NAME]: deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
+  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceManagementScripts',
+                method: 'post',
+              },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+          },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceManagementScripts',
+            rootField: 'deviceManagementScriptAssignments',
+          }),
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceManagementScripts/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [ASSIGNMENTS_FIELD_NAME],
+              },
+            },
+          },
+          groupAssignments.createAssignmentsRequest({
+            resourcePath: '/deviceManagement/deviceManagementScripts',
+            rootField: 'deviceManagementScriptAssignments',
+          }),
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/deviceManagement/deviceManagementScripts/{id}',
                 method: 'delete',
               },
             },

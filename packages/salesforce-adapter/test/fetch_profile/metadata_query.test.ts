@@ -839,86 +839,83 @@ describe('buildMetadataQuery', () => {
     })
   })
   describe('buildElemIDMetadataQuery', () => {
-    let metadataQuery: jest.Mocked<MetadataQuery>
+    let metadataQuery: MetadataQuery
     let elemIDMetadataQuery: MetadataQuery<ElemID>
-
-    beforeEach(() => {
-      metadataQuery = {
-        isInstanceIncluded: jest.fn(),
-        isInstanceMatch: jest.fn(),
-        isTypeMatch: jest.fn(),
-        isFetchWithChangesDetection: jest.fn(),
-        isPartialFetch: jest.fn(),
-        isTargetedFetch: jest.fn(),
-        getFolderPathsByName: jest.fn(),
-        logData: jest.fn(),
-      }
-      elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+    describe('CustomObjects', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: 'CustomObject', namespace: '' }],
+            },
+          },
+        })
+        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+      })
+      it('should return true for included CustomObject', () => {
+        expect(new ElemID('salesforce', 'Account')).toSatisfy(elemIDMetadataQuery.isInstanceIncluded)
+        expect(new ElemID('salesforce', 'Account')).toSatisfy(elemIDMetadataQuery.isInstanceMatch)
+      })
+      it('should return false for excluded CustomObject from namespace', () => {
+        expect(new ElemID('salesforce', 'sbaa__Account__c')).not.toSatisfy(elemIDMetadataQuery.isInstanceIncluded)
+        expect(new ElemID('salesforce', 'sbaa__Account__c')).not.toSatisfy(elemIDMetadataQuery.isInstanceMatch)
+      })
     })
-
-    const testCases = [
-      // Custom Object
-      {
-        elemFullName: 'salesforce.Account',
-        expectedMetadataInstance: {
-          namespace: 'standard',
-          metadataType: 'CustomObject',
-          name: 'Account',
-          changedAt: undefined,
-          isFolderType: false,
-        },
-      },
-      // Custom Object Field
-      {
-        elemFullName: 'salesforce.Account.field.sbaa__AccountField__c',
-        expectedMetadataInstance: {
-          namespace: 'standard',
-          metadataType: 'CustomObject',
-          name: 'Account',
-          changedAt: undefined,
-          isFolderType: false,
-        },
-      },
-      // Instance with standard namespace
-      {
-        elemFullName: 'salesforce.ApexClass.instance.standard__AccessTestingUtil',
-        expectedMetadataInstance: {
-          namespace: 'standard',
-          metadataType: 'ApexClass',
-          name: 'standard__AccessTestingUtil',
-          changedAt: undefined,
-          isFolderType: false,
-        },
-      },
-      // Managed Instance
-      // Known issue: Sub-instances of CustomObjects (WebLinks, CompactLayouts etc...) name is not their actual
-      // fullName but instead CustomObjectApiName_InstanceName when it's supposed to be CustomObjectApiName.instanceName.
-      {
-        elemFullName: 'salesforce.WebLink.instance.sbaa__Approval__c_sbaa__Approve',
-        expectedMetadataInstance: {
-          namespace: 'sbaa',
-          metadataType: 'WebLink',
-          name: 'sbaa__Approval__c_sbaa__Approve', // The correct name should be sbaa__Approval__c.sbaa__Approve
-          changedAt: undefined,
-          isFolderType: false,
-        },
-      },
-    ]
-
-    describe.each(testCases)(
-      'isInstanceMatch & isInstanceIncluded on "$elemFullName"',
-      ({ elemFullName, expectedMetadataInstance }) => {
-        let elemID: ElemID
-        beforeEach(() => {
-          elemID = ElemID.fromFullName(elemFullName)
+    describe('Instances', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: 'ApexClass', namespace: '', name: 'Apex1' }],
+            },
+          },
         })
-        it('should invoke the underlying MetadataQuery with correct MetadataInstance', () => {
-          elemIDMetadataQuery.isInstanceMatch(elemID)
-          expect(metadataQuery.isInstanceMatch).toHaveBeenCalledWith(expectedMetadataInstance)
-          elemIDMetadataQuery.isInstanceIncluded(elemID)
-          expect(metadataQuery.isInstanceIncluded).toHaveBeenCalledWith(expectedMetadataInstance)
+        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+      })
+      it('should return true for included instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+      it('should return false for excluded instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+    })
+    describe('Instances from standard namespace', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: 'ApexClass', namespace: '' }],
+            },
+          },
         })
-      },
-    )
+        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+      })
+      it('should return true for included instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'standard__Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'standard__Apex1')).toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+      it('should return false for excluded instance', () => {
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'sbaa__Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceIncluded,
+        )
+        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'sbaa__Apex2')).not.toSatisfy(
+          elemIDMetadataQuery.isInstanceMatch,
+        )
+      })
+    })
   })
 })

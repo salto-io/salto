@@ -322,6 +322,10 @@ export const buildFilePropsMetadataQuery = (metadataQuery: MetadataQuery): Metad
 type TopLevelElemID = Omit<ElemID, 'idType'> & {
   idType: 'type' | 'instance'
 }
+/**
+ * This implementation should cover most of the use-cases but shouldn't be used as a general solution.
+ * Use this implementation only if you have no access to the actual metadata instances and the list results (FileProperties).
+ */
 export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): MetadataQuery<ElemID> => {
   const getTopLevelElemID = (elemID: ElemID): TopLevelElemID => elemID.createTopLevelParentID().parent as TopLevelElemID
   const elemIDToMetadataInstance = (id: TopLevelElemID): MetadataInstance => {

@@ -32,6 +32,7 @@ const {
   DEVICE_COMPLIANCE_TYPE_NAME,
   FILTER_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   // Field names
   APPS_FIELD_NAME,
@@ -270,59 +271,9 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       },
     },
   },
-  [DEVICE_CONFIGURATION_TYPE_NAME]: {
-    requestsByAction: {
-      customizations: {
-        add: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/deviceConfigurations',
-                method: 'post',
-              },
-              transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-          },
-          groupAssignments.createAssignmentsRequest({
-            resourcePath: '/deviceManagement/deviceConfigurations',
-          }),
-        ],
-        modify: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/deviceConfigurations/{id}',
-                method: 'patch',
-              },
-              transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-            condition: {
-              transformForCheck: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-          },
-          groupAssignments.createAssignmentsRequest({
-            resourcePath: '/deviceManagement/deviceConfigurations',
-          }),
-        ],
-        remove: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/deviceConfigurations/{id}',
-                method: 'delete',
-              },
-            },
-          },
-        ],
-      },
-    },
-  },
+  [DEVICE_CONFIGURATION_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+    resourcePath: '/deviceManagement/deviceConfigurations',
+  }),
   [DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME]:
     deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
   [DEVICE_COMPLIANCE_TYPE_NAME]: {
@@ -402,61 +353,14 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
     },
   },
   [PLATFORM_SCRIPT_LINUX_TYPE_NAME]: deviceConfigurationSettings.DEVICE_CONFIGURATION_SETTINGS_DEPLOY_DEFINITION,
-  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: {
-    requestsByAction: {
-      customizations: {
-        add: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/deviceManagementScripts',
-                method: 'post',
-              },
-              transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-          },
-          groupAssignments.createAssignmentsRequest({
-            resourcePath: '/deviceManagement/deviceManagementScripts',
-            rootField: 'deviceManagementScriptAssignments',
-          }),
-        ],
-        modify: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/deviceManagementScripts/{id}',
-                method: 'patch',
-              },
-              transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-            condition: {
-              transformForCheck: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
-              },
-            },
-          },
-          groupAssignments.createAssignmentsRequest({
-            resourcePath: '/deviceManagement/deviceManagementScripts',
-            rootField: 'deviceManagementScriptAssignments',
-          }),
-        ],
-        remove: [
-          {
-            request: {
-              endpoint: {
-                path: '/deviceManagement/deviceManagementScripts/{id}',
-                method: 'delete',
-              },
-            },
-          },
-        ],
-      },
-    },
-  },
+  [PLATFORM_SCRIPT_WINDOWS_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+    resourcePath: '/deviceManagement/deviceManagementScripts',
+    assignmentRootField: 'deviceManagementScriptAssignments',
+  }),
+  [PLATFORM_SCRIPT_MAC_OS_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+    resourcePath: '/deviceManagement/deviceShellScripts',
+    assignmentRootField: 'deviceManagementScriptAssignments',
+  }),
 }
 
 export const createIntuneCustomizations = (): DeployCustomDefinitions =>

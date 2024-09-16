@@ -6,11 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce'
 import {
-  buildElemIDMetadataQuery,
   buildFilePropsMetadataQuery,
   buildMetadataQuery,
   buildMetadataQueryForFetchWithChangesDetection,
@@ -835,86 +834,6 @@ describe('buildMetadataQuery', () => {
             changedAt: CHANGED_AT,
           })
         })
-      })
-    })
-  })
-  describe('buildElemIDMetadataQuery', () => {
-    let metadataQuery: MetadataQuery
-    let elemIDMetadataQuery: MetadataQuery<ElemID>
-    describe('CustomObjects', () => {
-      beforeEach(() => {
-        metadataQuery = buildMetadataQuery({
-          fetchParams: {
-            metadata: {
-              include: [{ metadataType: 'CustomObject', namespace: '' }],
-            },
-          },
-        })
-        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
-      })
-      it('should return true for included CustomObject', () => {
-        expect(new ElemID('salesforce', 'Account')).toSatisfy(elemIDMetadataQuery.isInstanceIncluded)
-        expect(new ElemID('salesforce', 'Account')).toSatisfy(elemIDMetadataQuery.isInstanceMatch)
-      })
-      it('should return false for excluded CustomObject from namespace', () => {
-        expect(new ElemID('salesforce', 'sbaa__Account__c')).not.toSatisfy(elemIDMetadataQuery.isInstanceIncluded)
-        expect(new ElemID('salesforce', 'sbaa__Account__c')).not.toSatisfy(elemIDMetadataQuery.isInstanceMatch)
-      })
-    })
-    describe('Instances', () => {
-      beforeEach(() => {
-        metadataQuery = buildMetadataQuery({
-          fetchParams: {
-            metadata: {
-              include: [{ metadataType: 'ApexClass', namespace: '', name: 'Apex1' }],
-            },
-          },
-        })
-        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
-      })
-      it('should return true for included instance', () => {
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex1')).toSatisfy(
-          elemIDMetadataQuery.isInstanceIncluded,
-        )
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex1')).toSatisfy(
-          elemIDMetadataQuery.isInstanceMatch,
-        )
-      })
-      it('should return false for excluded instance', () => {
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex2')).not.toSatisfy(
-          elemIDMetadataQuery.isInstanceIncluded,
-        )
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'Apex2')).not.toSatisfy(
-          elemIDMetadataQuery.isInstanceMatch,
-        )
-      })
-    })
-    describe('Instances from standard namespace', () => {
-      beforeEach(() => {
-        metadataQuery = buildMetadataQuery({
-          fetchParams: {
-            metadata: {
-              include: [{ metadataType: 'ApexClass', namespace: '' }],
-            },
-          },
-        })
-        elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
-      })
-      it('should return true for included instance', () => {
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'standard__Apex1')).toSatisfy(
-          elemIDMetadataQuery.isInstanceIncluded,
-        )
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'standard__Apex1')).toSatisfy(
-          elemIDMetadataQuery.isInstanceMatch,
-        )
-      })
-      it('should return false for excluded instance', () => {
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'sbaa__Apex2')).not.toSatisfy(
-          elemIDMetadataQuery.isInstanceIncluded,
-        )
-        expect(new ElemID('salesforce', 'ApexClass', 'instance', 'sbaa__Apex2')).not.toSatisfy(
-          elemIDMetadataQuery.isInstanceMatch,
-        )
       })
     })
   })

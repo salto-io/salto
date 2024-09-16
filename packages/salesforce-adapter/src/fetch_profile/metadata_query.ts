@@ -7,10 +7,10 @@
  */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
 import { logger } from '@salto-io/logging'
-import { invertNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -34,7 +34,7 @@ import {
   TypeWithNestedInstances,
   TypeWithNestedInstancesPerParent,
 } from '../types'
-import { getChangedAtSingletonInstance, getNamespaceFromString } from '../filters/utils'
+import { getChangedAtSingletonInstance } from '../filters/utils'
 import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
@@ -316,33 +316,5 @@ export const buildFilePropsMetadataQuery = (metadataQuery: MetadataQuery): Metad
     ...metadataQuery,
     isInstanceIncluded: instance => metadataQuery.isInstanceIncluded(filePropsToMetadataInstance(instance)),
     isInstanceMatch: instance => metadataQuery.isInstanceMatch(filePropsToMetadataInstance(instance)),
-  }
-}
-
-type TopLevelElemID = Omit<ElemID, 'idType'> & {
-  idType: 'type' | 'instance'
-}
-/**
- * This implementation should cover most of the use-cases but shouldn't be used as a general solution.
- * Use this implementation only if you have no access to the actual metadata instances and the list results (FileProperties).
- */
-export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): MetadataQuery<ElemID> => {
-  const getTopLevelElemID = (elemID: ElemID): TopLevelElemID => elemID.createTopLevelParentID().parent as TopLevelElemID
-  const elemIDToMetadataInstance = (id: TopLevelElemID): MetadataInstance => {
-    const fullName = invertNaclCase(id.name)
-    const namespacePrefix = getNamespaceFromString(fullName)
-    const namespace = namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix
-    return {
-      namespace,
-      metadataType: id.idType === 'instance' ? id.typeName : CUSTOM_OBJECT,
-      name: fullName,
-      changedAt: undefined,
-      isFolderType: false,
-    }
-  }
-  return {
-    ...metadataQuery,
-    isInstanceIncluded: id => metadataQuery.isInstanceIncluded(elemIDToMetadataInstance(getTopLevelElemID(id))),
-    isInstanceMatch: id => metadataQuery.isInstanceMatch(elemIDToMetadataInstance(getTopLevelElemID(id))),
   }
 }

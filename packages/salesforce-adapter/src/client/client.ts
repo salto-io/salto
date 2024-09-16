@@ -745,12 +745,14 @@ export default class SalesforceClient implements ISalesforceClient {
           request,
         ])
         const listedFullNames = new Set(originalListResult.result.map(props => props.fullName))
-        request = Promise.resolve({
+        const result = {
           result: originalListResult.result.concat(
             customListResult.result.filter(props => !listedFullNames.has(props.fullName)),
           ),
           errors: originalListResult.errors.concat(customListResult.errors),
-        })
+        }
+        request = Promise.resolve(result)
+        this.populateListedInstancesByType(result)
       }
     } else {
       request = this.sendChunkedList([{ type }], isUnhandledError)

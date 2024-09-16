@@ -11,6 +11,7 @@ import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { FilterWith } from './mocks'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('emailTemplate static files filter', () => {
   const ATTACHMENT_AS_STRING = 'attachment'
@@ -31,66 +32,170 @@ describe('emailTemplate static files filter', () => {
     content: Buffer.from(ATTACHMENT_AS_STRING, 'base64'),
   })
 
+  const attachmentWithIndexAsName = new StaticFile({
+    filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/0_attachment.txt',
+    content: Buffer.from(ATTACHMENT_AS_STRING, 'base64'),
+  })
+
   const staticContent = new StaticFile({
     filepath: 'salesforce/Records/emailTemplate.email',
     content: Buffer.from(EMAIL_CONTENT),
   })
 
   describe('on fetch', () => {
-    describe('attachment as an object', () => {
-      beforeEach(async () => {
-        const emailNoArrayAttachment = createInstanceElement(
-          {
-            fullName: 'unfiled$public/emailTemplate',
-            content: staticContent,
-            attachments: {
-              name: ATTACHMENT_NAME,
-              content: ATTACHMENT_AS_STRING,
-            },
+    beforeEach(() => {
+      const emailTemplate = createInstanceElement(
+        {
+          fullName: 'unfiled$public/emailTemplate',
+          content: staticContent,
+          attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
+        },
+        mockTypes.EmailTemplate,
+      )
+      elements = [emailTemplate]
+    })
+    describe('when indexedEmailTemplateAttachments is disabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                optionalFeatures: {
+                  indexedEmailTemplateAttachments: false,
+                },
+              },
+            }),
           },
-          mockTypes.EmailTemplate,
-        )
+        }) as FilterType
+      })
+      describe('attachment as an object', () => {
+        beforeEach(async () => {
+          const emailNoArrayAttachment = createInstanceElement(
+            {
+              fullName: 'unfiled$public/emailTemplate',
+              content: staticContent,
+              attachments: {
+                name: ATTACHMENT_NAME,
+                content: ATTACHMENT_AS_STRING,
+              },
+            },
+            mockTypes.EmailTemplate,
+          )
 
-        elements = [emailNoArrayAttachment]
+          elements = [emailNoArrayAttachment]
 
-        await filter.onFetch(elements)
+          await filter.onFetch(elements)
+        })
+
+        it('should extract attachment content to static file when emailTemplate has has attachment not in array', () => {
+          const receivedEmailTemplate = elements[0] as InstanceElement
+          expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers([
+            { name: ATTACHMENT_NAME, content: attachment },
+          ])
+          expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
+            'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email',
+          )
+        })
       })
 
-      it('should extract attachment content to static file when emailTemplate has has attachment not in array', () => {
-        const receivedEmailTemplate = elements[0] as InstanceElement
-        expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers([
-          { name: ATTACHMENT_NAME, content: attachment },
-        ])
-        expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
-          'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email',
-        )
+      describe('attachment as an array', () => {
+        beforeEach(async () => {
+          const emailArrayAttachment = createInstanceElement(
+            {
+              fullName: 'unfiled$public/emailTemplate',
+              content: staticContent,
+              attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
+            },
+            mockTypes.EmailTemplate,
+          )
+
+          elements = [emailArrayAttachment]
+
+          await filter.onFetch(elements)
+        })
+
+        it('should extract attachment content to static file when emailTemplate has attachment in array', () => {
+          const receivedEmailTemplate = elements[0] as InstanceElement
+          expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers([
+            { name: ATTACHMENT_NAME, content: attachment },
+          ])
+          expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
+            'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email',
+          )
+        })
       })
     })
-
-    describe('attachment as an array', () => {
-      beforeEach(async () => {
-        const emailArrayAttachment = createInstanceElement(
-          {
-            fullName: 'unfiled$public/emailTemplate',
-            content: staticContent,
-            attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
+    describe('when indexedEmailTemplateAttachments is enabled', () => {
+      beforeEach(() => {
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                optionalFeatures: {
+                  indexedEmailTemplateAttachments: true,
+                },
+              },
+            }),
           },
-          mockTypes.EmailTemplate,
-        )
+        }) as FilterType
+      })
+      describe('attachment as an object', () => {
+        beforeEach(async () => {
+          const emailNoArrayAttachment = createInstanceElement(
+            {
+              fullName: 'unfiled$public/emailTemplate',
+              content: staticContent,
+              attachments: {
+                name: ATTACHMENT_NAME,
+                content: ATTACHMENT_AS_STRING,
+              },
+            },
+            mockTypes.EmailTemplate,
+          )
 
-        elements = [emailArrayAttachment]
+          elements = [emailNoArrayAttachment]
 
-        await filter.onFetch(elements)
+          await filter.onFetch(elements)
+        })
+
+        it('should extract attachment content to static file when emailTemplate has has attachment not in array', () => {
+          const receivedEmailTemplate = elements[0] as InstanceElement
+          expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers([
+            { name: ATTACHMENT_NAME, content: attachmentWithIndexAsName },
+          ])
+          expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
+            'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email',
+          )
+        })
       })
 
-      it('should extract attachment content to static file when emailTemplate has attachment in array', () => {
-        const receivedEmailTemplate = elements[0] as InstanceElement
-        expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers([
-          { name: ATTACHMENT_NAME, content: attachment },
-        ])
-        expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
-          'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email',
-        )
+      describe('attachment as an array', () => {
+        beforeEach(async () => {
+          const emailArrayAttachment = createInstanceElement(
+            {
+              fullName: 'unfiled$public/emailTemplate',
+              content: staticContent,
+              attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
+            },
+            mockTypes.EmailTemplate,
+          )
+
+          elements = [emailArrayAttachment]
+
+          await filter.onFetch(elements)
+        })
+
+        it('should extract attachment content to static file when emailTemplate has attachment in array', () => {
+          const receivedEmailTemplate = elements[0] as InstanceElement
+          expect(receivedEmailTemplate?.value.attachments).toIncludeSameMembers([
+            { name: ATTACHMENT_NAME, content: attachmentWithIndexAsName },
+          ])
+          expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
+            'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email',
+          )
+        })
       })
     })
   })

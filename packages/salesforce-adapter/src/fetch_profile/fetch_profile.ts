@@ -44,6 +44,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   sharingRulesMaps: false,
   excludeNonRetrievedProfilesRelatedInstances: true,
   waveMetadataSupport: false,
+  indexedEmailTemplateAttachments: false,
   skipParsingXmlNumbers: false,
   logDiffsFromParsingXmlNumbers: true,
 }

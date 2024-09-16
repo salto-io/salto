@@ -123,6 +123,7 @@ export type OptionalFeatures = {
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
   waveMetadataSupport?: boolean
+  indexedEmailTemplateAttachments?: boolean
   skipParsingXmlNumbers?: boolean
   logDiffsFromParsingXmlNumbers?: boolean
 }
@@ -824,6 +825,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
     waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
+    indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
     skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
   },

@@ -37,12 +37,14 @@ import {
   TypeElement,
   TypeMap,
   Value,
+  Values,
 } from '@salto-io/adapter-api'
 import {
   buildElementsSourceFromElements,
   createSchemeGuard,
   detailedCompare,
   getParents,
+  inspectValue,
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
@@ -109,7 +111,11 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
-import { CUSTOM_OBJECTS_FIELD, ORG_SETTINGS_INSTANCE_ELEM_ID } from './organization_settings'
+import {
+  CUSTOM_OBJECTS_FIELD,
+  CUSTOM_OBJECTS_LOOKUPS_FIELD,
+  ORG_SETTINGS_INSTANCE_ELEM_ID,
+} from './organization_settings'
 import { SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
@@ -957,32 +963,46 @@ export const isCustomField = (field: Field): boolean => field.name.endsWith(SALE
 export const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
 
+type CustomObjectsTargets = {
+  customObjects: readonly string[]
+  customObjectsLookups: Record<string, readonly string[]>
+}
 type SalesforceFetchTargets = {
   metadataTypes: readonly string[]
-  customObjects: readonly string[]
-}
+} & CustomObjectsTargets
+
+const isStringArray = (val: unknown): val is string[] => _.isArray(val) && val.every(_.isString)
+
+const isCustomObjectsTargets = (val: Values): val is CustomObjectsTargets =>
+  isStringArray(val[CUSTOM_OBJECTS_FIELD]) &&
+  _.isPlainObject(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]) &&
+  Object.values(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]).every(isStringArray)
 
 export const getOrgFetchTargets = async (elementsSource: ReadOnlyElementsSource): Promise<SalesforceFetchTargets> => {
-  const orgSettings = elementsSource.get(ORG_SETTINGS_INSTANCE_ELEM_ID)
+  const orgSettings = await elementsSource.get(ORG_SETTINGS_INSTANCE_ELEM_ID)
   if (!isInstanceElement(orgSettings)) {
     log.warn('Expected org settings Instance to be in elements source. Fetch targets will only include metadata types')
     return {
       metadataTypes: SUPPORTED_METADATA_TYPES,
       customObjects: [],
+      customObjectsLookups: {},
     }
   }
-  const customObjects: unknown = orgSettings.value[CUSTOM_OBJECTS_FIELD]
-  if (!_.isArray(customObjects) || !customObjects.every(_.isString)) {
+  const orgSettingsValues = orgSettings.value
+  if (!isCustomObjectsTargets(orgSettingsValues)) {
     log.warn(
-      'Expected custom objects field in org settings to be an array of strings. Fetch targets will only include metadata types',
+      'Failed to extract customObject fetch settings from OrganizationSettings instance. Fetch targets will only include Metadata types',
     )
+    log.trace('Singleton values are: %s', inspectValue(orgSettingsValues))
     return {
       metadataTypes: SUPPORTED_METADATA_TYPES,
       customObjects: [],
+      customObjectsLookups: {},
     }
   }
   return {
     metadataTypes: SUPPORTED_METADATA_TYPES,
-    customObjects,
+    customObjects: orgSettingsValues[CUSTOM_OBJECTS_FIELD],
+    customObjectsLookups: orgSettingsValues[CUSTOM_OBJECTS_LOOKUPS_FIELD],
   }
 }

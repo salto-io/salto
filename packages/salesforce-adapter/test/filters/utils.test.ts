@@ -57,6 +57,7 @@ import {
   isCustomMetadataRecordTypeSync,
   isCustomField,
   isFieldOfTaskOrEvent,
+  getOrgFetchTargets,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -78,6 +79,7 @@ import {
   UNIX_TIME_ZERO_STRING,
   VALUE_SETTINGS_FIELDS,
   VALUE_SET_FIELDS,
+  ORGANIZATION_SETTINGS,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -85,6 +87,8 @@ import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField, createValueSetEntry } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
+import { CUSTOM_OBJECTS_FIELD, CUSTOM_OBJECTS_LOOKUPS_FIELD } from '../../src/filters/organization_settings'
+import { SUPPORTED_METADATA_TYPES } from '../../src/fetch_profile/metadata_types'
 
 const { makeArray } = collections.array
 
@@ -1441,6 +1445,46 @@ describe('filter utils', () => {
     it('should return false for fields of other types', () => {
       expect(activity.fields.Name).not.toSatisfy(isFieldOfTaskOrEvent)
       expect(mockTypes.User.fields.Manager__c).not.toSatisfy(isFieldOfTaskOrEvent)
+    })
+  })
+  describe('getOrgFetchTargets', () => {
+    let organizationSettingsType: ObjectType
+    let elementsSource: ReadOnlyElementsSource
+    beforeEach(() => {
+      organizationSettingsType = new ObjectType({ elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS) })
+    })
+    describe('when Custom Objects Targets are invalid in the organization settings instance', () => {
+      beforeEach(() => {
+        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, organizationSettingsType, {
+          [CUSTOM_OBJECTS_FIELD]: 'Invalid',
+        })
+        elementsSource = buildElementsSourceFromElements([invalidOrgSettings])
+      })
+      it('should return metadata types only', async () => {
+        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+          metadataTypes: SUPPORTED_METADATA_TYPES,
+          customObjects: [],
+          customObjectsLookups: {},
+        })
+      })
+    })
+    describe('when Custom Objects Targets are valid in the organization settings instance', () => {
+      beforeEach(() => {
+        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, organizationSettingsType, {
+          [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact'],
+          [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
+            Account: ['Contact'],
+          },
+        })
+        elementsSource = buildElementsSourceFromElements([invalidOrgSettings])
+      })
+      it('should return correct fetch targets', async () => {
+        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+          metadataTypes: SUPPORTED_METADATA_TYPES,
+          customObjects: ['Account', 'Contact'],
+          customObjectsLookups: { Account: ['Contact'] },
+        })
+      })
     })
   })
 })

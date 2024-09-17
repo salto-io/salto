@@ -24,7 +24,12 @@ import {
 } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
-import { getStateContentProvider, loadState, localState } from '../../../../src/local-workspace/state/state'
+import {
+  getStateContentProvider,
+  loadState,
+  localState,
+  parseStateContent,
+} from '../../../../src/local-workspace/state/state'
 import * as stateFunctions from '../../../../src/local-workspace/state/state'
 import { getTopLevelElements } from '../../../common/elements'
 import { version as currentSaltoVersion } from '../../../../src/generated/version.json'
@@ -38,25 +43,46 @@ const { awu } = collections.asynciterable
 const { toMD5 } = hash
 
 type MockStateContentArgs = {
+  format: 'new' | 'old'
   elements: Element[]
-  date?: Date
+  date: Date
   pathIndexLine?: string
   version?: string
   extraLine?: string
 }
 const mockStateContent = async ({
+  format,
   elements,
   date,
   pathIndexLine = '[]',
   version = '0.0.1',
   extraLine,
 }: MockStateContentArgs): Promise<Buffer> => {
-  const elementsLine = await serialization.serialize(elements)
-  const dateLine = safeJsonStringify({ [elements[0].elemID.adapter]: date ?? new Date() })
-  const lines = [elementsLine, dateLine, pathIndexLine]
-  if (version !== undefined) {
-    lines.push(safeJsonStringify(version))
+  const dateObject = { [elements[0].elemID.adapter]: date }
+  const stateContentLines = {
+    old: async (): Promise<string[]> => {
+      const dateLine = safeJsonStringify(dateObject)
+      const elementsLine = await serialization.serialize(elements)
+      const lines = [elementsLine, dateLine, pathIndexLine]
+      if (version !== undefined) {
+        lines.push(safeJsonStringify(version))
+      }
+      return lines
+    },
+    new: async (): Promise<string[]> => {
+      const deprecatedLines = ['[]', '{}', '[]', '""']
+      const versionsLine = safeJsonStringify({ versions: [version] })
+      const updateDatesLine = safeJsonStringify({ updateDates: [dateObject] })
+      const elementsLines = await Promise.all(
+        _.chunk(elements, elements.length / 2).map(
+          async chunk => `{"elements":${await serialization.serialize(chunk)}}`,
+        ),
+      )
+      const pathIndicesLine = `{"pathIndices":${pathIndexLine}}`
+      return deprecatedLines.concat(versionsLine).concat(updateDatesLine).concat(elementsLines).concat(pathIndicesLine)
+    },
   }
+  const lines = await stateContentLines[format]()
   if (extraLine !== undefined) {
     lines.push(extraLine)
   }
@@ -78,10 +104,12 @@ describe('localState', () => {
         getHashFromHashes(Object.values(_.pick(currentContent, filePaths)).map(content => toMD5(content.toString()))),
       ),
       readContents: mockFunction<StateContentProvider['readContents']>().mockImplementation(filePaths =>
-        awu(Object.entries(_.pick(currentContent, filePaths))).map(([name, content]) => ({
-          name,
-          stream: Readable.from(content),
-        })),
+        awu(Object.entries(filePaths.length > 0 ? _.pick(currentContent, filePaths) : currentContent)).map(
+          ([name, content]) => ({
+            name,
+            stream: Readable.from(content),
+          }),
+        ),
       ),
       writeContents: mockFunction<StateContentProvider['writeContents']>().mockImplementation(
         async (prefix, newContents) => {
@@ -94,7 +122,7 @@ describe('localState', () => {
     }
   }
 
-  describe('multiple state files', () => {
+  describe.each(['old', 'new'] as const)('multiple state files - %s state format', stateFormat => {
     let state: wsState.State
     let contentProvider: jest.Mocked<StateContentProvider>
     let sfElements: Element[]
@@ -105,17 +133,20 @@ describe('localState', () => {
     const pathPrefix = 'multiple_files'
     let mapCreator: remoteMap.RemoteMapCreator
     beforeEach(async () => {
+      process.env.SALTO_DUMP_STATE_WITH_LEGACY_FORMAT = stateFormat === 'new' ? '0' : '1'
       nsElements = getTopLevelElements('netsuite')
       sfElements = getTopLevelElements('salesforce')
       sfUpdateDate = new Date('2023-02-01T00:00:00.000Z')
       nsUpdateDate = new Date('2023-02-02T00:00:00.000Z')
       contentProvider = mockContentProvider({
         [`${pathPrefix}/netsuite`]: await mockStateContent({
+          format: stateFormat,
           elements: nsElements,
           date: nsUpdateDate,
           version: '0.1.23',
         }),
         [`${pathPrefix}/salesforce`]: await mockStateContent({
+          format: stateFormat,
           elements: sfElements,
           date: sfUpdateDate,
           version: '0.0.1',
@@ -124,6 +155,9 @@ describe('localState', () => {
       mapCreator = inMemRemoteMapCreator()
       state = localState(pathPrefix, 'env', mapCreator, contentProvider)
       initialStateHash = await state.getHash()
+    })
+    afterEach(() => {
+      delete process.env.SALTO_DUMP_STATE_WITH_LEGACY_FORMAT
     })
 
     it('should read elements from both state files', async () => {
@@ -178,6 +212,22 @@ describe('localState', () => {
       })
       it('should set new hash value', async () => {
         await expect(state.getHash()).resolves.not.toEqual(initialStateHash)
+      })
+      it('should write state file correctly', async () => {
+        const res = await parseStateContent(contentProvider.readContents([]))
+        expect(new Set(Object.keys(res))).toEqual(new Set(['pathIndices', 'updateDates', 'versions', 'elements']))
+        expect(res.pathIndices).toEqual([])
+        expect(res.updateDates).toEqual([
+          { netsuite: nsUpdateDate.toISOString() },
+          { salesforce: sfUpdateDate.toISOString() },
+          ...(stateFormat === 'new' ? [{}] : []),
+        ])
+        expect(res.versions).toEqual([currentSaltoVersion, currentSaltoVersion, currentSaltoVersion])
+        const originalElements = nsElements.concat(sfElements).concat(mockElement)
+        expect(res.elements).toHaveLength(originalElements.length)
+        res.elements.forEach(resElement => {
+          expect(originalElements.find(elem => elem.isEqual(resElement))).toBeDefined()
+        })
       })
     })
 
@@ -435,21 +485,66 @@ describe('localState', () => {
     })
   })
 
-  describe('malformed state data', () => {
+  describe.each(['old', 'new'] as const)('malformed state data - %s state format', stateFormat => {
     let state: wsState.State
     let contentProvider: jest.Mocked<StateContentProvider>
+    let updateDate: Date
     beforeEach(async () => {
+      process.env.SALTO_DUMP_STATE_WITH_LEGACY_FORMAT = stateFormat === 'new' ? '0' : '1'
+      updateDate = new Date()
       contentProvider = mockContentProvider({
-        'env/noVersion': await mockStateContent({ elements: getTopLevelElements(), version: undefined }),
-        'env/extraLine': await mockStateContent({ elements: getTopLevelElements('extra'), extraLine: '"more data?"' }),
-        'env/emptyVersion': await mockStateContent({ elements: getTopLevelElements('noVersion'), version: '' }),
+        'env/noVersion': await mockStateContent({
+          format: stateFormat,
+          elements: getTopLevelElements(),
+          date: updateDate,
+          version: undefined,
+        }),
+        'env/extraLine': await mockStateContent({
+          format: stateFormat,
+          elements: getTopLevelElements('extra'),
+          date: updateDate,
+          extraLine: '"more data?"',
+        }),
+        'env/emptyVersion': await mockStateContent({
+          format: stateFormat,
+          elements: getTopLevelElements('noVersion'),
+          date: updateDate,
+          version: '',
+        }),
       })
       state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
     })
+
+    afterEach(() => {
+      delete process.env.SALTO_DUMP_STATE_WITH_LEGACY_FORMAT
+    })
+
     it('should still read elements successfully', async () => {
       await expect(state.getAll()).resolves.toBeDefined()
       const elements = await awu(await state.getAll()).toArray()
       expect(elements).toHaveLength(getTopLevelElements().length * 3)
+    })
+    it('should write state file correctly', async () => {
+      await state.set(mockElement)
+      await state.flush()
+
+      expect(contentProvider.writeContents).toHaveBeenCalled()
+      const res = await parseStateContent(contentProvider.readContents([]))
+      expect(new Set(Object.keys(res))).toEqual(new Set(['pathIndices', 'updateDates', 'versions', 'elements']))
+      expect(res.pathIndices).toEqual([])
+      expect(res.updateDates).toEqual([
+        { extra: updateDate.toISOString() },
+        { noVersion: updateDate.toISOString() },
+        { salto: updateDate.toISOString() },
+      ])
+      expect(res.versions).toEqual([currentSaltoVersion, currentSaltoVersion, currentSaltoVersion])
+      const originalElements = getTopLevelElements()
+        .concat(getTopLevelElements('extra'))
+        .concat(getTopLevelElements('noVersion'))
+      expect(res.elements).toHaveLength(originalElements.length)
+      res.elements.forEach(resElement => {
+        expect(originalElements.find(elem => elem.isEqual(resElement))).toBeDefined()
+      })
     })
   })
 

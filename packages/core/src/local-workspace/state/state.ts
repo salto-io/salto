@@ -66,7 +66,7 @@ const pathIndicesStreamSerializer = serialize.createStreamSerializer({
   wrapWithKey: parsedStateKeys.pathIndices,
 })
 
-const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
+export const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
   let elements: unknown[] = []
   const res: Omit<ParsedState, 'elements'> = {
     updateDates: [],

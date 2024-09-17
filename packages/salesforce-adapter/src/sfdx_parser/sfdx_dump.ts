@@ -86,7 +86,14 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     .map(change => resolveChangeElement(change, getLookUpName))
     .toArray()
 
-  const fetchProfile = buildFetchProfile({ fetchParams: {} })
+  const fetchProfile = buildFetchProfile({
+    fetchParams: {
+      optionalFeatures: {
+        // Needed to remove related instances of custom objects (e.g - layouts, sharing rules, etc...)
+        performSideEffectDeletes: true,
+      },
+    },
+  })
   const filterRunner = filter.filtersRunner(
     {
       // TODO: This is a hack that we want to replace with something more type-safe in the near future

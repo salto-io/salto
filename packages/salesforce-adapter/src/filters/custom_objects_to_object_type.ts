@@ -967,18 +967,20 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         originalChangeMapping[name].filter(isObjectTypeChange).some(isRemovalChange),
       )
 
-      const sideEffectRemovalsByObject = await groupByAsync(
-        (await awu(changes).filter(isSideEffectRemoval(removedCustomObjectNames)).toArray()) as Change[],
-        async c => (await getParentCustomObjectName(c)) ?? '',
-      )
+      if (!config.fetchProfile.isFeatureEnabled('performSideEffectDeletes')) {
+        const sideEffectRemovalsByObject = await groupByAsync(
+          (await awu(changes).filter(isSideEffectRemoval(removedCustomObjectNames)).toArray()) as Change[],
+          async c => (await getParentCustomObjectName(c)) ?? '',
+        )
 
-      if (!_.isEmpty(sideEffectRemovalsByObject)) {
-        // Store the changes we are about to remove in the original changes so we will restore
-        // them if the custom object is deleted successfully
-        Object.entries(sideEffectRemovalsByObject).forEach(([objectName, sideEffects]) => {
-          originalChangeMapping[objectName].push(...sideEffects)
-        })
-        await removeAsync(changes, isSideEffectRemoval(removedCustomObjectNames))
+        if (!_.isEmpty(sideEffectRemovalsByObject)) {
+          // Store the changes we are about to remove in the original changes so we will restore
+          // them if the custom object is deleted successfully
+          Object.entries(sideEffectRemovalsByObject).forEach(([objectName, sideEffects]) => {
+            originalChangeMapping[objectName].push(...sideEffects)
+          })
+          await removeAsync(changes, isSideEffectRemoval(removedCustomObjectNames))
+        }
       }
 
       // Remove all the non-deployable custom object changes from the original list and replace them

@@ -179,9 +179,9 @@ const queryDeps = async ({
             // A single Element has more than maxResponseSize dependencies
             if (chunkSize === 1) {
               errorIds.add(idsChunk[0])
-            } else {
-              return chunkedQuery(idsChunk, Math.ceil(idsChunk.length / 2))
+              return []
             }
+            return chunkedQuery(idsChunk, Math.ceil(idsChunk.length / 2))
           }
           return allRecords.map(rec => ({
             from: {

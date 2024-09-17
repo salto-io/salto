@@ -46,6 +46,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   indexedEmailTemplateAttachments: false,
   skipParsingXmlNumbers: false,
   logDiffsFromParsingXmlNumbers: true,
+  performSideEffectDeletes: false,
 }
 
 type BuildFetchProfileParams = {

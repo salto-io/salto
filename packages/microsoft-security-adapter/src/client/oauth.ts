@@ -5,7 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import axios from 'axios'
+import { logger } from '@salto-io/logging'
 import {
   InstanceElement,
   OAuthMethod,
@@ -22,12 +24,15 @@ import {
   SCOPE_MAPPING,
 } from '../auth'
 
+const log = logger(module)
+
 const extractServicesToManageFromInputAsArray = (userInput: Values): AvailableMicrosoftSecurityServices[] =>
-  AVAILABLE_MICROSOFT_SECURITY_SERVICES.filter(service => userInput[service])
+  AVAILABLE_MICROSOFT_SECURITY_SERVICES.filter(service => userInput[service] === true)
 
 export const getOAuthRequiredScopes = (userInput: Values): string => {
   const servicesToManage = extractServicesToManageFromInputAsArray(userInput)
   const scopes = servicesToManage.flatMap(service => SCOPE_MAPPING[service])
+  log.trace('Using scopes %s for services %s', scopes, servicesToManage)
   return [...new Set([...BASIC_OAUTH_REQUIRED_SCOPES, ...scopes])].join(' ')
 }
 
@@ -37,13 +42,7 @@ export const getAuthenticationBaseUrl = (tenantId: string): string =>
 const getRedirectUri = (port: number): string => `http://localhost:${port}/extract`
 
 const extractServicesToManageFromInputAsObject = (userInput: Values): MicrosoftServicesToManage =>
-  AVAILABLE_MICROSOFT_SECURITY_SERVICES.reduce(
-    (acc, service) => ({
-      ...acc,
-      [service]: userInput[service],
-    }),
-    {} as MicrosoftServicesToManage,
-  )
+  _.pick(userInput, AVAILABLE_MICROSOFT_SECURITY_SERVICES)
 
 export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
   const { tenantId, clientId, port } = userInput.value

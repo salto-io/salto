@@ -118,15 +118,11 @@ export const credentialsType = createMatchingObjectType<Credentials>({
     servicesToManage: {
       refType: new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'servicesToManage'),
-        fields: AVAILABLE_MICROSOFT_SECURITY_SERVICES.reduce(
-          (fields, service) => ({
-            ...fields,
-            [service]: {
-              refType: BuiltinTypes.BOOLEAN,
-              annotations: { message: `Manage ${service}?` },
-            },
-          }),
-          {},
+        fields: Object.fromEntries(
+          AVAILABLE_MICROSOFT_SECURITY_SERVICES.map(service => [
+            service,
+            { refType: BuiltinTypes.BOOLEAN, annotations: { message: `Manage ${service}?` } },
+          ]),
         ),
       }),
       annotations: { _required: true, message: 'List of Microsoft Security services to manage' },

@@ -16,7 +16,7 @@ import { MicrosoftServicesToManage } from '../../../auth'
 const createCustomizations = (
   servicesToManage: MicrosoftServicesToManage,
 ): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  ...createEntraCustomizations({ entraExtended: servicesToManage.Entra }),
+  ...createEntraCustomizations({ entraExtended: Boolean(servicesToManage.Entra) }),
   ...(servicesToManage.Intune ? createIntuneCustomizations() : {}),
 })
 

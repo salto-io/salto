@@ -13,9 +13,20 @@ import {
   OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import { AvailableMicrosoftSecurityServices, BASIC_OAUTH_REQUIRED_SCOPES, Credentials, SCOPE_MAPPING } from '../auth'
+import {
+  AVAILABLE_MICROSOFT_SECURITY_SERVICES,
+  AvailableMicrosoftSecurityServices,
+  BASIC_OAUTH_REQUIRED_SCOPES,
+  Credentials,
+  MicrosoftServicesToManage,
+  SCOPE_MAPPING,
+} from '../auth'
 
-export const getOAuthRequiredScopes = (servicesToManage: AvailableMicrosoftSecurityServices[]): string => {
+const extractServicesToManageFromInputAsArray = (userInput: Values): AvailableMicrosoftSecurityServices[] =>
+  AVAILABLE_MICROSOFT_SECURITY_SERVICES.filter(service => userInput[service])
+
+export const getOAuthRequiredScopes = (userInput: Values): string => {
+  const servicesToManage = extractServicesToManageFromInputAsArray(userInput)
   const scopes = servicesToManage.flatMap(service => SCOPE_MAPPING[service])
   return [...new Set([...BASIC_OAUTH_REQUIRED_SCOPES, ...scopes])].join(' ')
 }
@@ -25,21 +36,24 @@ export const getAuthenticationBaseUrl = (tenantId: string): string =>
 
 const getRedirectUri = (port: number): string => `http://localhost:${port}/extract`
 
-const getServicesToManageFromResponse = (response: Values): AvailableMicrosoftSecurityServices[] =>
-  Object.entries(response)
-    .filter(([, shouldManage]) => shouldManage)
-    .map(([serviceName]) => serviceName as AvailableMicrosoftSecurityServices)
+const extractServicesToManageFromInputAsObject = (userInput: Values): MicrosoftServicesToManage =>
+  AVAILABLE_MICROSOFT_SECURITY_SERVICES.reduce(
+    (acc, service) => ({
+      ...acc,
+      [service]: userInput[service],
+    }),
+    {} as MicrosoftServicesToManage,
+  )
 
 export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { tenantId, clientId, clientSecret: _clientSecret, port, ...servicesToManageResponse } = userInput.value
-  const baseUrl = getAuthenticationBaseUrl(tenantId)
-  const redirectUri = getRedirectUri(port)
-  const servicesToManage = getServicesToManageFromResponse(servicesToManageResponse)
-  if (servicesToManage.length === 0) {
+  const { tenantId, clientId, port } = userInput.value
+  if (extractServicesToManageFromInputAsArray(userInput.value).length === 0) {
     throw new Error('At least one service should be selected to be managed by Salto')
   }
-  const scope = `offline_access ${getOAuthRequiredScopes(servicesToManage)}`
+
+  const baseUrl = getAuthenticationBaseUrl(tenantId)
+  const redirectUri = getRedirectUri(port)
+  const scope = `offline_access ${getOAuthRequiredScopes(userInput.value)}`
   const url = `${baseUrl}/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`
 
   return {
@@ -52,19 +66,18 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
   input: Values,
   response: OauthAccessTokenResponse,
 ): Promise<Credentials> => {
-  const { tenantId, clientId, clientSecret, port, ...servicesToManageResponse } = input
+  const { tenantId, clientId, clientSecret, port } = input
   const { code } = response.fields
   const httpClient = axios.create({
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
   })
-  const servicesToManage = getServicesToManageFromResponse(servicesToManageResponse)
   const data = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
     redirect_uri: getRedirectUri(port),
-    scope: getOAuthRequiredScopes(servicesToManage),
+    scope: getOAuthRequiredScopes(input),
     grant_type: 'authorization_code',
     code,
   })
@@ -75,6 +88,6 @@ export const createFromOauthResponse: OAuthMethod['createFromOauthResponse'] = a
     clientId,
     clientSecret,
     refreshToken,
-    servicesToManage,
+    servicesToManage: extractServicesToManageFromInputAsObject(input),
   }
 }

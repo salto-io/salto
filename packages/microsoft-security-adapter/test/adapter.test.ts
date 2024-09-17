@@ -23,7 +23,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
-import { AvailableMicrosoftSecurityServices, credentialsType } from '../src/auth'
+import { credentialsType, MicrosoftServicesToManage } from '../src/auth'
 
 type MockReply = {
   url: string
@@ -55,7 +55,7 @@ describe('Microsoft Security adapter', () => {
   })
 
   describe('fetch', () => {
-    const setup = async (servicesToManage: AvailableMicrosoftSecurityServices[]): Promise<FetchResult> =>
+    const setup = async (servicesToManage: MicrosoftServicesToManage): Promise<FetchResult> =>
       adapter
         .operations({
           credentials: new InstanceElement('config', credentialsType, {
@@ -73,7 +73,7 @@ describe('Microsoft Security adapter', () => {
     describe('full', () => {
       let elements: Element[]
       beforeEach(async () => {
-        ;({ elements } = await setup(['Entra', 'Intune']))
+        ;({ elements } = await setup({ Entra: true, Intune: true }))
       })
 
       it('should generate the right elements on fetch', async () => {
@@ -787,7 +787,7 @@ describe('Microsoft Security adapter', () => {
     describe('Entra', () => {
       let elements: Element[]
       beforeEach(async () => {
-        ;({ elements } = await setup(['Entra']))
+        ;({ elements } = await setup({ Entra: true, Intune: false }))
       })
 
       it('should generate the right elements on fetch', async () => {
@@ -820,7 +820,7 @@ describe('Microsoft Security adapter', () => {
     describe('Intune', () => {
       let elements: Element[]
       beforeEach(async () => {
-        ;({ elements } = await setup(['Intune']))
+        ;({ elements } = await setup({ Entra: false, Intune: true }))
       })
 
       it('should generate the right elements on fetch', async () => {

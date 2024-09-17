@@ -11,14 +11,14 @@ import { ADAPTER_NAME } from './constants'
 
 export const AVAILABLE_MICROSOFT_SECURITY_SERVICES = ['Entra', 'Intune'] as const
 export type AvailableMicrosoftSecurityServices = (typeof AVAILABLE_MICROSOFT_SECURITY_SERVICES)[number]
-export type MicrosoftServicesToManage = Record<AvailableMicrosoftSecurityServices, boolean>
+export type MicrosoftServicesToManage = Partial<Record<AvailableMicrosoftSecurityServices, boolean>>
 
 export type OauthRequestParameters = {
   tenantId: string
   clientId: string
   clientSecret: string
   port: number
-} & MicrosoftServicesToManage
+} & Required<MicrosoftServicesToManage>
 
 export type Credentials = Omit<OauthRequestParameters, 'port' | AvailableMicrosoftSecurityServices> & {
   refreshToken: string

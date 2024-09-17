@@ -30,7 +30,7 @@ describe('OAuth client', () => {
   describe(`${getOAuthRequiredScopes}`, () => {
     describe('when all services are requested', () => {
       it('should return all scopes', () => {
-        const scopes = getOAuthRequiredScopes(['Entra', 'Intune'])
+        const scopes = getOAuthRequiredScopes({ Entra: true, Intune: true })
         // Basic scopes
         expect(scopes).toContain('Group.ReadWrite.All')
         // Entra scopes sample
@@ -42,7 +42,7 @@ describe('OAuth client', () => {
 
     describe('when only entra is requested', () => {
       it('should return only entra scopes', () => {
-        const scopes = getOAuthRequiredScopes(['Entra'])
+        const scopes = getOAuthRequiredScopes({ Entra: true, Intune: false })
         // Basic scopes
         expect(scopes).toContain('Group.ReadWrite.All')
         // Entra scopes sample
@@ -53,7 +53,7 @@ describe('OAuth client', () => {
 
     describe('when only intune is requested', () => {
       it('should return only intune scopes', () => {
-        const scopes = getOAuthRequiredScopes(['Intune'])
+        const scopes = getOAuthRequiredScopes({ Entra: false, Intune: true })
         // Basic scopes
         expect(scopes).toContain('Group.ReadWrite.All')
         // Intune scopes sample
@@ -124,7 +124,7 @@ describe('OAuth client', () => {
         clientId: 'clientId',
         clientSecret: 'clientSecret',
         refreshToken: 'refresh_token',
-        servicesToManage: ['Entra'],
+        servicesToManage: { Entra: true, Intune: false },
       })
     })
   })

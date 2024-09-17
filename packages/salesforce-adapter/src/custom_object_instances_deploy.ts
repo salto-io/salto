@@ -131,14 +131,12 @@ const logErroredInstances = (instancesAndResults: InstanceAndResult[], errorType
 const getErrorInstancesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] =>
   instancesAndResults.flatMap(({ instance, result }) =>
     values.isDefined(result.errors)
-      ? result.errors.filter(Boolean).map(
-          (error: string) =>
-            ({
-              elemID: instance.elemID,
-              message: error,
-              severity: 'Error',
-            }) as SaltoElementError,
-        )
+      ? result.errors.filter(Boolean).map((error: string) => ({
+          elemID: instance.elemID,
+          message: error,
+          detailedMessage: error,
+          severity: 'Error',
+        }))
       : [],
   )
 

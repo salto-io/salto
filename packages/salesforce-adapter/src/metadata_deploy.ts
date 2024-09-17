@@ -418,9 +418,7 @@ export const validateChanges = async (
 
   const [invalidChanges, validChanges] = _.partition(changesAndValidation, ({ error }) => isDefined(error))
 
-  const errors = invalidChanges
-    .filter(change => isDefined(change.error))
-    .map(({ error }) => error) as SaltoElementError[]
+  const errors = invalidChanges.map(({ error }) => error).filter(isDefined)
 
   return {
     // We can cast to MetadataInstanceElement here because we will have an error for changes that

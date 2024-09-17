@@ -35,7 +35,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   importantValues: true,
   hideTypesFolder: true,
   omitStandardFieldsNonDeployableValues: true,
-  latestSupportedApiVersion: false,
   metaTypes: false,
   cpqRulesAndConditionsRefs: true,
   flowCoordinates: false,

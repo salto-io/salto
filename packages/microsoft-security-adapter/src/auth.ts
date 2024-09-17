@@ -5,23 +5,24 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { BuiltinTypes, ElemID, ListType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from './constants'
 
 export const AVAILABLE_MICROSOFT_SECURITY_SERVICES = ['Entra', 'Intune'] as const
 export type AvailableMicrosoftSecurityServices = (typeof AVAILABLE_MICROSOFT_SECURITY_SERVICES)[number]
+export type MicrosoftServicesToManage = Record<AvailableMicrosoftSecurityServices, boolean>
 
 export type OauthRequestParameters = {
   tenantId: string
   clientId: string
   clientSecret: string
   port: number
-} & Record<AvailableMicrosoftSecurityServices, boolean>
+} & MicrosoftServicesToManage
 
 export type Credentials = Omit<OauthRequestParameters, 'port' | AvailableMicrosoftSecurityServices> & {
   refreshToken: string
-  servicesToManage: AvailableMicrosoftSecurityServices[]
+  servicesToManage: MicrosoftServicesToManage
 }
 
 export const BASIC_OAUTH_REQUIRED_SCOPES = ['Group.ReadWrite.All']
@@ -115,7 +116,19 @@ export const credentialsType = createMatchingObjectType<Credentials>({
       annotations: { _required: true, message: 'Refresh Token' },
     },
     servicesToManage: {
-      refType: new ListType(BuiltinTypes.STRING),
+      refType: new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'servicesToManage'),
+        fields: AVAILABLE_MICROSOFT_SECURITY_SERVICES.reduce(
+          (fields, service) => ({
+            ...fields,
+            [service]: {
+              refType: BuiltinTypes.BOOLEAN,
+              annotations: { message: `Manage ${service}?` },
+            },
+          }),
+          {},
+        ),
+      }),
       annotations: { _required: true, message: 'List of Microsoft Security services to manage' },
     },
   },

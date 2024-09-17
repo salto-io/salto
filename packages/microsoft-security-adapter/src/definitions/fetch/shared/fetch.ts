@@ -11,17 +11,17 @@ import { Options } from '../../types'
 import { DEFAULT_FIELD_CUSTOMIZATIONS, DEFAULT_ID_PARTS } from './defaults'
 import { createEntraCustomizations } from '../entra/fetch'
 import { createIntuneCustomizations } from '../intune/fetch'
-import { AvailableMicrosoftSecurityServices } from '../../../auth'
+import { MicrosoftServicesToManage } from '../../../auth'
 
 const createCustomizations = (
-  servicesToManage: AvailableMicrosoftSecurityServices[],
+  servicesToManage: MicrosoftServicesToManage,
 ): Record<string, definitions.fetch.InstanceFetchApiDefinitions<Options>> => ({
-  ...createEntraCustomizations({ entraExtended: servicesToManage.includes('Entra') }),
-  ...(servicesToManage.includes('Intune') ? createIntuneCustomizations() : {}),
+  ...createEntraCustomizations({ entraExtended: servicesToManage.Entra }),
+  ...(servicesToManage.Intune ? createIntuneCustomizations() : {}),
 })
 
 export const createFetchDefinitions = (
-  servicesToManage: AvailableMicrosoftSecurityServices[],
+  servicesToManage: MicrosoftServicesToManage,
 ): definitions.fetch.FetchApiDefinitions<Options> => ({
   instances: {
     default: {

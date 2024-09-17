@@ -834,6 +834,9 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceConfigurationSettingCatalog',
           'IntuneFilter',
           'IntunePlatformScriptLinux',
+          'IntunePlatformScriptMacOS',
+          'IntunePlatformScriptWindows',
+          'IntuneScopeTag',
         ])
       })
     })

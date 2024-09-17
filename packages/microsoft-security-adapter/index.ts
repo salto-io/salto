@@ -7,4 +7,5 @@
  */
 
 export { adapter } from './src/adapter_creator'
-export { OAUTH_REQUIRED_SCOPES } from './src/client/oauth'
+export { OAUTH_REQUIRED_SCOPES } from './src/auth'
+export { getOAuthRequiredScopes } from './src/client/oauth'

@@ -10,6 +10,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {
   Element,
+  FetchResult,
   InstanceElement,
   isInstanceElement,
   ObjectType,
@@ -20,9 +21,9 @@ import {
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import { credentialsType } from '../src/client/oauth'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
+import { credentialsType, MicrosoftServicesToManage } from '../src/auth'
 
 type MockReply = {
   url: string
@@ -54,21 +55,25 @@ describe('Microsoft Security adapter', () => {
   })
 
   describe('fetch', () => {
+    const setup = async (servicesToManage: MicrosoftServicesToManage): Promise<FetchResult> =>
+      adapter
+        .operations({
+          credentials: new InstanceElement('config', credentialsType, {
+            tenantId: 'testTenantId',
+            clientId: 'testClientId',
+            clientSecret: 'testClient',
+            refreshToken: 'testRefreshToken',
+            servicesToManage,
+          }),
+          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+        .fetch({ progressReporter: { reportProgress: () => null } })
+
     describe('full', () => {
       let elements: Element[]
       beforeEach(async () => {
-        ;({ elements } = await adapter
-          .operations({
-            credentials: new InstanceElement('config', credentialsType, {
-              tenantId: 'testTenantId',
-              clientId: 'testClientId',
-              clientSecret: 'testClient',
-              refreshToken: 'testRefreshToken',
-            }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-          .fetch({ progressReporter: { reportProgress: () => null } }))
+        ;({ elements } = await setup({ Entra: true, Intune: true }))
       })
 
       it('should generate the right elements on fetch', async () => {
@@ -776,6 +781,63 @@ describe('Microsoft Security adapter', () => {
             })
           })
         })
+      })
+    })
+
+    describe('Entra', () => {
+      let elements: Element[]
+      beforeEach(async () => {
+        ;({ elements } = await setup({ Entra: true, Intune: false }))
+      })
+
+      it('should generate the right elements on fetch', async () => {
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
+          'EntraAdministrativeUnit',
+          'EntraAppRole',
+          'EntraApplication',
+          'EntraAuthenticationMethodPolicy',
+          'EntraAuthenticationMethodPolicy__authenticationMethodConfigurations',
+          'EntraAuthenticationStrengthPolicy',
+          'EntraConditionalAccessPolicy',
+          'EntraConditionalAccessPolicyNamedLocation',
+          'EntraCrossTenantAccessPolicy',
+          'EntraCustomSecurityAttributeDefinition',
+          'EntraCustomSecurityAttributeDefinition__allowedValues',
+          'EntraCustomSecurityAttributeSet',
+          'EntraDirectoryRoleTemplate',
+          'EntraDomain',
+          'EntraGroup',
+          'EntraGroupLifeCyclePolicy',
+          'EntraGroup__appRoleAssignments',
+          'EntraOauth2PermissionGrant',
+          'EntraPermissionGrantPolicy',
+          'EntraRoleDefinition',
+          'EntraServicePrincipal',
+        ])
+      })
+    })
+
+    describe('Intune', () => {
+      let elements: Element[]
+      beforeEach(async () => {
+        ;({ elements } = await setup({ Entra: false, Intune: true }))
+      })
+
+      it('should generate the right elements on fetch', async () => {
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
+          'EntraGroup',
+          'IntuneApplication',
+          'IntuneApplicationConfigurationManagedApp',
+          'IntuneApplicationConfigurationManagedDevice',
+          'IntuneDeviceCompliance',
+          'IntuneDeviceConfiguration',
+          'IntuneDeviceConfigurationSettingCatalog',
+          'IntuneFilter',
+          'IntunePlatformScriptLinux',
+          'IntunePlatformScriptMacOS',
+          'IntunePlatformScriptWindows',
+          'IntuneScopeTag',
+        ])
       })
     })
   })

@@ -65,6 +65,8 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   USER_SCHEMA_TYPE_NAME,
+  EMAIL_TEMPLATE_TYPE_NAME,
+  EMAIL_CUSTOMIZATION_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -518,13 +520,35 @@ describe('adapter', () => {
   describe('deploy', () => {
     let operations: AdapterOperations
 
-    let brandType: ObjectType
-    let brand1: InstanceElement
     let appType: ObjectType
     let groupType: ObjectType
     let orgSettingType: ObjectType
     let userTypeType: ObjectType
     let userSchemaType: ObjectType
+    const emailTemplateType = new ObjectType({
+      elemID: new ElemID(OKTA, EMAIL_TEMPLATE_TYPE_NAME),
+      fields: {
+        name: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+        brandId: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+      },
+    })
+    const brandType = new ObjectType({
+      elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
+      fields: {
+        id: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+      },
+    })
+    const brand1 = new InstanceElement('brand1', brandType, {
+      id: 'brand-fakeid1',
+      name: 'subdomain.example.com',
+      removePoweredByOkta: false,
+    })
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -541,20 +565,6 @@ describe('adapter', () => {
         }),
         config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
         elementsSource: buildElementsSourceFromElements([orgSetting]),
-      })
-
-      brandType = new ObjectType({
-        elemID: new ElemID(OKTA, BRAND_TYPE_NAME),
-        fields: {
-          id: {
-            refType: BuiltinTypes.SERVICE_ID,
-          },
-        },
-      })
-      brand1 = new InstanceElement('brand1', brandType, {
-        id: 'brand-fakeid1',
-        name: 'subdomain.example.com',
-        removePoweredByOkta: false,
       })
       appType = new ObjectType({
         elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
@@ -2652,6 +2662,176 @@ describe('adapter', () => {
         })
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy email template', () => {
+      it('should successfully add an email template', async () => {
+        loadMockReplies('email_template_add.json')
+        const emailTemplate = new InstanceElement(
+          'emailTemplate',
+          emailTemplateType,
+          {
+            name: 'ForgotPassword',
+            settings: {
+              recipients: 'ADMINS_ONLY',
+            },
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: emailTemplate.elemID.getFullName(),
+            changes: [toChange({ after: emailTemplate })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('ForgotPassword')
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.brandId).toEqual(
+          'brand-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an email template', async () => {
+        loadMockReplies('email_template_modify.json')
+        const emailTemplate = new InstanceElement(
+          'emailTemplate',
+          emailTemplateType,
+          {
+            name: 'ForgotPassword',
+            settings: { recipients: 'ALL_USERS' },
+          },
+          undefined,
+          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)] },
+        )
+        const updatedEmailTemplate = emailTemplate.clone()
+        updatedEmailTemplate.value.settings.recipients = 'ADMINS_ONLY'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: emailTemplate.elemID.getFullName(),
+            changes: [toChange({ before: emailTemplate, after: updatedEmailTemplate })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.settings.recipients).toEqual(
+          'ADMINS_ONLY',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy email customization', () => {
+      const emailCustomizationType = new ObjectType({
+        elemID: new ElemID(OKTA, EMAIL_CUSTOMIZATION_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      const emailTemplateParent = new InstanceElement(
+        'FORGOT_PASSWORD',
+        emailTemplateType,
+        {
+          id: 'emailtemplate-fakeid1',
+          brandId: 'brand-fakeid1',
+          name: 'ForgotPassword',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)] },
+      )
+
+      it('should successfully add an email customization', async () => {
+        loadMockReplies('email_customization_add.json')
+        const emailCustomization = new InstanceElement(
+          'emailCustomization',
+          emailCustomizationType,
+          {
+            language: 'ja',
+            isDefault: true,
+            subject: 'Konichiwa',
+            // eslint-disable-next-line no-template-curly-in-string
+            body: '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html>\n<head>\n    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n</head>\n<body>\n<div style="background-color: ${brand.theme.secondaryColor}; margin: 0">\n    <table style="font-family: \'Proxima Nova\', \'Century Gothic\', Arial, Verdana, sans-serif; font-size: 14px; color: #5e5e5e; width:98%; max-width: 600px; float: none; margin: 0 auto;" border="0" cellpadding="0" cellspacing="0" valign="top" align="left">\n        <tr align="middle"><td style="padding-top: 30px; padding-bottom: 32px;"><img src="${brand.theme.logo}" height="37"></td></tr>\n        <tr bgcolor="#ffffff"><td>\n            <table bgcolor="#ffffff" style="width: 100%; line-height: 20px; padding: 32px; border: 2px solid; border-color: #f0f0f0;" cellpadding="0">\n                <tr>\n                    <td style="color: #5e5e5e; font-size: 22px; line-height: 22px;">\n                        ${org.name} - Okta\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u30ea\u30bb\u30c3\u30c8\u304c\u8981\u6c42\u3055\u308c\u307e\u3057\u305f\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px; vertical-align: bottom;">\n                        \u3053\u3093\u306b\u3061\u306f\u3001$!{StringTool.escapeHtml($!{user.profile.firstName})} \u3055\u3093\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        \u3042\u306a\u305f\u306eOkta\u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u5bfe\u3057\u3066\u3001\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u30ea\u30bb\u30c3\u30c8\u304c\u8981\u6c42\u3055\u308c\u307e\u3057\u305f\u3002\u3053\u306e\u8981\u6c42\u3092\u3057\u3066\u3044\u306a\u3044\u5834\u5408\u306f\u3001\u3059\u3050\u306b\u30b7\u30b9\u30c6\u30e0\u7ba1\u7406\u8005\u306b\u3054\u9023\u7d61\u304f\u3060\u3055\u3044\u3002\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        \u30e6\u30fc\u30b6\u30fc\u540d ${user.profile.login} \u306e\u30d1\u30b9\u30ef\u30fc\u30c9\u3092\u30ea\u30bb\u30c3\u30c8\u3059\u308b\u306b\u306f\u3001\u3053\u306e\u30ea\u30f3\u30af\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u304f\u3060\u3055\u3044 Konochwaaaaaa\uff1a\n                    </td>\n                </tr>\n                <tr>\n                    <td align="center">\n                        <table border="0" cellpadding="0" cellspacing="0" valign="top">\n                            <tr>\n                                <td align="center" style="height: 32px; padding-top: 24px; padding-bottom: 16px;">\n                                    <a id="reset-password-link" href="${resetPasswordLink}" style="text-decoration: none;"><span style="padding: 9px 32px 7px 31px; border: 1px solid; text-align: center; cursor: pointer; color: #fff; border-radius: 3px; background-color: ${brand.theme.primaryColor}; border-color: ${brand.theme.primaryColor}; box-shadow: 0 1px 0 ${brand.theme.primaryColor};">\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u30ea\u30bb\u30c3\u30c8</span></a>\n                                </td>\n                            </tr>\n                            <tr>\n                                <td align="center" style="color: #999;">\n                                    \u3053\u306e\u30ea\u30f3\u30af\u306f ${f.formatTimeDiffDateNowInUserLocale(${resetPasswordTokenExpirationDate})} \u3067\u5931\u52b9\u3057\u307e\u3059\u3002\n                                </td>\n                            </tr>\n                            #if(${oneTimePassword})\n                            <tr>\n                                <td align="center" style="padding-top: 16px;">\n                                    \u30ea\u30f3\u30af\u3092\u4f7f\u7528\u3067\u304d\u306a\u3044\u5834\u5408\u306f\u3001\u4ee3\u308f\u308a\u306b\u3053\u306e\u30b3\u30fc\u30c9\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\uff1a<b>${oneTimePassword}</b>\n                                </td>\n                            </tr>\n                            #end\n                        </table>\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        \u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u30a2\u30af\u30bb\u30b9\u3067\u304d\u306a\u3044\u5834\u5408\u306f\u3001\u7ba1\u7406\u8005\u306b\u30d8\u30eb\u30d7\u30ea\u30af\u30a8\u30b9\u30c8\u3092\u9001\u4fe1\u3057\u3066\u304f\u3060\u3055\u3044\uff1a\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        <a href="${baseURL}/help/login" style="color: #007dc1; text-decoration: none;"><span style="color: #007dc1; text-decoration: none;">\u30b5\u30a4\u30f3\u30a4\u30f3\u306e\u30d8\u30eb\u30d7</span></a>\u30da\u30fc\u30b8\u306b\u79fb\u52d5\u3057\u307e\u3059\u3002\u305d\u306e\u5f8c\u3067\u3001\u30d8\u30eb\u30d7\u8981\u8acb\u30ea\u30f3\u30af\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u304f\u3060\u3055\u3044\u3002\n                    </td>\n                </tr>\n            </table>\n        </td></tr>\n        <tr>\n            <td style="font-size: 12px; padding: 16px 0 30px 50px; color: #999;">\n                \u3053\u306e\u30e1\u30c3\u30bb\u30fc\u30b8\u306f\u3001<a href="https://www.okta.com" style="color: rgb(97,97,97);">Okta</a>\u306b\u3088\u308a\u81ea\u52d5\u7684\u306b\u751f\u6210\u3055\u308c\u305f\u3082\u306e\u3067\u3059\u3002\u3053\u306e\u30e1\u30fc\u30eb\u306b\u8fd4\u4fe1\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002\n            </td>\n        </tr>\n    </table>\n</div>\n</body>\n</html>\n',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(emailTemplateParent.elemID, emailTemplateParent)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: emailCustomization.elemID.getFullName(),
+            changes: [toChange({ after: emailCustomization })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'emailcustomization-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify an email customization', async () => {
+        loadMockReplies('email_customization_modify.json')
+        const emailCustomization = new InstanceElement(
+          'emailCustomization',
+          emailCustomizationType,
+          {
+            id: 'emailcustomization-fakeid1',
+            subject: 'Konichiwa',
+            // eslint-disable-next-line no-template-curly-in-string
+            body: '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html>\n<head>\n    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n</head>\n<body>\n<div style="background-color: ${brand.theme.secondaryColor}; margin: 0">\n    <table style="font-family: \'Proxima Nova\', \'Century Gothic\', Arial, Verdana, sans-serif; font-size: 14px; color: #5e5e5e; width:98%; max-width: 600px; float: none; margin: 0 auto;" border="0" cellpadding="0" cellspacing="0" valign="top" align="left">\n        <tr align="middle"><td style="padding-top: 30px; padding-bottom: 32px;"><img src="${brand.theme.logo}" height="37"></td></tr>\n        <tr bgcolor="#ffffff"><td>\n            <table bgcolor="#ffffff" style="width: 100%; line-height: 20px; padding: 32px; border: 2px solid; border-color: #f0f0f0;" cellpadding="0">\n                <tr>\n                    <td style="color: #5e5e5e; font-size: 22px; line-height: 22px;">\n                        ${org.name} - Okta\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u30ea\u30bb\u30c3\u30c8\u304c\u8981\u6c42\u3055\u308c\u307e\u3057\u305f\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px; vertical-align: bottom;">\n                        \u3053\u3093\u306b\u3061\u306f\u3001$!{StringTool.escapeHtml($!{user.profile.firstName})} \u3055\u3093\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        \u3042\u306a\u305f\u306eOkta\u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u5bfe\u3057\u3066\u3001\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u30ea\u30bb\u30c3\u30c8\u304c\u8981\u6c42\u3055\u308c\u307e\u3057\u305f\u3002\u3053\u306e\u8981\u6c42\u3092\u3057\u3066\u3044\u306a\u3044\u5834\u5408\u306f\u3001\u3059\u3050\u306b\u30b7\u30b9\u30c6\u30e0\u7ba1\u7406\u8005\u306b\u3054\u9023\u7d61\u304f\u3060\u3055\u3044\u3002\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        \u30e6\u30fc\u30b6\u30fc\u540d ${user.profile.login} \u306e\u30d1\u30b9\u30ef\u30fc\u30c9\u3092\u30ea\u30bb\u30c3\u30c8\u3059\u308b\u306b\u306f\u3001\u3053\u306e\u30ea\u30f3\u30af\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u304f\u3060\u3055\u3044 Konochwaaaaaa\uff1a\n                    </td>\n                </tr>\n                <tr>\n                    <td align="center">\n                        <table border="0" cellpadding="0" cellspacing="0" valign="top">\n                            <tr>\n                                <td align="center" style="height: 32px; padding-top: 24px; padding-bottom: 16px;">\n                                    <a id="reset-password-link" href="${resetPasswordLink}" style="text-decoration: none;"><span style="padding: 9px 32px 7px 31px; border: 1px solid; text-align: center; cursor: pointer; color: #fff; border-radius: 3px; background-color: ${brand.theme.primaryColor}; border-color: ${brand.theme.primaryColor}; box-shadow: 0 1px 0 ${brand.theme.primaryColor};">\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u30ea\u30bb\u30c3\u30c8</span></a>\n                                </td>\n                            </tr>\n                            <tr>\n                                <td align="center" style="color: #999;">\n                                    \u3053\u306e\u30ea\u30f3\u30af\u306f ${f.formatTimeDiffDateNowInUserLocale(${resetPasswordTokenExpirationDate})} \u3067\u5931\u52b9\u3057\u307e\u3059\u3002\n                                </td>\n                            </tr>\n                            #if(${oneTimePassword})\n                            <tr>\n                                <td align="center" style="padding-top: 16px;">\n                                    \u30ea\u30f3\u30af\u3092\u4f7f\u7528\u3067\u304d\u306a\u3044\u5834\u5408\u306f\u3001\u4ee3\u308f\u308a\u306b\u3053\u306e\u30b3\u30fc\u30c9\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\uff1a<b>${oneTimePassword}</b>\n                                </td>\n                            </tr>\n                            #end\n                        </table>\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        \u30a2\u30ab\u30a6\u30f3\u30c8\u306b\u30a2\u30af\u30bb\u30b9\u3067\u304d\u306a\u3044\u5834\u5408\u306f\u3001\u7ba1\u7406\u8005\u306b\u30d8\u30eb\u30d7\u30ea\u30af\u30a8\u30b9\u30c8\u3092\u9001\u4fe1\u3057\u3066\u304f\u3060\u3055\u3044\uff1a\n                    </td>\n                </tr>\n                <tr>\n                    <td style="padding-top: 24px;">\n                        <a href="${baseURL}/help/login" style="color: #007dc1; text-decoration: none;"><span style="color: #007dc1; text-decoration: none;">\u30b5\u30a4\u30f3\u30a4\u30f3\u306e\u30d8\u30eb\u30d7</span></a>\u30da\u30fc\u30b8\u306b\u79fb\u52d5\u3057\u307e\u3059\u3002\u305d\u306e\u5f8c\u3067\u3001\u30d8\u30eb\u30d7\u8981\u8acb\u30ea\u30f3\u30af\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u304f\u3060\u3055\u3044\u3002\n                    </td>\n                </tr>\n            </table>\n        </td></tr>\n        <tr>\n            <td style="font-size: 12px; padding: 16px 0 30px 50px; color: #999;">\n                \u3053\u306e\u30e1\u30c3\u30bb\u30fc\u30b8\u306f\u3001<a href="https://www.okta.com" style="color: rgb(97,97,97);">Okta</a>\u306b\u3088\u308a\u81ea\u52d5\u7684\u306b\u751f\u6210\u3055\u308c\u305f\u3082\u306e\u3067\u3059\u3002\u3053\u306e\u30e1\u30fc\u30eb\u306b\u8fd4\u4fe1\u3057\u306a\u3044\u3067\u304f\u3060\u3055\u3044\u3002\n            </td>\n        </tr>\n    </table>\n</div>\n</body>\n</html>\n',
+            language: 'ja',
+            isDefault: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(emailTemplateParent.elemID, emailTemplateParent)],
+          },
+        )
+        const updatedEmailCustomization = emailCustomization.clone()
+        updatedEmailCustomization.value.subject = 'Hello'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emailCustomization',
+            changes: [toChange({ before: emailCustomization, after: updatedEmailCustomization })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.subject).toEqual('Hello')
+      })
+      it('should successfully remove an email customization', async () => {
+        loadMockReplies('email_customization_remove.json')
+        const emailCustomization = new InstanceElement(
+          'emailCustomization',
+          emailCustomizationType,
+          {
+            id: 'emailcustomization-fakeid1',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(emailTemplateParent.elemID, emailTemplateParent)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emailCustomization',
+            changes: [toChange({ before: emailCustomization })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })

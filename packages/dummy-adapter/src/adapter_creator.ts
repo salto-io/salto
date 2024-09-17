@@ -20,7 +20,7 @@ import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-u
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
-import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
+import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, fetchErrorType } from './generator'
 
 const log = logger(module)
 
@@ -42,6 +42,7 @@ export const configType = new ObjectType({
     importantValuesFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
     templateExpressionFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
     templateStaticFileFreq: { refType: new ListType(BuiltinTypes.NUMBER) },
+    fetchErrors: { refType: new ListType(fetchErrorType) },
   },
 })
 

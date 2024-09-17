@@ -453,7 +453,6 @@ export const ArtificialTypes = {
 
 // Standard Object Types
 export const ORGANIZATION_SETTINGS = 'Organization'
-export const ORGANIZATION_API_VERSION = 'OrganizationApiVersion'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX =

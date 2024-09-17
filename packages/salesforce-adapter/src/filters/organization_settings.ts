@@ -11,7 +11,6 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID,
-  FieldDefinition,
   InstanceElement,
   ListType,
   ObjectType,
@@ -21,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FilterContext, RemoteFilterCreator } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
@@ -32,14 +31,7 @@ import {
   safeApiName,
 } from './utils'
 import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
-import {
-  API_NAME,
-  ORGANIZATION_API_VERSION,
-  ORGANIZATION_SETTINGS,
-  RECORDS_PATH,
-  SALESFORCE,
-  SETTINGS_PATH,
-} from '../constants'
+import { API_NAME, ORGANIZATION_SETTINGS, RECORDS_PATH, SALESFORCE, SETTINGS_PATH } from '../constants'
 import SalesforceClient from '../client/client'
 import { FetchProfile } from '../types'
 
@@ -122,32 +114,29 @@ const enrichTypeWithFields = async (
   }
 }
 
-const createOrganizationType = (config: FilterContext): ObjectType => {
-  const fieldDefinitions: Record<string, FieldDefinition> = {
-    [CUSTOM_OBJECTS_FIELD]: {
-      refType: new ListType(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    },
-    [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
-      refType: new MapType(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    },
-  }
-  if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
-    fieldDefinitions[LATEST_SUPPORTED_API_VERSION_FIELD] = {
-      refType: BuiltinTypes.NUMBER,
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    }
-  }
-  return new ObjectType({
+const createOrganizationType = (): ObjectType =>
+  new ObjectType({
     elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-    fields: fieldDefinitions,
+    fields: {
+      [LATEST_SUPPORTED_API_VERSION_FIELD]: {
+        refType: BuiltinTypes.NUMBER,
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+      },
+      [CUSTOM_OBJECTS_FIELD]: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+      },
+      [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
+        refType: new MapType(new ListType(BuiltinTypes.STRING)),
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+      },
+    },
     annotations: {
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
@@ -157,7 +146,6 @@ const createOrganizationType = (config: FilterContext): ObjectType => {
     isSettings: true,
     path: getTypePath(ORGANIZATION_SETTINGS),
   })
-}
 
 const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, objectType, _.pick(fieldValues, Object.keys(objectType.fields)), [
@@ -167,38 +155,12 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
     ORGANIZATION_SETTINGS_INSTANCE_NAME,
   ])
 
-const createOrganizationApiVersionElements = (): [ObjectType, InstanceElement] => {
-  const objectType = new ObjectType({
-    elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION),
-    fields: {
-      [LATEST_SUPPORTED_API_VERSION_FIELD]: {
-        refType: BuiltinTypes.NUMBER,
-      },
-    },
-    annotations: {
-      [CORE_ANNOTATIONS.HIDDEN]: true,
-      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      [CORE_ANNOTATIONS.UPDATABLE]: false,
-      [CORE_ANNOTATIONS.CREATABLE]: false,
-      [CORE_ANNOTATIONS.DELETABLE]: false,
-    },
-    isSettings: true,
-    path: getTypePath(ORGANIZATION_API_VERSION),
-  })
-
-  const instance = new InstanceElement(ElemID.CONFIG_NAME, objectType)
-
-  return [objectType, instance]
-}
-
 type AddLatestSupportedAPIVersionParams = {
   client: SalesforceClient
-  apiVersionInstance: InstanceElement
-  organizationInstance?: InstanceElement
+  organizationInstance: InstanceElement
 }
 const addLatestSupportedAPIVersion = async ({
   client,
-  apiVersionInstance,
   organizationInstance,
 }: AddLatestSupportedAPIVersionParams): Promise<void> => {
   const versions = await client.request('/services/data/')
@@ -217,11 +179,7 @@ const addLatestSupportedAPIVersion = async ({
     log.error('Could not get the latest supported API version.')
     return
   }
-
-  apiVersionInstance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
-  if (organizationInstance !== undefined) {
-    organizationInstance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
-  }
+  organizationInstance.value[LATEST_SUPPORTED_API_VERSION_FIELD] = latestVersion
 }
 
 const getCustomObjectLookupTypes = (customObject: ObjectType): string[] =>
@@ -262,7 +220,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async elements => {
-      const objectType = createOrganizationType(config)
+      const objectType = createOrganizationType()
       const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
       await enrichTypeWithFields(client, objectType, fieldsToIgnore, config.fetchProfile)
 
@@ -273,24 +231,16 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       }
 
       const organizationInstance = createOrganizationInstance(objectType, queryResult[0])
-
-      // TODO (SALTO-5978): Remove once we enable the optional feature.
-      const [apiVersionType, apiVersionInstance] = createOrganizationApiVersionElements()
-
-      const addLatestSupportedAPIVersionParams: AddLatestSupportedAPIVersionParams = {
+      await addLatestSupportedAPIVersion({
         client,
-        apiVersionInstance,
-      }
-      if (config.fetchProfile.isFeatureEnabled('latestSupportedApiVersion')) {
-        addLatestSupportedAPIVersionParams.organizationInstance = organizationInstance
-      }
-      await addLatestSupportedAPIVersion(addLatestSupportedAPIVersionParams)
+        organizationInstance,
+      })
       populateCustomObjects({
         elements: await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
         organizationInstance,
       })
 
-      elements.push(objectType, organizationInstance, apiVersionType, apiVersionInstance)
+      elements.push(objectType, organizationInstance)
     },
   }),
 })

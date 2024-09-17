@@ -114,7 +114,6 @@ export type OptionalFeatures = {
   importantValues?: boolean
   hideTypesFolder?: boolean
   omitStandardFieldsNonDeployableValues?: boolean
-  latestSupportedApiVersion?: boolean
   metaTypes?: boolean
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
@@ -817,7 +816,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
     omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
-    latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
     flowCoordinates: { refType: BuiltinTypes.BOOLEAN },

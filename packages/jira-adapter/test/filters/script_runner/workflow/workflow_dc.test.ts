@@ -160,13 +160,6 @@ describe('Scriptrunner DC Workflow', () => {
         await filterOff.onFetch([instance])
         expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES).toEqual(goodBase64)
       })
-      it('should fail if script not in json format', async () => {
-        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = goodBase64
-        await filter.onFetch([instance])
-        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual(
-          goodBase64,
-        )
-      })
       it('should delete empty fields', async () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES = ''
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = ''
@@ -218,6 +211,22 @@ describe('Scriptrunner DC Workflow', () => {
         instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES = goodBase64
         await filterOff.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_NOTES).toEqual(goodBase64)
+      })
+    })
+    describe('old format scripts', () => {
+      it('should format properly a script in plain text', async () => {
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = 'ABCD'
+        await filter.onFetch([instance])
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual({
+          script: 'ABCD',
+        })
+      })
+      it('should format properly a script in base64 without json', async () => {
+        instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION = goodBase64
+        await filter.onFetch([instance])
+        expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual({
+          script: 'demo string',
+        })
       })
     })
   })

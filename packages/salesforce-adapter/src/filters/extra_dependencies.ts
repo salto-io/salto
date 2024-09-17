@@ -176,7 +176,7 @@ const queryDeps = async ({
           )
           queriesExecuted += 1
           if (allRecords.length >= maxResponseSize) {
-            // A single Element has more than TOOLING_QUERY_MAX_RECORDS dependencies
+            // A single Element has more than maxResponseSize dependencies
             if (chunkSize === 1) {
               errorIds.add(idsChunk[0])
             } else {
@@ -202,7 +202,7 @@ const queryDeps = async ({
   if (errorIds.size > 0) {
     log.error(
       'Could not add all the dependencies on the following elements since they have more than %d dependencies: %s',
-      TOOLING_QUERY_MAX_RECORDS,
+      maxResponseSize,
       Array.from(errorIds)
         .map(id => elementsByMetadataComponentId[id]?.elemID.getFullName())
         .join(', '),

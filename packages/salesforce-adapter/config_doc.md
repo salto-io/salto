@@ -197,9 +197,9 @@ salesforce {
 
 ### Limits
 
-| Name                              | Default when undefined | Description                                                        |
-| --------------------------------- | ---------------------- | ------------------------------------------------------------------ |
-| maxExtraDependenciesQuerySize     | 500                    | Max size of each individual request in the extra depencies filter  |
+| Name                             | Default when undefined | Description                                                        |
+| -------------------------------- | ---------------------- | ------------------------------------------------------------------ |
+| maxExtraDependenciesQuerySize    | 500                    | Max size of each individual request in the extra depencies filter  |
 | maxExtraDependenciesResponseSize | 1950                   | Max size of each individual response in the extra depencies filter |
 
 ### Warning settings

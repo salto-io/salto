@@ -24,7 +24,7 @@ import {
   Element,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
+import { filter, inspectValue, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -36,7 +36,6 @@ import {
   apiName,
   Types,
   isMetadataObjectType,
-  MetadataObjectType,
   createInstanceElement,
   isCustom,
   MetadataMetaType,
@@ -418,17 +417,19 @@ export const SYSTEM_FIELDS = [
 
 export const UNSUPPORTED_SYSTEM_FIELDS = ['LastReferencedDate', 'LastViewedDate']
 
-const getMetadataTypesFromElementsSource = async (
+const getIncludedTypesFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource,
-): Promise<MetadataObjectType[]> =>
+  metadataQuery: MetadataQuery,
+): Promise<TypeElement[]> =>
   awu(await elementsSource.getAll())
     .filter(isMetadataObjectType)
     // standard and custom objects
     .filter(metadataType => !isCustomObjectSync(metadataType))
-    // custom types (CustomMetadata / CustomObject (non standard) / CustomSettings)
+    // custom types (CustomMetadata / CustomObject (non-standard) / CustomSettings)
     .filter(metadataType => !isCustomType(metadataType))
     // settings types
     .filter(metadataType => !metadataType.isSettings)
+    .filter(type => metadataQuery.isTypeMatch(apiNameSync(type) ?? ''))
     .toArray()
 
 type CreateFiltersRunnerParams = {
@@ -574,9 +575,13 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     ]
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
-    const metadataTypesPromise = withChangesDetection
-      ? getMetadataTypesFromElementsSource(this.elementsSource)
-      : this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
+    const metadataTypesPromise = this.fetchTypes({
+      metadataQuery,
+      withChangesDetection,
+      metadataTypeInfosPromise,
+      hardCodedTypes,
+      metadataMetaType,
+    })
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
 
@@ -746,6 +751,38 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     return (await this.client.listMetadataTypes()).filter(info => metadataQuery.isTypeMatch(info.xmlName))
   }
 
+  private async fetchTypes({
+    metadataQuery,
+    withChangesDetection,
+    metadataTypeInfosPromise,
+    hardCodedTypes,
+    metadataMetaType,
+  }: {
+    metadataQuery: MetadataQuery
+    withChangesDetection: boolean
+    metadataTypeInfosPromise: Promise<MetadataObject[]>
+    hardCodedTypes: TypeElement[]
+    metadataMetaType?: ObjectType
+  }): Promise<TypeElement[]> {
+    if (!withChangesDetection) {
+      return this.fetchMetadataTypes(metadataTypeInfosPromise, hardCodedTypes, metadataMetaType)
+    }
+    const metadataTypes = await metadataTypeInfosPromise
+    const includedTypesFromSource = await getIncludedTypesFromElementsSource(this.elementsSource, metadataQuery)
+    const includedTypesFromSourceNames = new Set(includedTypesFromSource.map(metadataType => apiNameSync(metadataType)))
+    const missingTypes = metadataTypes.filter(type => !includedTypesFromSourceNames.has(type.xmlName))
+    if (missingTypes.length === 0) {
+      return includedTypesFromSource
+    }
+    log.debug(
+      'Going to fetch the following metadata types in fetchWithChangesDetection: %s',
+      inspectValue(missingTypes.map(type => type.xmlName)),
+    )
+    return includedTypesFromSource.concat(
+      await this.fetchMetadataTypes(Promise.resolve(missingTypes), hardCodedTypes, metadataMetaType),
+    )
+  }
+
   @logDuration('fetching metadata types')
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
@@ -839,20 +876,18 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     }
   }
 
-  private async getElemIdsByTypeFromSource(): Promise<Record<string, ElemID[]>> {
+  private async getMetadataElementsByTypeFromSource(): Promise<Record<string, Element[]>> {
     const metadataElements = (await awu(await this.elementsSource.getAll()).toArray())
       .filter(element => !constants.NON_LISTED_ELEMENT_IDS.includes(element.elemID.getFullName()))
       .filter(element => isMetadataInstanceElementSync(element) || isCustomObjectSync(element))
-    return _(metadataElements)
-      .groupBy(metadataTypeSync)
-      .mapValues(elements => elements.map(e => e.elemID))
-      .value()
+    return _.groupBy(metadataElements, metadataTypeSync)
   }
 
   private async getDeletedMetadataForPartialFetch(
     fetchElements: ReadonlyArray<Element>,
     fetchProfile: FetchProfile,
   ): Promise<Required<PartialFetchData>['deletedElements']> {
+    const isTargetedFetch = fetchProfile.metadataQuery.isTargetedFetch()
     const createElemId = (type: ObjectType, fullName: string): ElemID => {
       const typeName = apiNameSync(type)
       return typeName === CUSTOM_OBJECT
@@ -864,34 +899,41 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       fetchElements.filter(isMetadataObjectType),
       type => apiNameSync(type) ?? 'unknown',
     )
-    const elemIdsByTypeFromSource = await this.getElemIdsByTypeFromSource()
+    const metadataElementsByTypeFromSource = await this.getMetadataElementsByTypeFromSource()
     const deletedElemIds = new Set<ElemID>()
-    Object.entries(elemIdsByTypeFromSource)
-      // We only want to check types that are included. This is especially relevant for targeted fetch
-      .filter(([typeName]) => fetchProfile.metadataQuery.isTypeMatch(typeName))
-      .forEach(([typeName, elemIdsFromSource]) => {
-        const metadataType = metadataTypesByName[typeName]
-        if (metadataType === undefined) {
-          log.warn('Skipping deletion detections for type %s since the metadata ObjectType was not found', typeName)
-          return
+    Object.entries(metadataElementsByTypeFromSource).forEach(([typeName, elementsFromSource]) => {
+      if (!fetchProfile.metadataQuery.isTypeMatch(typeName)) {
+        // Instances of Type that is not part of the fetch targets should not be handled
+        if (!isTargetedFetch) {
+          // Type was excluded, we should remove all of its Instances
+          elementsFromSource.forEach(elementFromSource => {
+            deletedElemIds.add(elementFromSource.elemID)
+          })
         }
-        const listedInstancesFullNames = this.client.listedInstancesByType.getOrUndefined(typeName)
-        if (listedInstancesFullNames === undefined) {
-          log.warn('Skipping deletion detections for type %s since the type was not listed', typeName)
-          return
-        }
-        const listedElemIdsFullNames = new Set(
-          Array.from(listedInstancesFullNames)
-            // We invoke createInstanceElement to have the correct elemID that we calculate in fetch
-            .map(fullName => createElemId(metadataType, fullName).getFullName()),
-        )
+        return
+      }
+      const metadataType = metadataTypesByName[typeName]
+      if (metadataType === undefined) {
+        log.warn('Skipping deletion detections for type %s since the metadata ObjectType was not found', typeName)
+        return
+      }
+      const listedInstancesFullNames = this.client.listedInstancesByType.getOrUndefined(typeName)
+      if (listedInstancesFullNames === undefined) {
+        log.warn('Skipping deletion detections for type %s since the type was not listed', typeName)
+        return
+      }
+      const listedElemIdsFullNames = new Set(
+        Array.from(listedInstancesFullNames)
+          // Create the correct elemID that we calculate in fetch
+          .map(fullName => createElemId(metadataType, fullName).getFullName()),
+      )
 
-        elemIdsFromSource.forEach(sourceElemId => {
-          if (!listedElemIdsFullNames.has(sourceElemId.getFullName())) {
-            deletedElemIds.add(sourceElemId)
-          }
-        })
+      elementsFromSource.forEach(elementFromSource => {
+        if (!listedElemIdsFullNames.has(elementFromSource.elemID.getFullName())) {
+          deletedElemIds.add(elementFromSource.elemID)
+        }
       })
+    })
     return Array.from(deletedElemIds)
   }
 

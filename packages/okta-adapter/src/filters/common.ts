@@ -14,6 +14,7 @@ import { FilterCreator } from '../filter'
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+  addAlias: filters.addAliasFilterCreator(),
   query: filters.queryFilterCreator({}),
 }
 

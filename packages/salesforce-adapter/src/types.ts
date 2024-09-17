@@ -126,6 +126,7 @@ export type OptionalFeatures = {
   indexedEmailTemplateAttachments?: boolean
   skipParsingXmlNumbers?: boolean
   logDiffsFromParsingXmlNumbers?: boolean
+  performSideEffectDeletes?: boolean
 }
 
 export type ChangeValidatorName =
@@ -828,6 +829,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
     skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
+    performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

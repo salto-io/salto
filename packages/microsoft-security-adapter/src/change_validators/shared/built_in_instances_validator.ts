@@ -13,7 +13,7 @@ import {
   isRemovalOrModificationChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { entraConstants } from '../../constants'
+import { entraConstants, intuneConstants } from '../../constants'
 
 type BuiltInIndicator = {
   fieldName: string
@@ -25,6 +25,10 @@ const POTENTIAL_BUILD_IN_TYPES: Record<string, BuiltInIndicator> = {
     value: 'builtIn',
   },
   [entraConstants.ROLE_DEFINITION_TYPE_NAME]: {
+    fieldName: 'isBuiltIn',
+    value: true,
+  },
+  [intuneConstants.SCOPE_TAG_TYPE_NAME]: {
     fieldName: 'isBuiltIn',
     value: true,
   },

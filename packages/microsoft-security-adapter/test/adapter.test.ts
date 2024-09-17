@@ -104,6 +104,7 @@ describe('Microsoft Security adapter', () => {
           'IntunePlatformScriptLinux',
           'IntunePlatformScriptMacOS',
           'IntunePlatformScriptWindows',
+          'IntuneScopeTag',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -185,6 +186,22 @@ describe('Microsoft Security adapter', () => {
               expect(applicationsWithoutAssignments).toHaveLength(5)
               expect(applicationsWithoutAssignments.every(e => e.value.assignments?.length === 0)).toBeTruthy()
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const applicationWithScopeTags = intuneApplications.find(
+                e => e.elemID.name === 'managedAndroidStoreApp_com_test@uv',
+              )
+              expect(applicationWithScopeTags).toBeDefined()
+              const { roleScopeTagIds } = (applicationWithScopeTags as InstanceElement).value
+              expect(roleScopeTagIds).toHaveLength(2)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual(
+                expect.arrayContaining([
+                  'microsoft_security.IntuneScopeTag.instance.Default',
+                  'microsoft_security.IntuneScopeTag.instance.test_scope_tag@s',
+                ]),
+              )
+            })
           })
 
           describe('application configurations - managed apps', () => {
@@ -234,6 +251,19 @@ describe('Microsoft Security adapter', () => {
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneApplicationConfiguration = intuneApplicationConfigurations[0]
+              const { roleScopeTagIds } = intuneApplicationConfiguration.value
+              expect(roleScopeTagIds).toHaveLength(2)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual(
+                expect.arrayContaining([
+                  'microsoft_security.IntuneScopeTag.instance.Default',
+                  'microsoft_security.IntuneScopeTag.instance.test_scope_tag@s',
+                ]),
               )
             })
           })
@@ -337,6 +367,19 @@ describe('Microsoft Security adapter', () => {
               const { assignments } = (intuneApplicationConfigurationWithoutAssignments as InstanceElement).value
               expect(assignments).toHaveLength(0)
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneApplicationConfiguration = intuneApplicationConfigurations.find(
+                e => e.elemID.name === 'test_android@s',
+              )
+              expect(intuneApplicationConfiguration).toBeDefined()
+              const { roleScopeTagIds } = (intuneApplicationConfiguration as InstanceElement).value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('device configurations', () => {
@@ -384,6 +427,19 @@ describe('Microsoft Security adapter', () => {
                 intuneDeviceConfigurationWithoutAssignments.every(e => e.value.assignments?.length === 0),
               ).toBeTruthy()
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneDeviceConfiguration = intuneDeviceConfigurations.find(
+                e => e.elemID.name === 'test_windows_health_monitoring@s',
+              )
+              expect(intuneDeviceConfiguration).toBeDefined()
+              const { roleScopeTagIds } = (intuneDeviceConfiguration as InstanceElement).value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('device configurations - setting catalog', () => {
@@ -422,6 +478,16 @@ describe('Microsoft Security adapter', () => {
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneDeviceConfigurationSettingCatalog = intuneDeviceConfigurationSettingCatalogs[0]
+              const { roleScopeTagIds } = intuneDeviceConfigurationSettingCatalog.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
             })
           })
 
@@ -476,6 +542,16 @@ describe('Microsoft Security adapter', () => {
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneDeviceCompliance = intuneDeviceCompliances[0]
+              const { roleScopeTagIds } = intuneDeviceCompliance.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('filter', () => {
@@ -498,6 +574,16 @@ describe('Microsoft Security adapter', () => {
 
             it("should not include 'payloads' field", async () => {
               expect(intuneFilters.every(e => !('payloads' in e.value))).toBeTruthy()
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneFilter = intuneFilters[0]
+              const { roleScopeTags } = intuneFilter.value
+              expect(roleScopeTags).toHaveLength(1)
+              expect(roleScopeTags.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTags.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
             })
           })
 
@@ -547,6 +633,16 @@ describe('Microsoft Security adapter', () => {
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              const { roleScopeTagIds } = platformScriptLinux.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('platform script windows', () => {
@@ -587,6 +683,16 @@ describe('Microsoft Security adapter', () => {
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { roleScopeTagIds } = platformScriptWindows.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('platform script macOS', () => {
@@ -626,6 +732,47 @@ describe('Microsoft Security adapter', () => {
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const platformScriptMacOS = platformScriptsMacOS[0]
+              const { roleScopeTagIds } = platformScriptMacOS.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
+
+          describe('scope tags', () => {
+            let scopeTags: InstanceElement[]
+            beforeEach(async () => {
+              scopeTags = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'IntuneScopeTag')
+            })
+
+            it('should create the correct instances for Intune scope tags', async () => {
+              expect(scopeTags).toHaveLength(2)
+
+              const scopeTagNames = scopeTags.map(e => e.elemID.name)
+              expect(scopeTagNames).toEqual(expect.arrayContaining(['Default', 'test_scope_tag@s']))
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const scopeTag = scopeTags.find(e => e.elemID.name === 'test_scope_tag@s') as InstanceElement
+              const { assignments } = scopeTag.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include assignments field as empty array when there are no assignments', async () => {
+              const scopeTag = scopeTags.find(e => e.elemID.name === 'Default') as InstanceElement
+              const { assignments } = scopeTag.value
+              expect(assignments).toHaveLength(0)
             })
           })
         })

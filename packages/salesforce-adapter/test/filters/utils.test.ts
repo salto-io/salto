@@ -1553,6 +1553,9 @@ describe('filter utils', () => {
             {
               metadataType: 'CustomObject',
             },
+            {
+              metadataType: 'TopicsForObjects',
+            },
           ])
         })
       })

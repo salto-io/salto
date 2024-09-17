@@ -21,6 +21,7 @@ import filterCreator, { createActiveVersionFileProperties } from '../../src/filt
 import * as filterModule from '../../src/filters/flows_filter'
 import {
   ACTIVE_VERSION_NUMBER,
+  APEX_CLASS_METADATA_TYPE,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
@@ -35,7 +36,8 @@ import * as fetchModule from '../../src/fetch'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
 import { SalesforceClient } from '../../index'
-import { apiNameSync, isInstanceOfTypeSync } from '../../src/filters/utils'
+import { apiNameSync, getMetadataIncludeFromFetchTargets, isInstanceOfTypeSync } from '../../src/filters/utils'
+import { buildMetadataQuery } from '../../src/fetch_profile/metadata_query'
 
 describe('flows filter', () => {
   let client: SalesforceClient
@@ -73,9 +75,14 @@ describe('flows filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: {
-                target: ['ApexClass'],
-              },
+              metadataQuery: buildMetadataQuery({
+                fetchParams: {},
+                targetedFetchInclude: await getMetadataIncludeFromFetchTargets(
+                  [APEX_CLASS_METADATA_TYPE],
+                  buildElementsSourceFromElements([]),
+                ),
+              }),
+              fetchParams: {},
             }),
           },
           client,
@@ -93,9 +100,14 @@ describe('flows filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: {
-                target: [FLOW_METADATA_TYPE],
-              },
+              metadataQuery: buildMetadataQuery({
+                fetchParams: {},
+                targetedFetchInclude: await getMetadataIncludeFromFetchTargets(
+                  [FLOW_METADATA_TYPE],
+                  buildElementsSourceFromElements([]),
+                ),
+              }),
+              fetchParams: {},
             }),
           },
           client,

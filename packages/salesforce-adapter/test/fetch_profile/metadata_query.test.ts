@@ -20,6 +20,7 @@ import { MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
 import { mockFileProperties } from '../connection'
 import { emptyLastChangeDateOfTypesWithNestedInstances } from '../utils'
+import { getMetadataIncludeFromFetchTargets } from '../../src/filters/utils'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -415,7 +416,7 @@ describe('buildMetadataQuery', () => {
 
   describe('with fetch target', () => {
     let query: MetadataQuery
-    beforeEach(() => {
+    beforeEach(async () => {
       query = buildMetadataQuery({
         fetchParams: {
           metadata: {
@@ -424,6 +425,10 @@ describe('buildMetadataQuery', () => {
           },
           target: ['target', 'exclude', CUSTOM_METADATA],
         },
+        targetedFetchInclude: await getMetadataIncludeFromFetchTargets(
+          ['target', 'exclude', CUSTOM_METADATA],
+          buildElementsSourceFromElements([]),
+        ),
       })
     })
     describe('isPartialFetch', () => {

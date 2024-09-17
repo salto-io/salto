@@ -169,7 +169,7 @@ const queryDeps = async ({
   FROM MetadataComponentDependency WHERE MetadataComponentId IN (${idsChunk.map(id => `'${id}'`).join(', ')})`
           const allRecords = (await toArrayAsync(await client.queryAll(query, true))).flat()
           log.debug(
-            'Queried %d dependencies for %d elements, the last 3 elements are',
+            'Queried %d dependencies for %d elements, the last 3 elements are %s',
             allRecords.length,
             idsChunk.length,
             inspectValue(idsChunk.slice(-3)),

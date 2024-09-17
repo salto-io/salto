@@ -145,7 +145,6 @@ export const calculatePatch = async ({
     workspaceElements: await workspace.elements(false),
     partiallyFetchedAccounts: new Map([[accountName, {}]]),
     allFetchedAccounts: new Set([accountName]),
-    calculatePendingChanges: true,
   })
   return {
     changes,

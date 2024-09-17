@@ -793,7 +793,7 @@ export const calcFetchChanges = async ({
   workspaceElements,
   partiallyFetchedAccounts,
   allFetchedAccounts,
-  calculatePendingChanges,
+  calculatePendingChanges = true,
 }: {
   accountElements: ReadonlyArray<Element>
   mergedAccountElements: ReadonlyArray<Element>
@@ -801,7 +801,7 @@ export const calcFetchChanges = async ({
   workspaceElements: ReadOnlyElementsSource
   partiallyFetchedAccounts: Map<string, PartiallyFetchedAccountData>
   allFetchedAccounts: Set<string>
-  calculatePendingChanges: boolean
+  calculatePendingChanges?: boolean
 }): Promise<CalcFetchChangesResult> => {
   const mergedAccountElementsSource = elementSource.createInMemoryElementSource(mergedAccountElements)
 
@@ -963,7 +963,10 @@ const createFetchChanges = async ({
     .filter(e => !e.isConfigType())
     .isEmpty()
 
-  const isStateEmpty = await stateElements.isEmpty()
+  // When we init a new env, the state will be empty, but the workspace can already have elements in common.
+  // In that case we shouldn't calculate pending changes, otherwise there would be conflicts
+  // between the fetched elements and the elements in common.
+  const calculatePendingChanges = !(await stateElements.isEmpty())
 
   const { changes, serviceToStateChanges } = isFirstFetch
     ? await createFirstFetchChanges(unmergedElements, processErrorsResult.keptElements)
@@ -974,7 +977,7 @@ const createFetchChanges = async ({
         workspaceElements,
         partiallyFetchedAccounts: partiallyFetchedAccountData,
         allFetchedAccounts: new Set(adapterNames),
-        calculatePendingChanges: !isStateEmpty,
+        calculatePendingChanges,
       })
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {

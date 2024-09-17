@@ -390,7 +390,6 @@ export const calculatePatchFromChanges = async ({
     workspaceElements: await workspace.elements(false),
     partiallyFetchedAccounts: partialFetchData,
     allFetchedAccounts: new Set(accounts),
-    calculatePendingChanges: true,
   })
   return result.changes
 }

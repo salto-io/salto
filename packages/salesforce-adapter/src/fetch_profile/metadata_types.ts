@@ -7,6 +7,12 @@
  */
 
 import _ from 'lodash'
+import {
+  CUSTOM_OBJECT,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+} from '../constants'
 
 export const FOLDER_METADATA_TYPES = ['ReportFolder', 'DashboardFolder', 'DocumentFolder', 'EmailFolder'] as const
 
@@ -139,7 +145,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'CustomLabels',
   'CustomMetadataValue',
   'CustomNotificationType',
-  'CustomObject',
   'CustomObjectTranslation',
   'CustomPageWebLink',
   'CustomPermission',
@@ -223,7 +228,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'FlexiPageEventSourceProperty',
   'FlexiPageEventTarget',
   'FlexiPageEventTargetProperty',
-  'Flow',
   'FlowActionCall',
   'FlowActionCallInputParameter',
   'FlowActionCallOutputParameter',
@@ -570,7 +574,13 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'WorkspaceMapping',
 ] as const
 
-export const METADATA_TYPES_WITH_DEPENDENCIES = ['CustomMetadata', ...CUSTOM_OBJECT_FIELDS, ...WORKFLOW_FIELDS] as const
+export const METADATA_TYPES_WITH_DEPENDENCIES = [
+  'CustomMetadata',
+  ...CUSTOM_OBJECT_FIELDS,
+  ...WORKFLOW_FIELDS,
+  CUSTOM_OBJECT,
+  FLOW_METADATA_TYPE,
+] as const
 
 export const EXCLUDED_METADATA_TYPES = [
   'AssignmentRule', // Fetched through parent type
@@ -618,6 +628,8 @@ export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies,
   WorkflowOutboundMessage: ['Workflow'],
   WorkflowRule: ['Workflow'],
   WorkflowTask: ['Workflow'],
+  CustomObject: [TOPICS_FOR_OBJECTS_METADATA_TYPE],
+  Flow: [FLOW_DEFINITION_METADATA_TYPE],
 }
 
 export const isMetadataTypeWithoutDependencies = (

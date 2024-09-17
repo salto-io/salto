@@ -14,12 +14,12 @@ import {
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { brandDependentElementRemovalValidator } from '../../src/change_validators/brand_dependent_element_removal'
-import { OKTA, BRAND_THEME_TYPE_NAME, EMAIL_TEMPLATE, BRAND_TYPE_NAME } from '../../src/constants'
+import { OKTA, BRAND_THEME_TYPE_NAME, EMAIL_TEMPLATE_TYPE_NAME, BRAND_TYPE_NAME } from '../../src/constants'
 
 describe('brandDependentElementRemovalValidator', () => {
   const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
   const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
-  const emailTemplateType = new ObjectType({ elemID: new ElemID(OKTA, EMAIL_TEMPLATE) })
+  const emailTemplateType = new ObjectType({ elemID: new ElemID(OKTA, EMAIL_TEMPLATE_TYPE_NAME) })
 
   const brand = new InstanceElement('brand', brandType, { id: 'brandId123' })
   const brandTheme = new InstanceElement('user type', brandThemeType, {}, undefined, {

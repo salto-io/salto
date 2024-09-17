@@ -85,6 +85,64 @@ describe('client_http_connection', () => {
       ).rejects.toThrow(new Error('Login failed with error: aaa'))
     })
   })
+  describe('axiosConnection with timeout', () => {
+    let retryOptions: RetryOptions
+    beforeEach(() => {
+      retryOptions = createRetryOptions(
+        {
+          maxAttempts: 3,
+          retryDelay: 100,
+          additionalStatusCodesToRetry: [],
+        },
+        {
+          retryOnTimeout: true,
+          lastRetryNoTimeout: true,
+        },
+      )
+    })
+    it('should set timeout to 0 for POST request', async () => {
+      const connection = axiosConnection({
+        retryOptions,
+        authParamsFunc: async () => ({}),
+        baseURLFunc: async () => BASE_URL,
+        credValidateFunc: async () => ({ accountId: '1' }),
+        timeout: 5000,
+      })
+
+      const mockCredentials = { username: 'test', password: 'test' }
+
+      const httpClient = await connection.login(mockCredentials)
+
+      // Mock a POST request
+      mockAxiosAdapter.onPost('/test').reply(200, { data: 'success' })
+
+      // Make a POST request
+      const response = await httpClient.post('/test', {})
+
+      expect(response.config.timeout).toBe(0)
+    })
+    it('should not change timeout for GET request', async () => {
+      const connection = axiosConnection({
+        retryOptions,
+        authParamsFunc: async () => ({}),
+        baseURLFunc: async () => BASE_URL,
+        credValidateFunc: async () => ({ accountId: '1' }),
+        timeout: 5000,
+      })
+
+      const mockCredentials = { username: 'test', password: 'test' }
+
+      const httpClient = await connection.login(mockCredentials)
+
+      // Mock a POST request
+      mockAxiosAdapter.onGet('/test').reply(200, { data: 'success' })
+
+      // Make a POST request
+      const response = await httpClient.get('/test')
+
+      expect(response.config.timeout).toBe(5000)
+    })
+  })
   describe('createRetryOptions', () => {
     let retryOptions: RetryOptions
 

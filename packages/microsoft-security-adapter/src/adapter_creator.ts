@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { createAdapter, credentials, filters } from '@salto-io/adapter-components'
+import { createAdapter, credentials as credentialsUtils, filters } from '@salto-io/adapter-components'
 import createChangeValidator from './change_validator'
 import { DEFAULT_CONFIG, UserConfig } from './config'
 import { createConnection } from './client/connection'
@@ -14,17 +14,12 @@ import { createClientDefinitions, createDeployDefinitions, createFetchDefinition
 import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references/references'
-import {
-  Credentials,
-  createFromOauthResponse,
-  createOAuthRequest,
-  credentialsType,
-  oauthRequestParameters,
-} from './client/oauth'
+import { createFromOauthResponse, createOAuthRequest } from './client/oauth'
 import { appRolesFilter, deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
 import { customConvertError } from './error_utils'
+import { Credentials, credentialsType, oauthRequestParameters } from './auth'
 
-const { defaultCredentialsFromConfig } = credentials
+const { defaultCredentialsFromConfig } = credentialsUtils
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
@@ -40,10 +35,10 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     },
   },
   defaultConfig: DEFAULT_CONFIG,
-  definitionsCreator: ({ clients, userConfig }) => ({
+  definitionsCreator: ({ clients, credentials }) => ({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,
-    fetch: createFetchDefinitions(userConfig.fetch),
+    fetch: createFetchDefinitions(credentials.servicesToManage),
     deploy: createDeployDefinitions(),
     references: REFERENCES,
   }),

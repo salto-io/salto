@@ -5,27 +5,40 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { MockInterface } from '@salto-io/test-utils'
 import filterCreator from '../../src/filters/organization_settings'
 import mockAdapter from '../adapter'
 import * as filterUtilsModule from '../../src/filters/utils'
-import { API_NAME, CUSTOM_OBJECT_ID_FIELD, ORGANIZATION_SETTINGS, SALESFORCE } from '../../src/constants'
-import { defaultFilterContext } from '../utils'
+import { CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS, ORGANIZATION_SETTINGS } from '../../src/constants'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
+import { Types } from '../../src/transformers/transformer'
+import { SalesforceClient } from '../../index'
+import Connection from '../../src/client/jsforce'
+import { FilterWith } from './mocks'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
   queryClient: jest.fn(),
 }))
+const mockedFilterUtils = jest.mocked(filterUtilsModule)
 
 describe('organization-wide defaults filter', () => {
-  const mockedFilterUtils = jest.mocked(filterUtilsModule)
-  const { client, connection } = mockAdapter({})
-  const filter = filterCreator({
-    config: defaultFilterContext,
-    client,
+  let client: SalesforceClient
+  let connection: MockInterface<Connection>
+  let filter: FilterWith<'onFetch'>
+
+  beforeEach(() => {
+    ;({ client, connection } = mockAdapter({}))
+    filter = filterCreator({
+      config: defaultFilterContext,
+      client,
+    }) as typeof filter
   })
 
   describe('onFetch', () => {
+    const CUSTOM_OBJECT_NAME = 'CustomObject__c'
+    const CUSTOM_OBJECT_WITH_LOOKUP_NAME = 'CustomObjectWithLookup__c'
     const objectDefaults = {
       activateable: false,
       childRelationships: [],
@@ -89,7 +102,9 @@ describe('organization-wide defaults filter', () => {
       updateable: false,
     } as const
 
-    beforeEach(() => {
+    let elements: Element[]
+
+    beforeEach(async () => {
       mockedFilterUtils.queryClient.mockResolvedValue([
         {
           [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
@@ -130,36 +145,57 @@ describe('organization-wide defaults filter', () => {
           ],
         },
       ])
+      const customObjectType = createCustomObjectType(CUSTOM_OBJECT_NAME, {})
+      const customObjectTypeWithLookup = createCustomObjectType(CUSTOM_OBJECT_WITH_LOOKUP_NAME, {
+        fields: {
+          LookupField__c: {
+            refType: Types.primitiveDataTypes.Lookup,
+            annotations: {
+              [FIELD_ANNOTATIONS.REFERENCE_TO]: [CUSTOM_OBJECT_NAME],
+            },
+          },
+          // Make sure we store unique refTo lookups in the singleton
+          AnotherLookupField__c: {
+            refType: Types.primitiveDataTypes.Lookup,
+            annotations: {
+              [FIELD_ANNOTATIONS.REFERENCE_TO]: [CUSTOM_OBJECT_NAME],
+            },
+          },
+          MultipleRefToLookupField__c: {
+            refType: Types.primitiveDataTypes.Lookup,
+            annotations: {
+              [FIELD_ANNOTATIONS.REFERENCE_TO]: ['Account', 'Contact'],
+            },
+          },
+        },
+      })
+      elements = [customObjectType, customObjectTypeWithLookup]
+      await filter.onFetch?.(elements)
     })
 
-    it('should fetch them', async () => {
-      const elements: Element[] = []
-      await filter.onFetch?.(elements)
-      expect(elements).toIncludeAllPartialMembers([
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-          annotations: {
-            [CORE_ANNOTATIONS.CREATABLE]: false,
-            [CORE_ANNOTATIONS.DELETABLE]: false,
-            [CORE_ANNOTATIONS.UPDATABLE]: false,
-            [API_NAME]: ORGANIZATION_SETTINGS,
-          },
-          isSettings: true,
+    it('should fetch the OrganizationSettings instance and its type', () => {
+      const organizationType = elements
+        .filter(isObjectType)
+        .find(e => e.elemID.name === ORGANIZATION_SETTINGS) as ObjectType
+      const organizationInstance = elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.typeName === ORGANIZATION_SETTINGS) as InstanceElement
+      expect(organizationType).toBeDefined()
+      expect(organizationInstance).toBeDefined()
+      expect(organizationInstance.value).toEqual({
+        DefaultAccountAccess: 'Edit',
+        DefaultCalendarAccess: 'HideDetailsInsert',
+        DefaultCampaignAccess: 'All',
+        DefaultCaseAccess: 'None',
+        DefaultContactAccess: 'ControlledByParent',
+        DefaultLeadAccess: 'ReadEditTransfer',
+        DefaultOpportunityAccess: 'None',
+        LatestSupportedApiVersion: 60,
+        customObjects: [CUSTOM_OBJECT_NAME, CUSTOM_OBJECT_WITH_LOOKUP_NAME],
+        customObjectsLookups: {
+          [CUSTOM_OBJECT_WITH_LOOKUP_NAME]: [CUSTOM_OBJECT_NAME, 'Account', 'Contact'],
         },
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance', '_config'),
-          value: {
-            DefaultAccountAccess: 'Edit',
-            DefaultCalendarAccess: 'HideDetailsInsert',
-            DefaultCampaignAccess: 'All',
-            DefaultCaseAccess: 'None',
-            DefaultContactAccess: 'ControlledByParent',
-            DefaultLeadAccess: 'ReadEditTransfer',
-            DefaultOpportunityAccess: 'None',
-            LatestSupportedApiVersion: 60,
-          },
-        },
-      ])
+      })
     })
   })
 })

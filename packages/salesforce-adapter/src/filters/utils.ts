@@ -54,6 +54,7 @@ import SalesforceClient, { ErrorFilter } from '../client/client'
 import {
   FetchElements,
   INSTANCE_SUFFIXES,
+  MetadataQueryParams,
   OptionalFeatures,
   ProfileRelatedMetadataType,
   SalesforceConfig,
@@ -116,7 +117,7 @@ import {
   CUSTOM_OBJECTS_LOOKUPS_FIELD,
   ORG_SETTINGS_INSTANCE_ELEM_ID,
 } from './organization_settings'
-import { SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
+import { getFetchTargetsWithDependencies, SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -1005,4 +1006,51 @@ export const getOrgFetchTargets = async (elementsSource: ReadOnlyElementsSource)
     customObjects: orgSettingsValues[CUSTOM_OBJECTS_FIELD],
     customObjectsLookups: orgSettingsValues[CUSTOM_OBJECTS_LOOKUPS_FIELD],
   }
+}
+
+const getCustomObjectDependenciesRecursively = (
+  target: string,
+  lookups: Record<string, readonly string[]>,
+  handledTypes: Set<string>,
+): string[] => {
+  if (handledTypes.has(target)) {
+    return []
+  }
+  handledTypes.add(target)
+  const dependencies = lookups[target] ?? []
+  return dependencies.reduce(
+    (acc, dep) => acc.concat(dep, getCustomObjectDependenciesRecursively(dep, lookups, handledTypes)),
+    [target],
+  )
+}
+
+export const getMetadataIncludeFromFetchTargets = async (
+  targets: string[],
+  elementsSource: ReadOnlyElementsSource,
+): Promise<MetadataQueryParams[]> => {
+  const targetsWithDependencies = getFetchTargetsWithDependencies(targets)
+  const includeParams: MetadataQueryParams[] = []
+  const orgFetchTargets = await getOrgFetchTargets(elementsSource)
+  const orgCustomObjects = new Set(orgFetchTargets.customObjects)
+  const [customObjectTargets, metadataTypeTargets] = _.partition(targetsWithDependencies, target =>
+    orgCustomObjects.has(target),
+  )
+  const handledTypes = new Set<string>()
+  const customObjectTargetsWithDependencies = _.uniq(
+    customObjectTargets.flatMap(target =>
+      getCustomObjectDependenciesRecursively(target, orgFetchTargets.customObjectsLookups, handledTypes),
+    ),
+  )
+  metadataTypeTargets.forEach(typeName => {
+    includeParams.push({
+      metadataType: typeName,
+    })
+  })
+  customObjectTargetsWithDependencies.forEach(customObjectName => {
+    includeParams.push({
+      metadataType: CUSTOM_OBJECT,
+      name: customObjectName,
+    })
+  })
+  return includeParams
 }

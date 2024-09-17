@@ -354,13 +354,19 @@ export type DataManagementConfig = {
   regenerateSaltoIds?: boolean
 }
 
+export type FetchLimits = {
+  maxExtraDependenciesQuerySize?: number
+  maxExtraDependenciesResponseSize?: number
+}
+
 export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
   fetchAllCustomSettings?: boolean // TODO - move this into optional features
   optionalFeatures?: OptionalFeatures
   target?: string[]
-  maxInstancesPerType?: number
+  limits?: FetchLimits
+  maxInstancesPerType?: number // TODO - move this into fetchLimits
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
@@ -881,6 +887,17 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
+const limitsType = createMatchingObjectType<FetchLimits>({
+  elemID: new ElemID(constants.SALESFORCE, 'limits'),
+  fields: {
+    maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
+    maxExtraDependenciesResponseSize: { refType: BuiltinTypes.NUMBER },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
@@ -905,6 +922,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       // Exported type is downcast to TypeElement
       refType: new ListType(importantValueType),
     },
+    limits: { refType: limitsType },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1051,6 +1069,7 @@ export type FetchProfile = {
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
   readonly importantValues: ImportantValues
+  readonly limits?: FetchLimits
 }
 
 export type TypeWithNestedInstances = (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]

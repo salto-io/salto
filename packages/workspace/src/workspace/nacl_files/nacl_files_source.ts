@@ -58,13 +58,12 @@ import { getStaticFilesFunctions } from '../static_files/functions'
 import { buildNewMergedElementsAndErrors, ChangeSet } from './elements_cache'
 import { deserializeMergeErrors, deserializeSingleElement, serialize } from '../../serializer/elements'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
-import { ParsedNaclFile } from './parsed_nacl_file'
+import { AwaitedParsedNaclFile, ParsedNaclFile } from './parsed_nacl_file'
 import { createParseResultCache, ParsedNaclFileCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
-type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
 const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
@@ -192,7 +191,7 @@ export const getElementReferenced = async (
 }
 
 const getElementsReferencedAndStaticFiles = (
-  elements: ThenableIterable<Element>,
+  elements: Element[],
 ): Promise<{
   referenced: Set<string>
   staticFiles: Set<string>
@@ -207,10 +206,7 @@ const getElementsReferencedAndStaticFiles = (
     { referenced: new Set<string>(), staticFiles: new Set<string>() },
   )
 
-export const toParsedNaclFile = async (
-  naclFile: NaclFile,
-  parseResult: parser.ParseResult,
-): Promise<ParsedNaclFile> => {
+export const toParsedNaclFile = (naclFile: NaclFile, parseResult: parser.ParseResult): AwaitedParsedNaclFile => {
   let referenced: string[]
   let staticFiles: string[]
   const loadRefs = async (): Promise<void> => {
@@ -222,9 +218,9 @@ export const toParsedNaclFile = async (
   }
   return {
     filename: naclFile.filename,
-    elements: () => awu(parseResult.elements).toArray(),
+    elements: () => parseResult.elements,
     data: {
-      errors: () => Promise.resolve(parseResult.errors),
+      errors: () => parseResult.errors,
       referenced: async () => {
         await loadRefs()
         return referenced
@@ -235,7 +231,7 @@ export const toParsedNaclFile = async (
       },
     },
     buffer: naclFile.buffer,
-    sourceMap: () => Promise.resolve(parseResult.sourceMap),
+    sourceMap: () => parseResult.sourceMap,
   }
 }
 type ParseNaclFileArgs = {
@@ -265,7 +261,7 @@ const parseNaclFiles = async ({
   naclFiles,
   functions,
   createSourceMap = false,
-}: ParseNaclFilesArgs): Promise<ParsedNaclFile[]> =>
+}: ParseNaclFilesArgs): Promise<AwaitedParsedNaclFile[]> =>
   withLimitedConcurrency(
     naclFiles.map(
       naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions, createSourceMap })),
@@ -273,8 +269,8 @@ const parseNaclFiles = async ({
     PARSE_CONCURRENCY,
   )
 
-const isEmptyNaclFile = async (naclFile: ParsedNaclFile): Promise<boolean> =>
-  _.isEmpty(await naclFile.elements()) && _.isEmpty(await naclFile.data.errors())
+const isEmptyNaclFile = (naclFile: AwaitedParsedNaclFile): boolean =>
+  _.isEmpty(naclFile.elements()) && _.isEmpty(naclFile.data.errors())
 
 export const getFunctions = (staticFilesSource: StaticFilesSource): parser.Functions => ({
   ...getStaticFilesFunctions(staticFilesSource), // add future functions here
@@ -347,7 +343,7 @@ const buildNaclFilesState = async ({
   newNaclFiles,
   currentState,
 }: {
-  newNaclFiles: ParsedNaclFile[]
+  newNaclFiles: AwaitedParsedNaclFile[]
   currentState: NaclFilesState
 }): Promise<buildNaclFilesStateResult> => {
   const preChangeHash = await currentState.metadata.get(HASH_KEY)
@@ -432,12 +428,12 @@ const buildNaclFilesState = async ({
     })
   }
 
-  const getNaclFile = async (file: ParsedNaclFile): Promise<ParsedNaclFile | undefined> =>
+  const getNaclFile = async (file: AwaitedParsedNaclFile): Promise<ParsedNaclFile | undefined> =>
     currentState.parsedNaclFiles.get(file.filename)
 
-  const handleAdditionsOrModifications = (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> =>
+  const handleAdditionsOrModifications = (naclFiles: AwaitedParsedNaclFile[]): Promise<void> =>
     log.timeDebug(async () => {
-      await naclFiles.forEach(async naclFile => {
+      await awu(naclFiles).forEach(async naclFile => {
         const parsedFile = await getNaclFile(naclFile)
         log.trace('Updating indexes of %s nacl file: %s', !parsedFile ? 'added' : 'modified', naclFile.filename)
         updateIndexOfFile(
@@ -456,7 +452,7 @@ const buildNaclFilesState = async ({
           await naclFile.data.staticFiles(),
         )
 
-        const currentNaclFileElements = (await naclFile.elements()) ?? []
+        const currentNaclFileElements = naclFile.elements() ?? []
         const oldNaclFileElements = (await parsedFile?.elements()) ?? []
         updateIndexOfFile(
           elementsIndexAdditions,
@@ -481,10 +477,10 @@ const buildNaclFilesState = async ({
       })
     }, 'handle additions/modifications of nacl files')
 
-  const handleDeletions = (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> =>
+  const handleDeletions = (naclFiles: AwaitedParsedNaclFile[]): Promise<void> =>
     log.timeDebug(async () => {
       const toDelete: string[] = []
-      await naclFiles.forEach(async naclFile => {
+      await awu(naclFiles).forEach(async naclFile => {
         const oldNaclFile = await getNaclFile(naclFile)
         if (oldNaclFile === undefined) {
           return
@@ -508,10 +504,9 @@ const buildNaclFilesState = async ({
       await currentState.parsedNaclFiles.deleteAll(toDelete)
     }, 'handle deletions of nacl files')
 
-  await handleDeletions(awu(Object.values(newParsed)).filter(isEmptyNaclFile))
-  await handleAdditionsOrModifications(
-    awu(Object.values(newParsed)).filter(async naclFile => !(await isEmptyNaclFile(naclFile))),
-  )
+  const [emptyNaclFiles, nonEmptyNaclFiles] = _.partition(Object.values(newParsed), isEmptyNaclFile)
+  await handleDeletions(emptyNaclFiles)
+  await handleAdditionsOrModifications(nonEmptyNaclFiles)
 
   const unmodifiedFragments = awu(_.uniqBy(relevantElementIDs, e => e.getFullName()))
     .flatMap(async elemID => {
@@ -702,7 +697,7 @@ const buildNaclFilesSource = (
   }
 
   const buildNaclFilesStateInner = async (
-    parsedNaclFiles: ParsedNaclFile[] = [],
+    parsedNaclFiles: AwaitedParsedNaclFile[] = [],
     ignoreFileChanges = false,
   ): Promise<buildNaclFilesStateResult> => {
     if (_.isUndefined(state)) {
@@ -718,6 +713,15 @@ const buildNaclFilesSource = (
   const getNaclFile = (filename: string): Promise<NaclFile | undefined> => naclFilesStore.get(filename)
 
   const getParsedNaclFile = async (filename: string): Promise<ParsedNaclFile | undefined> => {
+    const toPromisedParsedNaclFile = (parsed: AwaitedParsedNaclFile): ParsedNaclFile => ({
+      ...parsed,
+      elements: () => Promise.resolve(parsed.elements()),
+      data: {
+        ...parsed.data,
+        errors: () => Promise.resolve(parsed.data.errors()),
+      },
+      sourceMap: () => Promise.resolve(parsed.sourceMap?.()),
+    })
     const addPathParsedNaclFileElements = (parsed: ParsedNaclFile): ParsedNaclFile => ({
       ...parsed,
       elements: async () => {
@@ -738,7 +742,9 @@ const buildNaclFilesSource = (
     }
     const naclFile = await getNaclFile(filename)
     if (naclFile === undefined) return undefined
-    return addPathParsedNaclFileElements(await toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions })))
+    return addPathParsedNaclFileElements(
+      toPromisedParsedNaclFile(toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions }))),
+    )
   }
 
   const getElementNaclFiles = async (elemID: ElemID): Promise<string[]> => {
@@ -777,17 +783,17 @@ const buildNaclFilesSource = (
     }
     const parsedResult = await parseNaclFile({ naclFile, functions, createSourceMap: true })
     if (useCache) {
-      const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
+      const newParsedNaclFile = toParsedNaclFile(naclFile, parsedResult)
       await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
     }
     return parsedResult.sourceMap
   }
 
-  const createNaclFileFromChange = async (
+  const createNaclFileFromChange = (
     filename: string,
     change: AdditionDiff<Element>,
     fileData: string,
-  ): Promise<ParsedNaclFile> => {
+  ): AwaitedParsedNaclFile => {
     const elements = [change.data.after]
     let referenced: string[]
     let staticFiles: string[]
@@ -800,9 +806,9 @@ const buildNaclFilesSource = (
     }
     return {
       filename,
-      elements: () => Promise.resolve(elements),
+      elements: () => elements,
       data: {
-        errors: () => Promise.resolve([]),
+        errors: () => [],
         referenced: async () => {
           await loadRefs()
           return referenced
@@ -886,7 +892,7 @@ const buildNaclFilesSource = (
       await withLimitedConcurrency(
         Object.entries(changesByFileName).map(
           ([lowerCaseFilename, fileChanges]) =>
-            async (): Promise<(ParsedNaclFile & NaclFile) | undefined> => {
+            async (): Promise<(AwaitedParsedNaclFile & NaclFile) | undefined> => {
               // Changes might have a different cased filename, we take the version that already exists
               // or the first variation if this is a new file
               const filename =
@@ -906,12 +912,12 @@ const buildNaclFilesSource = (
                   fileChanges[0].action === 'add' &&
                   isElement(fileChanges[0].data.after)
                 const parsed = shouldNotParse
-                  ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>, buffer)
-                  : await toParsedNaclFile(
+                  ? createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>, buffer)
+                  : toParsedNaclFile(
                       { filename, buffer },
                       await parser.parse(Buffer.from(buffer), filename, functions, false),
                     )
-                if (((await parsed.data.errors()) ?? []).length > 0) {
+                if ((parsed.data.errors() ?? []).length > 0) {
                   logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
                 }
                 log.trace(
@@ -1147,7 +1153,7 @@ export const naclFilesSource = async (
   staticFilesSource: StaticFilesSource,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
-  parsedFiles?: ParsedNaclFile[],
+  parsedFiles?: AwaitedParsedNaclFile[],
 ): Promise<NaclFilesSource> => {
   const state =
     parsedFiles !== undefined

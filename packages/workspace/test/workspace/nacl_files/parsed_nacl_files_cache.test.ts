@@ -7,7 +7,7 @@
  */
 import { ObjectType, ElemID, Value, SeverityLevel } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/parser'
-import { ParsedNaclFile } from '../../../src/workspace/nacl_files'
+import { AwaitedParsedNaclFile, ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
@@ -54,7 +54,7 @@ describe('ParsedNaclFileCache', () => {
     buffer: mockCacheFileContent,
     lastModified: beforeTimestamp,
   }
-  let parsedDummy: ParsedNaclFile
+  let parsedDummy: AwaitedParsedNaclFile
 
   const dummy2Filename = 'dummy2.nacl'
   const mockCacheFileContentDummy2 = 'content2'
@@ -83,7 +83,7 @@ describe('ParsedNaclFileCache', () => {
     buffer: mockCacheFileContentDummy2,
     lastModified: beforeTimestamp,
   }
-  let parsedDummy2: ParsedNaclFile
+  let parsedDummy2: AwaitedParsedNaclFile
 
   const toDeleteFilename = 'toDelete.nacl'
   const toDeleteContent = 'toDelete'
@@ -111,7 +111,7 @@ describe('ParsedNaclFileCache', () => {
     buffer: toDeleteContent,
     lastModified: someDateTimestamp,
   }
-  let parsedToDelete: ParsedNaclFile
+  let parsedToDelete: AwaitedParsedNaclFile
 
   const toDelete2Filename = 'toDelete2.nacl'
   const toDelete2Content = 'toDelete2'
@@ -139,7 +139,7 @@ describe('ParsedNaclFileCache', () => {
     buffer: toDelete2Content,
     lastModified: someDateTimestamp,
   }
-  let parsedToDelete2: ParsedNaclFile
+  let parsedToDelete2: AwaitedParsedNaclFile
 
   const initDummyFilename = 'initDummy.nacl'
   const mockCacheFileContentInitDummy = 'content'
@@ -168,9 +168,9 @@ describe('ParsedNaclFileCache', () => {
     buffer: mockCacheFileContentInitDummy,
     lastModified: beforeTimestamp,
   }
-  let parsedInitDummy: ParsedNaclFile
+  let parsedInitDummy: AwaitedParsedNaclFile
 
-  const parsedWithoutBuffer = (parsed: ParsedNaclFile): ParsedNaclFile => {
+  const parsedWithoutBuffer = (parsed: AwaitedParsedNaclFile): AwaitedParsedNaclFile => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { buffer, ...parsedWithoutBuff } = parsed
     return parsedWithoutBuff
@@ -179,21 +179,21 @@ describe('ParsedNaclFileCache', () => {
   const fileExistsInCache = async (filename: string): Promise<boolean> =>
     (await (await cache.get(filename)).elements()) !== undefined
 
-  const validateParsedNaclFileEquals = async (p1: ParsedNaclFile, p2: ParsedNaclFile): Promise<void> => {
-    expect(await p1.elements()).toEqual(await p2.elements())
+  const validateParsedNaclFileEquals = async (p1: ParsedNaclFile, p2: AwaitedParsedNaclFile): Promise<void> => {
+    expect(await p1.elements()).toEqual(p2.elements())
     expect(p1.filename).toEqual(p2.filename)
-    expect(await p1.sourceMap?.()).toEqual(await p2.sourceMap?.())
-    expect(await p1.data.errors()).toEqual(await p2.data.errors())
+    expect(await p1.sourceMap?.()).toEqual(p2.sourceMap?.())
+    expect(await p1.data.errors()).toEqual(p2.data.errors())
     expect(await p1.data.referenced()).toEqual(await p2.data.referenced())
   }
 
   beforeAll(async () => {
     jest.spyOn(Date, 'now').mockImplementation(() => someDateTimestamp)
-    parsedInitDummy = await toParsedNaclFile(initDummyParsedKey, parseResultWithoutMD5InitDummy)
-    parsedDummy = await toParsedNaclFile(dummyParsedKey, parseResultWithoutMD5)
-    parsedDummy2 = await toParsedNaclFile(dummy2ParsedKey, parseResultWithoutMD5Dummy2)
-    parsedToDelete = await toParsedNaclFile(toDeleteKey, toDeleteParseResult)
-    parsedToDelete2 = await toParsedNaclFile(toDelete2Key, toDelete2ParseResult)
+    parsedInitDummy = toParsedNaclFile(initDummyParsedKey, parseResultWithoutMD5InitDummy)
+    parsedDummy = toParsedNaclFile(dummyParsedKey, parseResultWithoutMD5)
+    parsedDummy2 = toParsedNaclFile(dummy2ParsedKey, parseResultWithoutMD5Dummy2)
+    parsedToDelete = toParsedNaclFile(toDeleteKey, toDeleteParseResult)
+    parsedToDelete2 = toParsedNaclFile(toDelete2Key, toDelete2ParseResult)
   })
 
   beforeEach(async () => {
@@ -397,7 +397,7 @@ describe('ParsedNaclFileCache', () => {
     beforeEach(async () => {
       await cache.put(
         dummyFilename,
-        await toParsedNaclFile(dummyParsedKey, {
+        toParsedNaclFile(dummyParsedKey, {
           elements: [dummyObjectType],
           errors: [errorA],
           sourceMap,
@@ -405,7 +405,7 @@ describe('ParsedNaclFileCache', () => {
       )
       await cache.put(
         toDeleteFilename,
-        await toParsedNaclFile(toDeleteKey, {
+        toParsedNaclFile(toDeleteKey, {
           elements: [toDeleteObjectType],
           errors: [errorB],
           sourceMap,
@@ -422,7 +422,7 @@ describe('ParsedNaclFileCache', () => {
     it('Should unset errors when none exist', async () => {
       await cache.put(
         toDeleteFilename,
-        await toParsedNaclFile(toDeleteKey, {
+        toParsedNaclFile(toDeleteKey, {
           elements: [toDeleteObjectType],
           errors: [],
           sourceMap,

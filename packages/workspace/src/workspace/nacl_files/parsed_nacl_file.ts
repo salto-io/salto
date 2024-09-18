@@ -8,10 +8,24 @@
 import { Element } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/parser'
 
+export type AwaitedParsedNaclFileData = {
+  errors: () => parser.ParseError[] | undefined
+  referenced: () => Promise<string[]>
+  staticFiles: () => Promise<string[]>
+}
+
 export type ParsedNaclFileData = {
   errors: () => Promise<parser.ParseError[] | undefined>
   referenced: () => Promise<string[]>
   staticFiles: () => Promise<string[]>
+}
+
+export type AwaitedParsedNaclFile = {
+  filename: string
+  elements: () => Element[] | undefined
+  data: AwaitedParsedNaclFileData
+  buffer?: string
+  sourceMap?: () => parser.SourceMap | undefined
 }
 
 export type ParsedNaclFile = {

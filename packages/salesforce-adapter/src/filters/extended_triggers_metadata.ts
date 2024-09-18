@@ -38,20 +38,20 @@ import { SalesforceRecord } from '../client/types'
 const { toArrayAsync, awu } = collections.asynciterable
 const log = logger(module)
 
-const ON_DELETE_TRIGGER_TYPES = ['UsageBeforeDelete', 'UsageAfterDelete']
+const ON_DELETE_TRIGGER_TYPES = ['UsageBeforeDelete', 'UsageAfterDelete'] as const
 
-const ON_INSERT_TRIGGER_TYPES = ['UsageBeforeInsert', 'UsageAfterInsert']
+const ON_INSERT_TRIGGER_TYPES = ['UsageBeforeInsert', 'UsageAfterInsert'] as const
 
-const ON_UPDATE_TRIGGER_TYPES = ['UsageBeforeUpdate', 'UsageAfterUpdate']
+const ON_UPDATE_TRIGGER_TYPES = ['UsageBeforeUpdate', 'UsageAfterUpdate'] as const
 
-const TRIGGER_TYPE_FIELDS = [
+export const TRIGGER_TYPE_FIELDS = [
   ...ON_DELETE_TRIGGER_TYPES,
   ...ON_INSERT_TRIGGER_TYPES,
   ...ON_UPDATE_TRIGGER_TYPES,
   'UsageAfterUndelete',
-]
+] as const
 
-const TRIGGER_TYPES_FIELD = 'triggerTypes'
+export const TRIGGER_TYPES_FIELD_NAME = 'triggerTypes'
 
 // Avoid increasing this value as this may cause the created SOQL query to exceed the max allowed query length
 const IDS_CHUNK_SIZE = 500
@@ -75,9 +75,9 @@ const queryApexTriggerRecords = async ({
   )
 
 const updateApexTriggerMetadataType = (metadataType: ObjectType): void => {
-  metadataType.fields[TRIGGER_TYPES_FIELD] = new Field(
+  metadataType.fields[TRIGGER_TYPES_FIELD_NAME] = new Field(
     metadataType,
-    TRIGGER_TYPES_FIELD,
+    TRIGGER_TYPES_FIELD_NAME,
     new ListType(BuiltinTypes.STRING),
   )
 }
@@ -96,14 +96,14 @@ const extendTriggerMetadataFromRecord = ({
   const tableEnumOrId = record.TableEnumOrId
   const parentObject = customObjectsByInternalId[tableEnumOrId] ?? customObjectsByApiName[tableEnumOrId]
   const triggerTypes = Object.entries(record)
-    .filter(([key]) => TRIGGER_TYPE_FIELDS.includes(key))
+    .filter(([key]) => (TRIGGER_TYPE_FIELDS as ReadonlyArray<string>).includes(key))
     .filter(([_key, value]) => value === true)
     .map(([key]) => key)
   if (parentObject) {
     trigger.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parentObject.elemID, parentObject)]
   }
   if (triggerTypes.length > 0) {
-    trigger.annotations[TRIGGER_TYPES_FIELD] = triggerTypes
+    trigger.value[TRIGGER_TYPES_FIELD_NAME] = triggerTypes
   }
 }
 
@@ -121,6 +121,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
           .filter(isObjectType)
           .find(type => apiNameSync(type) === APEX_TRIGGER_METADATA_TYPE)
         if (apexTriggerMetadataType === undefined) {
+          log.debug('ApexTrigger MetadataType not found. Skipping filter')
           return
         }
         updateApexTriggerMetadataType(apexTriggerMetadataType)
@@ -180,7 +181,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
         change => getChangeData(change).elemID.getFullName(),
       )
       relevantApexTriggerChanges.map(getChangeData).forEach(trigger => {
-        delete trigger.value[TRIGGER_TYPES_FIELD]
+        delete trigger.value[TRIGGER_TYPES_FIELD_NAME]
         delete trigger.annotations[CORE_ANNOTATIONS.PARENT]
       })
     },

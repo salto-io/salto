@@ -96,6 +96,7 @@ export default class WorkatoAdapter implements AdapterOperations {
           config: {
             fetch: config.fetch,
             apiDefinitions: config.apiDefinitions,
+            enableDeploySupport: config[ENABLE_DEPLOY_SUPPORT_FLAG],
           },
           getElemIdFunc,
           fetchQuery: this.fetchQuery,

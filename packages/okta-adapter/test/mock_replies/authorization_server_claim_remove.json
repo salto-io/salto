@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/claims/claim-fakeid",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1726651388"
+    }
+  }
+]

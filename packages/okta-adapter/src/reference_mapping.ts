@@ -290,6 +290,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: JWK_TYPE_NAME },
   },
   {
+    src: { field: 'scopes', parentTypes: ['OAuth2ClaimConditions'] },
+    serializationStrategy: 'name',
+    target: { type: 'OAuth2Scope' },
+  },
+  {
     src: { field: 'include', parentTypes: ['OAuth2ScopesMediationPolicyRuleCondition'] },
     serializationStrategy: 'name',
     target: { type: 'OAuth2Scope' },

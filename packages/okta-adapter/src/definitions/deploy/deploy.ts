@@ -895,6 +895,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    OAuth2Claim: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
     [EMAIL_TEMPLATE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {

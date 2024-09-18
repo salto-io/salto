@@ -447,6 +447,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
         fieldsToConvert,
         annotationToMapDef,
       )
+      // await updateFieldTypes(fieldsToConvert[0].refType, nonUniqueMapFields, annotationToMapDef)
       log.debug('converted fields to maps: %s', nonUniqueMapFields)
     })
   },

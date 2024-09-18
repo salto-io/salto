@@ -46,6 +46,7 @@ import {
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
 import { isCustomObjectSync } from './utils'
+import { GLOBAL_VALUE_SET } from './global_value_sets'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -145,16 +146,9 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
   [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
-  StandardValueSet: {
-    standardValue: {
-      key: 'fullName',
-    }
+  [GLOBAL_VALUE_SET]: {
+    customValue: { key: 'fullName' },
   },
-  GlobalValueSet: {
-    customValue: {
-      key: 'fullName',
-    }
-  }
 }
 
 export const fieldTypeToAnnotationToMapDef: Record<string, Record<string, MapDef>> = {
@@ -444,12 +438,12 @@ const filter: LocalFilterCreator = ({ config }) => ({
 
     const fields = elements.filter(isCustomObjectSync).flatMap(obj => Object.values(obj.fields))
     await awu(Object.entries(fieldTypeToAnnotationToMapDef)).forEach(async ([fieldType, annotationToMapDef]) => {
-      const fieldsToConvert = fields.filter(field => field.elemID.typeName === fieldType)
+      const fieldsToConvert = fields.filter(field => field.refType.elemID.typeName === fieldType)
       if (fieldsToConvert.length === 0) {
         return
       }
       const nonUniqueMapFields = await convertElementFieldsToMaps(
-        fieldsToConvert.map(field => field.parent),
+        fieldsToConvert,
         annotationToMapDef,
       )
       log.debug('converted fields to maps: %s', nonUniqueMapFields)

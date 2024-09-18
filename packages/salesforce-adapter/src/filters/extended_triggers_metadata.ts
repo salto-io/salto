@@ -51,7 +51,7 @@ const TRIGGER_TYPE_FIELDS = [
   'UsageAfterUndelete',
 ]
 
-const TRIGGER_TYPES_FIELD = 'triggerType'
+const TRIGGER_TYPES_FIELD = 'triggerTypes'
 
 // Avoid increasing this value as this may cause the created SOQL query to exceed the max allowed query length
 const IDS_CHUNK_SIZE = 500

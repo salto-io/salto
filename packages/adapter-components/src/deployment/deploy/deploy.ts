@@ -103,6 +103,10 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   const deploySingleChange =
     deployChangeFunc ?? createSingleChangeDeployer({ convertError, definitions, changeResolver })
 
+  const shouldFailChange = (elemID: ElemID): boolean =>
+    defQuery.query(elemID.typeName)?.failIfChangeHasErrors !== false &&
+    !_.isEmpty(errors[elemID.getFullName()]?.filter(e => e.severity === 'Error'))
+
   await graph.walkAsync(async nodeID => {
     const { typeName, action, typeActionChanges } = graph.getData(nodeID)
 
@@ -115,13 +119,22 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
 
-    const bucket = new RateLimiter({ maxConcurrentCalls: concurrency })
-    const limitedDeployChange = bucket.wrap(deploySingleChange)
+    const limiter = new RateLimiter({ maxConcurrentCalls: concurrency })
+    const limitedDeployChange = limiter.wrap(deploySingleChange)
 
     const applied = (
       await Promise.all(
         typeActionChanges.map(async change => {
+          const { elemID } = getChangeData(change)
           try {
+            if (shouldFailChange(elemID)) {
+              log.error(
+                'Not continuing deployment of change %s (action %s) due to earlier failure',
+                elemID.getFullName(),
+                change.action,
+              )
+              return undefined
+            }
             await limitedDeployChange({
               ...changeContext,
               change,
@@ -130,14 +143,12 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
             })
             return change
           } catch (err) {
-            const { elemID } = getChangeData(change)
             if (errors[elemID.getFullName()] === undefined) {
               errors[elemID.getFullName()] = []
             }
-            log.error('Deployment of %s failed: %o', elemID.getFullName(), err)
+            log.error('Deployment of %s (action %s) failed: %o', elemID.getFullName(), change.action, err)
             if (isSaltoError(err)) {
               errors[elemID.getFullName()].push({
-                // TODON index errors by elem id so that it's easier to look up?
                 ...err,
                 elemID,
               })
@@ -154,7 +165,16 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
           }
         }),
       )
-    ).filter(values.isDefined)
+    )
+      .filter(values.isDefined)
+      .filter(change => {
+        const { elemID } = getChangeData(change)
+        if (shouldFailChange(elemID)) {
+          log.error('Not marking change %s as successful due to partial failure', elemID.getFullName())
+          return false
+        }
+        return true
+      })
     applied.forEach(change => appliedChanges.push(change))
   })
 

@@ -67,24 +67,18 @@ const createExtractor = (transformationDef?: TransformDefinition<ChangeAndExtend
 }
 
 const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndExtendedContext) => Promise<boolean>) => {
-  const { custom, transformForCheck, skipIfIdentical, failIfChangeHasErrors } = conditionDef ?? {}
+  const { custom, transformForCheck, skipIfIdentical } = conditionDef ?? {}
   if (custom !== undefined) {
-    return async input => custom({ skipIfIdentical, transformForCheck, failIfChangeHasErrors })(input)
+    return async input => custom({ skipIfIdentical, transformForCheck })(input)
+  }
+  if (skipIfIdentical === false) {
+    return async () => true
   }
   // note: no need to add a default for the value of single,
   // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
   return async args => {
-    const { change, errors } = args
-    if (
-      failIfChangeHasErrors !== false &&
-      !_.isEmpty(errors[getChangeData(change).elemID.getFullName()]?.filter(e => e.severity === 'Error'))
-    ) {
-      return false
-    }
-    if (skipIfIdentical === false) {
-      return true
-    }
+    const { change } = args
     if (!isModificationChange(change)) {
       return true
     }

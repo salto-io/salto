@@ -20,10 +20,7 @@ export type DeployRequestCondition = ArgsWithCustomizer<
     // default: true
     skipIfIdentical?: boolean
     // transformation to use on before and after of the change when comparing the values
-    transformForCheck?: TransformDefinition<ChangeAndExtendedContext>
-    // fail if the change already has (error-level) errors from previous actions
-    // default: true
-    failIfChangeHasErrors?: boolean
+    transformForCheck?: TransformDefinition<ChangeAndContext>
   },
   ChangeAndExtendedContext
 >
@@ -102,6 +99,10 @@ export type InstanceDeployApiDefinitions<AdditionalAction extends string, Client
   }
 
   changeGroupId?: ChangeIdFunction
+
+  // fail if the change already has (error-level) errors from previous actions
+  // default: true
+  failIfChangeHasErrors?: boolean
 }
 
 export type DeployApiDefinitions<AdditionalAction extends string, ClientOptions extends string> = {

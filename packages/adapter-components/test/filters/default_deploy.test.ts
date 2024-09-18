@@ -120,8 +120,12 @@ describe('default deploy filter', () => {
         .mockResolvedValueOnce(Promise.resolve())
         .mockImplementationOnce(() => Promise.reject(Error('something bad happened')))
       const changes = [
-        toChange({ after: new InstanceElement('name', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') })) }),
-        toChange({ after: new InstanceElement('name', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') })) }),
+        toChange({
+          after: new InstanceElement('success', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') })),
+        }),
+        toChange({
+          after: new InstanceElement('failure', new ObjectType({ elemID: new ElemID('myAdapter', 'myType') })),
+        }),
       ]
       const res = await filter.deploy(changes, { changes, groupID: 'a' })
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -129,7 +133,7 @@ describe('default deploy filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toEqual([
         {
-          elemID: new ElemID('myAdapter', 'myType', 'instance', 'name'),
+          elemID: new ElemID('myAdapter', 'myType', 'instance', 'failure'),
           message: 'Error: something bad happened',
           detailedMessage: 'Error: something bad happened',
           severity: 'Error',

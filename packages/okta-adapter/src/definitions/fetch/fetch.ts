@@ -435,6 +435,7 @@ const createCustomizations = ({
       fieldCustomizations: {
         name: { fieldType: 'string' },
         id: { hide: true },
+        orn: { omit: true },
         [CUSTOM_NAME_FIELD]: { fieldType: 'string', hide: true },
         _links: { hide: true },
         _embedded: { omit: true },

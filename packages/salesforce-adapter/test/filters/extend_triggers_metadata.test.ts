@@ -29,7 +29,7 @@ import { SalesforceRecord } from '../../src/client/types'
 import Connection from '../../src/client/jsforce'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
-describe('extendedTriggersMetadata filter', () => {
+describe('extendTriggersMetadata filter', () => {
   const TRIGGER_API_NAME = 'TestTrigger'
   const TRIGGER_ID = '01qQy000000EmuPIAS'
 
@@ -89,7 +89,7 @@ describe('extendedTriggersMetadata filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { extendedTriggersMetadata: true } },
+              fetchParams: { optionalFeatures: { extendTriggersMetadata: true } },
             }),
           },
         }) as typeof filter
@@ -157,7 +157,7 @@ describe('extendedTriggersMetadata filter', () => {
           config: {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { extendedTriggersMetadata: false } },
+              fetchParams: { optionalFeatures: { extendTriggersMetadata: false } },
             }),
           },
         }) as typeof filter

@@ -110,11 +110,11 @@ const extendTriggerMetadataFromRecord = ({
 const filterCreator: RemoteFilterCreator = ({ client, config }) => {
   let originalApexTriggerChangesByElemId: Record<string, Change<InstanceElement>>
   return {
-    name: 'extendedTriggersMetadata',
+    name: 'extendTriggersMetadata',
     remote: true,
     onFetch: ensureSafeFilterFetch({
       config,
-      filterName: 'extendedTriggersMetadata',
+      filterName: 'extendTriggersMetadata',
       warningMessage: 'Failed to extend the Metadata on Apex Triggers',
       fetchFilterFunc: async elements => {
         const apexTriggerMetadataType = elements

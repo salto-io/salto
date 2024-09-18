@@ -16,6 +16,7 @@ import {
   isAdditionOrModificationChange,
   getChangeData,
   Change,
+  ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -50,7 +51,7 @@ const TRIGGER_TYPE_FIELDS = [
   'UsageAfterUndelete',
 ]
 
-const TRIGGER_TYPE_FIELD = 'triggerType'
+const TRIGGER_TYPES_FIELD = 'triggerType'
 
 // Avoid increasing this value as this may cause the created SOQL query to exceed the max allowed query length
 const IDS_CHUNK_SIZE = 500
@@ -74,7 +75,11 @@ const queryApexTriggerRecords = async ({
   )
 
 const updateApexTriggerMetadataType = (metadataType: ObjectType): void => {
-  metadataType.fields[TRIGGER_TYPE_FIELD] = new Field(metadataType, TRIGGER_TYPE_FIELD, BuiltinTypes.STRING)
+  metadataType.fields[TRIGGER_TYPES_FIELD] = new Field(
+    metadataType,
+    TRIGGER_TYPES_FIELD,
+    new ListType(BuiltinTypes.STRING),
+  )
 }
 
 const extendTriggerMetadataFromRecord = ({
@@ -90,14 +95,15 @@ const extendTriggerMetadataFromRecord = ({
 }): void => {
   const tableEnumOrId = record.TableEnumOrId
   const parentObject = customObjectsByInternalId[tableEnumOrId] ?? customObjectsByApiName[tableEnumOrId]
-  const triggerType = Object.entries(record)
+  const triggerTypes = Object.entries(record)
     .filter(([key]) => TRIGGER_TYPE_FIELDS.includes(key))
-    .find(([_key, value]) => value === true)?.[0]
+    .filter(([_key, value]) => value === true)
+    .map(([key]) => key)
   if (parentObject) {
     trigger.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parentObject.elemID, parentObject)]
   }
-  if (triggerType) {
-    trigger.annotations[TRIGGER_TYPE_FIELD] = triggerType
+  if (triggerTypes.length > 0) {
+    trigger.annotations[TRIGGER_TYPES_FIELD] = triggerTypes
   }
 }
 
@@ -174,7 +180,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
         change => getChangeData(change).elemID.getFullName(),
       )
       relevantApexTriggerChanges.map(getChangeData).forEach(trigger => {
-        delete trigger.value[TRIGGER_TYPE_FIELD]
+        delete trigger.value[TRIGGER_TYPES_FIELD]
         delete trigger.annotations[CORE_ANNOTATIONS.PARENT]
       })
     },

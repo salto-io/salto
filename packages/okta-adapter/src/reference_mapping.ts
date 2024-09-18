@@ -34,7 +34,7 @@ import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
 
-type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid'
+type OktaReferenceSerializationStrategyName = 'key' | 'mappingRuleId' | 'kid' | 'credentials.oauthClient.client_id'
 type OktaReferenceIndexName = OktaReferenceSerializationStrategyName
 const OktaReferenceSerializationStrategyLookup: Record<
   OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
@@ -55,6 +55,11 @@ const OktaReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.kid,
     lookup: val => val,
     lookupIndexName: 'kid',
+  },
+  'credentials.oauthClient.client_id': {
+    lookup: val => val,
+    lookupIndexName: 'credentials.oauthClient.client_id',
+    getReferenceId: topLevelId => topLevelId.createNestedID('credentials', 'oauthClient', 'client_id'),
   },
 }
 
@@ -288,6 +293,11 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     src: { field: 'include', parentTypes: ['OAuth2ScopesMediationPolicyRuleCondition'] },
     serializationStrategy: 'name',
     target: { type: 'OAuth2Scope' },
+  },
+  {
+    src: { field: 'include', parentTypes: ['ClientPolicyCondition'] },
+    serializationStrategy: 'credentials.oauthClient.client_id',
+    target: { type: APPLICATION_TYPE_NAME },
   },
 ]
 

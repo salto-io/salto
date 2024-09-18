@@ -208,7 +208,9 @@ describe('fieldReferencesFilter', () => {
         'okta.Authenticator.instance.authenticator',
       )
 
-      const authorizationServerPolicy = elements.filter(e => isInstanceElement(e) && e.elemID.name === 'authServerPolicy')[0] as InstanceElement
+      const authorizationServerPolicy = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'authServerPolicy',
+      )[0] as InstanceElement
       expect(authorizationServerPolicy.value.conditions.clients.include[0]).toBeInstanceOf(ReferenceExpression)
       expect(authorizationServerPolicy.value.conditions.clients.include[0].elemID.getFullName()).toEqual(
         'okta.Application.instance.app1.credentials.oauthClient.client_id',

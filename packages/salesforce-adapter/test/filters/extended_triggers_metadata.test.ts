@@ -5,7 +5,15 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, ObjectType, Element, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ObjectType,
+  Element,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  Change,
+  getChangeData,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FilterWith } from './mocks'
 import filterCreator, {
@@ -167,6 +175,31 @@ describe('extendedTriggersMetadata filter', () => {
       it('should not add the triggerTypes field on the metadata type', () => {
         expect(triggerMetadataType.fields[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
       })
+    })
+  })
+  describe('preDeploy and onDeploy', () => {
+    let changes: Change<InstanceElement>[]
+    beforeEach(() => {
+      triggerInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(parentObject.elemID, parentObject),
+      ]
+      triggerInstance.value[TRIGGER_TYPES_FIELD_NAME] = ['UsageBeforeInsert', 'UsageAfterDelete']
+      changes = [{ action: 'add', data: { after: triggerInstance } }]
+    })
+    it('should remove the triggerTypes field and the parent reference on preDeploy and revert to the original change from onDeploy', async () => {
+      await filter.preDeploy(changes)
+      const instanceAfterPreDeploy = getChangeData(changes[0])
+      expect(instanceAfterPreDeploy.value[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
+      expect(instanceAfterPreDeploy.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+      await filter.onDeploy(changes)
+      const instanceAfterOnDeploy = getChangeData(changes[0])
+      expect(instanceAfterOnDeploy.value[TRIGGER_TYPES_FIELD_NAME]).toIncludeSameMembers([
+        'UsageBeforeInsert',
+        'UsageAfterDelete',
+      ])
+      expect(instanceAfterOnDeploy.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
+        new ReferenceExpression(parentObject.elemID, parentObject),
+      ])
     })
   })
 })

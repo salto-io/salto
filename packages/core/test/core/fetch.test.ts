@@ -32,7 +32,6 @@ import {
   StaticFile,
   isStaticFile,
   toChange,
-  isModificationChange,
   toServiceIdsString,
   ElemIdGetter,
   ServiceIds,

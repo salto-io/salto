@@ -398,6 +398,42 @@ describe('buildMetadataQuery', () => {
     })
   })
 
+  describe('isTypeMatch on nested types', () => {
+    let metadataQuery: MetadataQuery
+    describe('when parent type is included', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [{ metadataType: CUSTOM_OBJECT }],
+            },
+          },
+        })
+      })
+      it('should return true for nested types', () => {
+        expect(metadataQuery.isTypeMatch('ValidationRule')).toBeTrue()
+        expect(metadataQuery.isTypeMatch('CustomField')).toBeTrue()
+        expect(metadataQuery.isTypeMatch('FieldSet')).toBeTrue()
+      })
+    })
+    describe('when parent type is excluded', () => {
+      beforeEach(() => {
+        metadataQuery = buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              exclude: [{ metadataType: CUSTOM_OBJECT }],
+            },
+          },
+        })
+      })
+      it('should return false for nested types', () => {
+        expect(metadataQuery.isTypeMatch('ValidationRule')).toBeFalse()
+        expect(metadataQuery.isTypeMatch('CustomField')).toBeFalse()
+        expect(metadataQuery.isTypeMatch('FieldSet')).toBeFalse()
+      })
+    })
+  })
+
   it('isTypeMatch should return correct results', () => {
     const query = buildMetadataQuery({
       fetchParams: {

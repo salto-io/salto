@@ -35,6 +35,7 @@ import { getChangedAtSingletonInstance } from '../filters/utils'
 import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
+  TYPE_TO_NESTED_TYPES,
 } from '../last_change_date_of_types_with_nested_instances'
 import { getFetchTargetsWithDependencies } from './metadata_types'
 
@@ -94,6 +95,17 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   }
   const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+  const nestedTypeToParentType = Object.entries(TYPE_TO_NESTED_TYPES).reduce<Record<string, string>>(
+    (acc, [parentType, nestedTypes]) => {
+      nestedTypes
+        .filter(nestedType => nestedType !== parentType)
+        .forEach(nestedType => {
+          acc[nestedType] = parentType
+        })
+      return acc
+    },
+    {},
+  )
 
   const isIncludedInTargetedFetch = (type: string): boolean => {
     if (target === undefined) {
@@ -101,14 +113,16 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     }
     return target.includes(type)
   }
-
   const isTypeIncluded = (type: string): boolean =>
-    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type)) &&
-    isIncludedInTargetedFetch(type)
+    include.some(({ metadataType = '.*' }) =>
+      new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+    ) && isIncludedInTargetedFetch(type)
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
-        namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type),
+        namespace === '.*' &&
+        name === '.*' &&
+        new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
     )
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,

@@ -70,7 +70,7 @@ export const putHomepageIdInAdditionContext = (args: definitions.deploy.ChangeAn
 /**
  * AdjustFunction that update the page id in case it is a homepage of a new deployed space.
  */
-const updateHomepageId: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async args => {
+const updateHomepageId: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext> = async args => {
   const value = validateValue(args.value)
   const spaceChange = args.context.changeGroup.changes.find(c => getChangeData(c).elemID.typeName === SPACE_TYPE_NAME)
   if (spaceChange === undefined) {
@@ -89,7 +89,7 @@ export const adjustUserReferencesOnPageReverse = createAdjustUserReferencesRever
 /**
  * AdjustFunction that runs all page modification adjust functions.
  */
-export const adjustPageOnModification = concatAdjustFunctions<definitions.deploy.ChangeAndContext>(
+export const adjustPageOnModification = concatAdjustFunctions<definitions.deploy.ChangeAndExtendedContext>(
   increaseVersion,
   updateHomepageId,
   adjustUserReferencesOnPageReverse,

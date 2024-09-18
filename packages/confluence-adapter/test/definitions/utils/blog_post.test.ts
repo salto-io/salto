@@ -29,6 +29,7 @@ describe('blog_post definitions utils', () => {
             },
             sharedContext: {},
             change: blogPostChange,
+            errors: {},
           },
           value: {
             authorId: { accountId: 'authorId', displayName: 'authorId' },

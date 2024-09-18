@@ -26,6 +26,7 @@ describe('version utils', () => {
           },
           sharedContext: {},
           change,
+          errors: {},
         },
         value: { version: { number: 1 } },
       }
@@ -43,6 +44,7 @@ describe('version utils', () => {
           },
           sharedContext: {},
           change,
+          errors: {},
         },
         value: { version: { number: 'not a number' } },
       }

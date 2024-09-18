@@ -16,7 +16,7 @@ export const adjustUserReferencesOnBlogPostReverse = createAdjustUserReferencesR
 /**
  * AdjustFunction that runs all blog_post modification adjust functions.
  */
-export const adjustBlogPostOnModification = concatAdjustFunctions<definitions.deploy.ChangeAndContext>(
+export const adjustBlogPostOnModification = concatAdjustFunctions<definitions.deploy.ChangeAndExtendedContext>(
   increaseVersion,
   adjustUserReferencesOnBlogPostReverse,
 )

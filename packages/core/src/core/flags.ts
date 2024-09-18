@@ -11,7 +11,6 @@ export const CORE_FLAG_PREFIX = 'SALTO_'
 
 export const CORE_FLAGS = {
   skipResolveTypesInElementSource: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
-  autoMergeDisabled: 'AUTO_MERGE_DISABLE',
   autoMergeListsDisabled: 'AUTO_MERGE_LISTS_DISABLE',
 } as const
 

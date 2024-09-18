@@ -244,7 +244,7 @@ const toMergedChange = (change: FetchChange, after: Value): FetchChange => ({
 })
 
 const autoMergeChange: ChangeTransformFunction = async change => {
-  if (getCoreFlagBool(CORE_FLAGS.autoMergeDisabled) || !isMergeableDiffChange(change)) {
+  if (!isMergeableDiffChange(change)) {
     return [change]
   }
 

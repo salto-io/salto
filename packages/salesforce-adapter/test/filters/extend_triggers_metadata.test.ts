@@ -19,7 +19,7 @@ import { FilterWith } from './mocks'
 import filterCreator, {
   TRIGGER_TYPE_FIELDS,
   TRIGGER_TYPES_FIELD_NAME,
-} from '../../src/filters/extended_triggers_metadata'
+} from '../../src/filters/extend_triggers_metadata'
 import { SalesforceClient } from '../../index'
 import mockClient from '../client'
 import { createCustomObjectType, defaultFilterContext } from '../utils'

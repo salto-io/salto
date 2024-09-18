@@ -15,6 +15,7 @@ describe('serialize', () => {
   const inputs = [
     [],
     [[]],
+    [undefined],
     [[''], ['']],
     [['abc'], ['def']],
     [[], ['def']],
@@ -24,8 +25,10 @@ describe('serialize', () => {
     [['a', 'b'], { c: 'd' }, { e: 'f' }],
   ]
 
-  const getSerializedStreamRes = async (items: (unknown[] | Record<string, unknown>)[]): Promise<string> =>
+  const getSerializedStreamRes = async (items: unknown[]): Promise<string> =>
     (await awu(streamSerialized(items)).toArray()).join('')
+
+  const fixUndefinedItem = (items: unknown[]): unknown[] => (items.length === 1 && items[0] === undefined ? [] : items)
 
   describe('getSerializedStream', () => {
     beforeEach(() => {
@@ -34,7 +37,7 @@ describe('serialize', () => {
     it('should match serialized strings', async () => {
       await awu(inputs).forEach(async items =>
         // eslint-disable-next-line no-restricted-syntax
-        expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify(items)),
+        expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify(fixUndefinedItem(items))),
       )
     })
   })
@@ -43,6 +46,7 @@ describe('serialize', () => {
     const chunkedLines = [
       [[]],
       [[[]]],
+      [[undefined]],
       [[[''], ['']]],
       [[['abc']], [['def']]],
       [[[], ['def']]],
@@ -60,7 +64,7 @@ describe('serialize', () => {
         await awu(inputs).forEach(async (items, index) =>
           expect(await getSerializedStreamRes(items)).toEqual(
             // eslint-disable-next-line no-restricted-syntax
-            chunkedLines[index].map(line => JSON.stringify(line)).join(EOL),
+            chunkedLines[index].map(line => JSON.stringify(fixUndefinedItem(line))).join(EOL),
           ),
         )
       })
@@ -73,7 +77,7 @@ describe('serialize', () => {
       it('should match serialized strings', async () => {
         await awu(inputs).forEach(async items =>
           // eslint-disable-next-line no-restricted-syntax
-          expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify({ elements: items })),
+          expect(await getSerializedStreamRes(items)).toEqual(JSON.stringify({ elements: fixUndefinedItem(items) })),
         )
       })
     })
@@ -86,7 +90,7 @@ describe('serialize', () => {
         await awu(inputs).forEach(async (items, index) =>
           expect(await getSerializedStreamRes(items)).toEqual(
             // eslint-disable-next-line no-restricted-syntax
-            chunkedLines[index].map(line => JSON.stringify({ elements: line })).join(EOL),
+            chunkedLines[index].map(line => JSON.stringify({ elements: fixUndefinedItem(line) })).join(EOL),
           ),
         )
       })

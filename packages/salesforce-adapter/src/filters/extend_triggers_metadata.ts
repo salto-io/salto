@@ -94,6 +94,7 @@ const extendTriggerMetadataFromRecord = ({
   customObjectsByApiName: Record<string, ObjectType>
 }): void => {
   const tableEnumOrId = record.TableEnumOrId
+  // The value of TableEnumOrId is either the CustomObject API name or its internal Id.
   const parentObject = customObjectsByInternalId[tableEnumOrId] ?? customObjectsByApiName[tableEnumOrId]
   const triggerTypes = Object.entries(record)
     .filter(([key]) => (TRIGGER_TYPE_FIELDS as ReadonlyArray<string>).includes(key))

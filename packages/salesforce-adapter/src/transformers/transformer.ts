@@ -640,7 +640,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.VISIBLE_LINES]: restrictedNumberTypes.MultiPicklistVisibleLines,
         [FIELD_ANNOTATIONS.FIELD_DEPENDENCY]: Types.fieldDependencyType,
-        [FIELD_ANNOTATIONS.VALUE_SET]: new ListType(Types.valueSetType),
+        [FIELD_ANNOTATIONS.VALUE_SET]: new MapType(Types.valueSetType),
         [FIELD_ANNOTATIONS.RESTRICTED]: BuiltinTypes.BOOLEAN,
         [VALUE_SET_FIELDS.VALUE_SET_NAME]: BuiltinTypes.STRING,
         [VALUE_SET_DEFINITION_FIELDS.SORTED]: BuiltinTypes.BOOLEAN,

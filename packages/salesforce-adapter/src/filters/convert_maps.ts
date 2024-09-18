@@ -26,7 +26,7 @@ import {
   createRefToElmWithValue,
   getDeepInnerType,
   isObjectType,
-  getField,
+  getField, isFieldChange,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -46,6 +46,8 @@ import {
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
 import { isCustomObjectSync } from './utils'
+import { GLOBAL_VALUE_SET } from './global_value_sets'
+import { STANDARD_VALUE_SET } from './standard_value_sets'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -137,6 +139,14 @@ const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
   sharingOwnerRules: { key: INSTANCE_FULL_NAME_FIELD },
 }
 
+const GLOBAL_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
+  customValue: { key: 'fullName' },
+}
+
+const STANDARD_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
+  standardValue: { key: 'fullName' },
+}
+
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
@@ -145,11 +155,8 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
   [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
-  GlobalValueSet: {
-    customValue: {
-      key: 'fullName',
-    }
-  }
+  [GLOBAL_VALUE_SET]: GLOBAL_VALUE_SET_MAP_FIELD_DEF,
+  [STANDARD_VALUE_SET]: STANDARD_VALUE_SET_MAP_FIELD_DEF,
 }
 
 export const fieldTypeToAnnotationToMapDef: Record<string, Record<string, MapDef>> = {
@@ -308,52 +315,52 @@ const convertElementFieldsToMaps = async (
 }
 
 /**
- * Convert instance field values from maps back to arrays before deploy.
+ * Convert element field values from maps back to arrays before deploy.
  *
- * @param instanceChanges          The instance changes to deploy
- * @param instanceMapFieldDef      The definitions of the fields to covert
+ * @param changes          The changes to deploy
+ * @param mapFieldDef      The definitions of the fields to convert
  */
 const convertFieldsBackToLists = async (
-  instanceChanges: ReadonlyArray<Change<InstanceElement>>,
-  instanceMapFieldDef: Record<string, MapDef>,
+  changes: ReadonlyArray<Change<Element>>,
+  mapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
   const toVals = (values: Values): Values[] => Object.values(values).flat()
 
-  const backToArrays = (instance: InstanceElement): InstanceElement => {
-    Object.keys(instanceMapFieldDef)
-      .filter(fieldName => _.get(instance.value, fieldName) !== undefined)
+  const backToArrays = (element: Element): Element => {
+    Object.keys(mapFieldDef)
+      .filter(fieldName => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
       .forEach(fieldName => {
-        if (Array.isArray(_.get(instance.value, fieldName))) {
+        if (Array.isArray(_.get(getElementValueOrAnnotations(element), fieldName))) {
           // should not happen
           return
         }
 
-        if (instanceMapFieldDef[fieldName].nested) {
+        if (mapFieldDef[fieldName].nested) {
           // first convert the inner levels to arrays, then merge into one array
-          _.set(instance.value, fieldName, _.mapValues(_.get(instance.value, fieldName), toVals))
+          _.set(getElementValueOrAnnotations(element), fieldName, _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), toVals))
         }
-        _.set(instance.value, fieldName, toVals(_.get(instance.value, fieldName)))
+        _.set(getElementValueOrAnnotations(element), fieldName, toVals(_.get(getElementValueOrAnnotations(element), fieldName)))
       })
-    return instance
+    return element
   }
 
-  await awu(instanceChanges).forEach(instanceChange => applyFunctionToChangeData(instanceChange, backToArrays))
+  await awu(changes).forEach(change => applyFunctionToChangeData(change, backToArrays))
 }
 
 /**
- * Convert instance's field values from arrays back to maps after deploy.
+ * Convert an element's field values from arrays back to maps after deploy.
  *
- * @param instanceChanges  The instance changes to deploy
- * @param instanceMapFieldDef      The definitions of the fields to covert
+ * @param changes          The changes to deploy
+ * @param mapFieldDef      The definitions of the fields to covert
  */
 const convertFieldsBackToMaps = (
-  instanceChanges: ReadonlyArray<Change<InstanceElement>>,
-  instanceMapFieldDef: Record<string, MapDef>,
+  changes: ReadonlyArray<Change<Element>>,
+  mapFieldDef: Record<string, MapDef>,
 ): void => {
-  instanceChanges.forEach(instanceChange =>
-    applyFunctionToChangeData(instanceChange, instance => {
-      convertArraysToMaps(instance, instanceMapFieldDef)
-      return instance
+  changes.forEach(change =>
+    applyFunctionToChangeData(change, element => {
+      convertArraysToMaps(element, mapFieldDef)
+      return element
     }),
   )
 }
@@ -393,6 +400,14 @@ export const getInstanceChanges = (
     .filter(isInstanceChange)
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
+
+export const getFieldChanges = (
+  changes: ReadonlyArray<Change>,
+  fieldType: string,
+): Change[] =>
+  changes
+    .filter(isFieldChange)
+    .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
 
 export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
   const instances = elements.filter(isInstanceElement)
@@ -447,7 +462,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
         fieldsToConvert,
         annotationToMapDef,
       )
-      // await updateFieldTypes(fieldsToConvert[0].refType, nonUniqueMapFields, annotationToMapDef)
+      // TODO: handle nonUniqueMapFields?
       log.debug('converted fields to maps: %s', nonUniqueMapFields)
     })
   },
@@ -466,6 +481,15 @@ const filter: LocalFilterCreator = ({ config }) => ({
 
       const instanceType = await getChangeData(instanceChanges[0]).getType()
       await convertFieldTypesBackToLists(instanceType, mapFieldDef)
+    })
+
+    await awu(Object.keys(fieldTypeToAnnotationToMapDef)).forEach(async fieldType => {
+      const fieldsChanges = getFieldChanges(changes, fieldType)
+      if (fieldsChanges.length === 0) {
+        return
+      }
+      const mapFieldDef = fieldTypeToAnnotationToMapDef[fieldType]
+      await convertFieldsBackToLists(fieldsChanges, mapFieldDef)
     })
   },
 
@@ -486,6 +510,15 @@ const filter: LocalFilterCreator = ({ config }) => ({
         .filter(async fieldName => isListType(await instanceType.fields[fieldName].getType()))
         .toArray()
       await updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
+    })
+
+    await awu(Object.keys(fieldTypeToAnnotationToMapDef)).forEach(async fieldType => {
+      const fieldsChanges = getFieldChanges(changes, fieldType)
+      if (fieldsChanges.length === 0) {
+        return
+      }
+      const mapFieldDef = fieldTypeToAnnotationToMapDef[fieldType]
+      convertFieldsBackToMaps(fieldsChanges, mapFieldDef)
     })
   },
 })

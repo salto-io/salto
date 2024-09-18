@@ -134,7 +134,7 @@ describe('client_http_connection', () => {
 
       const httpClient = await connection.login(mockCredentials)
 
-      // Mock a POST request
+      // Mock a GET request
       mockAxiosAdapter.onGet('/test').reply(200, { data: 'success' })
 
       // Make a POST request

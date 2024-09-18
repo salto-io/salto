@@ -197,7 +197,6 @@ describe('deployChanges', () => {
     expect(mockedRequester.getRequester).toHaveBeenCalledTimes(1)
   })
   it('should not run dependent action when there are errors', async () => {
-    // TODON same test when false
     const mockedRequestAllForChangeAndAction: jest.MockedFunction<
       DeployRequester<
         ResolveAdditionalActionType<{ additionalAction: 'activate' | 'deactivate' | 'unused-action' }>
@@ -235,9 +234,13 @@ describe('deployChanges', () => {
         .sort(),
     ).toEqual(['adapter.typeB.instance.add1'])
     expect(mockedRequestAllForChangeAndAction).toHaveBeenCalledTimes(10)
+    expect(mockedRequestAllForChangeAndAction).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'activate',
+      }),
+    )
   })
   it('should run dependent action even when there are errors if failIfChangeHasErrors is false', async () => {
-    // TODON same test when false
     const mockedRequestAllForChangeAndAction: jest.MockedFunction<
       DeployRequester<
         ResolveAdditionalActionType<{ additionalAction: 'activate' | 'deactivate' | 'unused-action' }>
@@ -261,5 +264,10 @@ describe('deployChanges', () => {
     expect(_.sortBy(res.appliedChanges, changeId)).toEqual(_.sortBy(changes, changeId))
     expect(res.errors).toHaveLength(0)
     expect(mockedRequestAllForChangeAndAction).toHaveBeenCalledTimes(11)
+    expect(mockedRequestAllForChangeAndAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'activate',
+      }),
+    )
   })
 })

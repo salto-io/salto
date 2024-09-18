@@ -200,13 +200,15 @@ const filterCreator: FilterCreator = ({ config }) => {
       filterAutomations(changes.map(getChangeData))
         .filter(isInstanceElement)
         .forEach(instance =>
-          getPossibleSmartValues(instance).forEach(({ obj, key }) => {
-            try {
-              replaceTemplatesWithValues({ values: [obj], fieldName: key }, deployTemplateMapping, prepRef)
-            } catch (e) {
-              log.error('Error parsing templates in deployment', e)
-            }
-          }),
+          getPossibleSmartValues(instance, config.fetch.parseAdditionalAutomationExpressions).forEach(
+            ({ obj, key }) => {
+              try {
+                replaceTemplatesWithValues({ values: [obj], fieldName: key }, deployTemplateMapping, prepRef)
+              } catch (e) {
+                log.error('Error parsing templates in deployment', e)
+              }
+            },
+          ),
         )
     },
 
@@ -214,13 +216,15 @@ const filterCreator: FilterCreator = ({ config }) => {
       filterAutomations(changes.map(getChangeData))
         .filter(isInstanceElement)
         .forEach(instance =>
-          getPossibleSmartValues(instance).forEach(({ obj, key }) => {
-            try {
-              resolveTemplates({ values: [obj], fieldName: key }, deployTemplateMapping)
-            } catch (e) {
-              log.error('Error restoring templates in deployment', e)
-            }
-          }),
+          getPossibleSmartValues(instance, config.fetch.parseAdditionalAutomationExpressions).forEach(
+            ({ obj, key }) => {
+              try {
+                resolveTemplates({ values: [obj], fieldName: key }, deployTemplateMapping)
+              } catch (e) {
+                log.error('Error restoring templates in deployment', e)
+              }
+            },
+          ),
         )
     },
   }

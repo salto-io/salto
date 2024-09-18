@@ -13,17 +13,21 @@ import {
   ObjectType,
   CORE_ANNOTATIONS,
   ReferenceExpression,
+  isAdditionOrModificationChange,
+  getChangeData,
+  Change,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { RemoteFilterCreator } from '../filter'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
   ensureSafeFilterFetch,
   isCustomObjectSync,
+  isInstanceOfTypeChangeSync,
   isInstanceOfTypeSync,
 } from './utils'
 import { APEX_TRIGGER_METADATA_TYPE, INTERNAL_ID_FIELD } from '../constants'
@@ -97,66 +101,94 @@ const extendTriggerMetadataFromRecord = ({
   }
 }
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
-  name: 'extendedTriggersMetadata',
-  remote: true,
-  onFetch: ensureSafeFilterFetch({
-    config,
-    filterName: 'extendedTriggersMetadata',
-    warningMessage: 'Failed to extend the Metadata on Apex Triggers',
-    fetchFilterFunc: async elements => {
-      const apexTriggerMetadataType = elements
-        .filter(isObjectType)
-        .find(type => apiNameSync(type) === APEX_TRIGGER_METADATA_TYPE)
-      if (apexTriggerMetadataType === undefined) {
-        return
-      }
-      updateApexTriggerMetadataType(apexTriggerMetadataType)
-      const triggersByInternalId: Record<string, InstanceElement> = {}
-      elements.filter(isInstanceOfTypeSync(APEX_TRIGGER_METADATA_TYPE)).forEach(trigger => {
-        const internalId = trigger.value[INTERNAL_ID_FIELD]
-        if (_.isString(internalId)) {
-          triggersByInternalId[internalId] = trigger
+const filterCreator: RemoteFilterCreator = ({ client, config }) => {
+  let originalApexTriggerChangesByElemId: Record<string, Change<InstanceElement>>
+  return {
+    name: 'extendedTriggersMetadata',
+    remote: true,
+    onFetch: ensureSafeFilterFetch({
+      config,
+      filterName: 'extendedTriggersMetadata',
+      warningMessage: 'Failed to extend the Metadata on Apex Triggers',
+      fetchFilterFunc: async elements => {
+        const apexTriggerMetadataType = elements
+          .filter(isObjectType)
+          .find(type => apiNameSync(type) === APEX_TRIGGER_METADATA_TYPE)
+        if (apexTriggerMetadataType === undefined) {
+          return
         }
-      })
-      const internalIds = Object.keys(triggersByInternalId)
-      if (internalIds.length === 0) {
-        return
-      }
-      const recordsById = _.keyBy(
-        await queryApexTriggerRecords({ client, chunkSize: IDS_CHUNK_SIZE, internalIds }),
-        record => record.Id,
-      )
-      // Map CustomObjects by both internal Id and API Name
-      const customObjectsByInternalId: Record<string, ObjectType> = {}
-      const customObjectsByApiName: Record<string, ObjectType> = {}
-      await awu(await buildElementsSourceForFetch(elements, config).getAll())
-        .filter(isCustomObjectSync)
-        .forEach(customObject => {
-          const internalId = customObject.annotations[INTERNAL_ID_FIELD]
-          const objectApiName = apiNameSync(customObject)
+        updateApexTriggerMetadataType(apexTriggerMetadataType)
+        const triggersByInternalId: Record<string, InstanceElement> = {}
+        elements.filter(isInstanceOfTypeSync(APEX_TRIGGER_METADATA_TYPE)).forEach(trigger => {
+          const internalId = trigger.value[INTERNAL_ID_FIELD]
           if (_.isString(internalId)) {
-            customObjectsByInternalId[internalId] = customObject
-          }
-          if (objectApiName) {
-            customObjectsByApiName[objectApiName] = customObject
+            triggersByInternalId[internalId] = trigger
           }
         })
-      const triggersWithMissingRecord: string[] = []
-      Object.entries(triggersByInternalId).forEach(([internalId, trigger]) => {
-        const record = recordsById[internalId]
-        if (record) {
-          extendTriggerMetadataFromRecord({ trigger, record, customObjectsByInternalId, customObjectsByApiName })
-        } else {
-          triggersWithMissingRecord.push(apiNameSync(trigger) ?? '')
+        const internalIds = Object.keys(triggersByInternalId)
+        if (internalIds.length === 0) {
+          return
         }
-      })
-      log.warn(
-        'Failed to extend the following Apex Triggers: %s',
-        inspectValue(triggersWithMissingRecord, { maxArrayLength: 100 }),
+        const recordsById = _.keyBy(
+          await queryApexTriggerRecords({ client, chunkSize: IDS_CHUNK_SIZE, internalIds }),
+          record => record.Id,
+        )
+        // Map CustomObjects by both internal Id and API Name
+        const customObjectsByInternalId: Record<string, ObjectType> = {}
+        const customObjectsByApiName: Record<string, ObjectType> = {}
+        await awu(await buildElementsSourceForFetch(elements, config).getAll())
+          .filter(isCustomObjectSync)
+          .forEach(customObject => {
+            const internalId = customObject.annotations[INTERNAL_ID_FIELD]
+            const objectApiName = apiNameSync(customObject)
+            if (_.isString(internalId)) {
+              customObjectsByInternalId[internalId] = customObject
+            }
+            if (objectApiName) {
+              customObjectsByApiName[objectApiName] = customObject
+            }
+          })
+        const triggersWithMissingRecord: string[] = []
+        Object.entries(triggersByInternalId).forEach(([internalId, trigger]) => {
+          const record = recordsById[internalId]
+          if (record) {
+            extendTriggerMetadataFromRecord({ trigger, record, customObjectsByInternalId, customObjectsByApiName })
+          } else {
+            triggersWithMissingRecord.push(apiNameSync(trigger) ?? '')
+          }
+        })
+        log.warn(
+          'Failed to extend the following Apex Triggers: %s',
+          inspectValue(triggersWithMissingRecord, { maxArrayLength: 100 }),
+        )
+      },
+    }),
+    preDeploy: async changes => {
+      const relevantApexTriggerChanges = changes
+        .filter(isInstanceOfTypeChangeSync(APEX_TRIGGER_METADATA_TYPE))
+        .filter(isAdditionOrModificationChange)
+      originalApexTriggerChangesByElemId = _.keyBy(
+        await awu(relevantApexTriggerChanges)
+          .map(change => applyFunctionToChangeData(change, async trigger => trigger.clone()))
+          .toArray(),
+        change => getChangeData(change).elemID.getFullName(),
       )
+      relevantApexTriggerChanges.map(getChangeData).forEach(trigger => {
+        delete trigger.value[TRIGGER_TYPE_FIELD]
+        delete trigger.annotations[CORE_ANNOTATIONS.PARENT]
+      })
     },
-  }),
-})
+    onDeploy: async changes => {
+      const appliedApexTriggerChanges = changes
+        .filter(isInstanceOfTypeChangeSync(APEX_TRIGGER_METADATA_TYPE))
+        .filter(isAdditionOrModificationChange)
+      const appliedElemIds = appliedApexTriggerChanges.map(change => getChangeData(change).elemID.getFullName())
+      _.pullAll(changes, appliedApexTriggerChanges)
+      Object.values(_.pick(originalApexTriggerChangesByElemId, appliedElemIds)).forEach(originalChange => {
+        changes.push(originalChange)
+      })
+    },
+  }
+}
 
 export default filterCreator

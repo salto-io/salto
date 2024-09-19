@@ -32,7 +32,6 @@ const {
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   SCOPE_TAG_TYPE_NAME,
   // Nested types
-  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
@@ -118,18 +117,6 @@ const graphBetaCustomizations: FetchCustomizations = {
         allowEmptyArrays: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
-  [APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME]: {
-    element: {
-      fieldCustomizations: {
-        id: {
-          omit: true,
-        },
-        version: {
-          omit: true,
-        },
-      },
     },
   },
   [APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME]: {

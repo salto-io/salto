@@ -43,6 +43,7 @@ import {
   ARTICLE_ATTACHMENTS_FIELD,
   GUIDE_THEME_TYPE_NAME,
   THEME_SETTINGS_TYPE_NAME,
+  TRANSLATIONS_FIELD,
 } from '../constants'
 import { shortElemIdHash } from './utils'
 
@@ -352,6 +353,34 @@ const filterCreator: FilterCreator = () => ({
       attachment.value.content = new StaticFile({
         filepath: staticFilePath.join('/'),
         content,
+      })
+    })
+
+    await awu(TRANSLATION_TYPE_NAMES.flatMap(type => guideGrouped[type] ?? [])).forEach(async translation => {
+      const staticFile = translation.value.body
+      if (!isStaticFile(staticFile)) {
+        return
+      }
+      const content = await staticFile.getContent()
+      if (content === undefined) {
+        log.warn(`content is undefined for translation ${translation.elemID.getFullName()}`)
+        return
+      }
+      const path = translation.path ?? []
+      // path = [zendesk, records, guide, brand, brandName ... ]
+      const staticFilePath = [
+        ZENDESK,
+        TRANSLATIONS_FIELD,
+        ...path.slice(2, -1),
+        normalizeFilePathPart(
+          `${shortElemIdHash(translation.elemID)}_${staticFile.hash.slice(0, 10)}_${naclCase(translation.value.title)}`,
+        ), // <elemId-hash>_<file-hash>_title
+      ]
+      translation.value.body = new StaticFile({
+        filepath: staticFilePath.join('/'),
+        content,
+        isTemplate: staticFile.isTemplate,
+        encoding: staticFile.encoding,
       })
     })
   },

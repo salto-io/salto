@@ -16,8 +16,10 @@ import {
   ReferenceExpression,
   CORE_ANNOTATIONS,
   UnresolvedReference,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
+import { parserUtils } from '@salto-io/parser'
 import filterCreator from '../../../src/filters/article/article_body'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -254,23 +256,26 @@ describe('article body filter', () => {
         const fetchedTranslationWithReferences = elements
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'translationWithReferences')
-        expect(fetchedTranslationWithReferences?.value.body).toEqual(
+        const fetchedBody = fetchedTranslationWithReferences?.value.body
+        expect(fetchedBody).toBeInstanceOf(StaticFile)
+        expect(fetchedBody.isTemplate).toBeTruthy()
+        expect(await parserUtils.staticFileToTemplateExpression(fetchedBody)).toEqual(
           new TemplateExpression({
             parts: [
               '<p><a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
+              new ReferenceExpression(brandInstance.elemID),
               '/hc/en-us/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
+              new ReferenceExpression(articleInstance.elemID),
               '/sep/sections/',
-              new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+              new ReferenceExpression(sectionInstance.elemID),
               '/sep/categories/',
-              new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+              new ReferenceExpression(categoryInstance.elemID),
               '/sep/article_attachments/',
-              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+              new ReferenceExpression(attachmentInstance.elemID),
               '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
+              new ReferenceExpression(brandInstance.elemID),
               '/hc/he/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
+              new ReferenceExpression(articleInstance.elemID),
               '-extra_string"',
             ],
           }),
@@ -295,23 +300,25 @@ describe('article body filter', () => {
         const fetchedTranslationWithoutReferences = elements
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'translationWithMissingReferences')
-        expect(fetchedTranslationWithoutReferences?.value.body).toEqual(
+        expect(
+          await parserUtils.staticFileToTemplateExpression(fetchedTranslationWithoutReferences?.value.body),
+        ).toEqual(
           new TemplateExpression({
             parts: [
               '<p><a href="',
-              new ReferenceExpression(emptyBrandInstance.elemID, emptyBrandInstance),
+              new ReferenceExpression(emptyBrandInstance.elemID),
               '/hc/en-us/articles/',
-              new ReferenceExpression(missingArticleInstance.elemID, missingArticleInstance),
+              new ReferenceExpression(missingArticleInstance.elemID),
               '/sep/sections/',
-              new ReferenceExpression(missingSectionInstance.elemID, missingSectionInstance),
+              new ReferenceExpression(missingSectionInstance.elemID),
               '/sep/categories/',
-              new ReferenceExpression(missingCategoryInstance.elemID, missingCategoryInstance),
+              new ReferenceExpression(missingCategoryInstance.elemID),
               '/sep/article_attachments/',
-              new ReferenceExpression(missingArticleAttachmentInstance.elemID, missingArticleAttachmentInstance),
+              new ReferenceExpression(missingArticleAttachmentInstance.elemID),
               '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
+              new ReferenceExpression(brandInstance.elemID),
               '/hc/he/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
+              new ReferenceExpression(articleInstance.elemID),
               '-extra_string"',
             ],
           }),
@@ -330,16 +337,18 @@ describe('article body filter', () => {
         const fetchedTranslationWithTemplateExpression = elements
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'articleWithTemplateExpression')
-        expect(fetchedTranslationWithTemplateExpression?.value.body).toEqual(
+        expect(
+          await parserUtils.staticFileToTemplateExpression(fetchedTranslationWithTemplateExpression?.value.body),
+        ).toEqual(
           new TemplateExpression({
             parts: [
-              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+              new ReferenceExpression(attachmentInstance.elemID),
               '<p><a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
+              new ReferenceExpression(brandInstance.elemID),
               '/hc/en-us/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
+              new ReferenceExpression(articleInstance.elemID),
               '" target="_self">linkedArticle</a>',
-              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+              new ReferenceExpression(attachmentInstance.elemID),
             ],
           }),
         )
@@ -350,7 +359,7 @@ describe('article body filter', () => {
         const fetchedTranslationWithoutReferences = elements
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'translationWithoutReferences')
-        expect(fetchedTranslationWithoutReferences?.value.body).toEqual(
+        expect(((await fetchedTranslationWithoutReferences?.value.body.getContent()) ?? '').toString()).toEqual(
           '<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/0/sep/sections/0/sep/categories/0/sep/article_attachments/0-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/0-extra_string"',
         )
         expect(filterResult.errors).toHaveLength(0)
@@ -367,19 +376,19 @@ describe('article body filter', () => {
         const fetchedTranslationWithReferences = elements
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'articleWithExcludedBrand')
-        expect(fetchedTranslationWithReferences?.value.body).toEqual(
+        expect(((await fetchedTranslationWithReferences?.value.body.getContent()) ?? '').toString()).toEqual(
           '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/0" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
         )
         const fetchedTranslationWithReferences2 = elements
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'articleWithMixedBrand')
-        expect(fetchedTranslationWithReferences2?.value.body).toEqual(
+        expect(await parserUtils.staticFileToTemplateExpression(fetchedTranslationWithReferences2?.value.body)).toEqual(
           new TemplateExpression({
             parts: [
               '<p><a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
+              new ReferenceExpression(brandInstance.elemID),
               '/hc/en-us/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
+              new ReferenceExpression(articleInstance.elemID),
               '" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
             ],
           }),
@@ -408,13 +417,13 @@ describe('article body filter', () => {
       await filter.onFetch(elementsAfterFetch)
       const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
       await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
-      expect(elementsAfterPreDeploy).toEqual(elements)
+      expect(elementsAfterPreDeploy).toEqual(elementsAfterFetch)
     })
   })
 
   describe('onDeploy', () => {
     it('Returns elements to after fetch state (with templates) after onDeploy', async () => {
-      // we recreate feth and onDeploy to have the templates in place to be restored by onDeploy
+      // we recreate fetch and onDeploy to have the templates in place to be restored by onDeploy
       const elementsAfterFetch = elements.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
       const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())

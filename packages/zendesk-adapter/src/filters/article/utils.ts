@@ -312,10 +312,17 @@ export const updateArticleTranslationBody = async ({
   await awu(articleTranslations)
     .filter(isResolvedReferenceExpression)
     .map(translationRef => translationRef.value)
-    .filter(translationInstance => isTemplateExpression(translationInstance.value.body))
+    .filter(
+      translationInstance =>
+        isTemplateExpression(translationInstance.value.body) ||
+        (isStaticFile(translationInstance.value.body) && translationInstance.value.body.isTemplate),
+    )
     .map(translationInstance => translationInstance.clone()) // we don't want to resolve the translation itself
     .forEach(async translationInstance => {
       try {
+        if (Buffer.isBuffer(translationInstance.value.body)) {
+          translationInstance.value.body = translationInstance.value.body.toString()
+        }
         replaceTemplatesWithValues(
           { values: [translationInstance.value], fieldName: 'body' },
           {},

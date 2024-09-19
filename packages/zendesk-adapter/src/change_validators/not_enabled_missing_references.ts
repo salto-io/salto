@@ -37,7 +37,7 @@ const MISSING_REFERENCE_FILTERS: ((elements: Element[], config: ZendeskConfig) =
   fieldReferencesFilter,
   listValuesMissingReferencesFilter,
   dynamicContentReferencesFilter,
-  articleBodyFilter,
+  articleBodyFilter((translationBody, _translationElemID) => translationBody), // We want the templateExpression to retain the annotations.
   handleTemplateExpressionFilter,
 ]
 

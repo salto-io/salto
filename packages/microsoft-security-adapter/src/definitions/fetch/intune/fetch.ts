@@ -10,7 +10,7 @@ import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { EndpointPath, Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
-import { intuneConstants, ODATA_TYPE_FIELD_NACL_CASE } from '../../../constants'
+import { intuneConstants } from '../../../constants'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
 import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
@@ -186,7 +186,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         isTopLevel: true,
         serviceUrl: {
           baseUrl: SERVICE_BASE_URL,
-          path: `#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/{${ODATA_TYPE_FIELD_NACL_CASE}}/policyName/{${NAME_ID_FIELD.fieldName}}/policyType~/0/isAssigned~/{isAssigned}`,
+          path: '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.androidManagedAppProtection/policyName/{displayName}',
         },
         allowEmptyArrays: true,
       },

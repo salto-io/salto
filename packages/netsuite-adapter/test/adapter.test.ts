@@ -1431,8 +1431,6 @@ describe('Adapter', () => {
     })
 
     describe('getChangedObjects', () => {
-      let suiteAppClient: SuiteAppClient
-
       beforeEach(() => {
         getElementMock.mockResolvedValue(
           new InstanceElement(

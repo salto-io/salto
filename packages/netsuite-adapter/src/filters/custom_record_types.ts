@@ -32,6 +32,7 @@ const addFieldsToType = (
   type: ObjectType,
   nameToType: Record<string, ObjectType>,
   customRecordTypes: Record<string, ObjectType>,
+  internalIdToTypes: Record<string, string[]>,
 ): void => {
   makeArray(type.annotations[CUSTOM_FIELDS]?.[CUSTOM_FIELDS_LIST]).forEach((customField, index) => {
     const field = getCustomField({
@@ -39,6 +40,7 @@ const addFieldsToType = (
       customField,
       nameToType,
       customRecordTypes,
+      internalIdToTypes,
     })
     field.annotations = { ...customField, [INDEX]: index }
     type.fields[field.name] = field
@@ -94,7 +96,13 @@ const getElementsSourceTypes = async (
         .toArray()
     : []
 
-const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, elementsSource, isPartial, config }) => ({
+const filterCreator: LocalFilterCreator = ({
+  elementsSourceIndex,
+  elementsSource,
+  isPartial,
+  config,
+  internalIdToTypes,
+}) => ({
   name: 'customRecordTypesType',
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
@@ -119,7 +127,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, elementsSource
     )
 
     customRecordTypes.forEach(type => {
-      addFieldsToType(type, nameToType, customRecordTypesMap)
+      addFieldsToType(type, nameToType, customRecordTypesMap, internalIdToTypes)
       removeCustomFieldsAnnotation(type)
       if (fetchQuery.isCustomRecordTypeMatch(type.elemID.name)) {
         removeInstancesAnnotation(type)

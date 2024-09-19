@@ -48,7 +48,7 @@ import {
   getSuiteQLTableInternalIdsMap,
   updateSuiteQLTableInstances,
 } from '../data_elements/suiteql_table_elements'
-import { INTERNAL_ID_TO_TYPES, SuiteQLTableName } from '../data_elements/types'
+import { SuiteQLTableName } from '../data_elements/types'
 import { captureServiceIdInfo } from '../service_id_info'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { assignToCustomFieldsSelectRecordTypeIndex } from '../elements_source_index/elements_source_index'
@@ -407,9 +407,9 @@ const getQueryRecordType = (path: ElemID): QueryRecordType | undefined => {
   return QUERY_RECORD_TYPES[path.createParentID().name as QueryRecordType]
 }
 
-const getTypesFromInternalId = (typeInternalId: string): string[] => [
-  ...(INTERNAL_ID_TO_TYPES[typeInternalId] ?? []),
-  ...(ADDITIONAL_INTERNAL_ID_TO_TYPES[typeInternalId] ?? []),
+const getTypesFromInternalId = (internalIdToTypes: Record<string, string[]>, typeToInternalId: string): string[] => [
+  ...(internalIdToTypes[typeToInternalId] ?? []),
+  ...(ADDITIONAL_INTERNAL_ID_TO_TYPES[typeToInternalId] ?? []),
 ]
 
 const getQueryRecordFieldType = (
@@ -418,6 +418,7 @@ const getQueryRecordFieldType = (
   field: string,
   suiteQLTablesMap: Record<string, unknown>,
   selectRecordTypeMap: Record<string, unknown>,
+  internalIdToTypes: Record<string, string[]>,
 ): string | string[] | undefined => {
   // a field type by the field itself should be the first option ([field, value[field]])
   const fieldType = [[field, value[field]]]
@@ -452,7 +453,7 @@ const getQueryRecordFieldType = (
   const suiteQLTableName =
     suiteQLTablesMap[fieldType] !== undefined
       ? fieldType
-      : getTypesFromInternalId(fieldType).find(typeName => suiteQLTablesMap[typeName] !== undefined)
+      : getTypesFromInternalId(internalIdToTypes, fieldType).find(typeName => suiteQLTablesMap[typeName] !== undefined)
 
   if (suiteQLTableName === undefined) {
     log.warn('could not find SuiteQL table instance %s', fieldType)
@@ -469,10 +470,18 @@ const getFieldsWithAccountSpecificValue = (
   path: ElemID,
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
+  internalIdToTypes: Record<string, string[]>,
 ): QueryRecordField[] =>
   Object.entries(value).flatMap(([field, fieldValue]) => {
     if (fieldValue === ACCOUNT_SPECIFIC_VALUE) {
-      const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLTablesMap, selectRecordTypeMap)
+      const fieldType = getQueryRecordFieldType(
+        instance,
+        value,
+        field,
+        suiteQLTablesMap,
+        selectRecordTypeMap,
+        internalIdToTypes,
+      )
       if (fieldType !== undefined) {
         return { name: field, type: fieldType }
       }
@@ -483,7 +492,14 @@ const getFieldsWithAccountSpecificValue = (
         parameters.some(
           param =>
             param?.[VALUE_FIELD] === ACCOUNT_SPECIFIC_VALUE &&
-            getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap) !== undefined,
+            getQueryRecordFieldType(
+              instance,
+              param,
+              'value',
+              suiteQLTablesMap,
+              selectRecordTypeMap,
+              internalIdToTypes,
+            ) !== undefined,
         )
       ) {
         if (typeof fieldValue[FORMULA] !== 'string') {
@@ -503,6 +519,7 @@ const getQueryRecords = (
   instance: InstanceElement,
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
+  internalIdToTypes: Record<string, string[]>,
 ): InstanceWithQueryRecords => {
   const allQueryRecords: Record<string, Omit<QueryRecord, 'path'>> = {}
 
@@ -515,7 +532,14 @@ const getQueryRecords = (
       }
       const type = getQueryRecordType(elemID)
       if (type !== undefined) {
-        const fields = getFieldsWithAccountSpecificValue(instance, value, elemID, suiteQLTablesMap, selectRecordTypeMap)
+        const fields = getFieldsWithAccountSpecificValue(
+          instance,
+          value,
+          elemID,
+          suiteQLTablesMap,
+          selectRecordTypeMap,
+          internalIdToTypes,
+        )
         allQueryRecords[elemID.getFullName()] = {
           type,
           serviceId: value[SCRIPT_ID],
@@ -647,6 +671,7 @@ const getParametersAccountSpecificValueToTransform = (
   formulaWithInternalIds: string,
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
+  internalIdToTypes: Record<string, string[]>,
 ): AccountSpecificValueToTransform[] => {
   const conditionFormula = value[INIT_CONDITION][FORMULA]
   const allParams = getConditionParameters(value[INIT_CONDITION])
@@ -687,7 +712,14 @@ const getParametersAccountSpecificValueToTransform = (
       return []
     }
     const internalId = internalIds[index]
-    const paramType = getQueryRecordFieldType(instance, param, 'value', suiteQLTablesMap, selectRecordTypeMap)
+    const paramType = getQueryRecordFieldType(
+      instance,
+      param,
+      'value',
+      suiteQLTablesMap,
+      selectRecordTypeMap,
+      internalIdToTypes,
+    )
     if (paramType === undefined) {
       return []
     }
@@ -701,6 +733,7 @@ const getAccountSpecificValueToTransform = (
   results: QueryRecordResponse[],
   suiteQLTablesMap: Record<string, InstanceElement>,
   selectRecordTypeMap: Record<string, unknown>,
+  internalIdToTypes: Record<string, string[]>,
 ): AccountSpecificValueToTransform[] => {
   const innerValue = record.elemID.isTopLevel() ? instance.value : resolvePath(instance, record.elemID)
   const innerResult = getInnerResult(results, record.path)
@@ -733,6 +766,7 @@ const getAccountSpecificValueToTransform = (
         internalId,
         suiteQLTablesMap,
         selectRecordTypeMap,
+        internalIdToTypes,
       )
     }
     return { field, value: innerValue, internalId }
@@ -756,6 +790,7 @@ const toMultipleInternalIdsWarning = (elemID: ElemID, name: string, internalId: 
 export const getResolvedAccountSpecificValues = (
   instance: InstanceElement,
   suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>,
+  internalIdToTypes: Record<string, string[]>,
 ): ResolvedAccountSpecificValuesResult => {
   const resolvedAccountSpecificValues: ResolvedAccountSpecificValue[] = []
   const resolveWarnings: ChangeError[] = []
@@ -771,7 +806,14 @@ export const getResolvedAccountSpecificValues = (
       return
     }
     const name = getResolvedAccountSpecificValue(fieldValue)
-    const fieldType = getQueryRecordFieldType(instance, value, field, suiteQLNameToInternalIdsMap, {})
+    const fieldType = getQueryRecordFieldType(
+      instance,
+      value,
+      field,
+      suiteQLNameToInternalIdsMap,
+      {},
+      internalIdToTypes,
+    )
     const internalIds = _.uniq(makeArray(fieldType).flatMap(type => suiteQLNameToInternalIdsMap[type][name] ?? []))
     const internalId = internalIds[0]
     if (internalIds.length === 0) {
@@ -827,6 +869,8 @@ const filterCreator: RemoteFilterCreator = ({
   client,
   elementsSourceIndex,
   isPartial,
+  config,
+  internalIdToTypes,
   suiteQLNameToInternalIdsMap = {},
 }) => ({
   name: 'workflowAccountSpecificValues',
@@ -844,7 +888,7 @@ const filterCreator: RemoteFilterCreator = ({
     const selectRecordTypeMap = await getSelectRecordTypeMap(elements, elementsSourceIndex, isPartial)
     const workflowInstances = instances.filter(instance => instance.elemID.typeName === WORKFLOW)
     const queryRecords = workflowInstances
-      .map(instance => getQueryRecords(instance, suiteQLTablesMap, selectRecordTypeMap))
+      .map(instance => getQueryRecords(instance, suiteQLTablesMap, selectRecordTypeMap, internalIdToTypes))
       .filter(({ records }) => records.length > 0)
 
     if (queryRecords.length === 0) {
@@ -863,7 +907,14 @@ const filterCreator: RemoteFilterCreator = ({
 
     const accountSpecificValuesToTransform = queryRecords.flatMap(({ instance, records }) =>
       records.flatMap(record =>
-        getAccountSpecificValueToTransform(instance, record, results, suiteQLTablesMap, selectRecordTypeMap),
+        getAccountSpecificValueToTransform(
+          instance,
+          record,
+          results,
+          suiteQLTablesMap,
+          selectRecordTypeMap,
+          internalIdToTypes,
+        ),
       ),
     )
 
@@ -875,6 +926,7 @@ const filterCreator: RemoteFilterCreator = ({
 
     await updateSuiteQLTableInstances({
       client,
+      config,
       queryBy: 'internalId',
       itemsToQuery: internalIdsToQuery,
       suiteQLTablesMap,
@@ -899,9 +951,11 @@ const filterCreator: RemoteFilterCreator = ({
       return
     }
     workflowInstances.forEach(instance =>
-      getResolvedAccountSpecificValues(instance, suiteQLNameToInternalIdsMap).resolvedAccountSpecificValues.forEach(
-        ({ path, value }) => setPath(instance, path, value),
-      ),
+      getResolvedAccountSpecificValues(
+        instance,
+        suiteQLNameToInternalIdsMap,
+        internalIdToTypes,
+      ).resolvedAccountSpecificValues.forEach(({ path, value }) => setPath(instance, path, value)),
     )
   },
 })

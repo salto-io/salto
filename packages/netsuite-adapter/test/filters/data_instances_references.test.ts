@@ -20,8 +20,10 @@ import filterCreator from '../../src/filters/data_instances_references'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('data_instances_references', () => {
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
   const firstType = new ObjectType({
     elemID: new ElemID(NETSUITE, 'firstType'),
     fields: {
@@ -54,6 +56,8 @@ describe('data_instances_references', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(filterOpts).onFetch?.([instance, referencedInstance])
       expect((instance.value.field as ReferenceExpression).elemID.getFullName()).toBe(
@@ -73,6 +77,8 @@ describe('data_instances_references', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(fetchOpts).onFetch?.([instance])
       expect(instance.value.field.internalId).toBe('1')
@@ -97,6 +103,8 @@ describe('data_instances_references', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(fetchOpts).onFetch?.([instance])
       expect((instance.value.field as ReferenceExpression).elemID.getFullName()).toBe(
@@ -119,6 +127,8 @@ describe('data_instances_references', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(fetchOpts).onFetch?.([instance, referencedInstance])
       expect((instance.value.recordRefList[0] as ReferenceExpression).elemID.getFullName()).toBe(
@@ -143,6 +153,8 @@ describe('data_instances_references', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(fetchOpts).preDeploy?.([toChange({ before: instance, after: instance })])
       expect(instance.value).toEqual({
@@ -167,6 +179,8 @@ describe('data_instances_references', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(fetchOpts).preDeploy?.([
         toChange({ before: instance, after: instance }),

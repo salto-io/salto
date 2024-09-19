@@ -79,6 +79,7 @@ import * as elementsSourceIndexModule from '../src/elements_source_index/element
 import { fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
 import { FetchByQueryFunc } from '../src/config/query'
 import { createObjectIdListElements, OBJECT_ID_LIST_TYPE_NAME, OBJECT_ID_LIST_FIELD_NAME } from '../src/scriptid_list'
+import { getTypesToInternalId } from '../src/data_elements/types'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -1607,7 +1608,14 @@ describe('Adapter', () => {
         const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getDeletedElementsMock).toHaveBeenCalled()
         expect(partialFetchData?.deletedElements).toEqual([elemId])
-        expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
+        const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
+        expect(spy).toHaveBeenCalledWith({
+          elementsSource: expect.anything(),
+          isPartial: true,
+          typeToInternalId,
+          internalIdToTypes,
+          deletedElements: [elemId],
+        })
       })
     })
 
@@ -1624,7 +1632,14 @@ describe('Adapter', () => {
         const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts })
         expect(getDeletedElementsMock).not.toHaveBeenCalled()
         expect(partialFetchData?.deletedElements).toEqual(undefined)
-        expect(spy).toHaveBeenCalledWith(expect.anything(), false, [])
+        const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
+        expect(spy).toHaveBeenCalledWith({
+          elementsSource: expect.anything(),
+          isPartial: false,
+          typeToInternalId,
+          internalIdToTypes,
+          deletedElements: [],
+        })
       })
     })
   })

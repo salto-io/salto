@@ -39,7 +39,6 @@ import {
 } from '../constants'
 import { TYPE_ID } from '../client/suiteapp_client/constants'
 import { RemoteFilterCreator } from '../filter'
-import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import {
   SUITEQL_TABLE,
   getSuiteQLTableInternalIdsMap,
@@ -246,6 +245,7 @@ const getSuiteQLTableInstance = (
   field: Field | undefined,
   typeId: string | undefined,
   suiteQLTablesMap: Record<string, InstanceElement>,
+  internalIdToTypes: Record<string, string[]>,
 ): InstanceElement | undefined => {
   if (
     field !== undefined &&
@@ -262,7 +262,7 @@ const getSuiteQLTableInstance = (
     log.debug('value in %s has no typeId', path.getFullName())
     return undefined
   }
-  const potentialTypes = INTERNAL_ID_TO_TYPES[typeId]
+  const potentialTypes = internalIdToTypes[typeId]
   if (potentialTypes === undefined) {
     log.warn('missing internalId to type mapping for typeId %s', typeId)
     return undefined
@@ -280,6 +280,7 @@ const getSuiteQLTableInstance = (
 const getAccountSpecificValuesToTransform = (
   instance: InstanceElement,
   suiteQLTablesMap: Record<string, InstanceElement>,
+  internalIdToTypes: Record<string, string[]>,
 ): AccountSpecificValueToTransform[] => {
   const result: AccountSpecificValueToTransform[] = []
 
@@ -308,7 +309,7 @@ const getAccountSpecificValuesToTransform = (
       path,
       internalId,
       fallbackName,
-      suiteQLTableInstance: getSuiteQLTableInstance(path, field, typeId, suiteQLTablesMap),
+      suiteQLTableInstance: getSuiteQLTableInstance(path, field, typeId, suiteQLTablesMap, internalIdToTypes),
     })
 
     return value
@@ -434,6 +435,7 @@ const resolveAccountSpecificValues = ({
 const filterCreator: RemoteFilterCreator = ({
   client,
   config,
+  internalIdToTypes,
   elementsSource,
   isPartial,
   suiteQLNameToInternalIdsMap = {},
@@ -455,7 +457,7 @@ const filterCreator: RemoteFilterCreator = ({
 
     const accountSpecificValuesToTransform = instances
       .filter(instance => isDataObjectType(instance.getTypeSync()))
-      .flatMap(instance => getAccountSpecificValuesToTransform(instance, suiteQLTablesMap))
+      .flatMap(instance => getAccountSpecificValuesToTransform(instance, suiteQLTablesMap, internalIdToTypes))
 
     const internalIdsToQuery = accountSpecificValuesToTransform.flatMap(({ suiteQLTableInstance, internalId }) =>
       suiteQLTableInstance !== undefined &&
@@ -466,6 +468,7 @@ const filterCreator: RemoteFilterCreator = ({
 
     await updateSuiteQLTableInstances({
       client,
+      config,
       queryBy: 'internalId',
       itemsToQuery: internalIdsToQuery,
       suiteQLTablesMap,

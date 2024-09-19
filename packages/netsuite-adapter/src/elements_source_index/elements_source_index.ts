@@ -24,7 +24,6 @@ import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } fr
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { extractCustomRecordFields, getElementServiceIdRecords } from '../filters/element_references'
 import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE, SELECT_RECORD_TYPE } from '../constants'
-import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -47,6 +46,7 @@ const toCustomListValueElemID = (instanceElemId: ElemID, valueKey: string): Elem
 export const assignToInternalIdsIndex = async (
   element: Element,
   internalIdsIndex: Record<string, ElemID>,
+  typeToInternalId: Record<string, string>,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const values = getElementValueOrAnnotations(element)
@@ -56,15 +56,15 @@ export const assignToInternalIdsIndex = async (
   }
   const { elemID } = element
   if (isObjectType(element) && isCustomRecordType(element)) {
-    const customRecordTypeId = TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
+    const customRecordTypeId = typeToInternalId[CUSTOM_RECORD_TYPE]
     internalIdsIndex[getDataInstanceId(internalId, CUSTOM_RECORD_TYPE)] = elemID
     internalIdsIndex[getDataInstanceId(internalId, customRecordTypeId)] = elemID
   }
   if (isInstanceElement(element)) {
     const { typeName } = elemID
     internalIdsIndex[getDataInstanceId(internalId, typeName)] = elemID
-    if (typeName in TYPES_TO_INTERNAL_ID) {
-      internalIdsIndex[getDataInstanceId(internalId, TYPES_TO_INTERNAL_ID[typeName])] = elemID
+    if (typeName in typeToInternalId) {
+      internalIdsIndex[getDataInstanceId(internalId, typeToInternalId[typeName])] = elemID
     }
     const type = await element.getType(elementsSource)
     if (isCustomRecordType(type) && type.annotations[INTERNAL_ID]) {
@@ -93,11 +93,19 @@ export const assignToCustomFieldsSelectRecordTypeIndex = (element: Element, inde
   }
 }
 
-const createIndexes = async (
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean,
-  deletedElements: ElemID[],
-): Promise<ElementsSourceIndexes> => {
+const createIndexes = async ({
+  elementsSource,
+  isPartial,
+  typeToInternalId,
+  internalIdToTypes,
+  deletedElements,
+}: {
+  elementsSource: ReadOnlyElementsSource
+  isPartial: boolean
+  typeToInternalId: Record<string, string>
+  internalIdToTypes: Record<string, string[]>
+  deletedElements: ElemID[]
+}): Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
@@ -107,11 +115,11 @@ const createIndexes = async (
   const customFieldsSelectRecordTypeIndex: Record<string, unknown> = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
-    await assignToInternalIdsIndex(element, internalIdsIndex, elementsSource)
+    await assignToInternalIdsIndex(element, internalIdsIndex, typeToInternalId, elementsSource)
   }
 
   const updateCustomFieldsIndex = (element: InstanceElement): void => {
-    getFieldInstanceTypes(element).forEach(type => {
+    getFieldInstanceTypes(element, internalIdToTypes).forEach(type => {
       if (!(type in customFieldsIndex)) {
         customFieldsIndex[type] = []
       }
@@ -179,17 +187,25 @@ const createIndexes = async (
   }
 }
 
-export const createElementsSourceIndex = (
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean,
-  deletedElements?: ElemID[],
-): LazyElementsSourceIndexes => {
+export const createElementsSourceIndex = ({
+  elementsSource,
+  isPartial,
+  typeToInternalId,
+  internalIdToTypes,
+  deletedElements = [],
+}: {
+  elementsSource: ReadOnlyElementsSource
+  isPartial: boolean
+  typeToInternalId: Record<string, string>
+  internalIdToTypes: Record<string, string[]>
+  deletedElements?: ElemID[]
+}): LazyElementsSourceIndexes => {
   let cachedIndex: ElementsSourceIndexes | undefined
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
         cachedIndex = await log.timeDebug(
-          () => createIndexes(elementsSource, isPartial, deletedElements ?? []),
+          () => createIndexes({ elementsSource, isPartial, typeToInternalId, internalIdToTypes, deletedElements }),
           'createIndexes',
         )
       }

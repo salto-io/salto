@@ -28,6 +28,7 @@ import filterCreator, {
   UNKNOWN_TYPE_REFERENCES_ELEM_ID,
   UNKNOWN_TYPE_REFERENCES_TYPE_NAME,
 } from '../../src/filters/data_account_specific_values'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 const runSuiteQLMock = jest.fn()
 const runSavedSearchQueryMock = jest.fn()
@@ -79,6 +80,7 @@ describe('data account specific values filter', () => {
         789: 'Value 789',
       },
     })
+    const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
     filterOpts = {
       client,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
@@ -93,6 +95,8 @@ describe('data account specific values filter', () => {
           resolveAccountSpecificValues: true,
         },
       },
+      typeToInternalId,
+      internalIdToTypes,
     }
   })
 

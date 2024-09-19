@@ -19,6 +19,7 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../sr
 import filterCreator from '../../src/filters/custom_record_types'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { emptyQueryParams } from '../../src/config/config_creator'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 const { awu } = collections.asynciterable
 
@@ -28,6 +29,7 @@ describe('custom record types filter', () => {
   let lockedCustomRecordFieldRefType: ObjectType
   let dataType: ObjectType
 
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
   const filterOpts = {
     config: { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: emptyQueryParams() } },
     isPartial: false,
@@ -41,6 +43,8 @@ describe('custom record types filter', () => {
         throw new Error('should not call elementsSource.list')
       },
     },
+    typeToInternalId,
+    internalIdToTypes,
   } as unknown as LocalFilterOpts
 
   beforeEach(() => {

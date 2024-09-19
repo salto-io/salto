@@ -30,6 +30,7 @@ import { LocalFilterCreator } from '../src/filter'
 import { addApplicationIdToType, addBundleFieldToType } from '../src/transformer'
 import { createEmptyElementsSourceIndexes } from './utils'
 import { fullFetchConfig } from '../src/config/config_creator'
+import { getTypesToInternalId } from '../src/data_elements/types'
 
 const parseSdfProjectDirMock = jest.fn()
 jest.mock('../src/client/sdf_parser', () => ({
@@ -114,13 +115,20 @@ describe('sdf folder loader', () => {
       },
       [filterMock],
     )
-
-    expect(createElementsSourceIndexMock).toHaveBeenCalledWith(elementsSource, true)
+    const { internalIdToTypes, typeToInternalId } = getTypesToInternalId([])
+    expect(createElementsSourceIndexMock).toHaveBeenCalledWith({
+      elementsSource,
+      isPartial: true,
+      internalIdToTypes,
+      typeToInternalId,
+    })
     expect(filterMock).toHaveBeenCalledWith({
       elementsSourceIndex,
       elementsSource,
       isPartial: true,
       config: { fetch: fullFetchConfig() },
+      internalIdToTypes,
+      typeToInternalId,
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 

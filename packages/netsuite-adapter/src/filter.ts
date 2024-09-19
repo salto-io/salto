@@ -20,6 +20,8 @@ export type LocalFilterOpts = {
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
   config: NetsuiteConfig
+  internalIdToTypes: Record<string, string[]>
+  typeToInternalId: Record<string, string>
   timeZoneAndFormat?: TimeZoneAndFormat
   changesGroupId?: string
   fetchTime?: Date

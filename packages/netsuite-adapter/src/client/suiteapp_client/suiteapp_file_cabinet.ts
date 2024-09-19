@@ -365,6 +365,34 @@ const fullPathParts = (folder: FolderResult, idToFolder: Record<string, FolderRe
 const fullPath = (fileParts: string[]): string =>
   `${FILE_CABINET_PATH_SEPARATOR}${fileParts.join(FILE_CABINET_PATH_SEPARATOR)}`
 
+// SALTO-6690 this is for logging only. the code for removal should be done using a `groupBy` in the SuiteQL query
+const logLargeFolders = (filesResults: ExtendedFileResult[]): void => {
+  const filesByFolder = _.groupBy(filesResults, file => fullPath(file.path.slice(0, -1)))
+  const firstLargeFoldersLevel = Object.keys(_.pickBy(filesByFolder, files => files.length > 1000))
+  if (firstLargeFoldersLevel.length === 0) {
+    return
+  }
+  log.debug(
+    'There are %d folders with more than 1000 files in them: %o',
+    firstLargeFoldersLevel.length,
+    firstLargeFoldersLevel,
+  )
+  const secondLargeFoldersLevel = Object.entries(_.pickBy(filesByFolder, files => files.length > 10000)).map(
+    ([folderPath, files]) => {
+      const fileSamples = _.chunk(files.map(file => file.name).sort(), 2000).map(chunk => chunk[0])
+      return { path: folderPath, count: files.length, fileSamples }
+    },
+  )
+  if (secondLargeFoldersLevel.length === 0) {
+    return
+  }
+  log.debug(
+    'There are %d folders with more than 10000 files in them: %o',
+    secondLargeFoldersLevel.length,
+    secondLargeFoldersLevel,
+  )
+}
+
 const queryFileCabinet = async (
   suiteAppClient: SuiteAppClient,
   query: NetsuiteQuery,
@@ -441,6 +469,9 @@ export const importFileCabinet = async (
     extensionsToExclude,
     forceFileCabinetExclude,
   )
+
+  logLargeFolders(filesResults)
+
   const unfilteredFoldersCustomizationInfo = foldersResults.map(folder => ({
     path: folder.path,
     typeName: 'folder',

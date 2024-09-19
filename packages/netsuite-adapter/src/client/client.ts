@@ -27,11 +27,7 @@ import { NetsuiteFetchQueries, NetsuiteQuery } from '../config/query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
-import {
-  createSuiteAppFileCabinetOperations,
-  SuiteAppFileCabinetOperations,
-  DeployType,
-} from './suiteapp_client/suiteapp_file_cabinet'
+import { deployFileCabinetInstances, importFileCabinet } from './suiteapp_client/suiteapp_file_cabinet'
 import {
   ConfigRecord,
   EnvType,
@@ -59,16 +55,13 @@ import {
 } from './types'
 import { toCustomizationInfo } from '../transformer'
 import {
+  isFileCabinetDeployGroup,
   isSdfCreateOrUpdateGroupId,
   isSdfDeleteGroupId,
   isSuiteAppCreateRecordsGroupId,
   isSuiteAppDeleteRecordsGroupId,
   isSuiteAppUpdateRecordsGroupId,
-  SUITEAPP_CREATING_FILES_GROUP_ID,
-  SUITEAPP_DELETING_FILES_GROUP_ID,
-  SUITEAPP_FILE_CABINET_GROUPS,
   SUITEAPP_UPDATING_CONFIG_GROUP_ID,
-  SUITEAPP_UPDATING_FILES_GROUP_ID,
 } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
 import { ADDITIONAL_DEPENDENCIES, APPLICATION_ID, CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ROLE } from '../constants'
@@ -96,12 +89,6 @@ const { awu } = collections.asynciterable
 const { lookupValue } = values
 const log = logger(module)
 const { DefaultMap } = collections.map
-
-const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
-  [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
-  [SUITEAPP_UPDATING_FILES_GROUP_ID]: 'update',
-  [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
-}
 
 type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
@@ -145,7 +132,6 @@ const logDecorator = decorators.wrapMethodWith(async ({ call, name }: decorators
 export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
-  private suiteAppFileCabinet?: SuiteAppFileCabinetOperations
   public readonly url: URL
 
   constructor(sdfClient: SdfClient, suiteAppClient?: SuiteAppClient) {
@@ -154,7 +140,6 @@ export default class NetsuiteClient {
     if (this.suiteAppClient === undefined) {
       log.debug('Salto SuiteApp not configured')
     } else {
-      this.suiteAppFileCabinet = createSuiteAppFileCabinetOperations(this.suiteAppClient)
       log.debug('Salto SuiteApp configured')
     }
 
@@ -245,8 +230,9 @@ export default class NetsuiteClient {
     extensionsToExclude: string[],
     forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> {
-    if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(
+    if (this.suiteAppClient !== undefined) {
+      return importFileCabinet(
+        this.suiteAppClient,
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
@@ -546,10 +532,10 @@ export default class NetsuiteClient {
     }
 
     const instancesChanges = changes.filter(isInstanceChange)
-    if (SUITEAPP_FILE_CABINET_GROUPS.includes(groupID)) {
+    if (isFileCabinetDeployGroup(groupID)) {
       const message = `Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`
-      return this.suiteAppFileCabinet !== undefined
-        ? this.suiteAppFileCabinet.deploy(instancesChanges, GROUP_TO_DEPLOY_TYPE[groupID])
+      return this.suiteAppClient !== undefined
+        ? deployFileCabinetInstances(this.suiteAppClient, instancesChanges, groupID)
         : {
             errors: [
               {

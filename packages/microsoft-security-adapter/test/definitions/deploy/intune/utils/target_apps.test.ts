@@ -11,6 +11,7 @@ import { DeployRequestCondition } from '@salto-io/adapter-components/src/definit
 import { targetApps } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
 import { APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } from '../../../../../src/constants/intune'
+import { AdjustFunction } from '../../../../../src/definitions/deploy/shared/types'
 
 describe('apps configuration definition utils', () => {
   const applicationConfigurationType = new ObjectType({
@@ -18,6 +19,7 @@ describe('apps configuration definition utils', () => {
   })
   const appConfigurationWithAllApps = new InstanceElement('test', applicationConfigurationType, {
     targetTypeField: 'allApps',
+    apps: [],
   })
   const appConfigurationWithSelectedApps = new InstanceElement('test', applicationConfigurationType, {
     targetTypeField: 'selectedPublicApps',
@@ -25,6 +27,7 @@ describe('apps configuration definition utils', () => {
   })
   const appConfigurationWithSelectedAppsAndNoApps = new InstanceElement('test', applicationConfigurationType, {
     targetTypeField: 'selectedPublicApps',
+    apps: [],
   })
 
   describe(`${targetApps.createTargetAppsDeployDefinition.name}`, () => {
@@ -40,7 +43,7 @@ describe('apps configuration definition utils', () => {
             method: 'post',
           },
           transformation: {
-            pick: ['apps'],
+            adjust: expect.any(Function),
           },
         },
         condition: {
@@ -73,71 +76,69 @@ describe('apps configuration definition utils', () => {
         })
       })
 
-      describe('when the change is addition change', () => {
-        describe('when targetTypeField is selectedPublicApps', () => {
-          it('should return true if the change includes apps field', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ after: appConfigurationWithSelectedApps }),
+      describe('when targetTypeField was changed', () => {
+        it('should return true if the change includes apps field', () => {
+          expect(
+            condition?.custom?.({})({
+              ...contextMock,
+              change: toChange({
+                before: appConfigurationWithAllApps,
+                after: appConfigurationWithSelectedAppsAndNoApps,
               }),
-            ).toEqual(true)
-          })
-          it('should return false if the change does not include apps field', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ after: appConfigurationWithSelectedAppsAndNoApps }),
-              }),
-            ).toEqual(false)
-          })
-        })
-
-        describe('when targetTypeField is allApps', () => {
-          it('should return false', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ after: appConfigurationWithAllApps }),
-              }),
-            ).toEqual(false)
-          })
+            }),
+          ).toEqual(true)
         })
       })
-      describe('when the change is modification change', () => {
-        describe('when targetTypeField is selectedPublicApps', () => {
-          it('should return true if the apps field was changed', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({
-                  before: appConfigurationWithSelectedApps,
-                  after: appConfigurationWithSelectedAppsAndNoApps,
-                }),
+
+      describe('when apps field was changed', () => {
+        it('should return true', () => {
+          expect(
+            condition?.custom?.({})({
+              ...contextMock,
+              change: toChange({
+                before: appConfigurationWithSelectedAppsAndNoApps,
+                after: appConfigurationWithSelectedApps,
               }),
-            ).toEqual(true)
-          })
-          it('should return false if the apps field was not changed', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ before: appConfigurationWithSelectedApps, after: appConfigurationWithSelectedApps }),
-              }),
-            ).toEqual(false)
-          })
+            }),
+          ).toEqual(true)
         })
-        describe('when targetTypeField is allApps', () => {
-          it('should return false', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({
-                  before: appConfigurationWithSelectedApps,
-                  after: appConfigurationWithAllApps,
-                }),
+      })
+
+      describe('when both targetTypeField and apps field were not changed', () => {
+        it('should return false', () => {
+          expect(
+            condition?.custom?.({})({
+              ...contextMock,
+              change: toChange({
+                before: appConfigurationWithAllApps,
+                after: appConfigurationWithAllApps,
               }),
-            ).toEqual(false)
-          })
+            }),
+          ).toEqual(false)
+        })
+      })
+    })
+
+    describe('adjust', () => {
+      let adjust: AdjustFunction | undefined
+      beforeEach(() => {
+        adjust = targetApps.createTargetAppsDeployDefinition({
+          resourcePath: '/test',
+          targetTypeFieldName: 'targetTypeField',
+        }).request?.transformation?.adjust
+      })
+
+      it('should return a value with the apps field and targetTypeField', async () => {
+        const value = await adjust?.({
+          value: appConfigurationWithSelectedApps.value,
+          typeName: APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
+          context: contextMock,
+        })
+        expect(value).toEqual({
+          value: {
+            apps: ['app1', 'app2'],
+            appGroupType: 'selectedPublicApps',
+          },
         })
       })
     })

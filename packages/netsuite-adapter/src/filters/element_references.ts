@@ -72,16 +72,21 @@ const shouldExtractToGeneratedDependency = (serviceIdInfoRecord: ServiceIdInfo):
   serviceIdInfoRecord.bundleid !== undefined ||
   !serviceIdInfoRecord.isFullMatch
 
-const getReferencesWithRegex = (content: string): string[] => {
-  const contentWithoutComments = content.replace(jsCommentsRegex, '')
-  const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
-  const semanticReferences = getGroupItemFromRegex(
-    contentWithoutComments,
-    semanticReferenceRegex,
-    OPTIONAL_REFS,
-  ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-  return semanticReferences.concat(objectKeyReferences)
-}
+const getReferencesWithRegex = (filePath: string, content: string): string[] =>
+  log.timeDebug(
+    () => {
+      const contentWithoutComments = content.replace(jsCommentsRegex, '')
+      const objectKeyReferences = getGroupItemFromRegex(contentWithoutComments, mappedReferenceRegex, OPTIONAL_REFS)
+      const semanticReferences = getGroupItemFromRegex(
+        contentWithoutComments,
+        semanticReferenceRegex,
+        OPTIONAL_REFS,
+      ).filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+      return semanticReferences.concat(objectKeyReferences)
+    },
+    'getting references using regex from %s',
+    filePath,
+  )
 
 export const getElementServiceIdRecords = async (
   element: Element,
@@ -131,16 +136,16 @@ const getServiceElemIDsFromPaths = (
   foundReferences: string[],
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
-  element: InstanceElement,
+  filePath: string,
 ): ElemID[] =>
   foundReferences
     .flatMap(ref => {
       const absolutePath = pathPrefixRegex.test(ref)
-        ? resolveRelativePath(element.value[PATH], ref)
+        ? resolveRelativePath(filePath, ref)
         : FILE_CABINET_PATH_SEPARATOR.concat(ref)
       return [ref, absolutePath].concat(
-        osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
-          ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
+        osPath.extname(absolutePath) === '' && osPath.extname(filePath) !== ''
+          ? [absolutePath.concat(osPath.extname(filePath))]
           : [],
       )
     })
@@ -162,15 +167,15 @@ const hasValidExtension = (path: string, config: NetsuiteConfig): boolean => {
 }
 
 const getAndLogReferencesDiff = ({
+  filePath,
   newReferences,
   existingReferences,
-  element,
   serviceIdToElemID,
   customRecordFieldsToServiceIds,
 }: {
+  filePath: string
   newReferences: string[]
   existingReferences: string[]
-  element: InstanceElement
   serviceIdToElemID: ServiceIdRecords
   customRecordFieldsToServiceIds: ServiceIdRecords
 }): void => {
@@ -180,13 +185,13 @@ const getAndLogReferencesDiff = ({
     newFoundReferences,
     serviceIdToElemID,
     customRecordFieldsToServiceIds,
-    element,
+    filePath,
   )
   const removedReferencesElemIDs = getServiceElemIDsFromPaths(
     removedReferences,
     serviceIdToElemID,
     customRecordFieldsToServiceIds,
-    element,
+    filePath,
   )
   if (newReferencesElemIDs.length > 0 || removedReferencesElemIDs.length > 0) {
     log.info(
@@ -195,8 +200,35 @@ const getAndLogReferencesDiff = ({
       newReferencesElemIDs,
       removedReferencesElemIDs.length,
       removedReferencesElemIDs,
-      element.value[PATH],
+      filePath,
     )
+  }
+}
+
+const calculateNewReferencesInSuiteScripts = ({
+  filePath,
+  content,
+  existingReferences,
+  serviceIdToElemID,
+  customRecordFieldsToServiceIds,
+}: {
+  filePath: string
+  content: string
+  existingReferences: string[]
+  serviceIdToElemID: ServiceIdRecords
+  customRecordFieldsToServiceIds: ServiceIdRecords
+}): void => {
+  try {
+    const newReferences = getReferencesWithRegex(filePath, content)
+    getAndLogReferencesDiff({
+      filePath,
+      newReferences,
+      existingReferences,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+    })
+  } catch (e) {
+    log.error('Failed extracting references from file %s with error: %o', filePath, e)
   }
 }
 
@@ -207,6 +239,7 @@ const getSuiteScriptReferences = async (
   config: NetsuiteConfig,
   skippedFileExtensions: Set<string>,
 ): Promise<ElemID[]> => {
+  const filePath = element.value[PATH]
   const fileContent = await getContent(element.value.content)
 
   if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
@@ -223,44 +256,35 @@ const getSuiteScriptReferences = async (
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )
-  if (config.fetch.calculateNewReferencesInSuiteScripts) {
-    try {
-      const foundReferences = getReferencesWithRegex(content)
-      if (!hasValidExtension(element.value[PATH], config)) {
-        const referencesToBeRemoved = getServiceElemIDsFromPaths(
-          foundReferences,
-          serviceIdToElemID,
-          customRecordFieldsToServiceIds,
-          element,
-        )
-        if (referencesToBeRemoved.length > 0) {
-          log.info(
-            'Ignoring file with unsupported extension %s and %d references will be removed: %o',
-            element.value[PATH],
-            referencesToBeRemoved.length,
-            referencesToBeRemoved,
-          )
-        }
-        skippedFileExtensions.add(osPath.extname(element.value[PATH]))
-      }
-      getAndLogReferencesDiff({
-        newReferences: foundReferences,
-        existingReferences: semanticReferences,
-        element,
-        serviceIdToElemID,
-        customRecordFieldsToServiceIds,
-      })
-    } catch (e) {
-      log.error('Failed extracting references from file %s with error: %o', element.value[PATH], e)
-    }
-  }
 
-  return getServiceElemIDsFromPaths(
+  const foundReferences = getServiceElemIDsFromPaths(
     semanticReferences.concat(nsConfigReferences),
     serviceIdToElemID,
     customRecordFieldsToServiceIds,
-    element,
+    filePath,
   )
+
+  if (!hasValidExtension(filePath, config)) {
+    skippedFileExtensions.add(osPath.extname(filePath))
+    if (foundReferences.length > 0) {
+      log.info(
+        'Ignoring file with unsupported extension %s and %d references will be removed: %o',
+        filePath,
+        foundReferences.length,
+        foundReferences,
+      )
+    }
+  } else if (config.fetch.calculateNewReferencesInSuiteScripts) {
+    calculateNewReferencesInSuiteScripts({
+      filePath,
+      content,
+      serviceIdToElemID,
+      customRecordFieldsToServiceIds,
+      existingReferences: semanticReferences,
+    })
+  }
+
+  return foundReferences
 }
 
 const replaceReferenceValues = async (

@@ -204,7 +204,7 @@ const updatePriorityField = async ({
   deployPolicyPath: definitionsUtils.EndpointPath
   fieldsToOmit: string[]
 }): Promise<void> => {
-  const pathContext = _.merge({}, instance.value, { parent_id: getParentPolicy(instance)?.value?.id })
+  const pathContext = { ...instance.value, parent_id: getParentPolicy(instance)?.value?.id }
   const { path } = replaceAllArgs({
     value: { path: deployPolicyPath },
     context: pathContext,

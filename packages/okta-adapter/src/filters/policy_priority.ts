@@ -218,7 +218,7 @@ const updatePriorityField = async ({
     )
     return
   }
-  const data = _.omit({ ...response.data, priority: requiredPriority }, fieldsToOmit)
+  const data = { ..._.omit(response.data, fieldsToOmit), priority: requiredPriority }
   try {
     await client.put({ url: path, data })
   } catch (error) {

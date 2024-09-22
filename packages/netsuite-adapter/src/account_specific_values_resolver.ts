@@ -26,6 +26,7 @@ import { WORKFLOW } from './constants'
 import { isDataObjectType } from './types'
 import { getResolvedAccountSpecificValues as getWorkflowResolvedAccountSpecificValues } from './filters/workflow_account_specific_values'
 import { getResolvingErrors as getDataInstanceResolvingErrors } from './change_validators/data_account_specific_values'
+import { NetsuiteConfig } from './config/types'
 
 const { awu } = collections.asynciterable
 
@@ -45,8 +46,10 @@ const toSuiteQLNameToInternalIdsMap = (
 
 export const getUpdatedSuiteQLNameToInternalIdsMap = async (
   client: NetsuiteClient,
+  config: NetsuiteConfig,
   elementsSource: ReadOnlyElementsSource,
   changes: ReadonlyArray<Change>,
+  internalIdToTypes: Record<string, string[]>,
 ): Promise<Record<string, Record<string, string[]>>> => {
   const instances = changes.filter(isAdditionOrModificationChange).map(getChangeData).filter(isInstanceElement)
   const workflowInstances = instances.filter(instance => instance.elemID.typeName === WORKFLOW)
@@ -66,7 +69,9 @@ export const getUpdatedSuiteQLNameToInternalIdsMap = async (
   const suiteQLNameToInternalIdsMap = toSuiteQLNameToInternalIdsMap(suiteQLTablesMap)
 
   const missingInternalIdsFromWorkflows = workflowInstances.flatMap(
-    instance => getWorkflowResolvedAccountSpecificValues(instance, suiteQLNameToInternalIdsMap).missingInternalIds,
+    instance =>
+      getWorkflowResolvedAccountSpecificValues(instance, suiteQLNameToInternalIdsMap, internalIdToTypes)
+        .missingInternalIds,
   )
   const missingInternalIdsFromDataInstances = dataInstances.flatMap(
     instance =>
@@ -83,6 +88,7 @@ export const getUpdatedSuiteQLNameToInternalIdsMap = async (
 
   await updateSuiteQLTableInstances({
     client,
+    config,
     queryBy: 'name',
     itemsToQuery: missingInternalIds.map(({ tableName, name }) => ({ tableName, item: name })),
     suiteQLTablesMap,

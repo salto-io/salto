@@ -16,7 +16,7 @@ describe('getFieldInstanceTypes', () => {
   it('Should return matching types for other custom field', () => {
     const otherCustomFieldInstance = new InstanceElement('test', othercustomfieldType().type, { rectype: '-112' })
 
-    const relevantTypes = getFieldInstanceTypes(otherCustomFieldInstance)
+    const relevantTypes = getFieldInstanceTypes(otherCustomFieldInstance, { '-112': ['account'] })
     expect(relevantTypes).toEqual(['account'])
   })
 
@@ -29,7 +29,7 @@ describe('getFieldInstanceTypes', () => {
       appliestovendor: false,
       appliestopricelist: false,
     })
-    const relevantTypes = getFieldInstanceTypes(entityCustomFieldInstance)
+    const relevantTypes = getFieldInstanceTypes(entityCustomFieldInstance, {})
     expect(relevantTypes).toEqual(['contact', 'customer', 'partner'])
   })
 
@@ -42,7 +42,7 @@ describe('getFieldInstanceTypes', () => {
       appliestononinventory: true,
       appliestoothercharge: true,
     })
-    const relevantTypes = getFieldInstanceTypes(itemCustomFieldInstance)
+    const relevantTypes = getFieldInstanceTypes(itemCustomFieldInstance, {})
     expect(relevantTypes).toEqual([
       'inventoryItem',
       'assemblyItem',
@@ -63,7 +63,7 @@ describe('getFieldInstanceTypes', () => {
       appliestosolution: true,
       appliestotask: false,
     })
-    const relevantTypes = getFieldInstanceTypes(crmCustomFieldInstance)
+    const relevantTypes = getFieldInstanceTypes(crmCustomFieldInstance, {})
     expect(relevantTypes).toEqual(['campaign', 'projectTask', 'phoneCall', 'solution'])
   })
 })

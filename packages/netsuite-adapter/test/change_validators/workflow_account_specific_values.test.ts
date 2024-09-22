@@ -13,11 +13,13 @@ import { EMPLOYEE, SCRIPT_ID } from '../../src/constants'
 import { fullFetchConfig } from '../../src/config/config_creator'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('workflow account specific values', () => {
   let instance: InstanceElement
   let suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
 
+  const { internalIdToTypes, typeToInternalId } = getTypesToInternalId([])
   const baseParams = {
     deployReferencedElements: false,
     elementsSource: buildElementsSourceFromElements([]),
@@ -26,6 +28,8 @@ describe('workflow account specific values', () => {
     },
     client: new NetsuiteClient(mockSdfClient()),
     suiteQLNameToInternalIdsMap: {},
+    internalIdToTypes,
+    typeToInternalId,
   }
 
   beforeEach(() => {

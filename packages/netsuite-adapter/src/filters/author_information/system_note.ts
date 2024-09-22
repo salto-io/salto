@@ -19,7 +19,6 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import moment from 'moment-timezone'
-import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import {
   SUITEQL_TABLE,
   getSuiteQLTableInternalIdsMap,
@@ -41,6 +40,7 @@ import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE, EMPLOYEE } from '../../constants'
 import { toMomentDate } from './saved_searches'
 import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
+import { NetsuiteConfig } from '../../config/types'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -50,16 +50,6 @@ export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
 const ISO_8601 = 'YYYY-MM-DDTHH:mm:ssZ'
-
-const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys(
-  {
-    ...ORIGINAL_TYPES_TO_INTERNAL_ID,
-    // Types without record type id that are given new ids.
-    file: FILE_TYPE,
-    folder: FOLDER_TYPE,
-  },
-  (_value, key) => key.toLowerCase(),
-)
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`
@@ -172,6 +162,7 @@ const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, Modif
 
 const getEmployeeInternalIdsMap = async (
   client: NetsuiteClient,
+  config: NetsuiteConfig,
   employeeSuiteQLTableInstance: InstanceElement | undefined,
   systemNotes: SystemNoteResult[],
 ): Promise<Record<string, string>> => {
@@ -186,6 +177,7 @@ const getEmployeeInternalIdsMap = async (
 
   await updateSuiteQLTableInstances({
     client,
+    config,
     queryBy: 'internalId',
     itemsToQuery: employeeInternalIdsToQuery,
     suiteQLTablesMap: {
@@ -198,6 +190,7 @@ const getEmployeeInternalIdsMap = async (
 
 const fetchSystemNotes = async (
   client: NetsuiteClient,
+  config: NetsuiteConfig,
   queryIds: string[],
   lastFetchTime: Date,
   employeeSuiteQLTableInstance: InstanceElement | undefined,
@@ -205,7 +198,7 @@ const fetchSystemNotes = async (
 ): Promise<Record<string, ModificationInformation>> => {
   const now = timeZone ? moment.tz(timeZone).utc() : moment().utc()
   const systemNotes = await log.timeDebug(() => querySystemNotes(client, queryIds, lastFetchTime), 'querySystemNotes')
-  const employeeNames = await getEmployeeInternalIdsMap(client, employeeSuiteQLTableInstance, systemNotes)
+  const employeeNames = await getEmployeeInternalIdsMap(client, config, employeeSuiteQLTableInstance, systemNotes)
   return indexSystemNotes(
     distinctSortedSystemNotes(
       systemNotes
@@ -234,11 +227,14 @@ const fetchSystemNotes = async (
   )
 }
 
-const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
+const getInstancesWithInternalIds = (
+  elements: Element[],
+  typeToInternalId: Record<string, string>,
+): InstanceElement[] =>
   elements
     .filter(isInstanceElement)
     .filter(hasInternalId)
-    .filter(instance => instance.elemID.typeName.toLowerCase() in TYPES_TO_INTERNAL_ID)
+    .filter(instance => instance.elemID.typeName.toLowerCase() in typeToInternalId)
 
 const getCustomRecordTypesWithInternalIds = (elements: Element[]): ObjectType[] =>
   elements.filter(isObjectType).filter(isCustomRecordType).filter(hasInternalId)
@@ -253,6 +249,7 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
 const filterCreator: RemoteFilterCreator = ({
   client,
   config,
+  typeToInternalId: originalTypeToInternalId,
   elementsSource,
   elementsSourceIndex,
   timeZoneAndFormat,
@@ -275,20 +272,31 @@ const filterCreator: RemoteFilterCreator = ({
       log.debug('skipping author information fetching on first fetch')
       return
     }
-    const instancesWithInternalId = getInstancesWithInternalIds(elements)
+
+    const typeToInternalId = _.mapKeys(
+      {
+        ...originalTypeToInternalId,
+        // Types without record type id that are given new ids.
+        file: FILE_TYPE,
+        folder: FOLDER_TYPE,
+      },
+      (_value, key) => key.toLowerCase(),
+    )
+
+    const instancesWithInternalId = getInstancesWithInternalIds(elements, typeToInternalId)
     const customRecordTypesWithInternalIds = getCustomRecordTypesWithInternalIds(elements)
     const customRecordsWithInternalIds = await getCustomRecordsWithInternalIds(elements)
     const customRecordTypeNames = new Set(customRecordsWithInternalIds.map(({ elemID }) => elemID.typeName))
 
     const queryIds = _.uniq(
-      instancesWithInternalId.map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]),
+      instancesWithInternalId.map(instance => typeToInternalId[instance.elemID.typeName.toLowerCase()]),
     )
     if (customRecordTypesWithInternalIds.length > 0) {
       queryIds.push(
         ...customRecordTypesWithInternalIds
           .filter(({ elemID }) => customRecordTypeNames.has(elemID.name))
           .map(getInternalId)
-          .concat(TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]),
+          .concat(typeToInternalId[CUSTOM_RECORD_TYPE]),
       )
     }
 
@@ -301,7 +309,14 @@ const filterCreator: RemoteFilterCreator = ({
       .find(instance => instance.elemID.typeName === SUITEQL_TABLE && instance.elemID.name === EMPLOYEE)
 
     const timeZone = timeZoneAndFormat?.timeZone
-    const systemNotes = await fetchSystemNotes(client, queryIds, lastFetchTime, employeeSuiteQLTableInstance, timeZone)
+    const systemNotes = await fetchSystemNotes(
+      client,
+      config,
+      queryIds,
+      lastFetchTime,
+      employeeSuiteQLTableInstance,
+      timeZone,
+    )
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
     if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex) && _.isEmpty(elemIdToChangeAtIndex)) {
       return
@@ -322,14 +337,14 @@ const filterCreator: RemoteFilterCreator = ({
         systemNotes[
           getRecordIdAndTypeStringKey(
             instance.value.internalId,
-            TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()],
+            typeToInternalId[instance.elemID.typeName.toLowerCase()],
           )
         ]
       setAuthorInformation(instance, info)
     })
     customRecordTypesWithInternalIds.forEach(type => {
       const info =
-        systemNotes[getRecordIdAndTypeStringKey(type.annotations.internalId, TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE])]
+        systemNotes[getRecordIdAndTypeStringKey(type.annotations.internalId, typeToInternalId[CUSTOM_RECORD_TYPE])]
       setAuthorInformation(type, info)
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {

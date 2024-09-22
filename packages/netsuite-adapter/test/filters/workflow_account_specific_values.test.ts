@@ -33,6 +33,8 @@ import filterCreator from '../../src/filters/workflow_account_specific_values'
 import { RemoteFilterOpts } from '../../src/filter'
 import { getUpdatedSuiteQLNameToInternalIdsMap } from '../../src/account_specific_values_resolver'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
+import { getTypesToInternalId } from '../../src/data_elements/types'
+import { NetsuiteConfig } from '../../src/config/types'
 
 const runSavedSearchQueryMock = jest.fn()
 const runRecordsQueryMock = jest.fn()
@@ -48,12 +50,15 @@ describe('workflow account specific values filter', () => {
   const { type: entitycustomfield } = entitycustomfieldType()
   const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
 
+  let config: NetsuiteConfig
   let filterOpts: RemoteFilterOpts
   let workflowInstance1: InstanceElement
   let workflowInstance2: InstanceElement
   let suiteQLInstances: InstanceElement[]
   let customFieldInstance: InstanceElement
   let customRecordType: ObjectType
+
+  const { internalIdToTypes, typeToInternalId } = getTypesToInternalId([])
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -107,6 +112,7 @@ describe('workflow account specific values filter', () => {
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
+    config = await getDefaultAdapterConfig()
     filterOpts = {
       client,
       elementsSourceIndex: {
@@ -120,7 +126,9 @@ describe('workflow account specific values filter', () => {
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: true,
-      config: await getDefaultAdapterConfig(),
+      config,
+      internalIdToTypes,
+      typeToInternalId,
     }
   })
 
@@ -1050,8 +1058,10 @@ describe('workflow account specific values filter', () => {
       const changes = [toChange({ after: workflowInstance1 }), toChange({ after: workflowInstance2 })]
       const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
         client,
+        config,
         buildElementsSourceFromElements(suiteQLInstances),
         changes,
+        internalIdToTypes,
       )
       await filterCreator({ ...filterOpts, suiteQLNameToInternalIdsMap }).preDeploy?.(changes)
     })

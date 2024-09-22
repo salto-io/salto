@@ -19,7 +19,6 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { FILE, SCRIPT_ID } from '../constants'
 // eslint-disable-next-line camelcase
@@ -52,6 +51,7 @@ const getFieldType = (
   customField: CustomField,
   nameToType: Record<string, ObjectType>,
   customRecordTypes: Record<string, ObjectType>,
+  internalIdToTypes: Record<string, string[]>,
 ): {
   fieldType: TypeElement
   selectTypeIdAnnotation?: string
@@ -83,8 +83,8 @@ const getFieldType = (
     const customRecordType =
       customField.selectrecordtype in customRecordTypes ? customRecordTypes[customField.selectrecordtype] : undefined
     const types =
-      customField.selectrecordtype in INTERNAL_ID_TO_TYPES
-        ? INTERNAL_ID_TO_TYPES[customField.selectrecordtype]
+      customField.selectrecordtype in internalIdToTypes
+        ? internalIdToTypes[customField.selectrecordtype]
             .filter(name => name in nameToType)
             .map(name => nameToType[name])
         : []
@@ -117,21 +117,29 @@ export const getCustomField = ({
   customField,
   nameToType,
   customRecordTypes = {},
+  internalIdToTypes,
 }: {
   type: ObjectType
   customField: CustomField
   nameToType: Record<string, ObjectType>
   customRecordTypes?: Record<string, ObjectType>
+  internalIdToTypes: Record<string, string[]>
 }): Field => {
   const fieldName = toCustomFieldName(customField.scriptid)
-  const { fieldType, selectTypeIdAnnotation } = getFieldType(fieldName, customField, nameToType, customRecordTypes)
+  const { fieldType, selectTypeIdAnnotation } = getFieldType(
+    fieldName,
+    customField,
+    nameToType,
+    customRecordTypes,
+    internalIdToTypes,
+  )
 
   return new Field(type, fieldName, fieldType, {
     select_type_id: selectTypeIdAnnotation,
   })
 }
 
-const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) => ({
+const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex, internalIdToTypes }) => ({
   name: 'dataTypesCustomFields',
   onFetch: async elements => {
     const nameToType = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
@@ -154,6 +162,7 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
                 type,
                 customField: fieldInstance.value as CustomField,
                 nameToType,
+                internalIdToTypes,
               })
               field.annotate({
                 field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),
@@ -165,7 +174,7 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
 
     const instances = elements.filter(isInstanceElement)
     instances.forEach(fieldInstance => {
-      getFieldInstanceTypes(fieldInstance)
+      getFieldInstanceTypes(fieldInstance, internalIdToTypes)
         .map(typeName => nameToType[typeName])
         .filter(values.isDefined)
         .forEach(type => {
@@ -173,6 +182,7 @@ const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) =
             type,
             customField: fieldInstance.value as CustomField,
             nameToType,
+            internalIdToTypes,
           })
           field.annotate({
             field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),

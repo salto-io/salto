@@ -21,10 +21,13 @@ import {
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
+import { getParent } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
 import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../filters/policy_priority'
 
 const { isDefined } = values
+const log = logger(module)
 
 const createDependencyChange = (
   prevPolicyOrPolicyRule: deployment.dependency.ChangeWithKey<Change<InstanceElement>>,
@@ -37,6 +40,45 @@ const createDependencyChange = (
  * This prevents race conditions that could result in policies being assigned the same priority.
  */
 
+const getGroupedPoliciesAndRules = (
+  additionPoliciesAndRulesChanges: deployment.dependency.ChangeWithKey<Change<InstanceElement>>[],
+  priorityFullNameToPoliciesChanges: Record<string, deployment.dependency.ChangeWithKey<Change<InstanceElement>>[]>,
+): deployment.dependency.ChangeWithKey<Change<InstanceElement>>[][] => {
+  const policiesWithPriorityChange = new Set(
+    Object.values(priorityFullNameToPoliciesChanges)
+      .flat()
+      .map(policyChange => policyChange.key),
+  )
+
+  const typeNameToPolicyChanges: Record<string, typeof additionPoliciesAndRulesChanges> = {}
+  const policyToPolicyRulesChanges: Record<string, typeof additionPoliciesAndRulesChanges> = {}
+  additionPoliciesAndRulesChanges
+    .filter(policyChange => !policiesWithPriorityChange.has(policyChange.key))
+    .forEach(policyOrRuleChange => {
+      const instance = getChangeData(policyOrRuleChange.change)
+      if (new Set([...ALL_SUPPORTED_POLICY_NAMES]).has(instance.elemID.typeName)) {
+        const { typeName } = instance.elemID
+        if (!typeNameToPolicyChanges[typeName]) {
+          typeNameToPolicyChanges[typeName] = []
+        }
+        typeNameToPolicyChanges[typeName].push(policyOrRuleChange)
+      } else {
+        try {
+          const parent = getParent(instance)
+          if (!policyToPolicyRulesChanges[parent.elemID.getFullName()]) {
+            policyToPolicyRulesChanges[parent.elemID.getFullName()] = []
+          }
+          policyToPolicyRulesChanges[parent.elemID.getFullName()].push(policyOrRuleChange)
+        } catch (e) {
+          log.error('Failed to get parent for %s', instance.elemID.getFullName())
+        }
+      }
+    })
+  return Object.values(priorityFullNameToPoliciesChanges)
+    .concat(Object.values(typeNameToPolicyChanges))
+    .concat(Object.values(policyToPolicyRulesChanges))
+}
+
 export const addDependenciesFromPolicyToPriorPolicy: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
@@ -44,19 +86,17 @@ export const addDependenciesFromPolicyToPriorPolicy: DependencyChanger = async c
       isInstanceChange(change.change),
     )
 
-  const [additionPoliciesAndRulesChanges, priorityChanges] = _.partition(
-    instanceChanges.filter(change =>
-      [
-        ...ALL_SUPPORTED_POLICY_NAMES,
-        ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
-        ...POLICY_PRIORITY_TYPE_NAMES,
-        ...POLICY_RULE_PRIORITY_TYPE_NAMES,
-      ].includes(getChangeData(change.change).elemID.typeName),
-    ),
+  const additionPoliciesAndRulesChanges = instanceChanges.filter(
     change =>
-      [...ALL_SUPPORTED_POLICY_NAMES, ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE].includes(
+      new Set([...ALL_SUPPORTED_POLICY_NAMES, ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE]).has(
         getChangeData(change.change).elemID.typeName,
       ) && isAdditionChange(change.change),
+  )
+
+  const priorityChanges = instanceChanges.filter(change =>
+    new Set([...POLICY_PRIORITY_TYPE_NAMES, ...POLICY_RULE_PRIORITY_TYPE_NAMES]).has(
+      getChangeData(change.change).elemID.typeName,
+    ),
   )
 
   if (_.isEmpty(additionPoliciesAndRulesChanges)) {
@@ -83,25 +123,7 @@ export const addDependenciesFromPolicyToPriorPolicy: DependencyChanger = async c
     }),
   )
 
-  const policiesWithPriorityChange = new Set(Object.values(priorityFullNameToPoliciesChanges).flat())
-
-  // Organize changes by typeName excluding those with priority changes
-  const typeNameToPolicyChanges = additionPoliciesAndRulesChanges
-    .filter(policyChange => !policiesWithPriorityChange.has(policyChange))
-    .reduce(
-      (acc, policyChange) => {
-        const { typeName } = getChangeData(policyChange.change).elemID
-        if (!acc[typeName]) {
-          acc[typeName] = []
-        }
-
-        acc[typeName].push(policyChange)
-        return acc
-      },
-      {} as Record<string, typeof additionPoliciesAndRulesChanges>,
-    )
-
-  const policiesGroups = Object.values(typeNameToPolicyChanges).concat(Object.values(priorityFullNameToPoliciesChanges))
+  const policiesGroups = getGroupedPoliciesAndRules(additionPoliciesAndRulesChanges, priorityFullNameToPoliciesChanges)
 
   return policiesGroups
     .flatMap(group =>

@@ -14,7 +14,7 @@ import { removeProfileMappingAfterDeps } from './remove_profile_mapping_after_de
 import { changeDependenciesFromPoliciesAndRulesToPriority } from './policy_and_rules_to_priority'
 import { defaultMultifactorEnrollmentPolicyDependency } from './default_multi_factor_enrollment_policy'
 import { addAuthenticatorToMfaPolicyDependency } from './authenticator_to_mfa_policy'
-import { addDependenciesFromPolicyToPriorPolicy } from './policy_to_prior_policy'
+import { addDependenciesFromPolicyToPriorPolicy } from './order_policies_by_priority'
 
 const { awu } = collections.asynciterable
 

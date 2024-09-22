@@ -13,12 +13,13 @@ import {
   ElemID,
   ObjectType,
   ReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { OKTA } from '../../src/constants'
 import { changeDependenciesFromPoliciesAndRulesToPriority } from '../../src/dependency_changers/policy_and_rules_to_priority'
 import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../../src/filters/policy_priority'
-import { addDependenciesFromPolicyToPriorPolicy } from '../../src/dependency_changers/policy_to_prior_policy'
+import { addDependenciesFromPolicyToPriorPolicy } from '../../src/dependency_changers/order_policies_by_priority'
 
 describe('addDependenciesFromPolicyToPriorPolicy', () => {
   let dependencyChanges: DependencyChange[]
@@ -110,18 +111,53 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
     "should add dependencies between each %s addition change when they don't have priority change",
     async (policyName: string) => {
       const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
-      const policyInstanceOne = new InstanceElement('policyInstanceOne', policyType, {
+      const parentType = new ObjectType({ elemID: new ElemID(OKTA, 'testPolicy') })
+      const parentOne = new InstanceElement('parentOne', parentType, {
         id: '1',
-        name: 'policyInstanceOne',
+        name: 'parentOne',
       })
-      const policyInstanceTwo = new InstanceElement('policyInstanceTwo', policyType, {
-        id: '2',
-        name: 'policyInstanceTwo',
-      })
-      const policyInstanceThree = new InstanceElement('policyInstanceThree', policyType, {
-        id: '3',
-        name: 'policyInstanceThree',
-      })
+      const policyInstanceOne = new InstanceElement(
+        'policyInstanceOne',
+        policyType,
+        {
+          id: '1',
+          name: 'policyInstanceOne',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
+            ? undefined
+            : [new ReferenceExpression(parentOne.elemID, parentOne)],
+        },
+      )
+      const policyInstanceTwo = new InstanceElement(
+        'policyInstanceTwo',
+        policyType,
+        {
+          id: '2',
+          name: 'policyInstanceTwo',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
+            ? undefined
+            : [new ReferenceExpression(parentOne.elemID, parentOne)],
+        },
+      )
+      const policyInstanceThree = new InstanceElement(
+        'policyInstanceThree',
+        policyType,
+        {
+          id: '3',
+          name: 'policyInstanceThree',
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
+            ? undefined
+            : [new ReferenceExpression(parentOne.elemID, parentOne)],
+        },
+      )
 
       const inputChanges = new Map([
         [0, toChange({ after: policyInstanceOne })],
@@ -162,6 +198,62 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
       dependencyChanges = [...(await changeDependenciesFromPoliciesAndRulesToPriority(inputChanges, inputDeps))]
       expect(dependencyChanges).toHaveLength(0)
+    },
+  )
+  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE])(
+    'should add dependencies between each %s rule  only when they are belongs to the same policy',
+    async (policyRuleName: string) => {
+      const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
+      const parentType = new ObjectType({ elemID: new ElemID(OKTA, 'testPolicy') })
+      const parentOne = new InstanceElement('parentOne', parentType, {
+        id: '1',
+        name: 'parentOne',
+      })
+      const parentTwo = new InstanceElement('parentTwo', parentType, {
+        id: '2',
+        name: 'parentTwo',
+      })
+      const policyRuleOne = new InstanceElement(
+        'policyRuleOne',
+        policyRuleType,
+        {
+          id: '1',
+          name: 'policyRuleOne',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentOne.elemID, parentOne)] },
+      )
+      const policyRuleTwo = new InstanceElement(
+        'policyRuleTwo',
+        policyRuleType,
+        {
+          id: '2',
+          name: 'policyRuleTwo',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentTwo.elemID, parentTwo)] },
+      )
+      const policyRuleThree = new InstanceElement(
+        'policyRuleThree',
+        policyRuleType,
+        {
+          id: '3',
+          name: 'policyRuleThree',
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentOne.elemID, parentOne)] },
+      )
+      const inputChanges = new Map([
+        [0, toChange({ after: policyRuleOne })],
+        [1, toChange({ after: policyRuleTwo })],
+        [2, toChange({ after: policyRuleThree })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+      dependencyChanges = [...(await addDependenciesFromPolicyToPriorPolicy(inputChanges, inputDeps))]
+      expect(dependencyChanges).toHaveLength(1)
+      expect(dependencyChanges[0].action).toEqual('add')
+      expect(dependencyChanges[0].dependency.source).toEqual(2)
+      expect(dependencyChanges[0].dependency.target).toEqual(0)
     },
   )
 })

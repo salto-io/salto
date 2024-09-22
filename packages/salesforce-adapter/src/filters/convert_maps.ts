@@ -26,7 +26,8 @@ import {
   createRefToElmWithValue,
   getDeepInnerType,
   isObjectType,
-  getField, isFieldChange,
+  getField,
+  isFieldChange,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -245,7 +246,11 @@ const convertValuesToMapArrays = (
         _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), val => _.mapValues(val, makeArray)),
       )
     } else {
-      _.set(getElementValueOrAnnotations(element), fieldName, _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), makeArray))
+      _.set(
+        getElementValueOrAnnotations(element),
+        fieldName,
+        _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), makeArray),
+      )
     }
   })
 }
@@ -337,9 +342,17 @@ const convertFieldsBackToLists = async (
 
         if (mapFieldDef[fieldName].nested) {
           // first convert the inner levels to arrays, then merge into one array
-          _.set(getElementValueOrAnnotations(element), fieldName, _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), toVals))
+          _.set(
+            getElementValueOrAnnotations(element),
+            fieldName,
+            _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), toVals),
+          )
         }
-        _.set(getElementValueOrAnnotations(element), fieldName, toVals(_.get(getElementValueOrAnnotations(element), fieldName)))
+        _.set(
+          getElementValueOrAnnotations(element),
+          fieldName,
+          toVals(_.get(getElementValueOrAnnotations(element), fieldName)),
+        )
       })
     return element
   }
@@ -401,10 +414,7 @@ export const getInstanceChanges = (
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
 
-export const getFieldChanges = (
-  changes: ReadonlyArray<Change>,
-  fieldType: string,
-): Change[] =>
+export const getFieldChanges = (changes: ReadonlyArray<Change>, fieldType: string): Change[] =>
   changes
     .filter(isFieldChange)
     .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
@@ -458,10 +468,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
       if (fieldsToConvert.length === 0) {
         return
       }
-      const nonUniqueMapFields = await convertElementFieldsToMaps(
-        fieldsToConvert,
-        annotationToMapDef,
-      )
+      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef)
       // TODO: handle nonUniqueMapFields?
       log.debug('converted fields to maps: %s', nonUniqueMapFields)
     })

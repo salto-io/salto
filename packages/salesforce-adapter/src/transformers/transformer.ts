@@ -43,7 +43,8 @@ import {
   isContainerType,
   TypeReference,
   createRefToElmWithValue,
-  isElement, MapType,
+  isElement,
+  MapType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, TransformFuncSync } from '@salto-io/adapter-utils'

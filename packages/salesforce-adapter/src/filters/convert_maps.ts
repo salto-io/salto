@@ -429,7 +429,7 @@ export const findTypeToConvert = async (
 }
 
 /**
- * Convert certain instances' fields into maps, so that they are easier to view,
+ * Convert certain elements' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
  */
 const filter: LocalFilterCreator = ({ config }) => ({

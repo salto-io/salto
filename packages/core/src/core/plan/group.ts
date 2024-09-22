@@ -135,7 +135,10 @@ export const buildGroupedGraphFromDiffGraph = (
 
   const diffGraphWithoutRedundantFieldNodes = removeRedundantFieldNodes(diffGraph, groupKey)
   const shouldFailOnCircularDependency = getCoreFlagBool(CORE_FLAGS.failPlanOnCircularDependencies)
-  log.debug('building acyclic grouped graph with failPlanOnCircularDependencies value: %s', shouldFailOnCircularDependency)
+  log.debug(
+    'building acyclic grouped graph with failPlanOnCircularDependencies value: %s',
+    shouldFailOnCircularDependency,
+  )
   return buildAcyclicGroupedGraph({
     source: diffGraphWithoutRedundantFieldNodes,
     groupKey,

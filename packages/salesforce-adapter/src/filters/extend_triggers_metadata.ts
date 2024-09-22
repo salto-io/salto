@@ -144,7 +144,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
         const recordsById = _.keyBy(
           await queryApexTriggerRecords({
             client,
-            chunkSize: config.fetchProfile.limits?.extendedTriggersMetadataChunkSize ?? DEFAULT_CHUNK_SIZE,
+            chunkSize: config.fetchProfile.limits?.extendTriggersMetadataChunkSize ?? DEFAULT_CHUNK_SIZE,
             internalIds,
           }),
           record => record.Id,

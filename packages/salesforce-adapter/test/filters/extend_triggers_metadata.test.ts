@@ -145,6 +145,61 @@ describe('extendTriggersMetadata filter', () => {
           expect(triggerMetadataType.fields[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
         })
       })
+      describe('when chunk size is configured in the limits config', () => {
+        const ANOTHER_TRIGGER_ID = '01BAc000000EmuPBDC'
+        let anotherTriggerInstance: InstanceElement
+        beforeEach(() => {
+          anotherTriggerInstance = new InstanceElement('test2', triggerMetadataType, {
+            fullName: 'AnotherTriggerInstance',
+            [INTERNAL_ID_FIELD]: ANOTHER_TRIGGER_ID,
+          })
+          connection.query.mockResolvedValue({
+            records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
+            done: false,
+            totalSize: 1,
+          })
+        })
+        describe('when ApexTrigger instances count exceeds the chunk size', () => {
+          beforeEach(async () => {
+            filter = filterCreator({
+              client,
+              config: {
+                ...defaultFilterContext,
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    optionalFeatures: { extendTriggersMetadata: true },
+                    limits: { extendTriggersMetadataChunkSize: 1 },
+                  },
+                }),
+              },
+            }) as typeof filter
+            await filter.onFetch(elements.concat(anotherTriggerInstance))
+          })
+          it('should send multiple queries', () => {
+            expect(connection.query).toHaveBeenCalledTimes(2)
+          })
+        })
+        describe('when ApexTrigger instances count does not exceed the chunk size', () => {
+          beforeEach(async () => {
+            filter = filterCreator({
+              client,
+              config: {
+                ...defaultFilterContext,
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    optionalFeatures: { extendTriggersMetadata: true },
+                    limits: { extendTriggersMetadataChunkSize: 2 },
+                  },
+                }),
+              },
+            }) as typeof filter
+            await filter.onFetch(elements.concat(anotherTriggerInstance))
+          })
+          it('should send a single query', () => {
+            expect(connection.query).toHaveBeenCalledTimes(1)
+          })
+        })
+      })
     })
     describe('when feature is disabled', () => {
       beforeEach(async () => {

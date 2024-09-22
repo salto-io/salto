@@ -60,7 +60,7 @@ const pathPrefixRegex = new RegExp(
   'm',
 )
 // matches key strings in format of 'key': value or key: value
-const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*\\S`, 'gm')
+const mappedReferenceRegex = new RegExp(`\\b['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*\\S`, 'gm')
 // matches comments in js files
 // \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
 // ^\\s*\\/\\/.* - matches single line comments that start with '//'

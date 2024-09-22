@@ -71,7 +71,7 @@ export type RemoteMap<T, K extends string = string> = {
   keys: RemoteMapIteratorCreator<K>
   values: RemoteMapIteratorCreator<T>
   flush: () => Promise<boolean>
-  revert: () => Promise<void>
+  revert?: () => Promise<void>
   clear(): Promise<void>
   close(): Promise<void>
   isEmpty(): Promise<boolean>
@@ -157,11 +157,6 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
   // eslint-disable-next-line class-methods-use-this
   async flush(): Promise<boolean> {
     return Promise.resolve(false)
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  async revert(): Promise<void> {
-    return Promise.resolve(undefined)
   }
 
   // eslint-disable-next-line class-methods-use-this

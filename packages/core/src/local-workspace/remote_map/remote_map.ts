@@ -731,12 +731,6 @@ export const createRemoteMapCreator = (
         wasClearCalled = false
         return flushRes
       },
-      revert: async () => {
-        locationCache.reset()
-        delKeys.clear()
-        wasClearCalled = false
-        await clearImpl(tmpDB, tempKeyPrefix)
-      },
       clear: async () => {
         locationCache.reset()
         await clearImpl(tmpDB, tempKeyPrefix)
@@ -891,9 +885,6 @@ export const createReadOnlyRemoteMapCreator = (location: string): remoteMap.Read
       flush: async () => {
         notImplemented('flush')
         return false
-      },
-      revert: async () => {
-        notImplemented('revert')
       },
       clear: async () => {
         notImplemented('clear')

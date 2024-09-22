@@ -6,20 +6,17 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  Change,
+  CORE_ANNOTATIONS,
+  Element,
+  getChangeData,
   InstanceElement,
   ObjectType,
-  Element,
-  CORE_ANNOTATIONS,
   ReferenceExpression,
-  Change,
-  getChangeData,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { FilterWith } from './mocks'
-import filterCreator, {
-  TRIGGER_TYPE_FIELDS,
-  TRIGGER_TYPES_FIELD_NAME,
-} from '../../src/filters/extend_triggers_metadata'
+import filterCreator, { TRIGGER_TYPES_FIELD_NAME, TriggerType } from '../../src/filters/extend_triggers_metadata'
 import { SalesforceClient } from '../../index'
 import mockClient from '../client'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
@@ -37,7 +34,6 @@ describe('extendTriggersMetadata filter', () => {
   const PARENT_OBJECT_ID = '01IQy000000zEWgMAM' as const
 
   type TableEnumOrId = typeof PARENT_OBJECT_API_NAME | typeof PARENT_OBJECT_ID
-  type TriggerType = (typeof TRIGGER_TYPE_FIELDS)[number]
   type TriggerRecord = SalesforceRecord & {
     TableEnumOrId: string
   } & {
@@ -47,13 +43,13 @@ describe('extendTriggersMetadata filter', () => {
   const createTriggerRecord = (tableEnumOrId: TableEnumOrId, triggerTypes: Set<TriggerType>): TriggerRecord => ({
     Id: TRIGGER_ID,
     TableEnumOrId: tableEnumOrId,
-    UsageBeforeDelete: triggerTypes.has('UsageBeforeDelete'),
-    UsageAfterDelete: triggerTypes.has('UsageAfterDelete'),
-    UsageBeforeInsert: triggerTypes.has('UsageBeforeInsert'),
-    UsageAfterInsert: triggerTypes.has('UsageAfterInsert'),
-    UsageBeforeUpdate: triggerTypes.has('UsageBeforeUpdate'),
-    UsageAfterUpdate: triggerTypes.has('UsageAfterUpdate'),
-    UsageAfterUndelete: triggerTypes.has('UsageAfterUndelete'),
+    UsageBeforeDelete: triggerTypes.has(TriggerType.UsageBeforeDelete),
+    UsageAfterDelete: triggerTypes.has(TriggerType.UsageAfterDelete),
+    UsageBeforeInsert: triggerTypes.has(TriggerType.UsageBeforeInsert),
+    UsageAfterInsert: triggerTypes.has(TriggerType.UsageAfterInsert),
+    UsageBeforeUpdate: triggerTypes.has(TriggerType.UsageBeforeUpdate),
+    UsageAfterUpdate: triggerTypes.has(TriggerType.UsageAfterUpdate),
+    UsageAfterUndelete: triggerTypes.has(TriggerType.UsageAfterUndelete),
   })
 
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -80,7 +76,7 @@ describe('extendTriggersMetadata filter', () => {
     let triggerTypes: Set<TriggerType>
     beforeEach(() => {
       elements = [triggerMetadataType, triggerInstance, parentObject]
-      triggerTypes = new Set(['UsageBeforeInsert', 'UsageAfterDelete'])
+      triggerTypes = new Set([TriggerType.UsageBeforeInsert, TriggerType.UsageAfterDelete])
     })
     describe('when feature is enabled', () => {
       beforeEach(() => {

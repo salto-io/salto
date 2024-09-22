@@ -38,23 +38,21 @@ import { SalesforceRecord } from '../client/types'
 const { toArrayAsync, awu } = collections.asynciterable
 const log = logger(module)
 
-const ON_DELETE_TRIGGER_TYPES = ['UsageBeforeDelete', 'UsageAfterDelete'] as const
-
-const ON_INSERT_TRIGGER_TYPES = ['UsageBeforeInsert', 'UsageAfterInsert'] as const
-
-const ON_UPDATE_TRIGGER_TYPES = ['UsageBeforeUpdate', 'UsageAfterUpdate'] as const
-
-export const TRIGGER_TYPE_FIELDS = [
-  ...ON_DELETE_TRIGGER_TYPES,
-  ...ON_INSERT_TRIGGER_TYPES,
-  ...ON_UPDATE_TRIGGER_TYPES,
-  'UsageAfterUndelete',
-] as const
+export enum TriggerType {
+  UsageBeforeDelete = 'UsageBeforeDelete',
+  UsageAfterDelete = 'UsageAfterDelete',
+  UsageBeforeInsert = 'UsageBeforeInsert',
+  UsageAfterInsert = 'UsageAfterInsert',
+  UsageBeforeUpdate = 'UsageBeforeUpdate',
+  UsageAfterUpdate = 'UsageAfterUpdate',
+  UsageAfterUndelete = 'UsageAfterUndelete',
+}
+export const TRIGGER_TYPE_FIELDS = Object.values(TriggerType)
 
 export const TRIGGER_TYPES_FIELD_NAME = 'triggerTypes'
 
 // Avoid increasing this value as this may cause the created SOQL query to exceed the max allowed query length
-const IDS_CHUNK_SIZE = 500
+const DEFAULT_CHUNK_SIZE = 1000
 
 const queryApexTriggerRecords = async ({
   client,
@@ -102,6 +100,12 @@ const extendTriggerMetadataFromRecord = ({
     .map(([key]) => key)
   if (parentObject) {
     trigger.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(parentObject.elemID, parentObject)]
+  } else {
+    log.warn(
+      'Failed to find parent object for Apex Trigger %s with TableEnumOrId %s',
+      apiNameSync(trigger) ?? '',
+      tableEnumOrId,
+    )
   }
   if (triggerTypes.length > 0) {
     trigger.value[TRIGGER_TYPES_FIELD_NAME] = triggerTypes
@@ -138,7 +142,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
           return
         }
         const recordsById = _.keyBy(
-          await queryApexTriggerRecords({ client, chunkSize: IDS_CHUNK_SIZE, internalIds }),
+          await queryApexTriggerRecords({
+            client,
+            chunkSize: config.fetchProfile.limits?.extendedTriggersMetadataChunkSize ?? DEFAULT_CHUNK_SIZE,
+            internalIds,
+          }),
           record => record.Id,
         )
         // Map CustomObjects by both internal Id and API Name

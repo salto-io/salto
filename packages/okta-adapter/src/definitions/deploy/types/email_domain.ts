@@ -37,7 +37,7 @@ export const findReferencingBrands = async (
  * If there are multiple brands that reference the email domain, an arbitrary one is chosen.
  * If no brands reference the email domain, an error is thrown.
  */
-export const addBrandIdToRequest: definitions.AdjustFunction<definitions.deploy.ChangeAndContext> = async ({
+export const addBrandIdToRequest: definitions.AdjustFunction<definitions.deploy.ChangeAndExtendedContext> = async ({
   value,
   context,
 }) => {

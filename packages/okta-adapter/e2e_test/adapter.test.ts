@@ -33,6 +33,7 @@ import {
   detailedCompare,
   getParents,
   inspectValue,
+  invertNaclCase,
   naclCase,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
@@ -58,6 +59,9 @@ import {
   INACTIVE_STATUS,
   NETWORK_ZONE_TYPE_NAME,
   ORG_SETTING_TYPE_NAME,
+  PASSWORD_POLICY_PRIORITY_TYPE_NAME,
+  PASSWORD_POLICY_TYPE_NAME,
+  PASSWORD_RULE_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
   ROLE_TYPE_NAME,
@@ -93,10 +97,7 @@ const createInstance = ({
   parent?: InstanceElement
   name?: string
 }): InstanceElement => {
-  const instValues = {
-    ...mockDefaultValues[typeName],
-    ...valuesOverride,
-  }
+  const instValues = _.merge({}, mockDefaultValues[typeName], valuesOverride)
   const type = types.find(t => t.elemID.typeName === typeName)
   if (type === undefined) {
     log.warn(`Could not find type ${typeName}, error while creating instance`)
@@ -173,11 +174,11 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     types,
     valuesOverride: { name: createName('policy') },
   })
-  const accessPolicyRule = createInstance({
+  const accessPolicyRuleA = createInstance({
     typeName: ACCESS_POLICY_RULE_TYPE_NAME,
     types,
     valuesOverride: {
-      name: createName('policyRule'),
+      name: createName('policyRuleA'),
       conditions: {
         network: {
           connection: 'ANYWHERE',
@@ -185,10 +186,162 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
           // connection: 'ZONE',
           // include: [new ReferenceExpression(zoneInstance.elemID, zoneInstance)],
         },
-        riskScore: { level: 'ANY' },
+        riskScore: { level: 'MEDIUM' },
       },
     },
     parent: accessPolicy,
+  })
+  const accessPolicyRuleB = createInstance({
+    typeName: ACCESS_POLICY_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('policyRuleB'),
+      conditions: {
+        network: { connection: 'ANYWHERE' },
+        riskScore: { level: 'ANY' },
+        platform: {
+          include: [
+            {
+              type: 'DESKTOP',
+              os: {
+                type: 'MACOS',
+              },
+            },
+            {
+              type: 'MOBILE',
+              os: {
+                type: 'ANDROID',
+              },
+            },
+          ],
+        },
+      },
+    },
+    parent: accessPolicy,
+  })
+  const defaultRule = createInstance({
+    typeName: ACCESS_POLICY_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: 'Catch-all Rule',
+      system: true,
+      actions: {
+        appSignOn: {
+          access: 'DENY',
+          verificationMethod: {
+            factorMode: '1FA',
+            type: 'ASSURANCE',
+            reauthenticateIn: 'PT12H',
+            constraints: [
+              {
+                knowledge: {
+                  types: ['password'],
+                },
+              },
+            ],
+          },
+        },
+      },
+    },
+    parent: accessPolicy,
+  })
+  const accessPolicyRulePriority = createInstance({
+    typeName: 'AccessPolicyRulePriority',
+    types,
+    name: naclCase(`${invertNaclCase(accessPolicy.elemID.name)}_priority`),
+    valuesOverride: {
+      priorities: [
+        new ReferenceExpression(accessPolicyRuleB.elemID, accessPolicyRuleB),
+        new ReferenceExpression(accessPolicyRuleA.elemID, accessPolicyRuleA),
+      ],
+      defaultRule: new ReferenceExpression(defaultRule.elemID, defaultRule),
+    },
+    parent: accessPolicy,
+  })
+  const passwordPolicyA = createInstance({
+    typeName: PASSWORD_POLICY_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('passwordPolicyA'),
+      conditions: {
+        people: {
+          groups: {
+            include: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+          },
+        },
+        authProvider: {
+          provider: 'OKTA',
+        },
+      },
+      settings: {
+        password: {
+          complexity: {
+            minLength: 16,
+          },
+        },
+      },
+    },
+  })
+  const passwordPolicyB = createInstance({
+    typeName: PASSWORD_POLICY_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('passwordPolicyB'),
+      conditions: {
+        people: {
+          groups: {
+            include: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+          },
+        },
+        authProvider: { provider: 'OKTA' },
+      },
+    },
+  })
+  const defaultPasswordPolicy = createInstance({
+    typeName: PASSWORD_POLICY_TYPE_NAME,
+    name: 'Default Policy',
+    types,
+    valuesOverride: { name: 'Default Policy', system: true },
+  })
+  const passwordPolicyPriority = createInstance({
+    typeName: PASSWORD_POLICY_PRIORITY_TYPE_NAME,
+    types,
+    name: 'PasswordPolicy_priority',
+    valuesOverride: {
+      priorities: [
+        new ReferenceExpression(passwordPolicyB.elemID, passwordPolicyB),
+        new ReferenceExpression(passwordPolicyA.elemID, passwordPolicyA),
+      ],
+      defaultPolicy: new ReferenceExpression(defaultPasswordPolicy.elemID, defaultPasswordPolicy),
+    },
+  })
+  const passwordPolicyRuleA = createInstance({
+    typeName: PASSWORD_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('passwordRuleA'),
+    },
+    parent: passwordPolicyA,
+  })
+  const passwordPolicyRuleB = createInstance({
+    typeName: PASSWORD_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('passwordRuleB'),
+    },
+    parent: passwordPolicyA,
+  })
+  const passwordPolicyRulePriority = createInstance({
+    typeName: 'PasswordPolicyRulePriority',
+    types,
+    name: naclCase(`${invertNaclCase(passwordPolicyA.elemID.name)}_priority`),
+    valuesOverride: {
+      priorities: [
+        new ReferenceExpression(passwordPolicyRuleB.elemID, passwordPolicyRuleB),
+        new ReferenceExpression(passwordPolicyRuleA.elemID, passwordPolicyRuleA),
+      ],
+    },
+    parent: passwordPolicyA,
   })
   const profileEnrollment = createInstance({
     typeName: PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
@@ -285,7 +438,16 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     toChange({ after: ruleInstance }),
     toChange({ after: zoneInstance }),
     toChange({ after: accessPolicy }),
-    toChange({ after: accessPolicyRule }),
+    toChange({ after: accessPolicyRuleA }),
+    toChange({ after: accessPolicyRuleB }),
+    toChange({ after: defaultRule }),
+    toChange({ after: accessPolicyRulePriority }),
+    toChange({ after: passwordPolicyA }),
+    toChange({ after: passwordPolicyRuleA }),
+    toChange({ after: passwordPolicyRuleB }),
+    toChange({ after: passwordPolicyB }),
+    toChange({ after: passwordPolicyPriority }),
+    toChange({ after: passwordPolicyRulePriority }),
     toChange({ after: profileEnrollment }),
     toChange({ after: profileEnrollmentRule }),
     toChange({ after: app }),
@@ -461,6 +623,7 @@ describe('Okta adapter E2E', () => {
     })
 
     afterAll(async () => {
+      log.info('Starting cleanup')
       const appliedChanges = deployResults
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)

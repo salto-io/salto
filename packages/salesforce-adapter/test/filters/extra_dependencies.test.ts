@@ -624,10 +624,24 @@ describe('extra dependencies filter', () => {
         expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
       })
 
-      describe('when Records count is over 2000', () => {
+      describe('when Records count is over maxExtraDependenciesResponseSize', () => {
         beforeEach(() => {
           const records: SalesforceRecord[] = []
-          for (let i = 0; i < 2000; i += 1) {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  target: ['meta'],
+                  optionalFeatures: { extraDependenciesV2: true },
+                  limits: { maxExtraDependenciesResponseSize: 10 },
+                },
+              }),
+              elementsSource,
+            },
+          }) as FilterType
+          for (let i = 0; i < 20; i += 1) {
             records.push({
               Id: `${i}`,
               MetadataComponentType: 'meta',
@@ -651,9 +665,33 @@ describe('extra dependencies filter', () => {
           await filter.onFetch(elements)
           const queries = queryAllSpy.mock.calls.map(args => args[0])
           expect(queries).toHaveLength(3)
-          expect(queries[0]).toContain("MetadataComponentId IN ('inst1 id', 'inst2 id', 'layoutId1', 'Lead')")
-          expect(queries[1]).toContain("MetadataComponentId IN ('inst1 id', 'inst2 id')")
-          expect(queries[2]).toContain("MetadataComponentId IN ('layoutId1', 'Lead')")
+          expect(queries[0]).toContain("MetadataComponentId IN ('Lead', 'inst1 id', 'inst2 id', 'layoutId1')")
+          expect(queries[1]).toContain("MetadataComponentId IN ('Lead', 'inst1 id')")
+          expect(queries[2]).toContain("MetadataComponentId IN ('inst2 id', 'layoutId1')")
+        })
+      })
+
+      describe('when maxExtraDependenciesQuerySize is set', () => {
+        beforeEach(() => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  target: ['meta'],
+                  optionalFeatures: { extraDependenciesV2: true },
+                  limits: { maxExtraDependenciesQuerySize: 1, maxExtraDependenciesResponseSize: 5 },
+                },
+              }),
+              elementsSource,
+            },
+          }) as FilterType
+        })
+
+        it('should split the query to multiple queries', async () => {
+          await filter.onFetch(elements)
+          expect(queryAllSpy).toHaveBeenCalledTimes(4)
         })
       })
     })

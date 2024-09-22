@@ -10,9 +10,21 @@ import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } 
 import { intuneConstants } from '../../constants'
 
 const {
+  // Top level types
   APPLICATION_TYPE_NAME,
-  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
+  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  DEVICE_COMPLIANCE_TYPE_NAME,
+  DEVICE_CONFIGURATION_TYPE_NAME,
+  DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+  FILTER_TYPE_NAME,
+  PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+  SCOPE_TAG_TYPE_NAME,
+  TYPES_WITH_GROUP_ASSIGNMENTS_TARGET,
+  // Nested types
+  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_COMPLIANCE_RESTRICTED_APPS_TYPE_NAME,
 } = intuneConstants
 
@@ -60,5 +72,36 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     },
     target: { type: APPLICATION_TYPE_NAME },
     serializationStrategy: 'bundleId',
+  },
+  {
+    src: {
+      field: 'deviceAndAppManagementAssignmentFilterId',
+      parentTypes: TYPES_WITH_GROUP_ASSIGNMENTS_TARGET,
+    },
+    target: { type: FILTER_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: { field: 'roleScopeTags', parentTypes: [FILTER_TYPE_NAME] },
+    target: { type: SCOPE_TAG_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: 'roleScopeTagIds',
+      parentTypes: [
+        APPLICATION_TYPE_NAME,
+        APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
+        APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+        DEVICE_COMPLIANCE_TYPE_NAME,
+        DEVICE_CONFIGURATION_TYPE_NAME,
+        DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
+        PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+        PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
+        PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+      ],
+    },
+    target: { type: SCOPE_TAG_TYPE_NAME },
+    serializationStrategy: 'id',
   },
 ]

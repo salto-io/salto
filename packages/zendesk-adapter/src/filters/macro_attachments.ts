@@ -42,7 +42,7 @@ import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-import { createAdditionalParentChanges } from './utils'
+import { createAdditionalParentChanges, shortElemIdHash } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -140,21 +140,22 @@ const createAttachmentInstance = ({
   const name = fetchUtils.element.toNestedTypeName(macro.value.title, attachment.filename)
   const naclName = naclCase(name)
   const pathName = pathNaclCase(naclName)
-  const resourcePathName = normalizeFilePathPart(name)
-  return new InstanceElement(
+  const attachmentInstance = new InstanceElement(
     naclName,
     attachmentType,
     {
       id: attachment.id,
       filename: attachment.filename,
       contentType: attachment.content_type,
-      content: content
-        ? new StaticFile({ filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`, content })
-        : undefined,
     },
     [ZENDESK, RECORDS_PATH, MACRO_ATTACHMENT_TYPE_NAME, pathName],
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(macro.elemID, macro)] },
   )
+  const resourcePathName = normalizeFilePathPart(`${shortElemIdHash(attachmentInstance.elemID)}_${name}`)
+  attachmentInstance.value.content = content
+    ? new StaticFile({ filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`, content })
+    : undefined
+  return attachmentInstance
 }
 
 const createAttachmentType = (): ObjectType =>

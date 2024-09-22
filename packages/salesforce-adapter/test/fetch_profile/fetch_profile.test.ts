@@ -6,7 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { validateFetchParameters } from '../../src/fetch_profile/fetch_profile'
+import { validateFetchParameters, buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { mergeWithDefaultImportantValues } from '../../src/fetch_profile/important_values'
+import { FetchParameters } from '../../src/types'
 
 describe('Fetch Profile', () => {
   describe('validateFetchParameters', () => {
@@ -31,6 +33,29 @@ describe('Fetch Profile', () => {
         }
         expect(() => validateFetchParameters(params, [])).not.toThrow()
       })
+    })
+  })
+  describe('buildFetchProfile', () => {
+    it('should build a fetch profile with the correct values', () => {
+      const fetchParams: FetchParameters = {
+        metadata: { include: [{ metadataType: 'CustomObject' }], exclude: [] },
+        additionalImportantValues: [
+          { value: 'fullName', highlighted: true, indexed: false },
+          { value: 'label', highlighted: true, indexed: true },
+        ],
+        limits: { maxExtraDependenciesQuerySize: 10, maxExtraDependenciesResponseSize: 10 },
+      }
+      const maxItemsInRetrieveRequest = 10
+      const fetchProfile = buildFetchProfile({
+        fetchParams,
+        maxItemsInRetrieveRequest,
+      })
+      expect(fetchProfile.maxItemsInRetrieveRequest).toEqual(maxItemsInRetrieveRequest)
+      expect(fetchProfile.importantValues).toEqual(
+        mergeWithDefaultImportantValues(fetchParams.additionalImportantValues),
+      )
+      expect(fetchProfile.preferActiveFlowVersions).toEqual(false)
+      expect(fetchProfile.limits).toEqual(fetchParams.limits)
     })
   })
 })

@@ -58,7 +58,7 @@ const changeValidatorNames = [
   'profileMappingRemoval',
   'brandRemoval',
   'dynamicOSVersion',
-  'brandThemeRemoval',
+  'brandDependentElementRemoval',
   'appUserSchemaRemoval',
   'domainAddition',
   'domainModification',

@@ -10,9 +10,16 @@ import { FileProperties } from '@salto-io/jsforce'
 import { collections } from '@salto-io/lowerdash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { CustomListFuncDef } from './client'
 import { getChangedAtSingletonInstance } from '../filters/utils'
-import { APEX_CLASS_METADATA_TYPE } from '../constants'
+import {
+  APEX_CLASS_METADATA_TYPE,
+  WAVE_DATAFLOW_FILE_EXTENSION,
+  WAVE_DATAFLOW_METADATA_TYPE,
+  WAVE_RECIPE_FILE_EXTENSION,
+  WAVE_RECIPE_METADATA_TYPE,
+} from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
 const log = logger(module)
@@ -33,6 +40,7 @@ const latestChangedInstanceOfType = async (
 }
 
 export const createListApexClassesDef = (elementsSource: ReadOnlyElementsSource): CustomListFuncDef => ({
+  mode: 'partial',
   func: async client => {
     const sinceDate = await latestChangedInstanceOfType(elementsSource, APEX_CLASS_METADATA_TYPE)
     if (sinceDate === undefined) {
@@ -63,5 +71,35 @@ export const createListApexClassesDef = (elementsSource: ReadOnlyElementsSource)
     })
     return { result: props, errors: [] }
   },
-  isPartial: true,
+})
+
+export const createListMissingWaveDataflowsDef = (): CustomListFuncDef => ({
+  mode: 'extendsOriginal',
+  func: async client => {
+    log.debug('Creating missing WaveDataflows file properties from listed WaveRecipes')
+    const recipePropsToDataflowProps = (recipeProps: FileProperties): FileProperties => {
+      const clonedProps = _.clone(recipeProps)
+      return {
+        ...clonedProps,
+        id: '',
+        fileName: clonedProps.fileName.replace(WAVE_RECIPE_FILE_EXTENSION, WAVE_DATAFLOW_FILE_EXTENSION),
+        type: WAVE_DATAFLOW_METADATA_TYPE,
+      }
+    }
+    const { result: waveRecipesProps } = await client.listMetadataObjects([{ type: WAVE_RECIPE_METADATA_TYPE }])
+    const missingWaveDataflowsFileProps = waveRecipesProps.map(recipePropsToDataflowProps)
+    if (missingWaveDataflowsFileProps.length > 0) {
+      log.debug(
+        'Created %d missing WaveDataflows from WaveRecipes with names (first 100): %s',
+        missingWaveDataflowsFileProps.length,
+        inspectValue(
+          missingWaveDataflowsFileProps.map(p => p.fullName),
+          { maxArrayLength: 100 },
+        ),
+      )
+      log.trace('Created missing WaveDataflows file properties: %s', inspectValue(missingWaveDataflowsFileProps))
+    }
+
+    return { result: missingWaveDataflowsFileProps, errors: [] }
+  },
 })

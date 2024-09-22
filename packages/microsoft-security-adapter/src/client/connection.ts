@@ -9,7 +9,8 @@ import axios from 'axios'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { Credentials, getAuthenticationBaseUrl } from './oauth'
+import { getAuthenticationBaseUrl } from './oauth'
+import { Credentials } from '../auth'
 
 const log = logger(module)
 

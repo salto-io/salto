@@ -25,7 +25,7 @@ import { ChangeAndContext } from '../../definitions/system/deploy'
 import { getRequester } from './requester'
 import { RateLimiter } from '../../client'
 import { createDependencyGraph } from './graph'
-import { DeployChangeInput } from '../../definitions/system/deploy/types'
+import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
 
@@ -97,11 +97,15 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
 
   const graph = createDependencyGraph({ defQuery, dependencies, changes, ...changeContext })
 
-  const errors: SaltoElementError[] = []
+  const errors: Record<string, SaltoElementError[]> = {}
   const appliedChanges: Change<InstanceElement>[] = []
 
   const deploySingleChange =
     deployChangeFunc ?? createSingleChangeDeployer({ convertError, definitions, changeResolver })
+
+  const shouldFailChange = (elemID: ElemID): boolean =>
+    defQuery.query(elemID.typeName)?.failIfChangeHasErrors !== false &&
+    !_.isEmpty(errors[elemID.getFullName()]?.filter(e => e.severity === 'Error'))
 
   await graph.walkAsync(async nodeID => {
     const { typeName, action, typeActionChanges } = graph.getData(nodeID)
@@ -115,25 +119,42 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     )
     const { concurrency } = defQuery.query(String(typeName)) ?? {}
 
-    const bucket = new RateLimiter({ maxConcurrentCalls: concurrency })
-    const limitedDeployChange = bucket.wrap(deploySingleChange)
+    const limiter = new RateLimiter({ maxConcurrentCalls: concurrency })
+    const limitedDeployChange = limiter.wrap(deploySingleChange)
 
     const applied = (
       await Promise.all(
         typeActionChanges.map(async change => {
+          const { elemID } = getChangeData(change)
           try {
-            await limitedDeployChange({ ...changeContext, change, action })
+            if (shouldFailChange(elemID)) {
+              log.error(
+                'Not continuing deployment of change %s (action %s) due to earlier failure',
+                elemID.getFullName(),
+                change.action,
+              )
+              return undefined
+            }
+            await limitedDeployChange({
+              ...changeContext,
+              change,
+              action,
+              errors,
+            })
             return change
           } catch (err) {
-            log.error('Deployment of %s failed: %o', getChangeData(change).elemID.getFullName(), err)
+            if (errors[elemID.getFullName()] === undefined) {
+              errors[elemID.getFullName()] = []
+            }
+            log.error('Deployment of %s (action %s) failed: %o', elemID.getFullName(), change.action, err)
             if (isSaltoError(err)) {
-              errors.push({
+              errors[elemID.getFullName()].push({
                 ...err,
-                elemID: getChangeData(change).elemID,
+                elemID,
               })
             } else {
               const message = `${err}`
-              errors.push({
+              errors[elemID.getFullName()].push({
                 message,
                 detailedMessage: message,
                 severity: 'Error',
@@ -144,12 +165,21 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
           }
         }),
       )
-    ).filter(values.isDefined)
+    )
+      .filter(values.isDefined)
+      .filter(change => {
+        const { elemID } = getChangeData(change)
+        if (shouldFailChange(elemID)) {
+          log.error('Not marking change %s as successful due to partial failure', elemID.getFullName())
+          return false
+        }
+        return true
+      })
     applied.forEach(change => appliedChanges.push(change))
   })
 
   return {
-    errors,
+    errors: Object.values(errors).flat(),
     // TODO SALTO-5557 decide if change should be marked as applied if one of the actions failed
     appliedChanges: _.uniqBy(appliedChanges, changeId),
   }
@@ -163,4 +193,4 @@ export type SingleChangeDeployCreator<
 }: {
   definitions: types.PickyRequired<ApiDefinitions<TOptions>, 'clients' | 'deploy'>
   convertError: ConvertError
-}) => (args: ChangeAndContext) => Promise<void>
+}) => (args: ChangeAndExtendedContext) => Promise<void>

@@ -27,10 +27,9 @@ import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_NAMES,
   POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
 } from '../../src/filters/policy_priority'
-import { MFA_RULE_TYPE_NAME, OKTA, SIGN_ON_RULE_TYPE_NAME } from '../../src/constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, OKTA } from '../../src/constants'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import { OldOktaDefinitionsConfig } from '../../src/config'
 import { OktaOptions } from '../../src/definitions/types'
 
 describe('policyPrioritiesFilter', () => {
@@ -43,11 +42,6 @@ describe('policyPrioritiesFilter', () => {
         system: isSystem,
         name: `accessPolicyRule${id.toString()}`,
         priority: id,
-        actions: {
-          signon: {
-            access: 'ALLOW',
-          },
-        },
         type: 'someType',
       },
       undefined,
@@ -333,27 +327,40 @@ describe('policyPrioritiesFilter', () => {
       definitions = createDefinitions({ client })
       filter = policyPrioritiesFilter(getFilterParams({ definitions })) as typeof filter
       connection.put.mockResolvedValue({ status: 200, data: {} })
+      connection.get.mockImplementation(async (url: string) => {
+        if (url.includes('rules')) {
+          return {
+            status: 200,
+            data: {
+              created: '2021-09-01T00:00:00.000Z',
+              settings: {
+                a: 'a',
+              },
+              type: 'someType',
+            },
+          }
+        }
+        return {
+          status: 200,
+          data: {
+            created: '2021-09-01T00:00:00.000Z',
+            conditions: {
+              a: 'a',
+            },
+            type: 'someType',
+          },
+        }
+      })
     })
     it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
-      'should apply order when adding rule%sPriority instance',
+      'should apply order when adding %sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
-        const policyInstance = new InstanceElement(
-          `${policyRuleName}Instance`,
-          policyType,
-          {
-            name: `${policyRuleName}Instance`,
-            id: 4,
-          },
-          [
-            OKTA,
-            elementUtils.RECORDS_PATH,
-            policyRuleTypeNameToPolicyName(policyRuleName),
-            `${policyRuleName}_instance`,
-            `${policyRuleName}_instance`,
-          ],
-        )
+        const policyInstance = new InstanceElement(`${policyRuleName}Instance`, policyType, {
+          name: `${policyRuleName}Instance`,
+          id: 4,
+        })
         const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
         const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
         const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
@@ -380,23 +387,22 @@ describe('policyPrioritiesFilter', () => {
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
+
+        expect(connection.get).toHaveBeenCalledTimes(3)
         expect(connection.put).toHaveBeenCalledTimes(3)
-        if (policyRuleName === SIGN_ON_RULE_TYPE_NAME || policyRuleName === MFA_RULE_TYPE_NAME) {
+        const priorities = policyRulePriorityInstance.value.priorities as ReferenceExpression[]
+        priorities.forEach((ref, index) => {
           expect(connection.put).toHaveBeenCalledWith(
-            '/api/v1/policies/4/rules/1',
+            `/api/v1/policies/4/rules/${index + 1}`,
             {
-              priority: 1,
-              actions: {
-                signon: {
-                  access: 'ALLOW',
-                },
-              },
-              name: 'accessPolicyRule1',
+              // access policy rule priority starts from 0
+              priority: ref.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME ? index : index + 1,
+              settings: { a: 'a' },
               type: 'someType',
             },
             undefined,
           )
-        }
+        })
       },
     )
     it.each(ALL_SUPPORTED_POLICY_NAMES)(
@@ -429,7 +435,21 @@ describe('policyPrioritiesFilter', () => {
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)
+
+        expect(connection.get).toHaveBeenCalledTimes(3)
         expect(connection.put).toHaveBeenCalledTimes(3)
+        const priorities = policyPriorityInstance.value.priorities as ReferenceExpression[]
+        priorities.forEach((_, index) => {
+          expect(connection.put).toHaveBeenCalledWith(
+            `/api/v1/policies/${index + 1}`,
+            {
+              priority: index + 1,
+              conditions: { a: 'a' },
+              type: 'someType',
+            },
+            undefined,
+          )
+        })
       },
     )
     it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
@@ -544,55 +564,41 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(3)
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
-      'should throw when deployUrl is not defined for rule%sPriority instance',
-      async (policyRuleName: string) => {
-        const oldApiDefinitions = {
-          apiDefinitions: {
-            types: {
-              [policyRuleName]: {
-                deployRequests: {
-                  modify: {
-                    url: undefined,
-                  },
-                },
-              },
+    describe('failure scenarios', () => {
+      beforeEach(() => {
+        jest.clearAllMocks()
+        connection.get.mockResolvedValueOnce({ status: 404, data: {} })
+        connection.get.mockResolvedValueOnce({
+          status: 200,
+          data: {
+            created: '2021-09-01T00:00:00.000Z',
+            settings: {
+              a: 'a',
             },
+            type: 'someType',
           },
-        } as unknown as OldOktaDefinitionsConfig
-        filter = policyPrioritiesFilter(getFilterParams({ definitions, oldApiDefinitions })) as typeof filter
-        const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
-        const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
-        const policyInstance = new InstanceElement(
-          `${policyRuleName}Instance`,
-          policyType,
-          {
-            name: `${policyRuleName}Instance`,
-            id: 4,
-          },
-          [
-            OKTA,
-            elementUtils.RECORDS_PATH,
-            policyRuleTypeNameToPolicyName(policyRuleName),
-            `${policyRuleName}_instance`,
-            `${policyRuleName}_instance`,
-          ],
-        )
+        })
+        connection.put.mockResolvedValue({ status: 200, data: {} })
+      })
+
+      it('should use polling if the GET request returns 404', async () => {
+        const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
+        const policyType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME) })
+        const policyInstance = new InstanceElement(`${ACCESS_POLICY_RULE_TYPE_NAME}Instance`, policyType, {
+          name: `${ACCESS_POLICY_RULE_TYPE_NAME}Instance`,
+          id: 4,
+        })
         const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
-        const policyRulePriorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyRuleName}Priority`) })
+        const policyRuleInstanceDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const policyRulePriorityType = new ObjectType({
+          elemID: new ElemID(OKTA, `${ACCESS_POLICY_RULE_TYPE_NAME}Priority`),
+        })
         const policyRulePriorityInstance = new InstanceElement(
-          `${policyRuleName}PriorityInstance`,
+          `${ACCESS_POLICY_RULE_TYPE_NAME}PriorityInstance`,
           policyRulePriorityType,
           {
-            priorities: [
-              new ReferenceExpression(policyRuleInstanceOne.elemID, policyRuleInstanceOne),
-              new ReferenceExpression(policyRuleInstanceTwo.elemID, policyRuleInstanceTwo),
-              new ReferenceExpression(policyRuleInstanceThree.elemID, policyRuleInstanceThree),
-            ],
-            defaultRule: new ReferenceExpression(policyRuleInstanceFourDefault.elemID, policyRuleInstanceFourDefault),
+            priorities: [new ReferenceExpression(policyRuleInstanceOne.elemID, policyRuleInstanceOne)],
+            defaultRule: new ReferenceExpression(policyRuleInstanceDefault.elemID, policyRuleInstanceDefault),
           },
           undefined,
           {
@@ -602,71 +608,12 @@ describe('policyPrioritiesFilter', () => {
         const changes = [toChange({ after: policyRulePriorityInstance })]
         const res = await filter.deploy(changes)
         expect(res.leftoverChanges).toHaveLength(0)
-        expect(res.deployResult.errors).toHaveLength(1)
-        expect(res.deployResult.errors[0].message).toEqual('Failed to deploy priority change due to missing url')
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
-        expect(connection.put).toHaveBeenCalledTimes(0)
-      },
-    )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
-      'should throw when deployRequests is not defined for rule%sPriority instance',
-      async (policyRuleName: string) => {
-        const oldApiDefinitions = {
-          apiDefinitions: {
-            types: {
-              [policyRuleName]: {
-                deployRequests: undefined,
-              },
-            },
-          },
-        } as unknown as OldOktaDefinitionsConfig
-        filter = policyPrioritiesFilter(getFilterParams({ definitions, oldApiDefinitions })) as typeof filter
-        const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
-        const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
-        const policyInstance = new InstanceElement(
-          `${policyRuleName}Instance`,
-          policyType,
-          {
-            name: `${policyRuleName}Instance`,
-            id: 4,
-          },
-          [
-            OKTA,
-            elementUtils.RECORDS_PATH,
-            policyRuleTypeNameToPolicyName(policyRuleName),
-            `${policyRuleName}_instance`,
-            `${policyRuleName}_instance`,
-          ],
-        )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
-        const policyRulePriorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyRuleName}Priority`) })
-        const policyRulePriorityInstance = new InstanceElement(
-          `${policyRuleName}PriorityInstance`,
-          policyRulePriorityType,
-          {
-            priorities: [
-              new ReferenceExpression(policyRuleInstanceOne.elemID, policyRuleInstanceOne),
-              new ReferenceExpression(policyRuleInstanceTwo.elemID, policyRuleInstanceTwo),
-              new ReferenceExpression(policyRuleInstanceThree.elemID, policyRuleInstanceThree),
-            ],
-            defaultRule: new ReferenceExpression(policyRuleInstanceFourDefault.elemID, policyRuleInstanceFourDefault),
-          },
-          undefined,
-          {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(policyInstance.elemID, policyInstance)],
-          },
-        )
-        const changes = [toChange({ after: policyRulePriorityInstance })]
-        const res = await filter.deploy(changes)
-        expect(res.leftoverChanges).toHaveLength(0)
-        expect(res.deployResult.errors).toHaveLength(1)
-        expect(res.deployResult.errors[0].message).toEqual('Failed to deploy priority change due to missing url')
-        expect(res.deployResult.appliedChanges).toHaveLength(0)
-        expect(connection.put).toHaveBeenCalledTimes(0)
-      },
-    )
+        expect(res.deployResult.errors).toHaveLength(0)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
+
+        expect(connection.get).toHaveBeenCalledTimes(2)
+        expect(connection.put).toHaveBeenCalledTimes(1)
+      })
+    })
   })
 })

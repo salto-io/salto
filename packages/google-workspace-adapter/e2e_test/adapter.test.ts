@@ -128,6 +128,9 @@ const deployChanges = async (adapterAttr: Reals, changes: Change[]): Promise<Dep
         changeGroup: { groupID: getChangeData(change).elemID.getFullName(), changes: [change] },
         progressReporter: nullProgressReporter,
       })
+      if (deployResult.errors.length) {
+        log.info('Deploy errors: %o', deployResult.errors)
+      }
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)
       deployResult.appliedChanges

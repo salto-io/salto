@@ -8,13 +8,22 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { Element, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  Element,
+  FetchResult,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  StaticFile,
+  Values,
+} from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import { credentialsType } from '../src/client/oauth'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
+import { credentialsType, MicrosoftServicesToManage } from '../src/auth'
 
 type MockReply = {
   url: string
@@ -46,21 +55,25 @@ describe('Microsoft Security adapter', () => {
   })
 
   describe('fetch', () => {
+    const setup = async (servicesToManage: MicrosoftServicesToManage): Promise<FetchResult> =>
+      adapter
+        .operations({
+          credentials: new InstanceElement('config', credentialsType, {
+            tenantId: 'testTenantId',
+            clientId: 'testClientId',
+            clientSecret: 'testClient',
+            refreshToken: 'testRefreshToken',
+            servicesToManage,
+          }),
+          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+        .fetch({ progressReporter: { reportProgress: () => null } })
+
     describe('full', () => {
       let elements: Element[]
       beforeEach(async () => {
-        ;({ elements } = await adapter
-          .operations({
-            credentials: new InstanceElement('config', credentialsType, {
-              tenantId: 'testTenantId',
-              clientId: 'testClientId',
-              clientSecret: 'testClient',
-              refreshToken: 'testRefreshToken',
-            }),
-            config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-          .fetch({ progressReporter: { reportProgress: () => null } }))
+        ;({ elements } = await setup({ Entra: true, Intune: true }))
       })
 
       it('should generate the right elements on fetch', async () => {
@@ -92,6 +105,11 @@ describe('Microsoft Security adapter', () => {
           'IntuneDeviceCompliance',
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',
+          'IntuneFilter',
+          'IntunePlatformScriptLinux',
+          'IntunePlatformScriptMacOS',
+          'IntunePlatformScriptWindows',
+          'IntuneScopeTag',
         ])
         // TODO: Validate Entra sub-types and structure of the elements
       })
@@ -136,17 +154,33 @@ describe('Microsoft Security adapter', () => {
               )
             })
 
-            it('should include assignments field with references to the matching groups', async () => {
+            it('should include assignments field with references to the matching groups and filters', async () => {
               const applicationWithAssignments = intuneApplications.find(
                 e => e.elemID.name === 'managedAndroidStoreApp_com_test@uv',
               )
               expect(applicationWithAssignments).toBeDefined()
               const { assignments } = (applicationWithAssignments as InstanceElement).value
-              expect(assignments).toHaveLength(1)
-              expect(Object.keys(assignments[0])).toEqual(['intent', 'source', 'target', 'settings'])
+              expect(assignments).toHaveLength(2)
+              expect(
+                assignments.every((a: Values) => Object.keys(a).length === 2 && 'target' in a && 'source' in a),
+              ).toBeTruthy()
+              // group reference
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+              expect(assignments[1].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[1].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.another_test_group@s',
+              )
+              // filter reference
+              const filterRefs = assignments.map((a: Values) => a.target?.deviceAndAppManagementAssignmentFilterId)
+              expect(filterRefs.every((f: unknown) => f instanceof ReferenceExpression)).toBeTruthy()
+              expect(filterRefs.map((f: ReferenceExpression) => f.elemID.getFullName())).toEqual(
+                expect.arrayContaining([
+                  'microsoft_security.IntuneFilter.instance.test_filter_IOS_iOSMobileApplicationManagement@ssu',
+                  'microsoft_security.IntuneFilter.instance.test_filter_android_androidMobileApplicationManagement@ssu',
+                ]),
               )
             })
 
@@ -156,6 +190,22 @@ describe('Microsoft Security adapter', () => {
               )
               expect(applicationsWithoutAssignments).toHaveLength(5)
               expect(applicationsWithoutAssignments.every(e => e.value.assignments?.length === 0)).toBeTruthy()
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const applicationWithScopeTags = intuneApplications.find(
+                e => e.elemID.name === 'managedAndroidStoreApp_com_test@uv',
+              )
+              expect(applicationWithScopeTags).toBeDefined()
+              const { roleScopeTagIds } = (applicationWithScopeTags as InstanceElement).value
+              expect(roleScopeTagIds).toHaveLength(2)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual(
+                expect.arrayContaining([
+                  'microsoft_security.IntuneScopeTag.instance.Default',
+                  'microsoft_security.IntuneScopeTag.instance.test_scope_tag@s',
+                ]),
+              )
             })
           })
 
@@ -206,6 +256,19 @@ describe('Microsoft Security adapter', () => {
               expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneApplicationConfiguration = intuneApplicationConfigurations[0]
+              const { roleScopeTagIds } = intuneApplicationConfiguration.value
+              expect(roleScopeTagIds).toHaveLength(2)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual(
+                expect.arrayContaining([
+                  'microsoft_security.IntuneScopeTag.instance.Default',
+                  'microsoft_security.IntuneScopeTag.instance.test_scope_tag@s',
+                ]),
               )
             })
           })
@@ -309,6 +372,19 @@ describe('Microsoft Security adapter', () => {
               const { assignments } = (intuneApplicationConfigurationWithoutAssignments as InstanceElement).value
               expect(assignments).toHaveLength(0)
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneApplicationConfiguration = intuneApplicationConfigurations.find(
+                e => e.elemID.name === 'test_android@s',
+              )
+              expect(intuneApplicationConfiguration).toBeDefined()
+              const { roleScopeTagIds } = (intuneApplicationConfiguration as InstanceElement).value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('device configurations', () => {
@@ -356,6 +432,19 @@ describe('Microsoft Security adapter', () => {
                 intuneDeviceConfigurationWithoutAssignments.every(e => e.value.assignments?.length === 0),
               ).toBeTruthy()
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneDeviceConfiguration = intuneDeviceConfigurations.find(
+                e => e.elemID.name === 'test_windows_health_monitoring@s',
+              )
+              expect(intuneDeviceConfiguration).toBeDefined()
+              const { roleScopeTagIds } = (intuneDeviceConfiguration as InstanceElement).value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
           })
 
           describe('device configurations - setting catalog', () => {
@@ -394,6 +483,16 @@ describe('Microsoft Security adapter', () => {
               expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneDeviceConfigurationSettingCatalog = intuneDeviceConfigurationSettingCatalogs[0]
+              const { roleScopeTagIds } = intuneDeviceConfigurationSettingCatalog.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
             })
           })
 
@@ -448,8 +547,297 @@ describe('Microsoft Security adapter', () => {
                 'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
               )
             })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneDeviceCompliance = intuneDeviceCompliances[0]
+              const { roleScopeTagIds } = intuneDeviceCompliance.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
+
+          describe('filter', () => {
+            let intuneFilters: InstanceElement[]
+            beforeEach(async () => {
+              intuneFilters = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'IntuneFilter')
+            })
+
+            it('should create the correct instances for Intune filters', async () => {
+              expect(intuneFilters).toHaveLength(2)
+
+              const intuneFilterNames = intuneFilters.map(e => e.elemID.name)
+              expect(intuneFilterNames).toEqual(
+                expect.arrayContaining([
+                  'test_filter_android_androidMobileApplicationManagement@ssu',
+                  'test_filter_IOS_iOSMobileApplicationManagement@ssu',
+                ]),
+              )
+            })
+
+            it("should not include 'payloads' field", async () => {
+              expect(intuneFilters.every(e => !('payloads' in e.value))).toBeTruthy()
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const intuneFilter = intuneFilters[0]
+              const { roleScopeTags } = intuneFilter.value
+              expect(roleScopeTags).toHaveLength(1)
+              expect(roleScopeTags.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTags.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
+
+          describe('platform script linux', () => {
+            let platformScriptsLinux: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsLinux = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptLinux')
+            })
+
+            it('should create the correct instances for platform script linux', async () => {
+              expect(platformScriptsLinux).toHaveLength(1)
+
+              const platformScriptLinuxNames = platformScriptsLinux.map(e => e.elemID.name)
+              expect(platformScriptLinuxNames).toEqual(['test_linux_script@s'])
+            })
+
+            it('should include settings field with the correct values', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              expect(platformScriptLinux.value.settings).toHaveLength(4)
+              expect(Object.keys(platformScriptLinux.value.settings[0])).toEqual(['settingInstance'])
+              const linuxScript = _.get(platformScriptLinux.value.settings[3], [
+                'settingInstance',
+                'simpleSettingValue',
+                'value',
+              ])
+              expect(linuxScript).toBeInstanceOf(StaticFile)
+              const scriptContent = await linuxScript.getContent()
+              expect(scriptContent).toBeInstanceOf(Buffer)
+              expect(scriptContent.toString()).toEqual(
+                '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
+              )
+              expect(linuxScript.encoding).toEqual('base64')
+              expect(linuxScript.filepath).toEqual(
+                'microsoft_security/IntunePlatformScriptLinux/test_linux_script.s/linux_customconfig_script.sh',
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              const { assignments } = platformScriptLinux.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['source', 'target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const platformScriptLinux = platformScriptsLinux[0]
+              const { roleScopeTagIds } = platformScriptLinux.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
+
+          describe('platform script windows', () => {
+            let platformScriptsWindows: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsWindows = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptWindows')
+            })
+
+            it('should create the correct instances for platform script windows', async () => {
+              expect(platformScriptsWindows).toHaveLength(1)
+
+              const platformScriptWindowsNames = platformScriptsWindows.map(e => e.elemID.name)
+              expect(platformScriptWindowsNames).toEqual(['test_windows_platform_script@s'])
+            })
+
+            it('should include scriptContent field as a static file', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { scriptContent } = platformScriptWindows.value
+              expect(scriptContent).toBeInstanceOf(StaticFile)
+              const content = await scriptContent.getContent()
+              expect(content).toBeInstanceOf(Buffer)
+              expect(content.toString()).toEqual('echo "Hello, World!"')
+              expect(scriptContent.encoding).toEqual('base64')
+              expect(scriptContent.filepath).toEqual(
+                'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s/simple_powershell_script.ps1',
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { assignments } = platformScriptWindows.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const platformScriptWindows = platformScriptsWindows[0]
+              const { roleScopeTagIds } = platformScriptWindows.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
+
+          describe('platform script macOS', () => {
+            let platformScriptsMacOS: InstanceElement[]
+            beforeEach(async () => {
+              platformScriptsMacOS = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntunePlatformScriptMacOS')
+            })
+
+            it('should create the correct instances for platform script macOS', async () => {
+              expect(platformScriptsMacOS).toHaveLength(1)
+
+              const platformScriptMacOSNames = platformScriptsMacOS.map(e => e.elemID.name)
+              expect(platformScriptMacOSNames).toEqual(['test_script_macOS@s'])
+            })
+
+            it('should include scriptContent field as a static file', async () => {
+              const platformScriptMacOS = platformScriptsMacOS[0]
+              const { scriptContent } = platformScriptMacOS.value
+              expect(scriptContent).toBeInstanceOf(StaticFile)
+              const content = await scriptContent.getContent()
+              expect(content).toBeInstanceOf(Buffer)
+              expect(content.toString()).toEqual('echo "Hello, World! This is macOS test"')
+              expect(scriptContent.encoding).toEqual('base64')
+              expect(scriptContent.filepath).toEqual(
+                'microsoft_security/IntunePlatformScriptMacOS/test_script_macOS.s/intune-macOS-script-example.sh',
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const platformScriptMacOS = platformScriptsMacOS[0]
+              const { assignments } = platformScriptMacOS.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const platformScriptMacOS = platformScriptsMacOS[0]
+              const { roleScopeTagIds } = platformScriptMacOS.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
+
+          describe('scope tags', () => {
+            let scopeTags: InstanceElement[]
+            beforeEach(async () => {
+              scopeTags = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'IntuneScopeTag')
+            })
+
+            it('should create the correct instances for Intune scope tags', async () => {
+              expect(scopeTags).toHaveLength(2)
+
+              const scopeTagNames = scopeTags.map(e => e.elemID.name)
+              expect(scopeTagNames).toEqual(expect.arrayContaining(['Default', 'test_scope_tag@s']))
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const scopeTag = scopeTags.find(e => e.elemID.name === 'test_scope_tag@s') as InstanceElement
+              const { assignments } = scopeTag.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include assignments field as empty array when there are no assignments', async () => {
+              const scopeTag = scopeTags.find(e => e.elemID.name === 'Default') as InstanceElement
+              const { assignments } = scopeTag.value
+              expect(assignments).toHaveLength(0)
+            })
           })
         })
+      })
+    })
+
+    describe('Entra', () => {
+      let elements: Element[]
+      beforeEach(async () => {
+        ;({ elements } = await setup({ Entra: true, Intune: false }))
+      })
+
+      it('should generate the right elements on fetch', async () => {
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
+          'EntraAdministrativeUnit',
+          'EntraAppRole',
+          'EntraApplication',
+          'EntraAuthenticationMethodPolicy',
+          'EntraAuthenticationMethodPolicy__authenticationMethodConfigurations',
+          'EntraAuthenticationStrengthPolicy',
+          'EntraConditionalAccessPolicy',
+          'EntraConditionalAccessPolicyNamedLocation',
+          'EntraCrossTenantAccessPolicy',
+          'EntraCustomSecurityAttributeDefinition',
+          'EntraCustomSecurityAttributeDefinition__allowedValues',
+          'EntraCustomSecurityAttributeSet',
+          'EntraDirectoryRoleTemplate',
+          'EntraDomain',
+          'EntraGroup',
+          'EntraGroupLifeCyclePolicy',
+          'EntraGroup__appRoleAssignments',
+          'EntraOauth2PermissionGrant',
+          'EntraPermissionGrantPolicy',
+          'EntraRoleDefinition',
+          'EntraServicePrincipal',
+        ])
+      })
+    })
+
+    describe('Intune', () => {
+      let elements: Element[]
+      beforeEach(async () => {
+        ;({ elements } = await setup({ Entra: false, Intune: true }))
+      })
+
+      it('should generate the right elements on fetch', async () => {
+        expect([...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()).toEqual([
+          'EntraGroup',
+          'IntuneApplication',
+          'IntuneApplicationConfigurationManagedApp',
+          'IntuneApplicationConfigurationManagedDevice',
+          'IntuneDeviceCompliance',
+          'IntuneDeviceConfiguration',
+          'IntuneDeviceConfigurationSettingCatalog',
+          'IntuneFilter',
+          'IntunePlatformScriptLinux',
+          'IntunePlatformScriptMacOS',
+          'IntunePlatformScriptWindows',
+          'IntuneScopeTag',
+        ])
       })
     })
   })

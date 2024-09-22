@@ -137,11 +137,11 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
           log.error(
             'An error occurred during deployment of %s: %o',
             getChangeData(change).elemID.getFullName(),
-            err.message,
+            err.detailedMessage,
           )
           errors.push({
             message: err.message,
-            detailedMessage: err.message,
+            detailedMessage: err.detailedMessage,
             severity: err.severity,
             elemID: getChangeData(change).elemID,
           })

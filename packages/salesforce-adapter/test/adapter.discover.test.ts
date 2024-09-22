@@ -697,9 +697,6 @@ describe('SalesforceAdapter fetch', () => {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
-                optionalFeatures: {
-                  fixRetrieveFilePaths: true,
-                },
                 metadata: {
                   include: [
                     { metadataType: '.*' },
@@ -1381,7 +1378,7 @@ describe('SalesforceAdapter fetch', () => {
           ]),
           expect.anything(),
           expect.anything(),
-          true,
+          expect.anything(),
         )
       })
     })
@@ -2184,9 +2181,6 @@ public class LargeClass${index} {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
-                optionalFeatures: {
-                  fixRetrieveFilePaths: true,
-                },
                 metadata: {
                   include: [
                     { metadataType: '.*' },
@@ -2301,9 +2295,6 @@ public class LargeClass${index} {
             getElemIdFunc: mockGetElemIdFunc,
             config: {
               fetch: {
-                optionalFeatures: {
-                  fixRetrieveFilePaths: true,
-                },
                 metadata: {
                   include: [{ metadataType: '.*' }],
                 },
@@ -2544,7 +2535,7 @@ public class LargeClass${index} {
           ]),
           expect.anything(),
           expect.anything(),
-          true,
+          expect.anything(),
         )
       })
     })

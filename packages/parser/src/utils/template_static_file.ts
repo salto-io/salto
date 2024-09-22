@@ -26,7 +26,7 @@ const parseBufferToTemplateExpression = (
   const tokens = stringLexerFromString(buffer.toString())
   const context = { errors: [] as ParseError[], filename: '' }
   const value = createStringValue(context, tokens, createSimpleStringValue)
-  const errors = context.errors.map(err => err.message)
+  const errors = context.errors.map(err => err.detailedMessage)
   if (typeof value === 'string') {
     log.trace('Template static file is a string. Creating a TemplateExpression from it')
     return {

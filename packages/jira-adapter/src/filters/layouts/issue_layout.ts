@@ -95,7 +95,7 @@ const getProjectToScreenMappingUnresolved = (elements: Element[]): Record<string
         issueTypeScheme.value.id,
         issueTypeScheme.value.issueTypeIds?.map(
           (issueTypeIdRecord: Record<string, string>) => issueTypeIdRecord.issueTypeId,
-        ),
+        ) ?? [],
       ]),
   )
 

@@ -32,7 +32,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
     regexes => regexes.manifestErrorDetailsRegex,
   )
   const [missingDependenciesErrors, nonMissingDependenciesErrors] = _.partition(errors, error =>
-    missingDependenciesRegexes.some(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID).length > 0),
+    missingDependenciesRegexes.some(regex => getGroupItemFromRegex(error.detailedMessage, regex, OBJECT_ID).length > 0),
   )
 
   const missingDependenciesChangeErrors = Object.values(
@@ -40,7 +40,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
   ).map(elementErrors => {
     const missingDependencies = _.uniq(
       elementErrors.flatMap(error =>
-        missingDependenciesRegexes.flatMap(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID)),
+        missingDependenciesRegexes.flatMap(regex => getGroupItemFromRegex(error.detailedMessage, regex, OBJECT_ID)),
       ),
     )
 
@@ -60,7 +60,9 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
     regexes => regexes.missingFeatureInAccountErrorRegex,
   )
   const [missingFeatureErrors, unclassifiedErrors] = _.partition(nonMissingDependenciesErrors, error =>
-    missingFeatureInAccountRegexes.some(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME).length > 0),
+    missingFeatureInAccountRegexes.some(
+      regex => getGroupItemFromRegex(error.detailedMessage, regex, FEATURE_NAME).length > 0,
+    ),
   )
 
   const missingFeatureChangeErrors = Object.values(
@@ -68,7 +70,9 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
   ).map(elementErrors => {
     const missingFeatures = _.uniq(
       elementErrors.flatMap(error =>
-        missingFeatureInAccountRegexes.flatMap(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME)),
+        missingFeatureInAccountRegexes.flatMap(regex =>
+          getGroupItemFromRegex(error.detailedMessage, regex, FEATURE_NAME),
+        ),
       ),
     )
 
@@ -87,7 +91,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
       elemID: error.elemID,
       severity: error.severity,
       message: 'SDF validation error',
-      detailedMessage: error.message,
+      detailedMessage: error.detailedMessage,
     }))
     .concat(missingDependenciesChangeErrors)
     .concat(missingFeatureChangeErrors)
@@ -143,7 +147,7 @@ const changeValidator: ClientChangeValidator = async (changes, client, additiona
         realGroupChanges.map(change => ({
           elemID: getChangeData(change).elemID,
           message: error.message,
-          detailedMessage: error.message,
+          detailedMessage: error.detailedMessage,
           severity: error.severity,
         })),
       )

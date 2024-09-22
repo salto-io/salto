@@ -8,7 +8,7 @@
 import { InstanceElement, ObjectType, Element, ReadOnlyElementsSource } from './elements'
 import { AdapterAuthentication } from './authentication_types'
 import { ElemID } from './element_id'
-import { Change } from './change'
+import { Change, ChangeDataType } from './change'
 import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
@@ -48,12 +48,12 @@ type SaltoDeployErrors = {
   errors: ReadonlyArray<SaltoError | SaltoElementError>
 }
 
-type BaseDeployResult = {
-  appliedChanges: ReadonlyArray<Change>
+type BaseDeployResult<T extends ChangeDataType = ChangeDataType> = {
+  appliedChanges: ReadonlyArray<Change<T>>
   extraProperties?: DeployExtraProperties
 }
 
-export type DeployResult = SaltoDeployErrors & BaseDeployResult
+export type DeployResult<T extends ChangeDataType = ChangeDataType> = SaltoDeployErrors & BaseDeployResult<T>
 
 export type Progress = {
   message: string

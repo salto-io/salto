@@ -579,7 +579,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/api/v2/business_hours/schedules',
       recurseInto: [
         {
-          type: 'business_hours_schedule_holiday',
+          type: 'business_hours_schedule__holiday',
           toField: 'holidays',
           context: [{ name: 'scheduleId', fromField: 'id' }],
         },
@@ -915,6 +915,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'description', fieldType: 'string' }),
       serviceUrl: '/agent/admin/user_fields/{id}',
+      nameMapping: 'lowercase',
     },
     deployRequests: {
       add: {
@@ -1585,7 +1586,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'locales',
     },
   },
-  business_hours_schedule_holiday: {
+  business_hours_schedule__holiday: {
     request: {
       url: '/api/v2/business_hours/schedules/{scheduleId}/holidays',
     },

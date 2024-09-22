@@ -45,6 +45,7 @@ export const createAutomationTypes = (): {
     fields: {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.UNKNOWN },
+      rawValue: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_FIELD],
   })
@@ -71,6 +72,7 @@ export const createAutomationTypes = (): {
     fields: {
       field: { refType: fieldType },
       value: { refType: fieldType },
+      rawValue: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_OPERATION],
   })
@@ -194,6 +196,7 @@ export const createAutomationTypes = (): {
       type: { refType: BuiltinTypes.STRING },
       value: { refType: componentValueType },
       hasAttachmentsValue: { refType: BuiltinTypes.BOOLEAN },
+      rawValue: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_TYPE],
   })

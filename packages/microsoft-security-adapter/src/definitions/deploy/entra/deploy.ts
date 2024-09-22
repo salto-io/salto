@@ -441,7 +441,7 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
             },
             condition: {
               transformForCheck: {
-                pick: [MEMBERS_FIELD_NAME],
+                omit: [MEMBERS_FIELD_NAME],
               },
             },
           },

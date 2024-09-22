@@ -9,3 +9,4 @@
 export * as application from './application'
 export * as appsConfiguration from './apps_configuration'
 export * as groupAssignments from './group_assignments'
+export * as deviceConfigurationSettings from './device_configuration_settings'

@@ -110,12 +110,10 @@ export type OptionalFeatures = {
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
-  fixRetrieveFilePaths?: boolean
   extendedCustomFieldInformation?: boolean
   importantValues?: boolean
   hideTypesFolder?: boolean
   omitStandardFieldsNonDeployableValues?: boolean
-  latestSupportedApiVersion?: boolean
   metaTypes?: boolean
   cpqRulesAndConditionsRefs?: boolean
   flowCoordinates?: boolean
@@ -123,6 +121,11 @@ export type OptionalFeatures = {
   taskAndEventCustomFields?: boolean
   sharingRulesMaps?: boolean
   excludeNonRetrievedProfilesRelatedInstances?: boolean
+  waveMetadataSupport?: boolean
+  indexedEmailTemplateAttachments?: boolean
+  skipParsingXmlNumbers?: boolean
+  logDiffsFromParsingXmlNumbers?: boolean
+  performSideEffectDeletes?: boolean
 }
 
 export type ChangeValidatorName =
@@ -351,13 +354,19 @@ export type DataManagementConfig = {
   regenerateSaltoIds?: boolean
 }
 
+export type FetchLimits = {
+  maxExtraDependenciesQuerySize?: number
+  maxExtraDependenciesResponseSize?: number
+}
+
 export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
   fetchAllCustomSettings?: boolean // TODO - move this into optional features
   optionalFeatures?: OptionalFeatures
   target?: string[]
-  maxInstancesPerType?: number
+  limits?: FetchLimits
+  maxInstancesPerType?: number // TODO - move this into fetchLimits
   preferActiveFlowVersions?: boolean
   addNamespacePrefixToFullName?: boolean
   warningSettings?: WarningSettings
@@ -809,12 +818,10 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
-    fixRetrieveFilePaths: { refType: BuiltinTypes.BOOLEAN },
     extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
     importantValues: { refType: BuiltinTypes.BOOLEAN },
     hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
     omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
-    latestSupportedApiVersion: { refType: BuiltinTypes.BOOLEAN },
     metaTypes: { refType: BuiltinTypes.BOOLEAN },
     cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
     flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
@@ -822,6 +829,11 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
     sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
     excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
+    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
+    indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
+    skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
+    logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
+    performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -875,6 +887,17 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
+const limitsType = createMatchingObjectType<FetchLimits>({
+  elemID: new ElemID(constants.SALESFORCE, 'limits'),
+  fields: {
+    maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
+    maxExtraDependenciesResponseSize: { refType: BuiltinTypes.NUMBER },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
@@ -899,6 +922,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       // Exported type is downcast to TypeElement
       refType: new ListType(importantValueType),
     },
+    limits: { refType: limitsType },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1045,6 +1069,7 @@ export type FetchProfile = {
   isWarningEnabled: (name: keyof WarningSettings) => boolean
   readonly maxItemsInRetrieveRequest: number
   readonly importantValues: ImportantValues
+  readonly limits?: FetchLimits
 }
 
 export type TypeWithNestedInstances = (typeof constants.TYPES_WITH_NESTED_INSTANCES)[number]
@@ -1059,4 +1084,5 @@ export type ProfileRelatedMetadataType = (typeof constants.PROFILE_RELATED_METAD
 
 export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
+  config: SalesforceConfig
 }>

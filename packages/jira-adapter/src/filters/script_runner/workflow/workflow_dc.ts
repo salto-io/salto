@@ -24,13 +24,13 @@ const decodeBase64 = (base64: string): string => {
   try {
     const decoded = Buffer.from(base64, 'base64').toString('utf8')
     if (!decoded.startsWith(DC_ENCODE_PREFIX)) {
-      log.warn(`Could not decode DC ScriptRunner script, expected to start with ${DC_ENCODE_PREFIX}, got: ${decoded}`)
+      log.info(`Could not decode DC ScriptRunner script, expected to start with ${DC_ENCODE_PREFIX}, got: ${decoded}`)
       return base64
     }
     // all base64 strings of DC ScriptRunner scripts start with `!` (or YCFg in base 64)
     return decoded.substring(DC_ENCODE_PREFIX.length)
   } catch (e) {
-    log.warn(`Could not decode DC ScriptRunner script, expected base64, got: ${base64}`)
+    log.info(`Could not decode DC ScriptRunner script, expected base64, got: ${base64}`)
     return base64
   }
 }
@@ -39,9 +39,9 @@ const decodeBase64 = (base64: string): string => {
 const encodeBase64 = (script: string): string => Buffer.from(DC_ENCODE_PREFIX + script).toString('base64')
 
 const decodeScriptObject = (base64: string): unknown => {
-  const script = decodeBase64(base64)
+  const decoded = decodeBase64(base64)
   try {
-    const value = JSON.parse(script)
+    const value = JSON.parse(decoded)
     if (value.scriptPath === null) {
       delete value.scriptPath
     }
@@ -50,8 +50,10 @@ const decodeScriptObject = (base64: string): unknown => {
     }
     return value
   } catch (e) {
-    log.warn(`Could not decode DC ScriptRunner script, expected JSON, got: ${script}`)
-    return base64
+    log.info(`Could not decode DC ScriptRunner script, assuming an old format. Expected JSON, got: ${decoded}`)
+    return {
+      script: decoded,
+    }
   }
 }
 

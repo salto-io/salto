@@ -621,13 +621,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const errorsOnCustomFieldsByParents = _(originalChangesErrors)
       .filter(error => error.elemID.idType === 'field')
       .groupBy(error => error.elemID.createTopLevelParentID().parent.getFullName())
-      .mapValues(errors => new Set(errors.map(error => error.message)))
+      .mapValues(errors => new Set(errors.map(error => error.detailedMessage)))
       .value()
 
     additionalChangesErrors.forEach(error => {
       const errorsOnFields = errorsOnCustomFieldsByParents[error.elemID.createBaseID().parent.getFullName()]
-      if (!errorsOnFields?.has(error.message)) {
-        saltoErrors.push({ message: error.message, detailedMessage: error.message, severity: error.severity })
+      if (!errorsOnFields?.has(error.detailedMessage)) {
+        saltoErrors.push({ message: error.message, detailedMessage: error.detailedMessage, severity: error.severity })
       }
     })
 

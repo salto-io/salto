@@ -459,13 +459,7 @@ export const retrieveMetadataInstances = async ({
       )
     }
 
-    const allValues = await fromRetrieveResult(
-      result,
-      allFileProps,
-      typesWithMetaFile,
-      typesWithContent,
-      fetchProfile.isFeatureEnabled('fixRetrieveFilePaths'),
-    )
+    const allValues = await fromRetrieveResult(result, allFileProps, typesWithMetaFile, typesWithContent, fetchProfile)
     // Exclude Profile related instances we fail to retrieve for envs that manage Profiles to improve performance
     // in subsequent fetches and avoid broken references in Profiles.
     if (

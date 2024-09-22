@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Change, getChangeData, InstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
@@ -23,14 +23,16 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change => getChangeData(change).elemID.typeName === ACCOUNT_SETTING_TYPE_NAME,
     )
     if (accountSettingChanges.length > 1) {
+      const message = `${ACCOUNT_SETTING_TYPE_NAME} element is a singleton and should have only on instance. Found multiple: ${accountSettingChanges.length}`
       return {
         deployResult: {
           appliedChanges: [],
           errors: [
             {
-              message: `${ACCOUNT_SETTING_TYPE_NAME} element is a singleton and should have only on instance. Found multiple: ${accountSettingChanges.length}`,
+              message,
+              detailedMessage: message,
               severity: 'Error',
-            } as SaltoError,
+            },
           ],
         },
         leftoverChanges,

@@ -66,11 +66,16 @@ export const isSuiteAppDeleteRecordsGroupId = (groupId: string): boolean =>
 export const isSuiteAppUpdateConfigGroupId = (groupId: string): boolean =>
   groupId.startsWith(SUITEAPP_UPDATING_CONFIG_GROUP_ID)
 
-export const SUITEAPP_FILE_CABINET_GROUPS = [
+const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
   SUITEAPP_UPDATING_FILES_GROUP_ID,
   SUITEAPP_DELETING_FILES_GROUP_ID,
-]
+] as const
+
+export type FileCabinetDeployGroup = (typeof SUITEAPP_FILE_CABINET_GROUPS)[number]
+
+export const isFileCabinetDeployGroup = (groupId: string): groupId is FileCabinetDeployGroup =>
+  SUITEAPP_FILE_CABINET_GROUPS.includes(groupId as FileCabinetDeployGroup)
 
 const getSdfWithSuiteAppGroupName = (change: Change): string => {
   const element = getChangeData(change)

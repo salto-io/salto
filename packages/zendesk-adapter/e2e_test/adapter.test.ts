@@ -42,7 +42,7 @@ import {
   naclCase,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as fs from 'fs'
@@ -93,6 +93,7 @@ import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { ThemeDirectory, unzipFolderToElements } from '../src/filters/guide_theme'
+import { shortElemIdHash } from '../src/filters/utils'
 
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
@@ -147,14 +148,20 @@ const createInstanceElement = ({
     ...mockDefaultValues[type],
     ...valuesOverride,
   }
-  const transformationConfig = configUtils.getConfigWithDefault(
+  const { idFields, nameMapping } = configUtils.getConfigWithDefault(
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[type].transformation ?? {},
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
   )
 
-  const nameParts = transformationConfig.idFields.map(field => _.get(instValues, field))
+  const nameWithMapping = fetchUtils.element.getNameMapping({
+    name: idFields
+      .map(field => _.get(instValues, field))
+      .map(String)
+      .join('_'),
+    nameMapping,
+  })
   return new InstanceElement(
-    name ?? naclCase(nameParts.map(String).join('_')),
+    name ?? naclCase(nameWithMapping),
     new ObjectType({ elemID: new ElemID(ZENDESK, type), fields }),
     instValues,
     undefined,
@@ -339,7 +346,7 @@ describe('Zendesk adapter E2E', () => {
       const root = await unzipFolderToElements({
         buffer,
         currentBrandName: brand.value.name,
-        name,
+        folderName: name,
         idsToElements: {},
         matchBrandSubdomain: (url: string) => (url === brand.value.brand_url ? brand : undefined),
         config: {
@@ -907,15 +914,15 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: {
           file_name: fileName,
           content_type: 'image/png',
-          content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}/80f6f478ed_${fileName}`,
-            content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
-          }),
           inline: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
         name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${fileName}_false`,
+      })
+      articleAttachment.value.content = new StaticFile({
+        filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}/${shortElemIdHash(articleAttachment.elemID)}_80f6f478ed_${fileName}`,
+        content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
       })
       const inlineFileName = `naclTwo${attachmentName}`
       const articleInlineAttachment = createInstanceElement({
@@ -923,17 +930,16 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: {
           file_name: inlineFileName,
           content_type: 'image/png',
-          content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}/80f6f478ed_${inlineFileName}`,
-            content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
-          }),
           inline: true,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
         name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${inlineFileName}_true`,
       })
-
+      articleInlineAttachment.value.content = new StaticFile({
+        filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}/${shortElemIdHash(articleInlineAttachment.elemID)}_80f6f478ed_${inlineFileName}`,
+        content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
+      })
       articleInstance.value.attachments = [
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
         new ReferenceExpression(articleAttachment.elemID, articleAttachment),

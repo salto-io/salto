@@ -15,13 +15,12 @@ import {
   ReferenceExpression,
   isAdditionOrModificationChange,
   getChangeData,
-  Change,
   ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { RemoteFilterCreator } from '../filter'
 import {
   apiNameSync,
@@ -112,8 +111,13 @@ const extendTriggerMetadataFromRecord = ({
   }
 }
 
+type ValuesToRestoreOnDeploy = {
+  [TRIGGER_TYPES_FIELD_NAME]?: unknown
+  parent?: unknown
+}
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => {
-  let originalApexTriggerChangesByElemId: Record<string, Change<InstanceElement>>
+  const valuesToRestoreByElemId: Record<string, ValuesToRestoreOnDeploy> = {}
   return {
     name: 'extendTriggersMetadata',
     remote: true,
@@ -183,26 +187,37 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
       const relevantApexTriggerChanges = changes
         .filter(isInstanceOfTypeChangeSync(APEX_TRIGGER_METADATA_TYPE))
         .filter(isAdditionOrModificationChange)
-      originalApexTriggerChangesByElemId = _.keyBy(
-        await awu(relevantApexTriggerChanges)
-          .map(change => applyFunctionToChangeData(change, async trigger => trigger.clone()))
-          .toArray(),
-        change => getChangeData(change).elemID.getFullName(),
-      )
       relevantApexTriggerChanges.map(getChangeData).forEach(trigger => {
-        delete trigger.value[TRIGGER_TYPES_FIELD_NAME]
-        delete trigger.annotations[CORE_ANNOTATIONS.PARENT]
+        const valuesToRestore: ValuesToRestoreOnDeploy = {}
+        if (trigger.value[TRIGGER_TYPES_FIELD_NAME]) {
+          valuesToRestore[TRIGGER_TYPES_FIELD_NAME] = trigger.value[TRIGGER_TYPES_FIELD_NAME]
+          delete trigger.value[TRIGGER_TYPES_FIELD_NAME]
+        }
+        if (trigger.annotations[CORE_ANNOTATIONS.PARENT]) {
+          valuesToRestore.parent = trigger.annotations[CORE_ANNOTATIONS.PARENT]
+          delete trigger.annotations[CORE_ANNOTATIONS.PARENT]
+        }
+        if (valuesToRestore[TRIGGER_TYPES_FIELD_NAME] || valuesToRestore.parent) {
+          valuesToRestoreByElemId[trigger.elemID.getFullName()] = valuesToRestore
+        }
       })
     },
     onDeploy: async changes => {
-      const appliedApexTriggerChanges = changes
+      changes
         .filter(isInstanceOfTypeChangeSync(APEX_TRIGGER_METADATA_TYPE))
         .filter(isAdditionOrModificationChange)
-      const appliedElemIds = appliedApexTriggerChanges.map(change => getChangeData(change).elemID.getFullName())
-      _.pullAll(changes, appliedApexTriggerChanges)
-      Object.values(_.pick(originalApexTriggerChangesByElemId, appliedElemIds)).forEach(originalChange => {
-        changes.push(originalChange)
-      })
+        .map(getChangeData)
+        .forEach(trigger => {
+          const valuesToRestore = valuesToRestoreByElemId[trigger.elemID.getFullName()]
+          if (valuesToRestore) {
+            if (valuesToRestore[TRIGGER_TYPES_FIELD_NAME]) {
+              trigger.value[TRIGGER_TYPES_FIELD_NAME] = valuesToRestore[TRIGGER_TYPES_FIELD_NAME]
+            }
+            if (valuesToRestore.parent) {
+              trigger.annotations[CORE_ANNOTATIONS.PARENT] = valuesToRestore.parent
+            }
+          }
+        })
     },
   }
 }

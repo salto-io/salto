@@ -3035,7 +3035,7 @@ describe('adapter', () => {
           },
         })
         scopeType = new ObjectType({
-          elemID: new ElemID(OKTA, 'OAuth2Claim'),
+          elemID: new ElemID(OKTA, 'OAuth2Scope'),
           fields: {
             id: { refType: BuiltinTypes.SERVICE_ID },
             name: { refType: BuiltinTypes.STRING },
@@ -3085,7 +3085,7 @@ describe('adapter', () => {
         claimInstance.value.id = 'claim-fakeid'
         const updatedClaimInstance = claimInstance.clone()
         updatedClaimInstance.value.status = 'INACTIVE'
-        updatedClaimInstance.value.value = "isMemberOf('oag21341241')"
+        updatedClaimInstance.value.value = "isMemberOf('oag2134124222')"
         const result = await operations.deploy({
           changeGroup: {
             groupID: claimInstance.elemID.getFullName(),

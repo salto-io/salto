@@ -264,14 +264,19 @@ const getSuiteQLTableInstance = (
   }
   const potentialTypes = INTERNAL_ID_TO_TYPES[typeId]
   if (potentialTypes === undefined) {
-    log.warn('missing internalId to type mapping for typeId %s', typeId)
+    log.warn('missing internalId to type mapping for typeId %s in %s', typeId, path.getFullName())
     return undefined
   }
   const suiteQLTableInstance = potentialTypes
     .map(typeName => suiteQLTablesMap[typeName])
     .find(instance => instance !== undefined)
   if (suiteQLTableInstance === undefined) {
-    log.warn('missing suiteql table instance for types: %s (typeId: %s)', potentialTypes, typeId)
+    log.warn(
+      'missing suiteql table instance for types: %s (typeId: %s) in %s',
+      potentialTypes,
+      typeId,
+      path.getFullName(),
+    )
     return undefined
   }
   return suiteQLTableInstance

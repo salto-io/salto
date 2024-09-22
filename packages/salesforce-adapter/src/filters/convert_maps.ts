@@ -28,6 +28,7 @@ import {
   isObjectType,
   getField,
   isFieldChange,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -66,6 +67,8 @@ type MapDef = {
   mapToList?: boolean
   // with which mapper should we parse the key
   mapper?: (string: string) => string[]
+  // keep a separate list of references for each value to preserve the order
+  maintainOrder?: boolean
 }
 
 /**
@@ -140,12 +143,17 @@ const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
   sharingOwnerRules: { key: INSTANCE_FULL_NAME_FIELD },
 }
 
+const PICKLIST_MAP_FIELD_DEF: MapDef = {
+  key: 'fullName',
+  maintainOrder: true,
+}
+
 const GLOBAL_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
-  customValue: { key: 'fullName' },
+  customValue: PICKLIST_MAP_FIELD_DEF,
 }
 
 const STANDARD_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
-  standardValue: { key: 'fullName' },
+  standardValue: PICKLIST_MAP_FIELD_DEF,
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
@@ -162,7 +170,7 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
 
 export const fieldTypeToAnnotationToMapDef: Record<string, Record<string, MapDef>> = {
   Picklist: {
-    valueSet: { key: 'fullName' },
+    valueSet: PICKLIST_MAP_FIELD_DEF,
   },
 }
 
@@ -211,6 +219,15 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
           ),
         )
       } else {
+        if (mapDef.maintainOrder) {
+          _.set(
+            getElementValueOrAnnotations(element),
+            `${fieldName}Order`,
+            makeArray(_.get(getElementValueOrAnnotations(element), fieldName))
+              .map(item => mapper(item[mapDef.key])[0])
+              .map(name => new ReferenceExpression(element.elemID.createNestedID(fieldName, name))),
+          )
+        }
         _.set(
           getElementValueOrAnnotations(element),
           fieldName,
@@ -348,11 +365,20 @@ const convertFieldsBackToLists = async (
             _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), toVals),
           )
         }
-        _.set(
-          getElementValueOrAnnotations(element),
-          fieldName,
-          toVals(_.get(getElementValueOrAnnotations(element), fieldName)),
-        )
+        if (mapFieldDef[fieldName].maintainOrder) {
+          _.set(
+            getElementValueOrAnnotations(element),
+            fieldName,
+            _.get(getElementValueOrAnnotations(element), `${fieldName}Order`).map((ref: ReferenceExpression) => ref),
+          )
+          _.unset(getElementValueOrAnnotations(element), `${fieldName}Order`)
+        } else {
+          _.set(
+            getElementValueOrAnnotations(element),
+            fieldName,
+            toVals(_.get(getElementValueOrAnnotations(element), fieldName)),
+          )
+        }
       })
     return element
   }
@@ -446,7 +472,11 @@ const filter: LocalFilterCreator = ({ config }) => ({
   name: 'convertMapsFilter',
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      if (targetMetadataType === SHARING_RULES_TYPE && !config.fetchProfile.isFeatureEnabled('sharingRulesMaps')) {
+      if (
+        (targetMetadataType === SHARING_RULES_TYPE && !config.fetchProfile.isFeatureEnabled('sharingRulesMaps')) ||
+        ([GLOBAL_VALUE_SET, STANDARD_VALUE_SET].includes(targetMetadataType) &&
+          !config.fetchProfile.isFeatureEnabled('picklistsAsMaps'))
+      ) {
         return
       }
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
@@ -464,6 +494,9 @@ const filter: LocalFilterCreator = ({ config }) => ({
 
     const fields = elements.filter(isCustomObjectSync).flatMap(obj => Object.values(obj.fields))
     await awu(Object.entries(fieldTypeToAnnotationToMapDef)).forEach(async ([fieldType, annotationToMapDef]) => {
+      if (['Picklist', 'MultiselectPicklist'].includes(fieldType) && !config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
+        return
+      }
       const fieldsToConvert = fields.filter(field => field.refType.elemID.typeName === fieldType)
       if (fieldsToConvert.length === 0) {
         return

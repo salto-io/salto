@@ -30,7 +30,7 @@ export const createClassicApiDefinitionsForType = (
   typeName: string,
   plural: string,
   adjustFunctions?: Partial<
-    Record<AdditionalAction | ActionName, definitions.AdjustFunction<definitions.deploy.ChangeAndContext>>
+    Record<AdditionalAction | ActionName, definitions.AdjustFunction<definitions.deploy.ChangeAndExtendedContext>>
   >,
 ): Partial<definitions.deploy.InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>> => ({
   requestsByAction: {

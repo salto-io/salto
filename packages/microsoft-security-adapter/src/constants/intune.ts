@@ -58,7 +58,9 @@ export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('
 export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
 export const FILTER_TYPE_NAME = toIntuneTypeName('Filter')
 export const PLATFORM_SCRIPT_LINUX_TYPE_NAME = toIntuneTypeName('PlatformScriptLinux')
+export const PLATFORM_SCRIPT_MAC_OS_TYPE_NAME = toIntuneTypeName('PlatformScriptMacOS')
 export const PLATFORM_SCRIPT_WINDOWS_TYPE_NAME = toIntuneTypeName('PlatformScriptWindows')
+export const SCOPE_TAG_TYPE_NAME = toIntuneTypeName('ScopeTag')
 
 // Nested types
 export const APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME = recursiveNestedTypeName(
@@ -85,10 +87,7 @@ export const PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME = recursiveNestedTypeName(
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
   SETTINGS_FIELD_NAME,
 )
-export const PLATFORM_SCRIPT_WINDOWS_SCRIPT_CONTENT_TYPE_NAME = recursiveNestedTypeName(
-  PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
-  SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,
-)
+export const SCOPE_TAG_ASSIGNMENTS_TYPE_NAME = recursiveNestedTypeName(SCOPE_TAG_TYPE_NAME, ASSIGNMENTS_FIELD_NAME)
 
 // Urls
 export const SERVICE_BASE_URL = 'https://intune.microsoft.com'
@@ -102,7 +101,9 @@ export const TYPES_WITH_GROUP_ASSIGNMENTS = [
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+  PLATFORM_SCRIPT_MAC_OS_TYPE_NAME,
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
+  SCOPE_TAG_TYPE_NAME,
 ]
 export const TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS = TYPES_WITH_GROUP_ASSIGNMENTS.map(typeName =>
   recursiveNestedTypeName(typeName, ASSIGNMENTS_FIELD_NAME),

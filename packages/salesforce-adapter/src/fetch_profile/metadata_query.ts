@@ -14,11 +14,8 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
-  FLOW_DEFINITION_METADATA_TYPE,
-  FLOW_METADATA_TYPE,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   SETTINGS_METADATA_TYPE,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import {
@@ -38,6 +35,7 @@ import { getChangedAtSingletonInstance } from '../filters/utils'
 import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
+  TYPE_TO_NESTED_TYPES,
 } from '../last_change_date_of_types_with_nested_instances'
 import { getFetchTargetsWithDependencies } from './metadata_types'
 
@@ -97,32 +95,34 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   }
   const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+  const nestedTypeToParentType = Object.entries(TYPE_TO_NESTED_TYPES).reduce<Record<string, string>>(
+    (acc, [parentType, nestedTypes]) => {
+      nestedTypes
+        .filter(nestedType => nestedType !== parentType)
+        .forEach(nestedType => {
+          acc[nestedType] = parentType
+        })
+      return acc
+    },
+    {},
+  )
 
-  const isIncludedInPartialFetch = (type: string): boolean => {
+  const isIncludedInTargetedFetch = (type: string): boolean => {
     if (target === undefined) {
       return true
     }
-    if (target.includes(type)) {
-      return true
-    }
-    if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
-      return true
-    }
-    // We should really do this only when config.preferActiveFlowVersions is true
-    // if you have another use-case to pass the config here also handle this please
-    if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
-      return true
-    }
-    return false
+    return target.includes(type)
   }
-
   const isTypeIncluded = (type: string): boolean =>
-    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type)) &&
-    isIncludedInPartialFetch(type)
+    include.some(({ metadataType = '.*' }) =>
+      new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+    ) && isIncludedInTargetedFetch(type)
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
-        namespace === '.*' && name === '.*' && new RegExp(`^${metadataType}$`).test(type),
+        namespace === '.*' &&
+        name === '.*' &&
+        new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
     )
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,

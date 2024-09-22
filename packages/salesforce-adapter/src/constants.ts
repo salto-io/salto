@@ -425,6 +425,9 @@ export const WAVE_DATAFLOW_METADATA_TYPE = 'WaveDataflow'
 export const WAVE_DASHBOARD_METADATA_TYPE = 'WaveDashboard'
 export const WAVE_LENS_METADATA_TYPE = 'WaveLens'
 
+export const WAVE_RECIPE_FILE_EXTENSION = '.wdpr'
+export const WAVE_DATAFLOW_FILE_EXTENSION = '.wdf'
+
 // Meta Types
 export const METADATA_META_TYPE = 'Metadata'
 export const STANDARD_OBJECT_META_TYPE = 'StandardObject'
@@ -450,7 +453,6 @@ export const ArtificialTypes = {
 
 // Standard Object Types
 export const ORGANIZATION_SETTINGS = 'Organization'
-export const ORGANIZATION_API_VERSION = 'OrganizationApiVersion'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX =
@@ -574,21 +576,46 @@ export const groupIdForInstanceChangeGroup = (action: ActionName, typeName: stri
   }
   return `${_.capitalize(toVerbalNoun(action))} of data instances of type '${typeName}'`
 }
+
+// Custom Rules And Conditions Groups
+
+export const CUSTOM_APPROVAL_RULE_AND_CONDITION = 'Custom ApprovalRule and ApprovalCondition'
+export const CUSTOM_PRICE_RULE_AND_CONDITION = 'Custom PriceRule and PriceCondition'
+export const CUSTOM_PRODUCT_RULE_AND_CONDITION = 'Custom ProductRule and ErrorCondition'
+export const CUSTOM_QUOTE_TERM_AND_CONDITION = 'Custom QuoteTerm and TermCondition'
+
 export const ADD_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom ApprovalRule and ApprovalCondition',
+  CUSTOM_APPROVAL_RULE_AND_CONDITION,
 )
 export const ADD_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom PriceRule and PriceCondition',
+  CUSTOM_PRICE_RULE_AND_CONDITION,
 )
 export const ADD_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom ProductRule and ErrorCondition',
+  CUSTOM_PRODUCT_RULE_AND_CONDITION,
 )
 export const ADD_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
   'add',
-  'Custom QuoteTerm and TermCondition',
+  CUSTOM_QUOTE_TERM_AND_CONDITION,
+)
+
+export const REMOVE_SBAA_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  CUSTOM_APPROVAL_RULE_AND_CONDITION,
+)
+export const REMOVE_CPQ_CUSTOM_PRICE_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  CUSTOM_PRICE_RULE_AND_CONDITION,
+)
+export const REMOVE_CPQ_CUSTOM_PRODUCT_RULE_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  CUSTOM_PRODUCT_RULE_AND_CONDITION,
+)
+export const REMOVE_CPQ_QUOTE_TERM_AND_CONDITION_GROUP = groupIdForInstanceChangeGroup(
+  'remove',
+  CUSTOM_QUOTE_TERM_AND_CONDITION,
 )
 
 export const METADATA_CHANGE_GROUP = 'Salesforce Metadata'

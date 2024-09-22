@@ -20,7 +20,7 @@ const filter: FilterCreator = ({ config, fetchQuery }) => ({
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,
-      fieldsToGroupBy: ['id', 'name', 'key', 'mappingRuleId', 'kid'],
+      fieldsToGroupBy: ['id', 'name', 'key', 'mappingRuleId', 'kid', 'credentials.oauthClient.client_id'],
       defs: getReferenceDefs({
         enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
         isUserTypeIncluded: fetchQuery.isTypeMatch(USER_TYPE_NAME),

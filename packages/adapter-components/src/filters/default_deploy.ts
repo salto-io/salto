@@ -10,7 +10,7 @@ import { filter, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AdapterFilterCreator, FilterOptions } from '../filter_utils'
 import { ConvertError, deployChanges } from '../deployment'
 import { generateLookupFunc } from '../references'
-import { ChangeAndContext } from '../definitions/system/deploy'
+import { ChangeAndExtendedContext } from '../definitions/system/deploy'
 import { createChangeElementResolver } from '../resolve_utils'
 import { APIDefinitionsOptions } from '../definitions'
 import { FieldReferenceResolverCreator } from './field_references'
@@ -31,7 +31,7 @@ export const defaultDeployFilterCreator =
     fieldReferenceResolverCreator,
     lookupFuncCreator,
   }: {
-    deployChangeFunc?: (args: ChangeAndContext) => Promise<void>
+    deployChangeFunc?: (args: ChangeAndExtendedContext) => Promise<void>
     convertError: ConvertError
     fieldReferenceResolverCreator?: FieldReferenceResolverCreator<TOptions>
     lookupFuncCreator?: (opts: FilterOptions<TOptions, TContext, TAdditional>) => GetLookupNameFunc

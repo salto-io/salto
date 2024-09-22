@@ -58,7 +58,7 @@ import {
   LOOKUP_FILTER_FIELDS,
   FILTER_ITEM_FIELDS,
 } from '../../src/constants'
-import { findElements, createValueSetEntry, defaultFilterContext } from '../utils'
+import { findElements, createValueSetEntry, defaultFilterContext, buildFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import filterCreator, {
   INSTANCE_REQUIRED_FIELD,
@@ -1049,31 +1049,65 @@ describe('Custom Objects to Object Type filter', () => {
           undefined,
           parentAnnotation,
         )
-        filter = filterCreator({
-          config: defaultFilterContext,
-        }) as typeof filter
         changes = [toChange({ before: testObject }), toChange({ before: sideEffectInst })]
       })
-      describe('preDeploy', () => {
-        beforeAll(async () => {
-          await filter.preDeploy(changes)
+      describe('when performSideEffectDeletes is false', () => {
+        beforeAll(() => {
+          filter = filterCreator({
+            config: defaultFilterContext,
+          }) as typeof filter
         })
-        it('should omit side effect removals', async () => {
-          expect(changes).toHaveLength(1)
-          expect(changes[0].action).toEqual('remove')
-          const removedElem = getChangeData(changes[0])
-          expect(removedElem).toBeInstanceOf(InstanceElement)
-          expect(await metadataType(removedElem)).toEqual(CUSTOM_OBJECT)
+        describe('preDeploy', () => {
+          beforeAll(async () => {
+            await filter.preDeploy(changes)
+          })
+          it('should omit side effect removals', async () => {
+            expect(changes).toHaveLength(1)
+            expect(changes[0].action).toEqual('remove')
+            const removedElem = getChangeData(changes[0])
+            expect(removedElem).toBeInstanceOf(InstanceElement)
+            expect(await metadataType(removedElem)).toEqual(CUSTOM_OBJECT)
+          })
+        })
+        describe('onDeploy', () => {
+          beforeAll(async () => {
+            await filter.onDeploy(changes)
+          })
+          it('should return the side effect removal', () => {
+            expect(changes).toHaveLength(2)
+            expect(changes).toContainEqual(toChange({ before: testObject }))
+            expect(changes).toContainEqual(toChange({ before: sideEffectInst }))
+          })
         })
       })
-      describe('onDeploy', () => {
-        beforeAll(async () => {
-          await filter.onDeploy(changes)
+      describe('when performSideEffectDeletes is true', () => {
+        beforeAll(() => {
+          filter = filterCreator({
+            config: buildFilterContext({ optionalFeatures: { performSideEffectDeletes: true } }),
+          }) as typeof filter
         })
-        it('should return the side effect removal', () => {
-          expect(changes).toHaveLength(2)
-          expect(changes).toContainEqual(toChange({ before: testObject }))
-          expect(changes).toContainEqual(toChange({ before: sideEffectInst }))
+        describe('preDeploy', () => {
+          beforeAll(async () => {
+            await filter.preDeploy(changes)
+          })
+          it('should not omit side effect removals', async () => {
+            expect(changes).toHaveLength(2)
+            expect(changes[0]).toEqual(toChange({ before: sideEffectInst }))
+            expect(changes[1].action).toEqual('remove')
+            const removedElem = getChangeData(changes[1])
+            expect(removedElem).toBeInstanceOf(InstanceElement)
+            expect(await metadataType(removedElem)).toEqual(CUSTOM_OBJECT)
+          })
+        })
+        describe('onDeploy', () => {
+          beforeAll(async () => {
+            await filter.onDeploy(changes)
+          })
+          it('should keep the side effect removal and return the object removal', () => {
+            expect(changes).toHaveLength(2)
+            expect(changes).toContainEqual(toChange({ before: testObject }))
+            expect(changes).toContainEqual(toChange({ before: sideEffectInst }))
+          })
         })
       })
     })

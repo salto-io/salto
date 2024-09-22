@@ -35,7 +35,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   importantValues: true,
   hideTypesFolder: true,
   omitStandardFieldsNonDeployableValues: true,
-  latestSupportedApiVersion: false,
   metaTypes: false,
   cpqRulesAndConditionsRefs: true,
   flowCoordinates: false,
@@ -44,6 +43,10 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   sharingRulesMaps: false,
   excludeNonRetrievedProfilesRelatedInstances: true,
   waveMetadataSupport: false,
+  indexedEmailTemplateAttachments: false,
+  skipParsingXmlNumbers: false,
+  logDiffsFromParsingXmlNumbers: true,
+  performSideEffectDeletes: false,
 }
 
 type BuildFetchProfileParams = {
@@ -67,6 +70,7 @@ export const buildFetchProfile = ({
     preferActiveFlowVersions,
     addNamespacePrefixToFullName,
     warningSettings,
+    limits,
     additionalImportantValues,
   } = fetchParams
   const enabledCustomReferencesHandlers = customReferencesConfiguration(customReferencesSettings)
@@ -82,6 +86,7 @@ export const buildFetchProfile = ({
     metadataQuery,
     maxItemsInRetrieveRequest,
     importantValues: mergeWithDefaultImportantValues(additionalImportantValues),
+    limits,
   }
 }
 

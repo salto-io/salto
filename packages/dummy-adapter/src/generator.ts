@@ -38,6 +38,7 @@ import {
   SeverityLevel,
   TemplateExpression,
   isReferenceExpression,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -147,6 +148,40 @@ export const changeErrorType = createMatchingObjectType<ChangeErrorFromConfigFil
   },
 })
 
+export const fetchErrorType = createMatchingObjectType<SaltoError>({
+  elemID: new ElemID(DUMMY_ADAPTER, 'changeError'),
+  fields: {
+    detailedMessage: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    message: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
+    severity: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['Info', 'Warning', 'Error'],
+          enforce_value: true,
+        }),
+      },
+    },
+    type: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+      },
+    },
+  },
+})
+
 export type GeneratorParams = {
   seed: number
   numOfPrimitiveTypes: number
@@ -181,6 +216,7 @@ export type GeneratorParams = {
   listLengthMean: number
   listLengthStd: number
   changeErrors?: ChangeErrorFromConfigFile[]
+  fetchErrors?: SaltoError[]
   extraNaclPaths?: string[]
   generateEnvName?: string
   fieldsToOmitOnDeploy?: string[]

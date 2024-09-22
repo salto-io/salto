@@ -15,4 +15,4 @@ export {
   ChangeDependency,
 } from './deploy'
 export { DeployRequestDefinition, DeployRequestEndpointDefinition } from './request'
-export { ChangeAndContext } from './types'
+export { ChangeAndContext, ChangeAndExtendedContext } from './types'

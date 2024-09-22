@@ -65,6 +65,47 @@ describe('flows filter', () => {
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
     let flowDefinitionInstance: InstanceElement
+
+    describe('when Flow MetadataType is not in the fetch targets', () => {
+      beforeEach(async () => {
+        elements = [flowType, flowDefinitionType, flowDefinitionInstance]
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                target: ['ApexClass'],
+              },
+            }),
+          },
+          client,
+        }) as typeof filter
+        await filter.onFetch(elements)
+      })
+      it('should not fetch the Flow instances', async () => {
+        expect(fetchMetadataInstancesSpy).not.toHaveBeenCalled()
+      })
+    })
+    describe('when Flow MetadataType is in the fetch targets', () => {
+      beforeEach(async () => {
+        elements = [flowType, flowDefinitionType, flowDefinitionInstance]
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                target: [FLOW_METADATA_TYPE],
+              },
+            }),
+          },
+          client,
+        }) as typeof filter
+        await filter.onFetch(elements)
+      })
+      it('should fetch the Flow instances', async () => {
+        expect(fetchMetadataInstancesSpy).toHaveBeenCalled()
+      })
+    })
     describe('with preferActiveFlowVersions true', () => {
       beforeEach(async () => {
         flowDefinitionInstance = createInstanceElement(

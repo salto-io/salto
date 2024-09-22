@@ -9,14 +9,8 @@ import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/organization_settings'
 import mockAdapter from '../adapter'
 import * as filterUtilsModule from '../../src/filters/utils'
-import {
-  API_NAME,
-  CUSTOM_OBJECT_ID_FIELD,
-  ORGANIZATION_API_VERSION,
-  ORGANIZATION_SETTINGS,
-  SALESFORCE,
-} from '../../src/constants'
-import { buildFilterContext } from '../utils'
+import { API_NAME, CUSTOM_OBJECT_ID_FIELD, ORGANIZATION_SETTINGS, SALESFORCE } from '../../src/constants'
+import { defaultFilterContext } from '../utils'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
@@ -27,11 +21,7 @@ describe('organization-wide defaults filter', () => {
   const mockedFilterUtils = jest.mocked(filterUtilsModule)
   const { client, connection } = mockAdapter({})
   const filter = filterCreator({
-    config: buildFilterContext({
-      optionalFeatures: {
-        latestSupportedApiVersion: true,
-      },
-    }),
+    config: defaultFilterContext,
     client,
   })
 
@@ -166,76 +156,6 @@ describe('organization-wide defaults filter', () => {
             DefaultContactAccess: 'ControlledByParent',
             DefaultLeadAccess: 'ReadEditTransfer',
             DefaultOpportunityAccess: 'None',
-            LatestSupportedApiVersion: 60,
-          },
-        },
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION),
-          annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
-            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-            [CORE_ANNOTATIONS.UPDATABLE]: false,
-            [CORE_ANNOTATIONS.CREATABLE]: false,
-            [CORE_ANNOTATIONS.DELETABLE]: false,
-          },
-          isSettings: true,
-        },
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION, 'instance', '_config'),
-          value: {
-            LatestSupportedApiVersion: 60,
-          },
-        },
-      ])
-    })
-    it('should not add LatestSupportedApiVersion when latestSupportedApiVersion feature is disabled', async () => {
-      const elements: Element[] = []
-      const filterWithFeatureDisabled = filterCreator({
-        config: buildFilterContext({
-          optionalFeatures: {
-            latestSupportedApiVersion: false,
-          },
-        }),
-        client,
-      })
-      await filterWithFeatureDisabled.onFetch?.(elements)
-      expect(elements).toIncludeAllPartialMembers([
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
-          annotations: {
-            [CORE_ANNOTATIONS.CREATABLE]: false,
-            [CORE_ANNOTATIONS.DELETABLE]: false,
-            [CORE_ANNOTATIONS.UPDATABLE]: false,
-            [API_NAME]: ORGANIZATION_SETTINGS,
-          },
-          isSettings: true,
-        },
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance', '_config'),
-          value: {
-            DefaultAccountAccess: 'Edit',
-            DefaultCalendarAccess: 'HideDetailsInsert',
-            DefaultCampaignAccess: 'All',
-            DefaultCaseAccess: 'None',
-            DefaultContactAccess: 'ControlledByParent',
-            DefaultLeadAccess: 'ReadEditTransfer',
-            DefaultOpportunityAccess: 'None',
-          },
-        },
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION),
-          annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
-            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-            [CORE_ANNOTATIONS.UPDATABLE]: false,
-            [CORE_ANNOTATIONS.CREATABLE]: false,
-            [CORE_ANNOTATIONS.DELETABLE]: false,
-          },
-          isSettings: true,
-        },
-        {
-          elemID: new ElemID(SALESFORCE, ORGANIZATION_API_VERSION, 'instance', '_config'),
-          value: {
             LatestSupportedApiVersion: 60,
           },
         },

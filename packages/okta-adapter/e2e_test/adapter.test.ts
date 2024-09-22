@@ -542,6 +542,7 @@ describe('Okta adapter E2E', () => {
         'OrgSetting',
         'Brand',
         'BrandTheme',
+        'EmailTemplate',
         'Domain',
         'RateLimitAdminNotifications',
         'PerClientRateLimitSettings',

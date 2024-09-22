@@ -14,7 +14,9 @@ import { validateValue } from './generic'
 /**
  * AdjustFunction that increases version number on version object.
  */
-export const increaseVersion: definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext> = async args => {
+export const increaseVersion: definitions.AdjustFunctionSingle<
+  definitions.deploy.ChangeAndExtendedContext
+> = async args => {
   const value = validateValue(args.value)
   const version = _.get(value, 'version')
   if (!values.isPlainRecord(version) || !_.isNumber(version.number)) {

@@ -65,6 +65,9 @@ describe('Salesforce MetadataTypes', () => {
           'WorkflowRule',
           'CustomObject',
           'Workflow',
+          'TopicsForObjects',
+          'Flow',
+          'FlowDefinition',
         ])
       })
     })

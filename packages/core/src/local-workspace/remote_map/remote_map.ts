@@ -32,6 +32,11 @@ const log = logger(module)
 export const TMP_DB_DIR = 'tmp-dbs'
 export type RocksDBValue = string | Buffer | undefined
 
+const DB_OPTIONS = {
+  // Explicitly setting the default value that rocksdb would use (64MB) because the JS binding sets a smaller default value (4MB)
+  writeBufferSize: 67108864,
+}
+
 type CreateIteratorOpts = remoteMap.IterationOpts & {
   keys: boolean
   values: boolean
@@ -333,7 +338,7 @@ const getOpenDBConnection = async (loc: string, isReadOnly: boolean): Promise<ro
     )
   }
   const newDb = getRemoteDbImpl()(loc)
-  await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
+  await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly, ...DB_OPTIONS }))()
   currentConnectionsCount += 1
   return newDb
 }
@@ -613,13 +618,13 @@ export const createRemoteMapCreator = (
       const newDb: rocksdb = getRemoteDbImpl()(loc)
       const readOnly = !persistent
       try {
-        await promisify(newDb.open.bind(newDb, { readOnly }))()
+        await promisify(newDb.open.bind(newDb, { readOnly, ...DB_OPTIONS }))()
         await promisify(newDb.close.bind(newDb))()
       } catch (e) {
         if (newDb.status === 'new' && readOnly) {
           log.info('DB does not exist. Creating on %s', loc)
           try {
-            await promisify(newDb.open.bind(newDb))()
+            await promisify(newDb.open.bind(newDb, DB_OPTIONS))()
             await promisify(newDb.close.bind(newDb))()
           } catch (err) {
             throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)

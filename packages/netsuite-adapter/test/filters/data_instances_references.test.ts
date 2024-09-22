@@ -23,7 +23,7 @@ import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../ut
 import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('data_instances_references', () => {
-  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([{ name: 'data_type', typeId: '1234' }])
   const firstType = new ObjectType({
     elemID: new ElemID(NETSUITE, 'firstType'),
     fields: {
@@ -42,11 +42,19 @@ describe('data_instances_references', () => {
     },
     annotations: { source: 'soap' },
   })
+  const anotherType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'data_type'),
+    annotations: { source: 'soap' },
+  })
   describe('onFetch', () => {
     it('should replace with reference', async () => {
-      const instance = new InstanceElement('instance', secondType, { field: { internalId: '1' } })
+      const instance = new InstanceElement('instance', secondType, {
+        field: { internalId: '1' },
+        anotherField: { internalId: '1', typeId: '1234' },
+      })
 
       const referencedInstance = new InstanceElement('referencedInstance', firstType, { internalId: '1' })
+      const anotherReferencedInstance = new InstanceElement('referencedInstance', anotherType, { internalId: '1' })
 
       const filterOpts = {
         client: {} as NetsuiteClient,
@@ -59,9 +67,12 @@ describe('data_instances_references', () => {
         typeToInternalId,
         internalIdToTypes,
       }
-      await filterCreator(filterOpts).onFetch?.([instance, referencedInstance])
+      await filterCreator(filterOpts).onFetch?.([instance, referencedInstance, anotherReferencedInstance])
       expect((instance.value.field as ReferenceExpression).elemID.getFullName()).toBe(
         referencedInstance.elemID.getFullName(),
+      )
+      expect((instance.value.anotherField as ReferenceExpression).elemID.getFullName()).toBe(
+        anotherReferencedInstance.elemID.getFullName(),
       )
     })
 

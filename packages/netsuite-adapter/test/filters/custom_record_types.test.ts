@@ -28,8 +28,9 @@ describe('custom record types filter', () => {
   let customRecordFieldRefType: ObjectType
   let lockedCustomRecordFieldRefType: ObjectType
   let dataType: ObjectType
+  let anotherDataType: ObjectType
 
-  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([{ name: 'data_type', typeId: '1234' }])
   const filterOpts = {
     config: { fetch: { include: { types: [{ name: '.*' }], fileCabinet: ['.*'] }, exclude: emptyQueryParams() } },
     isPartial: false,
@@ -73,6 +74,11 @@ describe('custom record types filter', () => {
               fieldtype: 'SELECT',
               selectrecordtype: '-112',
             },
+            {
+              scriptid: 'custrecord_data_type',
+              fieldtype: 'SELECT',
+              selectrecordtype: '1234',
+            },
           ],
         },
         instances: [1, 2, 3],
@@ -97,6 +103,9 @@ describe('custom record types filter', () => {
     dataType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'account'),
     })
+    anotherDataType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'data_type'),
+    })
   })
   it('should add fields to type', async () => {
     await filterCreator(filterOpts).onFetch?.([
@@ -104,12 +113,14 @@ describe('custom record types filter', () => {
       customRecordFieldRefType,
       lockedCustomRecordFieldRefType,
       dataType,
+      anotherDataType,
     ])
     expect(Object.keys(customRecordType.fields)).toEqual([
       'custom_custrecord_newfield',
       'custom_custrecord_ref',
       'custom_custrecord_ref_locked',
       'custom_custrecord_account',
+      'custom_custrecord_data_type',
     ])
     expect(customRecordType.fields.custom_custrecord_newfield.refType.elemID.name).toEqual(
       BuiltinTypes.STRING.elemID.name,
@@ -141,6 +152,13 @@ describe('custom record types filter', () => {
       fieldtype: 'SELECT',
       selectrecordtype: '-112',
       index: 3,
+    })
+    expect(customRecordType.fields.custom_custrecord_data_type.refType.elemID.name).toEqual('data_type')
+    expect(customRecordType.fields.custom_custrecord_data_type.annotations).toEqual({
+      scriptid: 'custrecord_data_type',
+      fieldtype: 'SELECT',
+      selectrecordtype: '1234',
+      index: 4,
     })
   })
   it('should add fields correctly on partial fetch', async () => {

@@ -260,7 +260,10 @@ const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: Metad
     .value()
 
 const isStandardFieldPermissionsPath = (path: string): boolean =>
-  path.startsWith('fieldPermissions') && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+  path.startsWith(section.FIELD_PERMISSIONS) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+
+const isStandardObjectPermissionsPath = (path: string): boolean =>
+  path.startsWith(section.OBJECT) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
 
 type TopLevelElemID = Omit<ElemID, 'idType'> & {
   idType: 'type' | 'instance'
@@ -308,7 +311,10 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
     const brokenReferenceFields = Object.keys(
       await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())),
       // fieldPermissions may contain standard values that are not referring to any field, we shouldn't omit these
-    ).filter(path => !isStandardFieldPermissionsPath(path))
+    )
+      .filter(path => !isStandardFieldPermissionsPath(path))
+      // Some standard objects are not managed in the metadata API and won't exist in the workspace.
+      .filter(path => !isStandardObjectPermissionsPath(path))
     const instancesWithBrokenReferences = instances.filter(instance =>
       brokenReferenceFields.some(field => _(instance.value).has(field)),
     )

@@ -67,7 +67,6 @@ import {
 } from '../validator'
 
 const { awu } = collections.asynciterable
-const { getSerializedStream } = lowerdashSerialize
 
 // There are two issues with naive json stringification:
 //
@@ -160,11 +159,17 @@ function isSerializedClass(value: any): value is SerializedClass {
   return _.isPlainObject(value) && SALTO_CLASS_FIELD in value && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serializeStream = async <T = Element>(
-  elements: T[],
-  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
-  storeStaticFile?: (file: StaticFile) => Promise<void>,
-): Promise<AsyncIterable<string>> => {
+export const serializeStream = async <T = Element>({
+  elements,
+  referenceSerializerMode = 'replaceRefWithValue',
+  storeStaticFile,
+  streamSerializer = lowerdashSerialize.getSerializedStream,
+}: {
+  elements: T[]
+  referenceSerializerMode?: 'replaceRefWithValue' | 'keepRef'
+  storeStaticFile?: (file: StaticFile) => Promise<void>
+  streamSerializer?: lowerdashSerialize.StreamSerializer
+}): Promise<AsyncIterable<string>> => {
   const promises: Promise<void>[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -258,7 +263,7 @@ export const serializeStream = async <T = Element>(
   // avoid creating a single string for all elements, which may exceed the max allowed string length
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles
-  return getSerializedStream(clonedElements)
+  return streamSerializer(clonedElements)
 }
 
 export const serialize = async <T = Element>(
@@ -266,7 +271,7 @@ export const serialize = async <T = Element>(
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
   storeStaticFile?: (file: StaticFile) => Promise<void>,
 ): Promise<string> =>
-  (await awu(await serializeStream(elements, referenceSerializerMode, storeStaticFile)).toArray()).join('')
+  (await awu(await serializeStream({ elements, referenceSerializerMode, storeStaticFile })).toArray()).join('')
 
 export type StaticFileReviver = (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 

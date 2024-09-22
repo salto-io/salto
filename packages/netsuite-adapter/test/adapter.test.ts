@@ -69,9 +69,7 @@ import * as deletionCalculator from '../src/deletion_calculator'
 import SdfClient from '../src/client/sdf_client'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
-import * as suiteAppFileCabinet from '../src/client/suiteapp_client/suiteapp_file_cabinet'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
-import { SuiteAppFileCabinetOperations } from '../src/client/suiteapp_client/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { getStandardTypesNames } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
@@ -103,6 +101,12 @@ jest.mock('../src/config/suggestions', () => ({
 jest.mock('../src/data_elements/data_elements', () => ({
   ...jest.requireActual<{}>('../src/data_elements/data_elements'),
   getDataElements: jest.fn(() => ({ elements: [], largeTypesError: [] })),
+}))
+
+const suiteAppImportFileCabinetMock = jest.fn()
+jest.mock('../src/client/suiteapp_client/suiteapp_file_cabinet', () => ({
+  ...jest.requireActual<{}>('../src/client/suiteapp_client/suiteapp_file_cabinet'),
+  importFileCabinet: jest.fn((...args) => suiteAppImportFileCabinetMock(...args)),
 }))
 
 jest.mock('../src/change_validator')
@@ -159,12 +163,6 @@ describe('Adapter', () => {
     },
     withPartialDeletion: true,
   }
-
-  const suiteAppImportFileCabinetMock = jest.fn()
-
-  jest.spyOn(suiteAppFileCabinet, 'createSuiteAppFileCabinetOperations').mockReturnValue({
-    importFileCabinet: suiteAppImportFileCabinetMock,
-  } as unknown as SuiteAppFileCabinetOperations)
 
   const netsuiteAdapter = new NetsuiteAdapter({
     client: new NetsuiteClient(client),
@@ -1340,6 +1338,7 @@ describe('Adapter', () => {
 
   describe('SuiteAppClient', () => {
     let adapter: NetsuiteAdapter
+    let suiteAppClient: SuiteAppClient
 
     const dummyElement = new ObjectType({ elemID: new ElemID('dum', 'test') })
     const elementsSource = buildElementsSourceFromElements([dummyElement])
@@ -1383,7 +1382,7 @@ describe('Adapter', () => {
         largeTypesError: [],
       })
 
-      const suiteAppClient = {
+      suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
@@ -1404,7 +1403,13 @@ describe('Adapter', () => {
 
     it('should use suiteAppFileCabinet importFileCabinet and pass it the right params', async () => {
       await adapter.fetch(mockFetchOpts)
-      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(expect.anything(), 3, ['.*\\.(csv|pdf|png)'], false)
+      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(
+        suiteAppClient,
+        expect.anything(),
+        3,
+        ['.*\\.(csv|pdf|png)'],
+        false,
+      )
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {
@@ -1426,8 +1431,6 @@ describe('Adapter', () => {
     })
 
     describe('getChangedObjects', () => {
-      let suiteAppClient: SuiteAppClient
-
       beforeEach(() => {
         getElementMock.mockResolvedValue(
           new InstanceElement(

@@ -7,7 +7,7 @@
  */
 import { EOL } from 'os'
 
-export type StreamSerializer = (items: (unknown[] | Record<string, unknown>)[]) => AsyncIterable<string>
+export type StreamSerializer = (items: unknown[]) => AsyncIterable<string>
 
 /**
  * avoid creating a single string for all items, which may exceed the max allowed string length.
@@ -28,7 +28,7 @@ export const createStreamSerializer = ({
 
   const initialLineLength = start.length + end.length
 
-  async function* serializer(items: (unknown[] | Record<string, unknown>)[]): AsyncIterable<string> {
+  async function* serializer(items: unknown[]): AsyncIterable<string> {
     let first = true
     let currentLineLength = initialLineLength
 
@@ -36,7 +36,7 @@ export const createStreamSerializer = ({
     for (const item of items) {
       // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't circles
       // eslint-disable-next-line no-restricted-syntax
-      const serializedItem = JSON.stringify(item)
+      const serializedItem = JSON.stringify(item) ?? ''
       if (currentLineLength + serializedItem.length + 1 > maxLineLength) {
         yield end
         yield EOL

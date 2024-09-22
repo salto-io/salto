@@ -5,7 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Change, InstanceElement, ChangeGroup, ReadOnlyElementsSource, ActionName } from '@salto-io/adapter-api'
+import {
+  Change,
+  InstanceElement,
+  ChangeGroup,
+  ReadOnlyElementsSource,
+  ActionName,
+  SaltoElementError,
+} from '@salto-io/adapter-api'
 
 export type ChangeAndContext = {
   change: Change<InstanceElement>
@@ -16,6 +23,11 @@ export type ChangeAndContext = {
   sharedContext: Record<string, unknown>
 }
 
-export type DeployChangeInput<AdditionalAction extends string> = ChangeAndContext & {
+export type ChangeAndExtendedContext = ChangeAndContext & {
+  // current errors from the infra's deployment of the change group, by change elem id
+  errors: Record<string, SaltoElementError[]>
+}
+
+export type DeployChangeInput<AdditionalAction extends string> = ChangeAndExtendedContext & {
   action: ActionName | AdditionalAction
 }

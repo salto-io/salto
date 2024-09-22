@@ -201,12 +201,14 @@ describe('getPlan', () => {
           'salto.employee',
           'salto.office',
         ])
-        
+
         // With change validators
         const plainWithValidators = await planWithDependencyCycle(true)
         const planWithValidatorsItems = [...plainWithValidators.itemsByEvalOrder()]
         expect(planWithValidatorsItems).toHaveLength(4)
-        const circularDependencyErrorsWithValidators = planWithNoValidators.changeErrors.filter(isCircularDependencyChangeError)
+        const circularDependencyErrorsWithValidators = planWithNoValidators.changeErrors.filter(
+          isCircularDependencyChangeError,
+        )
         expect(circularDependencyErrorsWithValidators).toHaveLength(2)
         expect(circularDependencyErrorsWithValidators.map(err => err.elemID.getFullName())).toEqual([
           'salto.employee',

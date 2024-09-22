@@ -21,6 +21,7 @@ import {
   isObjectTypeChange,
   isFieldChange,
 } from '@salto-io/adapter-api'
+import { CORE_FLAGS, getCoreFlagBool } from '../flags'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -133,5 +134,10 @@ export const buildGroupedGraphFromDiffGraph = (
   }
 
   const diffGraphWithoutRedundantFieldNodes = removeRedundantFieldNodes(diffGraph, groupKey)
-  return buildAcyclicGroupedGraph(diffGraphWithoutRedundantFieldNodes, groupKey, disjointGroups)
+  return buildAcyclicGroupedGraph({
+    source: diffGraphWithoutRedundantFieldNodes,
+    groupKey,
+    shouldFailOnCircularDependency: getCoreFlagBool(CORE_FLAGS.failPlanOnCircularDependencies),
+    disjointGroups,
+  })
 }

@@ -50,7 +50,7 @@ export const addBrandIdToRequest: definitions.AdjustFunction<definitions.deploy.
     log.error(msg)
     throw new Error(msg)
   }
-  // Use the ID directly instead of a reference value to avoid circular references.
+  // Use the ID directly instead of a reference value as references are already resolved at this point.
   return {
     value: {
       ...value,

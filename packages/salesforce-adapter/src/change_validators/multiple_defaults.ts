@@ -27,6 +27,8 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
+import { GLOBAL_VALUE_SET } from '../filters/global_value_sets'
+import { STANDARD_VALUE_SET } from '../filters/standard_value_sets'
 
 const { awu } = collections.asynciterable
 
@@ -49,7 +51,9 @@ type ValueSetInnerObject = {
 
 type FieldWithValueSet = Field & {
   annotations: {
-    valueSet: Array<ValueSetInnerObject>
+    valueSet: {
+      values: Array<ValueSetInnerObject>
+    }
   }
 }
 
@@ -84,7 +88,7 @@ const createFieldChangeError = (field: Field, contexts: string[]): ChangeError =
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
-  const contexts = field.annotations.valueSet
+  const contexts = field.annotations.valueSet.values
     .filter(obj => obj.default)
     .map(obj => obj[LABEL])
     .map(formatContext)
@@ -163,6 +167,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
+    .filter(instance => ![GLOBAL_VALUE_SET, STANDARD_VALUE_SET].includes(instance.elemID.typeName))
     .flatMap(getInstancesMultipleDefaultsErrors)
     .toArray()
 

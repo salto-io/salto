@@ -28,7 +28,7 @@ import {
   isObjectType,
   getField,
   isFieldChange,
-  ReferenceExpression,
+  ReferenceExpression, TypeElement, ElemID,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -70,6 +70,28 @@ type MapDef = {
   // keep a separate list of references for each value to preserve the order
   maintainOrder?: boolean
 }
+
+const ORDERED_MAP_VALUES_FIELD = 'values'
+const ORDERED_MAP_ORDER_FIELD = 'order'
+
+const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
+new ObjectType({
+  elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
+  fields: {
+    [ORDERED_MAP_VALUES_FIELD]: {
+      refType: createRefToElmWithValue(new MapType(innerType)),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    [ORDERED_MAP_ORDER_FIELD]: {
+      refType: createRefToElmWithValue(new ListType(innerType)),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  },
+})
 
 /**
  * Convert a string value into the map index keys.
@@ -218,16 +240,27 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
             convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
           ),
         )
+      } else if (mapDef.maintainOrder) {
+        const originalFieldValue = _.get(getElementValueOrAnnotations(element), fieldName)
+        _.unset(getElementValueOrAnnotations(element), fieldName)
+        _.set(
+          getElementValueOrAnnotations(element),
+          [fieldName, ORDERED_MAP_VALUES_FIELD],
+          convertField(
+            makeArray(originalFieldValue),
+            item => mapper(item[mapDef.key])[0],
+            !!mapDef.mapToList,
+            fieldName,
+          ),
+        )
+        _.set(
+          getElementValueOrAnnotations(element),
+          [fieldName, ORDERED_MAP_ORDER_FIELD],
+          makeArray(originalFieldValue)
+            .map(item => mapper(item[mapDef.key])[0])
+            .map(name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name))),
+        )
       } else {
-        if (mapDef.maintainOrder) {
-          _.set(
-            getElementValueOrAnnotations(element),
-            `${fieldName}Order`,
-            makeArray(_.get(getElementValueOrAnnotations(element), fieldName))
-              .map(item => mapper(item[mapDef.key])[0])
-              .map(name => new ReferenceExpression(element.elemID.createNestedID(fieldName, name))),
-          )
-        }
         _.set(
           getElementValueOrAnnotations(element),
           fieldName,
@@ -280,7 +313,7 @@ const convertValuesToMapArrays = (
  * @param instanceMapFieldDef  The original field mapping definition
  */
 const updateFieldTypes = async (
-  instanceType: ObjectType,
+  instanceType: ObjectType | TypeElement,
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
@@ -296,6 +329,8 @@ const updateFieldTypes = async (
         }
         if (mapDef.nested) {
           field.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
+        } else if (mapDef.maintainOrder) {
+          field.refType = createRefToElmWithValue(createOrderedMapType(innerType))
         } else {
           field.refType = createRefToElmWithValue(new MapType(innerType))
         }
@@ -369,9 +404,8 @@ const convertFieldsBackToLists = async (
           _.set(
             getElementValueOrAnnotations(element),
             fieldName,
-            _.get(getElementValueOrAnnotations(element), `${fieldName}Order`).map((ref: ReferenceExpression) => ref),
+            _.get(getElementValueOrAnnotations(element), [fieldName, ORDERED_MAP_ORDER_FIELD]).map((ref: ReferenceExpression) => ref),
           )
-          _.unset(getElementValueOrAnnotations(element), `${fieldName}Order`)
         } else {
           _.set(
             getElementValueOrAnnotations(element),
@@ -494,7 +528,10 @@ const filter: LocalFilterCreator = ({ config }) => ({
 
     const fields = elements.filter(isCustomObjectSync).flatMap(obj => Object.values(obj.fields))
     await awu(Object.entries(fieldTypeToAnnotationToMapDef)).forEach(async ([fieldType, annotationToMapDef]) => {
-      if (['Picklist', 'MultiselectPicklist'].includes(fieldType) && !config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
+      if (
+        ['Picklist', 'MultiselectPicklist'].includes(fieldType) &&
+        !config.fetchProfile.isFeatureEnabled('picklistsAsMaps')
+      ) {
         return
       }
       const fieldsToConvert = fields.filter(field => field.refType.elemID.typeName === fieldType)
@@ -502,8 +539,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
         return
       }
       const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef)
-      // TODO: handle nonUniqueMapFields?
-      log.debug('converted fields to maps: %s', nonUniqueMapFields)
+      await updateFieldTypes(await fieldsToConvert[0].getType(), nonUniqueMapFields, annotationToMapDef)
     })
   },
 

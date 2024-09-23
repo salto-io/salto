@@ -49,6 +49,7 @@ type ValueSetInnerObject = {
   label: string
 } & Values[]
 
+// TODO: Make this work with a FF
 type FieldWithValueSet = Field & {
   annotations: {
     valueSet: {

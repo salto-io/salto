@@ -11,7 +11,6 @@ import { DeployRequestCondition } from '@salto-io/adapter-components/src/definit
 import { targetApps } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
 import { APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } from '../../../../../src/constants/intune'
-import { AdjustFunction } from '../../../../../src/definitions/deploy/shared/types'
 
 describe('apps configuration definition utils', () => {
   const applicationConfigurationType = new ObjectType({
@@ -43,7 +42,14 @@ describe('apps configuration definition utils', () => {
             method: 'post',
           },
           transformation: {
-            adjust: expect.any(Function),
+            rename: [
+              {
+                from: 'targetTypeField',
+                to: 'appGroupType',
+                onConflict: 'skip',
+              },
+            ],
+            pick: ['apps', 'appGroupType'],
           },
         },
         condition: {
@@ -115,30 +121,6 @@ describe('apps configuration definition utils', () => {
               }),
             }),
           ).toEqual(false)
-        })
-      })
-    })
-
-    describe('adjust', () => {
-      let adjust: AdjustFunction | undefined
-      beforeEach(() => {
-        adjust = targetApps.createTargetAppsDeployDefinition({
-          resourcePath: '/test',
-          targetTypeFieldName: 'targetTypeField',
-        }).request?.transformation?.adjust
-      })
-
-      it('should return a value with the apps field and targetTypeField', async () => {
-        const value = await adjust?.({
-          value: appConfigurationWithSelectedApps.value,
-          typeName: APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
-          context: contextMock,
-        })
-        expect(value).toEqual({
-          value: {
-            apps: ['app1', 'app2'],
-            appGroupType: 'selectedPublicApps',
-          },
         })
       })
     })

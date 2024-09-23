@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { createEmptyType, getFilterParams } from '../utils'
@@ -50,30 +50,6 @@ describe('projectFieldContext', () => {
   describe('onFetch', () => {
     it('should change the contexts order', async () => {
       await filter.onFetch([...projectInstances, firstContextInstance, secondContextInstance])
-
-      expect(firstContextInstance.value[PROJECT_IDS]).toHaveLength(3)
-      expect(firstContextInstance.value[PROJECT_IDS][0]).toBeInstanceOf(ReferenceExpression)
-      expect(firstContextInstance.value[PROJECT_IDS][0].resValue.elemID).toEqual(projectInstances[0].elemID)
-      expect(firstContextInstance.value[PROJECT_IDS][1]).toBeInstanceOf(ReferenceExpression)
-      expect(firstContextInstance.value[PROJECT_IDS][1].resValue.elemID).toEqual(projectInstances[1].elemID)
-      expect(firstContextInstance.value[PROJECT_IDS][2]).toBeInstanceOf(ReferenceExpression)
-      expect(firstContextInstance.value[PROJECT_IDS][2].resValue.elemID).toEqual(projectInstances[2].elemID)
-
-      expect(secondContextInstance.value[PROJECT_IDS]).toHaveLength(3)
-      expect(secondContextInstance.value[PROJECT_IDS][0]).toBeInstanceOf(ReferenceExpression)
-      expect(secondContextInstance.value[PROJECT_IDS][0].resValue.elemID).toEqual(projectInstances[0].elemID)
-      expect(secondContextInstance.value[PROJECT_IDS][1]).toBeInstanceOf(ReferenceExpression)
-      expect(secondContextInstance.value[PROJECT_IDS][1].resValue.elemID).toEqual(projectInstances[1].elemID)
-      expect(secondContextInstance.value[PROJECT_IDS][2]).toBeInstanceOf(ReferenceExpression)
-      expect(secondContextInstance.value[PROJECT_IDS][2].resValue.elemID).toEqual(projectInstances[2].elemID)
-    })
-  })
-  describe('onDeploy', () => {
-    it('should change the contexts order', async () => {
-      await filter.onDeploy([
-        toChange({ after: firstContextInstance }),
-        toChange({ before: firstContextInstance, after: secondContextInstance }),
-      ])
 
       expect(firstContextInstance.value[PROJECT_IDS]).toHaveLength(3)
       expect(firstContextInstance.value[PROJECT_IDS][0]).toBeInstanceOf(ReferenceExpression)

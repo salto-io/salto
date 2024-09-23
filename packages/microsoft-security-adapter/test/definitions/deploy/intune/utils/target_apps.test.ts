@@ -18,6 +18,7 @@ describe('apps configuration definition utils', () => {
   })
   const appConfigurationWithAllApps = new InstanceElement('test', applicationConfigurationType, {
     targetTypeField: 'allApps',
+    apps: [],
   })
   const appConfigurationWithSelectedApps = new InstanceElement('test', applicationConfigurationType, {
     targetTypeField: 'selectedPublicApps',
@@ -25,6 +26,7 @@ describe('apps configuration definition utils', () => {
   })
   const appConfigurationWithSelectedAppsAndNoApps = new InstanceElement('test', applicationConfigurationType, {
     targetTypeField: 'selectedPublicApps',
+    apps: [],
   })
 
   describe(`${targetApps.createTargetAppsDeployDefinition.name}`, () => {
@@ -40,7 +42,14 @@ describe('apps configuration definition utils', () => {
             method: 'post',
           },
           transformation: {
-            pick: ['apps'],
+            rename: [
+              {
+                from: 'targetTypeField',
+                to: 'appGroupType',
+                onConflict: 'skip',
+              },
+            ],
+            pick: ['apps', 'appGroupType'],
           },
         },
         condition: {
@@ -73,71 +82,45 @@ describe('apps configuration definition utils', () => {
         })
       })
 
-      describe('when the change is addition change', () => {
-        describe('when targetTypeField is selectedPublicApps', () => {
-          it('should return true if the change includes apps field', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ after: appConfigurationWithSelectedApps }),
+      describe('when targetTypeField was changed', () => {
+        it('should return true if the change includes apps field', () => {
+          expect(
+            condition?.custom?.({})({
+              ...contextMock,
+              change: toChange({
+                before: appConfigurationWithAllApps,
+                after: appConfigurationWithSelectedAppsAndNoApps,
               }),
-            ).toEqual(true)
-          })
-          it('should return false if the change does not include apps field', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ after: appConfigurationWithSelectedAppsAndNoApps }),
-              }),
-            ).toEqual(false)
-          })
-        })
-
-        describe('when targetTypeField is allApps', () => {
-          it('should return false', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ after: appConfigurationWithAllApps }),
-              }),
-            ).toEqual(false)
-          })
+            }),
+          ).toEqual(true)
         })
       })
-      describe('when the change is modification change', () => {
-        describe('when targetTypeField is selectedPublicApps', () => {
-          it('should return true if the apps field was changed', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({
-                  before: appConfigurationWithSelectedApps,
-                  after: appConfigurationWithSelectedAppsAndNoApps,
-                }),
+
+      describe('when apps field was changed', () => {
+        it('should return true', () => {
+          expect(
+            condition?.custom?.({})({
+              ...contextMock,
+              change: toChange({
+                before: appConfigurationWithSelectedAppsAndNoApps,
+                after: appConfigurationWithSelectedApps,
               }),
-            ).toEqual(true)
-          })
-          it('should return false if the apps field was not changed', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({ before: appConfigurationWithSelectedApps, after: appConfigurationWithSelectedApps }),
-              }),
-            ).toEqual(false)
-          })
+            }),
+          ).toEqual(true)
         })
-        describe('when targetTypeField is allApps', () => {
-          it('should return false', () => {
-            expect(
-              condition?.custom?.({})({
-                ...contextMock,
-                change: toChange({
-                  before: appConfigurationWithSelectedApps,
-                  after: appConfigurationWithAllApps,
-                }),
+      })
+
+      describe('when both targetTypeField and apps field were not changed', () => {
+        it('should return false', () => {
+          expect(
+            condition?.custom?.({})({
+              ...contextMock,
+              change: toChange({
+                before: appConfigurationWithAllApps,
+                after: appConfigurationWithAllApps,
               }),
-            ).toEqual(false)
-          })
+            }),
+          ).toEqual(false)
         })
       })
     })

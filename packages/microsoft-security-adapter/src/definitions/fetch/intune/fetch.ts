@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { EndpointPath, Options } from '../../types'
@@ -20,9 +21,7 @@ import { application, deviceConfigurationSettings, platformScript } from './util
 const {
   // Top level types
   APPLICATION_TYPE_NAME,
-  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
-  APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -44,6 +43,7 @@ const {
   ASSIGNMENTS_ODATA_CONTEXT,
   TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS,
   TYPES_WITH_TARGET_APPS_APPS,
+  TYPES_WITH_TARGET_APPS_PATH_MAP,
 } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -89,36 +89,6 @@ const graphBetaCustomizations: FetchCustomizations = {
       },
     },
   },
-  [APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/deviceAppManagement/targetedManagedAppConfigurations',
-          queryArgs: {
-            $expand: 'apps, assignments',
-          },
-        },
-        transformation: {
-          ...DEFAULT_TRANSFORMATION,
-          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        serviceUrl: {
-          baseUrl: SERVICE_BASE_URL,
-          path: '/#view/Microsoft_Intune/TargetedAppConfigInstanceBlade/~/fullscreensummary/id/{id}/odataType/undefined',
-        },
-        allowEmptyArrays: true,
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
   [APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME]: {
     resource: {
       directFetch: true,
@@ -144,36 +114,6 @@ const graphBetaCustomizations: FetchCustomizations = {
         serviceUrl: {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Apps/AppConfigPolicySettingsMenu/~/2/appConfigPolicyId/{id}',
-        },
-        allowEmptyArrays: true,
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
-  [APPLICATION_PROTECTION_ANDROID_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/deviceAppManagement/androidManagedAppProtections',
-          queryArgs: {
-            $expand: 'apps,assignments',
-          },
-        },
-        transformation: {
-          ...DEFAULT_TRANSFORMATION,
-          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        serviceUrl: {
-          baseUrl: SERVICE_BASE_URL,
-          path: '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.androidManagedAppProtection/policyName/{displayName}',
         },
         allowEmptyArrays: true,
       },
@@ -371,6 +311,36 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
+  ..._.mapValues(TYPES_WITH_TARGET_APPS_PATH_MAP, ({ resourcePath, serviceUrlPath }) => ({
+    requests: [
+      {
+        endpoint: {
+          path: resourcePath,
+          queryArgs: {
+            $expand: 'apps,assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true as const,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: serviceUrlPath,
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  })),
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
       ...(typeName === SCOPE_TAG_ASSIGNMENTS_TYPE_NAME

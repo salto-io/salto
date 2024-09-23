@@ -7,6 +7,7 @@
  */
 
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
+import { EndpointPath } from '../definitions/types'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
@@ -54,6 +55,7 @@ export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeNa
   'ApplicationConfigurationManagedDevice',
 )
 export const APPLICATION_PROTECTION_ANDROID_TYPE_NAME = toIntuneTypeName('ApplicationProtectionAndroid')
+export const APPLICATION_PROTECTION_IOS_TYPE_NAME = toIntuneTypeName('ApplicationProtectionIOS')
 export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('DeviceConfiguration')
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('DeviceConfigurationSettingCatalog')
 export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
@@ -95,6 +97,7 @@ export const TYPES_WITH_GROUP_ASSIGNMENTS = [
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
+  APPLICATION_PROTECTION_IOS_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -112,10 +115,30 @@ export const TYPES_WITH_GROUP_ASSIGNMENTS_TARGET = TYPES_WITH_GROUP_ASSIGNMENTS.
 export const ASSIGNMENTS_ODATA_CONTEXT = 'assignments@odata.context'
 
 // Target apps
-const TYPES_WITH_TARGET_APPS = [
-  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
-  APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
-]
+export const TYPES_WITH_TARGET_APPS_PATH_MAP: Record<
+  string,
+  { resourcePath: EndpointPath; serviceUrlPath: EndpointPath; targetTypeFieldName: string }
+> = {
+  [APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME]: {
+    resourcePath: '/deviceAppManagement/targetedManagedAppConfigurations',
+    serviceUrlPath:
+      '/#view/Microsoft_Intune/TargetedAppConfigInstanceBlade/~/fullscreensummary/id/{id}/odataType/undefined',
+    targetTypeFieldName: 'targetedManagedAppGroupType',
+  },
+  [APPLICATION_PROTECTION_ANDROID_TYPE_NAME]: {
+    resourcePath: '/deviceAppManagement/androidManagedAppProtections',
+    serviceUrlPath:
+      '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.androidManagedAppProtection/policyName/{displayName}',
+    targetTypeFieldName: 'appGroupType',
+  },
+  [APPLICATION_PROTECTION_IOS_TYPE_NAME]: {
+    resourcePath: '/deviceAppManagement/iosManagedAppProtections',
+    serviceUrlPath:
+      '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.iosManagedAppProtection/policyName/{displayName}',
+    targetTypeFieldName: 'appGroupType',
+  },
+}
+const TYPES_WITH_TARGET_APPS = Object.keys(TYPES_WITH_TARGET_APPS_PATH_MAP)
 export const TYPES_WITH_TARGET_APPS_APPS = TYPES_WITH_TARGET_APPS.map(typeName =>
   recursiveNestedTypeName(typeName, APPS_FIELD_NAME),
 )

@@ -2813,11 +2813,15 @@ describe('Test utils.ts', () => {
     })
     it('should throw when parent does not have an elemID', () => {
       child.annotations[CORE_ANNOTATIONS.PARENT] = 'a'
-      expect(() => getParentElemID(child)).toThrow('Expected test.test.instance.child parent to have an ElemID')
+      expect(() => getParentElemID(child)).toThrow(
+        'Expected test.test.instance.child parent to be a reference expression',
+      )
     })
     it('should throw when the parent elemID object is not an ElemID', () => {
       child.annotations[CORE_ANNOTATIONS.PARENT] = { elemID: 'a' }
-      expect(() => getParentElemID(child)).toThrow('Expected test.test.instance.child parent to have an ElemID')
+      expect(() => getParentElemID(child)).toThrow(
+        'Expected test.test.instance.child parent to be a reference expression',
+      )
     })
   })
   describe('getParentAsyncWithElementsSource', () => {

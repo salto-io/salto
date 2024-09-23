@@ -42,7 +42,7 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
   const contextChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_TYPE_NAME) as AddModifyInstanceChange[]
+    .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
 
   if (contextChanges.length === 0) {
     return []

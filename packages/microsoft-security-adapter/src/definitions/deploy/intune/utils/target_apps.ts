@@ -11,26 +11,29 @@ import { getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adap
 import { definitions as definitionUtils } from '@salto-io/adapter-components'
 import { DeployableRequestDefinition } from '../../shared/types'
 import { intuneConstants } from '../../../../constants'
+import { EndpointPath } from '../../../types'
 
 const { APPS_FIELD_NAME } = intuneConstants
 
 /**
- * Utilities for deploying application configurations [managed apps].
+ * Utilities for deploying the target apps field.
  *
  * This module handles the targeted apps field, which is deployed separately from the main configuration,
  * by defining the deploy request and condition.
  */
 
-export const targetAppsChangeCondition: definitionUtils.deploy.DeployRequestCondition = {
+const createTargetAppsChangeCondition = (
+  targetTypeFieldName: string,
+): definitionUtils.deploy.DeployRequestCondition => ({
   custom:
     () =>
     ({ change }) => {
       const changeData = getChangeData(change)
-      const targetedAppType = changeData.value.targetedManagedAppGroupType
+      const targetedAppType = changeData.value[targetTypeFieldName]
       // If targetedManagedAppGroupType is set to anything other than `selectedPublicApps`,
       // modifying the apps list will silently change it to `selectedPublicApps`.
       // TODO SALTO-6528: Warn the user when this occurs.
-      if (isRemovalChange(change) || targetedAppType !== 'selectedPublicApps') {
+      if (isRemovalChange(change) || (targetedAppType && targetedAppType !== 'selectedPublicApps')) {
         return false
       }
 
@@ -38,17 +41,23 @@ export const targetAppsChangeCondition: definitionUtils.deploy.DeployRequestCond
         ? !_.isEmpty(changeData.value.apps)
         : change.data.before.value.apps !== change.data.after.value.apps
     },
-}
+})
 
-export const TARGET_APP_DEPLOY_DEFINITION: DeployableRequestDefinition = {
+export const createTargetAppsDeployDefinition = ({
+  resourcePath,
+  targetTypeFieldName,
+}: {
+  resourcePath: EndpointPath
+  targetTypeFieldName: string
+}): DeployableRequestDefinition => ({
   request: {
     endpoint: {
-      path: '/deviceAppManagement/targetedManagedAppConfigurations/{id}/targetApps',
+      path: `${resourcePath}/{id}/targetApps`,
       method: 'post',
     },
     transformation: {
       pick: [APPS_FIELD_NAME],
     },
   },
-  condition: targetAppsChangeCondition,
-}
+  condition: createTargetAppsChangeCondition(targetTypeFieldName),
+})

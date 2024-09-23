@@ -22,6 +22,7 @@ const {
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -31,7 +32,6 @@ const {
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   SCOPE_TAG_TYPE_NAME,
   // Nested types
-  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
@@ -43,6 +43,7 @@ const {
   SERVICE_BASE_URL,
   ASSIGNMENTS_ODATA_CONTEXT,
   TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS,
+  TYPES_WITH_TARGET_APPS_APPS,
 } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -118,18 +119,6 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
-  [APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME]: {
-    element: {
-      fieldCustomizations: {
-        id: {
-          omit: true,
-        },
-        version: {
-          omit: true,
-        },
-      },
-    },
-  },
   [APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME]: {
     resource: {
       directFetch: true,
@@ -155,6 +144,36 @@ const graphBetaCustomizations: FetchCustomizations = {
         serviceUrl: {
           baseUrl: SERVICE_BASE_URL,
           path: '/#view/Microsoft_Intune_Apps/AppConfigPolicySettingsMenu/~/2/appConfigPolicyId/{id}',
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [APPLICATION_PROTECTION_ANDROID_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceAppManagement/androidManagedAppProtections',
+          queryArgs: {
+            $expand: 'apps,assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.androidManagedAppProtection/policyName/{displayName}',
         },
         allowEmptyArrays: true,
       },
@@ -375,6 +394,23 @@ const graphBetaCustomizations: FetchCustomizations = {
             omit: true,
           },
           sourceId: {
+            omit: true,
+          },
+        },
+      },
+    },
+  })).reduce((acc, curr) => ({ ...acc, ...curr }), {}),
+  ...TYPES_WITH_TARGET_APPS_APPS.map(typeName => ({
+    [typeName]: {
+      resource: {
+        directFetch: false,
+      },
+      element: {
+        fieldCustomizations: {
+          id: {
+            omit: true,
+          },
+          version: {
             omit: true,
           },
         },

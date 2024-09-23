@@ -10,10 +10,12 @@ import { WeakReferencesHandler } from './weak_references_handler'
 import { fieldConfigurationsHandler } from './field_configuration_items'
 import { queueFieldsHandler } from './queue_columns'
 import { contextProjectsHandler } from './context_projects'
+import { fieldContextsHandler } from './field_contexts'
 
 export const weakReferenceHandlers: Record<string, WeakReferencesHandler> = {
   automationProjects: automationProjectsHandler,
   fieldConfigurationsHandler,
   queueFieldsHandler,
   contextProjectsHandler,
+  fieldContextsHandler,
 }

@@ -67,7 +67,7 @@ const removeMissingContextProjects: WeakReferencesHandler['removeWeakReferences'
         fixedInstance.value[PROJECT_IDS] = await awu(contextProjects)
           .filter(
             async proj =>
-              isReferenceExpression(proj) &&
+              !isReferenceExpression(proj) ||
               // eslint-disable-next-line no-return-await
               (await elementsSource.has(proj.elemID)),
           )

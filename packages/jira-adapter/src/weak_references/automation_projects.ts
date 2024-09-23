@@ -94,6 +94,7 @@ const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferenc
           .filter(
             async proj =>
               proj.projectId === undefined ||
+              // consider changing, if it is not a reference expression it is not a weak reference
               (isReferenceExpression(proj.projectId) &&
                 // eslint-disable-next-line no-return-await
                 (await elementsSource.has(proj.projectId.elemID))),

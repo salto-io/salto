@@ -8,4 +8,4 @@
 
 import { AdditionChange, InstanceElement, ModificationChange } from '@salto-io/adapter-api'
 
-export type AddModifyInstanceChange = AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+export type AddOrModifyInstanceChange = AdditionChange<InstanceElement> | ModificationChange<InstanceElement>

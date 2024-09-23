@@ -51,7 +51,7 @@ const getContextsToProjectsReferences: GetCustomReferencesFunc = async elements 
 /**
  * Remove invalid projects (not references or missing references) from contexts.
  */
-const removeMissingContextProjects: WeakReferencesHandler['removeWeakReferences'] =
+export const removeMissingContextProjects: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource }) =>
   async elements => {
     const fixedElements = await awu(elements)

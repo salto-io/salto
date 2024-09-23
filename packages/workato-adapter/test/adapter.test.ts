@@ -22,6 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
+// import { definitions } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
@@ -68,6 +69,7 @@ describe('adapter', () => {
 
   afterEach(() => {
     mockAxiosAdapter.restore()
+    jest.clearAllMocks()
   })
 
   describe('fetch and postFetch', () => {
@@ -107,6 +109,7 @@ describe('adapter', () => {
           'workato.folder.instance.f1n2_leaf1_f1_nested2_basedir1_Root_vuu@suuuum',
           'workato.property',
           'workato.property.instance',
+          'workato.property__value',
           'workato.recipe',
           'workato.recipe.instance.Copy_of_New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_f1_nested2_basedir1_Root_vuu@sssssssssssssuuuum',
           'workato.recipe.instance.Copy_of_New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum@ssssss_00010sssssssssss_00010sssssuuuuuuum',
@@ -131,36 +134,19 @@ describe('adapter', () => {
           'workato.recipe__code__block',
           'workato.recipe__code__block__block',
           'workato.recipe__code__block__block__dynamicPickListSelection',
-          'workato.recipe__code__block__block__extended_input_schema',
-          'workato.recipe__code__block__block__extended_input_schema__properties',
           'workato.recipe__code__block__block__input',
           'workato.recipe__code__block__block__input__columns',
           'workato.recipe__code__block__block__toggleCfg',
           'workato.recipe__code__block__dynamicPickListSelection',
-          'workato.recipe__code__block__extended_input_schema',
-          'workato.recipe__code__block__extended_input_schema__properties',
           'workato.recipe__code__block__input',
           'workato.recipe__code__block__input__conditions',
           'workato.recipe__code__block__input__data',
           'workato.recipe__code__block__input__message',
           'workato.recipe__code__block__requirements',
-          'workato.recipe__code__block__requirements__extended_input_schema',
-          'workato.recipe__code__block__requirements__extended_input_schema__properties',
           'workato.recipe__code__block__toggleCfg',
           'workato.recipe__code__dynamicPickListSelection',
           'workato.recipe__code__dynamicPickListSelection__field_list',
           'workato.recipe__code__dynamicPickListSelection__table_list',
-          'workato.recipe__code__extended_input_schema',
-          'workato.recipe__code__extended_input_schema__toggle_field',
-          'workato.recipe__code__extended_output_schema',
-          'workato.recipe__code__extended_output_schema__properties',
-          'workato.recipe__code__extended_output_schema__properties__pick_list_params',
-          'workato.recipe__code__extended_output_schema__properties__properties',
-          'workato.recipe__code__extended_output_schema__properties__properties__pick_list_params',
-          'workato.recipe__code__extended_output_schema__properties__properties__properties',
-          'workato.recipe__code__extended_output_schema__properties__properties__toggle_field',
-          'workato.recipe__code__extended_output_schema__properties__toggle_field',
-          'workato.recipe__code__extended_output_schema__toggle_field',
           'workato.recipe__code__filter',
           'workato.recipe__code__filter__conditions',
           'workato.recipe__code__input',
@@ -309,10 +295,6 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'workato.api_access_profile',
-          'workato.api_client',
-          'workato.api_collection',
-          'workato.api_endpoint',
           'workato.connection',
           'workato.connection.instance.HTTP_connection_1@s',
           'workato.connection.instance.My_Gmail_connection@s',
@@ -320,11 +302,6 @@ describe('adapter', () => {
           'workato.connection.instance.Test_NetSuite_account@s',
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
-          'workato.folder',
-          'workato.property',
-          'workato.recipe',
-          'workato.recipe__code',
-          'workato.role',
         ])
       })
       it('should use elemIdGetter', async () => {

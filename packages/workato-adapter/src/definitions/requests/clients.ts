@@ -9,6 +9,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { WorkatoOptions } from '../types'
 
 export const DEFAULT_PAGE_SIZE = '10'
+const RECIPE_PAGE_SIZE = '100' // maximum page allowed for /recipes
 
 export const createClientDefinitions = (
   clients: Record<
@@ -39,6 +40,7 @@ export const createClientDefinitions = (
           '/recipes': {
             get: {
               pagination: 'minSinceId',
+              queryArgs: { per_page: RECIPE_PAGE_SIZE },
             },
           },
         },

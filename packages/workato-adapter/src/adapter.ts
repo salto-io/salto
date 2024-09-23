@@ -135,6 +135,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       fetchQuery: this.fetchQuery,
       definitions: this.definitions,
       getElemIdFunc: this.getElemIdFunc,
+      // parent_id is used as a query param for /folders recursion
       additionalRequestContext: { parent_id: [''] },
     })
   }

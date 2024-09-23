@@ -6,11 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/service_url'
-import WorkatoClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { getDefaultConfig } from '../../src/config'
 import {
   CONNECTION_TYPE,
   RECIPE_TYPE,
@@ -23,9 +20,9 @@ import {
   PROPERTY_TYPE,
   API_CLIENT_TYPE,
 } from '../../src/constants'
+import { getFilterParams } from '../utils'
 
 describe('service_url', () => {
-  let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   let connectionInstance: InstanceElement
@@ -83,15 +80,7 @@ describe('service_url', () => {
       { id: 9 },
     )
 
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: getDefaultConfig(),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(getFilterParams()) as FilterType
 
     await filter.onFetch([
       connectionInstance,

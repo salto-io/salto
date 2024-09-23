@@ -19,8 +19,7 @@ export const validateCredentials = async ({
 }): Promise<AccountInfo> => {
   try {
     await connection.get('/users/me')
-    // there is no good stable account id in workato, so we default to empty string to avoid
-    // preventing users from refreshing their credentials in the SaaS.
+    // there is no good stable account id in workato, so we default to empty string
     return { accountId: '' }
   } catch (error) {
     if (error.response?.status === 401) {

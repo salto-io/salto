@@ -115,7 +115,9 @@ describe('context_projects', () => {
       ])
       expect(fixes.fixedElements).toHaveLength(2)
       expect((fixes.fixedElements[0] as InstanceElement).value.projectIds).toEqual([
+        'proj1',
         new ReferenceExpression(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'proj1')),
+        'software',
       ])
     })
     it('should warn if all projects are removed', async () => {

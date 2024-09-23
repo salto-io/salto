@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
 import { isGlobalContext } from '../../common/fields'
-import { AddModifyInstanceChange } from '../../common/general'
+import { AddOrModifyInstanceChange } from '../../common/general'
 
 const log = logger(module)
 
@@ -52,7 +52,7 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     instance => getParentElemID(instance).getFullName(),
   )
 
-  const addedGlobalContext = (change: AddModifyInstanceChange): boolean =>
+  const addedGlobalContext = (change: AddOrModifyInstanceChange): boolean =>
     isGlobalContext(change.data.after) && (isAdditionChange(change) || !isGlobalContext(change.data.before))
 
   return Promise.all(

@@ -179,7 +179,7 @@ export const createForgeTransitionRule = (extensionId: string): WorkflowV2Transi
 })
 export const createSystemTransitionRule = (): WorkflowV2TransitionRule => ({ ruleKey: 'system:some-rule' })
 
-// SHould be used instead of the default buildElementsSourceFromElements in order to better mock
+// Should be used instead of the default buildElementsSourceFromElements in order to better mock
 // the elementsSource in real scenarios
 export const createMockElementsSource = (elements: InstanceElement[]): ReadOnlyElementsSource => {
   const mockedElements = elements.map(instance => instance.clone())

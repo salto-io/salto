@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
-import {InstanceElement, ObjectType, TypeElement, Values} from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, TypeElement, Values } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
@@ -20,6 +20,7 @@ import {
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
   MetadataInstance,
   MetadataQuery,
+  ProfileSection,
 } from './types'
 import {
   CUSTOM_OBJECT,
@@ -359,31 +360,32 @@ export const retrieveMetadataInstances = async ({
   const typesWithContent = await getTypesWithContent(types)
 
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
-    const idFieldsBySection: Record<string, string[]> = {
-      fieldPermissions: ['field'],
-      objectPermissions: ['object'],
-      recordTypeVisibilities: ['recordType'],
-      tabVisibilities: ['tab'],
-      userPermissions: ['name'],
-      applicationVisibilities: ['application'],
-      classAccesses: ['apexClass'],
-      flowAccesses: ['flow'],
-      layoutAssignments: ['layout', 'recordType'],
+    const fieldsToUniqueByPerSection: Record<ProfileSection, string[]> = {
+      [ProfileSection.FieldPermissions]: ['field'],
+      [ProfileSection.ObjectPermissions]: ['object'],
+      [ProfileSection.RecordTypeVisibilities]: ['recordType'],
+      [ProfileSection.TabVisibilities]: ['tab'],
+      [ProfileSection.UserPermissions]: ['name'],
+      [ProfileSection.ApplicationVisibilities]: ['application'],
+      [ProfileSection.ClassAccesses]: ['apexClass'],
+      [ProfileSection.FlowAccesses]: ['flow'],
+      [ProfileSection.LayoutAssignments]: ['layout', 'recordType'],
+      [ProfileSection.PageAccesses]: ['apexPage'],
     }
-    const mergeSection = (sectionName: string, idFields: string[]): Values => {
-      const allValues = instances.flatMap(instance => instance.value[sectionName] ?? [])
-      return _.uniqBy(allValues, value => {
-        const key = idFields.map(field => value[field] ?? '').join('@')
-        return key
-      })
-    }
+    const mergeSection = (sectionName: string, fieldsToUniqueBy: string[]): Values =>
+      _.uniqBy(
+        instances.flatMap(instance => instance.value[sectionName] ?? []),
+        value => fieldsToUniqueBy.map(fieldName => value[fieldName] ?? '').join('@'),
+      )
     const result = instances[0].clone()
     result.value = {
       ..._.merge({}, ...instances.map(instance => instance.value)),
-      ...Object.fromEntries(Object.entries(idFieldsBySection).map(([sectionName, uniqueField]) => [
-        sectionName,
-        mergeSection(sectionName, uniqueField),
-      ])),
+      ...Object.fromEntries(
+        Object.entries(fieldsToUniqueByPerSection).map(([sectionName, fieldsToUniqueBy]) => [
+          sectionName,
+          mergeSection(sectionName, fieldsToUniqueBy),
+        ]),
+      ),
     }
     return result
   }

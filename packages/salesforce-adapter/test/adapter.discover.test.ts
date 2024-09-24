@@ -306,7 +306,7 @@ describe('SalesforceAdapter fetch', () => {
         ]
         jest.spyOn(customListFuncsModule, 'createListApexClassesDef').mockReturnValue({
           func: async _client => ({ result: apexClassFileProperties, errors: [] }),
-          isPartial: true,
+          mode: 'partial',
         })
         connection.metadata.describe.mockResolvedValue(
           mockDescribeResult([
@@ -2766,7 +2766,7 @@ describe('Fetch via retrieve API', () => {
           client,
           types: [mockTypes.CustomObject, mockTypes.Profile],
           fetchProfile: buildFetchProfile({
-            fetchParams: { addNamespacePrefixToFullName: false },
+            fetchParams: {},
             maxItemsInRetrieveRequest: 3,
           }),
         })

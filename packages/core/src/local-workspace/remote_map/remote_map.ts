@@ -637,12 +637,10 @@ export const createRemoteMapCreator = (
                 resolve(undefined)
                 return
               }
-              isNamespaceEmpty = false
               await resolveRet(innerValue)
               statCounters.RemoteMapHit.inc()
             })
           } else {
-            isNamespaceEmpty = false
             await resolveRet(value)
             statCounters.RemoteMapHit.inc()
           }

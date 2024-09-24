@@ -398,7 +398,22 @@ const createFilteredReadIterator = (
   }
 }
 
-const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb): ReadIterator => {
+type CreateIteratorArgs = {
+  prefix: string
+  opts: CreateIteratorOpts
+  connection: rocksdb
+  isEmpty?: boolean | undefined
+}
+const createIterator = ({ prefix, opts, connection, isEmpty }: CreateIteratorArgs): ReadIterator => {
+  if (isEmpty) {
+    // If we know the result of the iterator is going to be empty, we can skip creating the connection iterator
+    // This is more efficient because the low level iterator works with a prefix, it doesn't really know about namespaces
+    // and therefore potentially has to do much more work to figure out that the iterator is empty
+    return {
+      next: async () => undefined,
+      nextPage: async () => undefined,
+    }
+  }
   // Cannot use inner limit when filtering because if we filter anything out we will need
   // to get additional results from the inner iterator
   const limit = opts.filter === undefined ? opts.first : undefined
@@ -430,6 +445,7 @@ export const createRemoteMapCreator = (
     deserialize,
   }: remoteMap.CreateRemoteMapParams<T>): Promise<remoteMap.RemoteMap<T, K>> => {
     let wasClearCalled = false
+    let isNamespaceEmpty: boolean | undefined
     const delKeys = new Set<string>()
     const locationTmpDir = getDBTmpDir(location)
     if (!(await fileUtils.exists(location))) {
@@ -457,7 +473,12 @@ export const createRemoteMapCreator = (
         ...opts,
         ...(opts.after ? { after: keyToTempDBKey(opts.after) } : {}),
       }
-      return createIterator(tempKeyPrefix, normalizedOpts, tmpDB)
+      return createIterator({
+        prefix: tempKeyPrefix,
+        opts: normalizedOpts,
+        connection: tmpDB,
+        isEmpty: isNamespaceEmpty,
+      })
     }
 
     const createPersistentIterator = (opts: CreateIteratorOpts): ReadIterator => {
@@ -465,7 +486,12 @@ export const createRemoteMapCreator = (
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
       }
-      return createIterator(keyPrefix, normalizedOpts, persistentDB)
+      return createIterator({
+        prefix: keyPrefix,
+        opts: normalizedOpts,
+        connection: persistentDB,
+        isEmpty: isNamespaceEmpty,
+      })
     }
     const batchUpdate = async (
       batchInsertIterator: AsyncIterable<remoteMap.RemoteMapEntry<string, string>>,
@@ -490,6 +516,9 @@ export const createRemoteMapCreator = (
       }
       if (i % batchInterval !== 0) {
         await promisify(batch.write.bind(batch))()
+      }
+      if (i > 0) {
+        isNamespaceEmpty = undefined
       }
       return i > 0
     }
@@ -579,6 +608,7 @@ export const createRemoteMapCreator = (
         if (locationCache.has(keyToTempDBKey(key))) {
           statCounters.LocationCacheHit.inc()
           statCounters.RemoteMapHit.inc()
+          isNamespaceEmpty = false
           resolve(locationCache.get(keyToTempDBKey(key)) as T)
           return
         }
@@ -586,6 +616,7 @@ export const createRemoteMapCreator = (
         const resolveRet = async (value: Buffer | string): Promise<void> => {
           const ret = await deserialize(value.toString())
           locationCache.set(keyToTempDBKey(key), ret)
+          isNamespaceEmpty = false
           resolve(ret)
         }
         tmpDB.get(keyToTempDBKey(key), async (error, value) => {
@@ -601,10 +632,12 @@ export const createRemoteMapCreator = (
                 resolve(undefined)
                 return
               }
+              isNamespaceEmpty = false
               await resolveRet(innerValue)
               statCounters.RemoteMapHit.inc()
             })
           } else {
+            isNamespaceEmpty = false
             await resolveRet(value)
             statCounters.RemoteMapHit.inc()
           }
@@ -613,6 +646,7 @@ export const createRemoteMapCreator = (
     const deleteImpl = async (key: string): Promise<void> => {
       delKeys.add(key)
       locationCache.del(key)
+      isNamespaceEmpty = undefined
     }
     const createDBIfNotExist = async (loc: string): Promise<void> => {
       const newDb: rocksdb = getRemoteDbImpl()(loc)
@@ -697,6 +731,7 @@ export const createRemoteMapCreator = (
       set: async (key: string, element: T): Promise<void> => {
         delKeys.delete(key)
         locationCache.set(keyToTempDBKey(key), element)
+        isNamespaceEmpty = false
         await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), await serialize(element))
       },
       setAll: setAllImpl,
@@ -741,10 +776,12 @@ export const createRemoteMapCreator = (
         locationCache.reset()
         await clearImpl(tmpDB, tempKeyPrefix)
         wasClearCalled = true
+        isNamespaceEmpty = true
       },
       delete: deleteImpl,
       has: async (key: string): Promise<boolean> => {
         if (locationCache.has(keyToTempDBKey(key))) {
+          isNamespaceEmpty = false
           return true
         }
         const hasKeyImpl = async (k: string, db: rocksdb): Promise<boolean> =>
@@ -753,17 +790,25 @@ export const createRemoteMapCreator = (
               resolve(!error && value !== undefined)
             })
           })
-        return (
+        const found =
           (await hasKeyImpl(keyToTempDBKey(key), tmpDB)) ||
-          (!wasClearCalled && hasKeyImpl(keyToDBKey(key), persistentDB))
-        )
+          (!wasClearCalled && (await hasKeyImpl(keyToDBKey(key), persistentDB)))
+        if (found) {
+          isNamespaceEmpty = false
+        }
+        return found
       },
       close: async (): Promise<void> => {
         // Do nothing - we can not close the connection here
         //  because we share the connection across multiple namespaces
         log.warn('cannot close connection of remote map with close method - use closeRemoteMapsOfLocation')
       },
-      isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
+      isEmpty: async (): Promise<boolean> => {
+        if (isNamespaceEmpty === undefined) {
+          isNamespaceEmpty = await awu(keysImpl({ first: 1 })).isEmpty()
+        }
+        return isNamespaceEmpty
+      },
     }
   }
 }
@@ -785,7 +830,7 @@ export const createReadOnlyRemoteMapCreator = (location: string): remoteMap.Read
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
       }
-      return createIterator(keyPrefix, normalizedOpts, db)
+      return createIterator({ prefix: keyPrefix, opts: normalizedOpts, connection: db })
     }
     const createDBConnection = async (): Promise<void> => {
       readonlyDBConnectionsPerRemoteMap[location] = readonlyDBConnectionsPerRemoteMap[location] ?? {}

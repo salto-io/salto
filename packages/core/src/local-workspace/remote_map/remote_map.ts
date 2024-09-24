@@ -17,6 +17,7 @@ import type rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { remoteMapLocations } from './location_pool'
+import { LocationCounters } from './counters'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -402,9 +403,10 @@ type CreateIteratorArgs = {
   prefix: string
   opts: CreateIteratorOpts
   connection: rocksdb
+  statCounters?: LocationCounters
   isEmpty?: boolean | undefined
 }
-const createIterator = ({ prefix, opts, connection, isEmpty }: CreateIteratorArgs): ReadIterator => {
+const createIterator = ({ prefix, opts, connection, statCounters, isEmpty }: CreateIteratorArgs): ReadIterator => {
   if (isEmpty) {
     // If we know the result of the iterator is going to be empty, we can skip creating the connection iterator
     // This is more efficient because the low level iterator works with a prefix, it doesn't really know about namespaces
@@ -424,6 +426,7 @@ const createIterator = ({ prefix, opts, connection, isEmpty }: CreateIteratorArg
     ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
     ...(limit !== undefined ? { limit } : {}),
   })
+  statCounters?.DBIteratorCreated.inc()
   return opts.filter === undefined
     ? createReadIterator(connectionIterator)
     : createFilteredReadIterator(connectionIterator, opts.filter, opts.first)
@@ -478,6 +481,7 @@ export const createRemoteMapCreator = (
         opts: normalizedOpts,
         connection: tmpDB,
         isEmpty: isNamespaceEmpty,
+        statCounters,
       })
     }
 
@@ -491,6 +495,7 @@ export const createRemoteMapCreator = (
         opts: normalizedOpts,
         connection: persistentDB,
         isEmpty: isNamespaceEmpty,
+        statCounters,
       })
     }
     const batchUpdate = async (

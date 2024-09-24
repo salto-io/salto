@@ -23,6 +23,7 @@ const COUNTER_TYPES = [
   'PersistentDbConnectionCreated',
   'PersistentDbConnectionReuse',
   'TmpDbConnectionReuse',
+  'DBIteratorCreated',
 ] as const
 type CounterType = (typeof COUNTER_TYPES)[number]
 

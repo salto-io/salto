@@ -138,14 +138,14 @@ export const calculatePatch = async ({
       updatedConfig: {},
     }
   }
-  const { changes } = await calcFetchChanges(
-    afterElements,
-    mergedAfterElements,
-    elementSource.createInMemoryElementSource(mergedBeforeElements),
-    await workspace.elements(false),
-    new Map([[accountName, {}]]),
-    new Set([accountName]),
-  )
+  const { changes } = await calcFetchChanges({
+    accountElements: afterElements,
+    mergedAccountElements: mergedAfterElements,
+    stateElements: elementSource.createInMemoryElementSource(mergedBeforeElements),
+    workspaceElements: await workspace.elements(false),
+    partiallyFetchedAccounts: new Map([[accountName, {}]]),
+    allFetchedAccounts: new Set([accountName]),
+  })
   return {
     changes,
     mergeErrors: [],

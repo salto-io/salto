@@ -414,10 +414,40 @@ const validateDeployParams = ({
   }
 }
 
+const validateAdditionalSuiteQLTables = (additionalSuiteQLTables: unknown): void => {
+  if (!Array.isArray(additionalSuiteQLTables)) {
+    throw new Error(
+      `Expected ${CONFIG.suiteAppClient}.${SUITEAPP_CLIENT_CONFIG.additionalSuiteQLTables} to be a list but found:\n${safeJsonStringify(additionalSuiteQLTables, undefined, 4)}.`,
+    )
+  }
+  const invalidAdditionalSuiteQLTables = additionalSuiteQLTables.filter(
+    params => !_.isPlainObject(params) || typeof params.name !== 'string' || typeof params.typeId !== 'string',
+  )
+  if (invalidAdditionalSuiteQLTables.length > 0) {
+    throw new Error(
+      `Expected each item in ${CONFIG.suiteAppClient}.${SUITEAPP_CLIENT_CONFIG.additionalSuiteQLTables} to be { name: string; typeId: string }, but found:\n${JSON.stringify(invalidAdditionalSuiteQLTables, null, 4)}}.`,
+    )
+  }
+  const invalidQueryParams = additionalSuiteQLTables
+    .filter(params => params.queryParams !== undefined)
+    .filter(
+      params =>
+        !_.isPlainObject(params.queryParams) ||
+        typeof params.queryParams.internalIdField !== 'string' ||
+        typeof params.queryParams.nameField !== 'string',
+    )
+  if (invalidQueryParams.length > 0) {
+    throw new Error(
+      `Expected each 'queryParams' in ${CONFIG.suiteAppClient}.${SUITEAPP_CLIENT_CONFIG.additionalSuiteQLTables} to be { internalIdField: string; nameField: string }, but found:\n${JSON.stringify(invalidQueryParams, null, 4)}}.`,
+    )
+  }
+}
+
 const validateSuiteAppClientParams = ({
   suiteAppConcurrencyLimit,
   httpTimeoutLimitInMinutes,
   wsdlVersion,
+  additionalSuiteQLTables,
 }: Record<keyof SuiteAppClientConfig, unknown>): void => {
   if (suiteAppConcurrencyLimit !== undefined) {
     validateNumber(suiteAppConcurrencyLimit, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.suiteAppConcurrencyLimit])
@@ -427,6 +457,9 @@ const validateSuiteAppClientParams = ({
   }
   if (wsdlVersion !== undefined) {
     validateEnumValue(wsdlVersion, SUPPORTED_WSDL_VERSIONS, [CONFIG.suiteAppClient, SUITEAPP_CLIENT_CONFIG.wsdlVersion])
+  }
+  if (additionalSuiteQLTables !== undefined) {
+    validateAdditionalSuiteQLTables(additionalSuiteQLTables)
   }
 }
 

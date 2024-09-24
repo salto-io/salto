@@ -6,23 +6,26 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { WorkatoOptions } from '../types'
+import { DEFAULT_PAGE_SIZE } from './clients'
 
-const { getWithPageOffsetPagination } = clientUtils
 const log = logger(module)
+const { pageOffsetPagination } = fetchUtils.request.pagination
 
 /**
  * Pagination based on descending ids, used for workato recipes - set the pagination field
  * to the lowest number out of this page's ids.
- * The rest of the logic is the same as getWithPageOffsetPagination.
+ * The rest of the logic is the same as pageOffsetPagination.
  */
-export const getMinSinceIdPagination: clientUtils.PaginationFuncCreator = () => {
+export const getMinSinceIdPagination = (): definitions.PaginationFunction => {
   let overallMin = Infinity
 
-  const nextPage: clientUtils.PaginationFunc = ({ page, getParams, currentParams }) => {
-    const { paginationField } = getParams
-    if (paginationField === undefined || page.length === 0) {
+  const nextPage: definitions.PaginationFunction = ({ responseData, currentParams }) => {
+    // recipes are nested under 'items' field
+    const page = !Array.isArray(responseData) ? responseData?.items : responseData
+    if (!Array.isArray(page) || page.length === 0) {
       return []
     }
     const pageIds = page.map(item => item.id)
@@ -40,15 +43,25 @@ export const getMinSinceIdPagination: clientUtils.PaginationFuncCreator = () => 
       return []
     }
     overallMin = minValueInPage
-    return [{ ...currentParams, [paginationField]: String(minValueInPage) }]
+
+    return [
+      _.merge({}, currentParams, {
+        queryParams: {
+          ...currentParams.queryParams,
+          since_id: String(minValueInPage),
+        },
+      }),
+    ]
   }
   return nextPage
 }
 
-export const paginate: clientUtils.PaginationFuncCreator = args => {
-  if (args.getParams?.paginationField === 'since_id') {
-    // special handling for endpoints that use descending ids, like the recipes endpoint
-    return getMinSinceIdPagination(args)
-  }
-  return getWithPageOffsetPagination(1)
+export const PAGINATION: definitions.ApiDefinitions<WorkatoOptions>['pagination'] = {
+  pageOffset: {
+    funcCreator: () =>
+      pageOffsetPagination({ firstPage: 1, paginationField: 'page', pageSize: Number(DEFAULT_PAGE_SIZE) }),
+  },
+  minSinceId: {
+    funcCreator: () => getMinSinceIdPagination(),
+  },
 }

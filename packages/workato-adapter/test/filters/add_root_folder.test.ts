@@ -6,31 +6,17 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, Element, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/add_root_folder'
-import WorkatoClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { getDefaultConfig } from '../../src/config'
 import { WORKATO } from '../../src/constants'
+import { getFilterParams } from '../utils'
 
 describe('Add root filter', () => {
-  let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 
   beforeAll(() => {
-    client = new WorkatoClient({
-      credentials: { username: 'a', token: 'b' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: getDefaultConfig(),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(getFilterParams()) as FilterType
   })
 
   const connectionType = new ObjectType({

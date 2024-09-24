@@ -6,23 +6,27 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { getDefaultConfig } from '../src/config'
 import changeValidator from '../src/change_validator'
 import { RECIPE_TYPE, RLM_DEPLOY_SUPPORTED_TYPES, WORKATO } from '../src/constants'
+import { DEFAULT_CONFIG, ENABLE_DEPLOY_SUPPORT_FLAG } from '../src/user_config'
 
 describe('change validator creator', () => {
   describe('withDeploySupport', () => {
+    const config = {
+      ...DEFAULT_CONFIG,
+      [ENABLE_DEPLOY_SUPPORT_FLAG]: true,
+    }
     describe('notSupportedTypesVzalidator', () => {
       const nonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM') })
       const anotherNonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM1') })
 
       it('should not fail if there are no deploy changes', async () => {
-        expect(await changeValidator(getDefaultConfig(true))([])).toEqual([])
+        expect(await changeValidator(config)([])).toEqual([])
       })
 
       it('both should fail', async () => {
         expect(
-          await changeValidator(getDefaultConfig(true))([
+          await changeValidator(config)([
             toChange({ after: new InstanceElement('inst1', nonInFolderType) }),
             toChange({
               before: new InstanceElement('inst1', anotherNonInFolderType),
@@ -46,9 +50,7 @@ describe('change validator creator', () => {
       const InFolderType = new ObjectType({ elemID: new ElemID(WORKATO, RLM_DEPLOY_SUPPORTED_TYPES[0]) })
       it('should fail', async () => {
         const validations = (
-          await changeValidator(getDefaultConfig(true))([
-            toChange({ before: new InstanceElement('inst1', InFolderType) }),
-          ])
+          await changeValidator(config)([toChange({ before: new InstanceElement('inst1', InFolderType) })])
         ).filter(change => change.severity === 'Error')
         expect(validations).toHaveLength(1)
         expect(validations[0].severity).toEqual('Error')
@@ -60,7 +62,7 @@ describe('change validator creator', () => {
       const recipeType = new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) })
       it('should raise warning', async () => {
         expect(
-          await changeValidator(getDefaultConfig(true))([
+          await changeValidator(config)([
             toChange({
               before: new InstanceElement('inst1', recipeType),
               after: new InstanceElement('inst1', recipeType),
@@ -78,12 +80,12 @@ describe('change validator creator', () => {
   describe('withoutDeploySupport', () => {
     describe('deployNotSupportedValidator', () => {
       it('should not fail if there are no deploy changes', async () => {
-        expect(await changeValidator(getDefaultConfig())([])).toEqual([])
+        expect(await changeValidator(DEFAULT_CONFIG)([])).toEqual([])
       })
 
       it('should fail each change individually', async () => {
         expect(
-          await changeValidator(getDefaultConfig())([
+          await changeValidator(DEFAULT_CONFIG)([
             toChange({ after: new ObjectType({ elemID: new ElemID(WORKATO, 'obj') }) }),
             toChange({ before: new ObjectType({ elemID: new ElemID(WORKATO, 'obj2') }) }),
           ]),

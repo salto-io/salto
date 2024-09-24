@@ -19,7 +19,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
-import { NetsuiteConfig } from '../config/types'
+import { NetsuiteConfig, SuiteQLTableQueryParams } from '../config/types'
 import { ALLOCATION_TYPE, NETSUITE, PROJECT_EXPENSE_TYPE, SUPPORT_CASE_PROFILE, TAX_SCHEDULE } from '../constants'
 import { SuiteQLTableName } from './types'
 
@@ -45,11 +45,6 @@ export type AdditionalQueryName =
 type InternalIdsMap = Record<string, { name: string }>
 
 type QueryBy = 'internalId' | 'name'
-
-type QueryParams = {
-  internalIdField: 'id' | 'key'
-  nameField: string
-}
 
 type SavedSearchInternalIdsResult = {
   internalid: [
@@ -124,7 +119,7 @@ const getColumnSearchResultSchema = (searchColumn: string): Schema => ({
   },
 })
 
-export const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, QueryParams | undefined> = {
+const QUERIES_BY_TABLE_NAME: Record<SuiteQLTableName, SuiteQLTableQueryParams | undefined> = {
   item: {
     internalIdField: 'id',
     nameField: 'itemid',
@@ -550,8 +545,16 @@ export const ADDITIONAL_QUERIES: Record<AdditionalQueryName, ReturnType<typeof g
   [SUPPORT_CASE_PROFILE]: getSavedSearchInternalIdsMapFromColumn('supportCase', 'profile'),
 }
 
+export const getQueriesByTableName = (config: NetsuiteConfig): Record<string, SuiteQLTableQueryParams | undefined> => {
+  const userQueries = Object.fromEntries(
+    config.suiteAppClient?.additionalSuiteQLTables?.map(table => [table.name, table.queryParams] as const) ?? [],
+  )
+  return { ...QUERIES_BY_TABLE_NAME, ...userQueries }
+}
+
 const getInternalIdsMap = async (
   client: NetsuiteClient,
+  config: NetsuiteConfig,
   queryBy: QueryBy,
   tableName: string,
   items: string[],
@@ -560,7 +563,7 @@ const getInternalIdsMap = async (
   if (additionalQuery !== undefined) {
     return additionalQuery(client, queryBy, items)
   }
-  const queryParams = QUERIES_BY_TABLE_NAME[tableName as SuiteQLTableName]
+  const queryParams = getQueriesByTableName(config)[tableName]
   if (queryParams === undefined) {
     return {}
   }
@@ -593,11 +596,13 @@ const getInternalIdsMap = async (
 
 export const updateSuiteQLTableInstances = async ({
   client,
+  config,
   queryBy,
   itemsToQuery,
   suiteQLTablesMap,
 }: {
   client: NetsuiteClient
+  config: NetsuiteConfig
   queryBy: QueryBy
   itemsToQuery: { tableName: string; item: string }[]
   suiteQLTablesMap: Record<string, InstanceElement>
@@ -613,7 +618,7 @@ export const updateSuiteQLTableInstances = async ({
         Object.entries(itemsToQueryByTableName).map(async ([tableName, items]) =>
           Object.assign(
             getSuiteQLTableInternalIdsMap(suiteQLTablesMap[tableName]),
-            await getInternalIdsMap(client, queryBy, tableName, items),
+            await getInternalIdsMap(client, config, queryBy, tableName, items),
           ),
         ),
       ),
@@ -655,7 +660,7 @@ export const getSuiteQLTableElements = async (
   })
 
   const instances = await Promise.all(
-    Object.entries(QUERIES_BY_TABLE_NAME)
+    Object.entries(getQueriesByTableName(config))
       .filter(([_tableName, queryParams]) => queryParams !== undefined)
       .map(([tableName, _queryParams]) => tableName)
       .concat(Object.keys(ADDITIONAL_QUERIES))

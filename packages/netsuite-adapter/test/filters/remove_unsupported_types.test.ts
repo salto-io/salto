@@ -12,6 +12,7 @@ import { NETSUITE } from '../../src/constants'
 import { LocalFilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('remove_unsupported_types', () => {
   let filterOpts: LocalFilterOpts
@@ -40,6 +41,7 @@ describe('remove_unsupported_types', () => {
       metadataType: 'customrecordtype',
     },
   })
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
 
   beforeEach(async () => {
     elements = [
@@ -57,6 +59,8 @@ describe('remove_unsupported_types', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      typeToInternalId,
+      internalIdToTypes,
     }
   })
 

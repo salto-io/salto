@@ -135,6 +135,7 @@ import { customReferenceHandlers } from './custom_references'
 import { SystemInformation } from './client/suiteapp_client/types'
 import { getOrCreateObjectIdListElements } from './scriptid_list'
 import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
+import { getTypesToInternalId } from './data_elements/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -304,30 +305,44 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
+    const { internalIdToTypes, typeToInternalId } = getTypesToInternalId(
+      config.suiteAppClient?.additionalSuiteQLTables ?? [],
+    )
     this.createFiltersRunner = params => {
       const getFilterOpts = (): RemoteFilterOpts => {
         switch (params.operation) {
           case 'fetch':
             return {
               client: this.client,
-              elementsSourceIndex: createElementsSourceIndex(
-                this.elementsSource,
-                params.isPartial,
-                params.deletedElements,
-              ),
+              elementsSourceIndex: createElementsSourceIndex({
+                elementsSource: this.elementsSource,
+                isPartial: params.isPartial,
+                typeToInternalId,
+                internalIdToTypes,
+                deletedElements: params.deletedElements,
+              }),
               elementsSource: this.elementsSource,
               isPartial: params.isPartial,
               config,
+              internalIdToTypes,
+              typeToInternalId,
               timeZoneAndFormat: params.timeZoneAndFormat,
               fetchTime: params.fetchTime,
             }
           case 'deploy':
             return {
               client: this.client,
-              elementsSourceIndex: createElementsSourceIndex(this.elementsSource, false),
+              elementsSourceIndex: createElementsSourceIndex({
+                elementsSource: this.elementsSource,
+                isPartial: false,
+                typeToInternalId,
+                internalIdToTypes,
+              }),
               elementsSource: this.elementsSource,
               isPartial: false,
               config,
+              internalIdToTypes,
+              typeToInternalId,
               changesGroupId: params.changesGroupId,
               suiteQLNameToInternalIdsMap: params.suiteQLNameToInternalIdsMap,
             }
@@ -637,10 +652,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
   @logDuration('deploying account configuration')
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
+    const { internalIdToTypes } = getTypesToInternalId(this.userConfig.suiteAppClient?.additionalSuiteQLTables ?? [])
     const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
       this.client,
+      this.userConfig,
       this.elementsSource,
       changesToDeploy,
+      internalIdToTypes,
     )
     const filtersRunner = this.createFiltersRunner({
       operation: 'deploy',

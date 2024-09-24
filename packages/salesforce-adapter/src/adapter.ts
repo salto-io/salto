@@ -155,6 +155,7 @@ import {
   LAST_MODIFIED_DATE,
   OWNER_ID,
   PROFILE_METADATA_TYPE,
+  PROFILE_RELATED_METADATA_TYPES,
   WAVE_DATAFLOW_METADATA_TYPE,
 } from './constants'
 import {
@@ -642,6 +643,12 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     }
     metadataQuery.logData()
     await this.client.awaitCompletionOfAllListRequests()
+    PROFILE_RELATED_METADATA_TYPES.forEach(type => {
+      const fullNames = this.client.listedInstancesByType.getOrUndefined(type)
+      if (fullNames) {
+        log.trace('list result for type %s: %s', type, Array.from(fullNames).join(','))
+      }
+    })
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],

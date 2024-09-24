@@ -383,14 +383,14 @@ export const calculatePatchFromChanges = async ({
     .forEach(id => {
       partialFetchData.get(id.adapter)?.deletedElements.add(id.getFullName())
     })
-  const result = await calcFetchChanges(
-    unmergedAfterElements,
-    afterElements,
-    elementSource.createInMemoryElementSource(beforeElements),
-    await workspace.elements(false),
-    partialFetchData,
-    new Set(accounts),
-  )
+  const result = await calcFetchChanges({
+    accountElements: unmergedAfterElements,
+    mergedAccountElements: afterElements,
+    stateElements: elementSource.createInMemoryElementSource(beforeElements),
+    workspaceElements: await workspace.elements(false),
+    partiallyFetchedAccounts: partialFetchData,
+    allFetchedAccounts: new Set(accounts),
+  })
   return result.changes
 }
 

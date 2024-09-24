@@ -194,16 +194,29 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
   maxFileCabinetSizeInGB: 'maxFileCabinetSizeInGB',
 }
 
+export type SuiteQLTableQueryParams = {
+  internalIdField: string
+  nameField: string
+}
+
+export type AdditionalSuiteQLTable = {
+  name: string
+  typeId: string
+  queryParams?: SuiteQLTableQueryParams
+}
+
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
   httpTimeoutLimitInMinutes?: number
   wsdlVersion?: WSDLVersion
+  additionalSuiteQLTables?: AdditionalSuiteQLTable[]
 }
 
 export const SUITEAPP_CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SuiteAppClientConfig> = {
   suiteAppConcurrencyLimit: 'suiteAppConcurrencyLimit',
   httpTimeoutLimitInMinutes: 'httpTimeoutLimitInMinutes',
   wsdlVersion: 'wsdlVersion',
+  additionalSuiteQLTables: 'additionalSuiteQLTables',
 }
 
 export type NetsuiteConfig = {
@@ -364,6 +377,43 @@ const clientConfigType = createMatchingObjectType<ClientConfig>({
   },
 })
 
+const suiteQLTableQueryParamsType = createMatchingObjectType<SuiteQLTableQueryParams>({
+  elemID: new ElemID(NETSUITE, 'suiteQLTableQueryParams'),
+  fields: {
+    internalIdField: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    nameField: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const additionalSuiteQLTableType = createMatchingObjectType<AdditionalSuiteQLTable>({
+  elemID: new ElemID(NETSUITE, 'additionalSuiteQLTable'),
+  fields: {
+    name: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    typeId: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    queryParams: {
+      refType: suiteQLTableQueryParamsType,
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>({
   elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
   fields: {
@@ -393,6 +443,9 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
           values: SUPPORTED_WSDL_VERSIONS,
         }),
       },
+    },
+    additionalSuiteQLTables: {
+      refType: new ListType(additionalSuiteQLTableType),
     },
   },
   annotations: {

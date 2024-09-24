@@ -7,6 +7,7 @@
  */
 import { ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { AdditionalSuiteQLTable } from '../config/types'
 
 const ITEM_TYPES = [
   'assemblyItem',
@@ -256,19 +257,24 @@ const SCRIPT_TYPES = [
   'sdfinstallationscript',
 ]
 
-export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
-  ...ALL_TABLE_TO_INTERNAL_ID,
-  ...Object.fromEntries(TRANSACTION_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.transaction])),
-  ...Object.fromEntries(FIELD_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.customfield])),
-  ...Object.fromEntries(SCRIPT_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.script])),
-  ...Object.fromEntries(ITEM_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.item])),
+export const getTypesToInternalId = (
+  additionalSuiteQLTables: AdditionalSuiteQLTable[],
+): { internalIdToTypes: Record<string, string[]>; typeToInternalId: Record<string, string> } => {
+  const typeToInternalId = {
+    ...ALL_TABLE_TO_INTERNAL_ID,
+    ...Object.fromEntries(TRANSACTION_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.transaction])),
+    ...Object.fromEntries(FIELD_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.customfield])),
+    ...Object.fromEntries(SCRIPT_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.script])),
+    ...Object.fromEntries(ITEM_TYPES.map(type => [type, TABLE_TO_INTERNAL_ID.item])),
+    ...Object.fromEntries(additionalSuiteQLTables.map(table => [table.name, table.typeId])),
+  }
+  const internalIdToTypes = _(typeToInternalId)
+    .entries()
+    .groupBy(([_type, internalId]) => internalId)
+    .mapValues(values => values.map(([type]) => type))
+    .value()
+  return { internalIdToTypes, typeToInternalId }
 }
-
-export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNAL_ID)
-  .entries()
-  .groupBy(([_type, internalId]) => internalId)
-  .mapValues(values => values.map(([type]) => type))
-  .value()
 
 export const ITEM_TYPE_TO_SEARCH_STRING: Record<ItemType, string> = {
   assemblyItem: '_assembly',

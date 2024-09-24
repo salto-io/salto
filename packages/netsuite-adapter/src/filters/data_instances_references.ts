@@ -89,7 +89,7 @@ const replaceReference =
 const getReferenceInternalId = (reference: ReferenceExpression): Value =>
   (isElement(reference.value) ? getElementValueOrAnnotations(reference.value) : reference.value ?? {}).internalId
 
-const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial }) => ({
+const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial, typeToInternalId }) => ({
   name: 'dataInstancesReferences',
   onFetch: async elements => {
     const elementsMap: Record<string, ElemID> = isPartial
@@ -97,7 +97,7 @@ const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial }) =
       : {}
 
     await awu(elements).forEach(async element => {
-      await assignToInternalIdsIndex(element, elementsMap)
+      await assignToInternalIdsIndex(element, elementsMap, typeToInternalId)
     })
 
     await awu(elements)

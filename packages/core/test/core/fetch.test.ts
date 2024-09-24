@@ -2348,8 +2348,9 @@ describe('calc fetch changes', () => {
     })
   })
 
-  describe('calculating pending changes', () => {
+  describe('calculatePendingChanges parameter', () => {
     let params: Parameters<typeof calcFetchChanges>[0]
+    let changes: FetchChange[]
     const accountName = 'salto'
     const elemID = new ElemID(accountName, 'type')
     beforeEach(() => {
@@ -2364,51 +2365,91 @@ describe('calc fetch changes', () => {
         allFetchedAccounts: new Set([accountName]),
       }
     })
-    it('should calculate pending changes', async () => {
-      const { changes } = await calcFetchChanges(params)
-      expect(changes).toEqual([
-        {
-          change: expect.objectContaining({
-            id: elemID.createNestedID('attr', 'test'),
-            action: 'modify',
-            data: { before: false, after: true },
-          }),
-          serviceChanges: [
-            expect.objectContaining({
-              id: elemID,
-              action: 'add',
-            }),
-          ],
-          pendingChanges: [
-            expect.objectContaining({
-              id: elemID,
-              action: 'add',
-            }),
-          ],
-          metadata: {},
-        },
-      ])
-    })
-    it('should not calculate pending changes', async () => {
-      const { changes } = await calcFetchChanges({ ...params, calculatePendingChanges: false })
-      expect(changes).toEqual([
-        {
-          change: expect.objectContaining({
-            id: elemID.createNestedID('attr', 'test'),
-            action: 'modify',
-            data: { before: false, after: true },
-          }),
-          serviceChanges: [
-            expect.objectContaining({
+    describe('when not passing the calculatePendingChanges parameter', () => {
+      beforeEach(async () => {
+        const result = await calcFetchChanges(params)
+        changes = result.changes
+      })
+      it('should calculate pending changes', async () => {
+        expect(changes).toEqual([
+          {
+            change: expect.objectContaining({
               id: elemID.createNestedID('attr', 'test'),
               action: 'modify',
               data: { before: false, after: true },
             }),
-          ],
-          pendingChanges: [],
-          metadata: {},
-        },
-      ])
+            serviceChanges: [
+              expect.objectContaining({
+                id: elemID,
+                action: 'add',
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: elemID,
+                action: 'add',
+              }),
+            ],
+            metadata: {},
+          },
+        ])
+      })
+    })
+    describe('when calculatePendingChanges is true', () => {
+      beforeEach(async () => {
+        const result = await calcFetchChanges({ ...params, calculatePendingChanges: true })
+        changes = result.changes
+      })
+      it('should calculate pending changes', async () => {
+        expect(changes).toEqual([
+          {
+            change: expect.objectContaining({
+              id: elemID.createNestedID('attr', 'test'),
+              action: 'modify',
+              data: { before: false, after: true },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: elemID,
+                action: 'add',
+              }),
+            ],
+            pendingChanges: [
+              expect.objectContaining({
+                id: elemID,
+                action: 'add',
+              }),
+            ],
+            metadata: {},
+          },
+        ])
+      })
+    })
+    describe('when calculatePendingChanges is false', () => {
+      beforeEach(async () => {
+        const result = await calcFetchChanges({ ...params, calculatePendingChanges: false })
+        changes = result.changes
+      })
+      it('should not calculate pending changes', async () => {
+        expect(changes).toEqual([
+          {
+            change: expect.objectContaining({
+              id: elemID.createNestedID('attr', 'test'),
+              action: 'modify',
+              data: { before: false, after: true },
+            }),
+            serviceChanges: [
+              expect.objectContaining({
+                id: elemID.createNestedID('attr', 'test'),
+                action: 'modify',
+                data: { before: false, after: true },
+              }),
+            ],
+            pendingChanges: [],
+            metadata: {},
+          },
+        ])
+      })
     })
   })
 })

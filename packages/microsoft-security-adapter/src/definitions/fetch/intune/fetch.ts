@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { EndpointPath, Options } from '../../types'
@@ -20,7 +21,6 @@ import { application, deviceConfigurationSettings, platformScript } from './util
 const {
   // Top level types
   APPLICATION_TYPE_NAME,
-  APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
@@ -31,7 +31,6 @@ const {
   PLATFORM_SCRIPT_WINDOWS_TYPE_NAME,
   SCOPE_TAG_TYPE_NAME,
   // Nested types
-  APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_SETTINGS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME,
   DEVICE_COMPLIANCE_SCHEDULED_ACTION_CONFIGURATIONS_TYPE_NAME,
@@ -43,6 +42,8 @@ const {
   SERVICE_BASE_URL,
   ASSIGNMENTS_ODATA_CONTEXT,
   TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS,
+  TYPES_WITH_TARGET_APPS_APPS,
+  TYPES_WITH_TARGET_APPS_PATH_MAP,
 } = intuneConstants
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -85,48 +86,6 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
         ...application.APPLICATION_FIELDS_TO_OMIT,
-      },
-    },
-  },
-  [APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/deviceAppManagement/targetedManagedAppConfigurations',
-          queryArgs: {
-            $expand: 'apps, assignments',
-          },
-        },
-        transformation: {
-          ...DEFAULT_TRANSFORMATION,
-          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        serviceUrl: {
-          baseUrl: SERVICE_BASE_URL,
-          path: '/#view/Microsoft_Intune/TargetedAppConfigInstanceBlade/~/fullscreensummary/id/{id}/odataType/undefined',
-        },
-        allowEmptyArrays: true,
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
-  [APPLICATION_CONFIGURATION_MANAGED_APP_APPS_TYPE_NAME]: {
-    element: {
-      fieldCustomizations: {
-        id: {
-          omit: true,
-        },
-        version: {
-          omit: true,
-        },
       },
     },
   },
@@ -352,6 +311,36 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
+  ..._.mapValues(TYPES_WITH_TARGET_APPS_PATH_MAP, ({ resourcePath, serviceUrlPath }) => ({
+    requests: [
+      {
+        endpoint: {
+          path: resourcePath,
+          queryArgs: {
+            $expand: 'apps,assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version', 'isAssigned', 'deployedAppCount', 'apps@odata.context', ASSIGNMENTS_ODATA_CONTEXT],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true as const,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: serviceUrlPath,
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  })),
   ...TYPES_WITH_GROUP_ASSIGNMENTS_ASSIGNMENTS.map(typeName => ({
     [typeName]: {
       ...(typeName === SCOPE_TAG_ASSIGNMENTS_TYPE_NAME
@@ -375,6 +364,23 @@ const graphBetaCustomizations: FetchCustomizations = {
             omit: true,
           },
           sourceId: {
+            omit: true,
+          },
+        },
+      },
+    },
+  })).reduce((acc, curr) => ({ ...acc, ...curr }), {}),
+  ...TYPES_WITH_TARGET_APPS_APPS.map(typeName => ({
+    [typeName]: {
+      resource: {
+        directFetch: false,
+      },
+      element: {
+        fieldCustomizations: {
+          id: {
+            omit: true,
+          },
+          version: {
             omit: true,
           },
         },

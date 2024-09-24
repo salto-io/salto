@@ -6,7 +6,4 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export * as application from './application'
-export * as targetApps from './target_apps'
-export * as groupAssignments from './group_assignments'
-export * as deviceConfigurationSettings from './device_configuration_settings'
+export { createFetchDefinitions } from './fetch'

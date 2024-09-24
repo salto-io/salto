@@ -11,7 +11,7 @@ import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType } from '../src/config'
+import { configType } from '../src/user_config'
 import { WORKATO } from '../src/constants'
 import * as connection from '../src/client/connection'
 
@@ -69,34 +69,6 @@ describe('adapter creator', () => {
         elementsSource: buildElementsSourceFromElements([]),
       }),
     ).toBeDefined()
-  })
-
-  it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
-    expect(() =>
-      adapter.operations({
-        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods.basic.credentialsType),
-        config: new InstanceElement(WORKATO, adapter.configType as ObjectType, {
-          fetch: {
-            include: [{ type: 'a' }, { type: 'b' }],
-            exclude: [],
-          },
-          apiDefinitions: {
-            types: {
-              c: {
-                request: {
-                  url: '/c',
-                },
-              },
-            },
-            supportedTypes: {
-              a: ['a'],
-              b: ['b'],
-            },
-          },
-        }),
-        elementsSource: buildElementsSourceFromElements([]),
-      }),
-    ).toThrow(new Error('Invalid type names in fetch: a,b does not match any of the supported types.'))
   })
 
   // Skipped until we decide how fetch is supposed to know which service connection is supported.

@@ -15,17 +15,14 @@ import {
   ReferenceExpression,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elemUtils } from '@salto-io/adapter-components'
-import { getDefaultConfig, FETCH_CONFIG, SUPPORTED_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
-import WorkatoClient from '../../src/client/client'
+import { filterUtils } from '@salto-io/adapter-components'
 import { WORKATO } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import commonCreators from '../../src/filters/common'
+import { getFilterParams } from '../utils'
 
 const filterCreator = commonCreators.referencedInstanceNames
 
 describe('referenced id fields filter', () => {
-  let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 
@@ -46,13 +43,6 @@ describe('referenced id fields filter', () => {
       id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
       parent_id: { refType: BuiltinTypes.NUMBER },
     },
-  })
-
-  beforeEach(async () => {
-    jest.clearAllMocks()
-    client = new WorkatoClient({
-      credentials: { username: 'a', token: 'b' },
-    })
   })
   const rootFolder = new InstanceElement('Root', folderType, { name: 'Root', id: 55 }) // root folder
   const folder11 = new InstanceElement('folder11_55', folderType, {
@@ -89,7 +79,7 @@ describe('referenced id fields filter', () => {
     parent_id: new ReferenceExpression(rootFolder.elemID, rootFolder),
   })
 
-  it('should resolve ids in instances names if & exist in the config', async () => {
+  it('should resolve ids in instances names according to elemID definitions', async () => {
     const elements = [
       folderType,
       recipeType,
@@ -102,43 +92,7 @@ describe('referenced id fields filter', () => {
       folder33,
     ]
     const lengthBefore = elements.length
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: {
-        fetch: getDefaultConfig()[FETCH_CONFIG],
-        apiDefinitions: {
-          typeDefaults: {
-            transformation: {
-              idFields: DEFAULT_ID_FIELDS,
-            },
-          },
-          types: {
-            folder: {
-              transformation: {
-                idFields: ['name', '&parent_id'],
-              },
-            },
-            recipe: {
-              transformation: {
-                idFields: ['name', '&folder_id'],
-              },
-            },
-            recipe__code: {
-              transformation: {
-                idFields: [],
-                extendsParentId: true,
-              },
-            },
-          },
-          supportedTypes: SUPPORTED_TYPES,
-        },
-      },
-      fetchQuery: elemUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(getFilterParams()) as FilterType
     await filter.onFetch(elements)
     expect(elements.length).toEqual(lengthBefore)
     const instances = elements.filter(isInstanceElement)
@@ -149,67 +103,6 @@ describe('referenced id fields filter', () => {
       'workato.folder.instance.folder33_Root',
       'workato.recipe.instance.recipe123_folder11_Root',
       'workato.recipe__code.instance.recipe123_folder11_Root',
-    ])
-  })
-  it('should not add referenced id fields configuration is not as expected', async () => {
-    const elements = [
-      folderType,
-      recipeType,
-      recipeCodeType,
-      recipeCode123,
-      folder11,
-      folder22,
-      rootFolder,
-      recipe123,
-      folder33,
-    ]
-    const lengthBefore = elements.length
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: {
-        fetch: getDefaultConfig()[FETCH_CONFIG],
-        apiDefinitions: {
-          typeDefaults: {
-            transformation: {
-              idFields: ['name'],
-            },
-          },
-          types: {
-            folder: {
-              transformation: {
-                idFields: ['name', '&somthing'],
-              },
-            },
-            recipe: {
-              transformation: {
-                idFields: ['name', '&nothing'],
-              },
-            },
-            recipe__code: {
-              transformation: {
-                idFields: [],
-              },
-            },
-          },
-          supportedTypes: SUPPORTED_TYPES,
-        },
-      },
-      fetchQuery: elemUtils.query.createMockQuery(),
-    }) as FilterType
-    await filter.onFetch(elements)
-    expect(elements.length).toEqual(lengthBefore)
-    const instances = elements.filter(isInstanceElement)
-    expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
-      'workato.folder.instance.Root',
-      'workato.folder.instance.folder11',
-      'workato.folder.instance.folder22',
-      'workato.folder.instance.folder33',
-      'workato.recipe.instance.recipe123',
-      'workato.recipe__code.instance.recipe123_',
     ])
   })
 })

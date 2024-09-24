@@ -26,6 +26,7 @@ import {
   DEFAULT_NAMESPACE,
   FOLDER_CONTENT_TYPE,
   INTERNAL_ID_FIELD,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_CONTENT_FIELD,
   PROFILE_METADATA_TYPE,
   RETRIEVE_SIZE_LIMIT_ERROR,
@@ -46,7 +47,13 @@ import {
   MetadataObjectType,
 } from './transformers/transformer'
 import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
-import { getFullName, isInstanceOfTypeSync, isProfileRelatedMetadataType, listMetadataObjects } from './filters/utils'
+import {
+  getFullName,
+  isInstanceOfTypeSync,
+  isProfileRelatedMetadataType,
+  layoutObjAndName,
+  listMetadataObjects,
+} from './filters/utils'
 import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
@@ -388,8 +395,33 @@ export const retrieveMetadataInstances = async ({
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
+    customObjectFilePropsByName: Record<string, FileProperties>,
   ): Promise<InstanceElement[]> => {
-    const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
+    // When fetching Profiles the layoutAssignments of RecordTypes require the parent CustomObject to be retrieved as part of the retrieve request.
+    const getLayoutParentsToRetrieve = (): FileProperties[] => {
+      if (!fetchProfile.metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE)) {
+        return []
+      }
+      const retrievedCustomObjectsApiName = new Set(
+        fileProps.filter(fileProp => fileProp.type === CUSTOM_OBJECT).map(prop => prop.fullName),
+      )
+      const parentFileProps = fileProps
+        .filter(prop => prop.type === LAYOUT_TYPE_ID_METADATA_TYPE)
+        .map(prop => layoutObjAndName(prop.fullName)[0])
+        .filter(customObjectApiName => !retrievedCustomObjectsApiName.has(customObjectApiName))
+        .map(customObjectApiName => customObjectFilePropsByName[customObjectApiName])
+        .filter(isDefined)
+      if (parentFileProps.length > 0) {
+        log.debug(
+          'Adding parent CustomObjects to retrieve request: %s',
+          inspectValue(parentFileProps.map(prop => prop.fullName)),
+        )
+      }
+      return parentFileProps
+    }
+    const layoutParentsToRetrieve = getLayoutParentsToRetrieve()
+    const customObjectsToOmitFromResult = new Set(layoutParentsToRetrieve.map(prop => prop.fullName))
+    const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk).concat(layoutParentsToRetrieve)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = allFileProps.map(inst => ({
       ...inst,
@@ -436,7 +468,7 @@ export const retrieveMetadataInstances = async ({
       return (
         await Promise.all(
           _.chunk(fileProps, chunkSize - filePropsToSendWithEveryChunk.length).map(chunk =>
-            retrieveInstances(chunk, filePropsToSendWithEveryChunk),
+            retrieveInstances(chunk, filePropsToSendWithEveryChunk, customObjectFilePropsByName),
           ),
         )
       ).flat()
@@ -479,19 +511,29 @@ export const retrieveMetadataInstances = async ({
         )
         .forEach(configChange => configChanges.push(configChange))
     }
-    return allValues.map(({ file, values }) =>
-      createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
-    )
+    return allValues
+      .map(
+        ({ file, values }) =>
+          createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
+        // Omit the additional CustomObjects that were retrieved for the Profile layoutAssignments
+      )
+      .filter(
+        instance => !isInstanceOfTypeSync(CUSTOM_OBJECT) || !customObjectsToOmitFromResult.has(instance.value.fullName),
+      )
   }
 
   const retrieveProfilesWithContextTypes = async (
     profileFileProps: ReadonlyArray<FileProperties>,
     contextFileProps: ReadonlyArray<FileProperties>,
   ): Promise<Array<InstanceElement>> => {
+    const customObjectFilePropsByName = _.keyBy(
+      (await client.listMetadataObjects([{ type: CUSTOM_OBJECT }])).result,
+      props => props.fullName,
+    )
     const allInstances = await Promise.all(
       _.chunk(contextFileProps, maxItemsInRetrieveRequest - profileFileProps.length)
         .filter(filesChunk => filesChunk.length > 0)
-        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps)),
+        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps, customObjectFilePropsByName)),
     )
 
     const [partialProfileInstances, contextInstances] = _(allInstances)

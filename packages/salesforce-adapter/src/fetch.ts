@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
-import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import {InstanceElement, ObjectType, TypeElement, Values} from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
@@ -359,8 +359,32 @@ export const retrieveMetadataInstances = async ({
   const typesWithContent = await getTypesWithContent(types)
 
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
+    const idFieldsBySection: Record<string, string[]> = {
+      fieldPermissions: ['field'],
+      objectPermissions: ['object'],
+      recordTypeVisibilities: ['recordType'],
+      tabVisibilities: ['tab'],
+      userPermissions: ['name'],
+      applicationVisibilities: ['application'],
+      classAccesses: ['apexClass'],
+      flowAccesses: ['flow'],
+      layoutAssignments: ['layout', 'recordType'],
+    }
+    const mergeSection = (sectionName: string, idFields: string[]): Values => {
+      const allValues = instances.flatMap(instance => instance.value[sectionName] ?? [])
+      return _.uniqBy(allValues, value => {
+        const key = idFields.map(field => value[field] ?? '').join('@')
+        return key
+      })
+    }
     const result = instances[0].clone()
-    result.value = _.merge({}, ...instances.map(instance => instance.value))
+    result.value = {
+      ..._.merge({}, ...instances.map(instance => instance.value)),
+      ...Object.fromEntries(Object.entries(idFieldsBySection).map(([sectionName, uniqueField]) => [
+        sectionName,
+        mergeSection(sectionName, uniqueField),
+      ])),
+    }
     return result
   }
 

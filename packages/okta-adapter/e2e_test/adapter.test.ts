@@ -42,6 +42,7 @@ import { definitions as definitionsUtils, fetch as fetchUtils } from '@salto-io/
 import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
+  ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
   ACCESS_POLICY_RULE_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
@@ -61,6 +62,7 @@ import {
   ORG_SETTING_TYPE_NAME,
   PASSWORD_POLICY_PRIORITY_TYPE_NAME,
   PASSWORD_POLICY_TYPE_NAME,
+  PASSWORD_RULE_PRIORITY_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   PROFILE_ENROLLMENT_RULE_TYPE_NAME,
@@ -246,7 +248,7 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     parent: accessPolicy,
   })
   const accessPolicyRulePriority = createInstance({
-    typeName: 'AccessPolicyRulePriority',
+    typeName: ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
     types,
     name: naclCase(`${invertNaclCase(accessPolicy.elemID.name)}_priority`),
     valuesOverride: {
@@ -332,7 +334,7 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     parent: passwordPolicyA,
   })
   const passwordPolicyRulePriority = createInstance({
-    typeName: 'PasswordPolicyRulePriority',
+    typeName: PASSWORD_RULE_PRIORITY_TYPE_NAME,
     types,
     name: naclCase(`${invertNaclCase(passwordPolicyA.elemID.name)}_priority`),
     valuesOverride: {

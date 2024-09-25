@@ -47,7 +47,7 @@ const { isDefined } = values
 const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
-const JS_FILE_EXTENSIONS = ['.js', '.cjs', '.mjs', '.json']
+const SUITE_SCRIPT_FILE_EXTENSIONS = ['.js', '.cjs', '.mjs', '.json', '.ts']
 
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
@@ -162,7 +162,7 @@ const getServiceElemIDsFromPaths = (
     .filter(isDefined)
 
 const hasValidExtension = (path: string, config: NetsuiteConfig): boolean => {
-  const validExtensions = JS_FILE_EXTENSIONS.concat(config.fetch?.findReferencesInFilesWithExtension ?? [])
+  const validExtensions = SUITE_SCRIPT_FILE_EXTENSIONS.concat(config.fetch?.findReferencesInFilesWithExtension ?? [])
   return validExtensions.some(ext => path.toLowerCase().endsWith(ext))
 }
 

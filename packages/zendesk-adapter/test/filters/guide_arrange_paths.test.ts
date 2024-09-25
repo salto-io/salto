@@ -442,7 +442,7 @@ describe('guide arrange paths', () => {
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
           'article_name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
-          `${shortElemIdHash(elements[3].elemID)}_${staticFile.hash.slice(0, 10)}_article_name@s`,
+          `${shortElemIdHash(elements[3].elemID)}_article_name`,
         ].join('/'),
       )
       expect(staticFile.isEqual(articleTranslationInstance.value.body)).toBeTruthy()

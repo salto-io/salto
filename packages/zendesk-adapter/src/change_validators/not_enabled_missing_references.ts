@@ -21,24 +21,24 @@ import { isResolvedReferenceExpression, WALK_NEXT_STEP, walkOnElement } from '@s
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { references } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { sideConversationsOnFetch as sideConversationsFilter } from '../filters/side_conversation'
-import { fieldReferencesOnFetch as fieldReferencesFilter } from '../filters/field_references'
-import { listValuesMissingReferencesOnFetch as listValuesMissingReferencesFilter } from '../filters/references/list_values_missing_references'
-import { handleTemplateExpressionsOnFetch as handleTemplateExpressionFilter } from '../filters/handle_template_expressions'
-import { DynamicContentReferencesOnFetch as dynamicContentReferencesFilter } from '../filters/dynamic_content_references'
-import { articleBodyOnFetch as articleBodyFilter } from '../filters/article/article_body'
+import { sideConversationsOnFetch } from '../filters/side_conversation'
+import { fieldReferencesOnFetch } from '../filters/field_references'
+import { listValuesMissingReferencesOnFetch } from '../filters/references/list_values_missing_references'
+import { handleTemplateExpressionsOnFetch } from '../filters/handle_template_expressions'
+import { dynamicContentReferencesOnFetch } from '../filters/dynamic_content_references'
+import { articleBodyOnFetch, templateExpressionIdentity } from '../filters/article/article_body'
 import { FETCH_CONFIG, ZendeskConfig } from '../config'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
 
-const MISSING_REFERENCE_FILTERS: ((elements: Element[], config: ZendeskConfig) => void)[] = [
-  sideConversationsFilter,
-  fieldReferencesFilter,
-  listValuesMissingReferencesFilter,
-  dynamicContentReferencesFilter,
-  articleBodyFilter((translationBody, _translationElemID) => translationBody), // We want the templateExpression to retain the annotations.
-  handleTemplateExpressionFilter,
+const MISSING_REFERENCE_FETCH_FILTERS: ((elements: Element[], config: ZendeskConfig) => void)[] = [
+  sideConversationsOnFetch,
+  fieldReferencesOnFetch,
+  listValuesMissingReferencesOnFetch,
+  dynamicContentReferencesOnFetch,
+  articleBodyOnFetch(templateExpressionIdentity), // We want the templateExpression to retain the annotations.
+  handleTemplateExpressionsOnFetch,
 ]
 
 const createMissingRefString = (path: ElemID, value: ReferenceExpression): string => {
@@ -66,7 +66,7 @@ export const notEnabledMissingReferencesValidator =
     const filtersConfig = _.cloneDeep(config)
     filtersConfig[FETCH_CONFIG].enableMissingReferences = true
     // Run the filters one by one, to make sure they are run in order
-    await awu(MISSING_REFERENCE_FILTERS.map(filter => filter(clonedRelevantInstances, filtersConfig))).toArray()
+    await awu(MISSING_REFERENCE_FETCH_FILTERS.map(filter => filter(clonedRelevantInstances, filtersConfig))).toArray()
 
     const errors = clonedRelevantInstances
       .map((instance): ChangeError | undefined => {

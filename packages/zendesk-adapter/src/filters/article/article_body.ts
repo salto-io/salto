@@ -137,12 +137,14 @@ const templateExpressionToStaticFile = (translationBody: TemplateExpression, tra
     : parserUtils.templateExpressionToStaticFile(translationBody, filepath)
 }
 
+export const templateExpressionIdentity = (translationBody: TemplateExpression): TemplateExpression => translationBody
+
 export const articleBodyOnFetch =
   (
     templateExpressionConverter: (
       translationBody: TemplateExpression,
       translationElemID: ElemID,
-    ) => StaticFile | TemplateExpression = templateExpressionToStaticFile,
+    ) => StaticFile | TemplateExpression,
   ) =>
   (elements: Element[], config: ZendeskConfig): { errors: SaltoError[] } => {
     const instances = elements.filter(isInstanceElement)
@@ -187,7 +189,10 @@ const filterCreator: FilterCreator = ({ config }) => {
       if (!isGuideEnabled(config[FETCH_CONFIG])) {
         return undefined
       }
-      return articleBodyOnFetch()(elements, config)
+      const templateExpressionConverter = config[FETCH_CONFIG].translationStaticFiles
+        ? templateExpressionToStaticFile
+        : templateExpressionIdentity
+      return articleBodyOnFetch(templateExpressionConverter)(elements, config)
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)
@@ -197,6 +202,7 @@ const filterCreator: FilterCreator = ({ config }) => {
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(change, instance => {
             if (Buffer.isBuffer(instance.value.body)) {
+              // Due to the resolver, the staticFile is converted to a buffer
               instance.value.body = instance.value.body.toString()
             }
             try {

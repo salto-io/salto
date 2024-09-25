@@ -244,7 +244,7 @@ const toMergedChange = (change: FetchChange, after: Value): FetchChange => ({
 })
 
 const autoMergeChange: ChangeTransformFunction = async change => {
-  if (getCoreFlagBool(CORE_FLAGS.autoMergeDisabled) || !isMergeableDiffChange(change)) {
+  if (!isMergeableDiffChange(change)) {
     return [change]
   }
 
@@ -786,14 +786,23 @@ type DetailedChangeTreesResults = {
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all account elements should be consider as "add" changes.
-export const calcFetchChanges = async (
-  accountElements: ReadonlyArray<Element>,
-  mergedAccountElements: ReadonlyArray<Element>,
-  stateElements: elementSource.ElementsSource,
-  workspaceElements: ReadOnlyElementsSource,
-  partiallyFetchedAccounts: Map<string, PartiallyFetchedAccountData>,
-  allFetchedAccounts: Set<string>,
-): Promise<CalcFetchChangesResult> => {
+export const calcFetchChanges = async ({
+  accountElements,
+  mergedAccountElements,
+  stateElements,
+  workspaceElements,
+  partiallyFetchedAccounts,
+  allFetchedAccounts,
+  calculatePendingChanges = true,
+}: {
+  accountElements: ReadonlyArray<Element>
+  mergedAccountElements: ReadonlyArray<Element>
+  stateElements: elementSource.ElementsSource
+  workspaceElements: ReadOnlyElementsSource
+  partiallyFetchedAccounts: Map<string, PartiallyFetchedAccountData>
+  allFetchedAccounts: Set<string>
+  calculatePendingChanges?: boolean
+}): Promise<CalcFetchChangesResult> => {
   const mergedAccountElementsSource = elementSource.createInMemoryElementSource(mergedAccountElements)
 
   const partialFetchFilter: IDFilter = id =>
@@ -892,13 +901,9 @@ export const calcFetchChanges = async (
     }
   }
 
-  // When we init a new env, state will be empty. We fallback to the workspace
-  // elements since they should be considered a part of the env and the diff
-  // should be calculated with them in mind.
-  const isStateEmpty = await stateElements.isEmpty()
-  const { serviceChanges, pendingChanges, workspaceToServiceChanges, serviceToStateChanges } = isStateEmpty
-    ? await calculateChangesWithEmptyState()
-    : await calculateChangesWithState()
+  const { serviceChanges, pendingChanges, workspaceToServiceChanges, serviceToStateChanges } = calculatePendingChanges
+    ? await calculateChangesWithState()
+    : await calculateChangesWithEmptyState()
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
@@ -958,16 +963,22 @@ const createFetchChanges = async ({
     .filter(e => !e.isConfigType())
     .isEmpty()
 
+  // When we init a new env, the state will be empty, but the workspace can already have elements in common.
+  // In that case we shouldn't calculate pending changes, otherwise there would be conflicts
+  // between the fetched elements and the elements in common.
+  const calculatePendingChanges = !(await stateElements.isEmpty())
+
   const { changes, serviceToStateChanges } = isFirstFetch
     ? await createFirstFetchChanges(unmergedElements, processErrorsResult.keptElements)
-    : await calcFetchChanges(
-        unmergedElements,
-        processErrorsResult.keptElements,
+    : await calcFetchChanges({
+        accountElements: unmergedElements,
+        mergedAccountElements: processErrorsResult.keptElements,
         stateElements,
         workspaceElements,
-        partiallyFetchedAccountData,
-        new Set(adapterNames),
-      )
+        partiallyFetchedAccounts: partiallyFetchedAccountData,
+        allFetchedAccounts: new Set(adapterNames),
+        calculatePendingChanges,
+      })
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {
     calculateDiffEmitter.emit('completed')

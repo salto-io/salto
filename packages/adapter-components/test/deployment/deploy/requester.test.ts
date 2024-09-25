@@ -272,6 +272,7 @@ describe('DeployRequester', () => {
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       }),
     ).rejects.toThrow('Could not find requests for change adapter.test.instance.instance action modify')
   })
@@ -294,6 +295,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(instance.value.obj.id).toBe(1)
     expect(client.delete).toHaveBeenCalledWith(
@@ -326,6 +328,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.put).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -371,6 +374,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
 
     expect(client.post).toHaveBeenCalledWith({
@@ -400,6 +404,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
 
     expect(getChangeData(change).value.id).toEqual(1234)
@@ -451,6 +456,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
 
     expect(getChangeData(change).value).toEqual({
@@ -508,6 +514,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext,
+      errors: {},
     })
 
     expect(getChangeData(change).value).toEqual({
@@ -567,6 +574,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext,
+      errors: {},
     })
 
     expect(sharedContext).toEqual({ stop: true })
@@ -601,6 +609,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
@@ -638,6 +647,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.delete).toHaveBeenCalledWith({
       url: '/test/endpoint/1',
@@ -676,6 +686,7 @@ describe('DeployRequester', () => {
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       }),
     ).resolves.not.toThrow()
   })
@@ -710,6 +721,7 @@ describe('DeployRequester', () => {
         changeGroup: { changes: [change], groupID: 'abc' },
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       })
     }).rejects.toThrow('Something went wrong')
   })
@@ -756,6 +768,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.delete).toHaveBeenCalledTimes(3)
   })
@@ -795,6 +808,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(getChangeData(change).value.id).toBe('NEW')
     expect(client.post).toHaveBeenCalledWith(
@@ -850,6 +864,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(getChangeData(change).value.stop).toBe(true)
     expect(client.post).toHaveBeenCalledWith(
@@ -898,6 +913,7 @@ describe('DeployRequester', () => {
       changeGroup: { changes: [change], groupID: 'abc' },
       elementSource: buildElementsSourceFromElements([]),
       sharedContext: {},
+      errors: {},
     })
     expect(client.post).toHaveBeenCalledWith(
       expect.objectContaining({

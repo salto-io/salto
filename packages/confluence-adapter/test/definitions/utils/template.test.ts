@@ -12,7 +12,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { addSpaceKey } from '../../../src/definitions/utils'
 
 describe('template definitions utils', () => {
-  let item: definitions.GeneratedItem<definitions.ContextParams & definitions.deploy.ChangeAndContext, unknown>
+  let item: definitions.GeneratedItem<definitions.ContextParams & definitions.deploy.ChangeAndExtendedContext, unknown>
   describe('addSpaceKey', () => {
     beforeEach(() => {
       const change = toChange({
@@ -33,6 +33,7 @@ describe('template definitions utils', () => {
           },
           elementSource: buildElementsSourceFromElements([]),
           sharedContext: {},
+          errors: {},
         },
         value: { something: 'else' },
       }

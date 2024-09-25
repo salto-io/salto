@@ -17,5 +17,7 @@ export type NetsuiteChangeValidator = (
     config: NetsuiteConfig
     client: NetsuiteClient
     suiteQLNameToInternalIdsMap: Record<string, Record<string, string[]>>
+    internalIdToTypes: Record<string, string[]>
+    typeToInternalId: Record<string, string>
   },
 ) => Promise<ReadonlyArray<ChangeError>>

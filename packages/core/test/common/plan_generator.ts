@@ -25,6 +25,7 @@ import {
 import * as mock from './elements'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from './helpers'
+import { addFieldToObjectDependency } from '../../src/core/plan/dependency'
 
 export type PlanGenerators = {
   planWithTypeChanges: () => Promise<[Plan, ObjectType]>
@@ -254,7 +255,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     return getPlan({
       before: createElementSource([]),
       after: createElementSource(afterElements),
-      dependencyChangers: [depChanger],
+      dependencyChangers: [depChanger, addFieldToObjectDependency],
       changeValidators: withValidator ? { salto: async () => [] } : {},
     })
   },

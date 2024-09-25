@@ -67,7 +67,7 @@ import {
 } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
-import { isItemType, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
+import { getTypesToInternalId, isItemType, ITEM_TYPE_TO_SEARCH_STRING } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
 import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../../config/types'
 import { toError } from '../../utils'
@@ -724,10 +724,12 @@ export default class SoapClient {
   }
 
   public async deleteSdfInstances(instances: InstanceElement[]): Promise<SoapDeployResult[]> {
+    // getting the hardcoded sdf types in SOAP format
+    const { typeToInternalId } = getTypesToInternalId([])
     const body = {
       baseRef: await awu(instances)
         .map(async instance => {
-          const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID).find(
+          const instanceTypeFromMap = Object.keys(typeToInternalId).find(
             key => key.toLowerCase() === instance.elemID.typeName.toLowerCase(),
           )
           return this.convertToDeletionRecord({

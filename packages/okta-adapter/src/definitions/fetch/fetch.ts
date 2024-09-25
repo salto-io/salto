@@ -32,6 +32,7 @@ import {
   EMBEDDED_SIGN_IN_SUPPORT_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
+  AUTOMATION_RULE_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -142,8 +143,13 @@ const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefiniti
 }
 
 const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
-  const policiesToOmitPriorities = [ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME]
-  const policyRulesToOmitPriorities = [PROFILE_ENROLLMENT_RULE_TYPE_NAME]
+  const policiesToOmitPriorities = [
+    ACCESS_POLICY_TYPE_NAME,
+    PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+    IDP_POLICY_TYPE_NAME,
+    AUTOMATION_TYPE_NAME,
+  ]
+  const policyRulesToOmitPriorities = [PROFILE_ENROLLMENT_RULE_TYPE_NAME, AUTOMATION_RULE_TYPE_NAME]
   const rulesWithFieldsCustomizations = [MFA_RULE_TYPE_NAME, IDP_RULE_TYPE_NAME]
   const defs = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => ({
     [typeName]: {
@@ -182,7 +188,7 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
         fieldCustomizations: {
           id: { hide: true },
           _links: { omit: true },
-          ...(policiesToOmitPriorities.includes(typeName) ? { priority: { omit: true } } : {}),
+          priority: policiesToOmitPriorities.includes(typeName) ? { omit: true } : { hide: true },
           policyRules: {
             standalone: {
               typeName: details.ruleName,
@@ -212,7 +218,7 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
           ...(rulesWithFieldsCustomizations.includes(details.ruleName)
             ? { actions: { fieldType: 'PolicyRuleActions' }, conditions: { fieldType: 'PolicyRuleConditions' } }
             : {}),
-          ...(policyRulesToOmitPriorities.includes(details.ruleName) ? { priority: { omit: true } } : {}),
+          priority: policyRulesToOmitPriorities.includes(details.ruleName) ? { omit: true } : { hide: true },
         },
       },
     },
@@ -435,6 +441,7 @@ const createCustomizations = ({
       fieldCustomizations: {
         name: { fieldType: 'string' },
         id: { hide: true },
+        orn: { omit: true },
         [CUSTOM_NAME_FIELD]: { fieldType: 'string', hide: true },
         _links: { hide: true },
         _embedded: { omit: true },
@@ -1145,6 +1152,7 @@ const createCustomizations = ({
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },
+        priority: { hide: true },
       },
     },
   },

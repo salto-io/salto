@@ -15,5 +15,5 @@ export type InstanceDeployApiDefinitions = definitions.deploy.InstanceDeployApiD
 export type DeployCustomDefinitions = Record<string, InstanceDeployApiDefinitions>
 export type DeployRequestDefinition = definitions.deploy.DeployRequestDefinition<ClientOptions>
 export type DeployableRequestDefinition = definitions.deploy.DeployableRequestDefinition<ClientOptions>
-export type AdjustFunctionSingle = definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndContext>
-export type AdjustFunction = definitions.AdjustFunction<definitions.deploy.ChangeAndContext>
+export type AdjustFunctionSingle = definitions.AdjustFunctionSingle<definitions.deploy.ChangeAndExtendedContext>
+export type AdjustFunction = definitions.AdjustFunction<definitions.deploy.ChangeAndExtendedContext>

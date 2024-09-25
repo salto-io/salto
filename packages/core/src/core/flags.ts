@@ -11,8 +11,9 @@ export const CORE_FLAG_PREFIX = 'SALTO_'
 
 export const CORE_FLAGS = {
   skipResolveTypesInElementSource: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
-  autoMergeDisabled: 'AUTO_MERGE_DISABLE',
   autoMergeListsDisabled: 'AUTO_MERGE_LISTS_DISABLE',
+  dumpStateWithLegacyFormat: 'DUMP_STATE_WITH_LEGACY_FORMAT',
+  failPlanOnCircularDependencies: 'FAIL_PLAN_ON_CIRCULAR_DEPENDENCY',
 } as const
 
 type CoreFlagName = types.ValueOf<typeof CORE_FLAGS>

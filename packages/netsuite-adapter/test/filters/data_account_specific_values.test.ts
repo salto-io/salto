@@ -28,6 +28,7 @@ import filterCreator, {
   UNKNOWN_TYPE_REFERENCES_ELEM_ID,
   UNKNOWN_TYPE_REFERENCES_TYPE_NAME,
 } from '../../src/filters/data_account_specific_values'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 const runSuiteQLMock = jest.fn()
 const runSavedSearchQueryMock = jest.fn()
@@ -44,6 +45,7 @@ describe('data account specific values filter', () => {
   let recordRefType: ObjectType
   let suiteQLTableType: ObjectType
   let suiteQLTableInstance: InstanceElement
+  let anotherSuiteQLTableInstance: InstanceElement
   let taxScheduleSuiteQLTableInstance: InstanceElement
   let unknownTypeReferencesType: ObjectType
   let existingUnknownTypeReferencesInstance: InstanceElement
@@ -68,6 +70,11 @@ describe('data account specific values filter', () => {
         1: { name: 'Account 1' },
       },
     })
+    anotherSuiteQLTableInstance = new InstanceElement('data_type', suiteQLTableType, {
+      [INTERNAL_IDS_MAP]: {
+        2: { name: 'Some Name' },
+      },
+    })
     taxScheduleSuiteQLTableInstance = new InstanceElement('taxSchedule', suiteQLTableType, {
       [INTERNAL_IDS_MAP]: {
         1: { name: 'Tax Schedule 1' },
@@ -79,6 +86,7 @@ describe('data account specific values filter', () => {
         789: 'Value 789',
       },
     })
+    const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([{ name: 'data_type', typeId: '1234' }])
     filterOpts = {
       client,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
@@ -93,6 +101,8 @@ describe('data account specific values filter', () => {
           resolveAccountSpecificValues: true,
         },
       },
+      typeToInternalId,
+      internalIdToTypes,
     }
   })
 
@@ -115,6 +125,11 @@ describe('data account specific values filter', () => {
           internalId: '2',
           typeId: '-112',
         },
+        anotherCustomField: {
+          name: 'Some Name',
+          internalId: '2',
+          typeId: '1234',
+        },
         someField: {
           inner: {
             name: 'Value 123',
@@ -131,7 +146,14 @@ describe('data account specific values filter', () => {
           internalId: '1',
         },
       })
-      elements = [dataType, dataInstance, suiteQLTableType, suiteQLTableInstance, taxScheduleSuiteQLTableInstance]
+      elements = [
+        dataType,
+        dataInstance,
+        suiteQLTableType,
+        suiteQLTableInstance,
+        anotherSuiteQLTableInstance,
+        taxScheduleSuiteQLTableInstance,
+      ]
     })
 
     it('should transform references to ACCOUNT_SPECIFIC_VALUE', async () => {
@@ -146,6 +168,9 @@ describe('data account specific values filter', () => {
         },
         customField: {
           id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
+        },
+        anotherCustomField: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (data_type) (Some Name)',
         },
         someField: {
           inner: {
@@ -270,6 +295,11 @@ describe('data account specific values filter', () => {
           name: 'Account 2',
           internalId: '2',
           typeId: '-112',
+        },
+        anotherCustomField: {
+          name: 'Some Name',
+          internalId: '2',
+          typeId: '1234',
         },
         someField: {
           inner: {

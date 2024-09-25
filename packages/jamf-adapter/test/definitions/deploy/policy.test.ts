@@ -14,7 +14,11 @@ describe('adjustPolicyOnDeploy', () => {
   it('should throw an error if value is not a record', async () => {
     const value = 'not a record'
     await expect(
-      adjustPolicyOnDeploy({ value, context: {} as definitions.deploy.ChangeAndContext, typeName: POLICY_TYPE_NAME }),
+      adjustPolicyOnDeploy({
+        value,
+        context: {} as definitions.deploy.ChangeAndExtendedContext,
+        typeName: POLICY_TYPE_NAME,
+      }),
     ).rejects.toThrow('Expected value to be a record')
   })
   describe('adjustScriptStructureBeforeDeploy', () => {
@@ -23,7 +27,7 @@ describe('adjustPolicyOnDeploy', () => {
       expect(
         await adjustPolicyOnDeploy({
           value,
-          context: {} as definitions.deploy.ChangeAndContext,
+          context: {} as definitions.deploy.ChangeAndExtendedContext,
           typeName: POLICY_TYPE_NAME,
         }),
       ).toEqual({ value: { scripts: { size: 2, script: ['script1', 'script2'] } } })
@@ -33,7 +37,7 @@ describe('adjustPolicyOnDeploy', () => {
       expect(
         await adjustPolicyOnDeploy({
           value,
-          context: {} as definitions.deploy.ChangeAndContext,
+          context: {} as definitions.deploy.ChangeAndExtendedContext,
           typeName: POLICY_TYPE_NAME,
         }),
       ).toEqual({ value: { scripts: 'not an array' } })

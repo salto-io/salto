@@ -267,8 +267,8 @@ export const addReferences = async <
   fieldsToGroupBy.forEach(fieldName =>
     indexer.addIndex({
       name: fieldName,
-      filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
-      key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
+      filter: e => isInstanceElement(e) && _.get(e.value, fieldName) !== undefined,
+      key: (inst: InstanceElement) => [inst.refType.elemID.name, _.get(inst.value, fieldName)],
     }),
   )
   const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))

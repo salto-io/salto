@@ -123,7 +123,10 @@ const getChangeErrorsOnAccountSpecificValues = (
     .concat(returnGenericAccountSpecificValuesWarning ? toAccountSpecificValuesWarning(instance) : [])
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, { suiteQLNameToInternalIdsMap }) => {
+const changeValidator: NetsuiteChangeValidator = async (
+  changes,
+  { suiteQLNameToInternalIdsMap, internalIdToTypes },
+) => {
   const workflowChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -145,6 +148,7 @@ const changeValidator: NetsuiteChangeValidator = async (changes, { suiteQLNameTo
     const { resolvedAccountSpecificValues, resolveWarnings } = getResolvedAccountSpecificValues(
       instance,
       suiteQLNameToInternalIdsMap,
+      internalIdToTypes,
     )
     resolvedAccountSpecificValues.forEach(({ path, value }) => setPath(instance, path, value))
     return resolveWarnings

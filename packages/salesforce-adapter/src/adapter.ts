@@ -105,6 +105,7 @@ import importantValuesFilter from './filters/important_values_filter'
 import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard_fields_non_deployable_values'
 import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
+import extendTriggersMetadataFilter from './filters/extend_triggers_metadata'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
@@ -155,6 +156,7 @@ import {
   LAST_MODIFIED_DATE,
   OWNER_ID,
   PROFILE_METADATA_TYPE,
+  PROFILE_RELATED_METADATA_TYPES,
   WAVE_DATAFLOW_METADATA_TYPE,
 } from './constants'
 import {
@@ -223,6 +225,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: topicsForObjectsFilter },
   { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },
+  { creator: extendTriggersMetadataFilter, addsNewInformation: true },
   { creator: profilePathsFilter, addsNewInformation: true },
   { creator: territoryFilter },
   { creator: elementsUrlFilter, addsNewInformation: true },
@@ -646,6 +649,12 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     }
     metadataQuery.logData()
     await this.client.awaitCompletionOfAllListRequests()
+    PROFILE_RELATED_METADATA_TYPES.forEach(type => {
+      const fullNames = this.client.listedInstancesByType.getOrUndefined(type)
+      if (fullNames) {
+        log.trace('list result for type %s: %s', type, Array.from(fullNames).join(','))
+      }
+    })
     return {
       elements,
       errors: onFetchFilterResult.errors ?? [],

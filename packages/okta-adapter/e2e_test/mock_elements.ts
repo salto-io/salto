@@ -21,6 +21,8 @@ import {
   BRAND_THEME_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   IDENTITY_PROVIDER_TYPE_NAME,
+  PASSWORD_POLICY_TYPE_NAME,
+  PASSWORD_RULE_TYPE_NAME,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -34,10 +36,6 @@ export const mockDefaultValues: Record<string, Values> = {
     status: 'ACTIVE',
     name: 'authentication rule',
     system: false,
-    conditions: {
-      network: { connection: 'ANYWHERE' },
-      riskScore: { level: 'ANY' },
-    },
     actions: {
       appSignOn: {
         access: 'ALLOW',
@@ -49,6 +47,102 @@ export const mockDefaultValues: Record<string, Values> = {
       },
     },
     type: 'ACCESS_POLICY',
+  },
+  [PASSWORD_POLICY_TYPE_NAME]: {
+    status: 'ACTIVE',
+    name: 'password policy',
+    type: 'PASSWORD',
+    system: false,
+    settings: {
+      password: {
+        complexity: {
+          minLength: 8,
+          minLowerCase: 1,
+          minUpperCase: 1,
+          minNumber: 1,
+          minSymbol: 0,
+          excludeUsername: true,
+          dictionary: {
+            common: {
+              exclude: false,
+            },
+          },
+        },
+        age: {
+          maxAgeDays: 0,
+          expireWarnDays: 0,
+          minAgeMinutes: 0,
+          historyCount: 4,
+        },
+        lockout: {
+          maxAttempts: 10,
+          autoUnlockMinutes: 0,
+          showLockoutFailures: false,
+        },
+      },
+      recovery: {
+        factors: {
+          recovery_question: {
+            status: 'INACTIVE',
+            properties: {
+              complexity: {
+                minLength: 4,
+              },
+            },
+          },
+          okta_email: {
+            status: 'INACTIVE',
+            properties: {
+              recoveryToken: {
+                tokenLifetimeMinutes: 60,
+              },
+            },
+          },
+          okta_sms: {
+            status: 'INACTIVE',
+          },
+          okta_call: {
+            status: 'INACTIVE',
+          },
+        },
+      },
+      delegation: {
+        options: {
+          skipUnlock: false,
+        },
+      },
+    },
+  },
+  [PASSWORD_RULE_TYPE_NAME]: {
+    status: 'ACTIVE',
+    name: 'password rule',
+    type: 'PASSWORD',
+    system: false,
+    conditions: {
+      network: { connection: 'ANYWHERE' },
+    },
+    actions: {
+      passwordChange: {
+        access: 'DENY',
+      },
+      selfServicePasswordReset: {
+        access: 'DENY',
+        requirement: {
+          primary: {
+            methods: ['email'],
+          },
+          stepUp: {
+            required: false,
+          },
+        },
+      },
+      selfServiceUnlock: {
+        access: 'ALLOW',
+      },
+    },
+    conditions: {
+      network: { connection: 'ANYWHERE' },
+    },
   },
   [APPLICATION_TYPE_NAME]: {
     label: 'SAML Test',

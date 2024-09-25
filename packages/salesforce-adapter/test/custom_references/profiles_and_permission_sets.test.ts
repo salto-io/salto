@@ -776,6 +776,7 @@ describe('Profiles And Permission Sets Custom References', () => {
         ],
       },
       objectPermissions: {
+        // Make sure we don't omit values of standard objects with broken reference
         Account: {
           allowCreate: true,
           allowDelete: true,
@@ -783,6 +784,15 @@ describe('Profiles And Permission Sets Custom References', () => {
           allowRead: true,
           modifyAllRecords: false,
           object: 'Account',
+          viewAllRecords: false,
+        },
+        TestObj__c: {
+          allowCreate: true,
+          allowDelete: true,
+          allowEdit: true,
+          allowRead: true,
+          modifyAllRecords: false,
+          object: 'TestObj__c',
           viewAllRecords: false,
         },
       },
@@ -843,7 +853,17 @@ describe('Profiles And Permission Sets Custom References', () => {
             },
             flowAccesses: {},
             layoutAssignments: {},
-            objectPermissions: {},
+            objectPermissions: {
+              Account: {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: false,
+                object: 'Account',
+                viewAllRecords: false,
+              },
+            },
             pageAccesses: {},
             recordTypeVisibilities: {
               Case: {},
@@ -874,6 +894,7 @@ describe('Profiles And Permission Sets Custom References', () => {
               [API_NAME]: 'Account',
             },
           }),
+          createCustomObjectType('TestObj__c', {}),
           new InstanceElement('SomeApplication', mockTypes.CustomApplication, {}),
           new InstanceElement('SomeApexClass', mockTypes.ApexClass, {}),
           new InstanceElement('SomeFlow', mockTypes.Flow, {}),
@@ -911,6 +932,7 @@ describe('Profiles And Permission Sets Custom References', () => {
         const elementsSource = buildElementsSourceFromElements([
           new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
           mockTypes.Account,
+          createCustomObjectType('TestObj__c', {}),
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
           new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {}),
         ])
@@ -947,6 +969,15 @@ describe('Profiles And Permission Sets Custom References', () => {
                 allowRead: true,
                 modifyAllRecords: false,
                 object: 'Account',
+                viewAllRecords: false,
+              },
+              TestObj__c: {
+                allowCreate: true,
+                allowDelete: true,
+                allowEdit: true,
+                allowRead: true,
+                modifyAllRecords: false,
+                object: 'TestObj__c',
                 viewAllRecords: false,
               },
             },

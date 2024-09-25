@@ -44,6 +44,7 @@ describe('page definitions utils', () => {
             },
             sharedContext: {},
             change: pageChange,
+            errors: {},
           },
           value: getChangeData(pageChange).value,
         }
@@ -60,6 +61,7 @@ describe('page definitions utils', () => {
             },
             sharedContext: {},
             change: pageChange,
+            errors: {},
           },
           value: getChangeData(pageChange).value,
         }
@@ -78,6 +80,7 @@ describe('page definitions utils', () => {
               [getChangeData(spaceChange).elemID.getFullName()]: { id: 'homepageId' },
             },
             change: pageChange,
+            errors: {},
           },
           value: getChangeData(pageChange).value,
         }
@@ -96,6 +99,7 @@ describe('page definitions utils', () => {
             },
             sharedContext: {},
             change: pageChange,
+            errors: {},
           },
           value: {
             authorId: { accountId: 'authorId', displayName: 'authorId' },

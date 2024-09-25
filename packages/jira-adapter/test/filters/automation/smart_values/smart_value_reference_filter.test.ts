@@ -183,26 +183,43 @@ describe('smart_value_reference_filter', () => {
             }),
           ) as FilterType
           elements = generateElements()
-          await filter.onFetch(elements)
-          const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
-          expect(automationResult).toBeDefined()
-          automation = automationResult as InstanceElement
         })
-        it('should resolve templates in array', () => {
-          expect(automation.value.components[0].children[0].value.first).toEqual(
-            new TemplateExpression({
-              parts: [
-                'Field is: {{issue.',
-                new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
-                '}} {{issue.',
-                new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-                '}} ending',
-              ],
-            }),
-          )
+        describe('fetch', () => {
+          beforeEach(async () => {
+            await filter.onFetch(elements)
+            const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
+            expect(automationResult).toBeDefined()
+            automation = automationResult as InstanceElement
+          })
+          it('should resolve templates in array', () => {
+            expect(automation.value.components[0].children[0].value.first).toEqual(
+              new TemplateExpression({
+                parts: [
+                  'Field is: {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                  '}} {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                  '}} ending',
+                ],
+              }),
+            )
 
-          expect(automation.value.components[1].value.operations[0].rawValue).toEqual(
-            new TemplateExpression({
+            expect(automation.value.components[1].value.operations[0].rawValue).toEqual(
+              new TemplateExpression({
+                parts: [
+                  'Field is: {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                  '}} {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                  '}} ending',
+                ],
+              }),
+            )
+          })
+        })
+        describe('deploy', () => {
+          beforeEach(async () => {
+            complexAutomationInstance.value.components[0].children[0].value.first = new TemplateExpression({
               parts: [
                 'Field is: {{issue.',
                 new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
@@ -210,8 +227,54 @@ describe('smart_value_reference_filter', () => {
                 new ReferenceExpression(fieldInstance.elemID, fieldInstance),
                 '}} ending',
               ],
-            }),
-          )
+            })
+            complexAutomationInstance.value.components[1].value.operations[0].rawValue = new TemplateExpression({
+              parts: [
+                'Field is: {{issue.',
+                new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                '}} {{issue.',
+                new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                '}} ending',
+              ],
+            })
+            await filter.preDeploy(elements.map(e => toChange({ before: e, after: e })))
+            const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'complexAutom')
+            expect(automationResult).toBeDefined()
+            automation = automationResult as InstanceElement
+          })
+          it('should resolve templates in array on pre deploy', () => {
+            expect(automation.value.components[0].children[0].value.first).toEqual(
+              'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+            )
+            expect(automation.value.components[1].value.operations[0].rawValue).toEqual(
+              'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+            )
+          })
+          it('should resolve templates in array on onDeploy', async () => {
+            await filter.onDeploy(elements.map(e => toChange({ before: e, after: e })))
+            expect(complexAutomationInstance.value.components[0].children[0].value.first).toEqual(
+              new TemplateExpression({
+                parts: [
+                  'Field is: {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                  '}} {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                  '}} ending',
+                ],
+              }),
+            )
+            expect(complexAutomationInstance.value.components[1].value.operations[0].rawValue).toEqual(
+              new TemplateExpression({
+                parts: [
+                  'Field is: {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
+                  '}} {{issue.',
+                  new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+                  '}} ending',
+                ],
+              }),
+            )
+          })
         })
       })
     })

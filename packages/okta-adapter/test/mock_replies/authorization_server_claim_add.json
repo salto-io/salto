@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/claims",
+    "scope": "",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "claim-fakeid",
+      "name": "access_custom",
+      "status": "ACTIVE",
+      "claimType": "RESOURCE",
+      "valueType": "EXPRESSION",
+      "value": "isMemberOf('oag21341241')",
+      "conditions": {
+        "scopes": ["address"]
+      },
+      "system": false,
+      "alwaysIncludeInToken": true,
+      "apiResourceId": null,
+      "_links": {
+        "self": {
+          "href": "https://test.okta.com/api/v1/authorizationServers/default/claims/claim-fakeid",
+          "hints": {
+            "allow": ["GET", "PUT", "DELETE"]
+          }
+        }
+      }
+    },
+    "body": {
+      "name": "access_custom",
+      "status": "ACTIVE",
+      "claimType": "RESOURCE",
+      "valueType": "EXPRESSION",
+      "value": "isMemberOf('oag21341241')",
+      "conditions": {
+        "scopes": ["address"]
+      },
+      "system": false,
+      "alwaysIncludeInToken": true
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1726651475"
+    }
+  }
+]

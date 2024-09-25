@@ -99,7 +99,7 @@
   },
   {
     "url": "/properties",
-    "params": { "prefix": "" },
+    "params": { "prefix": "", "per_page": "10" },
     "response": {
       "invisible.key value": "hidden value 543",
       "hidden.secret3243252542": "hidden value 123",
@@ -147,7 +147,7 @@
   },
   {
     "url": "/recipes",
-    "params": {},
+    "params": { "per_page": "100" },
     "response": {
       "items": [
         {
@@ -277,7 +277,7 @@
   },
   {
     "url": "/folders",
-    "params": { "parent_id": 300506 },
+    "params": { "parent_id": "300506", "per_page": "10" },
     "response": [
       {
         "id": 300508,
@@ -311,10 +311,10 @@
       }
     ]
   },
-  { "url": "/folders", "params": { "parent_id": 300507 }, "response": [] },
+  { "url": "/folders", "params": { "parent_id": "300507", "per_page": "10" }, "response": [] },
   {
     "url": "/folders",
-    "params": { "parent_id": 300508 },
+    "params": { "parent_id": "300508", "per_page": "10" },
     "response": [
       {
         "id": 300509,
@@ -325,11 +325,11 @@
       }
     ]
   },
-  { "url": "/folders", "params": { "parent_id": 300509 }, "response": [] },
+  { "url": "/folders", "params": { "parent_id": "300509", "per_page": "10" }, "response": [] },
   { "url": "/api_access_profiles", "params": { "page": 2 }, "response": [] },
   {
     "url": "/recipes",
-    "params": { "since_id": "1209414" },
+    "params": { "since_id": "1209414", "per_page": "100" },
     "response": {
       "items": [
         {
@@ -484,5 +484,5 @@
       ]
     }
   },
-  { "url": "/recipes", "params": { "since_id": "1109414" }, "response": { "items": [] } }
+  { "url": "/recipes", "params": { "since_id": "1109414", "per_page": "100" }, "response": { "items": [] } }
 ]

@@ -13,12 +13,13 @@ import { chain } from 'stream-chain'
 import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
 import { createGunzip } from 'zlib'
+import { constants as bufferConstants } from 'buffer'
 import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mkdirp, createGZipWriteStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } from '@salto-io/workspace'
-import { hash, collections, promises } from '@salto-io/lowerdash'
+import { hash, collections, promises, serialize, types } from '@salto-io/lowerdash'
 import semver from 'semver'
 
 import {
@@ -31,6 +32,7 @@ import {
 } from './content_providers'
 import { version } from '../../generated/version.json'
 import { getLocalStoragePath } from '../../app_config'
+import { CORE_FLAGS, getCoreFlagBool } from '../../core/flags'
 
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
@@ -47,12 +49,44 @@ type ParsedState = {
   versions: string[]
 }
 
-const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
-  const res: ParsedState = {
-    elements: [],
+const parsedStateKeys: types.TypeKeysEnum<ParsedState> = {
+  elements: 'elements',
+  updateDates: 'updateDates',
+  pathIndices: 'pathIndices',
+  versions: 'versions',
+}
+
+const elementsStreamSerializer = serialize.createStreamSerializer({
+  maxLineLength: bufferConstants.MAX_STRING_LENGTH,
+  wrapWithKey: parsedStateKeys.elements,
+})
+
+const pathIndicesStreamSerializer = serialize.createStreamSerializer({
+  maxLineLength: bufferConstants.MAX_STRING_LENGTH,
+  wrapWithKey: parsedStateKeys.pathIndices,
+})
+
+export const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
+  let elements: unknown[] = []
+  const res: Omit<ParsedState, 'elements'> = {
     updateDates: [],
     pathIndices: [],
     versions: [],
+  }
+
+  const updateWithParsedStateData = (data: Partial<ParsedState>): void => {
+    if (data.versions !== undefined) {
+      res.versions = res.versions.concat(data.versions)
+    }
+    if (data.updateDates !== undefined) {
+      res.updateDates = res.updateDates.concat(data.updateDates)
+    }
+    if (data.elements !== undefined) {
+      elements = elements.concat(data.elements)
+    }
+    if (data.pathIndices !== undefined) {
+      res.pathIndices = res.pathIndices.concat(data.pathIndices)
+    }
   }
 
   await awu(contentStreams).forEach(async ({ name, stream }) =>
@@ -61,24 +95,36 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
         stream,
         createGunzip(),
         parser({ checkErrors: true }),
-        async ({ key, value }) => {
+        ({ key, value }) => {
           if (key === 0) {
             // line 1 - serialized elements, e.g.
             //   [{"elemID":{...},"annotations":{...}},{"elemID":{...},"annotations":{...}},...]
-            res.elements = res.elements.concat(await deserializeParsed(value))
+            if (!_.isEmpty(value)) {
+              updateWithParsedStateData({ elements: value })
+            }
           } else if (key === 1) {
             // line 2 - update dates, e.g.
             //   {"dummy":"2023-01-09T15:57:59.322Z"}
-            res.updateDates.push(value)
+            if (!_.isEmpty(value)) {
+              updateWithParsedStateData({ updateDates: [value] })
+            }
           } else if (key === 2) {
             // line 3 - path index, e.g.
             //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]
-            res.pathIndices = res.pathIndices.concat(value)
+            if (!_.isEmpty(value)) {
+              updateWithParsedStateData({ pathIndices: value })
+            }
           } else if (key === 3) {
             // line 4 - version, e.g.
             //   "0.1.2"
             if (!_.isEmpty(value)) {
-              res.versions.push(value)
+              updateWithParsedStateData({ versions: [value] })
+            }
+          } else if (_.isPlainObject(value)) {
+            updateWithParsedStateData(value)
+            const unknownKeys = Object.keys(_.omit(value, Object.values(parsedStateKeys)))
+            if (unknownKeys.length > 0) {
+              log.error('found unexpected entries in state file %s - keys %s. ignoring', name, unknownKeys.join(','))
             }
           } else {
             log.error('found unexpected entry in state file %s - key %s. ignoring', name, key)
@@ -87,7 +133,7 @@ const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Pr
       ]),
     ),
   )
-  return res
+  return { ...res, elements: await deserializeParsed(elements) }
 }
 
 export const getStateContentProvider = (
@@ -201,11 +247,19 @@ export const localState = (
     const elements = await awu(await inMemState.getAll()).toArray()
     const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
     const accountToElementStreams = await promises.object.mapValuesAsync(elementsByAccount, accountElements =>
-      serializeStream(_.sortBy(accountElements, element => element.elemID.getFullName())),
+      serializeStream({
+        elements: _.sortBy(accountElements, element => element.elemID.getFullName()),
+        streamSerializer: getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+          ? serialize.getSerializedStream
+          : elementsStreamSerializer,
+      }),
     )
     const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray(),
+      getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+        ? serialize.getSerializedStream
+        : pathIndicesStreamSerializer,
     )
     async function* getStateStream(account: string): AsyncIterable<string> {
       async function* yieldWithEOL(streams: AsyncIterable<string>[]): AsyncIterable<string> {
@@ -214,12 +268,25 @@ export const localState = (
           yield EOL
         }
       }
-      yield* yieldWithEOL([
-        accountToElementStreams[account],
-        awu([safeJsonStringify({ [account]: accountToDates[account] })]),
-        accountToPathIndex[account] || '[]',
-        awu([safeJsonStringify(version)]),
-      ])
+      yield* yieldWithEOL(
+        getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+          ? [
+              accountToElementStreams[account],
+              awu([safeJsonStringify({ [account]: accountToDates[account] })]),
+              accountToPathIndex[account] || '[]',
+              awu([safeJsonStringify(version)]),
+            ]
+          : [
+              awu(['[]']), // deprecated: serialized elements
+              awu(['{}']), // deprecated: update dates
+              awu(['[]']), // deprecated: path indices
+              awu(['""']), // deprecated: version
+              awu([safeJsonStringify({ [parsedStateKeys.versions]: [version] })]),
+              awu([safeJsonStringify({ [parsedStateKeys.updateDates]: [{ [account]: accountToDates[account] }] })]),
+              accountToElementStreams[account],
+              accountToPathIndex[account] || safeJsonStringify({ [parsedStateKeys.pathIndices]: [] }),
+            ],
+      )
       log.debug(`finished dumping state text [#elements=${elements.length}]`)
     }
     return _.mapValues(accountToElementStreams, (_val, account) => {

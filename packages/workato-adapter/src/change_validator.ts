@@ -8,16 +8,15 @@
 
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import {
-  ChangeValidatorName,
-  ChangeValidatorsDeploySupportedName,
-  DEPLOY_CONFIG,
-  ENABLE_DEPLOY_SUPPORT_FLAG,
-  WorkatoConfig,
-} from './config'
 import { typesNotSupportedValidator } from './change_validators/types_not_supported'
 import { removalNotSupportedValidator } from './change_validators/removal_not_supported'
 import { recipeSettingsNotSupportedValidator } from './change_validators/recipe_settings_not_suuported'
+import {
+  ChangeValidatorName,
+  ChangeValidatorsDeploySupportedName,
+  ENABLE_DEPLOY_SUPPORT_FLAG,
+  WorkatoUserConfig,
+} from './user_config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -42,11 +41,11 @@ const validatorsWithoutDeploy: Record<
   deployNotSupported: deployNotSupportedValidator,
 }
 
-export default (config: WorkatoConfig): ChangeValidator => {
+export default (config: WorkatoUserConfig): ChangeValidator => {
   const validators: Record<string, ChangeValidator> =
     config[ENABLE_DEPLOY_SUPPORT_FLAG] === true ? validatorsWithDeploy : validatorsWithoutDeploy
   return createChangeValidator({
     validators,
-    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
+    validatorsActivationConfig: config.deploy?.changeValidators,
   })
 }

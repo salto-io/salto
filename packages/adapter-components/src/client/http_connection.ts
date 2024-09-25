@@ -204,8 +204,15 @@ export const axiosConnection = <TCredentials>({
       baseURL: await baseURLFunc(credentials),
       ...(await authParamsFunc(credentials)),
       maxBodyLength: Infinity,
-      timeout,
     })
+    httpClient.interceptors.request.use(
+      config => {
+        config.timeout = timeout
+        return config
+      },
+      null,
+      { runWhen: config => ['get', 'head', 'options'].includes(config.method ?? '') },
+    )
     axiosRetry(httpClient, retryOptions)
 
     try {

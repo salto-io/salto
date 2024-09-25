@@ -11,16 +11,16 @@ import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { getMetadataTypes, isCustomRecordType, isDataObjectType, metadataTypesToList } from '../types'
-import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from '../data_elements/types'
+import { SUPPORTED_TYPES } from '../data_elements/types'
 
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: LocalFilterCreator = ({ typeToInternalId }) => ({
   name: 'removeUnsupportedTypes',
   onFetch: async elements => {
     const sdfTypeNames = new Set(metadataTypesToList(getMetadataTypes()).map(e => e.elemID.getFullName().toLowerCase()))
     const dataTypes = elements.filter(isObjectType).filter(isDataObjectType)
     const supportedFetchedInstancesTypeNames = SUPPORTED_TYPES
     // types we fetch without their instances
-    const additionalFetchedTypes = Object.keys(TYPES_TO_INTERNAL_ID)
+    const additionalFetchedTypes = Object.keys(typeToInternalId)
     const customRecordTypeNames = dataTypes.filter(isCustomRecordType).map(({ elemID }) => elemID.name)
 
     const supportedTypeNames = _.uniq(

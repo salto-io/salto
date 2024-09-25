@@ -319,7 +319,6 @@ export const transformValuesSync = ({
   allowEmptyObjects = false,
 }: TransformValuesSyncArgs): lowerDashTypes.NonPromise<Value> | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): lowerDashTypes.NonPromise<Value> => {
-    log.trace(`rachum: transformValue: ${field?.elemID.getFullName()} ${inspect(value)}`)
     if (field === undefined && strict) {
       return undefined
     }

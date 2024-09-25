@@ -208,6 +208,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profilePermissionsFilter },
   // emailTemplateFilter should run before convertMapsFilter
   { creator: emailTemplateFilter },
+  // standardValueSetFilter should run before convertMapsFilter
   { creator: standardValueSetFilter, addsNewInformation: true },
   // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },

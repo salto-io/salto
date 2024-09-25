@@ -38,8 +38,11 @@ type FieldDef = {
 const FIELD_NAME_TO_INNER_CONTEXT_FIELD: Record<string, FieldDef> = {
   applicationVisibilities: { name: 'application' },
   recordTypeVisibilities: { name: 'recordType', nested: true },
+
+  // TODO(SALTO-4990): Remove once picklistsAsMaps FF is deployed and removed.
   standardValue: { name: 'label' },
   customValue: { name: 'label' },
+
   'standardValue.values': { name: 'label' },
   'customValue.values': { name: 'label' },
 }
@@ -55,6 +58,7 @@ type FieldWithValueSetList = Field & {
   }
 }
 
+// TODO(SALTO-4990): Remove once picklistsAsMaps FF is deployed and removed.
 type FieldWithValueSetOrderedMap = Field & {
   annotations: {
     valueSet: {

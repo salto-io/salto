@@ -104,6 +104,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneApplicationConfigurationManagedDevice',
           'IntuneApplicationProtectionAndroid',
           'IntuneApplicationProtectionIOS',
+          'IntuneApplicationProtectionWindows',
           'IntuneDeviceCompliance',
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',
@@ -886,6 +887,58 @@ describe('Microsoft Security adapter', () => {
               ])
             })
           })
+
+          describe('application protection windows', () => {
+            let applicationProtectionsWindows: InstanceElement[]
+            beforeEach(async () => {
+              applicationProtectionsWindows = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntuneApplicationProtectionWindows')
+            })
+
+            it('should create the correct instances for Intune application protection windows', async () => {
+              expect(applicationProtectionsWindows).toHaveLength(1)
+
+              const applicationProtectionWindowsNames = applicationProtectionsWindows.map(e => e.elemID.name)
+              expect(applicationProtectionWindowsNames).toEqual(['test_windows_protection@s'])
+            })
+
+            it('should reference the correct target application', async () => {
+              const applicationProtectionWindows = applicationProtectionsWindows[0]
+              const targetApps = applicationProtectionWindows.value.apps
+              expect(targetApps).toHaveLength(1)
+              expect(targetApps[0]).toEqual({
+                mobileAppIdentifier: {
+                  '_odata_type@mv': '#microsoft.graph.windowsMobileAppIdentifier',
+                  bundleId: expect.any(ReferenceExpression),
+                },
+              })
+              expect(targetApps[0].mobileAppIdentifier.bundleId.elemID.getFullName()).toEqual(
+                'microsoft_security.IntuneApplication.instance.managedIOSStoreApp_test',
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const applicationProtectionWindows = applicationProtectionsWindows[0]
+              const { assignments } = applicationProtectionWindows.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['source', 'target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const applicationProtectionWindows = applicationProtectionsWindows[0]
+              const { roleScopeTagIds } = applicationProtectionWindows.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
         })
       })
     })
@@ -937,6 +990,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneApplicationConfigurationManagedDevice',
           'IntuneApplicationProtectionAndroid',
           'IntuneApplicationProtectionIOS',
+          'IntuneApplicationProtectionWindows',
           'IntuneDeviceCompliance',
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',

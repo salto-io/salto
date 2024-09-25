@@ -28,7 +28,9 @@ import {
   isObjectType,
   getField,
   isFieldChange,
-  ReferenceExpression, TypeElement, ElemID,
+  ReferenceExpression,
+  TypeElement,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -75,23 +77,23 @@ const ORDERED_MAP_VALUES_FIELD = 'values'
 const ORDERED_MAP_ORDER_FIELD = 'order'
 
 const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
-new ObjectType({
-  elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
-  fields: {
-    [ORDERED_MAP_VALUES_FIELD]: {
-      refType: createRefToElmWithValue(new MapType(innerType)),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+  new ObjectType({
+    elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
+    fields: {
+      [ORDERED_MAP_VALUES_FIELD]: {
+        refType: createRefToElmWithValue(new MapType(innerType)),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      [ORDERED_MAP_ORDER_FIELD]: {
+        refType: createRefToElmWithValue(new ListType(innerType)),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
       },
     },
-    [ORDERED_MAP_ORDER_FIELD]: {
-      refType: createRefToElmWithValue(new ListType(innerType)),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-  },
-})
+  })
 
 /**
  * Convert a string value into the map index keys.
@@ -258,7 +260,9 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
           [fieldName, ORDERED_MAP_ORDER_FIELD],
           makeArray(originalFieldValue)
             .map(item => mapper(item[mapDef.key])[0])
-            .map(name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name))),
+            .map(
+              name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
+            ),
         )
       } else {
         _.set(
@@ -404,7 +408,9 @@ const convertFieldsBackToLists = async (
           _.set(
             getElementValueOrAnnotations(element),
             fieldName,
-            _.get(getElementValueOrAnnotations(element), [fieldName, ORDERED_MAP_ORDER_FIELD]).map((ref: ReferenceExpression) => ref),
+            _.get(getElementValueOrAnnotations(element), [fieldName, ORDERED_MAP_ORDER_FIELD]).map(
+              (ref: ReferenceExpression) => ref,
+            ),
           )
         } else {
           _.set(

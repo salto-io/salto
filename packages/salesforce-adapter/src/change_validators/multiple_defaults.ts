@@ -20,7 +20,8 @@ import {
   isMapType,
   Value,
   Values,
-  isReferenceExpression, getField,
+  isReferenceExpression,
+  getField,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -106,10 +107,10 @@ const createFieldChangeError = (field: Field, contexts: string[]): ChangeError =
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
-    const contexts = (isFieldWithValueSetList(field) ? field.annotations.valueSet : field.annotations.valueSet.values)
-      .filter(obj => obj.default)
-      .map(obj => obj[LABEL])
-      .map(formatContext)
+  const contexts = (isFieldWithValueSetList(field) ? field.annotations.valueSet : field.annotations.valueSet.values)
+    .filter(obj => obj.default)
+    .map(obj => obj[LABEL])
+    .map(formatContext)
   return contexts.length > 1 ? [createFieldChangeError(field, contexts)] : []
 }
 

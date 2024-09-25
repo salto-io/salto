@@ -196,6 +196,9 @@ export const fieldTypeToAnnotationToMapDef: Record<string, Record<string, MapDef
   Picklist: {
     valueSet: PICKLIST_MAP_FIELD_DEF,
   },
+  MultiselectPicklist: {
+    valueSet: PICKLIST_MAP_FIELD_DEF,
+  },
 }
 
 export const getElementValueOrAnnotations = (element: Element): Values =>

@@ -47,7 +47,7 @@ const { isDefined } = values
 const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
-const JS_FILE_EXTENSIONS = ['.js', '.cjs', '.mjs', '.json']
+const SUITE_SCRIPT_FILE_EXTENSIONS = ['.js', '.cjs', '.mjs', '.json', '.ts']
 
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
@@ -59,8 +59,8 @@ const pathPrefixRegex = new RegExp(
   `^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`,
   'm',
 )
-// matches key strings in format of 'key': value or key: value
-const mappedReferenceRegex = new RegExp(`['"]?(?<${OPTIONAL_REFS}>\\w+)['"]?\\s*:\\s*\\S`, 'gm')
+// matches object keys (e.g `key: value`)
+const mappedReferenceRegex = new RegExp(`\\b(?<${OPTIONAL_REFS}>\\w+)\\s*:\\s*\\S`, 'gm')
 // matches comments in js files
 // \\/\\*[\\s\\S]*?\\*\\/ - matches multiline comments by matching the first '/*' and the last '*/' and any character including newlines
 // ^\\s*\\/\\/.* - matches single line comments that start with '//'
@@ -162,7 +162,7 @@ const getServiceElemIDsFromPaths = (
     .filter(isDefined)
 
 const hasValidExtension = (path: string, config: NetsuiteConfig): boolean => {
-  const validExtensions = JS_FILE_EXTENSIONS.concat(config.fetch?.findReferencesInFilesWithExtension ?? [])
+  const validExtensions = SUITE_SCRIPT_FILE_EXTENSIONS.concat(config.fetch?.findReferencesInFilesWithExtension ?? [])
   return validExtensions.some(ext => path.toLowerCase().endsWith(ext))
 }
 
@@ -240,6 +240,12 @@ const getSuiteScriptReferences = async (
   skippedFileExtensions: Set<string>,
 ): Promise<ElemID[]> => {
   const filePath = element.value[PATH]
+
+  if (config.fetch.useNewReferencesInSuiteScripts && !hasValidExtension(filePath, config)) {
+    skippedFileExtensions.add(osPath.extname(filePath))
+    return []
+  }
+
   const fileContent = await getContent(element.value.content)
 
   if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
@@ -253,6 +259,22 @@ const getSuiteScriptReferences = async (
   const content = fileContent.toString()
 
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
+
+  if (config.fetch.useNewReferencesInSuiteScripts) {
+    try {
+      const newReferences = getReferencesWithRegex(filePath, content)
+      return getServiceElemIDsFromPaths(
+        newReferences.concat(nsConfigReferences),
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+        filePath,
+      )
+    } catch (e) {
+      log.error('Failed extracting references from file %s with error: %o', filePath, e)
+      return []
+    }
+  }
+
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )

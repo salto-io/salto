@@ -126,6 +126,7 @@ export type OptionalFeatures = {
   skipParsingXmlNumbers?: boolean
   logDiffsFromParsingXmlNumbers?: boolean
   performSideEffectDeletes?: boolean
+  extendTriggersMetadata?: boolean
   picklistsAsMaps?: boolean
 }
 
@@ -358,6 +359,7 @@ export type DataManagementConfig = {
 export type FetchLimits = {
   maxExtraDependenciesQuerySize?: number
   maxExtraDependenciesResponseSize?: number
+  extendTriggersMetadataChunkSize?: number
 }
 
 export type FetchParameters = {
@@ -835,6 +837,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
+    extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
     picklistsAsMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
@@ -894,6 +897,7 @@ const limitsType = createMatchingObjectType<FetchLimits>({
   fields: {
     maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
     maxExtraDependenciesResponseSize: { refType: BuiltinTypes.NUMBER },
+    extendTriggersMetadataChunkSize: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

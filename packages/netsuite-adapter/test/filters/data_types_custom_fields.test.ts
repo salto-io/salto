@@ -12,6 +12,7 @@ import { NETSUITE } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { LocalFilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('data_types_custom_fields', () => {
   let filterOpts: LocalFilterOpts
@@ -19,6 +20,7 @@ describe('data_types_custom_fields', () => {
   let instance: InstanceElement
 
   const Account = new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), annotations: { source: 'soap' } })
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId([])
 
   beforeEach(async () => {
     type = new ObjectType({ elemID: new ElemID(NETSUITE, 'customer'), fields: {}, annotations: { source: 'soap' } })
@@ -34,6 +36,8 @@ describe('data_types_custom_fields', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      typeToInternalId,
+      internalIdToTypes,
     }
   })
   it('should add integer field', async () => {
@@ -91,6 +95,8 @@ describe('data_types_custom_fields', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(filterOpts).onFetch?.([type, Account])
       expect((await type.fields.custom_someid.getType()).elemID.getFullName()).toBe(
@@ -115,6 +121,8 @@ describe('data_types_custom_fields', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
         config: await getDefaultAdapterConfig(),
+        typeToInternalId,
+        internalIdToTypes,
       }
       await filterCreator(filterOpts).onFetch?.([type, fetchedInstance, Account])
       expect(type.fields.custom_someid).toBeUndefined()

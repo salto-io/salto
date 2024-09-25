@@ -9,7 +9,6 @@
 import { BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SOAP_FIELDS_TYPES } from '../client/suiteapp_client/soap_client/types'
-import { INTERNAL_ID_TO_TYPES } from './types'
 import { EMPLOYEE, OTHER_CUSTOM_FIELD } from '../constants'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/
@@ -44,15 +43,18 @@ const CUSTOM_FIELD_TO_TYPE: Record<string, Record<string, string[]>> = {
  * @param instance an instance of a field type (e.g., entitycustomfield, crmcustomfield, etc...)
  * @returns All the names of types a certain field instance applies to
  */
-export const getFieldInstanceTypes = (instance: InstanceElement): string[] => {
+export const getFieldInstanceTypes = (
+  instance: InstanceElement,
+  internalIdToTypes: Record<string, string[]>,
+): string[] => {
   if (instance.elemID.typeName in CUSTOM_FIELD_TO_TYPE) {
     return Object.entries(CUSTOM_FIELD_TO_TYPE[instance.elemID.typeName])
       .filter(([fieldName]) => instance.value[fieldName])
       .flatMap(([_fieldName, typeNames]) => typeNames)
   }
 
-  if (instance.elemID.typeName === OTHER_CUSTOM_FIELD && instance.value.rectype in INTERNAL_ID_TO_TYPES) {
-    return INTERNAL_ID_TO_TYPES[instance.value.rectype]
+  if (instance.elemID.typeName === OTHER_CUSTOM_FIELD && instance.value.rectype in internalIdToTypes) {
+    return internalIdToTypes[instance.value.rectype]
   }
   return []
 }

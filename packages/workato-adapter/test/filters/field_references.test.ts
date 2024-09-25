@@ -15,31 +15,17 @@ import {
   isInstanceElement,
   ListType,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
-import WorkatoClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { getDefaultConfig } from '../../src/config'
 import { WORKATO } from '../../src/constants'
+import { getFilterParams } from '../utils'
 
 describe('Field references filter', () => {
-  let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 
   beforeAll(() => {
-    client = new WorkatoClient({
-      credentials: { username: 'a', token: 'b' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: getDefaultConfig(),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(getFilterParams()) as FilterType
   })
 
   const apiClientType = new ObjectType({

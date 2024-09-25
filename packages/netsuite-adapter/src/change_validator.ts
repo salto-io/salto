@@ -66,6 +66,7 @@ import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
 import { FetchByQueryFunc } from './config/query'
 import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
+import { getTypesToInternalId } from './data_elements/types'
 
 const { createChangeValidator } = deployment.changeValidators
 
@@ -185,7 +186,17 @@ const getChangeValidator: ({
       ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
       : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
 
-    const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(client, elementsSource, changes)
+    const { internalIdToTypes, typeToInternalId } = getTypesToInternalId(
+      config.suiteAppClient?.additionalSuiteQLTables ?? [],
+    )
+
+    const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
+      client,
+      config,
+      elementsSource,
+      changes,
+      internalIdToTypes,
+    )
 
     // Converts NetsuiteChangeValidator to ChangeValidator
     const validators: Record<string, ChangeValidator> = _.mapValues(
@@ -197,6 +208,8 @@ const getChangeValidator: ({
           config,
           client,
           suiteQLNameToInternalIdsMap,
+          internalIdToTypes,
+          typeToInternalId,
         }),
     )
     const safeDeploy = warnStaleData

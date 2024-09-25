@@ -9,11 +9,11 @@ import _ from 'lodash'
 import { regex, strings } from '@salto-io/lowerdash'
 import { ChangeDataType, ElemID, ProgressReporter, SaltoError } from '@salto-io/adapter-api'
 import { FailedFiles, FailedTypes } from '../client/types'
-import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
 import { addCustomRecordTypePrefix } from '../types'
 import { CriteriaQuery, FetchTypeQueryParams, IdsQuery, NetsuiteQueryParameters, ObjectID, QueryParams } from './types'
 import { ALL_TYPES_REGEX } from './constants'
+import { getTypesToInternalId } from '../data_elements/types'
 
 export type TypesQuery = {
   isTypeMatch: (typeName: string) => boolean
@@ -111,14 +111,13 @@ export const buildNetsuiteQuery = ({
   fileCabinet = [],
   customRecords = [],
 }: Partial<QueryParams>): NetsuiteQuery => {
+  const { typeToInternalId } = getTypesToInternalId([])
   // This is to support the adapter configuration before the migration of
   // the SuiteApp type names from PascalCase to camelCase
   const fixedTypes = types.map(type => ({
     ...type,
     name:
-      strings.lowerCaseFirstLetter(type.name) in TYPES_TO_INTERNAL_ID
-        ? strings.lowerCaseFirstLetter(type.name)
-        : type.name,
+      strings.lowerCaseFirstLetter(type.name) in typeToInternalId ? strings.lowerCaseFirstLetter(type.name) : type.name,
   }))
 
   const { isTypeMatch, areAllObjectsMatch, isObjectMatch } = buildTypesQuery(fixedTypes)

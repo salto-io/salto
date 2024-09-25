@@ -22,10 +22,10 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
+// import { definitions } from '@salto-io/adapter-components'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType, getDefaultConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
 import {
   CONNECTION_TYPE,
   DEPLOY_USING_RLM_GROUP,
@@ -36,6 +36,7 @@ import {
   WORKATO,
 } from '../src/constants'
 import { RLMDeploy } from '../src/rlm'
+import { DEFAULT_CONFIG, ENABLE_DEPLOY_SUPPORT_FLAG, configType } from '../src/user_config'
 
 type MockReply = {
   url: string
@@ -68,6 +69,7 @@ describe('adapter', () => {
 
   afterEach(() => {
     mockAxiosAdapter.restore()
+    jest.clearAllMocks()
   })
 
   describe('fetch and postFetch', () => {
@@ -76,7 +78,10 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
-            config: new InstanceElement('config', configType, getDefaultConfig()),
+            config: new InstanceElement('config', configType, {
+              ...DEFAULT_CONFIG,
+              fetch: { ...DEFAULT_CONFIG.fetch, hideTypes: false },
+            }),
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
@@ -104,6 +109,7 @@ describe('adapter', () => {
           'workato.folder.instance.f1n2_leaf1_f1_nested2_basedir1_Root_vuu@suuuum',
           'workato.property',
           'workato.property.instance',
+          'workato.property__value',
           'workato.recipe',
           'workato.recipe.instance.Copy_of_New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_f1_nested2_basedir1_Root_vuu@sssssssssssssuuuum',
           'workato.recipe.instance.Copy_of_New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum@ssssss_00010sssssssssss_00010sssssuuuuuuum',
@@ -128,36 +134,19 @@ describe('adapter', () => {
           'workato.recipe__code__block',
           'workato.recipe__code__block__block',
           'workato.recipe__code__block__block__dynamicPickListSelection',
-          'workato.recipe__code__block__block__extended_input_schema',
-          'workato.recipe__code__block__block__extended_input_schema__properties',
           'workato.recipe__code__block__block__input',
           'workato.recipe__code__block__block__input__columns',
           'workato.recipe__code__block__block__toggleCfg',
           'workato.recipe__code__block__dynamicPickListSelection',
-          'workato.recipe__code__block__extended_input_schema',
-          'workato.recipe__code__block__extended_input_schema__properties',
           'workato.recipe__code__block__input',
           'workato.recipe__code__block__input__conditions',
           'workato.recipe__code__block__input__data',
           'workato.recipe__code__block__input__message',
           'workato.recipe__code__block__requirements',
-          'workato.recipe__code__block__requirements__extended_input_schema',
-          'workato.recipe__code__block__requirements__extended_input_schema__properties',
           'workato.recipe__code__block__toggleCfg',
           'workato.recipe__code__dynamicPickListSelection',
           'workato.recipe__code__dynamicPickListSelection__field_list',
           'workato.recipe__code__dynamicPickListSelection__table_list',
-          'workato.recipe__code__extended_input_schema',
-          'workato.recipe__code__extended_input_schema__toggle_field',
-          'workato.recipe__code__extended_output_schema',
-          'workato.recipe__code__extended_output_schema__properties',
-          'workato.recipe__code__extended_output_schema__properties__pick_list_params',
-          'workato.recipe__code__extended_output_schema__properties__properties',
-          'workato.recipe__code__extended_output_schema__properties__properties__pick_list_params',
-          'workato.recipe__code__extended_output_schema__properties__properties__properties',
-          'workato.recipe__code__extended_output_schema__properties__properties__toggle_field',
-          'workato.recipe__code__extended_output_schema__properties__toggle_field',
-          'workato.recipe__code__extended_output_schema__toggle_field',
           'workato.recipe__code__filter',
           'workato.recipe__code__filter__conditions',
           'workato.recipe__code__input',
@@ -253,9 +242,9 @@ describe('adapter', () => {
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
             config: new InstanceElement('config', configType, {
-              ...getDefaultConfig(),
+              ...DEFAULT_CONFIG,
               fetch: {
-                ...getDefaultConfig().fetch,
+                ...DEFAULT_CONFIG.fetch,
                 include: [{ type: '(?!recipe$).*' }, { type: 'recipe', criteria: { name: 'test.*' } }],
               },
             }),
@@ -297,28 +286,15 @@ describe('adapter', () => {
           .operations({
             credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
             config: new InstanceElement('config', configType, {
-              [FETCH_CONFIG]: {
+              fetch: {
                 include: [{ type: 'connection' }],
                 exclude: [],
-              },
-              [API_DEFINITIONS_CONFIG]: {
-                types: {
-                  connection: {
-                    request: {
-                      url: '/connections',
-                    },
-                  },
-                },
               },
             }),
             elementsSource: buildElementsSourceFromElements([]),
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
-          'workato.api_access_profile',
-          'workato.api_client',
-          'workato.api_collection',
-          'workato.api_endpoint',
           'workato.connection',
           'workato.connection.instance.HTTP_connection_1@s',
           'workato.connection.instance.My_Gmail_connection@s',
@@ -326,11 +302,6 @@ describe('adapter', () => {
           'workato.connection.instance.Test_NetSuite_account@s',
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
-          'workato.folder',
-          'workato.property',
-          'workato.recipe',
-          'workato.recipe__code',
-          'workato.role',
         ])
       })
       it('should use elemIdGetter', async () => {
@@ -338,18 +309,9 @@ describe('adapter', () => {
         const operations = adapter.operations({
           credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
           config: new InstanceElement('config', configType, {
-            [FETCH_CONFIG]: {
+            fetch: {
               include: [{ type: 'connection' }],
               exclude: [],
-            },
-            [API_DEFINITIONS_CONFIG]: {
-              types: {
-                connection: {
-                  request: {
-                    url: '/connections',
-                  },
-                },
-              },
             },
           }),
           elementsSource: buildElementsSourceFromElements([]),
@@ -408,8 +370,8 @@ describe('adapter', () => {
         const adapterOperations = adapter.operations({
           credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
           config: new InstanceElement('config', configType, {
-            [FETCH_CONFIG]: {
-              ...getDefaultConfig()[FETCH_CONFIG],
+            fetch: {
+              ...DEFAULT_CONFIG.fetch,
               serviceConnectionNames: {
                 salesforce: ['sfdev1'],
                 salesforce2: ['dev2 sfdc account'],
@@ -526,7 +488,7 @@ describe('adapter', () => {
 
       operations = adapter.operations({
         credentials: new InstanceElement('config', usernameTokenCredentialsType, { token: 'token456' }),
-        config: new InstanceElement('config', configType, getDefaultConfig(true)),
+        config: new InstanceElement('config', configType, { ...DEFAULT_CONFIG, [ENABLE_DEPLOY_SUPPORT_FLAG]: true }),
         elementsSource: buildElementsSourceFromElements([]),
       })
       rootFolder = new InstanceElement('rootFolder', folderType, { id: 98 })

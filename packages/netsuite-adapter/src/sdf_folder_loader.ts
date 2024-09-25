@@ -11,22 +11,34 @@ import { allFilters } from './adapter'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { parseSdfProjectDir } from './client/sdf_parser'
 import { createElements } from './transformer'
+import { getTypesToInternalId } from './data_elements/types'
 import { netsuiteConfigFromConfig } from './config/config_creator'
 import { TYPES_TO_SKIP } from './types'
 
 const localFilters = allFilters.filter(filter.isLocalFilterCreator).map(({ creator }) => creator)
 
 const loadElementsFromFolder = async (
-  { baseDir, elementsSource, config, getElemIdFunc }: LoadElementsFromFolderArgs,
+  { baseDir, elementsSource, config: configInstance, getElemIdFunc }: LoadElementsFromFolderArgs,
   filters = localFilters,
 ): Promise<FetchResult> => {
   const isPartial = true
+  const config = netsuiteConfigFromConfig(configInstance)
+  const { typeToInternalId, internalIdToTypes } = getTypesToInternalId(
+    config.suiteAppClient?.additionalSuiteQLTables ?? [],
+  )
   const filtersRunner = filter.filtersRunner(
     {
-      elementsSourceIndex: createElementsSourceIndex(elementsSource, isPartial),
+      elementsSourceIndex: createElementsSourceIndex({
+        elementsSource,
+        isPartial,
+        typeToInternalId,
+        internalIdToTypes,
+      }),
       elementsSource,
       isPartial,
-      config: netsuiteConfigFromConfig(config),
+      config,
+      typeToInternalId,
+      internalIdToTypes,
     },
     filters,
   )

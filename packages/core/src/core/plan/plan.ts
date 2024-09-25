@@ -34,14 +34,16 @@ import {
   areReferencesEqual,
   CompareOptions,
   compareElementIDs,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
-import { filterInvalidChanges } from './filter'
+import { createCircularDependencyError, filterInvalidChanges, getChangeErrors, FilterResult } from './filter'
 import {
   addNodeDependencies,
   addFieldToObjectDependency,
@@ -416,6 +418,81 @@ const buildDiffGraph = (...transforms: ReadonlyArray<PlanTransformer>): Promise<
     Promise.resolve(new DataNodeMap<DiffNode<ChangeDataType>>()),
   )
 
+const buildGroupedGraphFromFilterResult = async (
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
+  filterResult: FilterResult,
+  customGroupIdFunctions: Record<string, ChangeGroupIdFunction>,
+): Promise<{ groupedGraph: GroupDAG<Change>; removedCycles: collections.set.SetId[][] }> => {
+  // If the graph was replaced during filtering we need to resolve the graph again to account
+  // for nodes that may have changed during the filter.
+  if (filterResult.replacedGraph) {
+    // Note - using "after" here may be incorrect because filtering could create different
+    // "after" elements
+    await resolveNodeElements(before, after)(filterResult.validDiffGraph)
+  }
+
+  const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(
+    filterResult.validDiffGraph,
+    customGroupIdFunctions,
+  )
+
+  const { graph: groupedGraph, removedCycles } = buildGroupedGraphFromDiffGraph(
+    filterResult.validDiffGraph,
+    changeGroupIdMap,
+    disjointGroups,
+  )
+  return { groupedGraph, removedCycles }
+}
+
+const createGroupedGraphAndChangeErrors = async (
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
+  filterResult: FilterResult,
+  customGroupIdFunctions: Record<string, ChangeGroupIdFunction>,
+): Promise<{ groupedGraph: GroupDAG<Change>; changeErrors: ChangeError[] }> => {
+  const { groupedGraph: firstIterationGraph, removedCycles } = await buildGroupedGraphFromFilterResult(
+    before,
+    after,
+    filterResult,
+    customGroupIdFunctions,
+  )
+  if (removedCycles.length === 0) {
+    return { groupedGraph: firstIterationGraph, changeErrors: filterResult.changeErrors }
+  }
+
+  log.error('detected circular dependencies in plan, rebuilding graph after cycles were removed')
+
+  const circularDependencyErrors = removedCycles.flatMap(cycle => {
+    const cycleIds = cycle.map(id => getChangeData(filterResult.validDiffGraph.getData(id)).elemID)
+    return cycleIds.map(id => createCircularDependencyError(id, cycleIds))
+  })
+
+  const filteredCircularNodesResult = await filterInvalidChanges(
+    before,
+    after,
+    filterResult.validDiffGraph,
+    circularDependencyErrors,
+  )
+
+  const { groupedGraph: secondIterationGraph, removedCycles: additionalCycles } =
+    await buildGroupedGraphFromFilterResult(before, after, filteredCircularNodesResult, customGroupIdFunctions)
+
+  // shouldn't happen, as all cycles were removed in the first iteration
+  if (additionalCycles.length > 0) {
+    log.error(
+      'detected circular dependencies in plan after cycles were removed in the first iteration. detected cycles: %s. failing plan',
+      safeJsonStringify(additionalCycles),
+    )
+    throw new Error('Failed to remove circular dependencies from plan')
+  }
+
+  return {
+    groupedGraph: secondIterationGraph,
+    changeErrors: filterResult.changeErrors.concat(filteredCircularNodesResult.changeErrors),
+  }
+}
+
 export const defaultDependencyChangers = [
   addAfterRemoveDependency,
   addTypeDependency,
@@ -457,24 +534,18 @@ export const getPlan = async ({
         resolveNodeElements(before, after),
         addNodeDependencies(dependencyChangers),
       )
-      const filterResult = await filterInvalidChanges(before, after, diffGraph, changeValidators)
+      const validatorsErrors = await getChangeErrors(after, diffGraph, changeValidators)
+      const filterResult = await filterInvalidChanges(before, after, diffGraph, validatorsErrors)
 
-      // If the graph was replaced during filtering we need to resolve the graph again to account
-      // for nodes that may have changed during the filter.
-      if (filterResult.replacedGraph) {
-        // Note - using "after" here may be incorrect because filtering could create different
-        // "after" elements
-        await resolveNodeElements(before, after)(filterResult.validDiffGraph)
-      }
-
-      const { changeGroupIdMap, disjointGroups } = await getCustomGroupIds(
-        filterResult.validDiffGraph,
+      // build graph and add additional errors
+      const { groupedGraph, changeErrors } = await createGroupedGraphAndChangeErrors(
+        before,
+        after,
+        filterResult,
         customGroupIdFunctions,
       )
-      // build graph
-      const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, changeGroupIdMap, disjointGroups)
       // build plan
-      return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
+      return addPlanFunctions(groupedGraph, changeErrors, compareOptions)
     },
     'get plan with %o -> %o elements',
     numBeforeElements,

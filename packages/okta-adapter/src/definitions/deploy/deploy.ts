@@ -39,6 +39,7 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   IDENTITY_PROVIDER_TYPE_NAME,
   JWK_TYPE_NAME,
+  EMAIL_DOMAIN_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
 } from '../../constants'
@@ -51,6 +52,7 @@ import {
 import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
+import { addBrandIdToRequest } from './types/email_domain'
 
 const log = logger(module)
 
@@ -577,6 +579,54 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
     },
+    [EMAIL_DOMAIN_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/email-domains',
+                  method: 'post',
+                },
+                transformation: {
+                  adjust: addBrandIdToRequest,
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: {
+                transformForCheck: {
+                  // These are the only fields that can be modified.
+                  pick: ['displayName', 'userName'],
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/email-domains/{id}',
+                  method: 'put',
+                },
+                transformation: {
+                  pick: ['displayName', 'userName'],
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/email-domains/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
     [USERTYPE_TYPE_NAME]: {
       requestsByAction: {
         customizations: {
@@ -837,6 +887,42 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 endpoint: {
                   path: '/api/v1/authorizationServers/{parent_id}/scopes/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    OAuth2Claim: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims/{id}',
                   method: 'delete',
                 },
               },

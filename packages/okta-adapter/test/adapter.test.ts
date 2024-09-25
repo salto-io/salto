@@ -27,6 +27,7 @@ import {
   isObjectType,
   StaticFile,
   TemplateExpression,
+  ListType,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -65,6 +66,7 @@ import {
   NETWORK_ZONE_TYPE_NAME,
   GROUP_RULE_TYPE_NAME,
   USER_SCHEMA_TYPE_NAME,
+  EMAIL_DOMAIN_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
 } from '../src/constants'
@@ -519,6 +521,7 @@ describe('adapter', () => {
   })
   describe('deploy', () => {
     let operations: AdapterOperations
+    let createOperations: (elements: Element[] = []) => AdapterOperations
 
     let appType: ObjectType
     let groupType: ObjectType
@@ -549,6 +552,17 @@ describe('adapter', () => {
       name: 'subdomain.example.com',
       removePoweredByOkta: false,
     })
+    const authorizationServerType = new ObjectType({
+      elemID: new ElemID(OKTA, AUTHORIZATION_SERVER),
+      fields: {
+        id: {
+          refType: BuiltinTypes.SERVICE_ID,
+        },
+      },
+    })
+    const authorizationServer = new InstanceElement('authorizationServer', authorizationServerType, {
+      id: 'authorizationserver-fakeid1',
+    })
 
     beforeEach(() => {
       nock('https://test.okta.com:443').persist().get('/api/v1/org').reply(200, { id: 'accountId' })
@@ -558,14 +572,17 @@ describe('adapter', () => {
       })
       const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
 
-      operations = adapter.operations({
-        credentials: new InstanceElement('config', accessTokenCredentialsType, {
-          baseUrl: 'https://test.okta.com',
-          token: 't',
-        }),
-        config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
-        elementsSource: buildElementsSourceFromElements([orgSetting]),
-      })
+      createOperations = (elements: Element[] = []) =>
+        adapter.operations({
+          credentials: new InstanceElement('config', accessTokenCredentialsType, {
+            baseUrl: 'https://test.okta.com',
+            token: 't',
+          }),
+          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+          elementsSource: buildElementsSourceFromElements([orgSetting, ...elements]),
+        })
+      operations = createOperations()
+
       appType = new ObjectType({
         elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
         fields: {
@@ -593,22 +610,9 @@ describe('adapter', () => {
     })
 
     describe('deploy authorization server policy', () => {
-      let authorizationServerType: ObjectType
       let authorizationServerPolicyType: ObjectType
-      let authorizationServer: InstanceElement
 
       beforeEach(() => {
-        authorizationServerType = new ObjectType({
-          elemID: new ElemID(OKTA, AUTHORIZATION_SERVER),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
-        authorizationServer = new InstanceElement('authorizationServer', authorizationServerType, {
-          id: 'authorizationserver-fakeid1',
-        })
         authorizationServerPolicyType = new ObjectType({
           elemID: new ElemID(OKTA, AUTHORIZATION_POLICY),
           fields: {
@@ -2914,6 +2918,191 @@ describe('adapter', () => {
           changeGroup: {
             groupID: 'appLogo',
             changes: [toChange({ before: appLogo, after: updatedAppLogo })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy email domain', () => {
+      let emailDomainType: ObjectType
+
+      beforeEach(() => {
+        emailDomainType = new ObjectType({
+          elemID: new ElemID(OKTA, EMAIL_DOMAIN_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+      })
+
+      it('should successfully add an email domain', async () => {
+        loadMockReplies('email_domain_add.json')
+        const emailDomain = new InstanceElement('emailDomain', emailDomainType, {
+          domain: 'example.com',
+          displayName: 'My Email Domain',
+          userName: 'sender',
+        })
+        // An email domain may only be added if at least one brand uses it.
+        const brand = brand1.clone()
+        brand.value.emailDomainId = new ReferenceExpression(emailDomain.elemID, emailDomain)
+
+        // In production, pending changes are added to elementSource so they are available for deploy transformations.
+        // In these tests, we call the adapter's `deploy` function directly, so we manually add the `brand` here to
+        // replicate this behavior.
+        operations = createOperations([brand])
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emaildomain',
+            changes: [toChange({ after: emailDomain })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'emaildomain-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify an email domain', async () => {
+        loadMockReplies('email_domain_modify.json')
+        const emailDomain = new InstanceElement('emailDomain', emailDomainType, {
+          domain: 'example.com',
+          displayName: 'My Email Domain',
+          userName: 'sender',
+          id: 'emaildomain-fakeid1',
+        })
+        const updatedEmailDomain = emailDomain.clone()
+        updatedEmailDomain.value.userName = 'support'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emaildomain',
+            changes: [toChange({ before: emailDomain, after: updatedEmailDomain })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.userName).toEqual('support')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove an email domain', async () => {
+        loadMockReplies('email_domain_remove.json')
+        const emailDomain = new InstanceElement('emailDomain', emailDomainType, {
+          id: 'emaildomain-fakeid1',
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'emaildomain',
+            changes: [toChange({ before: emailDomain })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy authorization server claims', () => {
+      let claimType: ObjectType
+      let claimInstance: InstanceElement
+      let scopeType: ObjectType
+      let scopeInstance: InstanceElement
+
+      beforeEach(() => {
+        claimType = new ObjectType({
+          elemID: new ElemID(OKTA, 'OAuth2Claim'),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+            conditions: {
+              refType: new ObjectType({
+                elemID: new ElemID(OKTA, 'OAuth2ClaimConditions'),
+                fields: {
+                  scopes: { refType: new ListType(BuiltinTypes.STRING) },
+                },
+              }),
+            },
+          },
+        })
+        scopeType = new ObjectType({
+          elemID: new ElemID(OKTA, 'OAuth2Scope'),
+          fields: {
+            id: { refType: BuiltinTypes.SERVICE_ID },
+            name: { refType: BuiltinTypes.STRING },
+          },
+        })
+        scopeInstance = new InstanceElement('scope', scopeType, { name: 'address' }, undefined, {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+        })
+        claimInstance = new InstanceElement(
+          'claim',
+          claimType,
+          {
+            name: 'access_custom',
+            status: 'ACTIVE',
+            claimType: 'RESOURCE',
+            valueType: 'EXPRESSION',
+            value: "isMemberOf('oag21341241')",
+            conditions: {
+              scopes: [new ReferenceExpression(scopeInstance.elemID, scopeInstance)],
+            },
+            system: false,
+            alwaysIncludeInToken: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          },
+        )
+      })
+
+      it('should successfully add an authorization server claim', async () => {
+        loadMockReplies('authorization_server_claim_add.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: claimInstance.elemID.getFullName(),
+            changes: [toChange({ after: claimInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('claim-fakeid')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify an authorization server claim', async () => {
+        loadMockReplies('authorization_server_claim_modify.json')
+        claimInstance.value.id = 'claim-fakeid'
+        const updatedClaimInstance = claimInstance.clone()
+        updatedClaimInstance.value.status = 'INACTIVE'
+        updatedClaimInstance.value.value = "isMemberOf('oag2134124222')"
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: claimInstance.elemID.getFullName(),
+            changes: [toChange({ before: claimInstance, after: updatedClaimInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+      it('should successfuly remove an authorization server claim', async () => {
+        loadMockReplies('authorization_server_claim_remove.json')
+        claimInstance.value.id = 'claim-fakeid'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: claimInstance.elemID.getFullName(),
+            changes: [toChange({ before: claimInstance })],
           },
           progressReporter: nullProgressReporter,
         })

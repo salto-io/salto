@@ -20,7 +20,7 @@ const ADDITIONAL_PARENT_FIELDS: Record<string, string[]> = {
  */
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
-  referencedInstanceNames: filters.referencedInstanceNamesFilterCreatorDeprecated(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
   query: filters.queryFilterCreator({
     additionalParentFields: ADDITIONAL_PARENT_FIELDS,
     typesToKeep: [RECIPE_CODE_TYPE],

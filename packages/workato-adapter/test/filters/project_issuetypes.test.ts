@@ -5,17 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, InstanceElement, ObjectType, Element, toChange } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { ElemID, InstanceElement, ObjectType, Element, toChange } from '@salto-io/adapter-api'
+import { filterUtils } from '@salto-io/adapter-components'
 import { WORKATO } from '../../src/constants'
-import WorkatoClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { getDefaultConfig } from '../../src/config'
 import filterCreator from '../../src/filters/cross_service/jira/project_issuetypes'
+import { getFilterParams } from '../utils'
 
 describe('projectIssuetype filter', () => {
-  let client: WorkatoClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let elements: Element[]
@@ -28,18 +25,7 @@ describe('projectIssuetype filter', () => {
   let notJiraCode: InstanceElement
 
   beforeAll(() => {
-    client = new WorkatoClient({
-      credentials: { username: 'a', token: 'b' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: getDefaultConfig(),
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(getFilterParams()) as FilterType
   })
 
   beforeEach(async () => {

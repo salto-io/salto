@@ -308,10 +308,6 @@ const filter: FilterCreator = ({ definitions }) => ({
       })
       elements.push(priorityInstance)
     })
-    // Remove priority field from the instances
-    policiesRules.concat(Object.values(policyTypeNameToPolicies).flat()).forEach(rule => {
-      delete rule.value.priority
-    })
   },
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(changes, change =>

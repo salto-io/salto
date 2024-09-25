@@ -9,7 +9,7 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { getConfig, configCreator, optionsType } from '../src/config_creator'
-import { ENABLE_DEPLOY_SUPPORT_FLAG, configType } from '../src/config'
+import { ENABLE_DEPLOY_SUPPORT_FLAG, configType } from '../src/user_config'
 import { WORKATO } from '../src/constants'
 
 describe('config creator', () => {

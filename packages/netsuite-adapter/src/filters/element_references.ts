@@ -240,6 +240,12 @@ const getSuiteScriptReferences = async (
   skippedFileExtensions: Set<string>,
 ): Promise<ElemID[]> => {
   const filePath = element.value[PATH]
+
+  if (config.fetch.useNewReferencesInSuiteScripts && !hasValidExtension(filePath, config)) {
+    skippedFileExtensions.add(osPath.extname(filePath))
+    return []
+  }
+
   const fileContent = await getContent(element.value.content)
 
   if (fileContent.length > bufferConstants.MAX_STRING_LENGTH) {
@@ -253,6 +259,22 @@ const getSuiteScriptReferences = async (
   const content = fileContent.toString()
 
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
+
+  if (config.fetch.useNewReferencesInSuiteScripts) {
+    try {
+      const newReferences = getReferencesWithRegex(filePath, content)
+      return getServiceElemIDsFromPaths(
+        newReferences.concat(nsConfigReferences),
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds,
+        filePath,
+      )
+    } catch (e) {
+      log.error('Failed extracting references from file %s with error: %o', filePath, e)
+      return []
+    }
+  }
+
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS).filter(
     path => !path.startsWith(NETSUITE_MODULE_PREFIX),
   )

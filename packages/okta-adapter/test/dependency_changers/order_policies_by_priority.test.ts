@@ -21,32 +21,57 @@ import { changeDependenciesFromPoliciesAndRulesToPriority } from '../../src/depe
 import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../../src/filters/policy_priority'
 import { addDependenciesFromPolicyToPriorPolicy } from '../../src/dependency_changers/order_policies_by_priority'
 
+const createPolicyOrRuleInstance = (
+  policyName: string,
+  name: string,
+  id: number,
+  isDefault?: boolean,
+): InstanceElement => {
+  const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
+  const parentType = new ObjectType({ elemID: new ElemID(OKTA, 'testPolicy') })
+  const parentOne = new InstanceElement('parentOne', parentType, {
+    id: '1',
+    name: 'parentOne',
+  })
+  return new InstanceElement(
+    name,
+    policyType,
+    {
+      id,
+      name,
+      system: isDefault,
+    },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
+        ? undefined
+        : [new ReferenceExpression(parentOne.elemID, parentOne)],
+    },
+  )
+}
+
 describe('addDependenciesFromPolicyToPriorPolicy', () => {
   let dependencyChanges: DependencyChange[]
   it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
     'should add dependencies between each %s addition change when their priority is also addition change',
     async (policyName: string) => {
-      const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
       const priorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyName}Priority`) })
-      const policyInstanceOne = new InstanceElement('policyInstanceOne', policyType, {
-        id: '1',
-        name: 'policyInstanceOne',
-      })
-      const policyInstanceTwo = new InstanceElement('policyInstanceTwo', policyType, {
-        id: '2',
-        name: 'policyInstanceTwo',
-      })
-      const policyInstanceThree = new InstanceElement('policyInstanceThree', policyType, {
-        id: '3',
-        name: 'policyInstanceThree',
-      })
-
+      const policyInstanceOne = createPolicyOrRuleInstance(policyName, 'policyInstanceOne', 1)
+      const policyInstanceTwo = createPolicyOrRuleInstance(policyName, 'policyInstanceTwo', 2)
+      const policyInstanceThree = createPolicyOrRuleInstance(policyName, 'policyInstanceThree', 3)
+      const defaultPolicyInstance = createPolicyOrRuleInstance(policyName, 'defaultPolicyInstance', 0, true)
       const priorityInstance = new InstanceElement('priorityInstance', priorityType, {
         priorities: [
           new ReferenceExpression(policyInstanceOne.elemID, policyInstanceOne),
           new ReferenceExpression(policyInstanceTwo.elemID, policyInstanceTwo),
           new ReferenceExpression(policyInstanceThree.elemID, policyInstanceThree),
         ],
+        defaultRule: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
+          ? undefined
+          : new ReferenceExpression(defaultPolicyInstance.elemID, defaultPolicyInstance),
+        defaultPolicy: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
+          ? new ReferenceExpression(defaultPolicyInstance.elemID, defaultPolicyInstance)
+          : undefined,
       })
 
       const inputChanges = new Map([
@@ -69,20 +94,10 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
   it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
     'should add dependencies between each %s addition change when their priority is modification change',
     async (policyName: string) => {
-      const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
       const priorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyName}Priority`) })
-      const policyInstanceOne = new InstanceElement('policyInstanceOne', policyType, {
-        id: '1',
-        name: 'policyInstanceOne',
-      })
-      const policyInstanceTwo = new InstanceElement('policyInstanceTwo', policyType, {
-        id: '2',
-        name: 'policyInstanceTwo',
-      })
-      const policyInstanceThree = new InstanceElement('policyInstanceThree', policyType, {
-        id: '3',
-        name: 'policyInstanceThree',
-      })
+      const policyInstanceOne = createPolicyOrRuleInstance(policyName, 'policyInstanceOne', 1)
+      const policyInstanceTwo = createPolicyOrRuleInstance(policyName, 'policyInstanceTwo', 2)
+      const policyInstanceThree = createPolicyOrRuleInstance(policyName, 'policyInstanceThree', 3)
       const priorityInstanceBefore = new InstanceElement('priorityInstance', priorityType, {
         priorities: [new ReferenceExpression(policyInstanceOne.elemID, policyInstanceOne)],
       })
@@ -110,54 +125,9 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
   it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
     "should add dependencies between each %s addition change when they don't have priority change",
     async (policyName: string) => {
-      const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
-      const parentType = new ObjectType({ elemID: new ElemID(OKTA, 'testPolicy') })
-      const parentOne = new InstanceElement('parentOne', parentType, {
-        id: '1',
-        name: 'parentOne',
-      })
-      const policyInstanceOne = new InstanceElement(
-        'policyInstanceOne',
-        policyType,
-        {
-          id: '1',
-          name: 'policyInstanceOne',
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
-            ? undefined
-            : [new ReferenceExpression(parentOne.elemID, parentOne)],
-        },
-      )
-      const policyInstanceTwo = new InstanceElement(
-        'policyInstanceTwo',
-        policyType,
-        {
-          id: '2',
-          name: 'policyInstanceTwo',
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
-            ? undefined
-            : [new ReferenceExpression(parentOne.elemID, parentOne)],
-        },
-      )
-      const policyInstanceThree = new InstanceElement(
-        'policyInstanceThree',
-        policyType,
-        {
-          id: '3',
-          name: 'policyInstanceThree',
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: ALL_SUPPORTED_POLICY_NAMES.includes(policyName)
-            ? undefined
-            : [new ReferenceExpression(parentOne.elemID, parentOne)],
-        },
-      )
+      const policyInstanceOne = createPolicyOrRuleInstance(policyName, 'policyInstanceOne', 1)
+      const policyInstanceTwo = createPolicyOrRuleInstance(policyName, 'policyInstanceTwo', 2)
+      const policyInstanceThree = createPolicyOrRuleInstance(policyName, 'policyInstanceThree', 3)
 
       const inputChanges = new Map([
         [0, toChange({ after: policyInstanceOne })],
@@ -179,10 +149,7 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
     'should not add dependencies between each %s changes when they are modification changes',
     async (policyName: string) => {
       const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
-      const policyInstanceBefore = new InstanceElement('policyInstance', policyType, {
-        id: '1',
-        name: 'policyInstance',
-      })
+      const policyInstanceBefore = createPolicyOrRuleInstance(policyName, 'policyInstance', 1)
       const anotherPolicyInstanceBefore = new InstanceElement('anotherPolicyInstance', policyType, {
         id: '2',
         name: 'anotherPolicyInstance',
@@ -254,6 +221,42 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       expect(dependencyChanges[0].action).toEqual('add')
       expect(dependencyChanges[0].dependency.source).toEqual(2)
       expect(dependencyChanges[0].dependency.target).toEqual(0)
+    },
+  )
+  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
+    "should add dependencies between each %s changes when some of them has priority and some are doesn't",
+    async (policyName: string) => {
+      const priorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyName}Priority`) })
+      const policyInstanceOne = createPolicyOrRuleInstance(policyName, 'policyInstanceOne', 1)
+      const policyInstanceTwo = createPolicyOrRuleInstance(policyName, 'policyInstanceTwo', 2)
+      const policyInstanceThree = createPolicyOrRuleInstance(policyName, 'policyInstanceThree', 3)
+      const policyInstanceFour = createPolicyOrRuleInstance(policyName, 'policyInstanceFour', 4)
+      const priorityInstance = new InstanceElement('priorityInstance', priorityType, {
+        priorities: [
+          new ReferenceExpression(policyInstanceOne.elemID, policyInstanceOne),
+          new ReferenceExpression(policyInstanceTwo.elemID, policyInstanceTwo),
+        ],
+      })
+
+      const inputChanges = new Map([
+        [0, toChange({ after: policyInstanceFour })],
+        [1, toChange({ after: policyInstanceOne })],
+        [2, toChange({ after: policyInstanceThree })],
+        [3, toChange({ after: policyInstanceTwo })],
+        [4, toChange({ after: priorityInstance })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+      dependencyChanges = [...(await addDependenciesFromPolicyToPriorPolicy(inputChanges, inputDeps))]
+      expect(dependencyChanges).toHaveLength(3)
+      expect(dependencyChanges[0].action).toEqual('add')
+      expect(dependencyChanges[0].dependency.source).toEqual(3)
+      expect(dependencyChanges[0].dependency.target).toEqual(1)
+      expect(dependencyChanges[1].action).toEqual('add')
+      expect(dependencyChanges[1].dependency.source).toEqual(0)
+      expect(dependencyChanges[1].dependency.target).toEqual(3)
+      expect(dependencyChanges[2].action).toEqual('add')
+      expect(dependencyChanges[2].dependency.source).toEqual(2)
+      expect(dependencyChanges[2].dependency.target).toEqual(0)
     },
   )
 })

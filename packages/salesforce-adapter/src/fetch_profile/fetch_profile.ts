@@ -47,6 +47,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   skipParsingXmlNumbers: false,
   logDiffsFromParsingXmlNumbers: true,
   performSideEffectDeletes: false,
+  extendTriggersMetadata: false,
 }
 
 type BuildFetchProfileParams = {

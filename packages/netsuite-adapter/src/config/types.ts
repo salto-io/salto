@@ -113,6 +113,7 @@ export type FetchParams = {
   // SALTO-6145: should be removed
   forceFileCabinetExclude?: boolean
   calculateNewReferencesInSuiteScripts?: boolean
+  useNewReferencesInSuiteScripts?: boolean
   findReferencesInFilesWithExtension?: string[]
 } & LockedElementsConfig['fetch']
 
@@ -130,6 +131,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
   forceFileCabinetExclude: 'forceFileCabinetExclude',
   calculateNewReferencesInSuiteScripts: 'calculateNewReferencesInSuiteScripts',
+  useNewReferencesInSuiteScripts: 'useNewReferencesInSuiteScripts',
   findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
 }
 
@@ -637,6 +639,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
     forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
     calculateNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
+    useNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
     findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {

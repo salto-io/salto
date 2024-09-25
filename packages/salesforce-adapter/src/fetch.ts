@@ -26,6 +26,7 @@ import {
   DEFAULT_NAMESPACE,
   FOLDER_CONTENT_TYPE,
   INTERNAL_ID_FIELD,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
   METADATA_CONTENT_FIELD,
   PROFILE_METADATA_TYPE,
   RETRIEVE_SIZE_LIMIT_ERROR,
@@ -348,6 +349,9 @@ export const retrieveMetadataInstances = async ({
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
+    if (typeName === LAYOUT_TYPE_ID_METADATA_TYPE) {
+      log.trace('Layout file properties are %s', inspectValue(res))
+    }
     return _(res)
       .uniqBy(file => file.fullName)
       .map(file => getPropsWithFullName(file, fetchProfile.addNamespacePrefixToFullName, client.orgNamespace))

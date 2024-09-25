@@ -8,14 +8,14 @@
 
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { naclCase, validateArray, validatePlainObject } from '@salto-io/adapter-utils'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { fetch as fetchUtils } from '@salto-io/adapter-components'
-import { StaticFile } from '@salto-io/adapter-api'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../../shared/defaults'
 import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shared/types'
-import { ADAPTER_NAME, intuneConstants } from '../../../../constants'
+import { intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { SERVICE_BASE_URL } from '../../../../constants/intune'
+import { createStaticFileFromBase64Blob } from '../../shared/utils'
 
 const log = logger(module)
 const { recursiveNestedTypeName } = fetchUtils.element
@@ -32,26 +32,6 @@ const {
   SIMPLE_SETTING_VALUE_FIELD_NAME,
   ASSIGNMENTS_ODATA_CONTEXT,
 } = intuneConstants
-
-const createStaticFileFromScript = ({
-  typeName,
-  fullName,
-  fileName,
-  content,
-}: {
-  typeName: string
-  fullName: string
-  fileName: string
-  content: string
-}): StaticFile => {
-  const formattedFullName = naclCase(fullName).replace('@', '.')
-
-  return new StaticFile({
-    filepath: `${ADAPTER_NAME}/${typeName}/${formattedFullName}/${fileName}`,
-    content: Buffer.from(content, 'base64'),
-    encoding: 'base64',
-  })
-}
 
 /**
  * Creates a static file from the binary content of each setting that has a script value in the given instance.
@@ -79,7 +59,7 @@ export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = 
     _.set(
       setting,
       [SETTING_INSTANCE_FIELD_NAME, SIMPLE_SETTING_VALUE_FIELD_NAME, SCRIPT_VALUE_FIELD_NAME],
-      createStaticFileFromScript({
+      createStaticFileFromBase64Blob({
         typeName: PLATFORM_SCRIPT_LINUX_TYPE_NAME,
         fullName: value.name,
         fileName: `${_.get(setting, [SETTING_INSTANCE_FIELD_NAME, SETTING_DEFINITION_ID_FIELD_NAME])}.sh`,
@@ -115,7 +95,7 @@ export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async
   return {
     value: {
       ..._.omit(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
-      [SCRIPT_CONTENT_FIELD_NAME]: createStaticFileFromScript({
+      [SCRIPT_CONTENT_FIELD_NAME]: createStaticFileFromBase64Blob({
         typeName,
         fullName: value[NAME_ID_FIELD.fieldName],
         fileName: value.fileName,

@@ -400,11 +400,12 @@ describe('Microsoft Security adapter', () => {
             })
 
             it('should create the correct instances for Intune device configurations', async () => {
-              expect(intuneDeviceConfigurations).toHaveLength(4)
+              expect(intuneDeviceConfigurations).toHaveLength(5)
 
               const intuneDeviceConfigurationNames = intuneDeviceConfigurations.map(e => e.elemID.name)
               expect(intuneDeviceConfigurationNames).toEqual(
                 expect.arrayContaining([
+                  'test_custom_template@s',
                   'test_ios_email_configuration@s',
                   'test_wifi_configuration@s',
                   'test_windows_10_email_configuration@s',
@@ -431,7 +432,7 @@ describe('Microsoft Security adapter', () => {
               const intuneDeviceConfigurationWithoutAssignments = intuneDeviceConfigurations.filter(
                 e => e.elemID.name !== 'test_windows_health_monitoring@s',
               )
-              expect(intuneDeviceConfigurationWithoutAssignments).toHaveLength(3)
+              expect(intuneDeviceConfigurationWithoutAssignments).toHaveLength(4)
               expect(
                 intuneDeviceConfigurationWithoutAssignments.every(e => e.value.assignments?.length === 0),
               ).toBeTruthy()
@@ -448,6 +449,22 @@ describe('Microsoft Security adapter', () => {
               expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
                 'microsoft_security.IntuneScopeTag.instance.Default',
               ])
+            })
+
+            it('should convert payload field to a static file', async () => {
+              const intuneDeviceConfiguration = intuneDeviceConfigurations.find(
+                e => e.elemID.name === 'test_custom_template@s',
+              )
+              expect(intuneDeviceConfiguration).toBeDefined()
+              const { payload } = (intuneDeviceConfiguration as InstanceElement).value
+              expect(payload).toBeInstanceOf(StaticFile)
+              expect(payload.filepath).toEqual(
+                'microsoft_security/IntuneDeviceConfiguration/test_custom_template.s/example.xml',
+              )
+              expect(payload.encoding).toEqual('base64')
+              const payloadContent = await payload.getContent()
+              expect(payloadContent).toBeInstanceOf(Buffer)
+              expect(payloadContent.toString()).toEqual('<note>This is a test</note>')
             })
           })
 

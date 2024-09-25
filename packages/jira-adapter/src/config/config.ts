@@ -154,6 +154,8 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
         { pattern: '^\\/rest\\/greenhopper\\/1.0\\/rapidviewconfig\\/estimation', numItems: 1, strategy: 'omit' },
         { pattern: '^\\/rest\\/agile\\/1.0\\/board/.*\\/configuration', numItems: 50, strategy: 'omit' },
         { pattern: '^\\/rest\\/api\\/2\\/user\\/search', numItems: 10, strategy: 'truncate' },
+        { pattern: '^\\/rest\\/gira\\/1', numItems: 1, strategy: 'truncate' }, // for truncating the request data
+        { pattern: '^\\/rest\\/gira\\/1', numItems: 10, strategy: 'omit' },
         { size: 100000, strategy: 'truncate' },
       ],
     },

@@ -546,7 +546,7 @@ describe.each([false, true])(
         }
       })
 
-      it('should add generated dependency for for paths that dont start with path prefix', async () => {
+      it('should add generated dependency for paths that dont start with path prefix', async () => {
         const fileContent = `
       define([
         'SuiteScripts/NtxSuiteScript2_0/Suitelets/NTX_SUIT_CostBatch_TriggerBoomi',

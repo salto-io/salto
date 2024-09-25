@@ -105,6 +105,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneApplicationProtectionAndroid',
           'IntuneApplicationProtectionIOS',
           'IntuneApplicationProtectionWindows',
+          'IntuneApplicationProtectionWindowsInformationProtection',
           'IntuneDeviceCompliance',
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',
@@ -939,6 +940,48 @@ describe('Microsoft Security adapter', () => {
               ])
             })
           })
+
+          describe('application protection windows information protection', () => {
+            let applicationProtectionWindowsInformationProtections: InstanceElement[]
+            beforeEach(async () => {
+              applicationProtectionWindowsInformationProtections = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'IntuneApplicationProtectionWindowsInformationProtection')
+            })
+
+            it('should create the correct instances for Intune application protection windows information protection', async () => {
+              expect(applicationProtectionWindowsInformationProtections).toHaveLength(1)
+
+              const applicationProtectionWindowsInformationProtectionNames =
+                applicationProtectionWindowsInformationProtections.map(e => e.elemID.name)
+              expect(applicationProtectionWindowsInformationProtectionNames).toEqual(
+                expect.arrayContaining(['test_windows_information_protection@s']),
+              )
+            })
+
+            it('should include assignments field with references to the matching groups', async () => {
+              const applicationProtectionWindowsInformationProtection =
+                applicationProtectionWindowsInformationProtections[0]
+              const { assignments } = applicationProtectionWindowsInformationProtection.value
+              expect(assignments).toHaveLength(1)
+              expect(Object.keys(assignments[0])).toEqual(['source', 'target'])
+              expect(assignments[0].target?.groupId).toBeInstanceOf(ReferenceExpression)
+              expect(assignments[0].target.groupId.value.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraGroup.instance.Custom_group_rename@s',
+              )
+            })
+
+            it('should include scope tags field with references to the matching scope tags', async () => {
+              const applicationProtectionWindowsInformationProtection =
+                applicationProtectionWindowsInformationProtections[0]
+              const { roleScopeTagIds } = applicationProtectionWindowsInformationProtection.value
+              expect(roleScopeTagIds).toHaveLength(1)
+              expect(roleScopeTagIds.every((s: unknown) => s instanceof ReferenceExpression)).toBeTruthy()
+              expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
+                'microsoft_security.IntuneScopeTag.instance.Default',
+              ])
+            })
+          })
         })
       })
     })
@@ -991,6 +1034,7 @@ describe('Microsoft Security adapter', () => {
           'IntuneApplicationProtectionAndroid',
           'IntuneApplicationProtectionIOS',
           'IntuneApplicationProtectionWindows',
+          'IntuneApplicationProtectionWindowsInformationProtection',
           'IntuneDeviceCompliance',
           'IntuneDeviceConfiguration',
           'IntuneDeviceConfigurationSettingCatalog',

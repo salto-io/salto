@@ -379,7 +379,7 @@ export const retrieveMetadataInstances = async ({
       )
     const result = instances[0].clone()
     result.value = {
-      ..._.merge({}, ...instances.map(instance => instance.value)),
+      ...result.value,
       ...Object.fromEntries(
         Object.entries(fieldsToUniqueByPerSection).map(([sectionName, fieldsToUniqueBy]) => [
           sectionName,

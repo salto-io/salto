@@ -11,6 +11,8 @@ import {
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+  PROFILE_RELATED_METADATA_TYPES,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
 
@@ -417,7 +419,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'PrimaryTabComponents',
   'ProductAttributeSet',
   'ProductAttributeSetItem',
-  'Profile',
   'ProfileActionOverride',
   'ProfileApexClassAccess',
   'ProfileApexPageAccess',
@@ -580,6 +581,7 @@ export const METADATA_TYPES_WITH_DEPENDENCIES = [
   ...WORKFLOW_FIELDS,
   CUSTOM_OBJECT,
   FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
 ] as const
 
 export const EXCLUDED_METADATA_TYPES = [
@@ -630,6 +632,7 @@ export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies,
   WorkflowTask: ['Workflow'],
   CustomObject: [TOPICS_FOR_OBJECTS_METADATA_TYPE],
   Flow: [FLOW_DEFINITION_METADATA_TYPE],
+  Profile: [...PROFILE_RELATED_METADATA_TYPES],
 }
 
 export const isMetadataTypeWithoutDependencies = (

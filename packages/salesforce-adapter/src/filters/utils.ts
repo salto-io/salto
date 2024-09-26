@@ -1018,9 +1018,11 @@ const getCustomObjectDependenciesRecursively = (
   }
   handledTypes.add(target)
   const dependencies = lookups[target] ?? []
-  return dependencies.reduce(
-    (acc, dep) => acc.concat(dep, getCustomObjectDependenciesRecursively(dep, lookups, handledTypes)),
-    [target],
+  return _.uniq(
+    dependencies.reduce(
+      (acc, dep) => acc.concat(dep, getCustomObjectDependenciesRecursively(dep, lookups, handledTypes)),
+      [target],
+    ),
   )
 }
 

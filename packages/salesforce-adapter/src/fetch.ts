@@ -391,6 +391,7 @@ export const retrieveMetadataInstances = async ({
     return false
   }
 
+  const missingTypes = new Set<string>()
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
@@ -400,7 +401,7 @@ export const retrieveMetadataInstances = async ({
     const filesToRetrieve = allFileProps.map(inst => {
       const metadataType = typesByName[inst.type]
       if (metadataType === undefined) {
-        log.warn('Could not find metadata type for %s', inst.type)
+        missingTypes.add(inst.type)
         return inst
       }
       return {
@@ -541,6 +542,9 @@ export const retrieveMetadataInstances = async ({
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
+  if (missingTypes.size > 0) {
+    log.warn('Missing metadata types in fetch: %s', inspectValue(Array.from(missingTypes)))
+  }
   if (configChanges.length > 0) {
     log.debug('config changes (first 10): %s', inspectValue(configChanges, { maxArrayLength: 10 }))
   }

@@ -1036,12 +1036,10 @@ export const generateElements = async (
 
 export const generateFetchErrorsFromConfig = (
   fetchErrorsFromConfig?: FetchErrorFromConfigFile[],
-): SaltoElementError[] | undefined => {
-  if (fetchErrorsFromConfig === undefined) {
-    return undefined
-  }
-  return fetchErrorsFromConfig.map(error => ({
-    elemID: ElemID.fromFullName(error.elemID),
-    ..._.omit(error, 'elemID'),
-  }))
-}
+): SaltoElementError[] | undefined =>
+  fetchErrorsFromConfig === undefined
+    ? undefined
+    : fetchErrorsFromConfig.map(error => ({
+        ...error,
+        elemID: ElemID.fromFullName(error.elemID),
+      }))

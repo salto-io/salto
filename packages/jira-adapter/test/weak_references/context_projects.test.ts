@@ -120,16 +120,16 @@ describe('context_projects', () => {
         'software',
       ])
     })
-    it('should warn if all projects are removed', async () => {
+    it('should issue an error if all projects are removed and there is another global context', async () => {
       instance.value.projectIds = [new ReferenceExpression(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'proj2'))]
       const fixes = await contextProjectsHandler.removeWeakReferences({ elementsSource })([instance])
       expect(fixes.errors).toEqual([
         {
           elemID: instance.elemID.createNestedID('projectIds'),
-          severity: 'Warning',
-          message: 'Deploying project scoped context as global context',
+          severity: 'Error',
+          message: 'Project scoped context must have at least one project in the target environment',
           detailedMessage:
-            'This context is attached to projects that do not exist in the target environment. It will be deployed as a global context.',
+            'This context is attached to projects that do not exist in the target environment. It cannot be deployed without referencing at least one project in the target environment.',
         },
       ])
       expect((fixes.fixedElements[0] as InstanceElement).value.projectIds).toEqual([])

@@ -20,7 +20,7 @@ import {
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
 import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../filters/policy_priority'
@@ -31,38 +31,17 @@ type ChangeWithKey = deployment.dependency.ChangeWithKey<Change<InstanceElement>
 const createDependencyChange = (prev: ChangeWithKey, current: ChangeWithKey): DependencyChange[] => [
   dependencyChange('add', current.key, prev.key),
 ]
-
 const groupChangesByType = (changes: ChangeWithKey[]): Record<string, ChangeWithKey[]> =>
-  changes.reduce(
-    (acc, change) => {
-      const instance = getChangeData(change.change)
-      const { typeName } = instance.elemID
-      if (!acc[typeName]) {
-        acc[typeName] = []
-      }
-      acc[typeName].push(change)
-      return acc
-    },
-    {} as Record<string, ChangeWithKey[]>,
-  )
+  _.groupBy(changes, change => getChangeData(change.change).elemID.typeName)
 
 const groupRuleChangesByPolicy = (changes: ChangeWithKey[]): Record<string, ChangeWithKey[]> =>
-  changes.reduce(
-    (acc, change) => {
+  _.groupBy(
+    changes.filter(change => hasValidParent(getChangeData(change.change))),
+    change => {
       const instance = getChangeData(change.change)
-      try {
-        const parent = getParent(instance)
-        const parentFullName = parent.elemID.getFullName()
-        if (!acc[parentFullName]) {
-          acc[parentFullName] = []
-        }
-        acc[parentFullName].push(change)
-      } catch (e) {
-        log.error('Failed to get parent for %s', instance.elemID.getFullName())
-      }
-      return acc
+      const parent = getParent(instance)
+      return parent.elemID.getFullName()
     },
-    {} as Record<string, ChangeWithKey[]>,
   )
 
 const getGroupedPoliciesAndRules = (
@@ -83,9 +62,19 @@ const sortByPriority = (group: ChangeWithKey[], priorityMap: Record<string, numb
     return priority1 - priority2
   })
 
+const getPriorityMap = (priorityNameToPoliciesOrRuleNames: Record<string, string[]>): Record<string, number> =>
+  Object.fromEntries(
+    Object.entries(priorityNameToPoliciesOrRuleNames).flatMap(([priorityFullName, policyNames]) =>
+      policyNames.map(policyName => [
+        policyName,
+        priorityNameToPoliciesOrRuleNames[priorityFullName]?.indexOf(policyName) ?? Infinity,
+      ]),
+    ),
+  )
+
 /*
  * This dependency handler ensures that dependencies are added between each policy or policyRule during addition changes.
- * The dependency is added based on the priority change and if its none then by order by name
+ * The dependency is added based on the priority change and if it's none then by the order of the changes.
  * This prevents race conditions that could result in policies being assigned the same priority.
  */
 export const addDependenciesFromPolicyToPriorPolicy: DependencyChanger = async changes => {
@@ -129,15 +118,7 @@ export const addDependenciesFromPolicyToPriorPolicy: DependencyChanger = async c
     }),
   )
 
-  // Map each policy or rule name to its priority position
-  const policyNameToPriority = Object.fromEntries(
-    Object.entries(priorityNameToPoliciesOrRuleNames).flatMap(([priorityFullName, policyNames]) =>
-      policyNames.map(policyName => [
-        policyName,
-        priorityNameToPoliciesOrRuleNames[priorityFullName]?.indexOf(policyName) ?? Infinity,
-      ]),
-    ),
-  )
+  const policyNameToPriority = getPriorityMap(priorityNameToPoliciesOrRuleNames)
 
   const { policies, rules } = getGroupedPoliciesAndRules(additionPolicyChanges, additionRuleChanges)
 

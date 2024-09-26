@@ -321,16 +321,16 @@ describe('generator', () => {
       ]
       const fetchErrors = generateFetchErrorsFromConfig(fetchErrorsFromConfig)
       expect(fetchErrors).toHaveLength(fetchErrorsFromConfig.length)
-      expect(fetchErrors[0]).toEqual({
+      expect(fetchErrors?.[0]).toEqual({
         elemID: ElemID.fromFullName('dummy.Full.instance.yoyo'),
         message: 'some message',
         detailedMessage: 'some detailed message',
         severity: 'Error',
       })
     })
-    it('should return empty array if fetchErrors is undefined', () => {
+    it('should return undefined if fetchErrors is undefined', () => {
       const fetchErrors = generateFetchErrorsFromConfig()
-      expect(fetchErrors).toEqual([])
+      expect(fetchErrors).toBeUndefined()
     })
   })
 })

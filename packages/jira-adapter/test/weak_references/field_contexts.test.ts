@@ -53,7 +53,7 @@ describe('field_contexts', () => {
     })
   })
   describe('findWeakReferences', () => {
-    it('should return weak references projects', async () => {
+    it('should return weak references contexts', async () => {
       const references = await fieldContextsHandler.findWeakReferences([instance, instance2], adapterConfig)
 
       expect(references).toEqual([

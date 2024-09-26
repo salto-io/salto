@@ -17,7 +17,7 @@ import {
   FixElementsFunc,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { generateElements, GeneratorParams } from './generator'
+import { generateElements, generateFetchErrorsFromConfig, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
 
 export default class DummyAdapter implements AdapterOperations {
@@ -30,7 +30,7 @@ export default class DummyAdapter implements AdapterOperations {
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     return {
       elements: await generateElements(this.genParams, progressReporter),
-      errors: this.genParams.fetchErrors,
+      errors: generateFetchErrorsFromConfig(this.genParams.fetchErrors),
     }
   }
 

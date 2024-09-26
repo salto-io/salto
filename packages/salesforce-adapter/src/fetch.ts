@@ -362,6 +362,8 @@ export const retrieveMetadataInstances = async ({
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
 
+  log.trace('metadata types in fetch: %s', inspectValue(Object.keys(typesByName)))
+
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
     const result = instances[0].clone()
     result.value = _.merge({}, ...instances.map(instance => instance.value))
@@ -395,10 +397,17 @@ export const retrieveMetadataInstances = async ({
   ): Promise<InstanceElement[]> => {
     const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = allFileProps.map(inst => ({
-      ...inst,
-      type: getManifestTypeName(typesByName[inst.type]),
-    }))
+    const filesToRetrieve = allFileProps.map(inst => {
+      const metadataType = typesByName[inst.type]
+      if (metadataType === undefined) {
+        log.warn('Could not find metadata type for %s', inst.type)
+        return inst
+      }
+      return {
+        ...inst,
+        type: getManifestTypeName(metadataType),
+      }
+    })
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)

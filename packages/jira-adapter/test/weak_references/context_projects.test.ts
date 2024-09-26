@@ -125,7 +125,7 @@ describe('context_projects', () => {
       const fixes = await contextProjectsHandler.removeWeakReferences({ elementsSource })([instance])
       expect(fixes.errors).toEqual([
         {
-          elemID: instance.elemID.createNestedID('projectIds'),
+          elemID: instance.elemID,
           severity: 'Error',
           message: 'Project scoped context must have at least one project in the target environment',
           detailedMessage:

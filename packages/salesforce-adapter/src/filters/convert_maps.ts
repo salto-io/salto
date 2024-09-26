@@ -49,7 +49,6 @@ import {
   INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
-import { isCustomObjectSync } from './utils'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 
@@ -81,13 +80,13 @@ const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =
     elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
     fields: {
       [ORDERED_MAP_VALUES_FIELD]: {
-        refType: createRefToElmWithValue(new MapType(innerType)),
+        refType: new MapType(innerType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       [ORDERED_MAP_ORDER_FIELD]: {
-        refType: createRefToElmWithValue(new ListType(innerType)),
+        refType: new ListType(innerType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -192,7 +191,7 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [STANDARD_VALUE_SET]: STANDARD_VALUE_SET_MAP_FIELD_DEF,
 }
 
-export const fieldTypeToAnnotationToMapDef: Record<string, Record<string, MapDef>> = {
+export const annotationDefsByType: Record<string, Record<string, MapDef>> = {
   Picklist: {
     valueSet: PICKLIST_MAP_FIELD_DEF,
   },
@@ -230,53 +229,35 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
   }
 
   Object.entries(mapFieldDef)
-    .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
+    .filter(([fieldName]) => getElementValueOrAnnotations(element)[fieldName] !== undefined)
     .forEach(([fieldName, mapDef]) => {
       const mapper = mapDef.mapper ?? defaultMapper
+      const elementValues = getElementValueOrAnnotations(element)
       if (mapDef.nested) {
-        const firstLevelGroups = _.groupBy(
-          makeArray(_.get(getElementValueOrAnnotations(element), fieldName)),
-          item => mapper(item[mapDef.key])[0],
-        )
-        _.set(
-          getElementValueOrAnnotations(element),
-          fieldName,
-          _.mapValues(firstLevelGroups, firstLevelValues =>
-            convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
-          ),
+        const firstLevelGroups = _.groupBy(makeArray(elementValues[fieldName]), item => mapper(item[mapDef.key])[0])
+        elementValues[fieldName] = _.mapValues(firstLevelGroups, firstLevelValues =>
+          convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
         )
       } else if (mapDef.maintainOrder) {
-        const originalFieldValue = _.get(getElementValueOrAnnotations(element), fieldName)
-        _.unset(getElementValueOrAnnotations(element), fieldName)
-        _.set(
-          getElementValueOrAnnotations(element),
-          [fieldName, ORDERED_MAP_VALUES_FIELD],
-          convertField(
-            makeArray(originalFieldValue),
-            item => mapper(item[mapDef.key])[0],
-            !!mapDef.mapToList,
-            fieldName,
-          ),
-        )
-        _.set(
-          getElementValueOrAnnotations(element),
-          [fieldName, ORDERED_MAP_ORDER_FIELD],
-          makeArray(originalFieldValue)
-            .map(item => mapper(item[mapDef.key])[0])
-            .map(
-              name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
-            ),
-        )
-      } else {
-        _.set(
-          getElementValueOrAnnotations(element),
+        const originalFieldValue = elementValues[fieldName]
+        elementValues[fieldName] = {}
+        elementValues[fieldName][ORDERED_MAP_VALUES_FIELD] = convertField(
+          makeArray(originalFieldValue),
+          item => mapper(item[mapDef.key])[0],
+          !!mapDef.mapToList,
           fieldName,
-          convertField(
-            makeArray(_.get(getElementValueOrAnnotations(element), fieldName)),
-            item => mapper(item[mapDef.key])[0],
-            !!mapDef.mapToList,
-            fieldName,
-          ),
+        )
+        elementValues[fieldName][ORDERED_MAP_ORDER_FIELD] = makeArray(originalFieldValue)
+          .map(item => mapper(item[mapDef.key])[0])
+          .map(
+            name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
+          )
+      } else {
+        elementValues[fieldName] = convertField(
+          makeArray(elementValues[fieldName]),
+          item => mapper(item[mapDef.key])[0],
+          !!mapDef.mapToList,
+          fieldName,
         )
       }
     })
@@ -392,35 +373,24 @@ const convertFieldsBackToLists = async (
 
   const backToArrays = (element: Element): Element => {
     Object.keys(mapFieldDef)
-      .filter(fieldName => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
+      .filter(fieldName => getElementValueOrAnnotations(element)[fieldName] !== undefined)
       .forEach(fieldName => {
-        if (Array.isArray(_.get(getElementValueOrAnnotations(element), fieldName))) {
+        const elementValues = getElementValueOrAnnotations(element)
+        if (Array.isArray(elementValues[fieldName])) {
           // should not happen
           return
         }
 
         if (mapFieldDef[fieldName].nested) {
           // first convert the inner levels to arrays, then merge into one array
-          _.set(
-            getElementValueOrAnnotations(element),
-            fieldName,
-            _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), toVals),
-          )
+          elementValues[fieldName] = _.mapValues(elementValues[fieldName], toVals)
         }
         if (mapFieldDef[fieldName].maintainOrder) {
-          _.set(
-            getElementValueOrAnnotations(element),
-            fieldName,
-            _.get(getElementValueOrAnnotations(element), [fieldName, ORDERED_MAP_ORDER_FIELD]).map(
-              (ref: ReferenceExpression) => ref,
-            ),
-          )
+          // OrderedMap keeps the order in a list of references, so we just need to override the top-level OrderedMap
+          // with this list.
+          elementValues[fieldName] = elementValues[fieldName][ORDERED_MAP_ORDER_FIELD]
         } else {
-          _.set(
-            getElementValueOrAnnotations(element),
-            fieldName,
-            toVals(_.get(getElementValueOrAnnotations(element), fieldName)),
-          )
+          elementValues[fieldName] = toVals(elementValues[fieldName])
         }
       })
     return element
@@ -483,7 +453,7 @@ export const getInstanceChanges = (
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
 
-export const getFieldChanges = (changes: ReadonlyArray<Change>, fieldType: string): Change[] =>
+export const getFieldChangesOfType = (changes: ReadonlyArray<Change>, fieldType: string): Change[] =>
   changes
     .filter(isFieldChange)
     .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
@@ -535,8 +505,8 @@ const filter: LocalFilterCreator = ({ config }) => ({
       }
     })
 
-    const fields = elements.filter(isCustomObjectSync).flatMap(obj => Object.values(obj.fields))
-    await awu(Object.entries(fieldTypeToAnnotationToMapDef)).forEach(async ([fieldType, annotationToMapDef]) => {
+    const fields = elements.filter(isObjectType).flatMap(obj => Object.values(obj.fields))
+    await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldType, annotationToMapDef]) => {
       if (
         ['Picklist', 'MultiselectPicklist'].includes(fieldType) &&
         !config.fetchProfile.isFeatureEnabled('picklistsAsMaps')
@@ -568,12 +538,12 @@ const filter: LocalFilterCreator = ({ config }) => ({
       await convertFieldTypesBackToLists(instanceType, mapFieldDef)
     })
 
-    await awu(Object.keys(fieldTypeToAnnotationToMapDef)).forEach(async fieldType => {
-      const fieldsChanges = getFieldChanges(changes, fieldType)
+    await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
+      const fieldsChanges = getFieldChangesOfType(changes, fieldType)
       if (fieldsChanges.length === 0) {
         return
       }
-      const mapFieldDef = fieldTypeToAnnotationToMapDef[fieldType]
+      const mapFieldDef = annotationDefsByType[fieldType]
       await convertFieldsBackToLists(fieldsChanges, mapFieldDef)
     })
   },
@@ -597,12 +567,12 @@ const filter: LocalFilterCreator = ({ config }) => ({
       await updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
     })
 
-    await awu(Object.keys(fieldTypeToAnnotationToMapDef)).forEach(async fieldType => {
-      const fieldsChanges = getFieldChanges(changes, fieldType)
+    await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
+      const fieldsChanges = getFieldChangesOfType(changes, fieldType)
       if (fieldsChanges.length === 0) {
         return
       }
-      const mapFieldDef = fieldTypeToAnnotationToMapDef[fieldType]
+      const mapFieldDef = annotationDefsByType[fieldType]
       convertFieldsBackToMaps(fieldsChanges, mapFieldDef)
     })
   },

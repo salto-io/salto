@@ -85,7 +85,7 @@ export const removeMissingContextProjects: WeakReferencesHandler['removeWeakRefe
     const errors = fixedElements.map(instance =>
       instance.value[PROJECT_IDS].length === 0
         ? {
-            elemID: instance.elemID.createNestedID('projectIds'),
+            elemID: instance.elemID,
             severity: 'Error' as const,
             message: 'Project scoped context must have at least one project in the target environment',
             detailedMessage:

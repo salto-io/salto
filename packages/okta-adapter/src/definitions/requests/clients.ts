@@ -91,6 +91,11 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
+          '/api/v1/brands/{brandId}/pages/sign-in/customized': {
+            get: {
+              additionalValidStatuses: [404],
+            },
+          },
         },
       },
     },

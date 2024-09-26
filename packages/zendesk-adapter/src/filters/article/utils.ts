@@ -9,6 +9,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
+import { resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import {
   getParent,
@@ -29,6 +30,7 @@ import {
   isStaticFile,
   isTemplateExpression,
   ObjectType,
+  ReadOnlyElementsSource,
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
@@ -42,6 +44,7 @@ import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskConfig } from '../../config'
 import { ZendeskApiConfig } from '../../user_config'
 import { DOMAIN_REGEX, ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
+import { lookupFunc } from '../field_references'
 
 const { isDefined } = lowerDashValues
 
@@ -296,10 +299,12 @@ export const updateArticleTranslationBody = async ({
   client,
   articleValues,
   attachmentInstances,
+  elementsSource,
 }: {
   client: ZendeskClient
   articleValues: Values
   attachmentInstances: InstanceElement[]
+  elementsSource: ReadOnlyElementsSource
 }): Promise<void> => {
   const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
   const articleTranslations = articleValues?.translations
@@ -318,11 +323,13 @@ export const updateArticleTranslationBody = async ({
         (isStaticFile(translationInstance.value.body) && translationInstance.value.body.isTemplate),
     )
     .map(translationInstance => translationInstance.clone()) // we don't want to resolve the translation itself
+    .map(async translationInstance =>
+      isStaticFile(translationInstance.value.body) // StaticFiles may not be resolved
+        ? resolveValues(translationInstance, lookupFunc, elementsSource)
+        : translationInstance,
+    )
     .forEach(async translationInstance => {
       try {
-        if (Buffer.isBuffer(translationInstance.value.body)) {
-          translationInstance.value.body = translationInstance.value.body.toString()
-        }
         replaceTemplatesWithValues(
           { values: [translationInstance.value], fieldName: 'body' },
           {},
@@ -347,8 +354,13 @@ export const updateArticleTranslationBody = async ({
           elemID: translationInstance.elemID,
         })
       }
+      // If the static file is resolved, the locale ReferenceExpression is resolved directly
+      const locale =
+        typeof translationInstance.value.locale === 'string'
+          ? translationInstance.value.locale
+          : translationInstance.value.locale.value.value.locale
       await client.put({
-        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.locale.value.value.locale}`,
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${locale}`,
         data: { translation: { body: translationInstance.value.body } },
       })
     })

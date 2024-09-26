@@ -302,6 +302,7 @@ const handleArticleAttachmentsPreDeploy = async ({
       client,
       articleValues,
       attachmentInstances: modificationAndAdditionInlineInstances,
+      elementsSource,
     })
   }
   return attachmentChanges.map(getChangeData)

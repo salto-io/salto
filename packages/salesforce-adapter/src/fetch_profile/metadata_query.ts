@@ -112,8 +112,9 @@ export const buildMetadataQuery = ({ fetchParams, targetedFetchInclude }: BuildM
     return targetedFetchInclude.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
   }
   const isTypeIncluded = (type: string): boolean =>
-    include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type)) &&
-    isTypeIncludedInTargetedFetch(type)
+    include.some(({ metadataType = '.*' }) =>
+      new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+    ) && isTypeIncludedInTargetedFetch(type)
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>

@@ -56,6 +56,10 @@ export const APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME = toIntuneTypeNa
 )
 export const APPLICATION_PROTECTION_ANDROID_TYPE_NAME = toIntuneTypeName('ApplicationProtectionAndroid')
 export const APPLICATION_PROTECTION_IOS_TYPE_NAME = toIntuneTypeName('ApplicationProtectionIOS')
+export const APPLICATION_PROTECTION_WINDOWS_TYPE_NAME = toIntuneTypeName('ApplicationProtectionWindows')
+export const APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME = toIntuneTypeName(
+  'ApplicationProtectionWindowsInformationProtection',
+)
 export const DEVICE_CONFIGURATION_TYPE_NAME = toIntuneTypeName('DeviceConfiguration')
 export const DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME = toIntuneTypeName('DeviceConfigurationSettingCatalog')
 export const DEVICE_COMPLIANCE_TYPE_NAME = toIntuneTypeName('DeviceCompliance')
@@ -98,6 +102,8 @@ export const TYPES_WITH_GROUP_ASSIGNMENTS = [
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
   APPLICATION_PROTECTION_ANDROID_TYPE_NAME,
   APPLICATION_PROTECTION_IOS_TYPE_NAME,
+  APPLICATION_PROTECTION_WINDOWS_TYPE_NAME,
+  APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -135,6 +141,12 @@ export const TYPES_WITH_TARGET_APPS_PATH_MAP: Record<
     resourcePath: '/deviceAppManagement/iosManagedAppProtections',
     serviceUrlPath:
       '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.iosManagedAppProtection/policyName/{displayName}',
+    targetTypeFieldName: 'appGroupType',
+  },
+  [APPLICATION_PROTECTION_WINDOWS_TYPE_NAME]: {
+    resourcePath: '/deviceAppManagement/windowsManagedAppProtections',
+    serviceUrlPath:
+      '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.windowsManagedAppProtection/policyName/{displayName}',
     targetTypeFieldName: 'appGroupType',
   },
 }

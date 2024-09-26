@@ -769,7 +769,6 @@ const graphBetaCustomizations: FetchCustomizations = {
         [AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME]: {
           standalone: {
             typeName: AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME,
-            nestPathUnderParent: true,
             referenceFromParent: false,
             addParentAnnotation: false,
           },

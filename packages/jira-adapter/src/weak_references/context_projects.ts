@@ -86,10 +86,10 @@ export const removeMissingContextProjects: WeakReferencesHandler['removeWeakRefe
       instance.value[PROJECT_IDS].length === 0
         ? {
             elemID: instance.elemID.createNestedID('projectIds'),
-            severity: 'Warning' as const,
-            message: 'Deploying project scoped context as global context',
+            severity: 'Error' as const,
+            message: 'Project scoped context must have at least one project in the target environment',
             detailedMessage:
-              'This context is attached to projects that do not exist in the target environment. It will be deployed as a global context.',
+              'This context is attached to projects that do not exist in the target environment. It cannot be deployed without referencing at least one project in the target environment.',
           }
         : {
             elemID: instance.elemID.createNestedID('projectIds'),

@@ -45,6 +45,7 @@ import elementApiVersionValidator from './change_validators/element_api_version'
 import cpqBillingStartDate from './change_validators/cpq_billing_start_date'
 import cpqBillingTriggers from './change_validators/cpq_billing_triggers'
 import managedApexComponent from './change_validators/managed_apex_component'
+import orderedMaps from './change_validators/ordered_maps'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
@@ -100,6 +101,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   cpqBillingStartDate: () => cpqBillingStartDate,
   cpqBillingTriggers: () => cpqBillingTriggers,
   managedApexComponent: () => managedApexComponent,
+  orderedMaps: () => orderedMaps,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

@@ -167,6 +167,7 @@ export type ChangeValidatorName =
   | 'cpqBillingStartDate'
   | 'cpqBillingTriggers'
   | 'managedApexComponent'
+  | 'orderedMaps'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -886,6 +887,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
     managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
+    orderedMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

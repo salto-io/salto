@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { definitions, references as referenceUtils, createChangeElementResolver } from '@salto-io/adapter-components'
-import { Change, InstanceElement } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../constants'
 import { CustomReferenceSerializationStrategyName, Options } from '../types'
 import { REFERENCE_RULES as EntraReferenceRules } from './entra_reference_rules'
@@ -23,6 +23,7 @@ const fieldsToGroupBy: Record<referenceUtils.ReferenceIndexField | CustomReferen
   appId: null,
   bundleId: null,
   packageId: null,
+  servicePrincipalAppId: null,
 }
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
@@ -35,6 +36,18 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       lookup: referenceUtils.basicLookUp,
       lookupIndexName: 'appId',
     },
+    servicePrincipalAppId: {
+      serialize: ({ ref }) => {
+        const { appId } = ref.value.value
+        if (isReferenceExpression(appId)) {
+          return appId.value.value.appId
+        }
+        return appId
+      },
+      lookup: referenceUtils.basicLookUp,
+      lookupIndexName: 'appId',
+    },
+
     // Intune serialization strategies lookup
     bundleId: {
       serialize: ({ ref }) => ref.value.value.bundleId,

@@ -7,7 +7,7 @@
  */
 
 import { StaticFile } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { fileNameFromUniqueName } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../../../../constants'
 
 /**
@@ -24,7 +24,7 @@ export const createStaticFileFromBase64Blob = ({
   fileName: string
   content: string
 }): StaticFile => {
-  const formattedFullName = naclCase(fullName).replace('@', '.')
+  const formattedFullName = fileNameFromUniqueName(fullName)
 
   return new StaticFile({
     filepath: `${ADAPTER_NAME}/${typeName}/${formattedFullName}/${fileName}`,

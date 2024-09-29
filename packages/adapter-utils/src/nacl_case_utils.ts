@@ -148,6 +148,11 @@ export const invertNaclCase = (name: string): string => {
   )
 }
 
+// Converts a nacl case to a file system safe name. Use it (instead of pathNaclCase) if the file name must be unique
+export const fileNameFromNaclCase = (name: string): string => name.replace('@', '.')
+// Coverts a unique name to a file system safe name
+export const fileNameFromUniqueName = (name: string): string => fileNameFromNaclCase(naclCase(name))
+
 const prettifyWord = (str: string): string[] => {
   if (allCapsRegex.test(str)) {
     return [str]

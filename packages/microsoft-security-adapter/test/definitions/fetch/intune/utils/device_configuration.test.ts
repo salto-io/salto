@@ -26,8 +26,7 @@ describe('device configuration utils', () => {
     it('should return the value with the payload as a static file', async () => {
       const value = {
         displayName: 'name',
-        payload:
-          'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4NCjxub3RlPg0KICA8dG8+VGVzdDwvdG8+DQogIDxmcm9tPlRlc3RlcjwvZnJvbT4NCiAgPGhlYWRpbmc+UGxlYXNlIHdvcmsgbmljZWx5PC9oZWFkaW5nPg0KICA8Ym9keT5UaGFuayB5b3U8L2JvZHk+DQo8L25vdGU+',
+        payload: 'PG5vdGU+VGhpcyBpcyBhIHRlc3Q8L25vdGU+',
         payloadFileName: 'payloadFileName',
       }
       const result = await extractPayloadToStaticFile({ value, typeName: 'test', context: contextMock })

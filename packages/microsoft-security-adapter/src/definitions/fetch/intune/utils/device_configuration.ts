@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import _ from 'lodash'
 import { validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
 import { DEVICE_CONFIGURATION_TYPE_NAME } from '../../../../constants/intune'
@@ -18,7 +19,7 @@ import { NAME_ID_FIELD } from '../../shared/defaults'
 export const extractPayloadToStaticFile: AdjustFunctionSingle = async ({ value }) => {
   validatePlainObject(value, DEVICE_CONFIGURATION_TYPE_NAME)
   const { payload } = value
-  if (!payload) {
+  if (!_.isString(payload)) {
     return { value }
   }
   return {

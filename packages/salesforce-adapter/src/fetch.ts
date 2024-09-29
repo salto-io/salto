@@ -362,6 +362,8 @@ export const retrieveMetadataInstances = async ({
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
 
+  log.trace('metadata types in fetch: %s', inspectValue(Object.keys(typesByName)))
+
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
     const result = instances[0].clone()
     result.value = _.merge({}, ...instances.map(instance => instance.value))
@@ -389,16 +391,24 @@ export const retrieveMetadataInstances = async ({
     return false
   }
 
+  const missingTypes = new Set<string>()
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
   ): Promise<InstanceElement[]> => {
     const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = allFileProps.map(inst => ({
-      ...inst,
-      type: getManifestTypeName(typesByName[inst.type]),
-    }))
+    const filesToRetrieve = allFileProps.map(inst => {
+      const metadataType = typesByName[inst.type]
+      if (metadataType === undefined) {
+        missingTypes.add(inst.type)
+        return inst
+      }
+      return {
+        ...inst,
+        type: getManifestTypeName(metadataType),
+      }
+    })
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
@@ -532,6 +542,9 @@ export const retrieveMetadataInstances = async ({
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
+  if (missingTypes.size > 0) {
+    log.warn('Missing metadata types in fetch: %s', inspectValue(Array.from(missingTypes)))
+  }
   if (configChanges.length > 0) {
     log.debug('config changes (first 10): %s', inspectValue(configChanges, { maxArrayLength: 10 }))
   }

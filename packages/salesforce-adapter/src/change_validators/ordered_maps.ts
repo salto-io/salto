@@ -66,7 +66,7 @@ export const getOrderedMapErrors = (element: Element, fieldName: string): Change
         elemID: element.elemID,
         severity: 'Error',
         message: 'Duplicate reference in ordered map',
-        detailedMessage: `Duplicate reference in field ${fieldName}.order: ${valueRef.elemID.getFullName()}`,
+        detailedMessage: `Duplicate reference in field ${fieldName}.order: ${valueRef.elemID.name}`,
       })
     }
     foundValueElemIds.push(valueRef.elemID)
@@ -74,12 +74,14 @@ export const getOrderedMapErrors = (element: Element, fieldName: string): Change
   const missingElemIds = valueElemIds.filter(
     valueElemId => !foundValueElemIds.map(elemID => elemID.getFullName()).includes(valueElemId.getFullName()),
   )
-  errors.push({
-    elemID: element.elemID,
-    severity: 'Error',
-    message: 'Missing reference in ordered map',
-    detailedMessage: `Missing reference in field ${fieldName}.order: ${missingElemIds.map(elemID => elemID.name).join(', ')}`,
-  })
+  if (!_.isEmpty(missingElemIds)) {
+    errors.push({
+      elemID: element.elemID,
+      severity: 'Error',
+      message: 'Missing reference in ordered map',
+      detailedMessage: `Missing reference in field ${fieldName}.order: ${missingElemIds.map(elemID => elemID.name).join(', ')}`,
+    })
+  }
   return errors
 }
 

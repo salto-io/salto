@@ -67,4 +67,21 @@ describe('OrderedMap Change Validator', () => {
       detailedMessage: 'Missing reference in field customValue.order: val2',
     })
   })
+  it('should return an error for duplicate field refs', async () => {
+    gvs.value.customValue.order = [
+      new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
+      new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
+      new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2')),
+    ]
+    const errors = await changeValidator([
+      toChange({ after: gvs })
+    ])
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toMatchObject({
+      elemID: gvs.elemID,
+      severity: 'Error',
+      message: 'Duplicate reference in ordered map',
+      detailedMessage: 'Duplicate reference in field customValue.order: val1',
+    })
+  })
 })

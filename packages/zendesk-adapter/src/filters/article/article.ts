@@ -54,7 +54,7 @@ import {
   getArticleAttachments,
   isAttachments,
   maybeModifySourceLocaleInGuideObject,
-  updateArticleTranslationBody,
+  replaceAttachmentReferencesInArticleTranslationBody,
 } from './utils'
 import { API_DEFINITIONS_CONFIG, CLIENT_CONFIG, FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
 
@@ -298,7 +298,7 @@ const handleArticleAttachmentsPreDeploy = async ({
     const modificationAndAdditionInlineInstances = modificationAndAdditionInlineChanges.map(getChangeData)
     // All the attachments in the current change_group share the same parent article instance
     const articleValues = getParents(modificationAndAdditionInlineInstances[0])[0]
-    await updateArticleTranslationBody({
+    await replaceAttachmentReferencesInArticleTranslationBody({
       client,
       articleValues,
       attachmentInstances: modificationAndAdditionInlineInstances,

@@ -57,7 +57,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   omitTicketStatusTicketField?: boolean
   useNewInfra?: boolean
   useGuideNewInfra?: boolean
-  translationStaticFiles?: boolean
+  translationBodyAsStaticFile?: boolean
 }
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }

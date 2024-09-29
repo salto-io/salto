@@ -246,7 +246,7 @@ describe('article body filter', () => {
   })
 
   describe('on fetch', () => {
-    describe('when translationStaticFiles is true', () => {
+    describe('when translationBodyAsStaticFile is true', () => {
       describe('when all brands included', () => {
         beforeEach(async () => {
           filter = filterCreator(
@@ -420,13 +420,13 @@ describe('article body filter', () => {
         })
       })
     })
-    describe('when translationStaticFiles is false', () => {
+    describe('when translationBodyAsStaticFile is false', () => {
       beforeEach(async () => {
         filter = filterCreator(
           createFilterCreatorParams({
             config: {
               ...config,
-              fetch: { ...config[FETCH_CONFIG], guide: { brands: ['.*'] }, translationStaticFiles: false },
+              fetch: { ...config[FETCH_CONFIG], guide: { brands: ['.*'] }, translationBodyAsStaticFile: false },
             },
           }),
         ) as FilterType

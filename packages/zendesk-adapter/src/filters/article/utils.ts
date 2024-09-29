@@ -295,7 +295,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   return part.value
 }
 
-export const updateArticleTranslationBody = async ({
+export const replaceAttachmentReferencesInArticleTranslationBody = async ({
   client,
   articleValues,
   attachmentInstances,
@@ -356,9 +356,20 @@ export const updateArticleTranslationBody = async ({
       }
       // If the static file is resolved, the locale ReferenceExpression is resolved directly
       const locale =
-        typeof translationInstance.value.locale === 'string'
+        translationInstance.value.locale && typeof translationInstance.value.locale === 'string'
           ? translationInstance.value.locale
           : translationInstance.value.locale.value.value.locale
+      if (locale === undefined) {
+        const message = `Received an invalid locale value for translation ${translationInstance.name}`
+        log.error(message)
+        throw createSaltoElementError({
+          // caught in adapter.ts
+          message,
+          detailedMessage: message,
+          severity: 'Error',
+          elemID: translationInstance.elemID,
+        })
+      }
       await client.put({
         url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${locale}`,
         data: { translation: { body: translationInstance.value.body } },

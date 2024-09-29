@@ -192,7 +192,7 @@ describe('article utility functions', () => {
       const clonedAttachment = articleAttachmentInstance.clone()
       clonedAttachment.value.id = 250595
       clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clonedArticle.value] })
-      await articleUtils.updateArticleTranslationBody({
+      await articleUtils.replaceAttachmentReferencesInArticleTranslationBody({
         client,
         articleValues: clonedArticle.value,
         attachmentInstances: [clonedAttachment],
@@ -207,7 +207,7 @@ describe('article utility functions', () => {
         const clonedAttachment = articleAttachmentInstance.clone()
         clonedAttachment.value.id = 250595
         clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clonedArticle.value] })
-        await articleUtils.updateArticleTranslationBody({
+        await articleUtils.replaceAttachmentReferencesInArticleTranslationBody({
           client,
           articleValues: clonedArticle.value,
           attachmentInstances: [clonedAttachment],
@@ -223,7 +223,7 @@ describe('article utility functions', () => {
         const clonedAttachment = articleAttachmentInstance.clone()
         clonedAttachment.value.id = 250595
         clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clonedArticle.value] })
-        await articleUtils.updateArticleTranslationBody({
+        await articleUtils.replaceAttachmentReferencesInArticleTranslationBody({
           client,
           articleValues: clonedArticle.value,
           attachmentInstances: [clonedAttachment],

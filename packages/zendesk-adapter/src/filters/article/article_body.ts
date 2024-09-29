@@ -17,10 +17,12 @@ import {
   isInstanceChange,
   isInstanceElement,
   isReferenceExpression,
+  isStaticFile,
   isTemplateExpression,
   SaltoError,
   StaticFile,
   TemplateExpression,
+  TemplatePart,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -50,7 +52,29 @@ type missingBrandInfo = {
   articleName: string
 }
 
-const updateArticleTranslationBody = ({
+const extractTranslationBodyParts = async (
+  translationBody: string | TemplateExpression | StaticFile,
+): Promise<TemplatePart[]> => {
+  if (_.isString(translationBody)) {
+    return [translationBody]
+  }
+  if (isTemplateExpression(translationBody)) {
+    return translationBody.parts
+  }
+  if (isStaticFile(translationBody)) {
+    if (translationBody.isTemplate) {
+      const templateExpression = await parserUtils.staticFileToTemplateExpression(translationBody)
+      if (templateExpression === undefined) {
+        return []
+      }
+      return templateExpression.parts
+    }
+    return [((await translationBody.getContent()) ?? '').toString()]
+  }
+  return []
+}
+
+const extractReferencesFromArticleTranslationBody = async ({
   translationInstance,
   instancesById,
   brandsByUrl,
@@ -67,19 +91,21 @@ const updateArticleTranslationBody = ({
     translationElemID: ElemID,
   ) => StaticFile | TemplateExpression
   enableMissingReferences?: boolean
-}): missingBrandInfo[] => {
+}): Promise<missingBrandInfo[]> => {
   const missingBrands: missingBrandInfo[] = []
   const originalTranslationBody = translationInstance.value[BODY_FIELD]
-  if (!_.isString(originalTranslationBody) && !isTemplateExpression(originalTranslationBody)) {
+  if (
+    !_.isString(originalTranslationBody) &&
+    !isTemplateExpression(originalTranslationBody) &&
+    !isStaticFile(originalTranslationBody)
+  ) {
     return []
   }
 
   const articleName = getParent(translationInstance).elemID.name
-  // the body may have already been processed by a previous filter and converted to a template expression
+  // the body may have already been processed by a previous filter and converted to a template expression or static file
   // if so, we need to extract the parts of the template expression and process each of them
-  const originalTranslationBodyParts = _.isString(originalTranslationBody)
-    ? [originalTranslationBody]
-    : originalTranslationBody.parts
+  const originalTranslationBodyParts = await extractTranslationBodyParts(originalTranslationBody)
   // Find the urls that are in the body
   const processedTranslationBodyParts = originalTranslationBodyParts.map(part =>
     isReferenceExpression(part)
@@ -137,7 +163,10 @@ const templateExpressionToStaticFile = (translationBody: TemplateExpression, tra
     : parserUtils.templateExpressionToStaticFile(translationBody, filepath)
 }
 
-export const templateExpressionIdentity = (translationBody: TemplateExpression): TemplateExpression => translationBody
+export const templateExpressionIdentity = (
+  translationBody: TemplateExpression,
+  _translationElemID: ElemID,
+): TemplateExpression => translationBody
 
 export const articleBodyOnFetch =
   (
@@ -146,7 +175,7 @@ export const articleBodyOnFetch =
       translationElemID: ElemID,
     ) => StaticFile | TemplateExpression,
   ) =>
-  (elements: Element[], config: ZendeskConfig): { errors: SaltoError[] } => {
+  async (elements: Element[], config: ZendeskConfig): Promise<{ errors: SaltoError[] }> => {
     const instances = elements.filter(isInstanceElement)
     const instancesById = _.keyBy(
       instances.filter(instance => _.isNumber(instance.value.id)),
@@ -158,20 +187,23 @@ export const articleBodyOnFetch =
     )
 
     const brandsIncludingGuide = getBrandsForGuide(instances, config[FETCH_CONFIG])
-    const translationToMissingBrands = instances
-      .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
-      .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
-      .flatMap(translationInstance =>
-        updateArticleTranslationBody({
-          translationInstance,
-          instancesById,
-          brandsByUrl,
-          brandsIncludingGuide,
-          templateExpressionConverter,
-          enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
-        }),
+    const translationToMissingBrands = (
+      await Promise.all(
+        instances
+          .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
+          .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
+          .flatMap(translationInstance =>
+            extractReferencesFromArticleTranslationBody({
+              translationInstance,
+              instancesById,
+              brandsByUrl,
+              brandsIncludingGuide,
+              templateExpressionConverter,
+              enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
+            }),
+          ),
       )
-
+    ).flat()
     const warnings = _.isEmpty(translationToMissingBrands)
       ? []
       : getWarningsForMissingBrands(translationToMissingBrands)
@@ -189,7 +221,7 @@ const filterCreator: FilterCreator = ({ config }) => {
       if (!isGuideEnabled(config[FETCH_CONFIG])) {
         return undefined
       }
-      const templateExpressionConverter = config[FETCH_CONFIG].translationStaticFiles
+      const templateExpressionConverter = config[FETCH_CONFIG].translationBodyAsStaticFile
         ? templateExpressionToStaticFile
         : templateExpressionIdentity
       return articleBodyOnFetch(templateExpressionConverter)(elements, config)

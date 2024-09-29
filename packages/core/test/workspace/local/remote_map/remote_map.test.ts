@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
 import rocksdb from '@salto-io/rocksdb'
@@ -21,7 +21,9 @@ import {
   TMP_DB_DIR,
   closeRemoteMapsOfLocation,
   cleanDatabases,
+  closeAllRemoteMaps,
 } from '../../../../src/local-workspace/remote_map/remote_map'
+import { remoteMapLocations } from '../../../../src/local-workspace/remote_map/location_pool'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const rocksdbImpl = require('../../../../src/local-workspace/remote_map/rocksdb').default
@@ -90,12 +92,11 @@ describe('test operations on remote db', () => {
     await remoteMap.flush()
     // eslint-disable-next-line prefer-destructuring
     expectedElementFromMap = (await deserialize(await serialize([elements[0]])))[0]
-    await closeRemoteMapsOfLocation(namespace)
+    await closeRemoteMapsOfLocation(DB_LOCATION)
     remoteMap = await createMap(namespace)
     readOnlyRemoteMap = await createReadOnlyMap(namespace)
   })
   afterEach(async () => {
-    await remoteMap.revert()
     await closeRemoteMapsOfLocation(DB_LOCATION)
   })
 
@@ -770,6 +771,24 @@ describe('test operations on remote db', () => {
   })
   it('should throw exception if the namespace is invalid', async () => {
     await expect(createMap('inval:d')).rejects.toThrow()
+  })
+
+  describe('closeAllRemoteMaps', () => {
+    beforeEach(async () => {
+      // Read something to ensure the cache is not empty
+      const key = (await awu(remoteMap.keys()).find(values.isDefined)) as string
+      await remoteMap.get(key)
+
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.cache.itemCount).not.toBe(0)
+      remoteMapLocations.return(DB_LOCATION)
+      await closeAllRemoteMaps()
+    })
+    it('should clear all caches', () => {
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.cache.itemCount).toBe(0)
+      remoteMapLocations.return(DB_LOCATION)
+    })
   })
 })
 

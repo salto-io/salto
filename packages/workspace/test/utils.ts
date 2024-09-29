@@ -86,7 +86,6 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       values: (): AsyncIterable<T> =>
         awu(Object.values(maps[opts.namespace])).map(async v => opts.deserialize(v as string)),
       flush: (): Promise<boolean> => Promise.resolve(false),
-      revert: (): Promise<void> => Promise.resolve(undefined),
       close: (): Promise<void> => Promise.resolve(undefined),
       isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(maps[opts.namespace])),
     }
@@ -142,7 +141,6 @@ export const createMockRemoteMap = <T>(): MockInterface<RemoteMap<T>> => ({
   keys: mockFunction<RemoteMap<T>['keys']>(),
   values: mockFunction<RemoteMap<T>['values']>(),
   flush: mockFunction<RemoteMap<T>['flush']>(),
-  revert: mockFunction<RemoteMap<T>['revert']>(),
   clear: mockFunction<RemoteMap<T>['clear']>(),
   close: mockFunction<RemoteMap<T>['close']>(),
   isEmpty: mockFunction<RemoteMap<T>['isEmpty']>(),

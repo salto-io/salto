@@ -15,6 +15,7 @@ import {
   SALESFORCE_METADATA_TYPES,
   MetadataTypeWithoutDependencies,
 } from '../../src/fetch_profile/metadata_types'
+import { PROFILE_RELATED_METADATA_TYPES } from '../../src/constants'
 
 describe('Salesforce MetadataTypes', () => {
   const getDuplicates = (array: ReadonlyArray<string>): ReadonlyArray<string> =>
@@ -63,11 +64,11 @@ describe('Salesforce MetadataTypes', () => {
           'WorkflowKnowledgePublish',
           'WorkflowTask',
           'WorkflowRule',
-          'CustomObject',
           'Workflow',
           'TopicsForObjects',
           'Flow',
-          'FlowDefinition',
+          'Profile',
+          ...PROFILE_RELATED_METADATA_TYPES,
         ])
       })
     })

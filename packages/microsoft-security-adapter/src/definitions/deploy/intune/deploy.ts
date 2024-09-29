@@ -26,6 +26,7 @@ const {
   // Type names
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -221,6 +222,10 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
       },
     },
   },
+  [APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME]:
+    groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
+      resourcePath: '/deviceAppManagement/mdmWindowsInformationProtectionPolicies',
+    }),
   [DEVICE_CONFIGURATION_TYPE_NAME]: groupAssignments.createBasicDeployDefinitionForTypeWithAssignments({
     resourcePath: '/deviceManagement/deviceConfigurations',
   }),

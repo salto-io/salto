@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, objects, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   ConfigChangeSuggestion,
@@ -20,6 +20,7 @@ import {
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
   MetadataInstance,
   MetadataQuery,
+  ProfileSection,
 } from './types'
 import {
   CUSTOM_OBJECT,
@@ -53,6 +54,7 @@ import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
+const { concatObjects } = objects
 const log = logger(module)
 
 export const fetchMetadataType = async (
@@ -362,10 +364,31 @@ export const retrieveMetadataInstances = async ({
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
 
+  log.trace('metadata types in fetch: %s', inspectValue(Object.keys(typesByName)))
+
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
-    const result = instances[0].clone()
-    result.value = _.merge({}, ...instances.map(instance => instance.value))
-    return result
+    const uniqueFnBySection: Record<ProfileSection, (values: unknown[]) => unknown[]> = {
+      [ProfileSection.FieldPermissions]: values => _.uniqBy(values, 'field'),
+      [ProfileSection.ObjectPermissions]: values => _.uniqBy(values, 'object'),
+      [ProfileSection.RecordTypeVisibilities]: values => _.uniqBy(values, 'recordType'),
+      [ProfileSection.TabVisibilities]: values => _.uniqBy(values, 'tab'),
+      [ProfileSection.UserPermissions]: values => _.uniqBy(values, 'name'),
+      [ProfileSection.ApplicationVisibilities]: values => _.uniqBy(values, 'application'),
+      [ProfileSection.ClassAccesses]: values => _.uniqBy(values, 'apexClass'),
+      [ProfileSection.FlowAccesses]: values => _.uniqBy(values, 'flow'),
+      [ProfileSection.LayoutAssignments]: values =>
+        _.uniqBy(values, value => `${_.get(value, 'layout', '')}@${_.get(value, 'recordType', '')}`),
+      [ProfileSection.PageAccesses]: values => _.uniqBy(values, 'apexPage'),
+    }
+    const mergedInstance = instances[0].clone()
+    mergedInstance.value = {
+      ...mergedInstance.value,
+      ...concatObjects(
+        instances.map(instance => _.pick(instance.value, Object.keys(uniqueFnBySection))),
+        uniqueFnBySection,
+      ),
+    }
+    return mergedInstance
   }
 
   const configChangeAlreadyExists = (change: ConfigChangeSuggestion): boolean => {
@@ -389,16 +412,24 @@ export const retrieveMetadataInstances = async ({
     return false
   }
 
+  const missingTypes = new Set<string>()
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
   ): Promise<InstanceElement[]> => {
     const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = allFileProps.map(inst => ({
-      ...inst,
-      type: getManifestTypeName(typesByName[inst.type]),
-    }))
+    const filesToRetrieve = allFileProps.map(inst => {
+      const metadataType = typesByName[inst.type]
+      if (metadataType === undefined) {
+        missingTypes.add(inst.type)
+        return inst
+      }
+      return {
+        ...inst,
+        type: getManifestTypeName(metadataType),
+      }
+    })
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
@@ -532,6 +563,9 @@ export const retrieveMetadataInstances = async ({
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
+  if (missingTypes.size > 0) {
+    log.warn('Missing metadata types in fetch: %s', inspectValue(Array.from(missingTypes)))
+  }
   if (configChanges.length > 0) {
     log.debug('config changes (first 10): %s', inspectValue(configChanges, { maxArrayLength: 10 }))
   }

@@ -5,20 +5,19 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { ArtificialTypes } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { buildElementsSourceForFetch, ensureSafeFilterFetch } from './utils'
+import { buildElementsSourceForFetch, ensureSafeFilterFetch, getProfilesAndPermissionSetsBrokenPaths } from './utils'
 import {
   getProfilesAndPsBrokenReferenceFields,
   isProfileOrPermissionSetInstance,
 } from '../custom_references/profiles_and_permission_sets'
 
 const log = logger(module)
-const { toArrayAsync } = collections.asynciterable
 
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'profilesAndPermissionSetsBrokenPaths',
@@ -27,9 +26,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     warningMessage: 'Error occurred while calculating Profiles and PermissionSets broken paths',
     fetchFilterFunc: async elements => {
       const elementsSource = buildElementsSourceForFetch(elements, config)
-      const profilesAndPermissionSets = (await toArrayAsync(await elementsSource.getAll())).filter(
-        isProfileOrPermissionSetInstance,
-      )
+      const profilesAndPermissionSets = elements.filter(isProfileOrPermissionSetInstance)
       if (profilesAndPermissionSets.length === 0) {
         return
       }
@@ -38,10 +35,10 @@ const filter: LocalFilterCreator = ({ config }) => ({
         profilesAndPermissionSets,
         config,
       })
-      const uniquePaths = new Set(paths)
-      if (uniquePaths.size === 0) {
+      if (paths.length === 0) {
         return
       }
+      const uniquePaths = _.uniq(paths.concat(await getProfilesAndPermissionSetsBrokenPaths(elementsSource)))
       log.debug('Profiles and PermissionSets broken paths: %s', inspectValue(uniquePaths, { maxArrayLength: 100 }))
       elements.push(
         new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths, {

@@ -7,14 +7,22 @@
  */
 import {
   ChangeError,
-  ChangeValidator, Element, ElemID,
-  getChangeData, isFieldChange,
-  isInstanceChange, isReferenceExpression, Value,
+  ChangeValidator,
+  Element,
+  ElemID,
+  getChangeData,
+  isFieldChange,
+  isInstanceChange,
+  isReferenceExpression,
+  Value,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
-  metadataTypeToFieldToMapDef, annotationDefsByType,
-  findInstancesToConvert, getElementValueOrAnnotations, getFieldChangesOfType,
+  metadataTypeToFieldToMapDef,
+  annotationDefsByType,
+  findInstancesToConvert,
+  getElementValueOrAnnotations,
+  getFieldChangesOfType,
 } from '../filters/convert_maps'
 
 const { awu } = collections.asynciterable
@@ -27,18 +35,23 @@ const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[]
   }
   const { values, order } = fieldValue
   if (order === undefined || values === undefined) {
-    return [{
-      elemID: element.elemID,
-      severity: 'Error',
-      message: 'Missing field in ordered map',
-      detailedMessage: `Missing order or values fields in field ${fieldName}`,
-    }]
+    return [
+      {
+        elemID: element.elemID,
+        severity: 'Error',
+        message: 'Missing field in ordered map',
+        detailedMessage: `Missing order or values fields in field ${fieldName}`,
+      },
+    ]
   }
   const valueElemIds: ElemID[] = Object.keys(values).map(key => element.elemID.createNestedID(fieldName, 'values', key))
   const foundValueElemIds: ElemID[] = []
   const errors: ChangeError[] = []
   order.forEach((valueRef: Value) => {
-    if (!isReferenceExpression(valueRef) || !valueElemIds.map(elemID => elemID.getFullName()).includes(valueRef.elemID.getFullName())) {
+    if (
+      !isReferenceExpression(valueRef) ||
+      !valueElemIds.map(elemID => elemID.getFullName()).includes(valueRef.elemID.getFullName())
+    ) {
       errors.push({
         elemID: element.elemID,
         severity: 'Error',
@@ -57,7 +70,9 @@ const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[]
     }
     foundValueElemIds.push(valueRef.elemID)
   })
-  const missingElemIds = valueElemIds.filter(valueElemId => !foundValueElemIds.map(elemID => elemID.getFullName()).includes(valueElemId.getFullName()))
+  const missingElemIds = valueElemIds.filter(
+    valueElemId => !foundValueElemIds.map(elemID => elemID.getFullName()).includes(valueElemId.getFullName()),
+  )
   errors.push({
     elemID: element.elemID,
     severity: 'Error',
@@ -70,7 +85,10 @@ const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[]
 const changeValidator: ChangeValidator = async changes => {
   const instanceErrors: ChangeError[] = await awu(Object.keys(metadataTypeToFieldToMapDef))
     .flatMap(async targetMetadataType => {
-      const instances = await findInstancesToConvert(changes.filter(isInstanceChange).map(getChangeData), targetMetadataType)
+      const instances = await findInstancesToConvert(
+        changes.filter(isInstanceChange).map(getChangeData),
+        targetMetadataType,
+      )
       const fieldNames = Object.entries(metadataTypeToFieldToMapDef[targetMetadataType])
         .filter(([_fieldName, mapDef]) => mapDef.maintainOrder)
         .map(([fieldName, _mapDef]) => fieldName)
@@ -79,16 +97,18 @@ const changeValidator: ChangeValidator = async changes => {
     })
     .toArray()
 
-  const objectTypeErrors: ChangeError[] =
-    await awu(Object.keys(annotationDefsByType)).flatMap(async fieldType => {
+  const objectTypeErrors: ChangeError[] = await awu(Object.keys(annotationDefsByType))
+    .flatMap(async fieldType => {
       const fieldNames = Object.entries(annotationDefsByType[fieldType])
         .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
         .map(([fieldName, _mapDef]) => fieldName)
 
       const fieldChanges = await getFieldChangesOfType(changes, fieldType)
-      const types = awu(fieldChanges).filter(isFieldChange).map(async change => {
-        await getChangeData(change).getType()
-      })
+      const types = awu(fieldChanges)
+        .filter(isFieldChange)
+        .map(async change => {
+          await getChangeData(change).getType()
+        })
       if (types === undefined) {
         return []
       }
@@ -96,7 +116,7 @@ const changeValidator: ChangeValidator = async changes => {
         .flatMap(getChangeData)
         .flatMap(field => fieldNames.flatMap(fieldName => getOrderedMapErrors(field, fieldName)))
     })
-      .toArray()
+    .toArray()
   return instanceErrors.concat(objectTypeErrors)
 }
 

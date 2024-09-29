@@ -107,7 +107,9 @@ const createFieldChangeError = (field: Field, contexts: string[]): ChangeError =
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
-  const contexts = (isFieldWithValueSetList(field) ? field.annotations.valueSet : Object.values(field.annotations.valueSet.values))
+  const contexts = (
+    isFieldWithValueSetList(field) ? field.annotations.valueSet : Object.values(field.annotations.valueSet.values)
+  )
     .filter(obj => obj.default)
     .map(obj => obj[LABEL])
     .map(formatContext)

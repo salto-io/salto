@@ -453,10 +453,11 @@ export const getInstanceChanges = (
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
 
-export const getFieldChangesOfType = (changes: ReadonlyArray<Change>, fieldType: string): Change[] =>
-  changes
+export const getFieldChangesOfType = async (changes: ReadonlyArray<Change>, fieldType: string): Promise<Change[]> =>
+  awu(changes)
     .filter(isFieldChange)
     .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
+    .toArray()
 
 export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
   const instances = elements.filter(isInstanceElement)
@@ -539,7 +540,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     })
 
     await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
-      const fieldsChanges = getFieldChangesOfType(changes, fieldType)
+      const fieldsChanges = await getFieldChangesOfType(changes, fieldType)
       if (fieldsChanges.length === 0) {
         return
       }
@@ -568,7 +569,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     })
 
     await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
-      const fieldsChanges = getFieldChangesOfType(changes, fieldType)
+      const fieldsChanges = await getFieldChangesOfType(changes, fieldType)
       if (fieldsChanges.length === 0) {
         return
       }

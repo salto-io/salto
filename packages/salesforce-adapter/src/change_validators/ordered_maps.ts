@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import {
   ChangeError,
   ChangeValidator,
@@ -27,7 +28,7 @@ import {
 
 const { awu } = collections.asynciterable
 
-const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[] => {
+export const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[] => {
   const elementValues = getElementValueOrAnnotations(element)
   const fieldValue = elementValues[fieldName]
   if (fieldValue === undefined) {
@@ -89,6 +90,9 @@ const changeValidator: ChangeValidator = async changes => {
         changes.filter(isInstanceChange).map(getChangeData),
         targetMetadataType,
       )
+      if (_.isEmpty(instances)) {
+        return []
+      }
       const fieldNames = Object.entries(metadataTypeToFieldToMapDef[targetMetadataType])
         .filter(([_fieldName, mapDef]) => mapDef.maintainOrder)
         .map(([fieldName, _mapDef]) => fieldName)

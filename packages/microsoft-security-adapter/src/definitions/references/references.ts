@@ -15,23 +15,23 @@ import { REFERENCE_RULES as CrossReferenceRules } from './cross_reference_rules'
 
 const REFERENCE_RULES = [...EntraReferenceRules, ...IntuneReferenceRules, ...CrossReferenceRules]
 
+type FieldsToGroupBy =
+  | referenceUtils.ReferenceIndexField
+  | Exclude<CustomReferenceSerializationStrategyName, 'servicePrincipalAppId'>
+
 // We only use this record as a TS 'hack' to fail the build if we add a custom serialization strategy
 // and forget to add it to the fieldsToGroupBy.
-const fieldsToGroupBy: Record<referenceUtils.ReferenceIndexField | CustomReferenceSerializationStrategyName, boolean> =
-  {
-    id: true,
-    name: true,
-    appId: true,
-    bundleId: true,
-    packageId: true,
-    servicePrincipalAppId: false,
-  }
+const fieldsToGroupBy: Record<FieldsToGroupBy, null> = {
+  id: null,
+  name: null,
+  appId: null,
+  bundleId: null,
+  packageId: null,
+}
 
 export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
   rules: REFERENCE_RULES,
-  fieldsToGroupBy: Object.entries(fieldsToGroupBy)
-    .filter(([, shouldGroupBy]) => shouldGroupBy)
-    .map(([field]) => field) as Array<keyof typeof fieldsToGroupBy>,
+  fieldsToGroupBy: Object.keys(fieldsToGroupBy) as Array<keyof typeof fieldsToGroupBy>,
   serializationStrategyLookup: {
     // Entra serialization strategies lookup
     appId: {

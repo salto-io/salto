@@ -9,7 +9,6 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ActionName, BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
-import { getTypePath } from './transformers/transformer'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -442,6 +441,14 @@ export const CUSTOM_METADATA_META_TYPE = 'CustomMetadata'
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 export const PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS = 'ProfilesAndPermissionSetsBrokenPaths'
+export const PATHS_FIELD = 'paths'
+
+export const getTypePath = (name: string, isTopLevelType = true): string[] => [
+  SALESFORCE,
+  TYPES_PATH,
+  ...(isTopLevelType ? [] : [SUBTYPES_PATH]),
+  name,
+]
 
 export const ArtificialTypes = {
   [CHANGED_AT_SINGLETON]: new ObjectType({
@@ -457,7 +464,7 @@ export const ArtificialTypes = {
     isSettings: true,
     path: getTypePath(PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS),
     fields: {
-      paths: { refType: new ListType(BuiltinTypes.STRING) },
+      [PATHS_FIELD]: { refType: new ListType(BuiltinTypes.STRING) },
     },
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,

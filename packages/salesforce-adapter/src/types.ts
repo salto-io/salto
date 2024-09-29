@@ -127,6 +127,7 @@ export type OptionalFeatures = {
   logDiffsFromParsingXmlNumbers?: boolean
   performSideEffectDeletes?: boolean
   extendTriggersMetadata?: boolean
+  storeProfilesAndPermissionSetsBrokenPaths?: boolean
 }
 
 export type ChangeValidatorName =
@@ -837,6 +838,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
+    storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

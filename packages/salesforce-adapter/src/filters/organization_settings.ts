@@ -11,8 +11,8 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Va
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { ensureSafeFilterFetch, queryClient, safeApiName } from './utils'
-import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
-import { API_NAME, ORGANIZATION_SETTINGS, RECORDS_PATH, SALESFORCE, SETTINGS_PATH } from '../constants'
+import { getSObjectFieldElement } from '../transformers/transformer'
+import { API_NAME, getTypePath, ORGANIZATION_SETTINGS, RECORDS_PATH, SALESFORCE, SETTINGS_PATH } from '../constants'
 import SalesforceClient from '../client/client'
 import { FetchProfile } from '../types'
 

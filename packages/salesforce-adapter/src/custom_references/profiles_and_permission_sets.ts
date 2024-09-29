@@ -32,6 +32,7 @@ import {
   ENDS_WITH_CUSTOM_SUFFIX_REGEX,
   extractFlatCustomObjectFields,
   getNamespaceFromString,
+  getProfilesAndPermissionSetsBrokenPaths,
   isInstanceOfTypeSync,
 } from '../filters/utils'
 import { buildMetadataQuery } from '../fetch_profile/metadata_query'
@@ -308,10 +309,11 @@ export const getProfilesAndPsBrokenReferenceFields = async ({
       .map(elem => elem.elemID.getFullName())
       .toArray(),
   )
-  const paths = Object.keys(
-    await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())),
+  const brokenPaths = new Set(await getProfilesAndPermissionSetsBrokenPaths(elementsSource))
+  const paths = Object.keys(await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())))
+    // Ignore broken paths that were calculated in fetch
+    .filter(path => !brokenPaths.has(path))
     // fieldPermissions may contain standard values that are not referring to any field, we shouldn't omit these
-  )
     .filter(path => !isStandardFieldPermissionsPath(path))
     // Some standard objects are not managed in the metadata API and won't exist in the workspace.
     .filter(path => !isStandardObjectPermissionsPath(path))

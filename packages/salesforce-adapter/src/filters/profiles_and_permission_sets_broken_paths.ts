@@ -11,7 +11,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ArtificialTypes } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { buildElementsSourceForFetch } from './utils'
+import { buildElementsSourceForFetch, ensureSafeFilterFetch } from './utils'
 import {
   getProfilesAndPsBrokenReferenceFields,
   isProfileOrPermissionSetInstance,
@@ -22,26 +22,34 @@ const { toArrayAsync } = collections.asynciterable
 
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'profilesAndPermissionSetsBrokenPaths',
-  onFetch: async elements => {
-    const elementsSource = buildElementsSourceForFetch(elements, config)
-    const profilesAndPermissionSets = (await toArrayAsync(await elementsSource.getAll())).filter(
-      isProfileOrPermissionSetInstance,
-    )
-    if (profilesAndPermissionSets.length === 0) {
-      return
-    }
-    const { paths } = await getProfilesAndPsBrokenReferenceFields({ elementsSource, profilesAndPermissionSets, config })
-    const uniquePaths = new Set(paths)
-    if (uniquePaths.size === 0) {
-      return
-    }
-    log.debug('Profiles and PermissionSets broken paths: %s', inspectValue(uniquePaths, { maxArrayLength: 100 }))
-    elements.push(
-      new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths, {
-        paths: uniquePaths,
-      }),
-    )
-  },
+  onFetch: ensureSafeFilterFetch({
+    config,
+    warningMessage: 'Error occurred while calculating Profiles and PermissionSets broken paths',
+    fetchFilterFunc: async elements => {
+      const elementsSource = buildElementsSourceForFetch(elements, config)
+      const profilesAndPermissionSets = (await toArrayAsync(await elementsSource.getAll())).filter(
+        isProfileOrPermissionSetInstance,
+      )
+      if (profilesAndPermissionSets.length === 0) {
+        return
+      }
+      const { paths } = await getProfilesAndPsBrokenReferenceFields({
+        elementsSource,
+        profilesAndPermissionSets,
+        config,
+      })
+      const uniquePaths = new Set(paths)
+      if (uniquePaths.size === 0) {
+        return
+      }
+      log.debug('Profiles and PermissionSets broken paths: %s', inspectValue(uniquePaths, { maxArrayLength: 100 }))
+      elements.push(
+        new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths, {
+          paths: uniquePaths,
+        }),
+      )
+    },
+  }),
 })
 
 export default filter

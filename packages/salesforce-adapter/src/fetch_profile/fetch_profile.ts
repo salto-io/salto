@@ -48,6 +48,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   logDiffsFromParsingXmlNumbers: true,
   performSideEffectDeletes: false,
   extendTriggersMetadata: false,
+  storeProfilesAndPermissionSetsBrokenPaths: true,
 }
 
 type BuildFetchProfileParams = {

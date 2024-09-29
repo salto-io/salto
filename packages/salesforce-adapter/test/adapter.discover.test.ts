@@ -306,7 +306,7 @@ describe('SalesforceAdapter fetch', () => {
         ]
         jest.spyOn(customListFuncsModule, 'createListApexClassesDef').mockReturnValue({
           func: async _client => ({ result: apexClassFileProperties, errors: [] }),
-          isPartial: true,
+          mode: 'partial',
         })
         connection.metadata.describe.mockResolvedValue(
           mockDescribeResult([
@@ -2703,101 +2703,6 @@ describe('Fetch via retrieve API', () => {
       })
     },
   )
-
-  describe.each([DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST, 2])('chunks with one profile [chunk size = %d]', chunkSize => {
-    let elements: InstanceElement[] = []
-
-    beforeEach(async () => {
-      await setupMocks([
-        { type: mockTypes.CustomObject, instanceName: 'Case' },
-        { type: mockTypes.CustomObject, instanceName: 'Account' },
-        { type: mockTypes.Profile, instanceName: 'SomeProfile' },
-      ])
-
-      elements = (
-        await retrieveMetadataInstances({
-          client,
-          types: [mockTypes.CustomObject, mockTypes.Profile],
-          fetchProfile: buildFetchProfile({
-            fetchParams: { addNamespacePrefixToFullName: false },
-            maxItemsInRetrieveRequest: chunkSize,
-          }),
-        })
-      ).elements
-    })
-
-    it('should fetch the correct instances including a complete profile', () => {
-      expect(elements).toHaveLength(3)
-      expect(elements).toIncludeAllPartialMembers([
-        {
-          elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Case'),
-        },
-        {
-          elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account'),
-        },
-        {
-          elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeProfile'),
-        },
-      ])
-      const profileInstance = elements[2]
-      expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
-      const referencedTypes = _(profileInstance.value.fieldPermissions)
-        .map(({ field }: { field: string }) => field.split('.')[0])
-        .sortBy()
-        .value()
-
-      expect(referencedTypes).toEqual(['Account', 'Case'])
-    })
-  })
-
-  describe('Multiple chunks with multiple profiles', () => {
-    let elements: InstanceElement[] = []
-
-    beforeEach(async () => {
-      await setupMocks([
-        { type: mockTypes.CustomObject, instanceName: 'Case' },
-        { type: mockTypes.CustomObject, instanceName: 'Account' },
-        { type: mockTypes.Profile, instanceName: 'SomeProfile' },
-        { type: mockTypes.Profile, instanceName: 'SomeOtherProfile' },
-      ])
-
-      elements = (
-        await retrieveMetadataInstances({
-          client,
-          types: [mockTypes.CustomObject, mockTypes.Profile],
-          fetchProfile: buildFetchProfile({
-            fetchParams: { addNamespacePrefixToFullName: false },
-            maxItemsInRetrieveRequest: 3,
-          }),
-        })
-      ).elements
-    })
-
-    it('should fetch the correct instances including both complete profiles', () => {
-      expect(elements).toHaveLength(4)
-      expect(elements).toIncludeAllPartialMembers([
-        { elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Case') },
-        {
-          elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account'),
-        },
-        {
-          elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeProfile'),
-        },
-        {
-          elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeOtherProfile'),
-        },
-      ])
-      const profileInstances = elements.slice(2)
-      profileInstances.forEach(profileInstance => {
-        expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
-        const referencedTypes = _(profileInstance.value.fieldPermissions)
-          .map(({ field }: { field: string }) => field.split('.')[0])
-          .sortBy()
-          .value()
-        expect(referencedTypes).toEqual(['Account', 'Case'])
-      })
-    })
-  })
 
   describe('Config changes', () => {
     let configChanges: ConfigChangeSuggestion[]

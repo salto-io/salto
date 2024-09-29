@@ -11,7 +11,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, InstanceElement, ReferenceInfo, Values } from '@salto-io/adapter-api'
 import { invertNaclCase } from '@salto-io/adapter-utils'
-import { MetadataInstance, MetadataQuery, WeakReferencesHandler } from '../types'
+import { MetadataInstance, MetadataQuery, ProfileSection, WeakReferencesHandler } from '../types'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -41,17 +41,6 @@ const { awu } = collections.asynciterable
 const { pickAsync } = promises.object
 const log = logger(module)
 
-enum section {
-  APEX_CLASS = 'classAccesses',
-  APEX_PAGE = 'pageAccesses',
-  APP_VISIBILITY = 'applicationVisibilities',
-  FIELD_PERMISSIONS = 'fieldPermissions',
-  FLOW = 'flowAccesses',
-  LAYOUTS = 'layoutAssignments',
-  OBJECT = 'objectPermissions',
-  RECORD_TYPE = 'recordTypeVisibilities',
-}
-
 const FIELD_NO_ACCESS = 'NoAccess'
 
 const isProfileOrPermissionSetInstance = isInstanceOfTypeSync(
@@ -77,7 +66,7 @@ type ReferenceFromSectionParams = {
 
 const mapSectionEntries = <T>(
   instance: InstanceElement,
-  sectionName: section,
+  sectionName: ProfileSection,
   { filter = () => true, targetsGetter }: ReferenceFromSectionParams,
   f: (sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
 ): T[] => {
@@ -187,36 +176,42 @@ const recordTypeReferences: RefTargetsGetter = sectionEntry =>
       sourceField: recordTypeVisibilityKey,
     }))
 
-const sectionsReferenceParams: Record<section, ReferenceFromSectionParams> = {
-  [section.APP_VISIBILITY]: {
+const sectionsReferenceParams: Record<ProfileSection, ReferenceFromSectionParams> = {
+  [ProfileSection.ApplicationVisibilities]: {
     filter: appVisibilityEntry => appVisibilityEntry.default || appVisibilityEntry.visible,
     targetsGetter: referenceToInstance('application', CUSTOM_APPLICATION_METADATA_TYPE),
   },
-  [section.APEX_CLASS]: {
+  [ProfileSection.ClassAccesses]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexClass', APEX_CLASS_METADATA_TYPE),
   },
-  [section.FLOW]: {
+  [ProfileSection.FlowAccesses]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('flow', FLOW_METADATA_TYPE),
   },
-  [section.APEX_PAGE]: {
+  [ProfileSection.PageAccesses]: {
     filter: isEnabled,
     targetsGetter: referenceToInstance('apexPage', APEX_PAGE_METADATA_TYPE),
   },
-  [section.OBJECT]: {
+  [ProfileSection.ObjectPermissions]: {
     filter: isAnyAccessEnabledForObject,
     targetsGetter: referenceToType('object'),
   },
-  [section.FIELD_PERMISSIONS]: {
+  [ProfileSection.FieldPermissions]: {
     filter: isAnyAccessEnabledForField,
     targetsGetter: referencesToFields,
   },
-  [section.LAYOUTS]: {
+  [ProfileSection.LayoutAssignments]: {
     targetsGetter: layoutReferences,
   },
-  [section.RECORD_TYPE]: {
+  [ProfileSection.RecordTypeVisibilities]: {
     targetsGetter: recordTypeReferences,
+  },
+  [ProfileSection.UserPermissions]: {
+    targetsGetter: () => [],
+  },
+  [ProfileSection.TabVisibilities]: {
+    targetsGetter: () => [],
   },
 }
 
@@ -225,7 +220,7 @@ export const mapInstanceSections = <T>(
   f: (sectionName: string, sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
 ): T[] =>
   Object.entries(sectionsReferenceParams).flatMap(([sectionName, params]) =>
-    mapSectionEntries(instance, sectionName as section, params, _.curry(f)(sectionName)),
+    mapSectionEntries(instance, sectionName as ProfileSection, params, _.curry(f)(sectionName)),
   )
 
 const referencesFromInstance = (instance: InstanceElement): ReferenceInfo[] =>
@@ -260,10 +255,10 @@ const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: Metad
     .value()
 
 const isStandardFieldPermissionsPath = (path: string): boolean =>
-  path.startsWith(section.FIELD_PERMISSIONS) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+  path.startsWith(ProfileSection.FieldPermissions) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
 
 const isStandardObjectPermissionsPath = (path: string): boolean =>
-  path.startsWith(section.OBJECT) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
+  path.startsWith(ProfileSection.ObjectPermissions) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
 
 type TopLevelElemID = Omit<ElemID, 'idType'> & {
   idType: 'type' | 'instance'

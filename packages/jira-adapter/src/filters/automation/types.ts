@@ -146,6 +146,14 @@ export const createAutomationTypes = (): {
     },
   })
 
+  const templateFormsConfigType = new ObjectType({
+    elemID: new ElemID(JIRA, 'TemplateFormsConfig'),
+    fields: {
+      projectId: { refType: BuiltinTypes.NUMBER },
+      templateFormIds: { refType: new ListType(BuiltinTypes.NUMBER) },
+    },
+  })
+
   const componentValueType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_COMPONENT_VALUE_TYPE),
     fields: {
@@ -177,6 +185,7 @@ export const createAutomationTypes = (): {
       schemaId: { refType: BuiltinTypes.STRING },
       objectTypeLabel: { refType: BuiltinTypes.STRING },
       objectTypeId: { refType: BuiltinTypes.STRING },
+      templateFormsConfig: { refType: templateFormsConfigType },
       requestType: { refType: BuiltinTypes.UNKNOWN }, // can be string or { type: string; value: string }
       serviceDesk: {
         refType: BuiltinTypes.STRING,

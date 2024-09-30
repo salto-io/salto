@@ -230,35 +230,54 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
   }
 
   Object.entries(mapFieldDef)
-    .filter(([fieldName]) => getElementValueOrAnnotations(element)[fieldName] !== undefined)
+    .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
     .forEach(([fieldName, mapDef]) => {
       const mapper = mapDef.mapper ?? defaultMapper
       const elementValues = getElementValueOrAnnotations(element)
       if (mapDef.nested) {
-        const firstLevelGroups = _.groupBy(makeArray(elementValues[fieldName]), item => mapper(item[mapDef.key])[0])
-        elementValues[fieldName] = _.mapValues(firstLevelGroups, firstLevelValues =>
-          convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
+        const firstLevelGroups = _.groupBy(
+          makeArray(_.get(elementValues, fieldName)),
+          item => mapper(item[mapDef.key])[0],
+        )
+        _.set(
+          elementValues,
+          fieldName,
+          _.mapValues(firstLevelGroups, firstLevelValues =>
+            convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
+          ),
         )
       } else if (mapDef.maintainOrder) {
-        const originalFieldValue = elementValues[fieldName]
-        elementValues[fieldName] = {}
-        elementValues[fieldName][ORDERED_MAP_VALUES_FIELD] = convertField(
-          makeArray(originalFieldValue),
-          item => mapper(item[mapDef.key])[0],
-          !!mapDef.mapToList,
+        const originalFieldValue = _.get(elementValues, fieldName)
+        _.set(elementValues, fieldName, {})
+        _.set(
+          elementValues,
           fieldName,
+          convertField(
+            makeArray(originalFieldValue),
+            item => mapper(item[mapDef.key])[0],
+            !!mapDef.mapToList,
+            fieldName,
+          ),
         )
-        elementValues[fieldName][ORDERED_MAP_ORDER_FIELD] = makeArray(originalFieldValue)
-          .map(item => mapper(item[mapDef.key])[0])
-          .map(
-            name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
-          )
-      } else {
-        elementValues[fieldName] = convertField(
-          makeArray(elementValues[fieldName]),
-          item => mapper(item[mapDef.key])[0],
-          !!mapDef.mapToList,
+        _.set(
+          elementValues,
           fieldName,
+          makeArray(originalFieldValue)
+            .map(item => mapper(item[mapDef.key])[0])
+            .map(
+              name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
+            ),
+        )
+      } else {
+        _.set(
+          elementValues,
+          fieldName,
+          convertField(
+            makeArray(_.get(elementValues, fieldName)),
+            item => mapper(item[mapDef.key])[0],
+            !!mapDef.mapToList,
+            fieldName,
+          ),
         )
       }
     })
@@ -388,21 +407,21 @@ const convertFieldsBackToLists = async (
         .filter(fieldName => getElementValueOrAnnotations(element)[fieldName] !== undefined)
         .forEach(fieldName => {
           const elementValues = getElementValueOrAnnotations(element)
-          if (Array.isArray(elementValues[fieldName])) {
+          if (Array.isArray(_.get(elementValues, fieldName))) {
             // should not happen
             return
           }
 
           if (mapFieldDef[fieldName].nested) {
             // first convert the inner levels to arrays, then merge into one array
-            elementValues[fieldName] = _.mapValues(elementValues[fieldName], toVals)
+            _.set(elementValues, fieldName, _.mapValues(elementValues[fieldName], toVals))
           }
           if (mapFieldDef[fieldName].maintainOrder) {
             // OrderedMap keeps the order in a list of references, so we just need to override the top-level OrderedMap
             // with this list.
-            elementValues[fieldName] = elementValues[fieldName][ORDERED_MAP_ORDER_FIELD]
+            _.set(elementValues, fieldName, elementValues[fieldName][ORDERED_MAP_ORDER_FIELD])
           } else {
-            elementValues[fieldName] = toVals(elementValues[fieldName])
+            _.set(elementValues, fieldName, toVals(elementValues[fieldName]))
           }
         })
     })

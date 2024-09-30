@@ -13,7 +13,7 @@ import {
   ElemID,
   getChangeData,
   isFieldChange,
-  isInstanceChange,
+  isInstanceChange, isObjectType, isObjectTypeChange,
   isReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'
@@ -110,16 +110,17 @@ const changeValidator: ChangeValidator = async changes => {
         .map(([fieldName, _mapDef]) => fieldName)
 
       const fieldChanges = await getFieldChangesOfType(changes, fieldType)
-      const types = awu(fieldChanges)
-        .filter(isFieldChange)
-        .map(async change => {
-          await getChangeData(change).getType()
-        })
-      if (types === undefined) {
-        return []
-      }
       return fieldChanges
-        .flatMap(getChangeData)
+        .flatMap(change => {
+          if (isFieldChange(change)) {
+            return [getChangeData(change)]
+          }
+          if (isObjectTypeChange(change)) {
+            const objectType = getChangeData(change)
+            return Object.values(objectType.fields).filter(field => field.refType.elemID.typeName === fieldType)
+          }
+          return []
+        })
         .flatMap(field => fieldNames.flatMap(fieldName => getOrderedMapErrors(field, fieldName)))
     })
     .toArray()

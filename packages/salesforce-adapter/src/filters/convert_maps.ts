@@ -30,7 +30,7 @@ import {
   isFieldChange,
   ReferenceExpression,
   TypeElement,
-  ElemID,
+  ElemID, isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -453,11 +453,20 @@ export const getInstanceChanges = (
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
 
-export const getFieldChangesOfType = async (changes: ReadonlyArray<Change>, fieldType: string): Promise<Change[]> =>
-  awu(changes)
+export const getFieldChangesOfType = async (changes: ReadonlyArray<Change>, fieldType: string): Promise<Change[]> => {
+  const directFieldChanges: Change[] = await awu(changes)
     .filter(isFieldChange)
     .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
     .toArray()
+
+  const internalFieldChanges = changes
+    .filter(isObjectTypeChange)
+    .filter(change =>
+      Object.values(getChangeData(change).fields).some(field => field.refType.elemID.typeName === fieldType)
+    )
+
+  return directFieldChanges.concat(internalFieldChanges)
+}
 
 export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
   const instances = elements.filter(isInstanceElement)

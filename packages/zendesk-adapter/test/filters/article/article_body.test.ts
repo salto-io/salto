@@ -251,7 +251,10 @@ describe('article body filter', () => {
         beforeEach(async () => {
           filter = filterCreator(
             createFilterCreatorParams({
-              config: { ...config, fetch: { ...config[FETCH_CONFIG], guide: { brands: ['.*'] } } },
+              config: {
+                ...config,
+                fetch: { ...config[FETCH_CONFIG], guide: { brands: ['.*'] }, translationBodyAsStaticFile: true },
+              },
             }),
           ) as FilterType
         })
@@ -374,7 +377,14 @@ describe('article body filter', () => {
         beforeEach(() => {
           filter = filterCreator(
             createFilterCreatorParams({
-              config: { ...config, fetch: { ...config[FETCH_CONFIG], guide: { brands: ['^(?!excluded).*$'] } } },
+              config: {
+                ...config,
+                fetch: {
+                  ...config[FETCH_CONFIG],
+                  guide: { brands: ['^(?!excluded).*$'] },
+                  translationBodyAsStaticFile: true,
+                },
+              },
             }),
           ) as FilterType
         })

@@ -5,13 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  ElemID,
-  InstanceElement,
-  ObjectType,
-  ReferenceExpression,
-  toChange,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/ordered_maps'
 import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { GLOBAL_VALUE_SET } from '../../src/filters/global_value_sets'
@@ -29,13 +23,11 @@ describe('OrderedMap Change Validator', () => {
           val1: 'value1',
           val2: 'value2',
         },
-      }
+      },
     })
 
     it('should return an error when the order field is missing', async () => {
-      const errors = await changeValidator([
-        toChange({ after: gvs })
-      ])
+      const errors = await changeValidator([toChange({ after: gvs })])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toMatchObject({
         elemID: gvs.elemID,
@@ -49,9 +41,7 @@ describe('OrderedMap Change Validator', () => {
       gvs.value.customValue.order = [
         new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
       ]
-      const errors = await changeValidator([
-        toChange({ after: gvs })
-      ])
+      const errors = await changeValidator([toChange({ after: gvs })])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toMatchObject({
         elemID: gvs.elemID,
@@ -67,9 +57,7 @@ describe('OrderedMap Change Validator', () => {
         new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
         new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2')),
       ]
-      const errors = await changeValidator([
-        toChange({ after: gvs })
-      ])
+      const errors = await changeValidator([toChange({ after: gvs })])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toMatchObject({
         elemID: gvs.elemID,
@@ -93,17 +81,15 @@ describe('OrderedMap Change Validator', () => {
                 Low: 'Low',
               },
             },
-          }
-        }
+          },
+        },
       },
     })
 
     const fieldElemID = account.elemID.createNestedID('field', 'CustomerPriority__c')
 
     it('should return an error when the order field is missing', async () => {
-      const errors = await changeValidator([
-        toChange({ after: account })
-      ])
+      const errors = await changeValidator([toChange({ after: account })])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toMatchObject({
         elemID: fieldElemID,
@@ -117,9 +103,7 @@ describe('OrderedMap Change Validator', () => {
       account.fields.CustomerPriority__c.annotations.valueSet.order = [
         new ReferenceExpression(fieldElemID.createNestedID('valueSet', 'values', 'High')),
       ]
-      const errors = await changeValidator([
-        toChange({ after: account })
-      ])
+      const errors = await changeValidator([toChange({ after: account })])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toMatchObject({
         elemID: fieldElemID,
@@ -135,9 +119,7 @@ describe('OrderedMap Change Validator', () => {
         new ReferenceExpression(fieldElemID.createNestedID('valueSet', 'values', 'High')),
         new ReferenceExpression(fieldElemID.createNestedID('valueSet', 'values', 'Low')),
       ]
-      const errors = await changeValidator([
-        toChange({ after: account })
-      ])
+      const errors = await changeValidator([toChange({ after: account })])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toMatchObject({
         elemID: fieldElemID,

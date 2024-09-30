@@ -30,7 +30,8 @@ import {
   isFieldChange,
   ReferenceExpression,
   TypeElement,
-  ElemID, isObjectTypeChange,
+  ElemID,
+  isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -376,8 +377,9 @@ const convertFieldsBackToLists = async (
   const backToArrays = (baseElement: Element): Element => {
     const elementsToConvert = []
     if (baseElement.elemID.typeName !== elementType && isObjectType(baseElement)) {
-      Object.values(baseElement.fields).filter(field => field.refType.elemID.typeName === elementType).forEach(field =>
-        elementsToConvert.push(field))
+      Object.values(baseElement.fields)
+        .filter(field => field.refType.elemID.typeName === elementType)
+        .forEach(field => elementsToConvert.push(field))
     } else {
       elementsToConvert.push(baseElement)
     }
@@ -478,7 +480,7 @@ export const getChangesWithFieldType = async (changes: ReadonlyArray<Change>, fi
   const internalFieldChanges = changes
     .filter(isObjectTypeChange)
     .filter(change =>
-      Object.values(getChangeData(change).fields).some(field => field.refType.elemID.typeName === fieldType)
+      Object.values(getChangeData(change).fields).some(field => field.refType.elemID.typeName === fieldType),
     )
 
   return directFieldChanges.concat(internalFieldChanges)

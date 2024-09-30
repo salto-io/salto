@@ -13,7 +13,8 @@ import {
   ElemID,
   getChangeData,
   isFieldChange,
-  isInstanceChange, isObjectTypeChange,
+  isInstanceChange,
+  isObjectTypeChange,
   isReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'

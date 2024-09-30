@@ -1158,6 +1158,7 @@ describe('Zendesk adapter E2E', () => {
             ...DEFAULT_CONFIG[FETCH_CONFIG],
             include: [{ type: '.*' }],
             exclude: [],
+            translationBodyAsStaticFile: true,
             guide: {
               brands: ['.*'],
               themes: {

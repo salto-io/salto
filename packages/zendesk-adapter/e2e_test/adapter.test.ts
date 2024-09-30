@@ -235,6 +235,7 @@ const usedConfig = {
     ...DEFAULT_CONFIG[FETCH_CONFIG],
     include: [{ type: '.*' }],
     exclude: [],
+    translationBodyAsStaticFile: true,
     guide: {
       brands: ['.*'],
       themes: {

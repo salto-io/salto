@@ -15,12 +15,21 @@ import {
   GetCustomReferencesFunc,
   ConfigCreator,
   createRestriction,
+  FetchResult,
+  LoadElementsFromFolderArgs,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
-import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, fetchErrorType } from './generator'
+import {
+  GeneratorParams,
+  DUMMY_ADAPTER,
+  defaultParams,
+  changeErrorType,
+  fetchErrorType,
+  generateExtraElements,
+} from './generator'
 
 const log = logger(module)
 
@@ -56,6 +65,10 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
         },
       ]
     : []
+
+const loadElementsFromFolder = async ({ baseDir }: LoadElementsFromFolderArgs): Promise<FetchResult> => ({
+  elements: await generateExtraElements([baseDir]),
+})
 
 const objectFieldType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'objectFieldType'),
@@ -198,4 +211,5 @@ export const adapter: Adapter = {
   configType,
   getCustomReferences,
   configCreator,
+  loadElementsFromFolder,
 }

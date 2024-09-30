@@ -15,6 +15,9 @@ import { getProductSettings } from '../product_settings'
 
 const log = logger(module)
 
+const AUTHENTICATION_DENIED_HEADER = 'x-authentication-denied-reason'
+const CAPTCHA_CHALLENGE = 'CAPTCHA_CHALLENGE'
+
 type appInfo = {
   id: string
   plan: string
@@ -28,6 +31,13 @@ const isAuthorized = async (connection: clientUtils.APIConnection): Promise<bool
     if (e.response?.status === 401) {
       return false
     }
+    if (e.response?.status === 403 && e.response?.headers?.[AUTHENTICATION_DENIED_HEADER] !== undefined) {
+      log.error(`Failed to authorize connection, denied reason is: ${e.response.headers[AUTHENTICATION_DENIED_HEADER]}`)
+      if (e.response.headers[AUTHENTICATION_DENIED_HEADER].startsWith(CAPTCHA_CHALLENGE)) {
+        throw new CredentialError('Captcha challenge')
+      }
+    }
+
     throw e
   }
 }

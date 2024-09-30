@@ -39,6 +39,7 @@ import {
   TemplateExpression,
   isReferenceExpression,
   SaltoError,
+  SaltoElementError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -72,6 +73,8 @@ export type ChangeErrorFromConfigFile = {
   severity: SeverityLevel
   deployActions?: DeployActions
 }
+
+type FetchErrorFromConfigFile = SaltoError & { elemID: string }
 
 const deployActionType = createMatchingObjectType<DeployAction>({
   elemID: new ElemID(DUMMY_ADAPTER, 'deployAction'),
@@ -148,9 +151,15 @@ export const changeErrorType = createMatchingObjectType<ChangeErrorFromConfigFil
   },
 })
 
-export const fetchErrorType = createMatchingObjectType<SaltoError>({
-  elemID: new ElemID(DUMMY_ADAPTER, 'changeError'),
+export const fetchErrorType = createMatchingObjectType<FetchErrorFromConfigFile>({
+  elemID: new ElemID(DUMMY_ADAPTER, 'fetchError'),
   fields: {
+    elemID: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: true,
+      },
+    },
     detailedMessage: {
       refType: BuiltinTypes.STRING,
       annotations: {
@@ -216,7 +225,7 @@ export type GeneratorParams = {
   listLengthMean: number
   listLengthStd: number
   changeErrors?: ChangeErrorFromConfigFile[]
-  fetchErrors?: SaltoError[]
+  fetchErrors?: FetchErrorFromConfigFile[]
   extraNaclPaths?: string[]
   generateEnvName?: string
   fieldsToOmitOnDeploy?: string[]
@@ -1024,3 +1033,13 @@ export const generateElements = async (
     ...envObjects,
   ].filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 }
+
+export const generateFetchErrorsFromConfig = (
+  fetchErrorsFromConfig?: FetchErrorFromConfigFile[],
+): SaltoElementError[] | undefined =>
+  fetchErrorsFromConfig === undefined
+    ? undefined
+    : fetchErrorsFromConfig.map(error => ({
+        ...error,
+        elemID: ElemID.fromFullName(error.elemID),
+      }))

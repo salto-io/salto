@@ -1090,3 +1090,16 @@ export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
   config: SalesforceConfig
 }>
+
+export enum ProfileSection {
+  FieldPermissions = 'fieldPermissions',
+  ObjectPermissions = 'objectPermissions',
+  RecordTypeVisibilities = 'recordTypeVisibilities',
+  TabVisibilities = 'tabVisibilities',
+  UserPermissions = 'userPermissions',
+  ApplicationVisibilities = 'applicationVisibilities',
+  ClassAccesses = 'classAccesses',
+  PageAccesses = 'pageAccesses',
+  FlowAccesses = 'flowAccesses',
+  LayoutAssignments = 'layoutAssignments',
+}

@@ -364,36 +364,47 @@ const convertElementFieldsToMaps = async (
  *
  * @param changes          The changes to deploy
  * @param mapFieldDef      The definitions of the fields to convert
+ * @param elementType      The type of the elements to convert
  */
 const convertFieldsBackToLists = async (
   changes: ReadonlyArray<Change<Element>>,
   mapFieldDef: Record<string, MapDef>,
+  elementType: string,
 ): Promise<void> => {
   const toVals = (values: Values): Values[] => Object.values(values).flat()
 
-  const backToArrays = (element: Element): Element => {
-    Object.keys(mapFieldDef)
-      .filter(fieldName => getElementValueOrAnnotations(element)[fieldName] !== undefined)
-      .forEach(fieldName => {
-        const elementValues = getElementValueOrAnnotations(element)
-        if (Array.isArray(elementValues[fieldName])) {
-          // should not happen
-          return
-        }
+  const backToArrays = (baseElement: Element): Element => {
+    const elementsToConvert = []
+    if (baseElement.elemID.typeName !== elementType && isObjectType(baseElement)) {
+      Object.values(baseElement.fields).filter(field => field.refType.elemID.typeName === elementType).forEach(field =>
+        elementsToConvert.push(field))
+    } else {
+      elementsToConvert.push(baseElement)
+    }
+    elementsToConvert.forEach(element => {
+      Object.keys(mapFieldDef)
+        .filter(fieldName => getElementValueOrAnnotations(element)[fieldName] !== undefined)
+        .forEach(fieldName => {
+          const elementValues = getElementValueOrAnnotations(element)
+          if (Array.isArray(elementValues[fieldName])) {
+            // should not happen
+            return
+          }
 
-        if (mapFieldDef[fieldName].nested) {
-          // first convert the inner levels to arrays, then merge into one array
-          elementValues[fieldName] = _.mapValues(elementValues[fieldName], toVals)
-        }
-        if (mapFieldDef[fieldName].maintainOrder) {
-          // OrderedMap keeps the order in a list of references, so we just need to override the top-level OrderedMap
-          // with this list.
-          elementValues[fieldName] = elementValues[fieldName][ORDERED_MAP_ORDER_FIELD]
-        } else {
-          elementValues[fieldName] = toVals(elementValues[fieldName])
-        }
-      })
-    return element
+          if (mapFieldDef[fieldName].nested) {
+            // first convert the inner levels to arrays, then merge into one array
+            elementValues[fieldName] = _.mapValues(elementValues[fieldName], toVals)
+          }
+          if (mapFieldDef[fieldName].maintainOrder) {
+            // OrderedMap keeps the order in a list of references, so we just need to override the top-level OrderedMap
+            // with this list.
+            elementValues[fieldName] = elementValues[fieldName][ORDERED_MAP_ORDER_FIELD]
+          } else {
+            elementValues[fieldName] = toVals(elementValues[fieldName])
+          }
+        })
+    })
+    return baseElement
   }
 
   await awu(changes).forEach(change => applyFunctionToChangeData(change, backToArrays))
@@ -453,7 +464,12 @@ export const getInstanceChanges = (
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
 
-export const getFieldChangesOfType = async (changes: ReadonlyArray<Change>, fieldType: string): Promise<Change[]> => {
+/** Get all changes that contain a specific field type.
+ *
+ * @return All changes that are either field changes of the specified type or object changes that contain fields of the
+ * specified type
+ */
+export const getChangesWithFieldType = async (changes: ReadonlyArray<Change>, fieldType: string): Promise<Change[]> => {
   const directFieldChanges: Change[] = await awu(changes)
     .filter(isFieldChange)
     .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
@@ -542,19 +558,19 @@ const filter: LocalFilterCreator = ({ config }) => ({
       // since transformElement and salesforce do not require list fields to be defined as lists,
       // we only mark fields as lists of their map inner value is a list,
       // so that we can convert the object back correctly in onDeploy
-      await convertFieldsBackToLists(instanceChanges, mapFieldDef)
+      await convertFieldsBackToLists(instanceChanges, mapFieldDef, targetMetadataType)
 
       const instanceType = await getChangeData(instanceChanges[0]).getType()
       await convertFieldTypesBackToLists(instanceType, mapFieldDef)
     })
 
     await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
-      const fieldsChanges = await getFieldChangesOfType(changes, fieldType)
-      if (fieldsChanges.length === 0) {
+      const elementsWithFieldType = await getChangesWithFieldType(changes, fieldType)
+      if (elementsWithFieldType.length === 0) {
         return
       }
       const mapFieldDef = annotationDefsByType[fieldType]
-      await convertFieldsBackToLists(fieldsChanges, mapFieldDef)
+      await convertFieldsBackToLists(elementsWithFieldType, mapFieldDef, fieldType)
     })
   },
 
@@ -578,7 +594,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     })
 
     await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
-      const fieldsChanges = await getFieldChangesOfType(changes, fieldType)
+      const fieldsChanges = await getChangesWithFieldType(changes, fieldType)
       if (fieldsChanges.length === 0) {
         return
       }

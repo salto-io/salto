@@ -6,14 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
-  BuiltinTypes,
-  ChangeError,
-  Element,
   ElemID,
-  InstanceElement, ListType,
+  InstanceElement,
   ObjectType,
-  ReferenceExpression, toChange,
-  Value,
+  ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/ordered_maps'
 import { METADATA_TYPE, SALESFORCE } from '../../src/constants'

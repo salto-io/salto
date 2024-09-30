@@ -13,7 +13,7 @@ import {
   ElemID,
   getChangeData,
   isFieldChange,
-  isInstanceChange, isObjectType, isObjectTypeChange,
+  isInstanceChange, isObjectTypeChange,
   isReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'
@@ -23,7 +23,7 @@ import {
   annotationDefsByType,
   findInstancesToConvert,
   getElementValueOrAnnotations,
-  getFieldChangesOfType,
+  getChangesWithFieldType,
 } from '../filters/convert_maps'
 
 const { awu } = collections.asynciterable
@@ -109,7 +109,7 @@ const changeValidator: ChangeValidator = async changes => {
         .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
         .map(([fieldName, _mapDef]) => fieldName)
 
-      const fieldChanges = await getFieldChangesOfType(changes, fieldType)
+      const fieldChanges = await getChangesWithFieldType(changes, fieldType)
       return fieldChanges
         .flatMap(change => {
           if (isFieldChange(change)) {

@@ -2797,7 +2797,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     omitTicketStatusTicketField: false,
     useNewInfra: true,
     useGuideNewInfra: false,
-    translationBodyAsStaticFile: true,
+    translationBodyAsStaticFile: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,

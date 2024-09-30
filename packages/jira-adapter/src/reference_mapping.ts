@@ -824,6 +824,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'projectId', parentTypes: ['TemplateFormsConfig'] },
     serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_TYPE },
   },
   {

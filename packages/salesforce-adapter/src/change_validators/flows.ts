@@ -26,12 +26,11 @@ import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
 import { apiNameSync, isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
-import { SalesforceConfig } from '../types'
+import { FetchProfile } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retriever/lightning_url_resolvers'
 
 const { awu } = collections.asynciterable
-const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
 
 const isFlowChange = (change: Change<InstanceElement>): Promise<boolean> =>
@@ -214,9 +213,9 @@ const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeE
  * Handling all changes regarding active flows
  */
 const activeFlowValidator =
-  (config: SalesforceConfig, isSandbox: boolean, client: SalesforceClient): ChangeValidator =>
+  (fetchProfile: FetchProfile, isSandbox: boolean, client: SalesforceClient): ChangeValidator =>
   async (changes, elementsSource) => {
-    const isPreferActiveVersion = config.fetch?.preferActiveFlowVersions ?? PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT
+    const isPreferActiveVersion = fetchProfile.preferActiveFlowVersions
     const isEnableFlowDeployAsActiveEnabled = await getDeployAsActiveFlag(
       elementsSource,
       ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT,

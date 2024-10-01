@@ -1054,7 +1054,7 @@ const getLookUpNameImpl = ({
 export const getLookUpName = (fetchProfile: FetchProfile): GetLookupNameFunc =>
   getLookUpNameImpl({
     defs: fieldNameToTypeMappingDefs.concat(
-      fetchProfile.isFeatureEnabled('createReferenceFromFilterItemToRecordType')
+      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
         ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
         : [],
     ),
@@ -1065,7 +1065,7 @@ export const getLookUpName = (fetchProfile: FetchProfile): GetLookupNameFunc =>
 export const getLookupNameForDataInstances = (fetchProfile: FetchProfile): GetLookupNameFunc =>
   getLookUpNameImpl({
     defs: fieldNameToTypeMappingDefs.concat(
-      fetchProfile.isFeatureEnabled('createReferenceFromFilterItemToRecordType')
+      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
         ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
         : [],
     ),

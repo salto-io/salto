@@ -12,12 +12,12 @@ import {
   InstanceElement,
   ChangeError,
   toChange,
-  ChangeValidator
+  ChangeValidator,
 } from '@salto-io/adapter-api'
 import changeValidatorCreator from '../../src/change_validators/custom_object_instances'
 import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
-import {defaultFilterContext} from "../utils";
-import {getLookUpName} from "../../src/transformers/reference_mapping";
+import { defaultFilterContext } from '../utils'
+import { getLookUpName } from '../../src/transformers/reference_mapping'
 
 describe('custom object instances change validator', () => {
   let customObjectInstancesValidator: ChangeValidator

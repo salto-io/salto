@@ -25,6 +25,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from '@salto-io/jsforce'
 import { resolveValues, restoreValues } from '@salto-io/adapter-components'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 
 import {
@@ -75,7 +76,6 @@ import { mockValueTypeField, mockDescribeValueResult, mockFileProperties, mockSO
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
 import { mockTypes } from '../mock_elements'
-import {GetLookupNameFunc} from "@salto-io/adapter-utils";
 
 const { awu } = collections.asynciterable
 

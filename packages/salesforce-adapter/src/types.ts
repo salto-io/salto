@@ -127,7 +127,7 @@ export type OptionalFeatures = {
   logDiffsFromParsingXmlNumbers?: boolean
   performSideEffectDeletes?: boolean
   extendTriggersMetadata?: boolean
-  createReferenceFromFilterItemToRecordType?: boolean
+  removeReferenceFromFilterItemToRecordType?: boolean
 }
 
 export type ChangeValidatorName =
@@ -838,7 +838,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
-    createReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
+    removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -101,13 +101,12 @@ const getMapKeyErrors = async (after: InstanceElement): Promise<ChangeError[]> =
 
 const changeValidator =
   (getLookupNameFunc: GetLookupNameFunc): ChangeValidator =>
-  async changes => {
-    return awu(changes)
+  async changes =>
+    awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
       .flatMap(async change => getMapKeyErrors(await resolveValues(getChangeData(change), getLookupNameFunc)))
       .toArray()
-  }
 
 export default changeValidator

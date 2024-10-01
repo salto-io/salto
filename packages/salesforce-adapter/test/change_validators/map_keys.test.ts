@@ -5,10 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeError, ObjectType, toChange, InstanceElement } from '@salto-io/adapter-api'
-import mapKeysValidator from '../../src/change_validators/map_keys'
-import { generateProfileType, generatePermissionSetType } from '../utils'
+import { ChangeError, ObjectType, toChange, InstanceElement, ChangeValidator } from '@salto-io/adapter-api'
+import changeValidatorCreator from '../../src/change_validators/map_keys'
+import { generateProfileType, generatePermissionSetType, defaultFilterContext } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
+import { getLookUpName } from '../../src/transformers/reference_mapping'
 
 const generateProfileInstance = (profileObj: ObjectType): InstanceElement =>
   new InstanceElement('Admin', profileObj, {
@@ -107,6 +108,11 @@ const breakPermissionSetInstanceMaps = (permissionSetInstance: InstanceElement):
 }
 
 describe('profile permission set map keys change validator', () => {
+  let mapKeysValidator: ChangeValidator
+
+  beforeEach(() => {
+    mapKeysValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile))
+  })
   const runChangeValidator = (before?: InstanceElement, after?: InstanceElement): Promise<ReadonlyArray<ChangeError>> =>
     mapKeysValidator([toChange({ before, after })])
 

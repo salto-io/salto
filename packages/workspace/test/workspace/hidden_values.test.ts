@@ -27,8 +27,10 @@ import {
   ReadOnlyElementsSource,
   Field,
   isField,
+  toChange,
+  TypeReference,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
@@ -319,6 +321,7 @@ describe('handleHiddenChanges', () => {
       expect(fieldVisiblePart.annotations).toEqual({ stringValue: 'visible' })
     })
   })
+
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType
@@ -662,7 +665,7 @@ describe('handleHiddenChanges', () => {
     })
   })
 
-  describe("when an instance type's hidden_value value is changes", () => {
+  describe("when an instance type's hidden_value value is changed", () => {
     let obj: ObjectType
     let hiddenObj: ObjectType
     let inst: InstanceElement
@@ -684,7 +687,7 @@ describe('handleHiddenChanges', () => {
         },
         path: ['this', 'is', 'path', 'to', 'hiddenObj'],
       })
-      inst = new InstanceElement('visi', obj, {}, ['this', 'is', 'path', 'to', 'inst'])
+      inst = new InstanceElement('visible', obj, {}, ['this', 'is', 'path', 'to', 'inst'])
       hidden1 = new InstanceElement('hidden', hiddenObj, { a: 1 }, ['this', 'is', 'path', 'to', 'hidden'])
       hidden2 = new InstanceElement('hidden', hiddenObj, { b: 2 }, ['this', 'is', 'path', 'to', 'hidden2'])
       hidden = new InstanceElement('hidden', hiddenObj, { a: 1, b: 2 })
@@ -766,6 +769,94 @@ describe('handleHiddenChanges', () => {
       expect(result.hidden).toHaveLength(0)
     })
   })
+
+  describe('when a type is hidden', () => {
+    let obj: ObjectType
+    let state: State
+    let visibleSource: RemoteElementSource
+
+    beforeEach(() => {
+      obj = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+        path: ['path', 'to', 'obj'],
+      })
+      state = mockState([obj])
+      visibleSource = createInMemoryElementSource([obj])
+    })
+
+    describe("when the change is on the 'hidden' annotation", () => {
+      let changes: DetailedChange[]
+
+      beforeEach(async () => {
+        const toHiddenChange = createAddChange(true, obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN))
+        changes = (await handleHiddenChanges([toHiddenChange], state, visibleSource)).visible
+      })
+
+      it('should create a remove change for the type', () => {
+        expect(changes).toHaveLength(1)
+        const [change] = changes
+        expect(isRemovalChange(change)).toBeTrue()
+        expect(change.id.isEqual(obj.elemID)).toBeTrue()
+      })
+    })
+
+    describe('when the change is on the whole element', () => {
+      let changes: DetailedChange[]
+
+      beforeEach(async () => {
+        const hiddenObj = obj.clone()
+        hiddenObj.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        const toHiddenChange = toDetailedChangeFromBaseChange(
+          toChange({
+            before: obj,
+            after: hiddenObj,
+          }),
+        )
+        changes = (await handleHiddenChanges([toHiddenChange], state, visibleSource)).visible
+      })
+
+      it('should create a remove change for the type', () => {
+        expect(changes).toHaveLength(1)
+        const [change] = changes
+        expect(isRemovalChange(change)).toBeTrue()
+        expect(change.id.isEqual(obj.elemID)).toBeTrue()
+      })
+    })
+  })
+
+  describe('when a hidden type has a top level modification', () => {
+    let obj: ObjectType
+    let state: State
+    let visibleSource: RemoteElementSource
+    let changes: DetailedChange[]
+
+    beforeEach(async () => {
+      obj = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN]: true,
+        },
+        path: ['path', 'to', 'obj'],
+      })
+      state = mockState([obj])
+      visibleSource = createInMemoryElementSource([])
+
+      const objWithMeta = obj.clone()
+      objWithMeta.metaType = new TypeReference(new ElemID('salto', 'meta'))
+      const addMetaChange = toDetailedChangeFromBaseChange(
+        toChange({
+          before: obj,
+          after: objWithMeta,
+        }),
+      )
+      changes = (await handleHiddenChanges([addMetaChange], state, visibleSource)).visible
+    })
+
+    it('should have no visible changes', () => {
+      expect(changes).toBeEmpty()
+    })
+  })
+
   describe('getElemHiddenParts', () => {
     describe('ObjectType attribute handling', () => {
       let elementsSource: ReadOnlyElementsSource

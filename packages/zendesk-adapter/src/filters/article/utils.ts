@@ -9,6 +9,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
+import { resolveValues } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import {
   getParent,
@@ -29,6 +30,7 @@ import {
   isStaticFile,
   isTemplateExpression,
   ObjectType,
+  ReadOnlyElementsSource,
   ReferenceExpression,
   SaltoElementError,
   StaticFile,
@@ -42,6 +44,7 @@ import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskConfig } from '../../config'
 import { ZendeskApiConfig } from '../../user_config'
 import { DOMAIN_REGEX, ELEMENTS_REGEXES, transformReferenceUrls } from '../utils'
+import { lookupFunc } from '../field_references'
 
 const { isDefined } = lowerDashValues
 
@@ -292,14 +295,16 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   return part.value
 }
 
-export const updateArticleTranslationBody = async ({
+export const replaceAttachmentReferencesInArticleTranslationBody = async ({
   client,
   articleValues,
   attachmentInstances,
+  elementsSource,
 }: {
   client: ZendeskClient
   articleValues: Values
   attachmentInstances: InstanceElement[]
+  elementsSource: ReadOnlyElementsSource
 }): Promise<void> => {
   const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
   const articleTranslations = articleValues?.translations
@@ -312,8 +317,17 @@ export const updateArticleTranslationBody = async ({
   await awu(articleTranslations)
     .filter(isResolvedReferenceExpression)
     .map(translationRef => translationRef.value)
-    .filter(translationInstance => isTemplateExpression(translationInstance.value.body))
+    .filter(
+      translationInstance =>
+        isTemplateExpression(translationInstance.value.body) ||
+        (isStaticFile(translationInstance.value.body) && translationInstance.value.body.isTemplate),
+    )
     .map(translationInstance => translationInstance.clone()) // we don't want to resolve the translation itself
+    .map(async translationInstance =>
+      isStaticFile(translationInstance.value.body) // StaticFiles may not be resolved
+        ? resolveValues(translationInstance, lookupFunc, elementsSource)
+        : translationInstance,
+    )
     .forEach(async translationInstance => {
       try {
         replaceTemplatesWithValues(
@@ -340,8 +354,24 @@ export const updateArticleTranslationBody = async ({
           elemID: translationInstance.elemID,
         })
       }
+      // If the static file is resolved, the locale ReferenceExpression is resolved directly
+      const locale =
+        translationInstance.value.locale && typeof translationInstance.value.locale === 'string'
+          ? translationInstance.value.locale
+          : translationInstance.value.locale.value.value.locale
+      if (locale === undefined) {
+        const message = `Received an invalid locale value for translation ${translationInstance.name}`
+        log.error(message)
+        throw createSaltoElementError({
+          // caught in adapter.ts
+          message,
+          detailedMessage: message,
+          severity: 'Error',
+          elemID: translationInstance.elemID,
+        })
+      }
       await client.put({
-        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.locale.value.value.locale}`,
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${locale}`,
         data: { translation: { body: translationInstance.value.body } },
       })
     })

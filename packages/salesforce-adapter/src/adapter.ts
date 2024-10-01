@@ -372,7 +372,7 @@ export const NESTED_METADATA_TYPES = {
     isNestedApiNameRelative: true,
   },
   AutoResponseRules: {
-    nestedInstanceFields: ['autoresponseRule'],
+    nestedInstanceFields: ['autoResponseRule'],
     isNestedApiNameRelative: true,
   },
   EscalationRules: {

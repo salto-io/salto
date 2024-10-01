@@ -33,6 +33,7 @@
   "dependencies": {
     "@salesforce/core": "^8.1.1",
     "@salesforce/source-deploy-retrieve": "^12.1.4",
+    "@salesforce/templates": "^61.4.11",
     "@salto-io/adapter-api": "0.4.3",
     "@salto-io/adapter-components": "0.4.3",
     "@salto-io/adapter-utils": "0.4.3",

@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { logger } from '@salto-io/logging'
 import { definitions, references as referenceUtils, createChangeElementResolver } from '@salto-io/adapter-components'
 import { Change, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { ODATA_TYPE_FIELD_NACL_CASE, entraConstants } from '../../constants'
@@ -12,6 +13,8 @@ import { CustomReferenceSerializationStrategyName, Options } from '../types'
 import { REFERENCE_RULES as EntraReferenceRules } from './entra_reference_rules'
 import { REFERENCE_RULES as IntuneReferenceRules } from './intune_reference_rules'
 import { REFERENCE_RULES as CrossReferenceRules } from './cross_reference_rules'
+
+const log = logger(module)
 
 const REFERENCE_RULES = [...EntraReferenceRules, ...IntuneReferenceRules, ...CrossReferenceRules]
 
@@ -43,6 +46,9 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
       serialize: ({ ref }) => {
         const { appId } = ref.value.value
         if (isReferenceExpression(appId)) {
+          if (appId.elemID.typeName !== entraConstants.APPLICATION_TYPE_NAME) {
+            log.error('Unexpected reference type %s for appId', appId.elemID.typeName)
+          }
           return appId.value.value.appId
         }
         return appId

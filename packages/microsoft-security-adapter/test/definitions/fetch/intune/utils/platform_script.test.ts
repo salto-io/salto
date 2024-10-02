@@ -11,6 +11,7 @@ import { StaticFile } from '@salto-io/adapter-api'
 import { platformScript } from '../../../../../src/definitions/fetch/intune/utils'
 import { contextMock } from '../../../../mocks'
 import { intuneConstants } from '../../../../../src/constants'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from '../../../../../src/definitions/fetch/intune/utils/group_assignments'
 
 const { SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME } = intuneConstants
 
@@ -262,6 +263,7 @@ describe('Intune platform script fetch utils', () => {
               id: {
                 hide: true,
               },
+              assignments: ASSIGNMENT_FIELD_CUSTOMIZATION,
             },
           },
         },

@@ -179,7 +179,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       parentTypes: [CONDITIONAL_ACCESS_POLICY_CONDITION_APPLICATIONS_TYPE_NAME],
     },
     target: { type: SERVICE_PRINCIPAL_TYPE_NAME },
-    serializationStrategy: 'appId',
+    serializationStrategy: 'servicePrincipalAppId',
   },
   {
     src: {
@@ -187,7 +187,7 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       parentTypes: [CONDITIONAL_ACCESS_POLICY_CONDITION_APPLICATIONS_TYPE_NAME],
     },
     target: { type: SERVICE_PRINCIPAL_TYPE_NAME },
-    serializationStrategy: 'appId',
+    serializationStrategy: 'servicePrincipalAppId',
   },
   {
     src: { field: 'includeRoles', parentTypes: [CONDITIONAL_ACCESS_POLICY_CONDITION_USERS_TYPE_NAME] },

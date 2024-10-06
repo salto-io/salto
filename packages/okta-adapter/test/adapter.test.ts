@@ -2544,7 +2544,7 @@ describe('adapter', () => {
           'signInPage',
           signInPageType,
           {
-            pageContent: '<h1>sign-in</h1>>',
+            pageContent: '<h1>sign-in</h1>',
           },
           undefined,
           {

@@ -1,0 +1,26 @@
+[
+  {
+    "path": "/api/v1/brands/brand-fakeid1/pages/error/customized",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "498",
+      "x-rate-limit-reset": "1728215122"
+    }
+  },
+  {
+    "path": "/api/v1/brands/brand-fakeid1/pages/sign-in/customized",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "497",
+      "x-rate-limit-reset": "1728215122"
+    }
+  }
+]

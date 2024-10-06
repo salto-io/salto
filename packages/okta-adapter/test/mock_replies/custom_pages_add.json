@@ -1,0 +1,69 @@
+[
+  {
+    "path": "/api/v1/brands/brand-fakeid1/pages/error/customized",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "pageContent": "<h1>error</h1>",
+      "contentSecurityPolicySetting": {
+        "mode": "enforced",
+        "srcList": [
+          "https://app.salto.io/login"
+        ]
+      }
+    },
+    "body": {
+      "pageContent": "<h1>error</h1>"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "492",
+      "x-rate-limit-reset": "1728215050"
+    }
+  },
+  {
+    "path": "/api/v1/brands/brand-fakeid1/pages/sign-in/customized",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "pageContent": "<h1>sign-in</h1>",
+      "widgetVersion": "^7",
+      "widgetCustomizations": {
+        "signInLabel": "Sign in test",
+        "usernameLabel": "what's your name",
+        "usernameInfoTip": "ok",
+        "passwordLabel": "what's you password",
+        "passwordInfoTip": "okok",
+        "showPasswordVisibilityToggle": true,
+        "showUserIdentifier": true,
+        "forgotPasswordLabel": "Did you forget your password????",
+        "forgotPasswordUrl": "https://help.salto.io/en/articles/8721163-connecting-okta-adapter-using-custom-oauth-integration",
+        "unlockAccountLabel": null,
+        "unlockAccountUrl": null,
+        "helpLabel": "MY custom help",
+        "helpUrl": null,
+        "customLink1Label": null,
+        "customLink1Url": null,
+        "customLink2Label": null,
+        "customLink2Url": null,
+        "authenticatorPageCustomLinkLabel": "here is my link",
+        "authenticatorPageCustomLinkUrl": "https://help.salto.io/en/articles/8721163-connecting-okta-adapter-using-custom-oauth-integration",
+        "classicRecoveryFlowEmailOrUsernameLabel": "Username or... Email",
+        "widgetGeneration": "G2"
+      },
+      "contentSecurityPolicySetting": {
+        "mode": "enforced"
+      }
+    },
+    "body": {
+      "pageContent": "<h1>sign-in</h1>"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "493",
+      "x-rate-limit-reset": "1728215050"
+    }
+  }
+]

@@ -1388,6 +1388,16 @@ const createCustomizations = ({
       },
     },
   },
+  AuthenticatorSettings: {
+    element: {
+      fieldCustomizations: {
+        userVerificationMethods: {
+          fieldType: 'list<string>',
+          sort: { properties: [] },
+        },
+      },
+    },
+  },
 })
 
 export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [

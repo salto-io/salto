@@ -48,7 +48,6 @@ describe('adapters local config', () => {
       keys: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['keys']>(),
       values: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['values']>(),
       flush: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['flush']>(),
-      revert: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['revert']>(),
       clear: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['clear']>(),
       close: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['close']>(),
       isEmpty: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['isEmpty']>(),

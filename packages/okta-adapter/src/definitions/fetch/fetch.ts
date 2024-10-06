@@ -1393,11 +1393,11 @@ const createCustomizations = ({
       fieldCustomizations: {
         userVerificationMethods: {
           fieldType: 'list<string>',
-          sort: { properties: [] }
-        }
+          sort: { properties: [] },
+        },
       },
     },
-  }
+  },
 })
 
 export const CLASSIC_ENGINE_UNSUPPORTED_TYPES = [

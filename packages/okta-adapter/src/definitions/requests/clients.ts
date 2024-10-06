@@ -96,6 +96,11 @@ export const createClientDefinitions = (
               additionalValidStatuses: [404],
             },
           },
+          '/api/v1/brands/{brandId}/pages/error/customized': {
+            get: {
+              additionalValidStatuses: [404],
+            },
+          },
         },
       },
     },

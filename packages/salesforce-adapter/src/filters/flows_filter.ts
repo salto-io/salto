@@ -19,14 +19,15 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
-import { findObjectType, resolveTypeShallow } from '@salto-io/adapter-utils'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { findObjectType, inspectValue, resolveTypeShallow } from '@salto-io/adapter-utils'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import {
   ACTIVE_VERSION_NUMBER,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_ID_FIELD,
   SALESFORCE,
 } from '../constants'
 import { fetchMetadataInstances } from '../fetch'
@@ -40,32 +41,92 @@ import {
   isInstanceOfTypeSync,
   listMetadataObjects,
 } from './utils'
+import { SalesforceRecord } from '../client/types'
 
 const { isDefined } = lowerdashValues
 
 const log = logger(module)
+const { toArrayAsync } = collections.asynciterable
 
 const FLOW_DEFINITION_METADATA_TYPE_ID = new ElemID(SALESFORCE, FLOW_DEFINITION_METADATA_TYPE)
 
 const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, FLOW_METADATA_TYPE)
+
+const DEFAULT_CHUNK_SIZE = 500
 
 const fixFilePropertiesName = (props: FileProperties, activeVersions: Map<string, string>): FileProperties => ({
   ...props,
   fullName: activeVersions.get(`${props.fullName}`) ?? `${props.fullName}`,
 })
 
-export const createActiveVersionFileProperties = (
-  fileProp: FileProperties[],
-  flowDefinitions: InstanceElement[],
-): FileProperties[] => {
+type FlowDefinitionViewRecord = SalesforceRecord & {
+  ActiveVersionId: string | null
+  ApiName: string
+}
+const isFlowDefinitionViewRecord = (record: SalesforceRecord): record is FlowDefinitionViewRecord =>
+  (record.ActiveVersionId === null || _.isString(record.ActiveVersionId)) && _.isString(record.ApiName)
+
+const getActiveVersionByFlowApiName = async ({
+  client,
+  flowDefinitions,
+  chunkSize,
+}: {
+  client: SalesforceClient
+  flowDefinitions: InstanceElement[]
+  chunkSize: number
+}): Promise<Record<string, string>> => {
+  const flowDefinitionsIds = flowDefinitions.map(flow => flow.value[INTERNAL_ID_FIELD])
+  const records = _.flatten(
+    await Promise.all(
+      _.chunk(flowDefinitionsIds, chunkSize).map(async chunk => {
+        const query = `SELECT Id, ApiName, ActiveVersionId FROM FlowDefinitionView WHERE Id IN ('${chunk.join("','")}')`
+        return (await toArrayAsync(await client.queryAll(query))).flat()
+      }),
+    ),
+  )
+  const [validRecords, invalidRecords] = _.partition(records, isFlowDefinitionViewRecord)
+  log.error(
+    'Some FlowDefinitionView records are invalid. Records are: %s',
+    inspectValue(invalidRecords, { maxArrayLength: 10 }),
+  )
+  if (invalidRecords.length > 10) {
+    log.trace('Invalid FlowDefinitionView records are: %s', inspectValue(invalidRecords))
+  }
+  return validRecords.reduce<Record<string, string>>((acc, record) => {
+    if (record.ActiveVersionId !== null) {
+      acc[record.ApiName] = record.ActiveVersionId
+    }
+    return acc
+  }, {})
+}
+
+export const createActiveVersionFileProperties = async ({
+  flowsFileProps,
+  flowDefinitions,
+  client,
+  fetchProfile,
+}: {
+  flowsFileProps: FileProperties[]
+  flowDefinitions: InstanceElement[]
+  client: SalesforceClient
+  fetchProfile: FetchProfile
+}): Promise<FileProperties[]> => {
   const activeVersions = new Map<string, string>()
+  const activeVersionsByApiName = await getActiveVersionByFlowApiName({
+    client,
+    flowDefinitions,
+    chunkSize: fetchProfile.limits?.flowDefinitionsChunkSize ?? DEFAULT_CHUNK_SIZE,
+  })
   flowDefinitions.forEach(flow =>
     activeVersions.set(
       `${flow.value.fullName}`,
       `${flow.value.fullName}${isDefined(flow.value[ACTIVE_VERSION_NUMBER]) ? `-${flow.value[ACTIVE_VERSION_NUMBER]}` : ''}`,
     ),
   )
-  return fileProp.map(prop => fixFilePropertiesName(prop, activeVersions))
+  return flowsFileProps.map(prop => ({
+    ...fixFilePropertiesName(prop, activeVersions),
+    id: activeVersionsByApiName[prop.fullName] ?? prop.id,
+  }))
 }
 
 const getFlowWithoutVersion = (element: InstanceElement, flowType: ObjectType): InstanceElement => {
@@ -96,13 +157,13 @@ const getFlowInstances = async (
   client: SalesforceClient,
   fetchProfile: FetchProfile,
   flowType: ObjectType,
-  flowDefinitionInstances: InstanceElement[],
+  flowDefinitions: InstanceElement[],
 ): Promise<FetchElements<InstanceElement[]>> => {
-  const { elements: fileProps, configChanges } = await listMetadataObjects(client, FLOW_METADATA_TYPE)
+  const { elements: flowsFileProps, configChanges } = await listMetadataObjects(client, FLOW_METADATA_TYPE)
 
   const flowsVersionProps = fetchProfile.preferActiveFlowVersions
-    ? createActiveVersionFileProperties(fileProps, flowDefinitionInstances)
-    : fileProps
+    ? await createActiveVersionFileProperties({ flowsFileProps, flowDefinitions, client, fetchProfile })
+    : flowsFileProps
 
   const instances = await fetchMetadataInstances({
     client,

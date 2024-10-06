@@ -839,7 +839,7 @@ const createCustomizations = ({
       topLevel: {
         isTopLevel: true,
         elemID: { extendsParent: true },
-        serviceUrl: { path: '' },
+        serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/pages/sign-in' },
       },
     },
   },
@@ -853,7 +853,7 @@ const createCustomizations = ({
       topLevel: {
         isTopLevel: true,
         elemID: { extendsParent: true },
-        serviceUrl: { path: '' },
+        serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/pages/error' },
       },
     },
   },

@@ -30,11 +30,8 @@ import {
   toChange,
   Value,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { getIndependentElemIDs, resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping, getChangeRealId, isOrderChange } from './list_comparison'
-
-const log = logger(module)
 
 const compareListWithOrderMatching = ({
   id,

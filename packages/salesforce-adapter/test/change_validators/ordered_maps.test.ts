@@ -55,7 +55,7 @@ describe('OrderedMap Change Validator', () => {
       gvs.value.customValue.order = [
         new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
         new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2')),
-        'invalid'
+        'invalid',
       ]
       const errors = await changeValidator([toChange({ after: gvs })])
       expect(errors).toHaveLength(1)
@@ -63,7 +63,8 @@ describe('OrderedMap Change Validator', () => {
         elemID: gvs.elemID,
         severity: 'Error',
         message: 'Invalid reference in ordered map',
-        detailedMessage: 'Invalid reference in field customValue.order: invalid. Only reference to internal value keys are allowed.',
+        detailedMessage:
+          'Invalid reference in field customValue.order: invalid. Only reference to internal value keys are allowed.',
       })
     })
 
@@ -141,7 +142,8 @@ describe('OrderedMap Change Validator', () => {
         elemID: fieldElemID,
         severity: 'Error',
         message: 'Invalid reference in ordered map',
-        detailedMessage: 'Invalid reference in field valueSet.order: invalid. Only reference to internal value keys are allowed.',
+        detailedMessage:
+          'Invalid reference in field valueSet.order: invalid. Only reference to internal value keys are allowed.',
       })
     })
 

@@ -51,6 +51,22 @@ describe('OrderedMap Change Validator', () => {
       })
     })
 
+    it('should return an error when a ref is invalid', async () => {
+      gvs.value.customValue.order = [
+        new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
+        new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2')),
+        'invalid'
+      ]
+      const errors = await changeValidator([toChange({ after: gvs })])
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toMatchObject({
+        elemID: gvs.elemID,
+        severity: 'Error',
+        message: 'Invalid reference in ordered map',
+        detailedMessage: 'Invalid reference in field customValue.order: invalid. Only reference to internal value keys are allowed.',
+      })
+    })
+
     it('should return an error for duplicate field refs', async () => {
       gvs.value.customValue.order = [
         new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
@@ -110,6 +126,22 @@ describe('OrderedMap Change Validator', () => {
         severity: 'Error',
         message: 'Missing reference in ordered map',
         detailedMessage: 'Missing reference in field valueSet.order: Low',
+      })
+    })
+
+    it('should return an error when a ref is invalid', async () => {
+      account.fields.CustomerPriority__c.annotations.valueSet.order = [
+        new ReferenceExpression(fieldElemID.createNestedID('valueSet', 'values', 'High')),
+        new ReferenceExpression(fieldElemID.createNestedID('valueSet', 'values', 'Low')),
+        'invalid',
+      ]
+      const errors = await changeValidator([toChange({ after: account })])
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toMatchObject({
+        elemID: fieldElemID,
+        severity: 'Error',
+        message: 'Invalid reference in ordered map',
+        detailedMessage: 'Invalid reference in field valueSet.order: invalid. Only reference to internal value keys are allowed.',
       })
     })
 

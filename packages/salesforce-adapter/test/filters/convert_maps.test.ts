@@ -17,10 +17,12 @@ import {
   isObjectType,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_maps'
-import { generateProfileType, generatePermissionSetType, defaultFilterContext } from '../utils'
-import { createInstanceElement } from '../../src/transformers/transformer'
+import { generateProfileType, generatePermissionSetType, defaultFilterContext, createCustomObjectType } from '../utils'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { FIELD_ANNOTATIONS } from '../../src/constants'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -589,6 +591,106 @@ describe('Convert maps filter', () => {
         const emailTemplateType = elements[0] as ObjectType
         const attachmentsType = await emailTemplateType.fields.attachments.getType()
         expect(isMapType(attachmentsType)).toBeTruthy()
+      })
+    })
+  })
+
+  describe('Maintain order', () => {
+    const gvsType = mockTypes.GlobalValueSet
+    const gvs = new InstanceElement('MyGVS', gvsType, {
+      customValue: [
+        { fullName: 'val1', default: true, label: 'value1' },
+        { fullName: 'val2', default: false, label: 'value2' },
+      ],
+    })
+    let elements: Element[]
+    type FilterType = FilterWith<'onFetch'>
+    let filter: FilterType
+    beforeAll(async () => {
+      elements = [gvs, gvsType]
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures: { picklistsAsMaps: true } } }),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+    })
+
+    it('should convert field type to ordered map', async () => {
+      const fieldType = await gvsType.fields.customValue.getType()
+      expect(fieldType.elemID.typeName).toEqual('OrderedMap<CustomValue>')
+    })
+
+    it('should convert instance value to map ', () => {
+      expect(gvs.value.customValue.values).toBeDefined()
+      expect(gvs.value.customValue.values).toEqual({
+        val1: { fullName: 'val1', default: true, label: 'value1' },
+        val2: { fullName: 'val2', default: false, label: 'value2' },
+      })
+    })
+  })
+
+  describe('Convert CustomObject field annotations by type', () => {
+    const myCustomObj = createCustomObjectType('MyCustomObj', {
+      fields: {
+        myPicklist: {
+          refType: Types.primitiveDataTypes.Picklist,
+          annotations: {
+            [FIELD_ANNOTATIONS.VALUE_SET]: [
+              { fullName: 'val1', default: true, label: 'value1' },
+              { fullName: 'val2', default: false, label: 'value2' },
+            ],
+          },
+        },
+        myMultiselectPicklist: {
+          refType: Types.primitiveDataTypes.MultiselectPicklist,
+          annotations: {
+            [FIELD_ANNOTATIONS.VALUE_SET]: [
+              { fullName: 'val1', default: true, label: 'value1' },
+              { fullName: 'val2', default: false, label: 'value2' },
+            ],
+          },
+        },
+      },
+    })
+
+    let elements: Element[]
+    type FilterType = FilterWith<'onFetch'>
+    let filter: FilterType
+    beforeAll(async () => {
+      elements = [myCustomObj]
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures: { picklistsAsMaps: true } } }),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+    })
+
+    it('should convert Picklist valueSet type to ordered map', async () => {
+      const fieldType = Types.primitiveDataTypes.Picklist.annotationRefTypes.valueSet
+      expect(fieldType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+    })
+
+    it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
+      const fieldType = Types.primitiveDataTypes.MultiselectPicklist.annotationRefTypes.valueSet
+      expect(fieldType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+    })
+
+    it('should convert annotation value to map (Picklist)', () => {
+      expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toBeDefined()
+      expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toEqual({
+        val1: { fullName: 'val1', default: true, label: 'value1' },
+        val2: { fullName: 'val2', default: false, label: 'value2' },
+      })
+    })
+    it('should convert annotation value to map (MultiselectPicklist)', () => {
+      expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toBeDefined()
+      expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toEqual({
+        val1: { fullName: 'val1', default: true, label: 'value1' },
+        val2: { fullName: 'val2', default: false, label: 'value2' },
       })
     })
   })

@@ -70,6 +70,7 @@ type MapDef = {
   // with which mapper should we parse the key
   mapper?: (string: string) => string[]
   // keep a separate list of references for each value to preserve the order
+  // Note: this is only supported for one-level maps (nested maps are not supported)
   maintainOrder?: boolean
 }
 
@@ -251,7 +252,7 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
         _.set(elementValues, fieldName, {})
         _.set(
           elementValues,
-          fieldName,
+          [fieldName, ORDERED_MAP_VALUES_FIELD],
           convertField(
             makeArray(originalFieldValue),
             item => mapper(item[mapDef.key])[0],
@@ -261,7 +262,7 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
         )
         _.set(
           elementValues,
-          fieldName,
+          [fieldName, ORDERED_MAP_ORDER_FIELD],
           makeArray(originalFieldValue)
             .map(item => mapper(item[mapDef.key])[0])
             .map(
@@ -353,6 +354,41 @@ const updateFieldTypes = async (
           }
           keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
         }
+      }
+    }
+  })
+}
+
+const updateAnnotationRefTypes = async (
+  typeElement: TypeElement,
+  nonUniqueMapFields: string[],
+  mapFieldDef: Record<string, MapDef>,
+): Promise<void> => {
+  Object.entries(mapFieldDef).forEach(async ([fieldName, mapDef]) => {
+    const fieldType = _.get(typeElement.annotationRefTypes, fieldName).type
+    // navigate to the right field type
+    if (isDefined(fieldType) && !isMapType(fieldType)) {
+      let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
+      if (mapDef.mapToList || nonUniqueMapFields.includes(fieldName)) {
+        innerType = new ListType(innerType)
+      }
+      if (mapDef.nested) {
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(new MapType(new MapType(innerType)))
+      } else if (mapDef.maintainOrder) {
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(createOrderedMapType(innerType))
+      } else {
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(new MapType(innerType))
+      }
+
+      // make the key field required
+      const deepInnerType = await getDeepInnerType(innerType)
+      if (isObjectType(deepInnerType)) {
+        const keyFieldType = deepInnerType.fields[mapDef.key]
+        if (!keyFieldType) {
+          log.error('could not find key field %s for field %s', mapDef.key, fieldType.elemID.getFullName())
+          return
+        }
+        keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
       }
     }
   })
@@ -565,7 +601,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
         return
       }
       const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef)
-      await updateFieldTypes(await fieldsToConvert[0].getType(), nonUniqueMapFields, annotationToMapDef)
+      await updateAnnotationRefTypes(await fieldsToConvert[0].getType(), nonUniqueMapFields, annotationToMapDef)
     })
   },
 

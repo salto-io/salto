@@ -31,7 +31,7 @@ const { awu } = collections.asynciterable
 
 export const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[] => {
   const elementValues = getElementValueOrAnnotations(element)
-  const fieldValue = elementValues[fieldName]
+  const fieldValue = _.get(elementValues, fieldName)
   if (fieldValue === undefined) {
     return []
   }

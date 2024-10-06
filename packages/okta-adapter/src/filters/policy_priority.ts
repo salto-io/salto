@@ -36,20 +36,23 @@ import {
   ACCESS_POLICY_RULE_TYPE_NAME,
   ACCESS_POLICY_TYPE_NAME,
   AUTHORIZATION_POLICY,
+  AUTHORIZATION_POLICY_PRIORITY_TYPE_NAME,
   AUTHORIZATION_POLICY_RULE,
   AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
+  AUTHORIZATION_SERVER,
   IDP_POLICY_TYPE_NAME,
   IDP_RULE_PRIORITY_TYPE_NAME,
   IDP_RULE_TYPE_NAME,
+  MFA_POLICY_PRIORITY_TYPE_NAME,
   MFA_POLICY_TYPE_NAME,
   MFA_RULE_PRIORITY_TYPE_NAME,
   MFA_RULE_TYPE_NAME,
   OKTA,
+  PASSWORD_POLICY_PRIORITY_TYPE_NAME,
   PASSWORD_POLICY_TYPE_NAME,
   PASSWORD_RULE_PRIORITY_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
-  POLICY_PRIORITY_TYPE_NAMES,
-  POLICY_RULE_PRIORITY_TYPE_NAMES,
+  SIGN_ON_POLICY_PRIORITY_TYPE_NAME,
   SIGN_ON_POLICY_TYPE_NAME,
   SIGN_ON_RULE_PRIORITY_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
@@ -59,15 +62,20 @@ import { deployChanges } from '../deprecated_deployment'
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { replaceAllArgs } = fetch.request
-export const POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE = [
+export const POLICY_RULE_WITH_PRIORITY = [
   ACCESS_POLICY_RULE_TYPE_NAME,
   IDP_RULE_TYPE_NAME,
   MFA_RULE_TYPE_NAME,
   SIGN_ON_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   AUTHORIZATION_POLICY_RULE,
+  // not a policy rule, but managed similarly as there is a policy per authrozation server
+  AUTHORIZATION_POLICY,
 ]
-export const ALL_SUPPORTED_POLICY_NAMES = [SIGN_ON_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME]
+const POLICY_WITH_PRIORITY = [SIGN_ON_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME] as const
+export const ALL_SUPPORTED_POLICY_NAMES = POLICY_WITH_PRIORITY as readonly string[]
+type PolicyTypeWithPriority = (typeof POLICY_WITH_PRIORITY)[number]
+
 // Automation and PofileEnrollmentPolicyRule is not included in the list of supported policy rules because it is not supported
 const POLICY_NAME_TO_RULE_PRIORITY_NAME: Record<string, string> = {
   [ACCESS_POLICY_TYPE_NAME]: ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
@@ -76,13 +84,18 @@ const POLICY_NAME_TO_RULE_PRIORITY_NAME: Record<string, string> = {
   [SIGN_ON_POLICY_TYPE_NAME]: SIGN_ON_RULE_PRIORITY_TYPE_NAME,
   [PASSWORD_POLICY_TYPE_NAME]: PASSWORD_RULE_PRIORITY_TYPE_NAME,
   [AUTHORIZATION_POLICY]: AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
+  [AUTHORIZATION_SERVER]: AUTHORIZATION_POLICY_PRIORITY_TYPE_NAME,
 }
 
-const POLICY_NAME_TO_PRIORITY_NAME: Record<string, string> = {
-  [SIGN_ON_POLICY_TYPE_NAME]: 'OktaSignOnPolicyPriority',
-  [MFA_POLICY_TYPE_NAME]: 'MultifactorEnrollmentPolicyPriority',
-  [PASSWORD_POLICY_TYPE_NAME]: 'PasswordPolicyPriority',
+const POLICY_NAME_TO_PRIORITY_NAME: Record<PolicyTypeWithPriority, string> = {
+  [SIGN_ON_POLICY_TYPE_NAME]: SIGN_ON_POLICY_PRIORITY_TYPE_NAME,
+  [MFA_POLICY_TYPE_NAME]: MFA_POLICY_PRIORITY_TYPE_NAME,
+  [PASSWORD_POLICY_TYPE_NAME]: PASSWORD_POLICY_PRIORITY_TYPE_NAME,
 }
+
+export const POLICY_PRIORITY_TYPE_NAMES = Object.values(POLICY_NAME_TO_PRIORITY_NAME)
+export const POLICY_RULE_PRIORITY_TYPE_NAMES = Object.values(POLICY_NAME_TO_RULE_PRIORITY_NAME)
+
 export const createPriorityType = (typeName: string, defaultFieldName: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(OKTA, typeName),
@@ -152,7 +165,13 @@ const createPolicyRulePriorityInstance = ({
   const fullValue = defaultRule
     ? { ...value, defaultRule: new ReferenceExpression(defaultRule.elemID, defaultRule) }
     : value
-  return new InstanceElement(name, type, fullValue, [...(policy.path ?? []).slice(0, -1), pathNaclCase(name)], {
+  log.debug('Shir: path part 1: %s, part 2 %s', (policy.path ?? []).slice(0, -1), pathNaclCase(name))
+  log.debug('Shir, fullPath: %s', [...(policy.path ?? []).slice(0, -1), pathNaclCase(name)])
+  const parentPath = (policy.path ?? []).slice(0, -1)
+  const path = policy.elemID.typeName === AUTHORIZATION_SERVER
+   ? [...parentPath, 'policies', pathNaclCase(name)]
+   : [...parentPath, pathNaclCase(name)]
+  return new InstanceElement(name, type, fullValue, path, {
     [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(policy.elemID, policy),
   })
 }
@@ -161,7 +180,7 @@ const createPolicyRulePriorityInstance = ({
 const getPriorityValue = (typeName: string, priority: number): number =>
   typeName === ACCESS_POLICY_RULE_TYPE_NAME ? priority : priority + 1
 
-const getParentPolicy = (rule: InstanceElement): InstanceElement | undefined => {
+export const getParentPolicy = (rule: InstanceElement): InstanceElement | undefined => {
   if (rule.elemID.typeName === AUTHORIZATION_POLICY_RULE) {
     return getParents(rule).find(parent => parent.elemID.typeName === AUTHORIZATION_POLICY)?.value
   }
@@ -204,7 +223,11 @@ const updatePriorityField = async ({
   deployPolicyPath: definitionsUtils.EndpointPath
   fieldsToOmit: string[]
 }): Promise<void> => {
-  const pathContext = { ...instance.value, parent_id: getParentPolicy(instance)?.value?.id }
+  const pathContext = {
+    ...instance.value,
+    parent_id: getParentPolicy(instance)?.value?.id,
+    second_parent_id: getParents(instance)[1]?.value?.value.id, // only applies for AuthorizationServerPolicyRule
+  }
   const { path } = replaceAllArgs({
     value: { path: deployPolicyPath },
     context: pathContext,
@@ -231,11 +254,21 @@ const updatePriorityField = async ({
   }
 }
 
-const getSinglePolicyPath = (elemID: ElemID): definitionsUtils.EndpointPath => {
-  if (POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE.includes(elemID.typeName)) {
-    return '/api/v1/policies/{parent_id}/rules/{id}'
+const getSinglePolicyPath = (typeName: string): definitionsUtils.EndpointPath => {
+  switch (typeName) {
+    case AUTHORIZATION_POLICY:
+      return '/api/v1/authorizationServers/{parent_id}/policies/{id}'
+    case AUTHORIZATION_POLICY_RULE:
+      return '/api/v1/authorizationServers/{second_parent_id}/policies/{parent_id}/rules/{id}'
+    case ACCESS_POLICY_RULE_TYPE_NAME:
+    case IDP_RULE_TYPE_NAME:
+    case MFA_RULE_TYPE_NAME:
+    case SIGN_ON_RULE_TYPE_NAME:
+    case PASSWORD_RULE_TYPE_NAME:
+      return '/api/v1/policies/{parent_id}/rules/{id}'
+    default:
+      return '/api/v1/policies/{id}'
   }
-  return '/api/v1/policies/{id}'
 }
 
 /*
@@ -251,9 +284,7 @@ const filter: FilterCreator = ({ definitions }) => ({
   name: 'policyPrioritiesFilter',
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
-    const policiesRules = instances.filter(instance =>
-      POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE.includes(instance.elemID.typeName),
-    )
+    const policiesRules = instances.filter(instance => POLICY_RULE_WITH_PRIORITY.includes(instance.elemID.typeName))
     const priorityTypes = POLICY_RULE_PRIORITY_TYPE_NAMES.map(name => createPriorityType(name, 'defaultRule')).concat(
       POLICY_PRIORITY_TYPE_NAMES.map(name => createPriorityType(name, 'defaultPolicy')),
     )
@@ -300,7 +331,8 @@ const filter: FilterCreator = ({ definitions }) => ({
     )
     Object.entries(policyTypeNameToPolicies).forEach(([policyTypeName, policies]) => {
       logDuplicatePriorities(policies)
-      const type = priorityTypeNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policyTypeName]]
+      const type =
+        priorityTypeNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policyTypeName as PolicyTypeWithPriority]]
       const priorityInstance = createPolicyPriorityInstance({
         policies,
         type,
@@ -322,7 +354,7 @@ const filter: FilterCreator = ({ definitions }) => ({
         await awu(instance.value.priorities)
           .filter(isReferenceExpression)
           .forEach(async (ref, priority) => {
-            const path = getSinglePolicyPath(ref.elemID)
+            const path = getSinglePolicyPath(ref.elemID.typeName)
             await updatePriorityField({
               client: definitions.clients.options.main.httpClient,
               requiredPriority: getPriorityValue(ref.elemID.typeName, priority),
@@ -338,7 +370,7 @@ const filter: FilterCreator = ({ definitions }) => ({
           .filter(isReferenceExpression)
           .forEach(async (ref, priority) => {
             if (positionsBefore[priority]?.elemID.getFullName() !== ref.elemID.getFullName()) {
-              const path = getSinglePolicyPath(ref.elemID)
+              const path = getSinglePolicyPath(ref.elemID.typeName)
               await updatePriorityField({
                 client: definitions.clients.options.main.httpClient,
                 requiredPriority: getPriorityValue(ref.elemID.typeName, priority),

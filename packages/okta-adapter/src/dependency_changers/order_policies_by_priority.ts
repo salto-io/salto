@@ -20,10 +20,14 @@ import {
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
-import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../filters/policy_priority'
+import {
+  ALL_SUPPORTED_POLICY_NAMES,
+  POLICY_PRIORITY_TYPE_NAMES,
+  POLICY_RULE_PRIORITY_TYPE_NAMES,
+  POLICY_RULE_WITH_PRIORITY,
+  getParentPolicy,
+} from '../filters/policy_priority'
 
 const log = logger(module)
 type ChangeWithKey = deployment.dependency.ChangeWithKey<Change<InstanceElement>>
@@ -36,11 +40,10 @@ const groupChangesByType = (changes: ChangeWithKey[]): Record<string, ChangeWith
 
 const groupRuleChangesByPolicy = (changes: ChangeWithKey[]): Record<string, ChangeWithKey[]> =>
   _.groupBy(
-    changes.filter(change => hasValidParent(getChangeData(change.change))),
+    changes.filter(change => getParentPolicy(getChangeData(change.change)) !== undefined),
     change => {
-      const instance = getChangeData(change.change)
-      const parent = getParent(instance)
-      return parent.elemID.getFullName()
+      const parent = getParentPolicy(getChangeData(change.change))
+      return parent?.elemID?.getFullName()
     },
   )
 
@@ -93,7 +96,7 @@ export const addDependenciesFromPolicyToPriorPolicy: DependencyChanger = async c
   const additionRuleChanges = instanceChanges
     .filter(
       change =>
-        POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE.includes(getChangeData(change.change).elemID.typeName) &&
+        POLICY_RULE_WITH_PRIORITY.includes(getChangeData(change.change).elemID.typeName) &&
         isAdditionChange(change.change),
     )
     .filter(change => getChangeData(change.change).value.system !== true)

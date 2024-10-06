@@ -1133,6 +1133,7 @@ const createCustomizations = ({
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },
+        priority: { hide: true },
         policyRules: {
           standalone: {
             typeName: 'AuthorizationServerPolicyRule',

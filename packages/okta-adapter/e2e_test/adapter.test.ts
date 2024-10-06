@@ -50,6 +50,11 @@ import {
   APP_USER_SCHEMA_TYPE_NAME,
   APPLICATION_TYPE_NAME,
   AUTHENTICATOR_TYPE_NAME,
+  AUTHORIZATION_POLICY,
+  AUTHORIZATION_POLICY_PRIORITY_TYPE_NAME,
+  AUTHORIZATION_POLICY_RULE,
+  AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
+  AUTHORIZATION_SERVER,
   BRAND_THEME_TYPE_NAME,
   BRAND_TYPE_NAME,
   CUSTOM_NAME_FIELD,
@@ -127,7 +132,11 @@ const createInstance = ({
   )
 }
 
-const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): Promise<Change[]> => {
+const createChangesForDeploy = async (
+  types: ObjectType[],
+  testSuffix: string,
+  authServerInstance?: InstanceElement,
+): Promise<Change[]> => {
   const createName = (type: string): string => `${TEST_PREFIX}${type}${testSuffix}`
 
   const groupInstance = createInstance({
@@ -434,6 +443,78 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
       name: createName(IDENTITY_PROVIDER_TYPE_NAME),
     },
   })
+  const authServerPolicyA = createInstance({
+    typeName: AUTHORIZATION_POLICY,
+    types,
+    valuesOverride: {
+      name: createName('AuthServerPolicyA'),
+    },
+    parent: authServerInstance,
+  })
+  const authServerPolicyB = createInstance({
+    typeName: AUTHORIZATION_POLICY,
+    types,
+    valuesOverride: {
+      name: createName('AuthServerPolicyB'),
+    },
+    parent: authServerInstance,
+  })
+  const authServerPolicyC = createInstance({
+    typeName: AUTHORIZATION_POLICY,
+    types,
+    valuesOverride: {
+      name: createName('AuthServerPolicyC'),
+    },
+    parent: authServerInstance,
+  })
+  const authServerPriority = createInstance({
+    typeName: AUTHORIZATION_POLICY_PRIORITY_TYPE_NAME,
+    types,
+    name: naclCase(`${invertNaclCase(authServerInstance?.elemID.name ?? 'default')}_priority`),
+    valuesOverride: {
+      priorities: [
+        new ReferenceExpression(authServerPolicyB.elemID, authServerPolicyB),
+        new ReferenceExpression(authServerPolicyC.elemID, authServerPolicyC),
+        new ReferenceExpression(authServerPolicyA.elemID, authServerPolicyA),
+      ],
+    },
+  })
+  const authServerRuleA = createInstance({
+    typeName: AUTHORIZATION_POLICY_RULE,
+    types,
+    valuesOverride: {
+      name: createName('authServerRuleA'),
+    },
+    parent: authServerPolicyA,
+  })
+  const authServerRuleB = createInstance({
+    typeName: AUTHORIZATION_POLICY_RULE,
+    types,
+    valuesOverride: {
+      name: createName('authServerRuleB'),
+      actions: {
+        token: {
+          accessTokenLifetimeMinutes: 180,
+        }
+      }
+    },
+    parent: authServerPolicyA,
+  })
+  if (authServerInstance !== undefined) {
+    authServerRuleA.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(authServerInstance.elemID, authServerInstance))
+    authServerRuleB.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(authServerInstance.elemID, authServerInstance))
+  }
+  const authServerPolicyRulePriority = createInstance({
+    typeName: AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
+    types,
+    name: naclCase(`${invertNaclCase(authServerPolicyA?.elemID.name)}_priority`),
+    valuesOverride: {
+      priorities: [
+        new ReferenceExpression(authServerRuleB.elemID, authServerRuleB),
+        new ReferenceExpression(authServerRuleA.elemID, authServerRuleA),
+      ],
+    }
+  })
   return [
     toChange({ after: groupInstance }),
     toChange({ after: anotherGroupInstance }),
@@ -456,6 +537,13 @@ const createChangesForDeploy = async (types: ObjectType[], testSuffix: string): 
     toChange({ after: appGroupAssignment }),
     toChange({ after: brand }),
     toChange({ after: identityProvider }),
+    toChange({ after: authServerPolicyA }),
+    toChange({ after: authServerPolicyB }),
+    toChange({ after: authServerPolicyC }),
+    toChange({ after: authServerPriority }),
+    toChange({ after: authServerRuleA }),
+    toChange({ after: authServerRuleB }),
+    toChange({ after: authServerPolicyRulePriority }),
   ]
 }
 
@@ -580,6 +668,7 @@ describe('Okta adapter E2E', () => {
     let elements: Element[] = []
     let deployResults: DeployResult[]
     let fetchDefinitions: definitionsUtils.fetch.FetchApiDefinitions<OktaOptions>
+    let defaultAuthServerInstance: InstanceElement | undefined
 
     const deployAndFetch = async (changes: Change[]): Promise<void> => {
       deployResults = await deployChanges(adapterAttr, changes)
@@ -618,9 +707,13 @@ describe('Okta adapter E2E', () => {
         usePrivateAPI: true,
       })
       const types = fetchBeforeCleanupResult.elements.filter(isObjectType)
+      defaultAuthServerInstance = fetchBeforeCleanupResult.elements
+        .filter(isInstanceElement)
+        .find(inst => inst.elemID.typeName === AUTHORIZATION_SERVER && inst.value.default === true)
+        ?.clone()
       await deployCleanup(adapterAttr, fetchBeforeCleanupResult.elements.filter(isInstanceElement))
 
-      const changesToDeploy = await createChangesForDeploy(types, testSuffix)
+      const changesToDeploy = await createChangesForDeploy(types, testSuffix, defaultAuthServerInstance)
       await deployAndFetch(changesToDeploy)
     })
 

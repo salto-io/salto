@@ -18,8 +18,9 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { OKTA } from '../../src/constants'
 import { changeDependenciesFromPoliciesAndRulesToPriority } from '../../src/dependency_changers/policy_and_rules_to_priority'
-import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../../src/filters/policy_priority'
+import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_WITH_PRIORITY } from '../../src/filters/policy_priority'
 import { addDependenciesFromPolicyToPriorPolicy } from '../../src/dependency_changers/order_policies_by_priority'
+import { policyRuleTypeNameToPolicyName } from '../filters/policy_priority.test' 
 
 const createPolicyOrRuleInstance = (
   policyName: string,
@@ -28,7 +29,7 @@ const createPolicyOrRuleInstance = (
   isDefault?: boolean,
 ): InstanceElement => {
   const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
-  const parentType = new ObjectType({ elemID: new ElemID(OKTA, 'testPolicy') })
+  const parentType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyName)) })
   const parentOne = new InstanceElement('parentOne', parentType, {
     id: '1',
     name: 'parentOne',
@@ -52,7 +53,7 @@ const createPolicyOrRuleInstance = (
 
 describe('addDependenciesFromPolicyToPriorPolicy', () => {
   let dependencyChanges: DependencyChange[]
-  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
+  it.each([...POLICY_RULE_WITH_PRIORITY, ...ALL_SUPPORTED_POLICY_NAMES])(
     'should add dependencies between each %s addition change when their priority is also addition change',
     async (policyName: string) => {
       const priorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyName}Priority`) })
@@ -91,7 +92,7 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       expect(dependencyChanges[1].dependency.target).toEqual(1)
     },
   )
-  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
+  it.each([...POLICY_RULE_WITH_PRIORITY, ...ALL_SUPPORTED_POLICY_NAMES])(
     'should add dependencies between each %s addition change when their priority is modification change',
     async (policyName: string) => {
       const priorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyName}Priority`) })
@@ -122,7 +123,7 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       expect(dependencyChanges[0].dependency.target).toEqual(0)
     },
   )
-  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
+  it.each([...POLICY_RULE_WITH_PRIORITY, ...ALL_SUPPORTED_POLICY_NAMES])(
     "should add dependencies between each %s addition change when they don't have priority change",
     async (policyName: string) => {
       const policyInstanceOne = createPolicyOrRuleInstance(policyName, 'policyInstanceOne', 1)
@@ -145,7 +146,7 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       expect(dependencyChanges[1].dependency.target).toEqual(1)
     },
   )
-  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
+  it.each([...POLICY_RULE_WITH_PRIORITY, ...ALL_SUPPORTED_POLICY_NAMES])(
     'should not add dependencies between each %s changes when they are modification changes',
     async (policyName: string) => {
       const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyName) })
@@ -167,7 +168,7 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       expect(dependencyChanges).toHaveLength(0)
     },
   )
-  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE])(
+  it.each([...POLICY_RULE_WITH_PRIORITY])(
     'should add dependencies between each %s rule  only when they are belongs to the same policy',
     async (policyRuleName: string) => {
       const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
@@ -223,7 +224,7 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
       expect(dependencyChanges[0].dependency.target).toEqual(0)
     },
   )
-  it.each([...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE, ...ALL_SUPPORTED_POLICY_NAMES])(
+  it.each([...POLICY_RULE_WITH_PRIORITY, ...ALL_SUPPORTED_POLICY_NAMES])(
     "should add dependencies between each %s changes when some of them has priority and some are doesn't",
     async (policyName: string) => {
       const priorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyName}Priority`) })

@@ -8,9 +8,7 @@
       "pageContent": "<h1>new error</h1>",
       "contentSecurityPolicySetting": {
         "mode": "enforced",
-        "srcList": [
-          "https://app.salto.io/login"
-        ]
+        "srcList": ["https://app.salto.io/login"]
       }
     },
     "body": {

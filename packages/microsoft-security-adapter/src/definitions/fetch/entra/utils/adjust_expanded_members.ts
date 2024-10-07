@@ -23,11 +23,11 @@ export const adjustEntitiesWithExpandedMembers: AdjustFunctionSingle = async ({ 
     value: {
       ...value,
       members: members
-        .map((member: unknown): object => {
+        .map((member: unknown): { id: string; [ODATA_TYPE_FIELD]: string } => {
           validatePlainObject(member, `${typeName} member`)
           return _.pick(member, ['id', ODATA_TYPE_FIELD])
         })
-        .filter((member: object) => supportedDirectoryObjectODataTypeNames.includes(_.get(member, ODATA_TYPE_FIELD))),
+        .filter(member => supportedDirectoryObjectODataTypeNames.includes(member[ODATA_TYPE_FIELD])),
     },
   }
 }

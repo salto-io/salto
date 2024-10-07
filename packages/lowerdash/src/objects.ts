@@ -46,3 +46,9 @@ export const cleanEmptyObjects = (object: Record<string, unknown>): unknown => {
   const cleanedRoot = cleanObject(object)
   return isPlainRecord(cleanedRoot) && _.isEmpty(cleanedRoot) ? undefined : cleanedRoot
 }
+
+/*
+ * Checks whether an object has a property with the given name in a type safe manner.
+ */
+export const hasOwnProperty = <X extends {}, Y extends PropertyKey>(obj: X, prop: Y): obj is X & Record<Y, unknown> =>
+  Object.prototype.hasOwnProperty.call(obj, prop)

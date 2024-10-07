@@ -41,7 +41,7 @@ import {
   naclCase,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
-import { collections, promises, values } from '@salto-io/lowerdash'
+import { collections, promises, values, objects } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { ConfigSource } from './config_source'
@@ -107,6 +107,7 @@ const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { partition } = promises.array
+const { hasOwnProperty } = objects
 
 export const COMMON_ENV_PREFIX = ''
 
@@ -1103,7 +1104,8 @@ export const loadWorkspace = async (
   }
   const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {
     const isParseError = (err: SaltoError): err is parser.ParseError => _.has(err, 'subject')
-    const isElementError = (err: SaltoError): err is SaltoElementError => _.get(err, 'elemID') instanceof ElemID
+    const isElementError = (err: SaltoError): err is SaltoElementError =>
+      hasOwnProperty(err, 'elemID') && err.elemID instanceof ElemID
     if (isParseError(error)) {
       return transformParseError(error)
     }

@@ -105,7 +105,13 @@ export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = 
  */
 export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value, typeName }) => {
   validatePlainObject(value, typeName)
-  const scriptContent = _.get(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
+  const scriptContent = (
+    value as {
+      [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]: {
+        [SCRIPT_CONTENT_FIELD_NAME]: string
+      }[]
+    }
+  )[SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]
   validateArray(scriptContent, `${typeName}.${SCRIPT_CONTENT_FIELD_NAME}`)
   if (scriptContent.length !== 1) {
     log.error(
@@ -121,7 +127,7 @@ export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async
         typeName,
         fullName: value[NAME_ID_FIELD.fieldName],
         fileName: value.fileName,
-        content: _.get(scriptContent[0], SCRIPT_CONTENT_FIELD_NAME),
+        content: scriptContent[0][SCRIPT_CONTENT_FIELD_NAME],
       }),
     },
   }

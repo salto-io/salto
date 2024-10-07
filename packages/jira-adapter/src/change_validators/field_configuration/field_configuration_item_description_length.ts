@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
 import {
   ChangeValidator,
   getChangeData,
@@ -34,7 +33,7 @@ const convertToDescribedElementType = (inst: InstanceElement): DescribedElementT
   return Object.entries(inst.value.fields)
     .map(([itemName, item]) => ({
       elemID: inst.elemID.createNestedID('fields', itemName),
-      description: _.get(item, 'description'),
+      description: (item as { description: string }).description,
     }))
     .filter(describedObj => describedObj.description !== undefined)
 }

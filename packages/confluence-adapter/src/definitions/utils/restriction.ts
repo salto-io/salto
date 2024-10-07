@@ -47,7 +47,17 @@ export const shouldDeleteRestrictionOnPageModification = (args: definitions.depl
  * Update the restriction format and omit redundant fields
  */
 export const adjustRestriction: definitions.AdjustFunctionSingle = async ({ value }) => {
-  const userRestrictions = _.get(value, 'restrictions.user.results')
+  const { restrictions } = value as {
+    restrictions?: {
+      user?: {
+        results?: unknown
+      }
+      group?: {
+        results?: unknown
+      }
+    }
+  }
+  const userRestrictions = restrictions?.user?.results
   return {
     value: {
       operation: _.get(value, 'operation'),
@@ -55,7 +65,7 @@ export const adjustRestriction: definitions.AdjustFunctionSingle = async ({ valu
         user: Array.isArray(userRestrictions)
           ? userRestrictions.map(user => _.omit(user, ['publicName', 'profilePicture', 'displayName']))
           : userRestrictions,
-        group: _.get(value, 'restrictions.group.results'),
+        group: restrictions?.group?.results,
       },
     },
   }

@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 
@@ -14,8 +13,12 @@ export const transform: definitions.AdjustFunctionSingle = async ({ value }) => 
   if (!lowerdashValues.isPlainObject(value)) {
     throw new Error('unexpected value for business hour schedule holiday, not transforming')
   }
-  const startYear = _.get(value, 'start_date')?.split('-')[0]
-  const endYear = _.get(value, 'end_date')?.split('-')[0]
+  const holiday = value as {
+    start_date?: string
+    end_date?: string
+  }
+  const startYear = holiday.start_date?.split('-')[0]
+  const endYear = holiday.end_date?.split('-')[0]
   return {
     value: {
       ...value,

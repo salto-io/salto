@@ -78,8 +78,14 @@ import { getDataElements } from '../src/data_elements/data_elements'
 import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 import { fullQueryParams, fullFetchConfig } from '../src/config/config_creator'
 import { FetchByQueryFunc } from '../src/config/query'
-import { createObjectIdListElements, OBJECT_ID_LIST_TYPE_NAME, OBJECT_ID_LIST_FIELD_NAME } from '../src/scriptid_list'
+import {
+  createObjectIdListElements,
+  OBJECT_ID_LIST_TYPE_NAME,
+  OBJECT_ID_LIST_FIELD_NAME,
+  getOrCreateObjectIdListElements,
+} from '../src/scriptid_list'
 import { getTypesToInternalId } from '../src/data_elements/types'
+import { getSuiteQLTableElements } from '../src/data_elements/suiteql_table_elements'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -261,8 +267,20 @@ describe('Adapter', () => {
       expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
       expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
 
-      // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance + scriptIdListInstance + scriptIdListType + objectIdType
-      expect(elements).toHaveLength(metadataTypes.length + 7)
+      const scriptIdListElements = await getOrCreateObjectIdListElements([], buildElementsSourceFromElements([]), false)
+      const suiteQLTableElements = await getSuiteQLTableElements(config, buildElementsSourceFromElements([]), false)
+
+      expect(elements.map(elem => elem.elemID.getFullName()).sort()).toEqual(
+        [...metadataTypes, ...scriptIdListElements, ...suiteQLTableElements.elements]
+          .map(elem => elem.elemID.getFullName())
+          .concat([
+            'netsuite.companyFeatures.instance',
+            'netsuite.entitycustomfield.instance.custentity_my_script_id',
+            'netsuite.file.instance.a_b@d',
+            'netsuite.folder.instance.a_b@d',
+          ])
+          .sort(),
+      )
 
       const customFieldType = elements.find(element =>
         element.elemID.isEqual(new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)),
@@ -499,8 +517,14 @@ describe('Adapter', () => {
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
       })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
-      // metadataTypes + scriptIdListInstance + scriptIdListType + objectIdType
-      expect(elements).toHaveLength(metadataTypes.length + 3)
+      const scriptIdListElements = await getOrCreateObjectIdListElements([], buildElementsSourceFromElements([]), false)
+      const suiteQLTableElements = await getSuiteQLTableElements(config, buildElementsSourceFromElements([]), false)
+
+      expect(elements.map(elem => elem.elemID.getFullName()).sort()).toEqual(
+        [...metadataTypes, ...scriptIdListElements, ...suiteQLTableElements.elements]
+          .map(elem => elem.elemID.getFullName())
+          .sort(),
+      )
     })
 
     it('should call filters by their order', async () => {
@@ -1409,7 +1433,7 @@ describe('Adapter', () => {
         expect.anything(),
         3,
         ['.*\\.(csv|pdf|png)'],
-        false,
+        true,
       )
     })
 

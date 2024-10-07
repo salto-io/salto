@@ -53,10 +53,7 @@ describe('SuiteQL table elements', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     config = {
-      fetch: {
-        ...fullFetchConfig(),
-        resolveAccountSpecificValues: true,
-      },
+      fetch: fullFetchConfig(),
       suiteAppClient: {
         additionalSuiteQLTables: [
           { name: 'someothertype', typeId: '111', queryParams: { internalIdField: 'id', nameField: 'name' } },
@@ -102,12 +99,6 @@ describe('SuiteQL table elements', () => {
         3: { name: 'Some name 3' },
       },
     })
-  })
-
-  it('should not return elements when fetch.resolveAccountSpecificValues=false', async () => {
-    config.fetch.resolveAccountSpecificValues = false
-    result = await getSuiteQLTableElements(config, elementsSource, true)
-    expect(result.elements).toHaveLength(0)
   })
 
   describe('update suiteql table instances', () => {

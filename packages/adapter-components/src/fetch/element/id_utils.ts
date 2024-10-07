@@ -226,9 +226,9 @@ export const getElemPath =
     customNameMappingFunctions?: NameMappingFunctionMap<TCustomNameMappingOptions>
   }): PartsCreator =>
   ({ entry, parent, defaultName }) => {
-    const pathPrefix = def?.prefix
+    const pathBaseDir = def?.baseDir ?? []
     if (singleton) {
-      return [typeID.adapter, RECORDS_PATH, ...(pathPrefix ? [pathPrefix] : []), SETTINGS_NESTED_PATH, pathNaclCase(typeID.typeName)]
+      return [typeID.adapter, RECORDS_PATH, ...pathBaseDir, SETTINGS_NESTED_PATH, pathNaclCase(typeID.typeName)]
     }
     const basicPathParts = def?.pathParts
       ?.map(part =>
@@ -245,7 +245,7 @@ export const getElemPath =
     return [
       adapterName,
       RECORDS_PATH,
-      ...(pathPrefix ? [pathPrefix] : []),
+      ...pathBaseDir,
       ...(nestUnderPath ?? [pathNaclCase(typeName)]),
       ...pathParts,
       ...(createSelfFolder && lastPart ? [lastPart] : []),

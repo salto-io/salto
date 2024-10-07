@@ -334,6 +334,43 @@ describe('id utils', () => {
         })({ entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }),
       ).toEqual(['myAdapter', 'Records', 'ParentType', 'FieldName', 'A', 'A'])
     })
+    describe('with baseDir provided', () => {
+      const args = { entry: { a: 'A', b: 'B', c: 'C' }, defaultName: 'unnamed' }
+      it('should nest instance path under baseDir', () => {
+        expect(
+          getElemPath({
+            def: {
+              pathParts: [{ parts: [{ fieldName: 'a' }] }],
+              baseDir: ['Base', 'Dir'],
+            },
+            typeID,
+            elemIDCreator: createElemIDFunc({
+              elemIDDef: {
+                parts: [{ fieldName: 'a' }],
+              },
+              typeID,
+            }),
+          })(args),
+        ).toEqual(['myAdapter', 'Records', 'Base', 'Dir', 'myType', 'A'])
+      })
+      it('should nest instance path under baseDir for singletons', () => {
+        expect(
+          getElemPath({
+            def: {
+              baseDir: ['Base', 'Dir'],
+            },
+            typeID,
+            elemIDCreator: createElemIDFunc({
+              elemIDDef: {
+                parts: [{ fieldName: 'a' }],
+              },
+              typeID,
+            }),
+            singleton: true,
+          })(args),
+        ).toEqual(['myAdapter', 'Records', 'Base', 'Dir', 'Settings', 'myType'])
+      })
+    })
   })
 
   describe('getNameMapping', () => {

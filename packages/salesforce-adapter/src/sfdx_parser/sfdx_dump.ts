@@ -27,9 +27,9 @@ import {
   TreeContainer,
   ManifestResolver,
   SourceComponent,
+  SfProject,
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
-import { resolveOrCreateProject } from './project'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -131,8 +131,8 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   })
   const componentsToDump = saltoComponentSet.getSourceComponents().toArray()
 
-  // Load current SFDX project, create if missing
-  const currentProject = await resolveOrCreateProject(baseDir)
+  // Load current SFDX project
+  const currentProject = await SfProject.resolve(baseDir)
   const currentComponents = ComponentSet.fromSource(baseDir).getSourceComponents()
 
   // Calling "convert" below will remove components from the component set, but will not actually delete the files.

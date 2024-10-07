@@ -7,13 +7,26 @@
  */
 
 import path from 'path'
-import { logger } from '@salto-io/logging'
+import { Adapter } from '@salto-io/adapter-api'
 import { API_VERSION } from '../client/client'
 import { SfProject, SfError, TemplateService, TemplateType, ProjectOptions } from './salesforce_imports'
 
-const log = logger(module)
+type CheckAdapterFormatFolderFunc = NonNullable<Adapter['checkAdapterFormatFolder']>
+export const checkProject: CheckAdapterFormatFolderFunc = async ({ baseDir }) => {
+  try {
+    await SfProject.resolve(baseDir)
+    return true
+  } catch (error) {
+    if (error instanceof SfError && error.name === 'InvalidProjectWorkspaceError') {
+      return false
+    }
 
-export const createProject = async (baseDir: string): Promise<void> => {
+    throw error
+  }
+}
+
+type InitAdapterFormatFolderFunc = NonNullable<Adapter['initAdapterFormatFolder']>
+export const createProject: InitAdapterFormatFolderFunc = async ({ baseDir }) => {
   const templateService = TemplateService.getInstance()
   const opts: ProjectOptions = {
     projectname: path.basename(baseDir),
@@ -26,18 +39,4 @@ export const createProject = async (baseDir: string): Promise<void> => {
     apiversion: API_VERSION,
   }
   await templateService.create(TemplateType.Project, opts)
-}
-
-export const resolveOrCreateProject = async (baseDir: string): Promise<SfProject> => {
-  try {
-    return await SfProject.resolve(baseDir)
-  } catch (error) {
-    if (error instanceof SfError && error.name === 'InvalidProjectWorkspaceError') {
-      log.info(`No SFDX project found at ${baseDir}, creating.`)
-      await createProject(baseDir)
-      return SfProject.resolve(baseDir)
-    }
-
-    throw error
-  }
 }

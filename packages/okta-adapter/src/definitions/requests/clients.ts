@@ -61,6 +61,7 @@ export const createClientDefinitions = (
           '/api/v1/mappings': {
             get: {
               queryArgs: { limit: '200' }, // maximum page size allowed
+              omitBody: true,
             },
           },
           '/api/v1/users': {
@@ -87,11 +88,6 @@ export const createClientDefinitions = (
           '/api/v1/idps/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/idps/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/brands/{parent_id}/templates/email/{name}': {
-            get: {
-              omitBody: true,
-            },
-          },
-          '/api/v1/mappings': {
             get: {
               omitBody: true,
             },

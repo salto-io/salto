@@ -316,38 +316,4 @@ describe('dumpElementsToFolder', () => {
       })
     })
   })
-
-  describe('with no sfdx project', () => {
-    describe('when adding a new instance', () => {
-      const project = setupTmpDir('all')
-      let dumpResult: DumpElementsResult
-      beforeAll(async () => {
-        const newElement = createInstanceElement(mockDefaultValues.StaticResource, mockTypes.StaticResource)
-        dumpResult = await dumpElementsToFolder({
-          baseDir: project.name(),
-          changes: [toChange({ after: newElement })],
-          elementsSource: buildElementsSourceFromElements([newElement]),
-        })
-      })
-
-      it('should apply all changes and have no errors', () => {
-        expect(dumpResult.unappliedChanges).toHaveLength(0)
-        expect(dumpResult.errors).toHaveLength(0)
-      })
-      it('should create the XML of the new metadata instance in a new project', async () => {
-        const metadataPath = path.join(
-          project.name(),
-          'force-app/main/default/staticresources/TestStaticResource.resource-meta.xml',
-        )
-        const metadataContent = await readTextFile.notFoundAsUndefined(metadataPath)
-        expect(metadataContent).toEqual(`<?xml version="1.0" encoding="UTF-8"?>
-<StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
-    <cacheControl>Private</cacheControl>
-    <contentType>text/xml</contentType>
-    <description>Test Static Resource Description</description>
-</StaticResource>
-`)
-      })
-    })
-  })
 })

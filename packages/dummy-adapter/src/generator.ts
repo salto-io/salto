@@ -284,7 +284,7 @@ const defaultObj = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Default'],
 })
 
-export const generateExtraElements = async (naclDirs: string[]): Promise<Element[]> => {
+export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promise<Element[]> => {
   const allNaclMocks = (
     await Promise.all(
       naclDirs.map(naclDir =>
@@ -294,7 +294,10 @@ export const generateExtraElements = async (naclDirs: string[]): Promise<Element
       ),
     )
   ).flatMap(list => list)
-  log.debug('the list of files read in generateExtraElements is: %s', allNaclMocks.map(mock => mock.path).join(' , '))
+  log.debug(
+    'the list of files read in generateExtraElementsFromPaths is: %s',
+    allNaclMocks.map(mock => mock.path).join(' , '),
+  )
   const elements = await awu(
     allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
@@ -1012,8 +1015,8 @@ export const generateElements = async (
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike()
   progressReporter.reportProgress({ message: 'Generating extra elements' })
-  const extraElements = params.extraNaclPaths ? await generateExtraElements(params.extraNaclPaths) : []
-  const defaultExtraElements = await generateExtraElements([path.join(dataPath, 'fixtures')])
+  const extraElements = params.extraNaclPaths ? await generateExtraElementsFromPaths(params.extraNaclPaths) : []
+  const defaultExtraElements = await generateExtraElementsFromPaths([path.join(dataPath, 'fixtures')])
   log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   progressReporter.reportProgress({ message: 'Generating conflicted elements' })
   const envObjects = generateEnvElements()

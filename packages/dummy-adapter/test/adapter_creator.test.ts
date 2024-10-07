@@ -61,28 +61,28 @@ describe('adapter creator', () => {
   describe('loadElementsFromFolder', () => {
     let loadedElements: FetchResult | undefined
     describe('When the path exists and contains a valid NaCl file', () => {
-      let remoteNaclDir: string
       const naclFileContents = `
-      type dummy.SomeType {
+      type dummy.Full {
+        strField: string
+        numField: number
         annotations {
-        }        
+        }
+      }
+  
+      dummy.Full FullInst1 {
+          strField = "STR1"
+          numField = 111
       }
       `
       beforeEach(async () => {
-        const originalReadFileSync = jest.requireActual('fs').readFileSync
-        mockedFs.readFileSync
-          .mockImplementationOnce((path): string => {
-            remoteNaclDir = path as string
-            return naclFileContents
-          })
-          .mockImplementation((path, encoding) => originalReadFileSync(path, encoding))
+        mockedFs.readFileSync.mockImplementationOnce(() => naclFileContents)
         mockedReaddirp.promise.mockImplementation(
           async (dir): Promise<readdirp.EntryInfo[]> =>
             Promise.resolve([
               {
-                path: 'some_type.nacl',
-                fullPath: `${dir}/some_type.nacl`,
-                basename: 'some_type.nacl',
+                path: 'fullInst.nacl.mock',
+                fullPath: `${dir}/fullInst.nacl.mock`,
+                basename: 'fullInst.nacl.mock',
               },
             ]),
         )
@@ -91,16 +91,19 @@ describe('adapter creator', () => {
           elementsSource: buildElementsSourceFromElements([]),
         })
       })
-      afterEach(() => {
-        jest.clearAllMocks()
-        jest.resetAllMocks()
-      })
       it('should fetch elements from the correct dir', () => {
-        expect(remoteNaclDir).toEqual('some_path/some_type.nacl')
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith('some_path/fullInst.nacl.mock', 'utf8')
       })
       it('should load the NaCl file from the provided dir', () => {
-        expect(loadedElements?.elements).toHaveLength(1)
-        expect(loadedElements?.elements[0]).toHaveProperty('elemID', new ElemID(DUMMY_ADAPTER, 'SomeType'))
+        const objectType = loadedElements?.elements.find(e => e.elemID.name === 'Full') as ObjectType
+        expect(objectType).toBeInstanceOf(ObjectType)
+        expect(objectType.elemID).toEqual(new ElemID(DUMMY_ADAPTER, 'Full'))
+
+        const instanceElement = loadedElements?.elements.find(e => e.elemID.name === 'FullInst1') as InstanceElement
+        expect(instanceElement).toBeInstanceOf(InstanceElement)
+        expect(instanceElement.value.strField).toEqual('STR1')
+        expect(instanceElement.value.numField).toEqual(111)
+        expect(instanceElement.elemID).toEqual(new ElemID(DUMMY_ADAPTER, 'Full', 'instance', 'FullInst1'))
       })
     })
   })

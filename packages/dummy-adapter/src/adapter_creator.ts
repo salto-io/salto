@@ -15,8 +15,6 @@ import {
   GetCustomReferencesFunc,
   ConfigCreator,
   createRestriction,
-  FetchResult,
-  LoadElementsFromFolderArgs,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -28,7 +26,7 @@ import {
   defaultParams,
   changeErrorType,
   fetchErrorType,
-  generateExtraElements,
+  generateExtraElementsFromPaths,
 } from './generator'
 
 const log = logger(module)
@@ -66,8 +64,8 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-const loadElementsFromFolder = async ({ baseDir }: LoadElementsFromFolderArgs): Promise<FetchResult> => ({
-  elements: await generateExtraElements([baseDir]),
+const loadElementsFromFolder: Adapter['loadElementsFromFolder'] = async ({ baseDir }) => ({
+  elements: await generateExtraElementsFromPaths([baseDir]),
 })
 
 const objectFieldType = new ObjectType({

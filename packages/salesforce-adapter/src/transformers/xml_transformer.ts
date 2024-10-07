@@ -410,7 +410,7 @@ export const fromRetrieveResult = async (
         typesWithDiff.add(file.type)
         log.trace(
           'Found differences in the xml parsing of instance of type %s: %s',
-          file.fullName,
+          file.type,
           inspectValue(detailedChanges),
         )
       }
@@ -462,6 +462,7 @@ export const fromRetrieveResult = async (
       return values === undefined ? undefined : { file, values }
     }),
   )
+  log.debug('xml parsing types  with diffs: [%s]', Array.from(typesWithDiff).join(', '))
   return instances.filter(isDefined)
 }
 

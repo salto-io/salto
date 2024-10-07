@@ -30,7 +30,11 @@ import {
 import { createValueTransformer } from '../../fetch/utils'
 import { replaceAllArgs } from '../../fetch/request/utils'
 import { TransformDefinition } from '../../definitions/system/shared'
-import { DeployRequestCondition, DeployableRequestDefinition } from '../../definitions/system/deploy/deploy'
+import {
+  DeployRequestCondition,
+  DeployableRequestDefinition,
+  DeployResponseValidator,
+} from '../../definitions/system/deploy/deploy'
 import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType, ResolveClientOptionsType } from '../../definitions/system/api'
@@ -87,6 +91,24 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndEx
       await transform({ value: change.data.before.value, typeName, context: args }),
       await transform({ value: change.data.after.value, typeName, context: args }),
     )
+  }
+}
+
+const createValidateFunc = (
+  validatorDef?: DeployResponseValidator,
+): ((args: ChangeAndExtendedContext & { response: Response<ResponseValue | ResponseValue[]> }) => Promise<boolean>) => {
+  const { custom, allowedStatusCodes } = validatorDef ?? {}
+  if (custom !== undefined) {
+    return async args => custom({ allowedStatusCodes })(args)
+  }
+  return async args => {
+    const {
+      response: { status },
+    } = args
+    if (allowedStatusCodes !== undefined) {
+      return allowedStatusCodes.includes(status)
+    }
+    return status >= 200 && status < 300
   }
 }
 
@@ -349,7 +371,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
     }
 
     await awu(collections.array.makeArray(requests)).some(async def => {
-      const { request, condition } = def
+      const { request, condition, validate } = def
       if (request.earlySuccess === undefined && request.endpoint === undefined) {
         // should not happen
         throw new Error(`Invalid request for change ${elemID.getFullName()} action ${action}`)
@@ -375,7 +397,11 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         return true
       }
 
+      const validateFunc = createValidateFunc(validate)
       const res = await singleRequest({ ...args, requestDef: request })
+      if (!(await validateFunc({ ...args, response: res }))) {
+        throw new Error(`Failed to validate response for change ${elemID.getFullName()} action ${action}`)
+      }
       try {
         const dataToApply = await extractResponseDataToApply({ ...args, requestDef: def, response: res })
         if (dataToApply !== undefined) {

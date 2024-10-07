@@ -10,6 +10,7 @@ import { ArgsWithCustomizer, DefaultWithCustomizations, TransformDefinition } fr
 import { DeployRequestDefinition } from './request'
 import { ChangeIdFunction } from '../../../deployment/grouping'
 import { ChangeAndContext, ChangeAndExtendedContext } from './types'
+import { Response, ResponseValue } from '../../../client'
 
 export type ValueReferenceResolver = (args: { value: Values }) => Values
 
@@ -25,11 +26,21 @@ export type DeployRequestCondition = ArgsWithCustomizer<
   ChangeAndExtendedContext
 >
 
+export type DeployResponseValidator = ArgsWithCustomizer<
+  boolean,
+  {
+    allowedStatusCodes?: number[]
+  },
+  ChangeAndExtendedContext & { response: Response<ResponseValue | ResponseValue[]> }
+>
+
 export type DeployableRequestDefinition<ClientOptions extends string> = {
   // when provided, only changes matching the condition will be used in this request
   condition?: DeployRequestCondition
 
   request: DeployRequestDefinition<ClientOptions>
+
+  validate?: DeployResponseValidator
 
   // define what (if any) part of the response should be copied back to the workspace (via the original change), or be available for subsequent calls within the operation.
   // by default, only values of fields marked as service id are copied

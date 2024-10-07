@@ -101,6 +101,12 @@ describe('SuiteQL table elements', () => {
     })
   })
 
+  it('should not return elements when fetch.resolveAccountSpecificValues=false', async () => {
+    config.fetch.resolveAccountSpecificValues = false
+    result = await getSuiteQLTableElements(config, elementsSource, true)
+    expect(result.elements).toHaveLength(0)
+  })
+
   describe('update suiteql table instances', () => {
     beforeEach(async () => {
       result = await getSuiteQLTableElements(config, elementsSource, true)

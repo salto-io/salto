@@ -495,14 +495,18 @@ const createChangesForDeploy = async (
       actions: {
         token: {
           accessTokenLifetimeMinutes: 180,
-        }
-      }
+        },
+      },
     },
     parent: authServerPolicyA,
   })
   if (authServerInstance !== undefined) {
-    authServerRuleA.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(authServerInstance.elemID, authServerInstance))
-    authServerRuleB.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(authServerInstance.elemID, authServerInstance))
+    authServerRuleA.annotations[CORE_ANNOTATIONS.PARENT].push(
+      new ReferenceExpression(authServerInstance.elemID, authServerInstance),
+    )
+    authServerRuleB.annotations[CORE_ANNOTATIONS.PARENT].push(
+      new ReferenceExpression(authServerInstance.elemID, authServerInstance),
+    )
   }
   const authServerPolicyRulePriority = createInstance({
     typeName: AUTHORIZATION_POLICY_RULE_PRIORITY_TYPE_NAME,
@@ -513,7 +517,7 @@ const createChangesForDeploy = async (
         new ReferenceExpression(authServerRuleB.elemID, authServerRuleB),
         new ReferenceExpression(authServerRuleA.elemID, authServerRuleA),
       ],
-    }
+    },
   })
   return [
     toChange({ after: groupInstance }),

@@ -20,7 +20,7 @@ import { OKTA } from '../../src/constants'
 import { changeDependenciesFromPoliciesAndRulesToPriority } from '../../src/dependency_changers/policy_and_rules_to_priority'
 import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_WITH_PRIORITY } from '../../src/filters/policy_priority'
 import { addDependenciesFromPolicyToPriorPolicy } from '../../src/dependency_changers/order_policies_by_priority'
-import { policyRuleTypeNameToPolicyName } from '../filters/policy_priority.test' 
+import { policyRuleTypeNameToPolicyName } from '../filters/policy_priority.test'
 
 const createPolicyOrRuleInstance = (
   policyName: string,
@@ -169,10 +169,10 @@ describe('addDependenciesFromPolicyToPriorPolicy', () => {
     },
   )
   it.each([...POLICY_RULE_WITH_PRIORITY])(
-    'should add dependencies between each %s rule  only when they are belongs to the same policy',
+    'should add dependencies between each %s rule only when they are belongs to the same policy',
     async (policyRuleName: string) => {
       const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
-      const parentType = new ObjectType({ elemID: new ElemID(OKTA, 'testPolicy') })
+      const parentType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
       const parentOne = new InstanceElement('parentOne', parentType, {
         id: '1',
         name: 'parentOne',

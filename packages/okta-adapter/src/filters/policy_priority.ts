@@ -69,14 +69,17 @@ export const POLICY_RULE_WITH_PRIORITY = [
   SIGN_ON_RULE_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
   AUTHORIZATION_POLICY_RULE,
-  // not a policy rule, but managed similarly as there is a policy per authrozation server
+  // not a policy rule, but managed similarly as there is a policy per authorization server
   AUTHORIZATION_POLICY,
 ]
 const POLICY_WITH_PRIORITY = [SIGN_ON_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, PASSWORD_POLICY_TYPE_NAME] as const
 export const ALL_SUPPORTED_POLICY_NAMES = POLICY_WITH_PRIORITY as readonly string[]
 type PolicyTypeWithPriority = (typeof POLICY_WITH_PRIORITY)[number]
 
-// Automation and PofileEnrollmentPolicyRule is not included in the list of supported policy rules because it is not supported
+const isPolicyTypeWithPriority = (typeName: string): typeName is PolicyTypeWithPriority =>
+  ALL_SUPPORTED_POLICY_NAMES.includes(typeName)
+
+// Automation and ProfileEnrollmentPolicyRule is not included in the list of supported policy rules because it is not supported
 const POLICY_NAME_TO_RULE_PRIORITY_NAME: Record<string, string> = {
   [ACCESS_POLICY_TYPE_NAME]: ACCESS_POLICY_RULE_PRIORITY_TYPE_NAME,
   [IDP_POLICY_TYPE_NAME]: IDP_RULE_PRIORITY_TYPE_NAME,
@@ -165,12 +168,11 @@ const createPolicyRulePriorityInstance = ({
   const fullValue = defaultRule
     ? { ...value, defaultRule: new ReferenceExpression(defaultRule.elemID, defaultRule) }
     : value
-  log.debug('Shir: path part 1: %s, part 2 %s', (policy.path ?? []).slice(0, -1), pathNaclCase(name))
-  log.debug('Shir, fullPath: %s', [...(policy.path ?? []).slice(0, -1), pathNaclCase(name)])
   const parentPath = (policy.path ?? []).slice(0, -1)
-  const path = policy.elemID.typeName === AUTHORIZATION_SERVER
-   ? [...parentPath, 'policies', pathNaclCase(name)]
-   : [...parentPath, pathNaclCase(name)]
+  const path =
+    policy.elemID.typeName === AUTHORIZATION_SERVER
+      ? [...parentPath, 'policies', pathNaclCase(name)]
+      : [...parentPath, pathNaclCase(name)]
   return new InstanceElement(name, type, fullValue, path, {
     [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(policy.elemID, policy),
   })
@@ -326,10 +328,13 @@ const filter: FilterCreator = ({ definitions }) => ({
     })
     // Responsible for creating the priority instances for the policies
     const policyTypeNameToPolicies = _.groupBy(
-      instances.filter(instance => ALL_SUPPORTED_POLICY_NAMES.includes(instance.elemID.typeName)),
+      instances.filter(instance => isPolicyTypeWithPriority(instance.elemID.typeName)),
       instance => instance.elemID.typeName,
     )
     Object.entries(policyTypeNameToPolicies).forEach(([policyTypeName, policies]) => {
+      if (!isPolicyTypeWithPriority(policyTypeName)) {
+        return
+      }
       logDuplicatePriorities(policies)
       const type =
         priorityTypeNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policyTypeName as PolicyTypeWithPriority]]

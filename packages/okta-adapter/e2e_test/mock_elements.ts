@@ -389,9 +389,7 @@ export const mockDefaultValues: Record<string, Values> = {
     conditions: {
       people: {
         groups: {
-          include: [
-           'EVERYONE',
-          ],
+          include: ['EVERYONE'],
         },
       },
       grantTypes: {
@@ -407,9 +405,7 @@ export const mockDefaultValues: Record<string, Values> = {
         ],
       },
       scopes: {
-        include: [
-          '*',
-        ]
+        include: ['*'],
       },
     },
     actions: {

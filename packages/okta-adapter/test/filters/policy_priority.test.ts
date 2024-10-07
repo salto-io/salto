@@ -27,7 +27,14 @@ import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_NAMES,
   POLICY_RULE_WITH_PRIORITY,
 } from '../../src/filters/policy_priority'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, AUTHORIZATION_POLICY, AUTHORIZATION_POLICY_RULE, AUTHORIZATION_SERVER, OKTA } from '../../src/constants'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  AUTHORIZATION_POLICY,
+  AUTHORIZATION_POLICY_RULE,
+  AUTHORIZATION_SERVER,
+  OKTA,
+} from '../../src/constants'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import { OktaOptions } from '../../src/definitions/types'
@@ -41,7 +48,12 @@ export const policyRuleTypeNameToPolicyName = (policyRuleName: string): string =
 }
 
 describe('policyPrioritiesFilter', () => {
-  const createInstance = (id: number, isSystem: boolean, type: ObjectType, parents?: InstanceElement[]): InstanceElement =>
+  const createInstance = (
+    id: number,
+    isSystem: boolean,
+    type: ObjectType,
+    parents?: InstanceElement[],
+  ): InstanceElement =>
     new InstanceElement(
       `accessPolicyRule${id.toString()}`,
       type,
@@ -54,8 +66,7 @@ describe('policyPrioritiesFilter', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: parents ?
-          parents.map(parent => new ReferenceExpression(parent.elemID, parent)) : [],
+        [CORE_ANNOTATIONS.PARENT]: parents ? parents.map(parent => new ReferenceExpression(parent.elemID, parent)) : [],
       },
     )
 
@@ -68,13 +79,7 @@ describe('policyPrioritiesFilter', () => {
       id: 10,
       status: 'ACTIVE',
     },
-    [
-      OKTA,
-      elementUtils.RECORDS_PATH,
-      AUTHORIZATION_SERVER,
-      'authServerInstance',
-      'authServerInstance',
-    ],
+    [OKTA, elementUtils.RECORDS_PATH, AUTHORIZATION_SERVER, 'authServerInstance', 'authServerInstance'],
   )
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
@@ -384,7 +389,8 @@ describe('policyPrioritiesFilter', () => {
           name: `${policyRuleName}Instance`,
           id: 4,
         })
-        const parents = policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
+        const parents =
+          policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
         const policyRuleInstanceOne = createInstance(1, false, policyRuleType, parents)
         const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, parents)
         const policyRuleInstanceThree = createInstance(3, false, policyRuleType, parents)
@@ -416,12 +422,13 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(3)
         const priorities = policyRulePriorityInstance.value.priorities as ReferenceExpression[]
         priorities.forEach((ref, index) => {
-          // eslint-disable-next-line no-nested-ternary
-          const path = policyRuleName === AUTHORIZATION_POLICY 
-           ? `/api/v1/authorizationServers/4/policies/${index + 1}`
-           : policyRuleName === AUTHORIZATION_POLICY_RULE
-             ? `/api/v1/authorizationServers/10/policies/4/rules/${index + 1}`
-             : `/api/v1/policies/4/rules/${index + 1}`
+          const path =
+            // eslint-disable-next-line no-nested-ternary
+            policyRuleName === AUTHORIZATION_POLICY
+              ? `/api/v1/authorizationServers/4/policies/${index + 1}`
+              : policyRuleName === AUTHORIZATION_POLICY_RULE
+                ? `/api/v1/authorizationServers/10/policies/4/rules/${index + 1}`
+                : `/api/v1/policies/4/rules/${index + 1}`
           expect(connection.put).toHaveBeenCalledWith(
             path,
             {
@@ -502,7 +509,8 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const parents = policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
+        const parents =
+          policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
         const policyRuleInstanceOne = createInstance(1, false, policyRuleType, parents)
         const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, parents)
         const policyRuleInstanceThree = createInstance(3, false, policyRuleType, parents)
@@ -558,7 +566,8 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const parents = policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
+        const parents =
+          policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
         const policyRuleInstanceOne = createInstance(1, false, policyRuleType, parents)
         const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, parents)
         const policyRuleInstanceThree = createInstance(3, false, policyRuleType, parents)

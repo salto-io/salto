@@ -15,8 +15,8 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { WeakReferencesHandler } from './weak_references_handler'
 import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../filters/policy_priority'
+import { WeakReferencesHandler } from './weak_references_handler'
 
 const { awu } = collections.asynciterable
 

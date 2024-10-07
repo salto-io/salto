@@ -91,6 +91,7 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
+          // Customized brand pages return 404 if they are not customized (i.e., the default page is used)
           '/api/v1/brands/{brandId}/pages/sign-in/customized': {
             get: {
               additionalValidStatuses: [404],

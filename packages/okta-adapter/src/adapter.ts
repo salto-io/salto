@@ -66,7 +66,6 @@ import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
-import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
 import policyPrioritiesFilter from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
@@ -125,7 +124,6 @@ const DEFAULT_FILTERS = [
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,
-  profileMappingAdditionFilter,
   profileMappingRemovalFilter,
   // should run after fieldReferences
   ...Object.values(commonFilters),

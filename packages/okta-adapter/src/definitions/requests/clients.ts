@@ -91,6 +91,11 @@ export const createClientDefinitions = (
               omitBody: true,
             },
           },
+          '/api/v1/mappings': {
+            get: {
+              omitBody: true,
+            },
+          },
         },
       },
     },

@@ -42,6 +42,7 @@ import {
   EMAIL_DOMAIN_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
+  PROFILE_MAPPING_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -1025,6 +1026,58 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   brandId: '{_parent.0.brandId}',
                   templateName: '{_parent.0.name}',
                 },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [PROFILE_MAPPING_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              // ProfileMappings are created automatically by Okta when a source / target instance is created,
+              // but we're allowing to "add" a mapping alongside its parents.
+              // We first send a GET query to get its ID, and then we perform a "modify" action.
+              request: {
+                endpoint: {
+                  path: '/api/v1/mappings',
+                  queryArgs: {
+                    sourceId: '{source.id}',
+                    targetId: '{target.id}',
+                  },
+                  method: 'get',
+                },
+              },
+            },
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/mappings/{id}',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/mappings/{id}',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          remove: [
+            // ProfileMappings are removed automatically by Okta when either side of the mapping is removed.
+            // We use an empty URL here to mark this action as supported in case a user removed the mapping
+            // alongside either side.
+            // A separate Change Validator ensures that mappings aren't removed by themselves.
+            {
+              request: {
+                earlySuccess: true,
               },
             },
           ],

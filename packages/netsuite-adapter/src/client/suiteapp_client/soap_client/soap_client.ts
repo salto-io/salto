@@ -86,7 +86,7 @@ const REQUEST_RETRY_DELAY = 5000
 const LOCKED_FIELDS_MAX_DEPLOYS = 6
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
-export const DEFAULT_WSDL_VERSION: WSDLVersion = '2020_2'
+export const DEFAULT_WSDL_VERSION: WSDLVersion = '2024_1'
 const SEARCH_PAGE_SIZE = 100
 
 const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'

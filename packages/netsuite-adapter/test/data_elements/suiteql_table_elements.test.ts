@@ -53,10 +53,7 @@ describe('SuiteQL table elements', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     config = {
-      fetch: {
-        ...fullFetchConfig(),
-        resolveAccountSpecificValues: true,
-      },
+      fetch: fullFetchConfig(),
       suiteAppClient: {
         additionalSuiteQLTables: [
           { name: 'someothertype', typeId: '111', queryParams: { internalIdField: 'id', nameField: 'name' } },

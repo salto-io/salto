@@ -241,7 +241,7 @@ const getSuiteScriptReferences = async (
 ): Promise<ElemID[]> => {
   const filePath = element.value[PATH]
 
-  if (config.fetch.useNewReferencesInSuiteScripts && !hasValidExtension(filePath, config)) {
+  if (config.fetch.useNewReferencesInSuiteScripts !== false && !hasValidExtension(filePath, config)) {
     skippedFileExtensions.add(osPath.extname(filePath))
     return []
   }
@@ -260,7 +260,7 @@ const getSuiteScriptReferences = async (
 
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
 
-  if (config.fetch.useNewReferencesInSuiteScripts) {
+  if (config.fetch.useNewReferencesInSuiteScripts !== false) {
     try {
       const newReferences = getReferencesWithRegex(filePath, content)
       return getServiceElemIDsFromPaths(

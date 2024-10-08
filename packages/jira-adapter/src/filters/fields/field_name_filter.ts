@@ -29,15 +29,16 @@ const getFieldType = (instance: InstanceElement): string | undefined =>
 
 const isCustomField = (instance: InstanceElement): boolean => instance.value.schema?.custom !== undefined
 
-const nameNaclCase = (baseName: string, instance: InstanceElement, config: JiraConfig): string => naclCase(
-  [
-    baseName,
-    config.fetch.addTypeToFieldName ?? true ? getFieldType(instance) : undefined,
-    isCustomField(instance) ? CUSTOM_FIELDS_SUFFIX : undefined,
-  ]
-    .filter(values.isDefined)
-    .join('__'),
-)
+const nameNaclCase = (baseName: string, instance: InstanceElement, config: JiraConfig): string =>
+  naclCase(
+    [
+      baseName,
+      config.fetch.addTypeToFieldName ?? true ? getFieldType(instance) : undefined,
+      isCustomField(instance) ? CUSTOM_FIELDS_SUFFIX : undefined,
+    ]
+      .filter(values.isDefined)
+      .join('__'),
+  )
 
 const getInstanceName = (instance: InstanceElement, config: JiraConfig, getElemIdFunc?: ElemIdGetter): string => {
   const baseName = generateInstanceNameFromConfig(instance.value, instance.elemID.typeName, config.apiDefinitions)

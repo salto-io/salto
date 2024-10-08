@@ -12,7 +12,7 @@ export type AdditionalAction = never
 export type ClientOptions = 'main'
 type PaginationOptions = 'cursor'
 export type ReferenceContextStrategies = 'ODataType'
-export type CustomReferenceSerializationStrategyName = 'appId' | 'bundleId' | 'packageId'
+export type CustomReferenceSerializationStrategyName = 'appId' | 'bundleId' | 'packageId' | 'servicePrincipalAppId'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
 
 export type Options = definitions.APIDefinitionsOptions & {

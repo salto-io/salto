@@ -119,7 +119,7 @@ const returnDynamicContentsToApiValue = async (
     })) ?? instance.value
 }
 
-export const DynamicContentReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
+export const dynamicContentReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
   const instances = elements.filter(isInstanceElement)
   const placeholderToItem = _(instances)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME)
@@ -141,7 +141,7 @@ const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
   return {
     name: 'dynamicContentReferencesFilter',
-    onFetch: async (elements: Element[]): Promise<void> => DynamicContentReferencesOnFetch(elements, config),
+    onFetch: async (elements: Element[]): Promise<void> => dynamicContentReferencesOnFetch(elements, config),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       await Promise.all(
         changes.map(getChangeData).map(instance => returnDynamicContentsToApiValue(instance, templateMapping)),

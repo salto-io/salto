@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { buildLazyShallowTypeResolverElementsSource } from '@salto-io/adapter-utils'
+import { buildLazyShallowTypeResolverElementsSource, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
@@ -46,15 +46,19 @@ import cpqBillingStartDate from './change_validators/cpq_billing_start_date'
 import cpqBillingTriggers from './change_validators/cpq_billing_triggers'
 import managedApexComponent from './change_validators/managed_apex_component'
 import SalesforceClient from './client/client'
-import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
+import { ChangeValidatorName, DEPLOY_CONFIG, FetchProfile, SalesforceConfig } from './types'
+import { buildFetchProfile } from './fetch_profile/fetch_profile'
+import { getLookUpName } from './transformers/reference_mapping'
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
-type ChangeValidatorCreator = (
-  config: SalesforceConfig,
-  isSandbox: boolean,
-  client: SalesforceClient,
-) => ChangeValidator
+type ChangeValidatorCreator = (params: {
+  config: SalesforceConfig
+  isSandbox: boolean
+  client: SalesforceClient
+  fetchProfile: FetchProfile
+  getLookupNameFunc: GetLookupNameFunc
+}) => ChangeValidator
 
 export const defaultChangeValidatorsDeployConfig: Record<string, boolean> = {
   omitData: false,
@@ -66,21 +70,21 @@ export const defaultChangeValidatorsValidateConfig: Record<string, boolean> = {
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
-  customObjectInstances: () => customObjectInstancesValidator,
+  customObjectInstances: ({ getLookupNameFunc }) => customObjectInstancesValidator(getLookupNameFunc),
   customFieldType: () => customFieldTypeValidator,
   standardFieldLabel: () => standardFieldLabelValidator,
-  mapKeys: () => mapKeysValidator,
+  mapKeys: ({ getLookupNameFunc }) => mapKeysValidator(getLookupNameFunc),
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   recordTypeDeletion: () => recordTypeDeletionValidator,
-  flowsValidator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
+  flowsValidator: ({ fetchProfile, isSandbox, client }) => flowsValidator(fetchProfile, isSandbox, client),
   fullNameChangedValidator: () => fullNameChangedValidator,
   invalidListViewFilterScope: () => invalidListViewFilterScope,
   caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
   omitData: () => omitDataValidator,
   dataChange: () => dataChangeValidator,
-  unknownUser: (_config, _isSandbox, client) => unknownUser(client),
+  unknownUser: ({ client }) => unknownUser(client),
   animationRuleRecordType: () => animationRuleRecordType,
   duplicateRulesSortOrder: () => duplicateRulesSortOrder,
   currencyIsoCodes: () => currencyIsoCodes,
@@ -95,7 +99,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   artificialTypes: () => artificialTypes,
   metadataTypes: () => metadataTypes,
   taskOrEventFieldsModifications: () => taskOrEventFieldsModifications,
-  newFieldsAndObjectsFLS: config => newFieldsAndObjectsFLS(config),
+  newFieldsAndObjectsFLS: ({ config }) => newFieldsAndObjectsFLS(config),
   elementApiVersion: () => elementApiVersionValidator,
   cpqBillingStartDate: () => cpqBillingStartDate,
   cpqBillingTriggers: () => cpqBillingTriggers,
@@ -119,8 +123,12 @@ const createSalesforceChangeValidator = ({
     ? defaultChangeValidatorsValidateConfig
     : defaultChangeValidatorsDeployConfig
 
+  const fetchProfile = buildFetchProfile({ fetchParams: config.fetch ?? {} })
+  const getLookupNameFunc: GetLookupNameFunc = getLookUpName(fetchProfile)
   const changeValidator = createChangeValidator({
-    validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
+    validators: _.mapValues(changeValidators, validator =>
+      validator({ config, isSandbox, client, fetchProfile, getLookupNameFunc }),
+    ),
     validatorsActivationConfig: {
       ...defaultValidatorsActivationConfig,
       ...config[DEPLOY_CONFIG]?.changeValidators,

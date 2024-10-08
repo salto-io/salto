@@ -33,6 +33,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   GUIDE,
   ARTICLE_ATTACHMENTS_FIELD,
+  TRANSLATIONS_FIELD,
 } from '../../src/constants'
 import filterCreator, { GUIDE_ELEMENT_DIRECTORY, GUIDE_PATH, UNSORTED } from '../../src/filters/guide_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
@@ -131,10 +132,12 @@ describe('guide arrange paths', () => {
     source_locale: 'en-us',
     title: 'article name',
   })
+  const content = Buffer.from('test')
   const articleTranslationInstance = new InstanceElement('instance9', articleTranslationType, {
     brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     title: 'article name',
     locale: 'en-us',
+    body: new StaticFile({ filepath: 'something', content }),
   })
   articleTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
     new ReferenceExpression(articleInstance.elemID, articleInstance),
@@ -142,7 +145,6 @@ describe('guide arrange paths', () => {
   articleInstance.value.translations = [
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
-  const content = Buffer.from('test')
   const articleAttachmentInstance = new InstanceElement('attachment', articleAttachmentType, {
     brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     content: new StaticFile({ filepath: 'something', content }),
@@ -420,6 +422,30 @@ describe('guide arrange paths', () => {
         ].join('/'),
       )
       expect(staticFile.isEqual(articleAttachmentInstance.value.content)).toBeTruthy()
+    })
+    it('should handle article translation static file correctly', async () => {
+      const elements = [sectionInstance, categoryInstance, articleInstance, articleTranslationInstance].map(e =>
+        e.clone(),
+      )
+      await filter.onFetch([elements, brandInstance].flat())
+      const staticFile = elements[3].value.body
+      expect(staticFile.filepath).toEqual(
+        [
+          ZENDESK,
+          TRANSLATIONS_FIELD,
+          GUIDE,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'category_name',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'section_name',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
+          'article_name',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
+          `${shortElemIdHash(elements[3].elemID)}_article_name`,
+        ].join('/'),
+      )
+      expect(staticFile.isEqual(articleTranslationInstance.value.body)).toBeTruthy()
     })
     it('should not raise error when parent types dont exist', async () => {
       const elements = [articleTranslationInstance, sectionTranslationInstance, categoryTranslationInstance].map(e =>

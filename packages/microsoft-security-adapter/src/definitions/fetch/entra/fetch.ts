@@ -341,6 +341,11 @@ const graphV1Customizations: FetchCustomizations = {
             referenceFromParent: false,
           },
         },
+        tags: {
+          sort: {
+            properties: [],
+          },
+        },
       },
     },
   },

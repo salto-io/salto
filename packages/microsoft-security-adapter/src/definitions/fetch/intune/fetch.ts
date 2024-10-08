@@ -17,6 +17,7 @@ import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 import { application, deviceConfigurationSettings, platformScript } from './utils'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './utils/group_assignments'
 
 const {
   // Top level types
@@ -87,6 +88,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
         ...application.APPLICATION_FIELDS_TO_OMIT,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
       },
     },
   },
@@ -118,7 +120,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME]: {
@@ -148,7 +153,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [DEVICE_CONFIGURATION_TYPE_NAME]: {
@@ -178,7 +186,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   ...deviceConfigurationSettings.createDeviceConfigurationSettingsFetchDefinition({
@@ -217,7 +228,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME]: {
@@ -339,7 +353,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   ..._.mapValues(TYPES_WITH_TARGET_APPS_PATH_MAP, ({ resourcePath, serviceUrlPath }) => ({

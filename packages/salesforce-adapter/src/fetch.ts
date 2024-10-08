@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, objects, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   ConfigChangeSuggestion,
@@ -20,6 +20,7 @@ import {
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
   MetadataInstance,
   MetadataQuery,
+  ProfileSection,
 } from './types'
 import {
   CUSTOM_OBJECT,
@@ -47,12 +48,22 @@ import {
   MetadataObjectType,
 } from './transformers/transformer'
 import { fromRetrieveResult, getManifestTypeName, toRetrieveRequest } from './transformers/xml_transformer'
-import { getFullName, isInstanceOfTypeSync, isProfileRelatedMetadataType, listMetadataObjects } from './filters/utils'
+import {
+  apiNameSync,
+  getFullName,
+  isInstanceOfTypeSync,
+  isProfileRelatedMetadataType,
+  layoutObjAndName,
+  listMetadataObjects,
+  metadataTypeSync,
+} from './filters/utils'
 import { buildFilePropsMetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
+const { DefaultMap } = collections.map
+const { concatObjects } = objects
 const log = logger(module)
 
 export const fetchMetadataType = async (
@@ -316,6 +327,8 @@ type RetrieveMetadataInstancesArgs = {
   getFilesToRetrieveFunc?: (allProps: FileProperties[]) => FileProperties[]
 }
 
+type GetAdditionalContextFilesToRetrieveFunc = (allProps: ReadonlyArray<FileProperties>) => FileProperties[]
+
 type Partitions = {
   profileProps: FileProperties[]
   profilesRelatedProps: FileProperties[]
@@ -350,7 +363,7 @@ export const retrieveMetadataInstances = async ({
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
     if (typeName === LAYOUT_TYPE_ID_METADATA_TYPE) {
-      log.trace('Layout file properties are %s', inspectValue(res))
+      log.trace('Layout file properties are %s', inspectValue(res, { maxArrayLength: null }))
     }
     return _(res)
       .uniqBy(file => file.fullName)
@@ -362,10 +375,31 @@ export const retrieveMetadataInstances = async ({
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
 
+  log.trace('metadata types in fetch: %s', inspectValue(Object.keys(typesByName)))
+
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
-    const result = instances[0].clone()
-    result.value = _.merge({}, ...instances.map(instance => instance.value))
-    return result
+    const uniqueFnBySection: Record<ProfileSection, (values: unknown[]) => unknown[]> = {
+      [ProfileSection.FieldPermissions]: values => _.uniqBy(values, 'field'),
+      [ProfileSection.ObjectPermissions]: values => _.uniqBy(values, 'object'),
+      [ProfileSection.RecordTypeVisibilities]: values => _.uniqBy(values, 'recordType'),
+      [ProfileSection.TabVisibilities]: values => _.uniqBy(values, 'tab'),
+      [ProfileSection.UserPermissions]: values => _.uniqBy(values, 'name'),
+      [ProfileSection.ApplicationVisibilities]: values => _.uniqBy(values, 'application'),
+      [ProfileSection.ClassAccesses]: values => _.uniqBy(values, 'apexClass'),
+      [ProfileSection.FlowAccesses]: values => _.uniqBy(values, 'flow'),
+      [ProfileSection.LayoutAssignments]: values =>
+        _.uniqBy(values, value => `${_.get(value, 'layout', '')}@${_.get(value, 'recordType', '')}`),
+      [ProfileSection.PageAccesses]: values => _.uniqBy(values, 'apexPage'),
+    }
+    const mergedInstance = instances[0].clone()
+    mergedInstance.value = {
+      ...mergedInstance.value,
+      ...concatObjects(
+        instances.map(instance => _.pick(instance.value, Object.keys(uniqueFnBySection))),
+        uniqueFnBySection,
+      ),
+    }
+    return mergedInstance
   }
 
   const configChangeAlreadyExists = (change: ConfigChangeSuggestion): boolean => {
@@ -389,16 +423,37 @@ export const retrieveMetadataInstances = async ({
     return false
   }
 
-  const retrieveInstances = async (
-    fileProps: ReadonlyArray<FileProperties>,
-    filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
-  ): Promise<InstanceElement[]> => {
-    const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
+  const missingTypes = new Set<string>()
+  const retrieveInstances = async ({
+    fileProps,
+    filePropsToSendWithEveryChunk = [],
+    getAdditionalFilePropsToRetrieveFunc,
+  }: {
+    fileProps: ReadonlyArray<FileProperties>
+    filePropsToSendWithEveryChunk?: ReadonlyArray<FileProperties>
+    getAdditionalFilePropsToRetrieveFunc: GetAdditionalContextFilesToRetrieveFunc
+  }): Promise<InstanceElement[]> => {
+    const additionalContextTypes = getAdditionalFilePropsToRetrieveFunc(fileProps)
+    const additionalContextInstancesByType = additionalContextTypes.reduce(
+      (acc, fileProp) => {
+        acc.get(fileProp.type).add(fileProp.fullName)
+        return acc
+      },
+      new DefaultMap<string, Set<string>>(() => new Set()),
+    )
+    const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk).concat(additionalContextTypes)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = allFileProps.map(inst => ({
-      ...inst,
-      type: getManifestTypeName(typesByName[inst.type]),
-    }))
+    const filesToRetrieve = allFileProps.map(inst => {
+      const metadataType = typesByName[inst.type]
+      if (metadataType === undefined) {
+        missingTypes.add(inst.type)
+        return inst
+      }
+      return {
+        ...inst,
+        type: getManifestTypeName(metadataType),
+      }
+    })
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
@@ -440,7 +495,11 @@ export const retrieveMetadataInstances = async ({
       return (
         await Promise.all(
           _.chunk(fileProps, chunkSize - filePropsToSendWithEveryChunk.length).map(chunk =>
-            retrieveInstances(chunk, filePropsToSendWithEveryChunk),
+            retrieveInstances({
+              fileProps: chunk,
+              filePropsToSendWithEveryChunk,
+              getAdditionalFilePropsToRetrieveFunc,
+            }),
           ),
         )
       ).flat()
@@ -483,19 +542,65 @@ export const retrieveMetadataInstances = async ({
         )
         .forEach(configChange => configChanges.push(configChange))
     }
-    return allValues.map(({ file, values }) =>
-      createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
+    const isAdditionalContextInstance = (instance: InstanceElement): boolean =>
+      additionalContextInstancesByType.get(metadataTypeSync(instance)).has(apiNameSync(instance) ?? '')
+    return (
+      allValues
+        .map(({ file, values }) =>
+          createInstanceElement(values, typesByName[file.type], file.namespacePrefix, getAuthorAnnotations(file)),
+        )
+        // Omit the additional context instances
+        .filter(instance => !isAdditionalContextInstance(instance))
     )
+  }
+
+  const createGetAdditionalContextFilesToRetrieveFunc = async (): Promise<GetAdditionalContextFilesToRetrieveFunc> => {
+    // When fetching Profiles the layoutAssignments of RecordTypes require the parent CustomObject to be retrieved as part of the retrieve request.
+    if (!fetchProfile.metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE)) {
+      return () => []
+    }
+    const customObjectFilePropsByName = _.keyBy(
+      (await client.listMetadataObjects([{ type: CUSTOM_OBJECT }])).result,
+      props => props.fullName,
+    )
+    return fileProps => {
+      const retrievedCustomObjectsApiName = new Set(
+        fileProps.filter(fileProp => fileProp.type === CUSTOM_OBJECT).map(prop => prop.fullName),
+      )
+      const parentFileProps = _.uniqBy(
+        fileProps
+          .filter(prop => prop.type === LAYOUT_TYPE_ID_METADATA_TYPE)
+          .map(prop => layoutObjAndName(prop.fullName)[0])
+          .filter(customObjectApiName => !retrievedCustomObjectsApiName.has(customObjectApiName))
+          .map(customObjectApiName => customObjectFilePropsByName[customObjectApiName])
+          .filter(isDefined),
+        'fullName',
+      )
+      if (parentFileProps.length > 0) {
+        log.debug(
+          'Adding parent CustomObjects to retrieve request: %s',
+          inspectValue(parentFileProps.map(prop => prop.fullName)),
+        )
+      }
+      return parentFileProps
+    }
   }
 
   const retrieveProfilesWithContextTypes = async (
     profileFileProps: ReadonlyArray<FileProperties>,
     contextFileProps: ReadonlyArray<FileProperties>,
+    getAdditionalFilePropsToRetrieveFunc: GetAdditionalContextFilesToRetrieveFunc,
   ): Promise<Array<InstanceElement>> => {
     const allInstances = await Promise.all(
       _.chunk(contextFileProps, maxItemsInRetrieveRequest - profileFileProps.length)
         .filter(filesChunk => filesChunk.length > 0)
-        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps)),
+        .map(filesChunk =>
+          retrieveInstances({
+            fileProps: filesChunk,
+            filePropsToSendWithEveryChunk: profileFileProps,
+            getAdditionalFilePropsToRetrieveFunc,
+          }),
+        ),
     )
 
     const [partialProfileInstances, contextInstances] = _(allInstances)
@@ -531,7 +636,14 @@ export const retrieveMetadataInstances = async ({
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
+  const instances = await retrieveProfilesWithContextTypes(
+    profileFiles,
+    nonProfileFiles,
+    await createGetAdditionalContextFilesToRetrieveFunc(),
+  )
+  if (missingTypes.size > 0) {
+    log.warn('Missing metadata types in fetch: %s', inspectValue(Array.from(missingTypes)))
+  }
   if (configChanges.length > 0) {
     log.debug('config changes (first 10): %s', inspectValue(configChanges, { maxArrayLength: 10 }))
   }

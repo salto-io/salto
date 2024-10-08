@@ -32,9 +32,7 @@ type Counter = {
   value: () => number
 }
 
-export type LocationCounters = Record<CounterType, Counter> & {
-  dump: () => void
-}
+export type LocationCounters = Record<CounterType, Counter>
 
 type StatCounters = {
   get: (location: string) => LocationCounters
@@ -51,40 +49,29 @@ const createCounter = (): Counter => {
   }
 }
 
-const createLocationCounters = (location: string): LocationCounters => {
-  const counters = Object.fromEntries([
-    ...COUNTER_TYPES.map(counterType => [counterType, createCounter()]),
-    [
-      'dump',
-      () => {
-        log.debug(
-          "Remote Map Stats for location '%s': %o",
-          location,
-          Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, counters[counterType].value()])),
-        )
-      },
-    ],
-  ])
-  return counters
+const logLocationCounters = (location: string, counters: LocationCounters): void => {
+  log.debug(
+    "Remote Map Stats for location '%s': %o",
+    location,
+    Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, counters[counterType].value()])),
+  )
 }
 
+const createLocationCounters = (): LocationCounters =>
+  Object.fromEntries(COUNTER_TYPES.map(counterType => [counterType, createCounter()])) as LocationCounters
+
 const createStatCounters = (): StatCounters => {
-  const locations = new DefaultMap((location: string) => ({ refCnt: 0, counters: createLocationCounters(location) }))
+  const locations = new DefaultMap(createLocationCounters)
   return {
-    get: location => {
-      locations.get(location).refCnt += 1
-      return locations.get(location).counters
-    },
+    get: location => locations.get(location),
     return: location => {
       if (!locations.has(location)) {
         log.warn('Returning counters that were never acquired. Location=%s', location)
         return
       }
       const locationInfo = locations.get(location)
-      locationInfo.refCnt -= 1
-      if (locationInfo.refCnt === 0) {
-        locations.delete(location)
-      }
+      logLocationCounters(location, locationInfo)
+      locations.delete(location)
     },
   }
 }

@@ -14,6 +14,7 @@ import {
   ListType,
   ObjectType,
   ReferenceExpression,
+  StaticFile,
   toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -203,7 +204,12 @@ describe('notEnabledMissingReferencesValidator', () => {
       'translationWithEmptyBrand',
       articleTranslationType,
       {
-        body: '<p><a href="https://brand.zendesk.com/hc/en-us/articles/124/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string"',
+        body: new StaticFile({
+          content: Buffer.from(
+            '<p><a href="https://brand.zendesk.com/hc/en-us/articles/124/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string"',
+          ),
+          filepath: 'test-file',
+        }),
       },
       undefined,
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },

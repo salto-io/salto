@@ -14,6 +14,8 @@ import {
   StaticFile,
   TemplateExpression,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { parserUtils } from '@salto-io/parser'
 import ZendeskClient from '../../../src/client/client'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -85,7 +87,7 @@ describe('article utility functions', () => {
     new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }),
     { locale: 'en-us' },
   )
-  const articleTranslationInstance = new InstanceElement(
+  const articleTranslationInstanceWithTemplateExpression = new InstanceElement(
     'testTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
     {
@@ -115,9 +117,24 @@ describe('article utility functions', () => {
       ],
     },
   )
+  const articleTranslationInstanceWithStaticFile = articleTranslationInstanceWithTemplateExpression.clone()
+  articleTranslationInstanceWithStaticFile.value.body = parserUtils.templateExpressionToStaticFile(
+    articleTranslationInstanceWithTemplateExpression.value.body,
+    'zendesk/article_translations/testTranslation',
+  )
   articleWithAttachmentInstance.value.translations = [
-    new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
+    new ReferenceExpression(
+      articleTranslationInstanceWithTemplateExpression.elemID,
+      articleTranslationInstanceWithTemplateExpression,
+    ),
+    new ReferenceExpression(articleTranslationInstanceWithStaticFile.elemID, articleTranslationInstanceWithStaticFile),
   ]
+  const elementsSource = buildElementsSourceFromElements([
+    brandInstance,
+    articleWithAttachmentInstance,
+    articleAttachmentInstance,
+    localeInstance,
+  ])
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -164,35 +181,56 @@ describe('article utility functions', () => {
       mockPut = jest.spyOn(client, 'put')
       mockPut.mockImplementation(params => {
         if (params.url === '/api/v2/help_center/articles/333333/translations/en-us') {
+          expect(params.data.translation.body).toContain('250595') // The updated attachment id
           return { status: 200 }
         }
         throw new Error('Err')
       })
     })
     it("should update the article translation's body", async () => {
-      const clondedArticle = articleWithAttachmentInstance.clone()
+      const clonedArticle = articleWithAttachmentInstance.clone()
       const clonedAttachment = articleAttachmentInstance.clone()
       clonedAttachment.value.id = 250595
-      clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clondedArticle.value] })
-      await articleUtils.updateArticleTranslationBody({
+      clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clonedArticle.value] })
+      await articleUtils.replaceAttachmentReferencesInArticleTranslationBody({
         client,
-        articleValues: clondedArticle.value,
+        articleValues: clonedArticle.value,
         attachmentInstances: [clonedAttachment],
+        elementsSource,
       })
-      expect(mockPut).toHaveBeenCalledTimes(1)
+      expect(mockPut).toHaveBeenCalledTimes(2)
     })
-    it("should update the article translation's body without changing the actual translation", async () => {
-      const clondedArticle = articleWithAttachmentInstance.clone()
-      const clonedTranslation = articleTranslationInstance.clone()
-      const clonedAttachment = articleAttachmentInstance.clone()
-      clonedAttachment.value.id = 250595
-      clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clondedArticle.value] })
-      await articleUtils.updateArticleTranslationBody({
-        client,
-        articleValues: clondedArticle.value,
-        attachmentInstances: [clonedAttachment],
+    describe('when the article translation body is a static file', () => {
+      it("should update the article translation's body without changing the actual translation", async () => {
+        const clonedArticle = articleWithAttachmentInstance.clone()
+        const clonedTranslation = articleTranslationInstanceWithStaticFile.clone()
+        const clonedAttachment = articleAttachmentInstance.clone()
+        clonedAttachment.value.id = 250595
+        clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clonedArticle.value] })
+        await articleUtils.replaceAttachmentReferencesInArticleTranslationBody({
+          client,
+          articleValues: clonedArticle.value,
+          attachmentInstances: [clonedAttachment],
+          elementsSource,
+        })
+        expect(clonedTranslation.value.body).toEqual(clonedArticle.value.translations[1].value.value.body)
       })
-      expect(clonedTranslation.value.body).toEqual(clondedArticle.value.translations[0].value.value.body)
+    })
+    describe('when the article translation body is a template expression', () => {
+      it("should update the article translation's body without changing the actual translation", async () => {
+        const clonedArticle = articleWithAttachmentInstance.clone()
+        const clonedTranslation = articleTranslationInstanceWithTemplateExpression.clone()
+        const clonedAttachment = articleAttachmentInstance.clone()
+        clonedAttachment.value.id = 250595
+        clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clonedArticle.value] })
+        await articleUtils.replaceAttachmentReferencesInArticleTranslationBody({
+          client,
+          articleValues: clonedArticle.value,
+          attachmentInstances: [clonedAttachment],
+          elementsSource,
+        })
+        expect(clonedTranslation.value.body).toEqual(clonedArticle.value.translations[0].value.value.body)
+      })
     })
   })
 })

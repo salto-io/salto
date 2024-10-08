@@ -25,6 +25,8 @@ type OptionalFeaturesDefaultValues = {
   [FeatureName in keyof OptionalFeatures]?: boolean
 }
 
+const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
+
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fetchProfilesUsingReadApi: false,
   generateRefsInProfiles: false,
@@ -48,6 +50,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   logDiffsFromParsingXmlNumbers: true,
   performSideEffectDeletes: false,
   extendTriggersMetadata: false,
+  removeReferenceFromFilterItemToRecordType: false,
 }
 
 type BuildFetchProfileParams = {
@@ -81,7 +84,7 @@ export const buildFetchProfile = ({
     isCustomReferencesHandlerEnabled: name => enabledCustomReferencesHandlers[name] ?? false,
     shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
-    preferActiveFlowVersions: preferActiveFlowVersions ?? false,
+    preferActiveFlowVersions: preferActiveFlowVersions ?? PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT,
     addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
     isWarningEnabled: name => warningSettings?.[name] ?? true,
     metadataQuery,

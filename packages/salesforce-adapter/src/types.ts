@@ -127,6 +127,7 @@ export type OptionalFeatures = {
   logDiffsFromParsingXmlNumbers?: boolean
   performSideEffectDeletes?: boolean
   extendTriggersMetadata?: boolean
+  removeReferenceFromFilterItemToRecordType?: boolean
 }
 
 export type ChangeValidatorName =
@@ -359,6 +360,7 @@ export type FetchLimits = {
   maxExtraDependenciesQuerySize?: number
   maxExtraDependenciesResponseSize?: number
   extendTriggersMetadataChunkSize?: number
+  flowDefinitionsQueryChunkSize?: number
 }
 
 export type FetchParameters = {
@@ -837,6 +839,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
+    removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -896,6 +899,7 @@ const limitsType = createMatchingObjectType<FetchLimits>({
     maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
     maxExtraDependenciesResponseSize: { refType: BuiltinTypes.NUMBER },
     extendTriggersMetadataChunkSize: { refType: BuiltinTypes.NUMBER },
+    flowDefinitionsQueryChunkSize: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -1090,3 +1094,16 @@ export type WeakReferencesHandler = ComponentsWeakReferencesHandler<{
   elementsSource: ReadOnlyElementsSource
   config: SalesforceConfig
 }>
+
+export enum ProfileSection {
+  FieldPermissions = 'fieldPermissions',
+  ObjectPermissions = 'objectPermissions',
+  RecordTypeVisibilities = 'recordTypeVisibilities',
+  TabVisibilities = 'tabVisibilities',
+  UserPermissions = 'userPermissions',
+  ApplicationVisibilities = 'applicationVisibilities',
+  ClassAccesses = 'classAccesses',
+  PageAccesses = 'pageAccesses',
+  FlowAccesses = 'flowAccesses',
+  LayoutAssignments = 'layoutAssignments',
+}

@@ -133,7 +133,7 @@ const createCustomizations = (): Record<string, definitions.fetch.InstanceFetchA
             typeName: RECIPE_CODE_TYPE,
             addParentAnnotation: true,
             referenceFromParent: true,
-            nestPathUnderParent: false,
+            nestPathUnderParent: true,
           },
         },
       },

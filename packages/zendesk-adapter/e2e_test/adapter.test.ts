@@ -47,6 +47,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as fs from 'fs'
 import * as path from 'path'
+import { parserUtils } from '@salto-io/parser'
 import { resolve } from '../../workspace/src/expressions'
 import {
   API_DEFINITIONS_CONFIG,
@@ -87,6 +88,7 @@ import {
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
   GROUP_TYPE_NAME,
+  TRANSLATIONS_FIELD,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -956,15 +958,6 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: {
           draft: true,
           title: `${articleName}`,
-          body: new TemplateExpression({
-            parts: [
-              '<p>this is a test <img src="',
-              new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-              '/hc/article_attachments/',
-              new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
-              `" alt="${inlineFileName}.png"></p><p></p>`,
-            ],
-          }),
           locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -972,12 +965,24 @@ describe('Zendesk adapter E2E', () => {
         parent: articleInstance,
         name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
       })
+      articleTranslationEn.value.body = parserUtils.templateExpressionToStaticFile(
+        new TemplateExpression({
+          parts: [
+            '<p>this is a test <img src="',
+            new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+            '/hc/article_attachments/',
+            new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+            `" alt="${inlineFileName}.png"></p><p></p>`,
+          ],
+        }),
+        `${ZENDESK}/${TRANSLATIONS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/translations/${shortElemIdHash(articleTranslationEn.elemID)}_${articleTranslationEn.value.title}`,
+      )
+
       const articleTranslationHe = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,
         valuesOverride: {
           draft: true,
           title: `${articleName}_he`,
-          body: 'זאת בדיקה בעברית',
           locale: new ReferenceExpression(guideLanguageSettingsHe.elemID, guideLanguageSettingsHe),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -985,7 +990,10 @@ describe('Zendesk adapter E2E', () => {
         parent: articleInstance,
         name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
       })
-
+      articleTranslationHe.value.body = new StaticFile({
+        content: Buffer.from('זאת בדיקה בעברית'),
+        filepath: `${ZENDESK}/${TRANSLATIONS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/translations/${shortElemIdHash(articleTranslationHe.elemID)}_${articleTranslationHe.value.title}`,
+      })
       articleInstance.value.translations = [
         new ReferenceExpression(articleTranslationEn.elemID, articleTranslationEn),
         new ReferenceExpression(articleTranslationHe.elemID, articleTranslationHe),
@@ -1013,13 +1021,16 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: {
           draft: true,
           title: `${article2Name}`,
-          body: 'this is a test',
           locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: article2Instance,
         name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
+      })
+      article2TranslationEn.value.body = new StaticFile({
+        content: Buffer.from('this is a test'),
+        filepath: `${ZENDESK}/${TRANSLATIONS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${article2Name}/translations/${shortElemIdHash(article2TranslationEn.elemID)}_${article2TranslationEn.value.title}`,
       })
 
       article2Instance.value.translations = [
@@ -1048,13 +1059,16 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: {
           draft: true,
           title: `${article3Name}`,
-          body: 'this is a test',
           locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: article3Instance,
         name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
+      })
+      article3TranslationEn.value.body = new StaticFile({
+        content: Buffer.from('this is a test'),
+        filepath: `${ZENDESK}/${TRANSLATIONS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${article3Name}/translations/${shortElemIdHash(article3TranslationEn.elemID)}_${article3TranslationEn.value.title}`,
       })
 
       article3Instance.value.translations = [

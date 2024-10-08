@@ -69,6 +69,7 @@ export type ZendeskClientConfig = definitions.ClientBaseConfig<ZendeskClientRate
 export type ZendeskDeployConfig = definitions.UserDeployConfig &
   definitions.DefaultMissingUserFallbackConfig & {
     createMissingOrganizations?: boolean
+    deployArticlesAsDraft?: boolean
   }
 
 export const fixerNames = ['mergeLists', 'fallbackUsers', 'removeDupUsers', 'orderElements'] as const

@@ -2801,6 +2801,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
+    deployArticlesAsDraft: false,
   },
   [FIX_ELEMENTS_CONFIG]: {
     mergeLists: false,

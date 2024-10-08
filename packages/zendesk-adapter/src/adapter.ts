@@ -119,6 +119,7 @@ import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
 import { dependencyChanger } from './dependency_changers'
+import deployArticleAsDraftsFilter from './filters/deploy_articles_as_drafts'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
@@ -267,6 +268,7 @@ export const DEFAULT_FILTERS = [
   // and articleBodyFilter
   handleIdenticalAttachmentConflicts,
   omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
+  deployArticleAsDraftsFilter,
   deployBrandedGuideTypesFilter,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches

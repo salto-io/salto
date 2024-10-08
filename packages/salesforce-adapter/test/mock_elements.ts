@@ -38,6 +38,7 @@ import {
   LABEL,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   METADATA_TYPE,
+  ORGANIZATION_SETTINGS,
   OWNER_ID,
   PATH_ASSISTANT_METADATA_TYPE,
   SALESFORCE,
@@ -686,6 +687,7 @@ export const mockTypes = {
       hasMetaFile: true,
     },
   }),
+  [ORGANIZATION_SETTINGS]: new ObjectType({ elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS) }),
   TestCustomObject__c: createCustomObjectType('TestCustomObject__c', {}),
   TestCustomEvent__e: createCustomObjectType('TestCustomEvent__e', {}),
   BusinessProcess: createMetadataObjectType({

@@ -6,12 +6,16 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import changeValidator from '../../src/change_validators/ordered_maps'
+import changeValidatorCreator from '../../src/change_validators/ordered_maps'
 import { METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { GLOBAL_VALUE_SET } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('OrderedMap Change Validator', () => {
+  const changeValidator = changeValidatorCreator(
+    buildFetchProfile({ fetchParams: { optionalFeatures: { picklistsAsMaps: true } } }),
+  )
   describe('InstanceElement with ordered map', () => {
     const gvsType = new ObjectType({
       elemID: new ElemID(SALESFORCE, GLOBAL_VALUE_SET),

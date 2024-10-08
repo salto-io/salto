@@ -14,7 +14,8 @@ import {
   isMapType,
   Change,
   toChange,
-  isObjectType, PrimitiveTypes, PrimitiveType,
+  isObjectType,
+  PrimitiveType,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, generatePermissionSetType, defaultFilterContext, createCustomObjectType } from '../utils'
@@ -684,9 +685,7 @@ describe('Convert maps filter', () => {
     })
 
     it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
-      expect(myCustomObj.fields.myMultiselectPicklist.getTypeSync()).toEqual(
-        multiselectPicklistType
-      )
+      expect(myCustomObj.fields.myMultiselectPicklist.getTypeSync()).toEqual(multiselectPicklistType)
       const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet
       expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
       expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')

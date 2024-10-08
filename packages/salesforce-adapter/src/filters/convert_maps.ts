@@ -252,16 +252,14 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
       } else if (mapDef.maintainOrder) {
         const originalFieldValue = makeArray(_.get(elementValues, fieldName))
         _.set(elementValues, fieldName, {
-          [ORDERED_MAP_VALUES_FIELD]:
-            convertField(
-              originalFieldValue,
-              item => mapper(item[mapDef.key])[0],
-              !!mapDef.mapToList,
-              fieldName,
-            ),
-          [ORDERED_MAP_ORDER_FIELD]:
-          originalFieldValue
-          .map(item => mapper(item[mapDef.key])[0])
+          [ORDERED_MAP_VALUES_FIELD]: convertField(
+            originalFieldValue,
+            item => mapper(item[mapDef.key])[0],
+            !!mapDef.mapToList,
+            fieldName,
+          ),
+          [ORDERED_MAP_ORDER_FIELD]: originalFieldValue
+            .map(item => mapper(item[mapDef.key])[0])
             .map(
               name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
             ),

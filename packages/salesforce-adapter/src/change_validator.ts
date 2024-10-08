@@ -105,7 +105,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   cpqBillingStartDate: () => cpqBillingStartDate,
   cpqBillingTriggers: () => cpqBillingTriggers,
   managedApexComponent: () => managedApexComponent,
-  orderedMaps: () => orderedMaps,
+  orderedMaps: ({ fetchProfile }) => orderedMaps(fetchProfile),
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

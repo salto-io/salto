@@ -85,12 +85,17 @@ const getActiveFlowVersionIdByApiName = async ({
     ),
   )
   const [validRecords, invalidRecords] = _.partition(records, isFlowDefinitionViewRecord)
-  log.error(
-    'Some FlowDefinitionView records are invalid. Records are: %s',
-    inspectValue(invalidRecords, { maxArrayLength: 10 }),
-  )
-  if (invalidRecords.length > 10) {
-    log.trace('Invalid FlowDefinitionView records are: %s', inspectValue(invalidRecords, { maxArrayLength: null }))
+  if (invalidRecords.length > 0) {
+    log.error(
+      'Some FlowDefinitionView records are invalid. Records are: %s',
+      inspectValue(invalidRecords, { maxArrayLength: 10 }),
+    )
+    if (invalidRecords.length > 10) {
+      log.trace(
+        'All Invalid FlowDefinitionView records are: %s',
+        inspectValue(invalidRecords, { maxArrayLength: null }),
+      )
+    }
   }
   return validRecords.reduce<Record<string, string>>((acc, record) => {
     if (record.ActiveVersionId !== null) {

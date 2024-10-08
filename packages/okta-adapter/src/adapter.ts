@@ -68,7 +68,10 @@ import unorderedListsFilter from './filters/unordered_lists'
 import addAliasFilter from './filters/add_alias'
 import profileMappingAdditionFilter from './filters/profile_mapping_addition'
 import profileMappingRemovalFilter from './filters/profile_mapping_removal'
-import policyPrioritiesFilter from './filters/policy_priority'
+import policyPrioritiesFilter, {
+  POLICY_PRIORITY_TYPE_NAMES,
+  POLICY_RULE_PRIORITY_TYPE_NAMES,
+} from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
 import {
@@ -77,8 +80,6 @@ import {
   FAV_ICON_TYPE_NAME,
   JWK_TYPE_NAME,
   OKTA,
-  POLICY_PRIORITY_TYPE_NAMES,
-  POLICY_RULE_PRIORITY_TYPE_NAMES,
   USER_TYPE_NAME,
 } from './constants'
 import { getLookUpNameCreator } from './reference_mapping'

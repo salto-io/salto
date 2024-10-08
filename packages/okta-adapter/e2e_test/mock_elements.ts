@@ -23,6 +23,8 @@ import {
   IDENTITY_PROVIDER_TYPE_NAME,
   PASSWORD_POLICY_TYPE_NAME,
   PASSWORD_RULE_TYPE_NAME,
+  AUTHORIZATION_POLICY,
+  AUTHORIZATION_POLICY_RULE,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -139,9 +141,6 @@ export const mockDefaultValues: Record<string, Values> = {
       selfServiceUnlock: {
         access: 'ALLOW',
       },
-    },
-    conditions: {
-      network: { connection: 'ANYWHERE' },
     },
   },
   [APPLICATION_TYPE_NAME]: {
@@ -374,5 +373,47 @@ export const mockDefaultValues: Record<string, Values> = {
       transformedUsernameMatchingEnabled: false,
     },
     type: 'OIDC',
+  },
+  [AUTHORIZATION_POLICY]: {
+    status: 'ACTIVE',
+    name: 'authServerPolicy',
+    description: 'some desc',
+    system: false,
+    type: 'OAUTH_AUTHORIZATION_POLICY',
+  },
+  [AUTHORIZATION_POLICY_RULE]: {
+    status: 'ACTIVE',
+    name: 'authServerRule',
+    system: false,
+    type: 'RESOURCE_ACCESS',
+    conditions: {
+      people: {
+        groups: {
+          include: ['EVERYONE'],
+        },
+      },
+      grantTypes: {
+        include: [
+          'implicit',
+          'urn:ietf:params:oauth:grant-type:saml2-bearer',
+          'client_credentials',
+          'password',
+          'urn:ietf:params:oauth:grant-type:device_code',
+          'authorization_code',
+          'urn:openid:params:grant-type:ciba',
+          'urn:ietf:params:oauth:grant-type:token-exchange',
+        ],
+      },
+      scopes: {
+        include: ['*'],
+      },
+    },
+    actions: {
+      token: {
+        accessTokenLifetimeMinutes: 60,
+        refreshTokenLifetimeMinutes: 129600,
+        refreshTokenWindowMinutes: 10080,
+      },
+    },
   },
 }

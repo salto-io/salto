@@ -363,7 +363,7 @@ export const retrieveMetadataInstances = async ({
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
     if (typeName === LAYOUT_TYPE_ID_METADATA_TYPE) {
-      log.trace('Layout file properties are %s', inspectValue(res))
+      log.trace('Layout file properties are %s', inspectValue(res, { maxArrayLength: null }))
     }
     return _(res)
       .uniqBy(file => file.fullName)

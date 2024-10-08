@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { cleanEmptyObjects, concatObjects } from '../src/objects'
+import { cleanEmptyObjects, concatObjects, hasOwnProperty } from '../src/objects'
 
 describe('concatObjects', () => {
   type testType = {
@@ -94,6 +94,25 @@ describe('cleanEmptyObjects', () => {
         arr: [],
       },
       anotherArr: [{}, { a: 'b' }],
+    })
+  })
+})
+
+describe('hasOwnProperty', () => {
+  const obj = {
+    a: 1,
+    b: 2,
+  }
+
+  describe('when object has property', () => {
+    it('should return true', () => {
+      expect(hasOwnProperty(obj, 'a')).toBe(true)
+    })
+  })
+
+  describe("when object doesn't have property", () => {
+    it('should return false', () => {
+      expect(hasOwnProperty(obj, 'c')).toBe(false)
     })
   })
 })

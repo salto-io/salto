@@ -57,12 +57,12 @@ describe('connection', () => {
     describe('when unauthorized', () => {
       it('should throw Invalid Credentials Error', async () => {
         mockAxios.onGet('/rest/api/3/configuration').reply(401)
-        await expect(validateCredentials({ connection, credentials })).rejects.toThrow(new Error('Invalid Credentials'))
+        await expect(validateCredentials({ connection, credentials })).rejects.toThrow('Invalid Credentials')
       })
 
       it('should rethrow unrelated Network Error', async () => {
         mockAxios.onGet('/rest/api/3/configuration').networkError()
-        await expect(validateCredentials({ connection, credentials })).rejects.toThrow(new Error('Network Error'))
+        await expect(validateCredentials({ connection, credentials })).rejects.toThrow('Network Error')
       })
     })
   })

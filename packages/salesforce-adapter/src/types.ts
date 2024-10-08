@@ -361,6 +361,7 @@ export type FetchLimits = {
   maxExtraDependenciesQuerySize?: number
   maxExtraDependenciesResponseSize?: number
   extendTriggersMetadataChunkSize?: number
+  flowDefinitionsQueryChunkSize?: number
 }
 
 export type FetchParameters = {
@@ -900,6 +901,7 @@ const limitsType = createMatchingObjectType<FetchLimits>({
     maxExtraDependenciesQuerySize: { refType: BuiltinTypes.NUMBER },
     maxExtraDependenciesResponseSize: { refType: BuiltinTypes.NUMBER },
     extendTriggersMetadataChunkSize: { refType: BuiltinTypes.NUMBER },
+    flowDefinitionsQueryChunkSize: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

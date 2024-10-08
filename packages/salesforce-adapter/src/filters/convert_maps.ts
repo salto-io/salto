@@ -32,6 +32,7 @@ import {
   TypeElement,
   ElemID,
   isObjectTypeChange,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -88,7 +89,7 @@ const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =
         },
       },
       [ORDERED_MAP_ORDER_FIELD]: {
-        refType: new ListType(innerType),
+        refType: new ListType(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -171,6 +172,7 @@ const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
 const PICKLIST_MAP_FIELD_DEF: MapDef = {
   key: 'fullName',
   maintainOrder: true,
+  mapper: (val: string): string[] => [naclCase(val)],
 }
 
 const GLOBAL_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
@@ -248,27 +250,22 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
           ),
         )
       } else if (mapDef.maintainOrder) {
-        const originalFieldValue = _.get(elementValues, fieldName)
-        _.set(elementValues, fieldName, {})
-        _.set(
-          elementValues,
-          [fieldName, ORDERED_MAP_VALUES_FIELD],
-          convertField(
-            makeArray(originalFieldValue),
-            item => mapper(item[mapDef.key])[0],
-            !!mapDef.mapToList,
-            fieldName,
-          ),
-        )
-        _.set(
-          elementValues,
-          [fieldName, ORDERED_MAP_ORDER_FIELD],
-          makeArray(originalFieldValue)
-            .map(item => mapper(item[mapDef.key])[0])
+        const originalFieldValue = makeArray(_.get(elementValues, fieldName))
+        _.set(elementValues, fieldName, {
+          [ORDERED_MAP_VALUES_FIELD]:
+            convertField(
+              originalFieldValue,
+              item => mapper(item[mapDef.key])[0],
+              !!mapDef.mapToList,
+              fieldName,
+            ),
+          [ORDERED_MAP_ORDER_FIELD]:
+          originalFieldValue
+          .map(item => mapper(item[mapDef.key])[0])
             .map(
               name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
             ),
-        )
+        })
       } else {
         _.set(
           elementValues,
@@ -385,7 +382,7 @@ const updateAnnotationRefTypes = async (
       if (isObjectType(deepInnerType)) {
         const keyFieldType = deepInnerType.fields[mapDef.key]
         if (!keyFieldType) {
-          log.error('could not find key field %s for field %s', mapDef.key, fieldType.elemID.getFullName())
+          log.error('could not find key field %s for type %s', mapDef.key, fieldType.elemID.getFullName())
           return
         }
         keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
@@ -526,19 +523,18 @@ export const getInstanceChanges = (
  * @return All changes that are either field changes of the specified type or object changes that contain fields of the
  * specified type
  */
-export const getChangesWithFieldType = async (changes: ReadonlyArray<Change>, fieldType: string): Promise<Change[]> => {
-  const directFieldChanges: Change[] = await awu(changes)
+export const getChangesWithFieldType = (changes: ReadonlyArray<Change>, fieldType: string): Change[] => {
+  const fieldChanges: Change[] = changes
     .filter(isFieldChange)
-    .filter(async change => (await getChangeData(change).getType()).elemID.typeName === fieldType)
-    .toArray()
+    .filter(async change => getChangeData(change).getTypeSync().elemID.typeName === fieldType)
 
-  const internalFieldChanges = changes
+  const objectTypeChanges = changes
     .filter(isObjectTypeChange)
     .filter(change =>
       Object.values(getChangeData(change).fields).some(field => field.refType.elemID.typeName === fieldType),
     )
 
-  return directFieldChanges.concat(internalFieldChanges)
+  return fieldChanges.concat(objectTypeChanges)
 }
 
 export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
@@ -622,7 +618,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     })
 
     await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
-      const elementsWithFieldType = await getChangesWithFieldType(changes, fieldType)
+      const elementsWithFieldType = getChangesWithFieldType(changes, fieldType)
       if (elementsWithFieldType.length === 0) {
         return
       }
@@ -651,7 +647,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     })
 
     await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
-      const fieldsChanges = await getChangesWithFieldType(changes, fieldType)
+      const fieldsChanges = getChangesWithFieldType(changes, fieldType)
       if (fieldsChanges.length === 0) {
         return
       }

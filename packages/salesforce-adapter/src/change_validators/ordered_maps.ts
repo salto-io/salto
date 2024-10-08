@@ -110,7 +110,7 @@ const changeValidator: ChangeValidator = async changes => {
         .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
         .map(([fieldName, _mapDef]) => fieldName)
 
-      const fieldChanges = await getChangesWithFieldType(changes, fieldType)
+      const fieldChanges = getChangesWithFieldType(changes, fieldType)
       return fieldChanges
         .flatMap(change => {
           if (isFieldChange(change)) {

@@ -14,7 +14,7 @@ import {
   isMapType,
   Change,
   toChange,
-  isObjectType,
+  isObjectType, PrimitiveTypes, PrimitiveType,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, generatePermissionSetType, defaultFilterContext, createCustomObjectType } from '../utils'
@@ -632,33 +632,39 @@ describe('Convert maps filter', () => {
   })
 
   describe('Convert CustomObject field annotations by type', () => {
-    const myCustomObj = createCustomObjectType('MyCustomObj', {
-      fields: {
-        myPicklist: {
-          refType: Types.primitiveDataTypes.Picklist,
-          annotations: {
-            [FIELD_ANNOTATIONS.VALUE_SET]: [
-              { fullName: 'val1', default: true, label: 'value1' },
-              { fullName: 'val2', default: false, label: 'value2' },
-            ],
-          },
-        },
-        myMultiselectPicklist: {
-          refType: Types.primitiveDataTypes.MultiselectPicklist,
-          annotations: {
-            [FIELD_ANNOTATIONS.VALUE_SET]: [
-              { fullName: 'val1', default: true, label: 'value1' },
-              { fullName: 'val2', default: false, label: 'value2' },
-            ],
-          },
-        },
-      },
-    })
-
+    let picklistType: PrimitiveType
+    let multiselectPicklistType: PrimitiveType
+    let myCustomObj: ObjectType
     let elements: Element[]
     type FilterType = FilterWith<'onFetch'>
     let filter: FilterType
-    beforeAll(async () => {
+    beforeEach(async () => {
+      // Clone the types to avoid changing the original types and affecting other tests.
+      picklistType = Types.primitiveDataTypes.Picklist.clone()
+      multiselectPicklistType = Types.primitiveDataTypes.MultiselectPicklist.clone()
+      myCustomObj = createCustomObjectType('MyCustomObj', {
+        fields: {
+          myPicklist: {
+            refType: picklistType,
+            annotations: {
+              [FIELD_ANNOTATIONS.VALUE_SET]: [
+                { fullName: 'val1', default: true, label: 'value1' },
+                { fullName: 'val2', default: false, label: 'value2' },
+              ],
+            },
+          },
+          myMultiselectPicklist: {
+            refType: multiselectPicklistType,
+            annotations: {
+              [FIELD_ANNOTATIONS.VALUE_SET]: [
+                { fullName: 'val1', default: true, label: 'value1' },
+                { fullName: 'val2', default: false, label: 'value2' },
+              ],
+            },
+          },
+        },
+      })
+
       elements = [myCustomObj]
       filter = filterCreator({
         config: {
@@ -670,13 +676,21 @@ describe('Convert maps filter', () => {
     })
 
     it('should convert Picklist valueSet type to ordered map', async () => {
-      const fieldType = Types.primitiveDataTypes.Picklist.annotationRefTypes.valueSet
-      expect(fieldType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+      expect(myCustomObj.fields.myPicklist.getTypeSync()).toEqual(picklistType)
+      const valueSetType = picklistType.annotationRefTypes.valueSet
+      expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+      expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
+      expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
     })
 
     it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
-      const fieldType = Types.primitiveDataTypes.MultiselectPicklist.annotationRefTypes.valueSet
-      expect(fieldType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+      expect(myCustomObj.fields.myMultiselectPicklist.getTypeSync()).toEqual(
+        multiselectPicklistType
+      )
+      const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet
+      expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+      expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
+      expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
     })
 
     it('should convert annotation value to map (Picklist)', () => {
@@ -686,6 +700,7 @@ describe('Convert maps filter', () => {
         val2: { fullName: 'val2', default: false, label: 'value2' },
       })
     })
+
     it('should convert annotation value to map (MultiselectPicklist)', () => {
       expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toBeDefined()
       expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toEqual({

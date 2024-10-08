@@ -47,7 +47,6 @@ export const realAdapter = (
   config.fetch.enableNewWorkflowAPI = true
   config.fetch.enableIssueLayouts = true
   config.fetch.enableJSM = true
-  config.fetch.enableJsmExperimental = true
   const adapter = new JiraAdapter({
     client,
     config,

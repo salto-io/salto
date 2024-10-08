@@ -43,7 +43,6 @@ describe('assetsObjectTypePathsFilter', () => {
       logErrorSpy = jest.spyOn(logging, 'error')
       const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       config.fetch.enableJSM = true
-      config.fetch.enableJsmExperimental = true
       filter = assetsObjectTypePath(getFilterParams({ config })) as typeof filter
       parentInstance = new InstanceElement(
         'parentInstance',

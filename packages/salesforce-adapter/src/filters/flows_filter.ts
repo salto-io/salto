@@ -66,7 +66,7 @@ type FlowDefinitionViewRecord = SalesforceRecord & {
 const isFlowDefinitionViewRecord = (record: SalesforceRecord): record is FlowDefinitionViewRecord =>
   (record.ActiveVersionId === null || _.isString(record.ActiveVersionId)) && _.isString(record.ApiName)
 
-const getActiveVersionByFlowApiName = async ({
+const getActiveFlowVersionIdByApiName = async ({
   client,
   flowDefinitions,
   chunkSize,
@@ -90,7 +90,7 @@ const getActiveVersionByFlowApiName = async ({
     inspectValue(invalidRecords, { maxArrayLength: 10 }),
   )
   if (invalidRecords.length > 10) {
-    log.trace('Invalid FlowDefinitionView records are: %s', inspectValue(invalidRecords))
+    log.trace('Invalid FlowDefinitionView records are: %s', inspectValue(invalidRecords, { maxArrayLength: null }))
   }
   return validRecords.reduce<Record<string, string>>((acc, record) => {
     if (record.ActiveVersionId !== null) {
@@ -112,10 +112,10 @@ export const createActiveVersionFileProperties = async ({
   fetchProfile: FetchProfile
 }): Promise<FileProperties[]> => {
   const activeVersions = new Map<string, string>()
-  const activeVersionsByApiName = await getActiveVersionByFlowApiName({
+  const activeFlowVersionIdByApiName = await getActiveFlowVersionIdByApiName({
     client,
     flowDefinitions,
-    chunkSize: fetchProfile.limits?.flowDefinitionsChunkSize ?? DEFAULT_CHUNK_SIZE,
+    chunkSize: fetchProfile.limits?.flowDefinitionsQueryChunkSize ?? DEFAULT_CHUNK_SIZE,
   })
   flowDefinitions.forEach(flow =>
     activeVersions.set(
@@ -125,7 +125,7 @@ export const createActiveVersionFileProperties = async ({
   )
   return flowsFileProps.map(prop => ({
     ...fixFilePropertiesName(prop, activeVersions),
-    id: activeVersionsByApiName[prop.fullName] ?? prop.id,
+    id: activeFlowVersionIdByApiName[prop.fullName] ?? prop.id,
   }))
 }
 

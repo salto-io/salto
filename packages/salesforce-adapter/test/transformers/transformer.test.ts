@@ -25,6 +25,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from '@salto-io/jsforce'
 import { resolveValues, restoreValues } from '@salto-io/adapter-components'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 
 import {
@@ -79,6 +80,10 @@ import { mockTypes } from '../mock_elements'
 const { awu } = collections.asynciterable
 
 describe('transformer', () => {
+  let getLookupNameFunc: GetLookupNameFunc
+  beforeEach(() => {
+    getLookupNameFunc = getLookUpName(defaultFilterContext.fetchProfile)
+  })
   describe('getAuthorAnnotations', () => {
     const newChangeDateFileProperties = mockFileProperties({
       lastModifiedDate: 'date that is new',
@@ -1544,7 +1549,7 @@ describe('transformer', () => {
     const origCopy = orig.clone()
     let modified: ObjectType
     beforeAll(async () => {
-      modified = await resolveValues(orig, getLookUpName)
+      modified = await resolveValues(orig, getLookupNameFunc)
     })
 
     it('should not modify the original element', () => {
@@ -1574,7 +1579,7 @@ describe('transformer', () => {
     })
 
     it('should transform back to orig value', async () => {
-      expect(await restoreValues(orig, modified, getLookUpName)).toEqual(orig)
+      expect(await restoreValues(orig, modified, getLookupNameFunc)).toEqual(orig)
     })
 
     it('should maintain new values when transforming back to orig value', async () => {
@@ -1585,7 +1590,7 @@ describe('transformer', () => {
       after.fields.field.annotations.regValue = newValue
       after.fields.field.annotations.changeToRef = instanceRef
       after.annotations.changeToRef = instanceRef
-      const restored = await restoreValues(orig, after, getLookUpName)
+      const restored = await restoreValues(orig, after, getLookupNameFunc)
       expect(restored.annotations.new).toEqual(newValue)
       expect(restored.fields.field.annotations.new).toEqual(newValue)
       expect(restored.annotations.regValue).toEqual(newValue)
@@ -1633,7 +1638,7 @@ describe('transformer', () => {
       const mockDefaultElemId = new ElemID(SALESFORCE, BUSINESS_HOURS_METADATA_TYPE, 'instance', 'Default')
       it('should resolve with mapKey strategy', async () => {
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(mockDefaultElemId, mockResolvedValue, mockBusinessHoursInstance),
             field: testField,
             path: new ElemID(SALESFORCE, 'EntitlementProcess', 'field', 'something'),
@@ -1674,7 +1679,7 @@ describe('transformer', () => {
       it('should resolve to relative api name', async () => {
         const testField = refObject.fields.test
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(testField.elemID, testField, refObject),
             field: mockLayoutItem.fields.field,
             path: mockLayoutInstance.elemID.createNestedID(
@@ -1694,7 +1699,7 @@ describe('transformer', () => {
         const testField = refObject.fields.test
         const refValue = { obj: { with: { some: 'details' } } }
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(testField.elemID, refValue),
             field: mockLayoutItem.fields.field,
             path: mockLayoutInstance.elemID.createNestedID(
@@ -1710,7 +1715,7 @@ describe('transformer', () => {
           }),
         ).toEqual(refValue)
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(testField.elemID, refValue),
             field: mockLayoutItem.fields.field,
             element: mockLayoutInstance,
@@ -1731,7 +1736,7 @@ describe('transformer', () => {
       it('should resolve to relative api name', async () => {
         const testField = refObject.fields.test
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(testField.elemID, testField, refObject),
             field: workflowFieldUpdate.fields.field,
             path: mockWorkflowFieldUpdateInstance.elemID.createNestedID('field'),
@@ -1763,7 +1768,7 @@ describe('transformer', () => {
         it('should resolve to relative api name', async () => {
           const testField = refObject.fields.test
           expect(
-            await getLookUpName({
+            await getLookupNameFunc({
               ref: new ReferenceExpression(testField.elemID, testField, refObject),
               field: filterItemType.fields.field,
               path: instance.elemID.createNestedID('someFilterField', 'field'),
@@ -1786,7 +1791,7 @@ describe('transformer', () => {
         it('should resolve to absolute api name', async () => {
           const testField = refObject.fields.test
           expect(
-            await getLookUpName({
+            await getLookupNameFunc({
               ref: new ReferenceExpression(testField.elemID, testField, refObject),
               field: filterItemType.fields.field,
               path: instance.elemID.createNestedID('someFilterField', 'field'),
@@ -1813,7 +1818,7 @@ describe('transformer', () => {
       })
       it('should resolve to relative api name', async () => {
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: mockProductRuleInst.value[CPQ_LOOKUP_PRODUCT_FIELD],
             field: mockProductRuleType.fields[CPQ_LOOKUP_PRODUCT_FIELD],
             path: mockProductRuleInst.elemID.createNestedID(CPQ_LOOKUP_PRODUCT_FIELD),
@@ -1856,7 +1861,7 @@ describe('transformer', () => {
       })
       it('should resolve to relative api name', async () => {
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(mockAlertInstance.elemID, mockAlertInstance),
             field: workflowActionReference.fields.name,
             path: mockWorkflowRuleInstance.elemID.createNestedID('actions', '0', 'name'),
@@ -1875,7 +1880,7 @@ describe('transformer', () => {
       it('should resolve to full api name', async () => {
         const testField = refObject.fields.test
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(testField.elemID, testField, refObject),
             path: srcInst.elemID.createNestedID('test'),
             element: srcInst,
@@ -1893,7 +1898,7 @@ describe('transformer', () => {
       it('should resolve to full api name', async () => {
         const testField = refObject.fields.test
         expect(
-          await getLookUpName({
+          await getLookupNameFunc({
             ref: new ReferenceExpression(testField.elemID, testField, refObject),
             field: srcObject.fields.test,
             path: srcInst.elemID.createNestedID('test'),

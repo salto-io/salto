@@ -323,7 +323,7 @@ describe('Netsuite adapter E2E with real account', () => {
       name: randomString,
       state: 'AZ',
       mainAddress: {
-        country: '_uSMinorOutlyingIslands',
+        country: '_unitedStatesMinorOutlyingIslands',
         addressee: 'testSub',
         state: 'AZ',
         addrText: 'testSub<br>AZ <br>US Minor Outlying Islands',

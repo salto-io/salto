@@ -17,7 +17,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { resolveValues } from '@salto-io/adapter-components'
 
 import { collections } from '@salto-io/lowerdash'
@@ -28,7 +28,6 @@ import {
   PERMISSION_SET_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
 } from '../constants'
-import { getLookUpName } from '../transformers/reference_mapping'
 import { isInstanceOfTypeChange } from '../filters/utils'
 import { apiName } from '../transformers/transformer'
 
@@ -100,12 +99,14 @@ const getMapKeyErrors = async (after: InstanceElement): Promise<ChangeError[]> =
   return errors
 }
 
-const changeValidator: ChangeValidator = async changes =>
-  awu(changes)
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
-    .flatMap(async change => getMapKeyErrors(await resolveValues(getChangeData(change), getLookUpName)))
-    .toArray()
+const changeValidator =
+  (getLookupNameFunc: GetLookupNameFunc): ChangeValidator =>
+  async changes =>
+    awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
+      .flatMap(async change => getMapKeyErrors(await resolveValues(getChangeData(change), getLookupNameFunc)))
+      .toArray()
 
 export default changeValidator

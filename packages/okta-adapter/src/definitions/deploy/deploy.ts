@@ -42,6 +42,8 @@ import {
   EMAIL_DOMAIN_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
+  SIGN_IN_PAGE_TYPE_NAME,
+  ERROR_PAGE_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -578,6 +580,60 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
       toActionNames: ({ change }) => (isAdditionChange(change) ? ['add', 'modify'] : [change.action]),
       actionDependencies: [{ first: 'add', second: 'modify' }],
+    },
+    [SIGN_IN_PAGE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{parent_id}/pages/sign-in/customized', method: 'put' },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{parent_id}/pages/sign-in/customized', method: 'put' },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{parent_id}/pages/sign-in/customized', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [ERROR_PAGE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{parent_id}/pages/error/customized', method: 'put' },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{parent_id}/pages/error/customized', method: 'put' },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/brands/{parent_id}/pages/error/customized', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
     },
     [EMAIL_DOMAIN_TYPE_NAME]: {
       requestsByAction: {

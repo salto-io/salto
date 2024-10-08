@@ -66,6 +66,7 @@ import {
   CUSTOM_LABEL_METADATA_TYPE,
 } from '../constants'
 import { instanceInternalId } from '../filters/utils'
+import { FetchProfile } from '../types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -193,6 +194,15 @@ export type FieldReferenceDefinition = {
   sourceTransformation?: referenceUtils.ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
+}
+
+const FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF: FieldReferenceDefinition = {
+  src: { field: 'value', parentTypes: ['FilterItem'] },
+  serializationStrategy: 'relativeApiName',
+  target: {
+    parentContext: 'instanceParent',
+    type: RECORD_TYPE_METADATA_TYPE,
+  },
 }
 
 /**
@@ -506,14 +516,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'relatedList', parentTypes: ['RelatedListItem'] },
     target: { type: CUSTOM_FIELD },
-  },
-  {
-    src: { field: 'value', parentTypes: ['FilterItem'] },
-    serializationStrategy: 'relativeApiName',
-    target: {
-      parentContext: 'instanceParent',
-      type: RECORD_TYPE_METADATA_TYPE,
-    },
   },
   {
     src: { field: 'sharedTo', parentTypes: ['FolderShare'] },
@@ -1049,13 +1051,24 @@ const getLookUpNameImpl = ({
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl({
-  defs: fieldNameToTypeMappingDefs,
-  resolveToElementFallback: false,
-  defaultStrategyName: 'absoluteApiName',
-})
-export const getLookupNameForDataInstances = getLookUpNameImpl({
-  defs: fieldNameToTypeMappingDefs,
-  resolveToElementFallback: true,
-  defaultStrategyName: 'fromDataInstance',
-})
+export const getLookUpName = (fetchProfile: FetchProfile): GetLookupNameFunc =>
+  getLookUpNameImpl({
+    defs: fieldNameToTypeMappingDefs.concat(
+      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
+        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
+        : [],
+    ),
+    resolveToElementFallback: false,
+    defaultStrategyName: 'absoluteApiName',
+  })
+
+export const getLookupNameForDataInstances = (fetchProfile: FetchProfile): GetLookupNameFunc =>
+  getLookUpNameImpl({
+    defs: fieldNameToTypeMappingDefs.concat(
+      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
+        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
+        : [],
+    ),
+    resolveToElementFallback: true,
+    defaultStrategyName: 'fromDataInstance',
+  })

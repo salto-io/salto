@@ -22,11 +22,10 @@ export class LocationCache extends LRU<string, unknown> {
 
 export type LocationCachePool = {
   get: (location: string) => LocationCache
-
-  return: (cache: LocationCache) => void
+  return: (location: string) => void
 }
 
-export type LocationCachePoolContents = Map<string, { cache: LocationCache; refcnt: number }>
+export type LocationCachePoolContents = Map<string, LocationCache>
 
 const DEFAULT_LOCATION_CACHE_SIZE = 5000
 
@@ -43,32 +42,26 @@ export const createLocationCachePool = (
       const cachePoolEntry = pool.get(location)
       if (cachePoolEntry !== undefined) {
         statCounters.LocationCacheReuse.inc()
-        cachePoolEntry.refcnt += 1
-        return cachePoolEntry.cache
+        return cachePoolEntry
       }
       statCounters.LocationCacheCreated.inc()
       const newCache: LocationCache = new LocationCache(location, cacheSize)
-      pool.set(location, { cache: newCache, refcnt: 1 })
+      pool.set(location, newCache)
       if (pool.size > poolSizeWatermark) {
         poolSizeWatermark = pool.size
         log.debug('Max location cache pool size: %d', poolSizeWatermark)
       }
       return newCache
     },
-    return: ({ location }) => {
-      const poolEntry = pool.get(location)
-      if (poolEntry === undefined || poolEntry.refcnt === 0) {
-        log.warn('Returning a locationCache for an unknown location %s. poolEntry=%o', location, poolEntry)
+    return: location => {
+      if (!pool.has(location)) {
+        log.warn('Returning a locationCache for an unknown location %s', location)
         return
       }
-      poolEntry.refcnt -= 1
-
-      if (poolEntry.refcnt === 0) {
-        pool.delete(location)
-        if (pool.size === 0) {
-          log.debug('Last location closed. Max location cache pool size: %d', poolSizeWatermark)
-          poolSizeWatermark = 0
-        }
+      pool.delete(location)
+      if (pool.size === 0) {
+        log.debug('Last location closed. Max location cache pool size: %d', poolSizeWatermark)
+        poolSizeWatermark = 0
       }
     },
   }

@@ -390,7 +390,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         updatedFetchQuery,
         this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
         this.userConfig.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
-        this.userConfig.fetch.forceFileCabinetExclude ?? false,
+        this.userConfig.fetch.forceFileCabinetExclude ?? true,
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result
@@ -407,7 +407,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
             .filter(scriptId => scriptIdsSet.has(scriptId)) ?? [],
         ),
       )
-      if (!this.userConfig.fetch.addLockedCustomRecordTypes) {
+      if (this.userConfig.fetch.addLockedCustomRecordTypes === false) {
         log.debug('skip adding the following locked custom record types: %o', lockedCustomRecordTypesScriptIds)
         return []
       }

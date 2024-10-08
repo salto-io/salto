@@ -15,10 +15,9 @@ import {
   PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
   SIGN_ON_POLICY_TYPE_NAME,
   AUTOMATION_TYPE_NAME,
-  POLICY_RULE_PRIORITY_TYPE_NAMES,
-  POLICY_PRIORITY_TYPE_NAMES,
 } from './constants'
 import { AdditionalAction } from './definitions/types'
+import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from './filters/policy_priority'
 
 type UserDeployConfig = definitions.UserDeployConfig
 

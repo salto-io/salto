@@ -29,7 +29,7 @@ const getFieldType = (instance: InstanceElement): string | undefined =>
 
 const isCustomField = (instance: InstanceElement): boolean => instance.value.schema?.custom !== undefined
 
-const nameNaclCase = (baseName: string, instance: InstanceElement, config: JiraConfig): string =>
+const getFieldElementName = (baseName: string, instance: InstanceElement, config: JiraConfig): string =>
   naclCase(
     [
       baseName,
@@ -49,13 +49,13 @@ const getInstanceName = (instance: InstanceElement, config: JiraConfig, getElemI
 
   // SALTO-5887: JSM CustomerRequestType was changed to RequestType - support same id for both
   // we do not support id stickiness (through get element from state) in this case
-  if (baseName === 'Customer Request Type' && instance.value.isLocked) {
-    const newName = nameNaclCase('Request Type', instance, config)
+  if (config.fetch.enableRequestTypeFieldNameAlignment && baseName === 'Customer Request Type' && instance.value.isLocked) {
+    const newName = getFieldElementName('Request Type', instance, config)
     log.trace(`'Customer Request Type' field was found. changing id to be based on 'Request Type': ${newName}`)
     return newName
   }
 
-  const defaultName = nameNaclCase(baseName, instance, config)
+  const defaultName = getFieldElementName(baseName, instance, config)
 
   const { serviceIdField } = configUtils.getConfigWithDefault(
     config.apiDefinitions.types[instance.elemID.typeName].transformation,

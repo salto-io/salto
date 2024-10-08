@@ -50,6 +50,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   logDiffsFromParsingXmlNumbers: true,
   performSideEffectDeletes: false,
   extendTriggersMetadata: false,
+  removeReferenceFromFilterItemToRecordType: false,
 }
 
 type BuildFetchProfileParams = {

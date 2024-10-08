@@ -534,13 +534,16 @@ export default class SuiteAppClient {
       const result = await this.sendRestletRequest(operation)
       if (!this.ajv.validate<T[]>(schema, result)) {
         log.error(`${operation} failed. Got invalid results - %s: %o`, this.ajv.errorsText(), result)
-        throw Error(this.ajv.errorsText())
+        throw new Error(this.ajv.errorsText())
       }
       return result
-    } catch (e) {
-      const errorMessage = `${operation} operation failed. Received the following error: ${e.message}`
+    } catch (error) {
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
+      const errorMessage = `${operation} operation failed. Received the following error: ${error.message}`
       log.error(errorMessage)
-      throw Error(errorMessage)
+      throw new Error(errorMessage)
     }
   }
 

@@ -11,6 +11,7 @@ import flowsChangeValidator from '../../src/change_validators/flows'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import mockClient from '../client'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('flows change validator', () => {
   let flowChanges: Change
@@ -43,7 +44,11 @@ describe('flows change validator', () => {
         before: beforeRecord,
         after: otherModifications,
       })
-      changeValidator = flowsChangeValidator({ fetch: { preferActiveFlowVersions: true } }, true, client)
+      changeValidator = flowsChangeValidator(
+        buildFetchProfile({ fetchParams: { preferActiveFlowVersions: true } }),
+        true,
+        client,
+      )
       const changeErrors = await changeValidator([flowChanges])
       const [changeError] = changeErrors
       expect(changeError.severity).toEqual('Info')

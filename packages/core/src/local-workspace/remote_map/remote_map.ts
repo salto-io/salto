@@ -269,9 +269,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
         delete readonlyDBConnectionsPerRemoteMap[location]
         log.debug('closed read-only connections per remote map of location %s', location)
       }
-      const locationResources = remoteMapLocations.get(location)
-      locationResources.counters.dump()
-      remoteMapLocations.return(locationResources)
+      remoteMapLocations.return(location)
     },
     'closeRemoteMapsOfLocation with location %s',
     location,
@@ -436,6 +434,8 @@ export const createRemoteMapCreator = (
   location: string,
   persistentDefaultValue = false,
 ): remoteMap.RemoteMapCreator => {
+  // This is a problem - we can create more than one remote map creator for a location
+  // if we do that, we don't know how many times we need to return the location cache :(
   const { counters: statCounters, cache: locationCache } = remoteMapLocations.get(location)
 
   let persistentDB: rocksdb
@@ -769,12 +769,6 @@ export const createRemoteMapCreator = (
         wasClearCalled = false
         return flushRes
       },
-      revert: async () => {
-        locationCache.reset()
-        delKeys.clear()
-        wasClearCalled = false
-        await clearImpl(tmpDB, tempKeyPrefix)
-      },
       clear: async () => {
         locationCache.reset()
         await clearImpl(tmpDB, tempKeyPrefix)
@@ -939,9 +933,6 @@ export const createReadOnlyRemoteMapCreator = (location: string): remoteMap.Read
       flush: async () => {
         notImplemented('flush')
         return false
-      },
-      revert: async () => {
-        notImplemented('revert')
       },
       clear: async () => {
         notImplemented('clear')

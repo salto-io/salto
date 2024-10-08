@@ -26,10 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import wu from 'wu'
-import { logger } from '@salto-io/logging'
 import { resolvePath, setPath } from './utils'
-
-const log = logger(module)
 
 type KeyFunction = (value: Value) => string
 
@@ -405,29 +402,25 @@ export const applyListChanges = (
   element: Element,
   changes: DetailedChange[],
   filterFunc: (change: DetailedChange) => boolean = () => true,
-): void =>
-  log.timeDebug(() => {
-    const ids = changes.map(change => change.id)
-    if (
-      ids.some(id => !isIndexPathPart(id.name)) ||
-      new Set(ids.map(id => id.createParentID().getFullName())).size > 1
-    ) {
-      throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
-    }
+): void => {
+  const ids = changes.map(change => change.id)
+  if (ids.some(id => !isIndexPathPart(id.name)) || new Set(ids.map(id => id.createParentID().getFullName())).size > 1) {
+    throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
+  }
 
-    const matchingChanges = changes.filter(filterFunc)
-    if (matchingChanges.length === 0) {
-      return
-    }
+  const matchingChanges = changes.filter(filterFunc)
+  if (matchingChanges.length === 0) {
+    return
+  }
 
-    const parentId = getChangeRealId(changes[0]).createParentID().replaceParentId(element.elemID)
-    const list = resolvePath(element, parentId)
+  const parentId = getChangeRealId(changes[0]).createParentID().replaceParentId(element.elemID)
+  const list = resolvePath(element, parentId)
 
-    if (matchingChanges.length === changes.length) {
-      updateList(list, changes.map(toListChange))
-    } else {
-      updateListWithFilteredChanges(list, changes, filterFunc)
-    }
+  if (matchingChanges.length === changes.length) {
+    updateList(list, changes.map(toListChange))
+  } else {
+    updateListWithFilteredChanges(list, changes, filterFunc)
+  }
 
-    setPath(element, parentId, list.filter(values.isDefined))
-  }, `applyListChanges - ${element.elemID.getFullName()}`)
+  setPath(element, parentId, list.filter(values.isDefined))
+}

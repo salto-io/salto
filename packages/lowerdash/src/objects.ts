@@ -10,14 +10,21 @@ import { isDefined, isPlainRecord } from './values'
 
 export const concatObjects = <T extends Record<string, ReadonlyArray<unknown> | unknown[] | undefined>>(
   objects: T[],
+  uniqueFnByKey: Record<string, (values: unknown[]) => unknown[]> = {},
 ): T =>
   _.mapValues(
     _.groupBy(objects.flatMap(Object.entries), ([key]) => key),
-    lists =>
-      lists
+    (lists, key) => {
+      const concatenated = lists
         .map(([_key, list]) => list)
         .filter(isDefined)
-        .flat(),
+        .flat()
+
+      if (uniqueFnByKey[key]) {
+        return uniqueFnByKey[key](concatenated)
+      }
+      return concatenated
+    },
   ) as T
 
 /*

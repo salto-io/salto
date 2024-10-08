@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/lowerdash",
-  "version": "0.4.1",
+  "version": "0.4.3",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto utils - stuff that isn't in lodash",
   "repository": {
@@ -36,7 +36,7 @@
     "@eslint/compat": "^1.1.0",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.6.0",
-    "@salto-io/test-utils": "0.4.1",
+    "@salto-io/test-utils": "0.4.3",
     "@tony.ganchev/eslint-plugin-header": "^3.1.2",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",

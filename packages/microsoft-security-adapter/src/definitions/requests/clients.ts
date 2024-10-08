@@ -55,6 +55,24 @@ export const createClientDefinitions = (
               },
             },
           },
+          '/beta/identity/conditionalAccess/policies': {
+            post: {
+              polling: {
+                interval: 5000,
+                retries: 3,
+                retryOnStatus: [400],
+                checkStatus: response => response.status === 201,
+              },
+            },
+            patch: {
+              polling: {
+                interval: 5000,
+                retries: 3,
+                retryOnStatus: [400],
+                checkStatus: response => response.status === 204,
+              },
+            },
+          },
         },
       },
     },

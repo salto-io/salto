@@ -16,8 +16,10 @@ import {
   ReferenceExpression,
   CORE_ANNOTATIONS,
   UnresolvedReference,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
+import { parserUtils } from '@salto-io/parser'
 import filterCreator from '../../../src/filters/article/article_body'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -244,14 +246,195 @@ describe('article body filter', () => {
   })
 
   describe('on fetch', () => {
-    describe('when all brands included', () => {
+    describe('when translationBodyAsStaticFile is true', () => {
+      describe('when all brands included', () => {
+        beforeEach(async () => {
+          filter = filterCreator(
+            createFilterCreatorParams({
+              config: { ...config, fetch: { ...config[FETCH_CONFIG], guide: { brands: ['.*'] } } },
+            }),
+          ) as FilterType
+        })
+        it('should convert all possible urls to references', async () => {
+          const filterResult = (await filter.onFetch(elements)) as FilterResult
+          const fetchedTranslationWithReferences = elements
+            .filter(isInstanceElement)
+            .find(i => i.elemID.name === 'translationWithReferences')
+          const fetchedBody = fetchedTranslationWithReferences?.value.body
+          expect(fetchedBody).toBeInstanceOf(StaticFile)
+          expect(fetchedBody.isTemplate).toBeTruthy()
+          expect(await parserUtils.staticFileToTemplateExpression(fetchedBody)).toEqual(
+            new TemplateExpression({
+              parts: [
+                '<p><a href="',
+                new ReferenceExpression(brandInstance.elemID),
+                '/hc/en-us/articles/',
+                new ReferenceExpression(articleInstance.elemID),
+                '/sep/sections/',
+                new ReferenceExpression(sectionInstance.elemID),
+                '/sep/categories/',
+                new ReferenceExpression(categoryInstance.elemID),
+                '/sep/article_attachments/',
+                new ReferenceExpression(attachmentInstance.elemID),
+                '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
+                new ReferenceExpression(brandInstance.elemID),
+                '/hc/he/articles/',
+                new ReferenceExpression(articleInstance.elemID),
+                '-extra_string"',
+              ],
+            }),
+          )
+          expect(filterResult.errors).toHaveLength(0)
+        })
+        it('should only match elements that exists', async () => {
+          const filterResult = (await filter.onFetch(elements)) as FilterResult
+          const brandName = emptyBrandInstance.value.name
+          const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLE_TYPE_NAME, `${brandName}_0`)
+          const missingSectionInstance = createMissingInstance(ZENDESK, SECTION_TYPE_NAME, `${brandName}_0`)
+          const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORY_TYPE_NAME, `${brandName}_0`)
+          const missingArticleAttachmentInstance = createMissingInstance(
+            ZENDESK,
+            ARTICLE_ATTACHMENT_TYPE_NAME,
+            `${brandName}_0`,
+          )
+          missingArticleInstance.value.id = '0'
+          missingSectionInstance.value.id = '0'
+          missingCategoryInstance.value.id = '0'
+          missingArticleAttachmentInstance.value.id = '0'
+          const fetchedTranslationWithoutReferences = elements
+            .filter(isInstanceElement)
+            .find(i => i.elemID.name === 'translationWithMissingReferences')
+          expect(
+            await parserUtils.staticFileToTemplateExpression(fetchedTranslationWithoutReferences?.value.body),
+          ).toEqual(
+            new TemplateExpression({
+              parts: [
+                '<p><a href="',
+                new ReferenceExpression(emptyBrandInstance.elemID),
+                '/hc/en-us/articles/',
+                new ReferenceExpression(missingArticleInstance.elemID),
+                '/sep/sections/',
+                new ReferenceExpression(missingSectionInstance.elemID),
+                '/sep/categories/',
+                new ReferenceExpression(missingCategoryInstance.elemID),
+                '/sep/article_attachments/',
+                new ReferenceExpression(missingArticleAttachmentInstance.elemID),
+                '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
+                new ReferenceExpression(brandInstance.elemID),
+                '/hc/he/articles/',
+                new ReferenceExpression(articleInstance.elemID),
+                '-extra_string"',
+              ],
+            }),
+          )
+          expect(filterResult.errors).toHaveLength(0)
+        })
+        it('should handle translation with template expression in body', async () => {
+          translationWithTemplateExpression.value.body = new TemplateExpression({
+            parts: [
+              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+              `<p><a href="https://brand.zendesk.com/hc/en-us/articles/${articleInstance.value.id}" target="_self">linkedArticle</a>`,
+              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+            ],
+          })
+          const filterResult = (await filter.onFetch(elements)) as FilterResult
+          const fetchedTranslationWithTemplateExpression = elements
+            .filter(isInstanceElement)
+            .find(i => i.elemID.name === 'articleWithTemplateExpression')
+          expect(
+            await parserUtils.staticFileToTemplateExpression(fetchedTranslationWithTemplateExpression?.value.body),
+          ).toEqual(
+            new TemplateExpression({
+              parts: [
+                new ReferenceExpression(attachmentInstance.elemID),
+                '<p><a href="',
+                new ReferenceExpression(brandInstance.elemID),
+                '/hc/en-us/articles/',
+                new ReferenceExpression(articleInstance.elemID),
+                '" target="_self">linkedArticle</a>',
+                new ReferenceExpression(attachmentInstance.elemID),
+              ],
+            }),
+          )
+          expect(filterResult.errors).toHaveLength(0)
+        })
+        it('should do nothing if elements do not exists', async () => {
+          const filterResult = (await filter.onFetch(elements)) as FilterResult
+          const fetchedTranslationWithoutReferences = elements
+            .filter(isInstanceElement)
+            .find(i => i.elemID.name === 'translationWithoutReferences')
+          expect(((await fetchedTranslationWithoutReferences?.value.body.getContent()) ?? '').toString()).toEqual(
+            '<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/0/sep/sections/0/sep/categories/0/sep/article_attachments/0-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/0-extra_string"',
+          )
+          expect(filterResult.errors).toHaveLength(0)
+        })
+      })
+
+      describe('when some brands are excluded', () => {
+        beforeEach(() => {
+          filter = filterCreator(
+            createFilterCreatorParams({
+              config: { ...config, fetch: { ...config[FETCH_CONFIG], guide: { brands: ['^(?!excluded).*$'] } } },
+            }),
+          ) as FilterType
+        })
+        it('should not create reference for urls of excluded brands', async () => {
+          const filterResult = (await filter.onFetch(elements)) as FilterResult
+          const fetchedTranslationWithReferences = elements
+            .filter(isInstanceElement)
+            .find(i => i.elemID.name === 'articleWithExcludedBrand')
+          expect(((await fetchedTranslationWithReferences?.value.body.getContent()) ?? '').toString()).toEqual(
+            '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/0" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
+          )
+          const fetchedTranslationWithReferences2 = elements
+            .filter(isInstanceElement)
+            .find(i => i.elemID.name === 'articleWithMixedBrand')
+          expect(
+            await parserUtils.staticFileToTemplateExpression(fetchedTranslationWithReferences2?.value.body),
+          ).toEqual(
+            new TemplateExpression({
+              parts: [
+                '<p><a href="',
+                new ReferenceExpression(brandInstance.elemID),
+                '/hc/en-us/articles/',
+                new ReferenceExpression(articleInstance.elemID),
+                '" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
+              ],
+            }),
+          )
+          expect(filterResult.errors).toHaveLength(2)
+          expect(filterResult.errors?.[0]).toEqual({
+            message:
+              'Brand excluded (subdomain excludedSub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
+            detailedMessage:
+              'Brand excluded (subdomain excludedSub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
+            severity: 'Warning',
+          })
+          expect(filterResult.errors?.[1]).toEqual({
+            message:
+              'Brand excluded2 (subdomain excluded2Sub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
+            detailedMessage:
+              'Brand excluded2 (subdomain excluded2Sub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
+            severity: 'Warning',
+          })
+        })
+      })
+    })
+    describe('when translationBodyAsStaticFile is false', () => {
       beforeEach(async () => {
-        config[FETCH_CONFIG].guide = { brands: ['.*'] }
-        filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+        filter = filterCreator(
+          createFilterCreatorParams({
+            config: {
+              ...config,
+              fetch: { ...config[FETCH_CONFIG], guide: { brands: ['.*'] }, translationBodyAsStaticFile: false },
+            },
+          }),
+        ) as FilterType
       })
       it('should convert all possible urls to references', async () => {
-        const filterResult = (await filter.onFetch(elements)) as FilterResult
-        const fetchedTranslationWithReferences = elements
+        const clones = elements.map(e => e.clone())
+        const filterResult = (await filter.onFetch(clones)) as FilterResult
+        const fetchedTranslationWithReferences = clones
           .filter(isInstanceElement)
           .find(i => i.elemID.name === 'translationWithReferences')
         expect(fetchedTranslationWithReferences?.value.body).toEqual(
@@ -277,129 +460,6 @@ describe('article body filter', () => {
         )
         expect(filterResult.errors).toHaveLength(0)
       })
-      it('should only match elements that exists', async () => {
-        const filterResult = (await filter.onFetch(elements)) as FilterResult
-        const brandName = emptyBrandInstance.value.name
-        const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLE_TYPE_NAME, `${brandName}_0`)
-        const missingSectionInstance = createMissingInstance(ZENDESK, SECTION_TYPE_NAME, `${brandName}_0`)
-        const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORY_TYPE_NAME, `${brandName}_0`)
-        const missingArticleAttachmentInstance = createMissingInstance(
-          ZENDESK,
-          ARTICLE_ATTACHMENT_TYPE_NAME,
-          `${brandName}_0`,
-        )
-        missingArticleInstance.value.id = '0'
-        missingSectionInstance.value.id = '0'
-        missingCategoryInstance.value.id = '0'
-        missingArticleAttachmentInstance.value.id = '0'
-        const fetchedTranslationWithoutReferences = elements
-          .filter(isInstanceElement)
-          .find(i => i.elemID.name === 'translationWithMissingReferences')
-        expect(fetchedTranslationWithoutReferences?.value.body).toEqual(
-          new TemplateExpression({
-            parts: [
-              '<p><a href="',
-              new ReferenceExpression(emptyBrandInstance.elemID, emptyBrandInstance),
-              '/hc/en-us/articles/',
-              new ReferenceExpression(missingArticleInstance.elemID, missingArticleInstance),
-              '/sep/sections/',
-              new ReferenceExpression(missingSectionInstance.elemID, missingSectionInstance),
-              '/sep/categories/',
-              new ReferenceExpression(missingCategoryInstance.elemID, missingCategoryInstance),
-              '/sep/article_attachments/',
-              new ReferenceExpression(missingArticleAttachmentInstance.elemID, missingArticleAttachmentInstance),
-              '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
-              '/hc/he/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
-              '-extra_string"',
-            ],
-          }),
-        )
-        expect(filterResult.errors).toHaveLength(0)
-      })
-      it('should handle translation with template expression in body', async () => {
-        translationWithTemplateExpression.value.body = new TemplateExpression({
-          parts: [
-            new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
-            `<p><a href="https://brand.zendesk.com/hc/en-us/articles/${articleInstance.value.id}" target="_self">linkedArticle</a>`,
-            new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
-          ],
-        })
-        const filterResult = (await filter.onFetch(elements)) as FilterResult
-        const fetchedTranslationWithTemplateExpression = elements
-          .filter(isInstanceElement)
-          .find(i => i.elemID.name === 'articleWithTemplateExpression')
-        expect(fetchedTranslationWithTemplateExpression?.value.body).toEqual(
-          new TemplateExpression({
-            parts: [
-              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
-              '<p><a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
-              '/hc/en-us/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
-              '" target="_self">linkedArticle</a>',
-              new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
-            ],
-          }),
-        )
-        expect(filterResult.errors).toHaveLength(0)
-      })
-      it('should do nothing if elements do not exists', async () => {
-        const filterResult = (await filter.onFetch(elements)) as FilterResult
-        const fetchedTranslationWithoutReferences = elements
-          .filter(isInstanceElement)
-          .find(i => i.elemID.name === 'translationWithoutReferences')
-        expect(fetchedTranslationWithoutReferences?.value.body).toEqual(
-          '<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/0/sep/sections/0/sep/categories/0/sep/article_attachments/0-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/0-extra_string"',
-        )
-        expect(filterResult.errors).toHaveLength(0)
-      })
-    })
-
-    describe('when some brands are excluded', () => {
-      beforeEach(() => {
-        config[FETCH_CONFIG].guide = { brands: ['^(?!excluded).*$'] }
-        filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
-      })
-      it('should not create reference for urls of excluded brands', async () => {
-        const filterResult = (await filter.onFetch(elements)) as FilterResult
-        const fetchedTranslationWithReferences = elements
-          .filter(isInstanceElement)
-          .find(i => i.elemID.name === 'articleWithExcludedBrand')
-        expect(fetchedTranslationWithReferences?.value.body).toEqual(
-          '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/0" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
-        )
-        const fetchedTranslationWithReferences2 = elements
-          .filter(isInstanceElement)
-          .find(i => i.elemID.name === 'articleWithMixedBrand')
-        expect(fetchedTranslationWithReferences2?.value.body).toEqual(
-          new TemplateExpression({
-            parts: [
-              '<p><a href="',
-              new ReferenceExpression(brandInstance.elemID, brandInstance),
-              '/hc/en-us/articles/',
-              new ReferenceExpression(articleInstance.elemID, articleInstance),
-              '" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
-            ],
-          }),
-        )
-        expect(filterResult.errors).toHaveLength(2)
-        expect(filterResult.errors?.[0]).toEqual({
-          message:
-            'Brand excluded (subdomain excludedSub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
-          detailedMessage:
-            'Brand excluded (subdomain excludedSub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
-          severity: 'Warning',
-        })
-        expect(filterResult.errors?.[1]).toEqual({
-          message:
-            'Brand excluded2 (subdomain excluded2Sub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
-          detailedMessage:
-            'Brand excluded2 (subdomain excluded2Sub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
-          severity: 'Warning',
-        })
-      })
     })
   })
   describe('preDeploy', () => {
@@ -408,13 +468,13 @@ describe('article body filter', () => {
       await filter.onFetch(elementsAfterFetch)
       const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
       await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
-      expect(elementsAfterPreDeploy).toEqual(elements)
+      expect(elementsAfterPreDeploy).toEqual(elementsAfterFetch)
     })
   })
 
   describe('onDeploy', () => {
     it('Returns elements to after fetch state (with templates) after onDeploy', async () => {
-      // we recreate feth and onDeploy to have the templates in place to be restored by onDeploy
+      // we recreate fetch and onDeploy to have the templates in place to be restored by onDeploy
       const elementsAfterFetch = elements.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
       const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())

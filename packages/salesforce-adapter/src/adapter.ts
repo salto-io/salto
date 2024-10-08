@@ -373,7 +373,7 @@ export const NESTED_METADATA_TYPES = {
     isNestedApiNameRelative: true,
   },
   AutoResponseRules: {
-    nestedInstanceFields: ['autoresponseRule'],
+    nestedInstanceFields: ['autoResponseRule'],
     isNestedApiNameRelative: true,
   },
   EscalationRules: {
@@ -676,7 +676,9 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       )}`,
     )
     const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
-    const getLookupNameFunc = isDataDeployGroup ? getLookupNameForDataInstances : getLookUpName
+    const getLookupNameFunc = isDataDeployGroup
+      ? getLookupNameForDataInstances(fetchProfile)
+      : getLookUpName(fetchProfile)
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookupNameFunc))
       .toArray()

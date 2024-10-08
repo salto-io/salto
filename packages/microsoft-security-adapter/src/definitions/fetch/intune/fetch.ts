@@ -17,11 +17,13 @@ import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 import { application, deviceConfigurationSettings, platformScript } from './utils'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './utils/group_assignments'
 
 const {
   // Top level types
   APPLICATION_TYPE_NAME,
   APPLICATION_CONFIGURATION_MANAGED_DEVICE_TYPE_NAME,
+  APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME,
   DEVICE_CONFIGURATION_TYPE_NAME,
   DEVICE_CONFIGURATION_SETTING_CATALOG_TYPE_NAME,
   DEVICE_COMPLIANCE_TYPE_NAME,
@@ -86,6 +88,7 @@ const graphBetaCustomizations: FetchCustomizations = {
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
         ...application.APPLICATION_FIELDS_TO_OMIT,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
       },
     },
   },
@@ -117,7 +120,43 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
+    },
+  },
+  [APPLICATION_PROTECTION_WINDOWS_INFORMATION_PROTECTION_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/deviceAppManagement/mdmWindowsInformationProtectionPolicies',
+          queryArgs: {
+            $expand: 'assignments',
+          },
+        },
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: ['version', 'isAssigned', ASSIGNMENTS_ODATA_CONTEXT],
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_Intune/PolicyInstanceMenuBlade/~/7/policyId/{id}/policyOdataType/#microsoft.graph.mdmWindowsInformationProtectionPolicy/policyName/{displayName}',
+        },
+        allowEmptyArrays: true,
+      },
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [DEVICE_CONFIGURATION_TYPE_NAME]: {
@@ -147,7 +186,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   ...deviceConfigurationSettings.createDeviceConfigurationSettingsFetchDefinition({
@@ -186,7 +228,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [DEVICE_COMPLIANCE_SCHEDULED_ACTIONS_TYPE_NAME]: {
@@ -308,7 +353,10 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   ..._.mapValues(TYPES_WITH_TARGET_APPS_PATH_MAP, ({ resourcePath, serviceUrlPath }) => ({

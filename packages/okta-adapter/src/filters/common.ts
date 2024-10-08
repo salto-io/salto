@@ -16,6 +16,7 @@ const filterCreators: Record<string, FilterCreator> = {
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
   addAlias: filters.addAliasFilterCreator(),
   query: filters.queryFilterCreator({}),
+  sortLists: filters.sortListsFilterCreator(),
 }
 
 export default filterCreators

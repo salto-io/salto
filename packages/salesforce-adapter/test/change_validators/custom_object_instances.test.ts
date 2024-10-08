@@ -5,11 +5,22 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, ChangeError, toChange } from '@salto-io/adapter-api'
-import customObjectInstancesValidator from '../../src/change_validators/custom_object_instances'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  InstanceElement,
+  ChangeError,
+  toChange,
+  ChangeValidator,
+} from '@salto-io/adapter-api'
+import changeValidatorCreator from '../../src/change_validators/custom_object_instances'
 import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT, API_NAME } from '../../src/constants'
+import { defaultFilterContext } from '../utils'
+import { getLookUpName } from '../../src/transformers/reference_mapping'
 
 describe('custom object instances change validator', () => {
+  let customObjectInstancesValidator: ChangeValidator
   const obj = new ObjectType({
     elemID: new ElemID('salesforce', 'obj'),
     fields: {
@@ -34,6 +45,9 @@ describe('custom object instances change validator', () => {
       [METADATA_TYPE]: CUSTOM_OBJECT,
       [API_NAME]: 'obj__c',
     },
+  })
+  beforeEach(() => {
+    customObjectInstancesValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile))
   })
 
   describe('onAdd of instance of customObject', () => {

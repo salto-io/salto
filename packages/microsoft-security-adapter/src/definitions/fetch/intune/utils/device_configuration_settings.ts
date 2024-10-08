@@ -10,8 +10,15 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE } from '../../shared/defaults'
 import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shared/types'
 import { intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './group_assignments'
 
-const { SETTINGS_FIELD_NAME, SETTING_COUNT_FIELD_NAME, ASSIGNMENTS_ODATA_CONTEXT, SERVICE_BASE_URL } = intuneConstants
+const {
+  SETTINGS_FIELD_NAME,
+  SETTING_COUNT_FIELD_NAME,
+  ASSIGNMENTS_ODATA_CONTEXT,
+  SERVICE_BASE_URL,
+  ASSIGNMENTS_FIELD_NAME,
+} = intuneConstants
 
 // In the Intune admin center, some of the device configurations (setting catalog) are located in the Device Configuration settings tab
 // and some are located in the Platform Scripts tab. We align with the UI view by separating them to two different types.
@@ -74,7 +81,10 @@ export const createDeviceConfigurationSettingsFetchDefinition = ({
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [settingsTypeName]: {

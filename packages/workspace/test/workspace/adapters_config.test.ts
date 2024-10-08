@@ -92,7 +92,6 @@ describe('adapters config', () => {
       keys: mockFunction<RemoteMap<ValidationError[]>['keys']>(),
       values: mockFunction<RemoteMap<ValidationError[]>['values']>(),
       flush: mockFunction<RemoteMap<ValidationError[]>['flush']>(),
-      revert: mockFunction<RemoteMap<ValidationError[]>['revert']>(),
       clear: mockFunction<RemoteMap<ValidationError[]>['clear']>(),
       close: mockFunction<RemoteMap<ValidationError[]>['close']>(),
       isEmpty: mockFunction<RemoteMap<ValidationError[]>['isEmpty']>(),

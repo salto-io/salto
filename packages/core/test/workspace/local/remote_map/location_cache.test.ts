@@ -21,7 +21,7 @@ describe('remote map location cache pool', () => {
   const LOCATION2 = 'SomeOtherLocation'
 
   beforeEach(() => {
-    poolContents = new Map<string, { cache: LocationCache; refcnt: number }>()
+    poolContents = new Map<string, LocationCache>()
     pool = createLocationCachePool(poolContents)
   })
 
@@ -46,8 +46,8 @@ describe('remote map location cache pool', () => {
   })
 
   it('should destroy cache when the last reference to it is returned', () => {
-    const cache = pool.get(LOCATION1)
-    pool.return(cache)
+    pool.get(LOCATION1)
+    pool.return(LOCATION1)
     expect(poolContents.size).toEqual(0)
     pool.get(LOCATION1)
     expect(poolContents.size).toEqual(1)

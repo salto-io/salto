@@ -217,24 +217,37 @@ const removeHiddenFromValues = (
     allowEmptyObjects: true,
   })
 
-const isChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>
+const isAttributeChangeToHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>
   change.id.name === (hiddenValue ? CORE_ANNOTATIONS.HIDDEN_VALUE : CORE_ANNOTATIONS.HIDDEN) &&
   isAdditionOrModificationChange(change) &&
   change.data.after === true
 
-const isChangeToNotHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>
+const isAttributeChangeToNotHidden = (change: DetailedChange, hiddenValue: boolean): boolean =>
   change.id.name === (hiddenValue ? CORE_ANNOTATIONS.HIDDEN_VALUE : CORE_ANNOTATIONS.HIDDEN) &&
   isRemovalOrModificationChange(change) &&
   change.data.before === true
-const isHiddenChangeOnElement = (change: DetailedChange, hiddenValue: boolean): boolean =>
+
+const isHiddenAttributeChange = (change: DetailedChange, hiddenValue: boolean): boolean =>
   change.id.idType === 'attr' &&
   change.id.nestingLevel === 1 &&
-  (isChangeToHidden(change, hiddenValue) || isChangeToNotHidden(change, hiddenValue))
+  (isAttributeChangeToHidden(change, hiddenValue) || isAttributeChangeToNotHidden(change, hiddenValue))
 
 const isHiddenChangeOnField = (change: DetailedChange): boolean =>
   change.id.idType === 'field' &&
   change.id.nestingLevel === 2 &&
-  (isChangeToHidden(change, true) || isChangeToNotHidden(change, true))
+  (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))
+
+const isTopLevelModificationWithHiddenChange = <T>(
+  change: DetailedChange<T>,
+): change is DetailedChange<T & Element> & ModificationChange<T & Element> =>
+  change.id.isTopLevel() &&
+  change.action === 'modify' &&
+  !!(change.data.before as Element).annotations?.[CORE_ANNOTATIONS.HIDDEN] !==
+    !!(change.data.after as Element).annotations?.[CORE_ANNOTATIONS.HIDDEN]
+
+const isTopLevelModificationAfterHidden = <T extends Element>(
+  change: DetailedChange<T> & ModificationChange<T>,
+): boolean => !!(change.data.after as Element).annotations?.[CORE_ANNOTATIONS.HIDDEN]
 
 /**
  * When a type changes from/to hidden, we need to create a change that adds/removes
@@ -242,7 +255,7 @@ const isHiddenChangeOnField = (change: DetailedChange): boolean =>
  */
 const getHiddenTypeChanges = async (changes: DetailedChange[], state: State): Promise<DetailedChange[]> =>
   awu(changes)
-    .filter(c => isHiddenChangeOnElement(c, false))
+    .filter(change => isTopLevelModificationWithHiddenChange(change) || isHiddenAttributeChange(change, false))
     .map(async change => {
       const elemId = change.id.createTopLevelParentID().parent
       const elem = await state.get(elemId)
@@ -251,24 +264,29 @@ const getHiddenTypeChanges = async (changes: DetailedChange[], state: State): Pr
         log.warn(
           'Element %s was changed to hidden %s but was not found in state',
           elemId.getFullName(),
-          isChangeToHidden(change, false),
+          isAttributeChangeToHidden(change, false),
         )
         return change
       }
-      return isChangeToHidden(change, false) ? createRemoveChange(elem, elemId) : createAddChange(elem, elemId)
+
+      const changeToHidden = isTopLevelModificationWithHiddenChange(change)
+        ? isTopLevelModificationAfterHidden(change)
+        : isAttributeChangeToHidden(change, false)
+      return changeToHidden ? createRemoveChange(elem, elemId) : createAddChange(elem, elemId)
     })
-    .filter(values.isDefined)
     .toArray()
 
 const getInstanceTypeHiddenChanges = async (changes: DetailedChange[], state: State): Promise<DetailedChange[]> => {
-  const hiddenValueOnElementChanges = changes.filter(c => isHiddenChangeOnElement(c, true))
+  const hiddenValueOnElementChanges = changes.filter(c => isHiddenAttributeChange(c, true))
 
   // Exit early to avoid unneeded calculation if there are no hidden type changes
   if (hiddenValueOnElementChanges.length === 0) {
     return []
   }
 
-  const [toHiddenChanges, fromHiddenChanges] = _.partition(hiddenValueOnElementChanges, c => isChangeToHidden(c, true))
+  const [toHiddenChanges, fromHiddenChanges] = _.partition(hiddenValueOnElementChanges, c =>
+    isAttributeChangeToHidden(c, true),
+  )
 
   const toHiddenElemIds = new Set(
     toHiddenChanges.map(change => change.id.createTopLevelParentID().parent.getFullName()),
@@ -305,9 +323,9 @@ const isAnnotationTypeChange = (
   isTypeReference(change.data.before) &&
   isTypeReference(change.data.after)
 
-type EffectOnHidden = 'hide' | 'unHide' | 'none'
+type EffectOnHidden = 'hide' | 'unhide' | 'none'
 const getTypeChangeEffectOnHidden =
-  (state: State, hideTypeIds: Set<string>, unHideTypeIds: Set<string>) =>
+  (state: State, hideTypeIds: Set<string>, unhideTypeIds: Set<string>) =>
   async (change: DetailedChange & ModificationChange<ReferenceExpression>): Promise<EffectOnHidden> => {
     const { before, after } = change.data as ModificationChange<ReferenceExpression>['data']
     const [beforeType, afterType] = await Promise.all([before.getResolvedValue(state), after.getResolvedValue(state)])
@@ -328,13 +346,13 @@ const getTypeChangeEffectOnHidden =
     // tell whether the type was hidden before, we also have to check if it changed
     const beforeHidden =
       (isHiddenValue(beforeType) && !hideTypeIds.has(beforeType.elemID.getFullName())) ||
-      unHideTypeIds.has(beforeType.elemID.getFullName())
+      unhideTypeIds.has(beforeType.elemID.getFullName())
 
     if (!beforeHidden && isHiddenValue(afterType)) {
       return 'hide'
     }
     if (beforeHidden && !isHiddenValue(afterType)) {
-      return 'unHide'
+      return 'unhide'
     }
     return 'none'
   }
@@ -345,11 +363,11 @@ const groupAnnotationIdsByParentAndName = (ids: ElemID[]): Record<string, Set<st
     idsOfParent => new Set(idsOfParent.map(id => id.name)),
   )
 
-const getChangeParentIdsByHideAction = (changes: DetailedChange[]): { hide: Set<string>; unHide: Set<string> } => {
-  const [hideChanges, unHideChanges] = _.partition(changes, c => isChangeToHidden(c, true))
+const getChangeParentIdsByHideAction = (changes: DetailedChange[]): { hide: Set<string>; unhide: Set<string> } => {
+  const [hideChanges, unhideChanges] = _.partition(changes, c => isAttributeChangeToHidden(c, true))
   return {
     hide: new Set(hideChanges.map(change => change.id.createParentID().getFullName())),
-    unHide: new Set(unHideChanges.map(change => change.id.createParentID().getFullName())),
+    unhide: new Set(unhideChanges.map(change => change.id.createParentID().getFullName())),
   }
 }
 
@@ -372,25 +390,25 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   // Note that when a field changes its type it does not matter because we don't take the type
   // into account when deciding whether an instance's value is hidden in isHiddenValue
 
-  const { hide: hideFieldIds, unHide: unHideFieldIds } = getChangeParentIdsByHideAction(
+  const { hide: hideFieldIds, unhide: unhideFieldIds } = getChangeParentIdsByHideAction(
     changes.filter(isHiddenChangeOnField),
   )
-  const { hide: hideTypeIds, unHide: unHideTypeIds } = getChangeParentIdsByHideAction(
-    changes.filter(c => isHiddenChangeOnElement(c, true)),
+  const { hide: hideTypeIds, unhide: unhideTypeIds } = getChangeParentIdsByHideAction(
+    changes.filter(c => isHiddenAttributeChange(c, true)),
   )
 
   const annotationTypeChanges = changes.filter(isAnnotationTypeChange)
   const annotationTypeChangesByHiddenEffect = await awu(annotationTypeChanges).groupBy(
-    getTypeChangeEffectOnHidden(state, hideTypeIds, unHideTypeIds),
+    getTypeChangeEffectOnHidden(state, hideTypeIds, unhideTypeIds),
   )
 
   const noRelevantChanges =
     _.isEmpty(hideFieldIds) &&
-    _.isEmpty(unHideFieldIds) &&
+    _.isEmpty(unhideFieldIds) &&
     _.isEmpty(hideTypeIds) &&
-    _.isEmpty(unHideTypeIds) &&
+    _.isEmpty(unhideTypeIds) &&
     _.isEmpty(annotationTypeChangesByHiddenEffect.hide) &&
-    _.isEmpty(annotationTypeChangesByHiddenEffect.unHide)
+    _.isEmpty(annotationTypeChangesByHiddenEffect.unhide)
   if (noRelevantChanges) {
     // This should be the common case where there are no changes to the hidden annotation
     return []
@@ -399,14 +417,14 @@ const getHiddenFieldAndAnnotationValueChanges = async (
     annotationTypeChangesByHiddenEffect.hide?.map(change => change.id) ?? [],
   )
   const annotationTypesToUnHide = groupAnnotationIdsByParentAndName(
-    annotationTypeChangesByHiddenEffect.unHide?.map(change => change.id) ?? [],
+    annotationTypeChangesByHiddenEffect.unhide?.map(change => change.id) ?? [],
   )
 
   log.debug('Handling changes in hidden values and annotations:')
   log.debug('fields to hide: [%s]', [...hideFieldIds.values()].join(', '))
-  log.debug('fields to unHide: [%s]', [...unHideFieldIds.values()].join(', '))
+  log.debug('fields to unhide: [%s]', [...unhideFieldIds.values()].join(', '))
   log.debug('types to hide: [%s]', [...hideTypeIds.values()].join(', '))
-  log.debug('types to unHide: [%s]', [...unHideTypeIds.values()].join(', '))
+  log.debug('types to unhide: [%s]', [...unhideTypeIds.values()].join(', '))
   log.debug(
     'annotation types to hide: [%s]',
     Object.entries(annotationTypesToHide)
@@ -414,7 +432,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       .join(', '),
   )
   log.debug(
-    'annotation types to unHide: [%s]',
+    'annotation types to unhide: [%s]',
     Object.entries(annotationTypesToUnHide)
       .flatMap(([typeName, annotationName]) => `${typeName}.annotation.${annotationName}`)
       .join(', '),
@@ -451,7 +469,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       hiddenValueChanges.push(createRemoveChange(value, path))
       return undefined
     }
-    if (unHideFieldIds.has(fieldId)) {
+    if (unhideFieldIds.has(fieldId)) {
       hiddenValueChanges.push(createAddChange(value, path))
       return undefined
     }
@@ -463,7 +481,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
         hiddenValueChanges.push(createRemoveChange(value, path))
         return undefined
       }
-      if (isInTypes(path, annotationTypesToUnHide) || unHideTypeIds.has(fieldTypeId)) {
+      if (isInTypes(path, annotationTypesToUnHide) || unhideTypeIds.has(fieldTypeId)) {
         hiddenValueChanges.push(createAddChange(value, path))
         return undefined
       }
@@ -473,7 +491,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
     if (path.idType === 'field') {
       if (hideTypeIds.has(fieldTypeId)) {
         hiddenValueChanges.push(createRemoveChange(value, path))
-      } else if (unHideTypeIds.has(fieldTypeId)) {
+      } else if (unhideTypeIds.has(fieldTypeId)) {
         hiddenValueChanges.push(createAddChange(value, path))
       }
     }

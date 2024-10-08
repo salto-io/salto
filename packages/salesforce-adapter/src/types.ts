@@ -128,6 +128,7 @@ export type OptionalFeatures = {
   performSideEffectDeletes?: boolean
   extendTriggersMetadata?: boolean
   storeProfilesAndPermissionSetsBrokenPaths?: boolean
+  removeReferenceFromFilterItemToRecordType?: boolean
 }
 
 export type ChangeValidatorName =
@@ -839,6 +840,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
     storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
+    removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

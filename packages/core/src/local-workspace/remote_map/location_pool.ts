@@ -17,7 +17,7 @@ type RemoteMapLocation = {
 
 type RemoteMapLocationPool = {
   get: (location: string) => RemoteMapLocation
-  return: (location: RemoteMapLocation) => void
+  return: (location: string) => void
 }
 const createRemoteMapLocationPool = (): RemoteMapLocationPool => ({
   get: location => ({
@@ -26,8 +26,8 @@ const createRemoteMapLocationPool = (): RemoteMapLocationPool => ({
     cache: locationCaches.get(location),
   }),
   return: location => {
-    locationCaches.return(location.cache)
-    counters.return(location.name)
+    locationCaches.return(location)
+    counters.return(location)
   },
 })
 

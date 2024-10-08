@@ -82,10 +82,6 @@ type DumpElementsToFolderFunc = NonNullable<Adapter['dumpElementsToFolder']>
 export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, changes, elementsSource }) => {
   const [customObjectInstanceChanges, metadataChanges] = _.partition(changes, isInstanceOfCustomObjectChangeSync)
 
-  const resolvedChanges = await awu(metadataChanges)
-    .map(change => resolveChangeElement(change, getLookUpName))
-    .toArray()
-
   const fetchProfile = buildFetchProfile({
     fetchParams: {
       optionalFeatures: {
@@ -94,6 +90,10 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       },
     },
   })
+
+  const resolvedChanges = await awu(metadataChanges)
+    .map(change => resolveChangeElement(change, getLookUpName(fetchProfile)))
+    .toArray()
   const filterRunner = filter.filtersRunner(
     {
       // TODO: This is a hack that we want to replace with something more type-safe in the near future

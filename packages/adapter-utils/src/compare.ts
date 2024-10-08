@@ -30,11 +30,8 @@ import {
   toChange,
   Value,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { getIndependentElemIDs, resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping, getChangeRealId, isOrderChange } from './list_comparison'
-
-const log = logger(module)
 
 const compareListWithOrderMatching = ({
   id,
@@ -50,50 +47,49 @@ const compareListWithOrderMatching = ({
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
   options: CompareOptions | undefined
-}): DetailedChange[] =>
-  log.timeDebug(() => {
-    const indexMapping = getArrayIndexMapping(before, after)
+}): DetailedChange[] => {
+  const indexMapping = getArrayIndexMapping(before, after)
 
-    const itemsChanges = _.flatten(
-      indexMapping.map((item, changeIndex) => {
-        const itemChangeId = id.createNestedID(changeIndex.toString())
-        const itemBeforeId =
-          item.beforeIndex !== undefined ? beforeId?.createNestedID(item.beforeIndex.toString()) : undefined
-        const itemAfterId =
-          item.afterIndex !== undefined ? afterId?.createNestedID(item.afterIndex.toString()) : undefined
+  const itemsChanges = _.flatten(
+    indexMapping.map((item, changeIndex) => {
+      const itemChangeId = id.createNestedID(changeIndex.toString())
+      const itemBeforeId =
+        item.beforeIndex !== undefined ? beforeId?.createNestedID(item.beforeIndex.toString()) : undefined
+      const itemAfterId =
+        item.afterIndex !== undefined ? afterId?.createNestedID(item.afterIndex.toString()) : undefined
 
-        const itemBeforeValue = item.beforeIndex !== undefined ? before[item.beforeIndex] : undefined
-        const itemAfterValue = item.afterIndex !== undefined ? after[item.afterIndex] : undefined
-        // eslint-disable-next-line no-use-before-define
-        const innerChanges = getValuesChanges({
+      const itemBeforeValue = item.beforeIndex !== undefined ? before[item.beforeIndex] : undefined
+      const itemAfterValue = item.afterIndex !== undefined ? after[item.afterIndex] : undefined
+      // eslint-disable-next-line no-use-before-define
+      const innerChanges = getValuesChanges({
+        id: itemChangeId,
+        beforeId: itemBeforeId,
+        afterId: itemAfterId,
+        before: itemBeforeValue,
+        after: itemAfterValue,
+        options,
+      })
+      const hasChangeDirectlyOnItem =
+        innerChanges.length === 1 && innerChanges.some(change => change.id.isEqual(itemChangeId))
+      if (item.beforeIndex !== item.afterIndex && !hasChangeDirectlyOnItem) {
+        // This item changed its index, so if we don't already have a change
+        // on this item, we need to add one
+        innerChanges.push({
+          action: 'modify',
+          data: {
+            before: itemBeforeValue,
+            after: itemAfterValue,
+          },
           id: itemChangeId,
-          beforeId: itemBeforeId,
-          afterId: itemAfterId,
-          before: itemBeforeValue,
-          after: itemAfterValue,
-          options,
+          elemIDs: { before: itemBeforeId, after: itemAfterId },
         })
-        const hasChangeDirectlyOnItem =
-          innerChanges.length === 1 && innerChanges.some(change => change.id.isEqual(itemChangeId))
-        if (item.beforeIndex !== item.afterIndex && !hasChangeDirectlyOnItem) {
-          // This item changed its index, so if we don't already have a change
-          // on this item, we need to add one
-          innerChanges.push({
-            action: 'modify',
-            data: {
-              before: itemBeforeValue,
-              after: itemAfterValue,
-            },
-            id: itemChangeId,
-            elemIDs: { before: itemBeforeId, after: itemAfterId },
-          })
-        }
-        return innerChanges
-      }),
-    )
+      }
+      return innerChanges
+    }),
+  )
 
-    return itemsChanges
-  }, `compareListWithOrderMatching - ${id.getFullName()}`)
+  return itemsChanges
+}
 
 /**
  * Create detailed changes from change data (before and after values)

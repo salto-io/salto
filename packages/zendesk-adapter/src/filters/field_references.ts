@@ -69,6 +69,7 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   add_skills: 'routing_attribute_value',
   set_skills: 'routing_attribute_value',
   remove_skills: 'routing_attribute_value',
+  custom_status_id: CUSTOM_STATUS_TYPE_NAME,
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {

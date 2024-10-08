@@ -33,6 +33,8 @@ import {
   EMAIL_CUSTOMIZATION_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
   AUTOMATION_RULE_TYPE_NAME,
+  SIGN_IN_PAGE_TYPE_NAME,
+  ERROR_PAGE_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -680,6 +682,14 @@ const createCustomizations = ({
           typeName: 'EmailTemplate',
           context: { args: { brandId: { root: 'id' } } },
         },
+        SignInPage: {
+          typeName: 'SignInPage',
+          context: { args: { brandId: { root: 'id' } } },
+        },
+        ErrorPage: {
+          typeName: 'ErrorPage',
+          context: { args: { brandId: { root: 'id' } } },
+        },
       },
     },
     element: {
@@ -701,6 +711,22 @@ const createCustomizations = ({
         EmailTemplate: {
           standalone: {
             typeName: 'EmailTemplate',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
+          },
+        },
+        SignInPage: {
+          standalone: {
+            typeName: 'SignInPage',
+            addParentAnnotation: true,
+            referenceFromParent: false,
+            nestPathUnderParent: true,
+          },
+        },
+        ErrorPage: {
+          standalone: {
+            typeName: 'ErrorPage',
             addParentAnnotation: true,
             referenceFromParent: false,
             nestPathUnderParent: true,
@@ -800,6 +826,34 @@ const createCustomizations = ({
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },
+      },
+    },
+  },
+  [SIGN_IN_PAGE_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: { path: '/api/v1/brands/{brandId}/pages/sign-in/customized' },
+      },
+    ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true },
+        serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/pages/sign-in' },
+      },
+    },
+  },
+  [ERROR_PAGE_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: { path: '/api/v1/brands/{brandId}/pages/error/customized' },
+      },
+    ],
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { extendsParent: true },
+        serviceUrl: { path: '/admin/customizations/brands/{_parent.0.brandId}/pages/error' },
       },
     },
   },
@@ -1133,6 +1187,7 @@ const createCustomizations = ({
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },
+        priority: { hide: true },
         policyRules: {
           standalone: {
             typeName: 'AuthorizationServerPolicyRule',
@@ -1385,6 +1440,16 @@ const createCustomizations = ({
     element: {
       fieldCustomizations: {
         name: { fieldType: 'UserSchemaAttribute' },
+      },
+    },
+  },
+  AuthenticatorSettings: {
+    element: {
+      fieldCustomizations: {
+        userVerificationMethods: {
+          fieldType: 'list<string>',
+          sort: { properties: [] },
+        },
       },
     },
   },

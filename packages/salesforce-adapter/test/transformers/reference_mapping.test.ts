@@ -12,6 +12,7 @@ import { resolveValues } from '@salto-io/adapter-components'
 import { mockTypes } from '../mock_elements'
 import { getLookUpName, getLookupNameForDataInstances } from '../../src/transformers/reference_mapping'
 import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { defaultFilterContext } from '../utils'
 
 describe('referenceMapping tests', () => {
   const FIRST_PRODUCT_ID = '1t0d00000000001AAA'
@@ -35,7 +36,7 @@ describe('referenceMapping tests', () => {
 
   describe('getLookupNameWithFallbackToElement', () => {
     beforeEach(() => {
-      getLookupNameFunc = getLookupNameForDataInstances
+      getLookupNameFunc = getLookupNameForDataInstances(defaultFilterContext.fetchProfile)
     })
     describe('when the default strategy resolves to undefined', () => {
       it('should resolve to the referenced instance', async () => {
@@ -75,7 +76,7 @@ describe('referenceMapping tests', () => {
   })
   describe('getLookupName', () => {
     beforeEach(() => {
-      getLookupNameFunc = getLookUpName
+      getLookupNameFunc = getLookUpName(defaultFilterContext.fetchProfile)
     })
     describe('when the default strategy resolves to undefined', () => {
       it('should resolve to undefined', async () => {

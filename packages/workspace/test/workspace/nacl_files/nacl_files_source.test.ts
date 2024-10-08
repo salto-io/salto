@@ -126,7 +126,6 @@ describe('Nacl Files Source', () => {
         keys: mockFunction<RemoteMap<Value>['keys']>().mockImplementation(realMap.keys.bind(realMap)),
         values: mockFunction<RemoteMap<Value>['values']>().mockImplementation(realMap.values.bind(realMap)),
         flush: mockFunction<RemoteMap<Value>['flush']>().mockImplementation(realMap.flush.bind(realMap)),
-        revert: mockFunction<RemoteMap<Value>['revert']>().mockImplementation(realMap.revert.bind(realMap)),
         clear: mockFunction<RemoteMap<Value>['clear']>().mockImplementation(realMap.clear.bind(realMap)),
         close: mockFunction<RemoteMap<Value>['close']>().mockImplementation(realMap.close.bind(realMap)),
         isEmpty: mockFunction<RemoteMap<Value>['isEmpty']>().mockImplementation(realMap.isEmpty.bind(realMap)),

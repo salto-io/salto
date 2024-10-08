@@ -21,8 +21,12 @@ import {
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
-import { POLICY_PRIORITY_TYPE_NAMES, POLICY_RULE_PRIORITY_TYPE_NAMES } from '../constants'
-import { ALL_SUPPORTED_POLICY_NAMES, POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE } from '../filters/policy_priority'
+import {
+  ALL_SUPPORTED_POLICY_NAMES,
+  POLICY_RULE_WITH_PRIORITY,
+  POLICY_PRIORITY_TYPE_NAMES,
+  POLICY_RULE_PRIORITY_TYPE_NAMES,
+} from '../filters/policy_priority'
 
 const { isDefined } = values
 
@@ -47,13 +51,13 @@ export const changeDependenciesFromPoliciesAndRulesToPriority: DependencyChanger
     modificationInstanceChanges.filter(change =>
       [
         ...ALL_SUPPORTED_POLICY_NAMES,
-        ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
+        ...POLICY_RULE_WITH_PRIORITY,
         ...POLICY_PRIORITY_TYPE_NAMES,
         ...POLICY_RULE_PRIORITY_TYPE_NAMES,
       ].includes(getChangeData(change.change).elemID.typeName),
     ),
     change =>
-      [...ALL_SUPPORTED_POLICY_NAMES, ...POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE].includes(
+      [...ALL_SUPPORTED_POLICY_NAMES, ...POLICY_RULE_WITH_PRIORITY].includes(
         getChangeData(change.change).elemID.typeName,
       ),
   )

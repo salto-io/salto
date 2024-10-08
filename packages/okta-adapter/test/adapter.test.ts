@@ -69,6 +69,8 @@ import {
   EMAIL_DOMAIN_TYPE_NAME,
   EMAIL_TEMPLATE_TYPE_NAME,
   EMAIL_CUSTOMIZATION_TYPE_NAME,
+  SIGN_IN_PAGE_TYPE_NAME,
+  ERROR_PAGE_TYPE_NAME,
 } from '../src/constants'
 
 const nullProgressReporter: ProgressReporter = {
@@ -2515,6 +2517,109 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
+    describe('deploy custom pages', () => {
+      let signInPageType: ObjectType
+      let errorPageType: ObjectType
+      let signInPage: InstanceElement
+      let errorPage: InstanceElement
+
+      beforeEach(() => {
+        signInPageType = new ObjectType({
+          elemID: new ElemID(OKTA, SIGN_IN_PAGE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        errorPageType = new ObjectType({
+          elemID: new ElemID(OKTA, ERROR_PAGE_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        signInPage = new InstanceElement(
+          'signInPage',
+          signInPageType,
+          {
+            pageContent: '<h1>sign-in</h1>',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+        errorPage = new InstanceElement(
+          'errorPage',
+          errorPageType,
+          {
+            pageContent: '<h1>error</h1>',
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brand1.elemID, brand1)],
+          },
+        )
+      })
+
+      it('should successfully add a custom page', async () => {
+        loadMockReplies('custom_pages_add.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'customPages',
+            changes: [toChange({ after: signInPage }), toChange({ after: errorPage })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully modify a custom page', async () => {
+        loadMockReplies('custom_pages_modify.json')
+        const updatedSignInPage = signInPage.clone()
+        updatedSignInPage.value.pageContent = '<h1>new sign-in</h1>'
+        const updatedErrorPage = errorPage.clone()
+        updatedErrorPage.value.pageContent = '<h1>new error</h1>'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [
+              toChange({ before: signInPage, after: updatedSignInPage }),
+              toChange({ before: errorPage, after: updatedErrorPage }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.pageContent).toEqual(
+          '<h1>new sign-in</h1>',
+        )
+        expect(getChangeData(result.appliedChanges[1] as Change<InstanceElement>).value.pageContent).toEqual(
+          '<h1>new error</h1>',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+
+      it('should successfully remove a custom page', async () => {
+        loadMockReplies('custom_pages_remove.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'brandTheme',
+            changes: [toChange({ before: signInPage }), toChange({ before: errorPage })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+
     describe('deploy brand theme files (logo and favicon)', () => {
       let brandThemeType: ObjectType
       let brandLogoType: ObjectType

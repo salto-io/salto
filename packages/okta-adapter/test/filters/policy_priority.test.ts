@@ -25,15 +25,35 @@ import {
 import { MockInterface } from '@salto-io/test-utils'
 import policyPrioritiesFilter, {
   ALL_SUPPORTED_POLICY_NAMES,
-  POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE,
+  POLICY_RULE_WITH_PRIORITY,
 } from '../../src/filters/policy_priority'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, OKTA } from '../../src/constants'
+import {
+  ACCESS_POLICY_RULE_TYPE_NAME,
+  ACCESS_POLICY_TYPE_NAME,
+  AUTHORIZATION_POLICY,
+  AUTHORIZATION_POLICY_RULE,
+  AUTHORIZATION_SERVER,
+  OKTA,
+} from '../../src/constants'
 import { createDefinitions, getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
 import { OktaOptions } from '../../src/definitions/types'
 
+export const policyRuleTypeNameToPolicyName = (policyRuleName: string): string => {
+  if (policyRuleName === AUTHORIZATION_POLICY) {
+    return AUTHORIZATION_SERVER
+  }
+  const ruleIndex = policyRuleName.indexOf('Rule')
+  return policyRuleName.slice(0, ruleIndex)
+}
+
 describe('policyPrioritiesFilter', () => {
-  const createInstance = (id: number, isSystem: boolean, type: ObjectType, parent?: InstanceElement): InstanceElement =>
+  const createInstance = (
+    id: number,
+    isSystem: boolean,
+    type: ObjectType,
+    parents?: InstanceElement[],
+  ): InstanceElement =>
     new InstanceElement(
       `accessPolicyRule${id.toString()}`,
       type,
@@ -46,13 +66,21 @@ describe('policyPrioritiesFilter', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: parent ? [new ReferenceExpression(parent.elemID, parent)] : [],
+        [CORE_ANNOTATIONS.PARENT]: parents ? parents.map(parent => new ReferenceExpression(parent.elemID, parent)) : [],
       },
     )
-  const policyRuleTypeNameToPolicyName = (policyRuleName: string): string => {
-    const ruleIndex = policyRuleName.indexOf('Rule')
-    return policyRuleName.slice(0, ruleIndex)
-  }
+
+  const authServerType = new ObjectType({ elemID: new ElemID(OKTA, AUTHORIZATION_SERVER) })
+  const authServerInstance = new InstanceElement(
+    'default',
+    authServerType,
+    {
+      name: 'authServerInstance',
+      id: 10,
+      status: 'ACTIVE',
+    },
+    [OKTA, elementUtils.RECORDS_PATH, AUTHORIZATION_SERVER, 'authServerInstance', 'authServerInstance'],
+  )
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
   let client: OktaClient
@@ -61,7 +89,7 @@ describe('policyPrioritiesFilter', () => {
     beforeEach(() => {
       jest.clearAllMocks()
     })
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should add rule%sPriority instance and type to the elements',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -82,10 +110,10 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, [policyInstance])
         elements = [
           policyRuleInstanceOne,
           policyRuleInstanceTwo,
@@ -134,7 +162,7 @@ describe('policyPrioritiesFilter', () => {
         )
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should add rule%sPriority instance and type to the elements when it does not have default rule',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -155,9 +183,9 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, [policyInstance])
         elements = [policyRuleInstanceOne, policyRuleInstanceTwo, policyRuleInstanceThree]
         await filter.onFetch(elements)
         const priorityInstances = elements
@@ -173,7 +201,7 @@ describe('policyPrioritiesFilter', () => {
         expect(priorityInstances[0].value.defaultRule).toBeUndefined()
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should add rule%sPriority instance and type to the elements when policy has no path',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -183,9 +211,9 @@ describe('policyPrioritiesFilter', () => {
           name: `${policyRuleName}Instance`,
           id: 4,
         })
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, [policyInstance])
         elements = [policyRuleInstanceOne, policyRuleInstanceTwo, policyRuleInstanceThree]
         await filter.onFetch(elements)
         const priorityInstances = elements
@@ -201,7 +229,7 @@ describe('policyPrioritiesFilter', () => {
         expect(priorityInstances[0].value.defaultRule).toBeUndefined()
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should not add rule%sPriority instance if there is no parent policy',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -217,7 +245,7 @@ describe('policyPrioritiesFilter', () => {
         expect(priorityInstances).toHaveLength(0)
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should log an error when there are duplicate priorities in %sPriority instance',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -238,11 +266,11 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, [policyInstance])
         policyRuleInstanceThree.value.priority = 2
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, [policyInstance])
         elements = [
           policyRuleInstanceOne,
           policyRuleInstanceTwo,
@@ -278,7 +306,7 @@ describe('policyPrioritiesFilter', () => {
         )
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should not log an error when there are no duplicate priorities in %sPriority instance',
       async (policyRuleName: string) => {
         filter = policyPrioritiesFilter(getFilterParams()) as typeof filter
@@ -299,10 +327,10 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, [policyInstance])
         elements = [
           policyRuleInstanceOne,
           policyRuleInstanceTwo,
@@ -352,7 +380,7 @@ describe('policyPrioritiesFilter', () => {
         }
       })
     })
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should apply order when adding %sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
@@ -361,10 +389,12 @@ describe('policyPrioritiesFilter', () => {
           name: `${policyRuleName}Instance`,
           id: 4,
         })
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const parents =
+          policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, parents)
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, parents)
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, parents)
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, parents)
         const policyRulePriorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyRuleName}Priority`) })
         const policyRulePriorityInstance = new InstanceElement(
           `${policyRuleName}PriorityInstance`,
@@ -392,12 +422,19 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(3)
         const priorities = policyRulePriorityInstance.value.priorities as ReferenceExpression[]
         priorities.forEach((ref, index) => {
+          const path =
+            // eslint-disable-next-line no-nested-ternary
+            policyRuleName === AUTHORIZATION_POLICY
+              ? `/api/v1/authorizationServers/4/policies/${index + 1}`
+              : policyRuleName === AUTHORIZATION_POLICY_RULE
+                ? `/api/v1/authorizationServers/10/policies/4/rules/${index + 1}`
+                : `/api/v1/policies/4/rules/${index + 1}`
           expect(connection.put).toHaveBeenCalledWith(
-            `/api/v1/policies/4/rules/${index + 1}`,
+            path,
             {
               // access policy rule priority starts from 0
               priority: ref.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME ? index : index + 1,
-              settings: { a: 'a' },
+              ...(ref.elemID.typeName === AUTHORIZATION_POLICY ? { conditions: { a: 'a' } } : { settings: { a: 'a' } }),
               type: 'someType',
             },
             undefined,
@@ -452,8 +489,8 @@ describe('policyPrioritiesFilter', () => {
         })
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
-      'should call API only for changed positions when modifing rule%sPriority instance',
+    it.each(POLICY_RULE_WITH_PRIORITY)(
+      'should call API only for changed positions when modifying rule%sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
         const policyType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleTypeNameToPolicyName(policyRuleName)) })
@@ -472,10 +509,12 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const parents =
+          policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, parents)
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, parents)
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, parents)
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, parents)
         const policyRulePriorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyRuleName}Priority`) })
         const policyRulePriorityInstance = new InstanceElement(
           `${policyRuleName}PriorityInstance`,
@@ -507,7 +546,7 @@ describe('policyPrioritiesFilter', () => {
         expect(connection.put).toHaveBeenCalledTimes(2)
       },
     )
-    it.each(POLICY_RULE_TYPES_WITH_PRIORITY_INSTANCE)(
+    it.each(POLICY_RULE_WITH_PRIORITY)(
       'should change order when adding another rule and change order for rule%sPriority instance',
       async (policyRuleName: string) => {
         const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, policyRuleName) })
@@ -527,10 +566,12 @@ describe('policyPrioritiesFilter', () => {
             `${policyRuleName}_instance`,
           ],
         )
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, policyInstance)
-        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, policyInstance)
-        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const parents =
+          policyRuleName === AUTHORIZATION_POLICY_RULE ? [policyInstance, authServerInstance] : [policyInstance]
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, parents)
+        const policyRuleInstanceTwo = createInstance(2, false, policyRuleType, parents)
+        const policyRuleInstanceThree = createInstance(3, false, policyRuleType, parents)
+        const policyRuleInstanceFourDefault = createInstance(4, true, policyRuleType, parents)
         const policyRulePriorityType = new ObjectType({ elemID: new ElemID(OKTA, `${policyRuleName}Priority`) })
         const policyRulePriorityInstance = new InstanceElement(
           `${policyRuleName}PriorityInstance`,
@@ -548,7 +589,7 @@ describe('policyPrioritiesFilter', () => {
             [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(policyInstance.elemID, policyInstance)],
           },
         )
-        const policyRuleInstanceFive = createInstance(5, false, policyRuleType, policyInstance)
+        const policyRuleInstanceFive = createInstance(5, false, policyRuleType, parents)
         const policyRulePriorityInstanceAfter = policyRulePriorityInstance.clone()
         policyRulePriorityInstanceAfter.value.priorities = [
           new ReferenceExpression(policyRuleInstanceTwo.elemID, policyRuleInstanceTwo),
@@ -588,8 +629,8 @@ describe('policyPrioritiesFilter', () => {
           name: `${ACCESS_POLICY_RULE_TYPE_NAME}Instance`,
           id: 4,
         })
-        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, policyInstance)
-        const policyRuleInstanceDefault = createInstance(4, true, policyRuleType, policyInstance)
+        const policyRuleInstanceOne = createInstance(1, false, policyRuleType, [policyInstance])
+        const policyRuleInstanceDefault = createInstance(4, true, policyRuleType, [policyInstance])
         const policyRulePriorityType = new ObjectType({
           elemID: new ElemID(OKTA, `${ACCESS_POLICY_RULE_TYPE_NAME}Priority`),
         })

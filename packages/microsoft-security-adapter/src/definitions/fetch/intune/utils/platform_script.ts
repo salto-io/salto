@@ -16,6 +16,7 @@ import { AdjustFunctionMergeAndTransform, FetchCustomizations } from '../../shar
 import { ADAPTER_NAME, intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { SERVICE_BASE_URL } from '../../../../constants/intune'
+import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './group_assignments'
 
 const log = logger(module)
 const { recursiveNestedTypeName } = fetchUtils.element
@@ -31,6 +32,7 @@ const {
   SETTINGS_FIELD_NAME,
   SIMPLE_SETTING_VALUE_FIELD_NAME,
   ASSIGNMENTS_ODATA_CONTEXT,
+  ASSIGNMENTS_FIELD_NAME,
 } = intuneConstants
 
 const createStaticFileFromScript = ({
@@ -180,7 +182,10 @@ export const createPlatformScriptFetchDefinition = ({
         },
         allowEmptyArrays: true,
       },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
+      fieldCustomizations: {
+        ...ID_FIELD_TO_HIDE,
+        [ASSIGNMENTS_FIELD_NAME]: ASSIGNMENT_FIELD_CUSTOMIZATION,
+      },
     },
   },
   [recursiveNestedTypeName(typeName, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)]: {

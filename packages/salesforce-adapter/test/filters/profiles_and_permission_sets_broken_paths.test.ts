@@ -6,12 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import { ElemID, InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/profiles_and_permission_sets_broken_paths'
 import { FilterWith } from './mocks'
-import { InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { ProfileSection } from '../../src/types'
@@ -53,32 +53,68 @@ describe('Profiles and PermissionSets broken paths filter', () => {
       describe('when ProfilesAndPermissionSetsBrokenPaths instance is in the ElementsSource', () => {
         beforeEach(() => {
           const brokenPathsInstance = new InstanceElement(
-            'ProfilesAndPermissionSetsBrokenPaths',
+            ElemID.CONFIG_NAME,
             ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths,
             {
               paths: ['classAccesses.SomeApexClass'],
             },
           )
           elementsSource = buildElementsSourceFromElements([existingApexClass, brokenPathsInstance])
-          filter = filterCreator({
-            config: {
-              ...defaultFilterContext,
-              elementsSource,
-              fetchProfile: buildFetchProfile({
-                fetchParams: {
-                  optionalFeatures: {
-                    storeProfilesAndPermissionSetsBrokenPaths: true,
-                  },
-                },
-              }),
-            },
-          }) as typeof filter
         })
-        it('should merge existing broken paths with the new ones', async () => {
-          const fetchElements = [instance, fetchedApexClass]
-          await filter.onFetch(fetchElements)
-          expect(fetchElements).toHaveLength(3)
-          expect(fetchElements[2].value).toEqual({})
+        describe('when fetch is full', () => {
+          beforeEach(() => {
+            filter = filterCreator({
+              config: {
+                ...defaultFilterContext,
+                elementsSource,
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    optionalFeatures: {
+                      storeProfilesAndPermissionSetsBrokenPaths: true,
+                    },
+                  },
+                }),
+              },
+            }) as typeof filter
+          })
+          it('should override broken paths with the new ones', async () => {
+            const fetchElements = [instance, fetchedApexClass, existingApexClass]
+            await filter.onFetch(fetchElements)
+            const brokenPathsInstance = fetchElements
+              .filter(isInstanceElement)
+              .find(e => e.getTypeSync() === ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths) as InstanceElement
+            expect(brokenPathsInstance).toBeDefined()
+            expect(brokenPathsInstance.value).toEqual({ paths: ['classAccesses.BrokenApexClass'] })
+          })
+        })
+        describe('when fetch is partial', () => {
+          beforeEach(() => {
+            filter = filterCreator({
+              config: {
+                ...defaultFilterContext,
+                elementsSource,
+                fetchProfile: buildFetchProfile({
+                  fetchParams: {
+                    target: ['ApexClass'],
+                    optionalFeatures: {
+                      storeProfilesAndPermissionSetsBrokenPaths: true,
+                    },
+                  },
+                }),
+              },
+            }) as typeof filter
+          })
+          it('should merge existing broken paths with the new ones', async () => {
+            const fetchElements = [instance, fetchedApexClass]
+            await filter.onFetch(fetchElements)
+            const brokenPathsInstance = fetchElements
+              .filter(isInstanceElement)
+              .find(e => e.getTypeSync() === ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths) as InstanceElement
+            expect(brokenPathsInstance).toBeDefined()
+            expect(brokenPathsInstance.value).toEqual({
+              paths: ['classAccesses.BrokenApexClass', 'classAccesses.SomeApexClass'],
+            })
+          })
         })
       })
     })

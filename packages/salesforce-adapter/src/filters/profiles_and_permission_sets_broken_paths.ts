@@ -38,7 +38,14 @@ const filter: LocalFilterCreator = ({ config }) => ({
       if (paths.length === 0) {
         return
       }
-      const uniquePaths = _.uniq(paths.concat(await getProfilesAndPermissionSetsBrokenPaths(elementsSource)))
+      const uniquePaths = _.uniq(
+        paths.concat(
+          // We should concat the existing broken paths in case of partial fetch, and override them in full fetch
+          config.fetchProfile.metadataQuery.isPartialFetch()
+            ? await getProfilesAndPermissionSetsBrokenPaths(elementsSource)
+            : [],
+        ),
+      )
       log.debug('Profiles and PermissionSets broken paths: %s', inspectValue(uniquePaths, { maxArrayLength: 100 }))
       elements.push(
         new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths, {

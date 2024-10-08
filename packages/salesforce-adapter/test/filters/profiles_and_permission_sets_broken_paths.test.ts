@@ -10,11 +10,11 @@ import filterCreator from '../../src/filters/profiles_and_permission_sets_broken
 import { FilterWith } from './mocks'
 import { InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
-import {ArtificialTypes, INSTANCE_FULL_NAME_FIELD} from '../../src/constants'
+import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import {ProfileSection} from "../../src/types";
+import { ProfileSection } from '../../src/types'
 
 describe('Profiles and PermissionSets broken paths filter', () => {
   let filter: FilterWith<'onFetch'>
@@ -52,9 +52,13 @@ describe('Profiles and PermissionSets broken paths filter', () => {
     describe('when feature is enabled', () => {
       describe('when ProfilesAndPermissionSetsBrokenPaths instance is in the ElementsSource', () => {
         beforeEach(() => {
-          const brokenPathsInstance = new InstanceElement('ProfilesAndPermissionSetsBrokenPaths', ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths, {
-            paths: ['classAccesses.SomeApexClass'],
-          })
+          const brokenPathsInstance = new InstanceElement(
+            'ProfilesAndPermissionSetsBrokenPaths',
+            ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths,
+            {
+              paths: ['classAccesses.SomeApexClass'],
+            },
+          )
           elementsSource = buildElementsSourceFromElements([existingApexClass, brokenPathsInstance])
           filter = filterCreator({
             config: {

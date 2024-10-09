@@ -9,7 +9,7 @@ import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-a
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 
-import { RemoteFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { getInternalId, isInstanceOfType, ensureSafeFilterFetch } from './utils'
@@ -44,7 +44,7 @@ export const WARNING_MESSAGE =
 /**
  * replace paths for profile instances upon fetch
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'profilePathsFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -52,6 +52,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'profilePaths',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
+
       const profiles = await awu(elements)
         .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e))
         .toArray()

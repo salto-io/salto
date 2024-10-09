@@ -82,7 +82,7 @@ import {
   CUSTOM_SETTINGS_META_TYPE,
   CUSTOM_FIELD_DEPLOYABLE_TYPES,
 } from '../constants'
-import { FilterContext, LocalFilterCreator } from '../filter'
+import { FilterContext, FilterCreator } from '../filter'
 import {
   Types,
   isCustomObject,
@@ -912,7 +912,7 @@ const removeDuplicateElements = <T extends Element>(elements: T[]): T[] => {
 /**
  * Convert custom object instance elements into object types
  */
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
     name: 'customObjectsToObjectTypeFilter',

@@ -24,7 +24,7 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections, types } from '@salto-io/lowerdash'
 
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import { metadataType, isCustomObject, Types, isCustom } from '../transformers/transformer'
 import { apiNameSync, extractFullNamesFromValueList, isInstanceOfTypeSync } from './utils'
@@ -194,7 +194,7 @@ const getAllStandardPicklistFields = (changes: Change[]): Field[] =>
  * and modify reference in fetched elements that uses them.
  */
 export const makeFilter =
-  (standardValueSetNames: StandardValuesSets): RemoteFilterCreator =>
+  (standardValueSetNames: StandardValuesSets): FilterCreator =>
   ({ client, config }) => {
     const fieldToRemovedValueSetName = new Map<string, string>()
     return {
@@ -207,6 +207,10 @@ export const makeFilter =
        * @param elements the already fetched elements
        */
       onFetch: async (elements: Element[]): Promise<FilterResult> => {
+        if (client === undefined) {
+          return {}
+        }
+
         const svsMetadataType: ObjectType | undefined = await findStandardValueSetType(elements)
         let configChanges: ConfigChangeSuggestion[] = []
         let fetchedSVSInstances: InstanceElement[] = []

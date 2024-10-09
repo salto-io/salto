@@ -7,7 +7,7 @@
  */
 import { isObjectType, Element, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -30,7 +30,7 @@ const FIELDS_TO_REMOVE_RESTRICTION_FROM_BY_TYPE: Record<string, string[]> = {
  * and hide all the values on upgrade.
  */
 export const makeFilter =
-  (typeNameToFieldMapping: Record<string, string[]>): LocalFilterCreator =>
+  (typeNameToFieldMapping: Record<string, string[]>): FilterCreator =>
   () => ({
     name: 'removeRestrictionAnnotationsFilter',
     onFetch: async (elements: Element[]) => {

@@ -10,7 +10,7 @@ import { collections, multiIndex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { extendGeneratedDependencies, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { INSTALLED_PACKAGE_METADATA, INSTALLED_PACKAGES_PATH } from '../constants'
 import {
   buildElementsSourceForFetch,
@@ -40,7 +40,7 @@ const installedPackageReference = (
   return new ReferenceExpression(installedPackageElemID)
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'installedPackageGeneratedDependencies',
   onFetch: async (elements: Element[]) => {
     const knownInstancesNamespaces = _.uniq(elements.map(getNamespaceSync).filter(isDefined))

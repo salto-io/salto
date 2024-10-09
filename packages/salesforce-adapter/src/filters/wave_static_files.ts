@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { InstanceElement, StaticFile } from '@salto-io/adapter-api'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiNameSync, ensureSafeFilterFetch, isInstanceOfTypeSync, metadataTypeSync } from './utils'
 import {
   RECORDS_PATH,
@@ -42,7 +42,7 @@ const convertContentToStaticFile = (instance: InstanceElement): void => {
 // Oddly enough, the API expects the decoded Base64 content as input for deploy, so no transformation
 // is need before deploying back to the service. The transformation in fetch
 // should allow deploying these instances successfully.
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'waveStaticFiles',
   onFetch: ensureSafeFilterFetch({
     warningMessage: 'Error occurred while attempting to convert Wave Metadata content to static files',

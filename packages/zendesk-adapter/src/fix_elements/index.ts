@@ -13,6 +13,7 @@ import { fallbackUsersHandler } from './fallback_user'
 import { FixElementsArgs } from './types'
 import { removeDupUsersHandler } from './remove_dup_users'
 import { mergeListsHandler } from './merge_lists'
+import { deployArticlesAsDraftHandler } from './deploy_articles_as_drafts'
 
 export const createFixElementFunctions = (args: FixElementsArgs): Record<string, FixElementsFunc> => ({
   ..._.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences(args)),
@@ -20,4 +21,5 @@ export const createFixElementFunctions = (args: FixElementsArgs): Record<string,
   mergeLists: mergeListsHandler(args),
   // removingDupes needs to be after fallbackUsers
   removeDupUsers: removeDupUsersHandler(args),
+  deployArticlesAsDraft: deployArticlesAsDraftHandler(args),
 })

@@ -109,7 +109,6 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       (isField(data) && isCustomObjectSync(data.parent))
     )
   })
-  // TODO:ORI exclude unsupported types and return them as unapplied changes as well
   const unappliedChanges = typeChanges.concat(customObjectInstanceChanges)
 
   const fetchProfile = buildFetchProfile({

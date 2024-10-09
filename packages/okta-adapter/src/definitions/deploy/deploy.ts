@@ -1131,6 +1131,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             // We use an empty URL here to mark this action as supported in case a user removed the mapping
             // alongside either side.
             // A separate Change Validator ensures that mappings aren't removed by themselves.
+            // A separate filter verifies that mappings are actually deleted by Okta.
             {
               request: {
                 earlySuccess: true,

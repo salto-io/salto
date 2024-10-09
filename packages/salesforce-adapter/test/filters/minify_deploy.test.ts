@@ -15,6 +15,7 @@ import filterCreator, {
 import { defaultFilterContext } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 import { FilterWith } from './mocks'
+import mockClient from '../client'
 
 describe('minifyDeployFilter', () => {
   describe('deploy flow', () => {
@@ -37,7 +38,7 @@ describe('minifyDeployFilter', () => {
     let afterPreDeployChanges: Change<InstanceElement>[]
     let afterOnDeployChanges: Change<InstanceElement>[]
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       const beforeProfileInstance = new InstanceElement('TestProfile', mockTypes.Profile, {
         [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
         [LOGIN_FLOWS_FIELD]: {
@@ -77,50 +78,83 @@ describe('minifyDeployFilter', () => {
         before: beforeProfileInstance,
         after: afterProfileInstance,
       })
-
-      filter = filterCreator({
-        config: defaultFilterContext,
-      }) as FilterWith<'preDeploy' | 'onDeploy'>
-      afterPreDeployChanges = [profileChange]
-      await filter.preDeploy(afterPreDeployChanges)
-      afterOnDeployChanges = [...afterPreDeployChanges]
-      await filter.onDeploy(afterOnDeployChanges)
     })
-    describe('on preDeploy', () => {
-      it('should have a minified Profile changes', () => {
-        expect(afterPreDeployChanges).toHaveLength(1)
-        const [, afterProfile] = getAllChangeData(afterPreDeployChanges[0])
-        expect(afterProfile.value).toEqual({
-          [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
-          [LOGIN_IP_RANGES_FIELD]: AFTER_IP_RANGES,
-          [LOGIN_FLOWS_FIELD]: {
-            flow: 'Test',
-            flowType: 'UI',
-            friendlyName: 'Test Login',
-            uiLoginFlowType: 'VisualWorkflow',
-            useLightningRuntime: 'false',
-          },
-          [LAYOUT_ASSIGNMENTS_FIELD]: {
-            newLayoutAssignment: [{ layout: 'newLayoutAssignment' }],
-          },
-          modifiedField: 'after',
-          modifiedNestedField: {
-            modifiedAttr: 'after',
-            nonModifiedAttr: '1',
-          },
-          modifiedNestedNestedField: {
-            modifiedNestedAttr: {
+
+    describe('when a client is passed', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          config: defaultFilterContext,
+          client: mockClient().client,
+        }) as FilterWith<'preDeploy' | 'onDeploy'>
+        afterPreDeployChanges = [profileChange]
+        await filter.preDeploy(afterPreDeployChanges)
+        afterOnDeployChanges = [...afterPreDeployChanges]
+        await filter.onDeploy(afterOnDeployChanges)
+      })
+
+      describe('on preDeploy', () => {
+        it('should have a minified Profile changes', () => {
+          expect(afterPreDeployChanges).toHaveLength(1)
+          const [, afterProfile] = getAllChangeData(afterPreDeployChanges[0])
+          expect(afterProfile.value).toEqual({
+            [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
+            [LOGIN_IP_RANGES_FIELD]: AFTER_IP_RANGES,
+            [LOGIN_FLOWS_FIELD]: {
+              flow: 'Test',
+              flowType: 'UI',
+              friendlyName: 'Test Login',
+              uiLoginFlowType: 'VisualWorkflow',
+              useLightningRuntime: 'false',
+            },
+            [LAYOUT_ASSIGNMENTS_FIELD]: {
+              newLayoutAssignment: [{ layout: 'newLayoutAssignment' }],
+            },
+            modifiedField: 'after',
+            modifiedNestedField: {
               modifiedAttr: 'after',
               nonModifiedAttr: '1',
             },
-          },
+            modifiedNestedNestedField: {
+              modifiedNestedAttr: {
+                modifiedAttr: 'after',
+                nonModifiedAttr: '1',
+              },
+            },
+          })
+        })
+      })
+
+      describe('on onDeploy', () => {
+        it('should have the original change', () => {
+          expect(afterOnDeployChanges).toHaveLength(1)
+          expect(afterOnDeployChanges[0]).toEqual(profileChange)
         })
       })
     })
-    describe('on onDeploy', () => {
-      it('should have the original change', () => {
-        expect(afterOnDeployChanges).toHaveLength(1)
-        expect(afterOnDeployChanges[0]).toEqual(profileChange)
+
+    describe('when no client is passed', () => {
+      beforeEach(async () => {
+        filter = filterCreator({
+          config: defaultFilterContext,
+        }) as FilterWith<'preDeploy' | 'onDeploy'>
+        afterPreDeployChanges = [profileChange]
+        await filter.preDeploy(afterPreDeployChanges)
+        afterOnDeployChanges = [...afterPreDeployChanges]
+        await filter.onDeploy(afterOnDeployChanges)
+      })
+
+      describe('on preDeploy', () => {
+        it('should have the original change', () => {
+          expect(afterPreDeployChanges).toHaveLength(1)
+          expect(afterPreDeployChanges[0]).toEqual(profileChange)
+        })
+      })
+
+      describe('on onDeploy', () => {
+        it('should have the original change', () => {
+          expect(afterOnDeployChanges).toHaveLength(1)
+          expect(afterOnDeployChanges[0]).toEqual(profileChange)
+        })
       })
     })
   })

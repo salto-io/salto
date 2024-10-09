@@ -263,9 +263,6 @@ export const allFilters: Array<FilterCreator> = [
   changedAtSingletonFilter,
 ]
 
-// By default we run all filters and provide a client
-const defaultFilters = allFilters
-
 export interface SalesforceAdapterParams {
   // Max items to fetch in one retrieve request
   maxItemsInRetrieveRequest?: number
@@ -450,7 +447,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = NESTED_METADATA_TYPES,
-    filterCreators = defaultFilters,
+    filterCreators = allFilters,
     client,
     getElemIdFunc,
     elementsSource,

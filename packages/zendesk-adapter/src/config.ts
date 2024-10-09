@@ -1909,7 +1909,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'edited_at' },
         { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
-        { fieldName: 'locale', fieldType: 'string' },
         { fieldName: 'draft', fieldType: 'boolean' },
       ),
       // serviceUrl is created in help_center_service_url filter
@@ -2803,13 +2802,13 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
-    deployArticlesAsDraft: false,
   },
   [FIX_ELEMENTS_CONFIG]: {
     mergeLists: false,
     fallbackUsers: true,
     removeDupUsers: true,
     orderElements: true,
+    deployArticlesAsDraft: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {

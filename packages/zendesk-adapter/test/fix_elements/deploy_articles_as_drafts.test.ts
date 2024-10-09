@@ -14,9 +14,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG, DEPLOY_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, FIX_ELEMENTS_CONFIG } from '../../src/config'
 import { ARTICLE_TRANSLATION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { deployArticlesAsDraftHandler } from '../../src/fix_elements/deploy_articles_as_drafts'
+import { ZendeskFixElementsConfig } from '../../src/user_config'
 import { createFilterCreatorParams } from '../utils'
 
 const articleTranslationType = new ObjectType({
@@ -39,9 +40,9 @@ describe('deployArticlesAsDraftHandler', () => {
       createFilterCreatorParams({
         config: {
           ...DEFAULT_CONFIG,
-          [DEPLOY_CONFIG]: {
+          [FIX_ELEMENTS_CONFIG]: {
             deployArticlesAsDraft: true,
-          },
+          } as ZendeskFixElementsConfig,
         },
       }),
     )
@@ -66,9 +67,9 @@ describe('deployArticlesAsDraftHandler', () => {
       createFilterCreatorParams({
         config: {
           ...DEFAULT_CONFIG,
-          [DEPLOY_CONFIG]: {
+          [FIX_ELEMENTS_CONFIG]: {
             deployArticlesAsDraft: false,
-          },
+          } as ZendeskFixElementsConfig,
         },
       }),
     )

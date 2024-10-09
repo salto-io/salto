@@ -7,7 +7,7 @@
  */
 import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { DEPLOY_CONFIG } from '../config'
+import { FIX_ELEMENTS_CONFIG } from '../config'
 import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 import { FixElementsHandler } from './types'
 
@@ -36,7 +36,7 @@ const toError = (element: InstanceElement): ChangeError => ({
 export const deployArticlesAsDraftHandler: FixElementsHandler =
   ({ config }) =>
   async elements => {
-    if (config[DEPLOY_CONFIG]?.deployArticlesAsDraft !== true) {
+    if (config[FIX_ELEMENTS_CONFIG]?.deployArticlesAsDraft !== true) {
       return {
         fixedElements: [],
         errors: [],

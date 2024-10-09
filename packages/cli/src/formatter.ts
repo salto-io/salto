@@ -493,10 +493,15 @@ export const formatFetchWarnings = (warnings: string[]): string =>
   [emptyLine(), `${Prompts.FETCH_WARNINGS}\n${warnings.join('\n\n')}`].join('\n')
 
 export const formatSyncToWorkspaceErrors = (syncErrors: ReadonlyArray<SaltoError | SaltoElementError>): string =>
-  [
-    emptyLine(),
-    `${Prompts.SYNC_TO_WORKSPACE_ERRORS}\n${syncErrors.map(err => `${err.severity} ${err.detailedMessage}${isSaltoElementError(err) ? ` (${err.elemID.getFullName()})` : ''}`).join('\n')}`,
-  ].join('\n')
+  [emptyLine(), Prompts.SYNC_TO_WORKSPACE_ERRORS]
+    .concat(
+      syncErrors.flatMap(err => [
+        `${err.severity} ${err.message}${isSaltoElementError(err) ? ` (${err.elemID.getFullName()})` : ''}`,
+        err.detailedMessage,
+        emptyLine(),
+      ]),
+    )
+    .join('\n')
 
 export const formatWorkspaceLoadFailed = (numErrors: number): string =>
   formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}`)

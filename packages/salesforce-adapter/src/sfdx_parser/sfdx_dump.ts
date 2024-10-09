@@ -6,20 +6,26 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import path from 'path'
 import { isSubDirectory, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
-import { Adapter } from '@salto-io/adapter-api'
+import { Adapter, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
-import { collections, promises, values } from '@salto-io/lowerdash'
+import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import { allFilters, NESTED_METADATA_TYPES } from '../adapter'
-import { SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS } from '../constants'
+import { CUSTOM_METADATA, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS, API_NAME } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
 import SalesforceClient from '../client/client'
 import { createDeployPackage, DeployPackage, PACKAGE } from '../transformers/xml_transformer'
 import { addChangeToPackage, validateChanges } from '../metadata_deploy'
-import { isInstanceOfCustomObjectChangeSync } from '../filters/utils'
+import {
+  isCustomObjectSync,
+  isInstanceOfCustomObjectChangeSync,
+  isMetadataInstanceElementSync,
+  metadataTypeSync,
+} from '../filters/utils'
 import {
   ComponentSet,
   ZipTreeContainer,
@@ -30,6 +36,7 @@ import {
   SfProject,
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
+import { UNSUPPORTED_TYPES } from './sfdx_parser'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -51,16 +58,28 @@ const getComponentsToDelete = async (
   tree: TreeContainer,
   pkg: DeployPackage,
   currentComponents: SourceComponent[],
-): Promise<SourceComponent[]> => {
+): Promise<{ fullDelete: SourceComponent[]; partialDelete: SourceComponent[] }> => {
   const manifestDeletions = await getManifestComponentsToDelete(tree, pkg)
-  const toDelete = currentComponents
-    // source components only returns top level components, if we want to delete child components (e.g - fields)
-    // we have to explicitly iterate over those as well
-    .flatMap(comp => [comp].concat(comp.getChildren()))
-    .filter(comp => manifestDeletions.has(`${comp.type.id}.${comp.fullName}`))
-  // If a component was deleted, we should also delete all of its child components
-  const childComponentsToDelete = toDelete.flatMap(comp => comp.getChildren())
-  return toDelete.concat(childComponentsToDelete)
+  const isInDeleteManifest = (comp: SourceComponent): boolean =>
+    manifestDeletions.has(`${comp.type.id}.${comp.fullName}`)
+
+  const result = currentComponents.map(comp => {
+    if (isInDeleteManifest(comp)) {
+      // We want to delete the entire component, we also fully delete all child components
+      return { fullDelete: [comp].concat(comp.getChildren()), partialDelete: [] }
+    }
+    const childrenToDelete = comp.getChildren().filter(child => isInDeleteManifest(child))
+    // In this case we want to delete child components without deleting the parent
+    // We can delete child components that appear in a separate file, but for components that appear in the same file
+    // as their parent, we must not delete the entire file.
+    // It seems like the MetadataConverter handles such "partial" deletions, but only does so properly for some types
+    // - for sharing rules and workflows this seems to work (though it is not fully consistent as it can leave the parent empty)
+    // - for custom fields and other children of CustomObject that are in different files, it does not work at all
+    // - for custom labels (which are in the parent file), it also doesn't work
+    const [partialDelete, fullDelete] = _.partition(childrenToDelete, child => child.xml === comp.xml)
+    return { fullDelete, partialDelete }
+  })
+  return objects.concatObjects(result)
 }
 
 const compactPathList = (paths: string[]): string[] => {
@@ -80,7 +99,17 @@ const compactPathList = (paths: string[]): string[] => {
 
 type DumpElementsToFolderFunc = NonNullable<Adapter['dumpElementsToFolder']>
 export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, changes, elementsSource }) => {
-  const [customObjectInstanceChanges, metadataChanges] = _.partition(changes, isInstanceOfCustomObjectChangeSync)
+  const [customObjectInstanceChanges, metadataAndTypeChanges] = _.partition(changes, isInstanceOfCustomObjectChangeSync)
+  const [metadataChanges, typeChanges] = _.partition(metadataAndTypeChanges, change => {
+    const data = getChangeData(change)
+    return (
+      isMetadataInstanceElementSync(data) ||
+      isCustomObjectSync(data) ||
+      (isObjectType(data) && metadataTypeSync(data) === CUSTOM_METADATA && data.annotations[API_NAME] !== undefined) ||
+      (isField(data) && isCustomObjectSync(data.parent))
+    )
+  })
+  const unappliedChanges = typeChanges.concat(customObjectInstanceChanges)
 
   const fetchProfile = buildFetchProfile({
     fetchParams: {
@@ -120,7 +149,6 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       }),
     ),
   )
-
   // Load the components we wish to merge with the current project
   const zipTree = await ZipTreeContainer.create(await pkg.getZip())
   const tree = new SyncZipTreeContainer(zipTree, pkg.getZipContent())
@@ -129,36 +157,48 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     fsPaths: [PACKAGE],
     tree,
   })
-  const componentsToDump = saltoComponentSet.getSourceComponents().toArray()
+  const componentsToDump = saltoComponentSet
+    .filter(component => !UNSUPPORTED_TYPES.has(component.type.name))
+    .getSourceComponents()
+    .toArray()
 
+  // SFDX code has some issues when working with relative paths (some custom object files may get the wrong path)
+  // normalizing the base dir to be an absolute path to work around those issues
+  const absBaseDir = path.resolve(baseDir)
   // Load current SFDX project
-  const currentProject = await SfProject.resolve(baseDir)
-  const currentComponents = ComponentSet.fromSource(baseDir).getSourceComponents()
+  const currentProject = await SfProject.resolve(absBaseDir)
+  const currentComponents = ComponentSet.fromSource(absBaseDir)
 
   // Calling "convert" below will remove components from the component set, but will not actually delete the files.
   // Therefore, we need to get the paths to all the files we intend to delete before calling "convert"
-  const componentsToDelete = await getComponentsToDelete(tree, pkg, currentComponents.toArray())
-  const allPathsToDelete = componentsToDelete.flatMap(comp => [comp.xml, comp.content].filter(values.isDefined))
+  const componentsToDelete = await getComponentsToDelete(tree, pkg, currentComponents.getSourceComponents().toArray())
+  const allPathsToDelete = componentsToDelete.fullDelete.flatMap(comp =>
+    [comp.xml, comp.content].filter(values.isDefined),
+  )
+  componentsToDelete.partialDelete.forEach(comp => comp.setMarkedForDelete(true))
 
   log.debug(
     'Starting SFDX convert of components: %o',
     componentsToDump.map(comp => `${comp.type.id}:${comp.fullName}`),
   )
-  const convertResult = await converter.convert(componentsToDump, 'source', {
+  const convertResult = await converter.convert(componentsToDump.concat(componentsToDelete.partialDelete), 'source', {
     type: 'merge',
     defaultDirectory: currentProject.getDefaultPackage().fullPath,
-    mergeWith: currentComponents,
+    mergeWith: currentComponents.getSourceComponents(),
   })
 
-  log.debug('Finished merging components with result %o', convertResult)
+  log.debug(
+    'Finished merging components with result, converted: %o',
+    convertResult.converted?.map(comp => `${comp.type.id}:${comp.fullName}`),
+  )
 
   // Remove paths that are nested under other paths to delete so we don't try to double-delete
   const pathsToDelete = compactPathList(allPathsToDelete)
-  log.debug('Deleting files for %d removed components: %o', componentsToDelete.length, pathsToDelete)
+  log.debug('Deleting files for %d removed components: %o', componentsToDelete.fullDelete.length, pathsToDelete)
   await withLimitedConcurrency(
     pathsToDelete.map(pathToDelete => () => rm(pathToDelete)),
     FILE_DELETE_CONCURRENCY,
   )
 
-  return { errors, unappliedChanges: customObjectInstanceChanges }
+  return { errors, unappliedChanges }
 }

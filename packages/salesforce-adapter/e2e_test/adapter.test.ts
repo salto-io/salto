@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import JSZip from 'jszip'
 import {
   ObjectType,
   ElemID,
@@ -2644,13 +2645,13 @@ describe('Salesforce adapter E2E with real account', () => {
             ...props,
             fileName: props.fileName.slice(packageName.length + 1),
           }))
-          const instances = await fromRetrieveResult(
-            retrieveResult,
+          const instances = await fromRetrieveResult({
+            zip: await JSZip.loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
             fileProps,
-            new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
-            new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
+            typesWithMetaFile: new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
+            typesWithContent: new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
             fetchProfile,
-          )
+          })
           return awu(instances)
             .filter(async ({ file }) => file.fullName === (await apiName(instance)))
             .map(({ values }) => values)

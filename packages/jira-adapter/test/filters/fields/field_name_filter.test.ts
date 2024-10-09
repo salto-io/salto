@@ -156,4 +156,69 @@ describe('field_name_filter', () => {
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.name)).toEqual(['custom2'])
   })
+
+  describe('SALTO-5887: JSM CustomerRequestType was changed to RequestType - support same id for both', () => {
+    it.only('change field name', async () => {
+      const custom = new InstanceElement('Customer Request Type', fieldType, {
+        name: 'Customer Request Type',
+        schema: {
+          custom: 'someType',
+        },
+        isLocked: true,
+      })
+      config.fetch.enableRequestTypeFieldNameAlignment = true
+
+      const elements = [custom]
+      await filter.onFetch(elements)
+      expect(elemIdGetter).not.toHaveBeenCalled()
+      expect(elements.map(e => e.elemID.name)).toEqual(['Request_Type__c@suu'])
+    })
+
+    it.only('do nothing when FF off', async () => {
+      const custom = new InstanceElement('Customer Request Type', fieldType, {
+        name: 'Customer Request Type',
+        schema: {
+          custom: 'someType',
+        },
+        isLocked: true,
+      })
+
+      const elements = [custom]
+      await filter.onFetch(elements)
+      expect(elemIdGetter).toHaveBeenCalled()
+      expect(elements.map(e => e.elemID.name)).toEqual(['Customer_Request_Type__c@ssuu'])
+    })
+
+    it.only('do nothing for non locked fields', async () => {
+      const custom = new InstanceElement('Customer Request Type', fieldType, {
+        name: 'Customer Request Type',
+        schema: {
+          custom: 'someType',
+        },
+        isLocked: false,
+      })
+      config.fetch.enableRequestTypeFieldNameAlignment = true
+
+      const elements = [custom]
+      await filter.onFetch(elements)
+      expect(elemIdGetter).toHaveBeenCalled()
+      expect(elements.map(e => e.elemID.name)).toEqual(['Customer_Request_Type__c@ssuu'])
+    })
+
+    it.only('do nothing for irrelevant an field name', async () => {
+      const custom = new InstanceElement('Customer Request Type', fieldType, {
+        name: 'Customer Request Type la la la',
+        schema: {
+          custom: 'someType',
+        },
+        isLocked: true,
+      })
+      config.fetch.enableRequestTypeFieldNameAlignment = true
+
+      const elements = [custom]
+      await filter.onFetch(elements)
+      expect(elemIdGetter).toHaveBeenCalled()
+      expect(elements.map(e => e.elemID.name)).toEqual(['Customer_Request_Type_la_la_la__c@sssssuu'])
+    })
+  })
 })

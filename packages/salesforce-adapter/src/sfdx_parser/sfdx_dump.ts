@@ -109,7 +109,10 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       (isField(data) && isCustomObjectSync(data.parent))
     )
   })
-  const unappliedChanges = typeChanges.concat(customObjectInstanceChanges)
+  const [unsupportedMetadataChanges, supportedMetadataChanges] = _.partition(metadataChanges, change =>
+    UNSUPPORTED_TYPES.has(metadataTypeSync(getChangeData(change))),
+  )
+  const unappliedChanges = typeChanges.concat(customObjectInstanceChanges).concat(unsupportedMetadataChanges)
 
   const fetchProfile = buildFetchProfile({
     fetchParams: {
@@ -120,7 +123,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     },
   })
 
-  const resolvedChanges = await awu(metadataChanges)
+  const resolvedChanges = await awu(supportedMetadataChanges)
     .map(change => resolveChangeElement(change, getLookUpName(fetchProfile)))
     .toArray()
   const filterRunner = filter.filtersRunner(

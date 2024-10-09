@@ -202,7 +202,6 @@ export const loadElementsFromFolder = async ({
       createInstanceElement(values, typesByName[file.type]),
     )
 
-    const localFilters = allFilters.filter(filter.isLocalFilterCreator).map(({ creator }) => creator)
     const filterRunner = filter.filtersRunner(
       {
         config: {
@@ -213,7 +212,7 @@ export const loadElementsFromFolder = async ({
           flsProfiles: [],
         },
       },
-      localFilters,
+      allFilters,
       results => ({ errors: results.flatMap(res => collections.array.makeArray(res.errors)) }),
     )
     // Some filters assume the types have to come from the elements list

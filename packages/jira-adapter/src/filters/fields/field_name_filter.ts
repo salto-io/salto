@@ -49,7 +49,11 @@ const getInstanceName = (instance: InstanceElement, config: JiraConfig, getElemI
 
   // SALTO-5887: JSM CustomerRequestType was changed to RequestType - support same id for both
   // we do not support id stickiness (through get element from state) in this case
-  if (config.fetch.enableRequestTypeFieldNameAlignment && baseName === 'Customer Request Type' && instance.value.isLocked) {
+  if (
+    config.fetch.enableRequestTypeFieldNameAlignment &&
+    baseName === 'Customer Request Type' &&
+    instance.value.isLocked
+  ) {
     const newName = getFieldElementName('Request Type', instance, config)
     log.trace(`'Customer Request Type' field was found. changing id to be based on 'Request Type': ${newName}`)
     return newName

@@ -205,7 +205,7 @@ describe('field_name_filter', () => {
       expect(elements.map(e => e.elemID.name)).toEqual(['Customer_Request_Type__c@ssuu'])
     })
 
-    it('do nothing for irrelevant an field name', async () => {
+    it('do nothing for an irrelevant field name', async () => {
       const custom = new InstanceElement('Customer Request Type', fieldType, {
         name: 'Customer Request Type la la la',
         schema: {

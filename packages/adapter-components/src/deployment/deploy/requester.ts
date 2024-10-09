@@ -94,21 +94,30 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndEx
   }
 }
 
-const createValidateFunc = (
-  validatorDef?: DeployResponseValidator,
-): ((args: ChangeAndExtendedContext & { response: Response<ResponseValue | ResponseValue[]> }) => Promise<boolean>) => {
-  const { custom, allowedStatusCodes } = validatorDef ?? {}
+const createValidateFunc = ({
+  validate,
+  additionalValidStatuses,
+}: {
+  validate?: DeployResponseValidator
+  // Baseline endpoint status codes that are considered valid, to be used as a fallback when no `validate` is provided.
+  additionalValidStatuses: number[]
+}): ((
+  args: ChangeAndExtendedContext & { response: Response<ResponseValue | ResponseValue[]> },
+) => Promise<boolean>) => {
+  const { custom, allowedStatusCodes } = validate ?? {}
   if (custom !== undefined) {
     return async args => custom({ allowedStatusCodes })(args)
   }
   return async args => {
+    log.trace('validating response %o', args.response)
     const {
       response: { status },
     } = args
     if (allowedStatusCodes !== undefined) {
+      log.trace('validating response status %o against allowed status codes %o', status, allowedStatusCodes)
       return allowedStatusCodes.includes(status)
     }
-    return status >= 200 && status < 300
+    return (status >= 200 && status < 300) || additionalValidStatuses?.includes(status)
   }
 }
 
@@ -258,10 +267,12 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
 
   const singleRequest = async ({
     requestDef,
+    validate,
     change,
     ...changeContext
   }: ChangeAndExtendedContext & {
     requestDef: DeployRequestEndpointDefinition<ResolveClientOptionsType<TOptions>>
+    validate?: DeployResponseValidator
   }): Promise<Response<ResponseValue | ResponseValue[]>> => {
     const { merged: mergedRequestDef, clientName } = getMergedRequestDefinition(requestDef)
     const mergedEndpointDef = mergedRequestDef.endpoint
@@ -320,26 +331,25 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
       throwOnUnresolvedArgs: true,
     })
     const client = clientDefs[clientName].httpClient
-    const additionalValidStatuses = mergedEndpointDef.additionalValidStatuses ?? []
     const { polling } = mergedEndpointDef
 
+    const additionalValidStatuses = mergedEndpointDef.additionalValidStatuses ?? []
+    const validateFunc = createValidateFunc({ validate, additionalValidStatuses })
+
     const singleClientCall = async (args: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>> => {
+      let response: Response<ResponseValue | ResponseValue[]>
       try {
-        return await client[finalEndpointIdentifier.method ?? 'get'](args)
+        response = await client[finalEndpointIdentifier.method ?? 'get'](args)
       } catch (e) {
+        // We leave response status validation to validateFunc
         const status = e.response?.status
-        if (additionalValidStatuses.includes(status)) {
-          log.debug(
-            'Suppressing %d error %o, for path %s in method %s',
-            status,
-            e,
-            finalEndpointIdentifier.path,
-            finalEndpointIdentifier.method,
-          )
-          return { data: {}, status }
-        }
-        throw e
+        response = { data: {}, status }
       }
+
+      if (!(await validateFunc({ change, ...changeContext, response }))) {
+        throw new Error(`Failed to validate response for change ${elemID.getFullName()}`)
+      }
+      return response
     }
 
     const updatedArgs: ClientDataParams = {
@@ -397,11 +407,8 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         return true
       }
 
-      const validateFunc = createValidateFunc(validate)
-      const res = await singleRequest({ ...args, requestDef: request })
-      if (!(await validateFunc({ ...args, response: res }))) {
-        throw new Error(`Failed to validate response for change ${elemID.getFullName()} action ${action}`)
-      }
+      const res = await singleRequest({ ...args, requestDef: request, validate })
+      log.trace(`received response for change ${elemID.getFullName()} action ${action}: %o`, res)
       try {
         const dataToApply = await extractResponseDataToApply({ ...args, requestDef: def, response: res })
         if (dataToApply !== undefined) {

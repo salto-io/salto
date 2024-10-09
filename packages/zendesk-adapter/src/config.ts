@@ -1909,6 +1909,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'edited_at' },
         { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
+        { fieldName: 'locale', fieldType: 'string' },
+        { fieldName: 'draft', fieldType: 'boolean' },
       ),
       // serviceUrl is created in help_center_service_url filter
     },

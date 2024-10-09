@@ -1579,6 +1579,8 @@ const createCustomizations = (): Record<
         id: { hide: true, fieldType: 'number' },
         position: { hide: true },
         author_id: { fieldType: 'unknown' },
+        draft: { omit: true },
+        locale: { omit: true },
         vote_sum: { omit: true },
         vote_count: { omit: true },
         edited_at: { omit: true },

@@ -112,12 +112,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   const unappliedChanges = typeChanges.concat(customObjectInstanceChanges)
 
   const fetchProfile = buildFetchProfile({
-    fetchParams: {
-      optionalFeatures: {
-        // Needed to remove related instances of custom objects (e.g - layouts, sharing rules, etc...)
-        performSideEffectDeletes: true,
-      },
-    },
+    fetchParams: {},
   })
 
   const resolvedChanges = await awu(metadataChanges)
@@ -136,7 +131,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
         flsProfiles: [],
       },
     },
-    allFilters.map(({ creator }) => creator),
+    allFilters,
   )
   await filterRunner.preDeploy(resolvedChanges)
 

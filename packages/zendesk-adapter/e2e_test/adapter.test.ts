@@ -896,11 +896,9 @@ describe('Zendesk adapter E2E', () => {
       const articleInstance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
-          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -1003,11 +1001,9 @@ describe('Zendesk adapter E2E', () => {
       const article2Instance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
-          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -1041,11 +1037,9 @@ describe('Zendesk adapter E2E', () => {
       const article3Instance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
-          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),

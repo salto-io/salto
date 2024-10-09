@@ -158,7 +158,7 @@ describe('field_name_filter', () => {
   })
 
   describe('SALTO-5887: JSM CustomerRequestType was changed to RequestType - support same id for both', () => {
-    it.only('change field name', async () => {
+    it('change field name', async () => {
       const custom = new InstanceElement('Customer Request Type', fieldType, {
         name: 'Customer Request Type',
         schema: {
@@ -174,7 +174,7 @@ describe('field_name_filter', () => {
       expect(elements.map(e => e.elemID.name)).toEqual(['Request_Type__c@suu'])
     })
 
-    it.only('do nothing when FF off', async () => {
+    it('do nothing when FF off', async () => {
       const custom = new InstanceElement('Customer Request Type', fieldType, {
         name: 'Customer Request Type',
         schema: {
@@ -189,7 +189,7 @@ describe('field_name_filter', () => {
       expect(elements.map(e => e.elemID.name)).toEqual(['Customer_Request_Type__c@ssuu'])
     })
 
-    it.only('do nothing for non locked fields', async () => {
+    it('do nothing for non locked fields', async () => {
       const custom = new InstanceElement('Customer Request Type', fieldType, {
         name: 'Customer Request Type',
         schema: {
@@ -205,7 +205,7 @@ describe('field_name_filter', () => {
       expect(elements.map(e => e.elemID.name)).toEqual(['Customer_Request_Type__c@ssuu'])
     })
 
-    it.only('do nothing for irrelevant an field name', async () => {
+    it('do nothing for irrelevant an field name', async () => {
       const custom = new InstanceElement('Customer Request Type', fieldType, {
         name: 'Customer Request Type la la la',
         schema: {

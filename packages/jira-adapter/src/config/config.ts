@@ -385,6 +385,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
       'fetch.parseAdditionalAutomationExpressions',
+      'fetch.enableRequestTypeFieldNameAlignment',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       'deploy.ignoreMissingExtensions',

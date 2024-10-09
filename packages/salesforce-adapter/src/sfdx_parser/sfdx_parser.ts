@@ -32,7 +32,7 @@ import { getTypesWithContent, getTypesWithMetaFile } from '../fetch'
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 
-export const UNSUPPORTED_TYPES = [
+export const UNSUPPORTED_TYPES = new Set([
   // Salto uses non-standard type names here (SFDX names them all "Settings", we have a separate type for each one)
   // This causes us to always think the settings in the project need to be deleted
   'Settings',
@@ -49,13 +49,13 @@ export const UNSUPPORTED_TYPES = [
   // Unfortunately, unlike other types like this (e.g - workflow, sharing rules), the SFDX code does not handle deleting
   // instances of labels from the "merged" XML, so until we implement proper deletion support, we exclude this type
   'CustomLabels',
-]
+])
 
 const getXmlDestination = (component: SourceComponent): string | undefined => {
   const { folderContentType, suffix } = component.type
   if (!component.xml) {
     // Should never happen
-    log.warn('getXmlDestination - got component without xml: %o', component)
+    log.error('getXmlDestination - got component without xml: %o', component)
     return undefined
   }
   let xmlDestination = component.getPackageRelativePath(component.xml, 'metadata')
@@ -78,7 +78,7 @@ const getXmlDestination = (component: SourceComponent): string | undefined => {
   // Even though most of the time it is correct to have the suffix, the current code in fromRetrieveResult
   // assumes all the names we get don't have this suffix, so, in order to mimic responses from the API
   // we always remove the suffix here, and we let fromRetrieveResult add it back where needed
-  if (xmlDestination.includes(METADATA_XML_SUFFIX)) {
+  if (xmlDestination.endsWith(METADATA_XML_SUFFIX)) {
     xmlDestination = xmlDestination.slice(0, xmlDestination.lastIndexOf(METADATA_XML_SUFFIX))
   }
 
@@ -86,7 +86,7 @@ const getXmlDestination = (component: SourceComponent): string | undefined => {
     // When working with complex types, the API seems to return the folder name as the file name whereas the SFDX code
     // returns the correct file name.
     // So we remove the file name and keep only to folder name here
-    xmlDestination = xmlDestination.split('/').slice(0, -1).join('/')
+    xmlDestination = path.dirname(xmlDestination)
   }
 
   return xmlDestination
@@ -98,11 +98,13 @@ export const loadElementsFromFolder = async ({
 }: LoadElementsFromFolderArgs): Promise<FetchResult> => {
   try {
     // Load current SFDX project
+    // SFDX code has some issues when working with relative paths (some custom object files may get the wrong path)
+    // normalizing the base dir to be an absolute path to work around those issues
     const absBaseDir = path.resolve(baseDir)
     const currentComponents = ComponentSet.fromSource(absBaseDir)
     const converter = new MetadataConverter()
     const convertResult = await converter.convert(
-      currentComponents.filter(component => !UNSUPPORTED_TYPES.includes(component.type.name)),
+      currentComponents.filter(component => !UNSUPPORTED_TYPES.has(component.type.name)),
       'metadata',
       { type: 'zip' },
     )

@@ -12,7 +12,7 @@ import { logger } from '@salto-io/logging'
 import { Adapter, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
-import { collections, promises, values } from '@salto-io/lowerdash'
+import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import { allFilters, NESTED_METADATA_TYPES } from '../adapter'
 import { CUSTOM_METADATA, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS, API_NAME } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
@@ -63,7 +63,7 @@ const getComponentsToDelete = async (
   const isInDeleteManifest = (comp: SourceComponent): boolean =>
     manifestDeletions.has(`${comp.type.id}.${comp.fullName}`)
 
-  const result = currentComponents.flatMap(comp => {
+  const result = currentComponents.map(comp => {
     if (isInDeleteManifest(comp)) {
       // We want to delete the entire component, we also fully delete all child components
       return { fullDelete: [comp].concat(comp.getChildren()), partialDelete: [] }
@@ -79,9 +79,7 @@ const getComponentsToDelete = async (
     const [partialDelete, fullDelete] = _.partition(childrenToDelete, child => child.xml === comp.xml)
     return { fullDelete, partialDelete }
   })
-  const fullDelete = result.flatMap(item => item.fullDelete)
-  const partialDelete = result.flatMap(item => item.partialDelete)
-  return { fullDelete, partialDelete }
+  return objects.concatObjects(result)
 }
 
 const compactPathList = (paths: string[]): string[] => {
@@ -161,7 +159,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     tree,
   })
   const componentsToDump = saltoComponentSet
-    .filter(component => !UNSUPPORTED_TYPES.includes(component.type.name))
+    .filter(component => !UNSUPPORTED_TYPES.has(component.type.name))
     .getSourceComponents()
     .toArray()
 

@@ -20,7 +20,7 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { detailedCompare, getPath } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { isInstanceOfTypeChange } from './utils'
 import { PROFILE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { apiName, metadataType } from '../transformers/transformer'
@@ -101,11 +101,16 @@ const toMinifiedChange = async (change: Change<InstanceElement>): Promise<Change
   })
 }
 
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: FilterCreator = ({ client }) => {
   let originalChanges: Record<string, Change>
   return {
     name: 'minifyDeployFilter',
     preDeploy: async changes => {
+      if (client === undefined) {
+        // We don't want to run this filter when the results aren't being sent to the service.
+        return
+      }
+
       const relatedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
@@ -117,6 +122,11 @@ const filterCreator: LocalFilterCreator = () => {
       changes.push(...(await Promise.all(relatedChanges.map(toMinifiedChange))))
     },
     onDeploy: async changes => {
+      if (client === undefined) {
+        // We don't want to run this filter when the results aren't being sent to the service.
+        return
+      }
+
       const appliedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
@@ -129,7 +139,7 @@ const filterCreator: LocalFilterCreator = () => {
       const appliedOriginalChanges = appliedChangesApiNames.map(name => originalChanges[name]).filter(isDefined)
 
       _.pullAll(changes, appliedChanges)
-      appliedOriginalChanges.forEach(change => changes.push(change))
+      changes.push(...appliedOriginalChanges)
     },
   }
 }

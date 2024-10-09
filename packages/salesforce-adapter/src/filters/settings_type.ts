@@ -8,7 +8,7 @@
 import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import {
   createMetadataTypeElements,
   apiName,
@@ -59,7 +59,7 @@ const getSettingsTypeName = (typeName: string): string => typeName.concat(SETTIN
 /**
  * Add settings type
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'settingsFilter',
   remote: true,
   /**
@@ -68,6 +68,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
    * @param elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    if (client === undefined) {
+      return {}
+    }
+
     // Fetch list of all settings types
     const { elements: settingsList, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
       client,

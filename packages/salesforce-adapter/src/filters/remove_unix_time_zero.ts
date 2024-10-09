@@ -8,7 +8,7 @@
 import { CORE_ANNOTATIONS, Element, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { UNIX_TIME_ZERO_STRING } from '../constants'
 
@@ -34,7 +34,7 @@ const removeUnixTimeZero = async (elements: Element[]): Promise<void> => {
 /**
  * Replace specific field values that are fetched as ids, to their names.
  */
-const filter: LocalFilterCreator = () => ({
+const filter: FilterCreator = () => ({
   name: 'removeUnixTimeZero',
   onFetch: async (elements: Element[]) => {
     await removeUnixTimeZero(elements)

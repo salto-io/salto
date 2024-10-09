@@ -11,7 +11,7 @@ import { collections } from '@salto-io/lowerdash'
 import { Element, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { parseFormulaIdentifier, extractFormulaIdentifiers } from '@salto-io/salesforce-formula-parser'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { FORMULA } from '../constants'
 import { buildElementsSourceForFetch, ensureSafeFilterFetch, extractFlatCustomObjectFields } from './utils'
@@ -85,7 +85,7 @@ const FILTER_NAME = 'formulaDeps'
  * formula field.
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: FILTER_NAME,
   onFetch: ensureSafeFilterFetch({
     warningMessage: 'Error while parsing formulas',

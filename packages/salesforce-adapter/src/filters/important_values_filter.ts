@@ -7,9 +7,9 @@
  */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { isMetadataObjectType, MetadataObjectType } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'salesforceImportantValuesFilter',
   onFetch: async elements => {
     if (!config.fetchProfile.isFeatureEnabled('importantValues')) {

@@ -32,7 +32,7 @@ import {
   ObjectType,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
 import {
@@ -432,10 +432,13 @@ const buildCustomObjectPrefixKeyMap = async (elements: Element[]): Promise<Recor
   return mapValuesAsync(typeMap, async (objectType: ObjectType) => apiName(objectType))
 }
 
-const filter: RemoteFilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'customObjectInstanceReferencesFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    if (client === undefined) {
+      return {}
+    }
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {
       return {}

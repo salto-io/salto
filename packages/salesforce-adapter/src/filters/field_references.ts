@@ -17,7 +17,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import {
   generateReferenceResolverFinder,
   ReferenceContextStrategyName,
@@ -202,7 +202,7 @@ export const addReferences = async (
  * Convert field values into references, based on predefined rules.
  *
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async elements => {
     const typesToIgnore = config.fetchProfile.isCustomReferencesHandlerEnabled('profilesAndPermissionSets')

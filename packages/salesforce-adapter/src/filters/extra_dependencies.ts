@@ -16,7 +16,7 @@ import {
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { getAllReferencedIds } from '@salto-io/adapter-components'
-import { RemoteFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import {
@@ -330,7 +330,7 @@ export const WARNING_MESSAGE =
 /**
  * Add references using the tooling API.
  */
-const creator: RemoteFilterCreator = ({ client, config }) => ({
+const creator: FilterCreator = ({ client, config }) => ({
   name: 'extraDependenciesFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -338,6 +338,10 @@ const creator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
+
       const groupedDeps = config.fetchProfile.isFeatureEnabled('extraDependenciesV2')
         ? await getDependenciesV2({
             client,

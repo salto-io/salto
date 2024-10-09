@@ -9,7 +9,7 @@ import { Element, isInstanceElement, isObjectType, ObjectType } from '@salto-io/
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { FileProperties } from '@salto-io/jsforce-types'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import { isInstanceOfType, listMetadataObjects } from './utils'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { notInSkipList } from '../fetch'
@@ -25,10 +25,13 @@ const createMissingInstalledPackageInstance = (file: FileProperties, installedPa
     getAuthorAnnotations(file),
   )
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'createMissingInstalledPackagesInstancesFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult | undefined> => {
+    if (client === undefined) {
+      return
+    }
     const installedPackageType = await awu(elements)
       .filter(isObjectType)
       .find(async objectType => (await apiName(objectType)) === INSTALLED_PACKAGE_METADATA)

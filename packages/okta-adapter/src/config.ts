@@ -427,32 +427,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  ProfileMapping: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/mappings/{mappingId}',
-        method: 'post',
-        urlParamsToFields: {
-          mappingId: 'id',
-        },
-      },
-      modify: {
-        url: '/api/v1/mappings/{mappingId}',
-        method: 'post',
-        urlParamsToFields: {
-          mappingId: 'id',
-        },
-      },
-      remove: {
-        // ProfileMappings are removed automatically by Okta when either side of the mapping is removed.
-        // We use an empty URL here to mark this action as supported in case a user removed the mapping
-        // alongside either side.
-        // A separate Change Validator ensures that mappings aren't removed by themselves.
-        url: '',
-        method: 'delete', // This is just for typing, we intercept it in a filter and use `get`.
-      },
-    },
-  },
   ...getPolicyConfig(),
   ...getPolicyAndPolicyRulePriorityConfig(),
   BehaviorRule: {

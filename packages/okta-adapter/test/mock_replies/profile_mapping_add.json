@@ -1,6 +1,6 @@
 [
   {
-    "path": "/api/v1/mappings?sourceId=usertype-fakeid1&targetId=app-fakeid1",
+    "path": "/api/v1/mappings?limit=200&sourceId=usertype-fakeid1&targetId=app-fakeid1",
     "scope": "",
     "method": "GET",
     "status": 200,

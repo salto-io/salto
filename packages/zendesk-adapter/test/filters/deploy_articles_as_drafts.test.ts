@@ -8,18 +8,18 @@
 import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, DEPLOY_CONFIG } from '../../src/config'
-import { ZENDESK, ARTICLE_TYPE_NAME } from '../../src/constants'
+import { ARTICLE_TRANSLATION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/deploy_articles_as_drafts'
 import { createFilterCreatorParams } from '../utils'
 
 type FilterType = filterUtils.FilterWith<'preDeploy'>
-const articleType = new ObjectType({
-  elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
+const articleTranslationType = new ObjectType({
+  elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME),
 })
-const draftArticle = new InstanceElement('draftArticle', articleType, {
+const draftArticleTranslation = new InstanceElement('draftArticle', articleTranslationType, {
   draft: true,
 })
-const publishedArticle = new InstanceElement('publishedArticle', articleType, {
+const publishedArticleTranslation = new InstanceElement('publishedArticle', articleTranslationType, {
   draft: false,
 })
 
@@ -27,7 +27,10 @@ describe('deployBrandedGuideTypesFilter', () => {
   describe('preDeploy', () => {
     let changes: Change<InstanceElement>[]
     beforeEach(() => {
-      changes = [toChange({ after: draftArticle.clone() }), toChange({ after: publishedArticle.clone() })]
+      changes = [
+        toChange({ after: draftArticleTranslation.clone() }),
+        toChange({ after: publishedArticleTranslation.clone() }),
+      ]
     })
     it('should update articles to be deployed as drafts if the flag is true', async () => {
       const filter = filterCreator(

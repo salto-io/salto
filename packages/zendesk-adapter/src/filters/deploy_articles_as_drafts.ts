@@ -7,10 +7,12 @@
  */
 import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { DEPLOY_CONFIG } from '../config'
+import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 /**
- * Update articles to be deployed to draft if the flag deployArticlesAsDraft is true
+ * Update articles to be deployed to draft if the flag deployArticlesAsDraft is true.
+ * These updates are done through article translations.
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'deployBrandedGuideTypesFilter',
@@ -20,7 +22,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     }
     changes
       .filter(isAdditionOrModificationChange)
-      .filter(change => getChangeData(change).elemID.typeName === 'article')
+      .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
       .forEach(change => {
         change.data.after.value.draft = true
       })

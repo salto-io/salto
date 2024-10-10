@@ -367,8 +367,8 @@ export const retrieveMetadataInstances = async ({
       log.trace('Layout file properties are %s', inspectValue(res, { maxArrayLength: null }))
     }
     return _(res)
-      .uniqBy(file => file.fullName)
       .map(file => getPropsWithFullName(file, fetchProfile.addNamespacePrefixToFullName, client.orgNamespace))
+      .uniqBy(file => file.fullName)
       .value()
   }
 

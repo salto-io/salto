@@ -41,21 +41,20 @@ export type IDPartsDefinition<TCustomNameMappingOptions extends string = never> 
   parts?: FieldIDPart<TCustomNameMappingOptions>[]
   // the delimiter to use between parts - default is '_'
   delimiter?: string
+  // elem id: default - true when parent annotation exists?
+  // path: when id parts info is missing, inherited from elemID (but the values are path-nacl-cased)
+  extendsParent?: boolean
 }
 
 export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
   IDPartsDefinition<TCustomNameMappingOptions> & {
-    // default - true when parent annotation exists?
-    // TODO check if still needed when implementing SALTO-5421
-    extendsParent?: boolean
     // This is a temporary flag to support double nacl case for upgrading existing services to the new definitions
     // https://salto-io.atlassian.net/browse/SALTO-5743
     useOldFormat?: boolean
   }
 
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
-  // when id parts info is missing, inherited from elemID (but the values are path-nacl-cased)
-  pathParts?: (IDPartsDefinition<TCustomNameMappingOptions> & { extendsParent?: boolean })[]
+  pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[]
 }
 
 type StandaloneFieldDefinition = {

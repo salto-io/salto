@@ -75,8 +75,8 @@ describe('workspace', () => {
       it('returns true if there are only warnings', async () => {
         mockWsFunctions.errors.mockResolvedValueOnce(
           mockErrors([
-            { message: 'Error', severity: 'Warning' },
-            { message: 'Error2', severity: 'Warning' },
+            { message: 'Error', severity: 'Warning', detailedMessage: 'Error' },
+            { message: 'Error2', severity: 'Warning', detailedMessage: 'Error2' },
           ]),
         )
 
@@ -87,8 +87,8 @@ describe('workspace', () => {
       it('returns false if there is at least one sever error', async () => {
         mockWsFunctions.errors.mockResolvedValueOnce(
           mockErrors([
-            { message: 'Error', severity: 'Warning' },
-            { message: 'Error2', severity: 'Error' },
+            { message: 'Error', severity: 'Warning', detailedMessage: 'Error' },
+            { message: 'Error2', severity: 'Error', detailedMessage: 'Error2' },
           ]),
         )
 
@@ -131,7 +131,9 @@ describe('workspace', () => {
     })
 
     it('with validation errors', async () => {
-      mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([{ message: 'Error BLA', severity: 'Error' }]))
+      mockWsFunctions.errors.mockResolvedValueOnce(
+        mockErrors([{ message: 'Error BLA', severity: 'Error', detailedMessage: 'Error BLA' }]),
+      )
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
@@ -183,7 +185,9 @@ describe('workspace', () => {
       expect(res).toBeTruthy()
     })
     it('should return false on error', async () => {
-      mockWsFunctions.errors.mockResolvedValue(mockErrors([{ message: 'Error BLA', severity: 'Error' }]))
+      mockWsFunctions.errors.mockResolvedValue(
+        mockErrors([{ message: 'Error BLA', severity: 'Error', detailedMessage: 'Error BLA' }]),
+      )
       const res = await applyChangesToWorkspace({
         workspace: mockWs,
         changes,

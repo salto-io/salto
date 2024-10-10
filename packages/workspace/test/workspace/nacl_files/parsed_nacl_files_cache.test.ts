@@ -386,6 +386,7 @@ describe('ParsedNaclFileCache', () => {
       summary: 'summary',
       subject: mockSourceRange,
       context: mockSourceRange,
+      detailedMessage: 'detailedMessage',
     }
     const errorB = {
       message: 'MessageB',
@@ -393,6 +394,7 @@ describe('ParsedNaclFileCache', () => {
       summary: 'summary',
       subject: mockSourceRange,
       context: mockSourceRange,
+      detailedMessage: 'detailedMessage',
     }
     beforeEach(async () => {
       await cache.put(

@@ -111,6 +111,7 @@ const commonErrors = new Errors({
       subject: commonSourceRange,
       message: 'common error',
       context: commonSourceRange,
+      detailedMessage: 'common error',
     },
   ],
 })
@@ -139,6 +140,7 @@ const envErrors = new Errors({
       subject: envSourceRange,
       message: 'env error',
       context: envSourceRange,
+      detailedMessage: 'env error',
     },
   ],
 })
@@ -174,6 +176,7 @@ const inactiveErrors = new Errors({
       subject: inactiveSourceRange,
       message: 'inactive error',
       context: inactiveSourceRange,
+      detailedMessage: 'inactive error',
     },
   ],
 })

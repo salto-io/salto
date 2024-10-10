@@ -23,3 +23,5 @@ diff --strip-trailing-cr <(
   grep -e '^< ' |
   sed -e 's/^< //' |
   xargs ${XARGS_OPTS} rm -v
+
+

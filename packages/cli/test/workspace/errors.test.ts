@@ -15,7 +15,7 @@ describe('groupRelatedErrors', () => {
   let originalErrors: ReadonlyArray<SaltoError>
   let groupedErrors: ReadonlyArray<SaltoError>
   beforeEach(() => {
-    nonGroupedError = { severity: 'Error', message: 'test' }
+    nonGroupedError = { severity: 'Error', message: 'test', detailedMessage: 'test' }
   })
 
   describe('group unresolved references by target', () => {

@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { Stream } from 'stream'
 import { collections, promises } from '@salto-io/lowerdash'
 import {
   ObjectType,
@@ -80,8 +81,21 @@ describe('SalesforceAdapter CRUD', () => {
     getData: (fileName: string) => Promise<Values>
   }
 
-  const getDeployedPackage = async (zipData: Buffer | string | NodeJS.ReadableStream): Promise<DeployedPackage> => {
-    const zip = await JSZip.loadAsync(zipData)
+  const streamToBuffer = async (stream: Stream): Promise<Buffer> => {
+    const chunks: Buffer[] = []
+    return new Promise((resolve, reject) => {
+      stream.on('data', (chunk: Buffer) => {
+        chunks.push(chunk)
+      })
+      stream.on('end', () => {
+        resolve(Buffer.concat(chunks))
+      })
+      stream.on('error', reject)
+    })
+  }
+
+  const getDeployedPackage = async (zipData: Buffer | string | Stream): Promise<DeployedPackage> => {
+    const zip = await JSZip.loadAsync(zipData instanceof Stream ? streamToBuffer(zipData) : zipData)
     const files = {
       manifest: zip.files['unpackaged/package.xml'],
       deleteManifest: zip.files['unpackaged/destructiveChangesPost.xml'],

@@ -22,6 +22,7 @@ import { roleType } from '../../src/autogen/types/standard_types/role'
 import { LocalFilterOpts } from '../../src/filter'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('data_instances_internal_id', () => {
   let defaultOpts: LocalFilterOpts
@@ -49,6 +50,7 @@ describe('data_instances_internal_id', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
     defaultOpts.config.fetch.resolveAccountSpecificValues = false
   })

@@ -3,6 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
+    "declaration": true,
+    "declarationMap": true,
     "paths": {
       "jsforce": ["../../node_modules/@salto-io/jsforce-types"],
       "yargonaut": ["src/types/yargonaut"],
@@ -11,7 +13,7 @@
       "@salto/lowerdash/*": ["../../node_modules/@salto/lowerdash/dist/src/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*", "e2e_test/**/*"],
   "references": [
     { "path": "../core" },
     { "path": "../lang-server" },

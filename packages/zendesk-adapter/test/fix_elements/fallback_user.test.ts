@@ -193,7 +193,10 @@ describe('fallbackUsersHandler', () => {
     let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      mockGetUsers.mockResolvedValue({
+        users: [],
+        errors: [{ message: 'No users here!', severity: 'Warning', detailedMessage: 'msg' }],
+      })
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       fallbackResponse = await fallbackUsersHandler({
         client,
@@ -214,7 +217,10 @@ describe('fallbackUsersHandler', () => {
     let fallbackResponse: { fixedElements: Element[]; errors: ChangeError[] }
 
     beforeEach(async () => {
-      mockGetUsers.mockResolvedValue({ users: [], errors: [{ message: 'No users here!', severity: 'Warning' }] })
+      mockGetUsers.mockResolvedValue({
+        users: [],
+        errors: [{ message: 'No users here!', severity: 'Warning', detailedMessage: 'msg' }],
+      })
       const instances = [macroInstance, articleInstance].map(e => e.clone())
       jest.spyOn(client, 'get').mockImplementation(({ url }) => {
         if (url === '/api/v2/users/me') {

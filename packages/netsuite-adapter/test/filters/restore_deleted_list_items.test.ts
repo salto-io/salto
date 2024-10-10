@@ -11,6 +11,7 @@ import { LocalFilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 import filterCreator from '../../src/filters/restore_deleted_list_items'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('restore deleted list items with scriptid filter', () => {
   let fetchOpts: LocalFilterOpts
@@ -56,6 +57,7 @@ describe('restore deleted list items with scriptid filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
   })
 

@@ -13,6 +13,7 @@ import { NETSUITE } from '../src/constants'
 import { NetsuiteChangeValidator } from '../src/change_validators/types'
 import { fullFetchConfig } from '../src/config/config_creator'
 import NetsuiteClient from '../src/client/client'
+import { getTypesToInternalId } from '../src/data_elements/types'
 import mockSdfClient from './client/sdf_client'
 
 export const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
@@ -41,4 +42,5 @@ export const mockChangeValidatorParams = (): Parameters<NetsuiteChangeValidator>
   },
   client: new NetsuiteClient(mockSdfClient()),
   suiteQLNameToInternalIdsMap: {},
+  ...getTypesToInternalId([]),
 })

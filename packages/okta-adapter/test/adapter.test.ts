@@ -523,7 +523,7 @@ describe('adapter', () => {
   })
   describe('deploy', () => {
     let operations: AdapterOperations
-    let createOperations: (elements: Element[] = []) => AdapterOperations
+    let createOperations: (elements: Element[]) => AdapterOperations
 
     let appType: ObjectType
     let groupType: ObjectType
@@ -583,7 +583,7 @@ describe('adapter', () => {
           config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
           elementsSource: buildElementsSourceFromElements([orgSetting, ...elements]),
         })
-      operations = createOperations()
+      operations = createOperations([])
 
       appType = new ObjectType({
         elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),

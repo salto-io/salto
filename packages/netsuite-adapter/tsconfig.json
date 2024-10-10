@@ -3,11 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
+    "resolveJsonModule": true,
     "paths": {
       "@salto-io/suitecloud-cli": ["../netsuite-adapter/types/suitecloud-cli"]
     }
   },
-  "include": ["src/**/*", "types/**/*", "index.ts", "e2e_test/jest_environment.ts", "e2e_test/adapter.ts"],
+  "include": ["src/**/*", "test/**/*", "types/**/*", "e2e_test/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },

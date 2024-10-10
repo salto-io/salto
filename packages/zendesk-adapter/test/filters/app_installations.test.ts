@@ -158,6 +158,7 @@ describe('app installation filter', () => {
           message: 'err',
           severity: 'Error',
           elemID: clonedApp.elemID,
+          detailedMessage: 'err',
         })
       })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])

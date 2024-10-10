@@ -526,8 +526,13 @@ describe('api.ts', () => {
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [
-            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, elemID: newEmployee.elemID },
-            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel },
+            {
+              message: 'cannot add new employee',
+              severity: 'Error' as SeverityLevel,
+              elemID: newEmployee.elemID,
+              detailedMessage: 'detailed',
+            },
+            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, detailedMessage: 'detailed' },
           ],
         }))
         result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)

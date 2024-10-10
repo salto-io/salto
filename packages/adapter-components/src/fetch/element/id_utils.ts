@@ -207,6 +207,25 @@ export const createElemIDFunc =
     return computedName
   }
 
+const verifyNestedPathIncludesBaseDir = ({
+  nestUnderPath,
+  pathBaseDir,
+  typeName,
+}: {
+  nestUnderPath: string[]
+  pathBaseDir: string[]
+  typeName: string
+}): void => {
+  if (!_.isEqual(pathBaseDir, nestUnderPath.slice(0, pathBaseDir.length))) {
+    log.warn(
+      'detected inconsistency between pathBaseDir and nestUnderPath for type %s, expected base dir to be %o, but received nested path: %o',
+      typeName,
+      pathBaseDir,
+      nestUnderPath,
+    )
+  }
+}
+
 export const getElemPath =
   <TCustomNameMappingOptions extends string = never>({
     def,
@@ -242,12 +261,9 @@ export const getElemPath =
 
     const { adapter: adapterName, typeName } = typeID
     const lastPart = pathParts[pathParts.length - 1]
-    return [
-      adapterName,
-      RECORDS_PATH,
-      ...pathBaseDir,
-      ...(nestUnderPath ?? [pathNaclCase(typeName)]),
-      ...pathParts,
-      ...(createSelfFolder && lastPart ? [lastPart] : []),
-    ]
+    const typePath = nestUnderPath ?? [...pathBaseDir, pathNaclCase(typeName)]
+    if (nestUnderPath !== undefined && !_.isEmpty(pathBaseDir)) {
+      verifyNestedPathIncludesBaseDir({ nestUnderPath, pathBaseDir, typeName })
+    }
+    return [adapterName, RECORDS_PATH, ...typePath, ...pathParts, ...(createSelfFolder && lastPart ? [lastPart] : [])]
   }

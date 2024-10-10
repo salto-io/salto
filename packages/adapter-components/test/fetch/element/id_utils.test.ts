@@ -370,6 +370,24 @@ describe('id utils', () => {
           })(args),
         ).toEqual(['myAdapter', 'Records', 'Base', 'Dir', 'Settings', 'myType'])
       })
+      it('should ignore baseDir if provided with nestUnderPath, as types with nestUnderPath should already include the baseDir', () => {
+        expect(
+          getElemPath({
+            def: {
+              pathParts: [{ parts: [{ fieldName: 'a' }] }],
+              baseDir: ['Base', 'Dir'],
+            },
+            typeID,
+            elemIDCreator: createElemIDFunc({
+              elemIDDef: {
+                parts: [{ fieldName: 'a' }],
+              },
+              typeID,
+            }),
+            nestUnderPath: ['Base', 'Dir', 'ParentType', 'ParentName'],
+          })(args),
+        ).toEqual(['myAdapter', 'Records', 'Base', 'Dir', 'ParentType', 'ParentName', 'A'])
+      })
     })
   })
 

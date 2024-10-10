@@ -38,7 +38,6 @@ export const UNSUPPORTED_TYPES = new Set([
   'Settings',
   // SFDX convert does not preserve the order of values on its own, so currently every time we dump a profile
   // the file changes because of random order changes
-  // The SFDX code also does not know how to handle "partial" information, so when we "minify" the profile it removes information
   'Profile',
   // For documents with a file extension (e.g. bla.txt) the SF API returns their fullName with the extension (so "bla.txt")
   // but the SFDX convert code loads them as a component with a fullName without the extension (so "bla").

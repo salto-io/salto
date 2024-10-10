@@ -122,18 +122,31 @@ export const createState = (elements: Element[], persistent = true): State =>
     persistent,
   )
 
-export const createWorkspace = async (
-  dirStore?: DirectoryStore<string>,
-  state?: State,
-  configSource?: WorkspaceConfigSource,
-  adaptersConfigSource?: AdaptersConfigSource,
-  credentials?: ConfigSource,
-  staticFilesSource?: StaticFilesSource,
-  elementSources?: Record<string, EnvironmentSource>,
-  remoteMapCreator?: RemoteMapCreator,
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+export const createWorkspace = async ({
+  dirStore,
+  state,
+  configSource,
+  adaptersConfigSource,
+  credentials,
+  staticFilesSource,
+  elementSources,
+  remoteMapCreator,
+  getCustomReferences,
+  validateDependentsMode,
   persistent = true,
-): Promise<Workspace> => {
+}: {
+  dirStore?: DirectoryStore<string>
+  state?: State
+  configSource?: WorkspaceConfigSource
+  adaptersConfigSource?: AdaptersConfigSource
+  credentials?: ConfigSource
+  staticFilesSource?: StaticFilesSource
+  elementSources?: Record<string, EnvironmentSource>
+  remoteMapCreator?: RemoteMapCreator
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc
+  validateDependentsMode?: 'old' | 'new' | 'log-validations-diff'
+  persistent?: boolean
+}): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
   return loadWorkspace(
@@ -163,5 +176,6 @@ export const createWorkspace = async (
     undefined,
     undefined,
     getCustomReferences,
+    validateDependentsMode,
   )
 }

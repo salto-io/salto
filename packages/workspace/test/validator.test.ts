@@ -24,6 +24,9 @@ import {
   createRefToElmWithValue,
   TypeReference,
   TemplateExpression,
+  ReadOnlyElementsSource,
+  toChange,
+  Field,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { parser } from '@salto-io/parser'
@@ -39,10 +42,13 @@ import {
   RegexMismatchValidationError,
   InvalidValueMaxLengthValidationError,
   InvalidValueMaxListLengthValidationError,
+  validateElementsAndDependents,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { getFieldsAndAnnoTypes } from './utils'
+import { InMemoryRemoteMap } from '../src/workspace/remote_map'
+import { ReferenceIndexEntry } from '../src/workspace/reference_indexes'
 
 describe('Elements validation', () => {
   const metaElemID = new ElemID('salto', 'meta')
@@ -2089,5 +2095,308 @@ describe('Elements validation', () => {
       expect(new InvalidStaticFileError({ elemID, error: new AccessDeniedStaticFile('path').message }).message).toEqual(
         'Error validating "adapter.bla": Unable to access static file: path',
       ))
+  })
+
+  describe('validateElementsAndDependents', () => {
+    let elementsSource: ReadOnlyElementsSource
+    let referenceSourcesIndex: InMemoryRemoteMap<ReferenceIndexEntry[]>
+
+    let primitiveType: PrimitiveType
+    let innerType: ObjectType
+    let type: ObjectType
+    let referencedType: ObjectType
+    let instance: InstanceElement
+    let referencedInstance: InstanceElement
+
+    let result: { validatedElementsIDs: ElemID[] }
+
+    beforeEach(() => {
+      primitiveType = new PrimitiveType({ elemID: new ElemID('salto', 'primitive'), primitive: PrimitiveTypes.STRING })
+      innerType = new ObjectType({
+        elemID: new ElemID('salto', 'inner'),
+        fields: { primitive: { refType: primitiveType } },
+        annotationRefsOrTypes: { primitive: primitiveType },
+      })
+      type = new ObjectType({
+        elemID: new ElemID('salto', 'type'),
+        fields: { inner: { refType: innerType } },
+        annotationRefsOrTypes: { inner: innerType },
+      })
+      referencedType = new ObjectType({ elemID: new ElemID('salto', 'referencedType') })
+      instance = new InstanceElement('instance', type)
+      referencedInstance = new InstanceElement('referencedInstance', type)
+
+      elementsSource = createInMemoryElementSource([primitiveType, innerType, type, instance, referencedInstance])
+
+      referenceSourcesIndex = new InMemoryRemoteMap([
+        {
+          key: primitiveType.elemID.getFullName(),
+          value: [
+            { id: innerType.fields.primitive.elemID, type: 'strong' },
+            { id: innerType.elemID.createNestedID('annotation', 'primitive'), type: 'strong' },
+          ],
+        },
+        {
+          key: innerType.elemID.getFullName(),
+          value: [
+            { id: type.fields.inner.elemID, type: 'strong' },
+            { id: type.elemID.createNestedID('annotation', 'inner'), type: 'strong' },
+          ],
+        },
+        {
+          key: referencedType.elemID.getFullName(),
+          value: [{ id: innerType.elemID.createNestedID('attr', 'ref'), type: 'strong' }],
+        },
+        {
+          key: referencedInstance.elemID.getFullName(),
+          value: [{ id: instance.elemID.createNestedID('ref'), type: 'strong' }],
+        },
+      ])
+    })
+
+    describe('when there is a field change', () => {
+      describe('field addition change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.fields.primitive2 = new Field(after, 'primitive2', primitiveType)
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent instances', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, instance.elemID, referencedInstance.elemID])
+        })
+      })
+
+      describe('field removal change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          delete after.fields.primitive
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent instances', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, instance.elemID, referencedInstance.elemID])
+        })
+      })
+
+      describe('field refType change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.fields.primitive.refType = new TypeReference(BuiltinTypes.STRING.elemID)
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent instances', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, instance.elemID, referencedInstance.elemID])
+        })
+      })
+
+      describe('field _required annotation change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.fields.primitive.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent instances', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, instance.elemID, referencedInstance.elemID])
+        })
+      })
+
+      describe('field _restriction annotation change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.fields.primitive.annotations[CORE_ANNOTATIONS.RESTRICTION] = { regex: '^\\d+$' }
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent instances', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, instance.elemID, referencedInstance.elemID])
+        })
+      })
+
+      describe('field other annotation change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.fields.primitive.annotations[CORE_ANNOTATIONS.DESCRIPTION] = 'primitive field'
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate the changed element only', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID])
+        })
+      })
+    })
+
+    describe('when there is a type change', () => {
+      describe('type addition change', () => {
+        beforeEach(async () => {
+          const changes = [toChange({ after: innerType })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate all dependents', () => {
+          expect(result.validatedElementsIDs).toEqual([
+            innerType.elemID,
+            instance.elemID,
+            referencedInstance.elemID,
+            type.elemID,
+          ])
+        })
+      })
+
+      describe('type removal change', () => {
+        beforeEach(async () => {
+          const changes = [toChange({ before: innerType })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate all dependents', () => {
+          expect(result.validatedElementsIDs).toEqual([
+            innerType.elemID,
+            instance.elemID,
+            referencedInstance.elemID,
+            type.elemID,
+          ])
+        })
+      })
+
+      describe('type annotation refType change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.annotationRefTypes.primitive = new TypeReference(BuiltinTypes.STRING.elemID)
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent types', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, type.elemID])
+        })
+      })
+
+      describe('type _additional_properties annotation change', () => {
+        beforeEach(async () => {
+          const after = innerType.clone()
+          after.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] = false
+          const changes = [toChange({ before: innerType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent instances', () => {
+          expect(result.validatedElementsIDs).toEqual([innerType.elemID, instance.elemID, referencedInstance.elemID])
+        })
+      })
+
+      describe('type other annotation change', () => {
+        beforeEach(async () => {
+          const after = referencedType.clone()
+          after.annotations.anno = 'test'
+          const changes = [toChange({ before: referencedType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent by reference only', () => {
+          expect(result.validatedElementsIDs).toEqual([referencedType.elemID, innerType.elemID])
+        })
+      })
+    })
+
+    describe('when there is a primitive type change', () => {
+      describe('primitive type addition change', () => {
+        beforeEach(async () => {
+          const changes = [toChange({ after: primitiveType })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate all dependents', () => {
+          expect(result.validatedElementsIDs).toEqual([
+            primitiveType.elemID,
+            instance.elemID,
+            referencedInstance.elemID,
+            innerType.elemID,
+            type.elemID,
+          ])
+        })
+      })
+
+      describe('primitive type removal change', () => {
+        beforeEach(async () => {
+          const changes = [toChange({ before: primitiveType })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate all dependents', () => {
+          expect(result.validatedElementsIDs).toEqual([
+            primitiveType.elemID,
+            instance.elemID,
+            referencedInstance.elemID,
+            innerType.elemID,
+            type.elemID,
+          ])
+        })
+      })
+
+      describe('primitive type primitive change', () => {
+        beforeEach(async () => {
+          const after = primitiveType.clone()
+          after.primitive = PrimitiveTypes.NUMBER
+          const changes = [toChange({ before: primitiveType, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate all dependents', () => {
+          expect(result.validatedElementsIDs).toEqual([
+            primitiveType.elemID,
+            instance.elemID,
+            referencedInstance.elemID,
+            innerType.elemID,
+            type.elemID,
+          ])
+        })
+      })
+    })
+
+    describe('when there is an instance change', () => {
+      describe('instance addition change', () => {
+        beforeEach(async () => {
+          const changes = [toChange({ after: referencedInstance })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent by reference', () => {
+          expect(result.validatedElementsIDs).toEqual([referencedInstance.elemID, instance.elemID])
+        })
+      })
+
+      describe('instance removal change', () => {
+        beforeEach(async () => {
+          const changes = [toChange({ before: referencedInstance })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent by reference', () => {
+          expect(result.validatedElementsIDs).toEqual([referencedInstance.elemID, instance.elemID])
+        })
+      })
+
+      describe('instance value change', () => {
+        beforeEach(async () => {
+          const after = referencedInstance.clone()
+          after.value.val = 'test'
+          const changes = [toChange({ before: referencedInstance, after })]
+          result = await validateElementsAndDependents(changes, elementsSource, referenceSourcesIndex)
+        })
+
+        it('should validate dependent by reference', () => {
+          expect(result.validatedElementsIDs).toEqual([referencedInstance.elemID, instance.elemID])
+        })
+      })
+    })
   })
 })

@@ -43,7 +43,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
-import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
+import { ValidationError, isUnresolvedRefError, validateElements, validateElementsAndDependents } from '../validator'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import {
@@ -506,6 +506,7 @@ export const loadWorkspace = async (
   persistent = true,
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
   getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
+  validateDependentsMode: 'old' | 'new' | 'log-validations-diff' = 'old',
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -717,7 +718,7 @@ export const loadWorkspace = async (
           'getElementsDependents for %s elemIDs',
           elemIDs.length,
         )
-      const validateElementsAndDependents = async (
+      const oldValidateElementsAndDependents = async (
         elements: ReadonlyArray<Element>,
         elementSource: ReadOnlyElementsSource,
         relevantElementIDs: ElemID[],
@@ -911,11 +912,46 @@ export const loadWorkspace = async (
       const changedElements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
       const changeIDs = changes.map(getChangeData).map(elem => elem.elemID)
       if (validate) {
-        const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
-          changedElements,
-          stateToBuild.states[envName].merged,
-          changeIDs,
-        )
+        const { errors: validationErrors, validatedElementsIDs } =
+          validateDependentsMode === 'new'
+            ? await validateElementsAndDependents(
+                changes,
+                stateToBuild.states[envName].merged,
+                stateToBuild.states[envName].referenceSources,
+              )
+            : await oldValidateElementsAndDependents(changedElements, stateToBuild.states[envName].merged, changeIDs)
+
+        if (validateDependentsMode === 'log-validations-diff') {
+          const { errors: newValidationErrors } = await validateElementsAndDependents(
+            changes,
+            stateToBuild.states[envName].merged,
+            stateToBuild.states[envName].referenceSources,
+          )
+
+          const validationErrorMessages = validationErrors.map(err => err.detailedMessage)
+          const newValidationErrorMessages = newValidationErrors.map(err => err.detailedMessage)
+          const addedErrors = _.difference(newValidationErrorMessages, validationErrorMessages)
+          const removedErrors = _.difference(validationErrorMessages, newValidationErrorMessages)
+
+          if (addedErrors.length > 0 || removedErrors.length > 0) {
+            log.debug(
+              'found mismatch in validation errors of the following validated elements: %o',
+              validatedElementsIDs,
+            )
+            log.debug(
+              'there are %d added validation errors and %d removed validation errors',
+              addedErrors.length,
+              removedErrors.length,
+            )
+            if (addedErrors.length > 0) {
+              log.debug('added validation errors: %s', addedErrors.join('; '))
+            }
+            if (removedErrors.length > 0) {
+              log.debug('removed validation errors: %s', removedErrors.join('; '))
+            }
+          }
+        }
+
         const validationErrorsById = await awu(validationErrors).groupBy(err =>
           err.elemID.createTopLevelParentID().parent.getFullName(),
         )

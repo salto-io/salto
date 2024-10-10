@@ -75,6 +75,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableAssetsObjectFieldConfiguration?: boolean
   automationPageSize?: number
   splitFieldContextOptions?: boolean
+  enableRequestTypeFieldNameAlignment?: boolean
 }
 
 export type MaskingConfig = {
@@ -328,6 +329,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     enableAssetsObjectFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     automationPageSize: { refType: BuiltinTypes.NUMBER },
     splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
+    enableRequestTypeFieldNameAlignment: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,
@@ -383,6 +385,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.enableAssetsObjectFieldConfiguration',
       'fetch.automationPageSize',
       'fetch.parseAdditionalAutomationExpressions',
+      'fetch.enableRequestTypeFieldNameAlignment',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       'deploy.ignoreMissingExtensions',

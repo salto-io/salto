@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import JSZip from 'jszip'
 import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataInfo, MetadataObject } from '@salto-io/jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
@@ -299,7 +300,7 @@ export const fetchMetadataInstances = async ({
   }
 }
 
-const getTypesWithContent = async (types: ReadonlyArray<ObjectType>): Promise<Set<string>> =>
+export const getTypesWithContent = async (types: ReadonlyArray<ObjectType>): Promise<Set<string>> =>
   new Set(
     await awu(types)
       .filter(t => Object.keys(t.fields).includes(METADATA_CONTENT_FIELD))
@@ -307,7 +308,7 @@ const getTypesWithContent = async (types: ReadonlyArray<ObjectType>): Promise<Se
       .toArray(),
   )
 
-const getTypesWithMetaFile = async (types: ReadonlyArray<MetadataObjectType>): Promise<Set<string>> =>
+export const getTypesWithMetaFile = async (types: ReadonlyArray<MetadataObjectType>): Promise<Set<string>> =>
   new Set(
     await awu(types)
       .filter(t => t.annotations.hasMetaFile === true)
@@ -522,7 +523,13 @@ export const retrieveMetadataInstances = async ({
       )
     }
 
-    const allValues = await fromRetrieveResult(result, allFileProps, typesWithMetaFile, typesWithContent, fetchProfile)
+    const allValues = await fromRetrieveResult({
+      zip: await JSZip.loadAsync(Buffer.from(result.zipFile, 'base64')),
+      fileProps: allFileProps,
+      typesWithMetaFile,
+      typesWithContent,
+      fetchProfile,
+    })
     // Exclude Profile related instances we fail to retrieve for envs that manage Profiles to improve performance
     // in subsequent fetches and avoid broken references in Profiles.
     if (

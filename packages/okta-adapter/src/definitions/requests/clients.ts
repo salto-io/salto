@@ -61,6 +61,7 @@ export const createClientDefinitions = (
           '/api/v1/mappings': {
             get: {
               queryArgs: { limit: '200' }, // maximum page size allowed
+              omitBody: true,
             },
           },
           '/api/v1/users': {

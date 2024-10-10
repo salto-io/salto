@@ -131,37 +131,36 @@ commands:
       - restore_node_modules
       - setup_yarn
 
-  run_e2e_tests:
+  install_jdk:
     parameters:
-      should_install_java:
-        type: boolean
-        default: false
-      package_name:
+      version:
         type: string
+        default: "17"
     steps:
-      - when:
-          condition: << parameters.should_install_java >>
-          steps:
-            run:
-              name: Install Java
-              command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
-      - run:
-          name: Run E2E tests for package << parameters.package_name >>
-          command: |
-            pushd packages/<< parameters.package_name >>
-            yarn e2e-test --reporters=default --reporters=jest-junit --coverage=false
-          no_output_timeout: 20m
-          environment:
-            SALTO_LOG_LEVEL: 'info'
-            # enable telemetry for end2end so we can count more events
-            # webpack configuration is irrelevant in this case and therefore
-            # we explicitly configure it in here
-            SALTO_TELEMETRY_DISABLE: '0'
-            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
-            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
 
-      - store_test_results:
-          path: reports
+      - restore_cache:
+          name: jdk-17
+          keys: 
+            - jdk-17
+
+      - run:
+          name: Install and Verify JDK
+          command: |
+            if ! java --version 1>&2 2> /dev/null
+            then
+              curl -L -o openjdk-17.tar.gz https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
+              mkdir -p /mnt/ramdisk/jdk-17
+              tar -xzf openjdk-17.tar.gz -C /mnt/ramdisk/jdk-17 --strip-components=1
+            fi
+            echo "export JAVA_HOME=/mnt/ramdisk/jdk-17" >> $BASH_ENV
+            echo "export PATH=/mnt/ramdisk/jdk-17/bin:$PATH" >> $BASH_ENV
+            /mnt/ramdisk/jdk-17/bin/java --version
+
+      - save_cache:
+          name: jdk-17
+          key: jdk-17
+          paths:
+            - /mnt/ramdisk/jdk-17
 
   set_s3_pkg_urls:
     steps:
@@ -364,11 +363,43 @@ jobs:
     resource_class: large
     working_directory: /mnt/ramdisk/project
     steps:
+      - when:
+          condition: << parameters.should_install_java >>
+          steps:
+            - install_jdk
       - step_setup
-      - run_e2e_tests:
-          package_name: <<parameters.package_name>>
-          should_install_java: <<parameters.should_install_java>>     
+      - restore_turbo_cache:
+          cache_name: jest_e2e-<< parameters.package_name >>
+      - restore_turbo_cache:
+          cache_name: build
+      
+      - run:
+          name: Extract package name
+          command: |
+            PACKAGE_NAME="$(echo "<< parameters.package_name >>" | cut -d':' -f2)"
+            echo "export E2E_PACKAGE_NAME=$PACKAGE_NAME" >> $BASH_ENV
 
+      - run:
+          name: Check dependencies for changes
+          command: |
+            export SALTO_DEPENDENCIES_HASH="$(node ./build_utils/hash_dependencies.js -p $E2E_PACKAGE_NAME)"
+            echo $SALTO_DEPENDENCIES_HASH
+      - run:
+          name: << parameters.package_name >> e2e tests
+          command: |
+            yarn e2e-test --filter "$E2E_PACKAGE_NAME" --env-mode loose -- --reporters=default --reporters=jest-junit --ci --colors
+          no_output_timeout: 20m
+          environment:
+            SALTO_LOG_LEVEL: 'info'
+            SALTO_TELEMETRY_DISABLE: '0'
+            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
+            JEST_JUNIT_OUTPUT_DIR: 'reports/e2e/'
+
+      - store_test_results:
+          path: reports
+      - store_turbo_cache:
+          cache_name: jest_e2e-<< parameters.package_name >>
+          
   package_cli:
     working_directory: /mnt/ramdisk/project
     docker:

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 TURBO_CONCURRENCY="${TURBO_CONCURRENCY:-"100%"}"
-ORG_ARG=("$@")
-
+ARGS=("$@")
 
 if [ -n "$CI" ]; then
 
@@ -32,8 +31,10 @@ else
   # that the user wants to run (or all of them, if we can't find it)
   #
 
+  ARGS_filter=("$@")
+
   filter=""
-  for arg in "$@"; do
+  for arg in "${ARGS_filter[@]}"; do
     if [[ $arg == --filter=* ]]; then
       filter="${arg#--filter=}"
       break
@@ -64,6 +65,6 @@ else
   export SALTO_DEPENDENCIES_HASH="$_dependency_hash"
 fi
 
-yarn turbo run \
+yarn turbo run  \
   --no-update-notifier --concurrency="$TURBO_CONCURRENCY" \
-  "${ORG_ARG[@]}"
+  "${ARGS[@]}"

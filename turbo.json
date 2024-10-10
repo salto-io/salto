@@ -30,6 +30,18 @@
         "coverage/**"
       ]
     },
+    "e2e-test": {
+      "dependsOn": [ "^build-ts"],
+      "outputLogs": "new-only",
+      "env": [
+        "SALTO_DEPENDENCIES_HASH",
+        "RUN_E2E_TESTS",
+        "SALTO_LOG_LEVEL",
+        "SALTO_TELEMETRY_DISABLE",
+        "SALTO_TELEMETRY_URL",
+        "JEST_JUNIT_OUTPUT_DIR"
+      ]
+    },
     "clean": {
       "cache": false
     }

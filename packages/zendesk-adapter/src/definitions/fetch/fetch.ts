@@ -1654,7 +1654,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }] }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {

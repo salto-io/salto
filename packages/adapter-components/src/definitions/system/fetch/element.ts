@@ -55,6 +55,8 @@ export type ElemIDDefinition<TCustomNameMappingOptions extends string = never> =
 
 export type PathDefinition<TCustomNameMappingOptions extends string = never> = {
   pathParts?: IDPartsDefinition<TCustomNameMappingOptions>[]
+  // allow adding hard coded baseDir for path that will be added before the type name
+  baseDir?: string[]
 }
 
 type StandaloneFieldDefinition = {

@@ -6,8 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
-import { FIX_ELEMENTS_CONFIG } from '../config'
 import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 import { FixElementsHandler } from './types'
 
@@ -16,7 +14,7 @@ const isRelevantElement = (element: unknown): element is InstanceElement =>
   element.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME &&
   element.value.draft === false
 
-const updateDraftToFalse = (element: InstanceElement): InstanceElement | undefined => {
+const updateDraftToFalse = (element: InstanceElement): InstanceElement => {
   const fixedInstance = element.clone()
   fixedInstance.value.draft = true
   return fixedInstance
@@ -33,24 +31,13 @@ const toError = (element: InstanceElement): ChangeError => ({
  * Update articles to be deployed to draft if the flag deployArticlesAsDraft is true.
  * These updates are done through article translations.
  */
-export const deployArticlesAsDraftHandler: FixElementsHandler =
-  ({ config }) =>
-  async elements => {
-    if (config[FIX_ELEMENTS_CONFIG]?.deployArticlesAsDraft !== true) {
-      return {
-        fixedElements: [],
-        errors: [],
-      }
-    }
-    const fixedArticleTranslationsWithDraft = elements
-      .filter(isRelevantElement)
-      .map(updateDraftToFalse)
-      .filter(values.isDefined)
+export const deployArticlesAsDraftHandler: FixElementsHandler = () => async elements => {
+  const fixedArticleTranslationsWithDraft = elements.filter(isRelevantElement).map(updateDraftToFalse)
 
-    const errors = fixedArticleTranslationsWithDraft.map(toError)
+  const errors = fixedArticleTranslationsWithDraft.map(toError)
 
-    return {
-      fixedElements: fixedArticleTranslationsWithDraft,
-      errors,
-    }
+  return {
+    fixedElements: fixedArticleTranslationsWithDraft,
+    errors,
   }
+}

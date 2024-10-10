@@ -21,11 +21,13 @@ import { referencedInstanceNamesFilterCreator } from './referenced_instance_name
 import { serviceUrlFilterCreator } from './service_url'
 import { addAliasFilterCreator } from './add_alias'
 import { ConvertError, defaultConvertError } from '../deployment'
+import { omitCollisionsFilterCreator } from './omit_collisions'
 
 export type FilterCreationArgs<
   Options extends APIDefinitionsOptions,
   Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
 > = {
+  adapterName: string
   config: Co
   definitions: ApiDefinitions<Options>
   referenceRules?: FieldReferenceDefinition<
@@ -43,6 +45,7 @@ export const createCommonFilters = <
   Options extends APIDefinitionsOptions,
   Co extends UserConfig<ResolveCustomNameMappingOptionsType<Options>>,
 >({
+  adapterName,
   referenceRules,
   fieldReferenceResolverCreator,
   convertError = defaultConvertError,
@@ -59,6 +62,8 @@ export const createCommonFilters = <
   addAlias: addAliasFilterCreator(),
 
   query: queryFilterCreator({}),
+  // omitCollisions must run after referencedInstanceNames
+  omitCollisions: omitCollisionsFilterCreator(adapterName),
   // defaultDeploy should run after other deploy filters
   defaultDeploy: defaultDeployFilterCreator({
     convertError,

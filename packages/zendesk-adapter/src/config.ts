@@ -3122,6 +3122,7 @@ const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfi
     fallbackUsers: { refType: BuiltinTypes.BOOLEAN },
     removeDupUsers: { refType: BuiltinTypes.BOOLEAN },
     orderElements: { refType: BuiltinTypes.BOOLEAN },
+    deployArticlesAsDraft: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

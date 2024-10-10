@@ -8,7 +8,7 @@
 import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiNameSync, ensureSafeFilterFetch, isInstanceOfTypeChangeSync, isInstanceOfTypeSync } from './utils'
 import { FLOW_METADATA_TYPE } from '../constants'
 
@@ -80,7 +80,7 @@ const addZeroCoordinatesToAllSections: TransformFuncSync = ({ value, field }) =>
 
 const FILTER_NAME = 'flowCoordinates'
 
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: FILTER_NAME,
   onFetch: ensureSafeFilterFetch({
     warningMessage: '',

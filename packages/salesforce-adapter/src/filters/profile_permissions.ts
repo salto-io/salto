@@ -31,7 +31,7 @@ import {
   metadataAnnotationTypes,
   MetadataTypeAnnotations,
 } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
 import { apiNameSync, isInstanceOfTypeChangeSync, isMasterDetailField } from './utils'
 
@@ -118,7 +118,7 @@ const addMissingPermissions = (
  * Do the same with added fields and fieldPermissions.
  * No reason to handle deleted Profiles.
  */
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config }) => {
   let originalProfileChangesByName: Record<
     string,
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>

@@ -21,7 +21,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard, pathNaclCase } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName, createInstanceElement, metadataAnnotationTypes } from '../transformers/transformer'
 import { getDataFromChanges, isInstanceOfType } from './utils'
 import {
@@ -129,7 +129,7 @@ const createCustomLabelsChange = async (customLabelChanges: Change[]): Promise<C
 /**
  * Split custom labels into individual instances
  */
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: FilterCreator = () => {
   let customLabelChanges: Change[]
   return {
     name: 'splitCustomLabels',

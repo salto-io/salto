@@ -11,7 +11,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ObjectType, isInstanceElement, ElemID, InstanceElement, Element } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import { getSObjectFieldElement, apiName, isSubfieldOfCompound } from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch, toCustomField } from './utils'
 import { CustomField } from '../client/types'
@@ -130,7 +130,7 @@ const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional i
  * Custom objects filter.
  * Fetches the custom objects via the soap api and adds them to the elements
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customObjectsFromDescribeFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -138,6 +138,9 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<FilterResult> => {
+      if (client === undefined) {
+        return {}
+      }
       const customObjectInstances = await keyByAsync(
         awu(elements).filter(isInstanceElement).filter(isInstanceOfType(CUSTOM_OBJECT)),
         instance => apiName(instance),

@@ -17,7 +17,7 @@ import {
   isFieldChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, SALESFORCE, TASK_CUSTOM_OBJECT } from '../constants'
 import {
   apiNameSync,
@@ -32,7 +32,7 @@ import { findMatchingActivityChange } from '../change_validators/task_or_event_f
 const log = logger(module)
 const { isDefined } = values
 
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config }) => {
   let taskOrEventFieldChanges: Change[]
 
   return {

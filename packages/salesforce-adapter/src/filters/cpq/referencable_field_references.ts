@@ -21,7 +21,7 @@ import { collections, types } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import {
   CPQ_FILTER_SOURCE_FIELD,
   CPQ_FILTER_SOURCE_OBJECT,
@@ -131,7 +131,7 @@ const createDeployableInstance = (instance: InstanceElement): InstanceElement =>
   return deployableInstance
 }
 
-const filter: LocalFilterCreator = () => {
+const filter: FilterCreator = () => {
   let originalChangesByFullName: Record<string, Change<InstanceElement>>
   return {
     name: 'cpqReferencableFieldReferencesFilter',

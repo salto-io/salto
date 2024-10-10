@@ -278,6 +278,6 @@ export const runFiltersOnFetch = async (
   client: SalesforceClient,
   context: Partial<FilterContext>,
   elements: Element[],
-  filterCreators = allFilters.map(({ creator }) => creator),
+  filterCreators = allFilters,
 ): Promise<void | FilterResult> =>
   filter.filtersRunner({ client, config: { ...defaultFilterContext, ...context } }, filterCreators).onFetch(elements)

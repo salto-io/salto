@@ -9,7 +9,7 @@ import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
 import { getAllInstances, getCustomObjectsFetchSettings, CustomObjectFetchSetting } from './custom_objects_instances'
 import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
@@ -28,10 +28,14 @@ const logInvalidCustomSettings = async (invalidCustomSettings: CustomObjectFetch
     ),
   )
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customSettingsFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    if (client === undefined) {
+      return {}
+    }
+
     if (!config.fetchProfile.shouldFetchAllCustomSettings()) {
       return {}
     }

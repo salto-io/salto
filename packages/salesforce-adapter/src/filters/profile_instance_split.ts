@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { strings, collections, promises } from '@salto-io/lowerdash'
 import { Element, ObjectType, isMapType, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 import { PROFILE_METADATA_TYPE } from '../constants'
 
@@ -54,7 +54,7 @@ const isProfileInstance = async (elem: Element): Promise<boolean> =>
  * Each map field is assigned to a separate file, and the other fields and annotations
  * to Attributes.nacl.
  */
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: FilterCreator = () => ({
   name: 'profileInstanceSplitFilter',
   onFetch: async (elements: Element[]) => {
     const profileInstances = (await removeAsync(elements, isProfileInstance)) as InstanceElement[]

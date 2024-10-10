@@ -13,7 +13,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { SHARING_RULES_TYPE } from '../../constants'
 import { getAuthorAnnotations } from '../../transformers/transformer'
-import { RemoteFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
 import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 
@@ -56,7 +56,7 @@ export const WARNING_MESSAGE =
 /*
  * add author information to sharing rules instances.
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'sharingRulesAuthorFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -64,6 +64,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
+
       const sharingRulesMap = await fetchAllSharingRules(client)
       const sharingRulesInstances = await awu(elements)
         .filter(isInstanceElement)

@@ -23,7 +23,7 @@ import {
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import { apiName, isCustomObject, relativeApiName } from '../../transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
@@ -259,7 +259,7 @@ const applyFuncOnCustomObjectWithMappingLookupChange = async (
   await awu(customObjectWithMappingLookupChanges).forEach(async change => applyFunctionToChangeData(change, fn))
 }
 
-const filter: LocalFilterCreator = () => ({
+const filter: FilterCreator = () => ({
   name: 'cpqLookupFieldsFilter',
   onFetch: async (elements: Element[]) => {
     log.debug('Started replacing lookupObject values with references')

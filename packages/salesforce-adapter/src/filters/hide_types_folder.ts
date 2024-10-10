@@ -7,13 +7,13 @@
  */
 import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE, TYPES_PATH } from '../constants'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ensureSafeFilterFetch } from './utils'
 
 const isElementWithinTypesFolder = ({ path = [] }: Element): boolean =>
   path?.[0] === SALESFORCE && path?.[1] === TYPES_PATH
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'hideTypesFolder',
   onFetch: ensureSafeFilterFetch({
     config,

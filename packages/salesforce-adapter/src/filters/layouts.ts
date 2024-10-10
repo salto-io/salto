@@ -10,7 +10,7 @@ import { Element, InstanceElement, ObjectType, ElemID, isInstanceElement } from 
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch, layoutObjAndName } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
@@ -34,7 +34,7 @@ const fixLayoutPath = async (layout: InstanceElement, customObject: ObjectType, 
  * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
  * Fixes references in layout items.
  */
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'layoutFilter',
   /**
    * Upon fetch, shorten layout ID and add reference to layout sobjects.

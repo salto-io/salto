@@ -17,7 +17,7 @@ import {
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { IS_ATTRIBUTE, XML_ATTRIBUTE_PREFIX } from '../constants'
 import { metadataType } from '../transformers/transformer'
 import { metadataTypesWithAttributes } from '../transformers/xml_transformer'
@@ -56,7 +56,7 @@ const removeAttributePrefix = async (instance: InstanceElement): Promise<void> =
     })) ?? instance.value
 }
 
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: FilterCreator = () => ({
   name: 'xmlAttributesFilter',
   /**
    * Upon fetch remove the XML_ATTRIBUTE_PREFIX from the instance.value keys so it'll match the type

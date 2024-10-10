@@ -32,7 +32,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import {
   SALESFORCE,
@@ -233,7 +233,7 @@ const removeUnfethcedCustomObjects = (instance: InstanceElement, customObjects: 
   }
 }
 
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'enumFieldPermissionsFilter',
   onFetch: async elements => {
     log.info('Running fieldPermissionsEnum onFetch - reducing fieldPermissions size')

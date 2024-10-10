@@ -28,7 +28,7 @@ import {
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import { isInstanceOfTypeChange } from '../utils'
 import {
   CPQ_CUSTOM_SCRIPT,
@@ -163,7 +163,7 @@ const applyFuncOnCustomScriptFieldChange = async (
     .forEach(change => applyFunctionToChangeData(change, fn))
 }
 
-const filter: LocalFilterCreator = () => ({
+const filter: FilterCreator = () => ({
   name: 'cpqCustomScriptFilter',
   onFetch: async (elements: Element[]) => {
     const customObjects = (await awu(elements).filter(isCustomObject).toArray()) as ObjectType[]

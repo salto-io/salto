@@ -10,7 +10,7 @@ import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiNameSync, isInstanceOfTypeSync } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
 
@@ -23,7 +23,7 @@ const log = logger(module)
  * This is required in fetch with changes detection where we retrieve partial profile instances
  * with the modified related props only.
  */
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'mergeProfilesWithSourceValues',
   onFetch: async elements => {
     const profileInstances = elements.filter(isInstanceOfTypeSync(PROFILE_METADATA_TYPE))

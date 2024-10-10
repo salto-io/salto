@@ -40,7 +40,7 @@ import {
   API_NAME_SEPARATOR,
   DATA_INSTANCES_CHANGED_AT_MAGIC,
 } from '../constants'
-import { FilterContext, FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterContext, FilterResult, FilterCreator } from '../filter'
 import { apiName, Types, createInstanceServiceIds, isNameField, toRecord } from '../transformers/transformer'
 import {
   getNamespace,
@@ -693,10 +693,13 @@ const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessib
   }
 }
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    if (client === undefined) {
+      return {}
+    }
     const getAllCustomObjects = async (elementsSource: ReadOnlyElementsSource): Promise<ObjectType[]> => {
       const customObjects = await awu(await elementsSource.getAll())
         .filter(isCustomObjectSync)

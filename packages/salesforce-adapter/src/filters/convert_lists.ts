@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
 import { metadataType } from '../transformers/transformer'
@@ -185,7 +185,7 @@ export const makeFilter =
     unorderedListFields: ReadonlyArray<UnorderedList>,
     unorderedListAnnotations: ReadonlyArray<UnorderedList>,
     hardcodedLists: ReadonlyArray<string>,
-  ): LocalFilterCreator =>
+  ): FilterCreator =>
   () => ({
     name: 'convertListsFilter',
     /**

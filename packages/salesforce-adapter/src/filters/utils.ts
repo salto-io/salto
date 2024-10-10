@@ -630,8 +630,16 @@ export const getDataFromChanges = <T extends Change<unknown>>(
   changes: ReadonlyArray<T>,
 ): ReadonlyArray<ChangeData<T>> =>
   changes
-    .filter(dataField === 'after' ? isAdditionOrModificationChange : isRemovalOrModificationChange)
-    .map(change => _.get(change.data, dataField))
+    .map(change => {
+      if (dataField === 'after' && isAdditionOrModificationChange(change)) {
+        return change.data.after
+      }
+      if (dataField === 'before' && isRemovalOrModificationChange(change)) {
+        return change.data.before
+      }
+      return undefined
+    })
+    .filter(isDefined)
 
 export const ensureSafeFilterFetch =
   ({

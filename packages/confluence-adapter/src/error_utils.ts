@@ -16,9 +16,17 @@ const log = logger(module)
 type SuppressedErrorChecker = (err: Error) => boolean
 
 const isJavaNullPointerErrorOrUndefined: SuppressedErrorChecker = err => {
-  const status = _.get(err, 'response.status')
-  const message = _.get(err, 'response.data.message')
-  return status === 500 && message.startsWith('java.lang.NullPointerException: Cannot invoke')
+  const { response } = err as {
+    response?: {
+      status?: number
+      data?: {
+        message?: string
+      }
+    }
+  }
+  const status = response?.status
+  const message = response?.data?.message
+  return status === 500 && (message?.startsWith('java.lang.NullPointerException: Cannot invoke') ?? false)
 }
 
 const SUPPRESSED_ERRORS_CHECKER_LIST: SuppressedErrorChecker[] = [isJavaNullPointerErrorOrUndefined]
@@ -26,8 +34,18 @@ const SUPPRESSED_ERRORS_CHECKER_LIST: SuppressedErrorChecker[] = [isJavaNullPoin
 const shouldSuppressError = (err: Error): boolean => SUPPRESSED_ERRORS_CHECKER_LIST.some(checkFunc => checkFunc(err))
 
 const getWrongVersionErrorOrUndefined = (err: Error): string | undefined => {
-  const errorsArray = _.get(err, 'response.data.errors')
-  const status = _.get(err, 'response.status')
+  const { response } = err as {
+    response?: {
+      status?: number
+      data?: {
+        errors?: {
+          title?: string
+        }[]
+      }
+    }
+  }
+  const errorsArray = response?.data?.errors
+  const status = response?.status
   if (
     status === 409 &&
     Array.isArray(errorsArray) &&

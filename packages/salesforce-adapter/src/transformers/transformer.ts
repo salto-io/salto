@@ -45,7 +45,7 @@ import {
   createRefToElmWithValue,
   isElement,
 } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues, promises, objects } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, TransformFuncSync } from '@salto-io/adapter-utils'
 
 import { logger } from '@salto-io/logging'
@@ -117,6 +117,7 @@ const log = logger(module)
 const { mapValuesAsync } = promises.object
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
+const { hasOwnProperty } = objects
 
 const xsdTypes = [
   'xsd:boolean',
@@ -1201,10 +1202,10 @@ export const transformPrimitive: TransformFuncSync = ({ value, path, field }) =>
 
   // (Salto-394) Salesforce returns objects like:
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
-  if (_.isObject(value) && Object.keys(value).includes('_')) {
+  if (_.isObject(value) && hasOwnProperty(value, '_') && _.isString(value._)) {
     const convertFunc = getXsdConvertFunc(_.get(value, ['$', 'xsi:type']))
     return transformPrimitive({
-      value: convertFunc(_.get(value, '_')),
+      value: convertFunc(value._),
       path,
       field,
     })

@@ -57,7 +57,7 @@
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
     "axios": "^1.7.2",
-    "axios-mock-adapter": "^1.19.0",
+    "axios-mock-adapter": "^2.0.0",
     "axios-retry": "^4.4.2",
     "eslint": "^9.6.0",
     "eslint-config-airbnb": "18.0.1",

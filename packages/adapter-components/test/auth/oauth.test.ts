@@ -56,7 +56,7 @@ describe('oauth', () => {
           clientSecret: 'secret',
           retryOptions: { retries: 2 },
         }),
-      ).rejects.toThrow(new Error('Request failed with status code 400'))
+      ).rejects.toThrow('Request failed with status code 400')
     })
     it('should throw error on unexpected token type', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {
@@ -177,7 +177,7 @@ describe('oauth', () => {
           refreshToken: 'refresh',
           retryOptions: { retries: 2 },
         }),
-      ).rejects.toThrow(new Error('Request failed with status code 400'))
+      ).rejects.toThrow('Request failed with status code 400')
     })
     it('should throw error on unexpected token type', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {

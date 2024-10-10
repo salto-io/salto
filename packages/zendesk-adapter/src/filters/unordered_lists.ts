@@ -15,6 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { objects } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
@@ -30,6 +31,7 @@ import {
 } from '../constants'
 
 const log = logger(module)
+const { hasOwnProperty } = objects
 
 type ChildField = { id: ReferenceExpression }
 type Condition = {
@@ -188,10 +190,10 @@ const isValidChildFields = (
   condition: unknown,
   ticketFieldById: Record<string, InstanceElement>,
 ): condition is Condition => {
-  if (!(_.isObject(condition) && 'child_fields' in condition)) {
+  if (!(_.isObject(condition) && hasOwnProperty(condition, 'child_fields'))) {
     return false
   }
-  const val = _.get(condition, 'child_fields')
+  const val = condition.child_fields
   return (
     _.isArray(val) &&
     val.every(

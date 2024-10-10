@@ -335,7 +335,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               request: {
                 transformation: {
                   pick: ['custom'],
-                  adjust: async ({ value }) => ({ value: { ..._.get(value, 'custom') } }),
+                  adjust: async ({ value }) => ({ value: { ...(value as { custom?: {} }).custom } }),
                 },
                 endpoint: {
                   path: '/wiki/rest/api/settings/lookandfeel/custom',

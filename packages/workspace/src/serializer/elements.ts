@@ -195,7 +195,8 @@ export const serializeStream = async <T = Element>({
     adapter: id.adapter,
     typeName: id.typeName,
     idType: id.idType,
-    nameParts: _.get(id, 'nameParts'),
+    // eslint-disable-next-line dot-notation
+    nameParts: id['nameParts'], // Accessing private member
   })
 
   const referenceExpressionReplacer = (e: ReferenceExpression): ReferenceExpression & SerializedClass => {

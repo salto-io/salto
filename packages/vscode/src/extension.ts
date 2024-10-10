@@ -26,37 +26,40 @@ import { createCopyReferenceCommand, createGoToServiceCommand } from './commands
 const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log('Workspace init started', new Date())
-  const { name, rootPath } = vscode.workspace
-  if (name && rootPath) {
+  const { name, workspaceFolders } = vscode.workspace
+  const workspaceFolder = workspaceFolders?.[0]
+  if (name && workspaceFolder) {
+    const baseUri = workspaceFolder.uri
+    const base = baseUri.fsPath
     const diagCollection = vscode.languages.createDiagnosticCollection('@salto-io/core')
-    const workspace = new ws.EditorWorkspace(rootPath, await loadLocalWorkspace({ path: rootPath, persistent: false }))
+    const workspace = new ws.EditorWorkspace(base, await loadLocalWorkspace({ path: base, persistent: false }))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
+      { scheme: 'file', pattern: { baseUri, base, pattern: '**/*.nacl' } },
       createCompletionsProvider(workspace),
       ' ',
       '.',
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
+      { scheme: 'file', pattern: { baseUri, base, pattern: '**/*.nacl' } },
       createDefinitionsProvider(workspace),
     )
 
     const referenceProvider = vscode.languages.registerReferenceProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
+      { scheme: 'file', pattern: { baseUri, base, pattern: '**/*.nacl' } },
       createReferenceProvider(workspace),
     )
 
     const symbolsProvider = vscode.languages.registerDocumentSymbolProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
+      { scheme: 'file', pattern: { baseUri, base, pattern: '**/*.nacl' } },
       createDocumentSymbolsProvider(workspace),
     )
 
     const searchProvier = vscode.languages.registerWorkspaceSymbolProvider(createWorkspaceSymbolProvider(workspace))
 
     const foldProvider = vscode.languages.registerFoldingRangeProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
+      { scheme: 'file', pattern: { baseUri, base, pattern: '**/*.nacl' } },
       createFoldingProvider(workspace),
     )
 

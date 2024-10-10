@@ -39,7 +39,7 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
 
 const FIELD_VALIDATOR_TYPE = new Set(['fieldHasSingleValue', 'fieldChanged'])
 
-export const isEmptyValidatorV2 = (validator: Values): boolean =>
+export const isEmptyValidatorV2 = (validator: Values): validator is { parameters: { ruleType: string } } =>
   validator.parameters?.ruleType !== undefined &&
   FIELD_VALIDATOR_TYPE.has(validator.parameters.ruleType) &&
   _.isEmpty(validator.parameters.fieldKey)
@@ -58,7 +58,7 @@ const workflowV1HasEmptyValidator = (transition: TransitionV1, invalidValidators
 const workflowV2HasEmptyValidator = (transition: WorkflowV2Transition, invalidValidators: Set<string>): void => {
   transition.validators?.forEach(validator => {
     if (isEmptyValidatorV2(validator)) {
-      invalidValidators.add(_.get(validator, 'parameters.ruleType'))
+      invalidValidators.add(validator.parameters.ruleType)
     }
   })
 }

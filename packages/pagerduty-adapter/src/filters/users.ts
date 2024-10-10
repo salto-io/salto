@@ -56,16 +56,21 @@ Example structure of schedule layer:
 */
 
 const isEscalationRule = (value: unknown): value is EscalationRule => {
-  const targets = _.get(value, 'targets')
+  const { targets } = value as {
+    targets: {
+      id?: string
+      type?: string
+    }[]
+  }
   return Array.isArray(targets) && targets.every(target => _.isString(target.id) && _.isString(target.type))
 }
 
 const isScheduleLayerUser = (value: unknown): value is ScheduleLayerUser => {
-  const user = _.get(value, 'user')
-  return _.isPlainObject(user) && _.isString(user.id) && _.isString(user.type)
+  const { user } = value as { user?: UserReference }
+  return user !== undefined && _.isPlainObject(user) && _.isString(user.id) && _.isString(user.type)
 }
 
-const replaceUserInUserObject = (userObj: ScheduleLayerUser | UserReference, mapping: Record<string, string>): void => {
+const replaceUserInUserObject = (userObj: ScheduleLayerUser, mapping: Record<string, string>): void => {
   const userIdentifier = _.get(userObj, 'user.id')
   if (mapping[userIdentifier]) {
     _.set(userObj, 'user.id', mapping[userIdentifier])

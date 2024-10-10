@@ -372,11 +372,7 @@ describe('swagger_type_elements', () => {
             types: {},
             supportedTypes: {},
           }),
-        ).rejects.toThrow(
-          new Error(
-            'Unsupported OpenAPI version: 4.0.1. Swagger Parser only supports versions 3.0.0, 3.0.1, 3.0.2, 3.0.3',
-          ),
-        )
+        ).rejects.toThrow('Unsupported OpenAPI version: 4.0.1.')
       })
     })
 

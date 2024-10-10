@@ -118,7 +118,16 @@ type VersionFeatures = {
 }
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
-  const errorDetails = _.get(error.response?.data ?? {}, 'o:errorDetails')
+  const { response } = error as {
+    response?: {
+      data?: {
+        ['o:errorDetails']?: {
+          detail?: string
+        }[]
+      }
+    }
+  }
+  const errorDetails = response?.data?.['o:errorDetails']
   if (!_.isArray(errorDetails)) {
     return undefined
   }

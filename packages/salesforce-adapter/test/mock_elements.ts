@@ -737,13 +737,13 @@ export const mockTypes = {
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
-        [constants.CPQ_INDEX_FIELD]: {
-          refType: BuiltinTypes.NUMBER,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          },
+      },
+      [constants.CPQ_INDEX_FIELD]: {
+        refType: BuiltinTypes.NUMBER,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
     },

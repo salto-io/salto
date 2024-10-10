@@ -15,6 +15,7 @@ import { fullFetchConfig } from '../../src/config/config_creator'
 import { UNKNOWN_TYPE_REFERENCES_ELEM_ID } from '../../src/filters/data_account_specific_values'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('data account specific values validator', () => {
   let dataType: ObjectType
@@ -26,6 +27,7 @@ describe('data account specific values validator', () => {
     },
     client: new NetsuiteClient(mockSdfClient()),
     suiteQLNameToInternalIdsMap: {},
+    ...getTypesToInternalId([]),
   }
 
   beforeEach(() => {

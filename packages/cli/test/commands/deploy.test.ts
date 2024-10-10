@@ -359,7 +359,9 @@ describe('deploy command', () => {
 
   describe('invalid deploy', () => {
     it('should fail gracefully', async () => {
-      workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+      )
       const result = await action({
         ...cliCommandArgs,
         input: {
@@ -374,7 +376,9 @@ describe('deploy command', () => {
       expect(result).toBe(CliExitCode.AppError)
     })
     it('should allow the user to cancel when there are warnings', async () => {
-      workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Warning', message: 'some warning' }]))
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Warning', message: 'some warning', detailedMessage: 'some warning' }]),
+      )
       mockGetUserBooleanInput.mockResolvedValue(false)
       const result = await action({
         ...cliCommandArgs,
@@ -395,7 +399,9 @@ describe('deploy command', () => {
     beforeEach(() => {
       workspace.updateNaclFiles.mockImplementationOnce(async () => {
         // Make the workspace errored after the call to updateNaclFiles
-        workspace.errors.mockResolvedValueOnce(mocks.mockErrors([{ severity: 'Error', message: '' }]))
+        workspace.errors.mockResolvedValueOnce(
+          mocks.mockErrors([{ severity: 'Error', message: '', detailedMessage: '' }]),
+        )
         return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
       })
       mockGetUserBooleanInput.mockReturnValue(true)

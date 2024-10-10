@@ -21,6 +21,7 @@ import NetsuiteClient from '../../src/client/client'
 import serviceUrls from '../../src/filters/service_urls'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 import { INTERNAL_ID, NETSUITE } from '../../src/constants'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('serviceUrls', () => {
   describe('onFetch', () => {
@@ -47,6 +48,7 @@ describe('serviceUrls', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        ...getTypesToInternalId([]),
       }).onFetch?.(elements)
       expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
         'https://accountid.app.netsuite.com/app/common/media/mediaitem.nl?id=1',
@@ -62,6 +64,7 @@ describe('serviceUrls', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        ...getTypesToInternalId([]),
       }).onFetch?.(elements)
       expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
     })
@@ -87,6 +90,7 @@ describe('serviceUrls', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        ...getTypesToInternalId([]),
       }).preDeploy?.([toChange({ after: instance }), toChange({ after: field }), toChange({ after: type })])
       expect(type.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
       expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()

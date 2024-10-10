@@ -49,6 +49,7 @@ import {
   parsedUnknownDatasetValueForFetch,
 } from './analytics_tests_constants'
 import { CHARTS, PIVOTS, TABLES } from '../../src/type_parsers/analytics_parsers/analytics_constants'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('analytics definition handle filter', () => {
   let fetchOpts: LocalFilterOpts
@@ -62,6 +63,7 @@ describe('analytics definition handle filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
   })
 

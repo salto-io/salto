@@ -356,7 +356,7 @@ describe('securitySchemeFilter', () => {
       it('should return the error from deployWithJspEndpoints when deploying the schemes', async () => {
         deployWithJspEndpointsMock.mockResolvedValue({
           appliedChanges: [],
-          errors: [{ message: 'error', severity: 'Error' as SeverityLevel }],
+          errors: [{ message: 'error', severity: 'Error' as SeverityLevel, detailedMessage: 'error' }],
         })
 
         const { deployResult } = await filter.deploy([
@@ -377,7 +377,7 @@ describe('securitySchemeFilter', () => {
         }))
         deployWithJspEndpointsMock.mockResolvedValueOnce({
           appliedChanges: [],
-          errors: [{ message: 'error', severity: 'Error' as SeverityLevel }],
+          errors: [{ message: 'error', severity: 'Error' as SeverityLevel, detailedMessage: 'error' }],
         })
 
         const { deployResult } = await filter.deploy([toChange({ after: securityLevelInstance })])

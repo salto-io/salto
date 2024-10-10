@@ -1535,9 +1535,12 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
-                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
-                  }),
+                  Object.assign(
+                    await transformFieldAnnotations(f, Types.get({ name: f.type ?? '' }), objectInfo.fullName),
+                    {
+                      [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                    },
+                  ),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)
@@ -2070,9 +2073,12 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
-                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
-                  }),
+                  Object.assign(
+                    await transformFieldAnnotations(f, Types.get({ name: f.type ?? '' }), objectInfo.fullName),
+                    {
+                      [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                    },
+                  ),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)
@@ -2243,7 +2249,11 @@ describe('Salesforce adapter E2E with real account', () => {
             const fieldWithoutName = _.omit(fieldInfo, constants.INSTANCE_FULL_NAME_FIELD)
             expect(
               Object.assign(
-                await transformFieldAnnotations(fieldWithoutName, Types.get({ name: fieldInfo.type }), accountApiName),
+                await transformFieldAnnotations(
+                  fieldWithoutName,
+                  Types.get({ name: fieldInfo.type ?? '' }),
+                  accountApiName,
+                ),
                 {
                   [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
                 },

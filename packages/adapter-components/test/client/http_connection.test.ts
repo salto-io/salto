@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import axios, { AxiosError, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosResponse, AxiosHeaders } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { RetryOptions } from '../../src/client/http_connection'
 import { validateCredentials, axiosConnection, UnauthorizedError, createRetryOptions } from '../../src/client'
@@ -117,7 +117,7 @@ describe('client_http_connection', () => {
       mockAxiosAdapter.onPost('/test').reply(200, { data: 'success' })
 
       // Make a POST request
-      const response = await httpClient.post('/test', {})
+      const response = (await httpClient.post('/test', {})) as AxiosResponse
 
       expect(response.config.timeout).toBe(0)
     })
@@ -138,7 +138,7 @@ describe('client_http_connection', () => {
       mockAxiosAdapter.onGet('/test').reply(200, { data: 'success' })
 
       // Make a POST request
-      const response = await httpClient.get('/test')
+      const response = (await httpClient.get('/test')) as AxiosResponse
 
       expect(response.config.timeout).toBe(5000)
     })
@@ -149,14 +149,14 @@ describe('client_http_connection', () => {
     const mockAxiosError = (args: Partial<AxiosError>): AxiosError => ({
       name: 'MockAxiosError',
       message: 'mock axios error message',
-      config: {},
+      config: { headers: new AxiosHeaders() },
       isAxiosError: true,
       toJSON: () => args,
       ...args,
     })
 
     const mockAxiosResponse = (args: Partial<AxiosResponse>): AxiosResponse => ({
-      config: {},
+      config: { headers: new AxiosHeaders() },
       data: null,
       headers: {},
       status: 200,
@@ -233,6 +233,7 @@ describe('client_http_connection', () => {
             }),
             code: 'code',
             config: {
+              headers: new AxiosHeaders(),
               url: 'url',
             },
           }),
@@ -251,6 +252,7 @@ describe('client_http_connection', () => {
             }),
             code: 'code',
             config: {
+              headers: new AxiosHeaders(),
               url: 'url',
             },
           }),
@@ -268,6 +270,7 @@ describe('client_http_connection', () => {
             }),
             code: 'code',
             config: {
+              headers: new AxiosHeaders(),
               url: 'url',
             },
           }),
@@ -302,6 +305,7 @@ describe('client_http_connection', () => {
             }),
             code: 'code',
             config: {
+              headers: new AxiosHeaders(),
               url: 'url',
             },
           }),

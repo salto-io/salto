@@ -5,7 +5,7 @@
     "baseUrl": ".",
     "declaration": true
   },
-  "include": ["src/**/*", "test/**/*", "index.ts"],
+  "include": ["src/**/*", "test/**/*", "index.ts", "test/**/*.json"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-utils" },

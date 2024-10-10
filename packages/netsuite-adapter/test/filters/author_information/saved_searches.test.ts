@@ -13,6 +13,7 @@ import NetsuiteClient from '../../../src/client/client'
 import { RemoteFilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
+import { getTypesToInternalId } from '../../../src/data_elements/types'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 import 'moment-timezone'
 
@@ -26,6 +27,7 @@ describe('netsuite saved searches author information tests', () => {
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
   const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
+  const { internalIdToTypes, typeToInternalId } = getTypesToInternalId([])
   const suiteAppClient = {
     runSuiteQL: runSuiteQLMock,
     runSavedSearchQuery: runSavedSearchQueryMock,
@@ -55,6 +57,8 @@ describe('netsuite saved searches author information tests', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
       timeZoneAndFormat: { format: 'MM/DD/YYYY H:mm a', timeZone: 'America/Toronto' },
+      internalIdToTypes,
+      typeToInternalId,
     }
   })
 
@@ -97,6 +101,8 @@ describe('netsuite saved searches author information tests', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
       timeZoneAndFormat: { format: 'DD/M/YYYY h:mm a', timeZone: 'America/Toronto' },
+      internalIdToTypes,
+      typeToInternalId,
     }
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/1/1995 6:17 am' },
@@ -115,6 +121,8 @@ describe('netsuite saved searches author information tests', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
       timeZoneAndFormat: { format: 'D MMMM, YYYY h:mm a', timeZone: 'Asia/Jerusalem' },
+      internalIdToTypes,
+      typeToInternalId,
     }
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 1995 6:17 am' },
@@ -132,6 +140,8 @@ describe('netsuite saved searches author information tests', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
       timeZoneAndFormat: { format: 'D MMMM, YYYY h:mm a', timeZone: 'Asia/Jerusalem' },
+      internalIdToTypes,
+      typeToInternalId,
     }
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 3995 6:17 am' },
@@ -150,6 +160,8 @@ describe('netsuite saved searches author information tests', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
       timeZoneAndFormat: { format: undefined, timeZone: 'Asia/Jerusalem' },
+      internalIdToTypes,
+      typeToInternalId,
     }
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toBeUndefined()
@@ -191,6 +203,8 @@ describe('netsuite saved searches author information tests', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        internalIdToTypes,
+        typeToInternalId,
       }
     })
     it('should not change any elements in fetch', async () => {
@@ -219,6 +233,8 @@ describe('netsuite saved searches author information tests', () => {
             },
           },
         },
+        internalIdToTypes,
+        typeToInternalId,
       }
     })
     it('should not change any elements in fetch', async () => {

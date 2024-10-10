@@ -21,7 +21,7 @@ import { addStartToLayers, addTimeZone, shouldChangeLayer } from '../../../src/d
 import { ADAPTER_NAME, SCHEDULE_LAYERS_TYPE_NAME, SCHEDULE_TYPE_NAME } from '../../../src/constants'
 
 describe('schedule layers definitions utils', () => {
-  let item: definitions.GeneratedItem<definitions.ContextParams & definitions.deploy.ChangeAndContext, unknown>
+  let item: definitions.GeneratedItem<definitions.ContextParams & definitions.deploy.ChangeAndExtendedContext, unknown>
   describe('addTimeZone', () => {
     beforeEach(() => {
       const change = toChange({
@@ -43,6 +43,7 @@ describe('schedule layers definitions utils', () => {
           },
           elementSource: buildElementsSourceFromElements([]),
           sharedContext: {},
+          errors: {},
         },
         value: { something: 'else', rotation_virtual_start: '2021-01-01T00:00:00Z' },
       }
@@ -81,6 +82,7 @@ describe('schedule layers definitions utils', () => {
           },
           elementSource: buildElementsSourceFromElements([]),
           sharedContext: {},
+          errors: {},
         },
         value: {
           schedule: {
@@ -145,6 +147,7 @@ describe('schedule layers definitions utils', () => {
         change: layerChange,
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       })
       expect(result).toBeTruthy()
     })
@@ -162,6 +165,7 @@ describe('schedule layers definitions utils', () => {
         change: layerChange,
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
+        errors: {},
       })
       expect(result).toBeFalsy()
     })

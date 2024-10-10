@@ -140,9 +140,6 @@ export const mockDefaultValues: Record<string, Values> = {
         access: 'ALLOW',
       },
     },
-    conditions: {
-      network: { connection: 'ANYWHERE' },
-    },
   },
   [APPLICATION_TYPE_NAME]: {
     label: 'SAML Test',

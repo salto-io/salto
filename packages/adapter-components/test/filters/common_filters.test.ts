@@ -31,6 +31,7 @@ describe('common filters', () => {
   describe('createCommonFilters', () => {
     it('should create the common filters', () => {
       const filters = createCommonFilters({
+        adapterName: 'myAdapter',
         referenceRules: [],
         config: {
           fetch: {
@@ -79,6 +80,7 @@ describe('common filters', () => {
         'defaultDeploy',
         'fieldReferencesFilter',
         'hideTypes',
+        'omitCollisions',
         'query',
         'referencedInstanceNames',
         'serviceUrl',

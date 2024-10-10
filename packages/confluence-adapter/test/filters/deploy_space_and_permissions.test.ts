@@ -49,6 +49,7 @@ describe('deploySpaceAndPermissions', () => {
     deploy: deployDef,
   } as definitionsUtils.ApiDefinitions<Options>
   const mockFilterArgs = {
+    adapterName: ADAPTER_NAME,
     config: {} as UserConfig,
     elementSource: buildElementsSourceFromElements([]),
     sharedContext: {},

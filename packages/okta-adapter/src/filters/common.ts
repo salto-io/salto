@@ -7,6 +7,7 @@
  */
 import { filters } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
+import { OKTA } from '../constants'
 
 /**
  * Filter creators of all the common filters
@@ -17,6 +18,7 @@ const filterCreators: Record<string, FilterCreator> = {
   addAlias: filters.addAliasFilterCreator(),
   query: filters.queryFilterCreator({}),
   sortLists: filters.sortListsFilterCreator(),
+  omitCollitions: filters.omitCollisionsFilterCreator(OKTA),
 }
 
 export default filterCreators

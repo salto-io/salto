@@ -127,6 +127,7 @@ export type OptionalFeatures = {
   logDiffsFromParsingXmlNumbers?: boolean
   performSideEffectDeletes?: boolean
   extendTriggersMetadata?: boolean
+  storeProfilesAndPermissionSetsBrokenPaths?: boolean
   removeReferenceFromFilterItemToRecordType?: boolean
 }
 
@@ -839,6 +840,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
+    storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
     removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

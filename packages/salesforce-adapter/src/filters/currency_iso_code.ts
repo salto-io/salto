@@ -27,8 +27,9 @@ import {
   CUSTOM_VALUE,
   CURRENCY_CODE_TYPE_NAME,
   CURRENCY_ISO_CODE,
+  getTypePath,
 } from '../constants'
-import { Types, getTypePath } from '../transformers/transformer'
+import { Types } from '../transformers/transformer'
 
 const currencyCodeType = new ObjectType({
   elemID: new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME),

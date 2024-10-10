@@ -239,6 +239,50 @@ describe('SalesforceAdapter fetch', () => {
       }
     }
 
+    describe('When a managed Instance with no namespace prefix has the same fullName as another Instance', () => {
+      const NAMESPACE1 = 'namespace1'
+      const NAMESPACE2 = 'namespace2'
+      beforeEach(() => {
+        mockMetadataType({ xmlName: 'Layout' }, { valueTypeFields: [] }, [
+          {
+            props: {
+              fullName: 'Account-Account Layout',
+              namespacePrefix: NAMESPACE1,
+            },
+            values: {
+              fullName: 'Account-Account Layout',
+            },
+          },
+          {
+            props: {
+              fullName: 'Account-Account Layout',
+              namespacePrefix: NAMESPACE2,
+            },
+            values: {
+              fullName: 'Account-Account Layout',
+            },
+          },
+          {
+            props: {
+              fullName: 'Account-Account Layout',
+            },
+            values: {
+              fullName: 'Account-Account Layout',
+            },
+          },
+        ])
+      })
+      it('should attempt to retrieve all the Instances', async () => {
+        await adapter.fetch(mockFetchOpts)
+        const request = connection.metadata.retrieve.mock.calls[0][0]
+        expect(request?.unpackaged?.types?.find(v => v.name === 'Layout')?.members).toIncludeSameMembers([
+          'Account-Account Layout',
+          `Account-${NAMESPACE1}__Account Layout`,
+          `Account-${NAMESPACE2}__Account Layout`,
+        ])
+      })
+    })
+
     describe('profiles fetch with changes detection', () => {
       const DATE = '2023-01-12T00:00:00.000Z'
       const GREATER_DATE = '2023-02-12T00:00:00.000Z'

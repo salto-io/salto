@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  Element,
   Change,
   DetailedChange,
   isAdditionOrModificationChange,
@@ -16,17 +17,31 @@ import {
 const hasElemIDs = <T extends Change | DetailedChange>(change: T): change is T & Pick<DetailedChange, 'elemIDs'> =>
   'elemIDs' in change
 
-export const reverseChange = <T extends Change | DetailedChange>(change: T): T => {
+const hasBaseChange = <T extends Change | DetailedChange>(
+  change: T,
+): change is T & Pick<DetailedChange, 'baseChange'> => 'baseChange' in change
+
+const reverseBaseChange = <T extends Element>(change: Change<T>): Change<T> => {
   const before = isAdditionOrModificationChange(change) ? change.data.after : undefined
   const after = isRemovalOrModificationChange(change) ? change.data.before : undefined
+  return toChange({ before, after })
+}
+
+export const reverseChange = <T extends Change | DetailedChange>(change: T): T => {
+  const reversedChange = reverseBaseChange(change)
+
   const reversedElemIDs =
     hasElemIDs(change) && change.elemIDs !== undefined
       ? { elemIDs: { before: change.elemIDs.after, after: change.elemIDs.before } }
       : {}
 
+  const reversedBaseChange =
+    hasBaseChange(change) && change.baseChange !== undefined ? { baseChange: reverseBaseChange(change.baseChange) } : {}
+
   return {
     ...change,
-    ...toChange({ before, after }),
+    ...reversedChange,
     ...reversedElemIDs,
+    ...reversedBaseChange,
   }
 }

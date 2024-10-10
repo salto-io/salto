@@ -186,6 +186,14 @@ export type ConfigCreator = {
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 
+export type CheckAdapterFormatFolderArgs = {
+  baseDir: string
+}
+
+export type InitAdapterFormatFolderArgs = {
+  baseDir: string
+}
+
 export type LoadElementsFromFolderArgs = {
   baseDir: string
 } & AdapterBaseContext
@@ -242,6 +250,8 @@ export type Adapter = {
   configType?: ObjectType
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
+  checkAdapterFormatFolder?: (args: CheckAdapterFormatFolderArgs) => Promise<boolean>
+  initAdapterFormatFolder?: (args: InitAdapterFormatFolderArgs) => Promise<void>
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
   dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc

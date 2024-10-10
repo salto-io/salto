@@ -77,6 +77,7 @@ describe('dumpElementsToFolder', () => {
 `)
       })
     })
+
     describe('when deleting an existing instance', () => {
       const project = setupTmpProject()
       let dumpResult: DumpElementsResult
@@ -159,6 +160,7 @@ describe('dumpElementsToFolder', () => {
         })
       })
     })
+
     describe('when modifying an existing nested instance', () => {
       const project = setupTmpProject()
       let dumpResult: DumpElementsResult

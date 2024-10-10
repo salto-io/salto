@@ -46,14 +46,21 @@ import {
   isField,
   isTemplateExpression,
   UnresolvedReference,
+  Change,
+  isAdditionOrModificationChange,
+  getChangeData,
+  isInstanceChange,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify, toObjectType } from '@salto-io/adapter-utils'
+import { getDetailedChanges, safeJsonStringify, toObjectType } from '@salto-io/adapter-utils'
 import { parser } from '@salto-io/parser'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { CircularReference, resolve } from './expressions'
+import { ReadOnlyRemoteMap } from './workspace/remote_map'
+import { ReferenceIndexEntry } from './workspace/reference_indexes'
 
 const log = logger(module)
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 const MAX_VALUE_LENGTH = 25
 
@@ -856,3 +863,149 @@ export const validateElements = async (
     'validateElements with %d elements',
     elements.length,
   )
+
+type FilterDependencyFunc = (param: { id: ElemID }) => boolean
+
+const isDependentAnnotationType: FilterDependencyFunc = ({ id }) => id.isAnnotationTypeID()
+
+const isDependentFieldType: FilterDependencyFunc = ({ id }) => id.isBaseID() && id.idType === 'field'
+
+const isDependentReference: FilterDependencyFunc = ({ id }) =>
+  !isDependentAnnotationType({ id }) && !isDependentFieldType({ id })
+
+const isInstanceDependency: FilterDependencyFunc = ({ id }) => {
+  const [annoName] = id.createBaseID().path
+
+  if (id.idType === 'field') {
+    return id.isBaseID() || annoName === CORE_ANNOTATIONS.REQUIRED || annoName === CORE_ANNOTATIONS.RESTRICTION
+  }
+  if (id.idType === 'attr') {
+    return annoName === CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES
+  }
+  return false
+}
+
+const getDependentIDs = async (
+  elemIDs: ElemID[],
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
+  filterDependencyFunc: FilterDependencyFunc,
+  addedIDs = new Set<string>(),
+): Promise<ElemID[]> => {
+  elemIDs.forEach(id => {
+    addedIDs.add(id.getFullName())
+  })
+
+  const dependentIDs = await log.timeDebug(
+    async () =>
+      awu(elemIDs)
+        // TODO: should we filter out weak referenecs or references that aren't in the element?
+        .map(id => referenceSourcesIndex.get(id.getFullName()))
+        .flatMap(references => references ?? [])
+        .filter(filterDependencyFunc)
+        .map(ref => ref.id.createTopLevelParentID().parent)
+        .filter(id => !addedIDs.has(id.getFullName()))
+        .uniquify(id => id.getFullName())
+        .toArray(),
+    'getElementsDependents for %d elemIDs',
+    elemIDs.length,
+  )
+
+  return _.isEmpty(dependentIDs)
+    ? dependentIDs
+    : dependentIDs.concat(await getDependentIDs(dependentIDs, referenceSourcesIndex, filterDependencyFunc, addedIDs))
+}
+
+const getDependentInstanceIDs = async (
+  instancesDependencies: ElemID[],
+  elementsSource: ReadOnlyElementsSource,
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
+): Promise<ElemID[]> => {
+  const dependentByFieldType = await getDependentIDs(instancesDependencies, referenceSourcesIndex, isDependentFieldType)
+  const typeIDsOfDependentInstances = instancesDependencies.concat(dependentByFieldType)
+  const typeIDs = new Set(typeIDsOfDependentInstances.map(id => id.getFullName()))
+
+  return awu(await elementsSource.list())
+    .filter(id => id.idType === 'instance' && typeIDs.has(`${id.adapter}${ElemID.NAMESPACE_SEPARATOR}${id.typeName}`))
+    .toArray()
+}
+
+const getDependencyIDs = (
+  changes: ReadonlyArray<Change>,
+): { instancesDependencies: ElemID[]; typesDependencies: ElemID[]; referencesDependencies: ElemID[] } => {
+  const [instanceChanges, typeChanges] = _.partition(changes, isInstanceChange)
+
+  const instanceChangeIDs = instanceChanges.map(change => getChangeData(change).elemID)
+
+  const allTypeDetailedChangeIDs = typeChanges
+    .flatMap(change => getDetailedChanges(change, { createFieldChanges: true }))
+    .map(change => change.id)
+
+  const [typeTopLevelChangeIDs, typeDetailedChangeIDs] = _.partition(allTypeDetailedChangeIDs, id => id.isTopLevel())
+
+  const [instancesDependencies, restOfTypeDetailedChangeIDs] = _.partition(typeDetailedChangeIDs, id =>
+    isInstanceDependency({ id }),
+  )
+
+  const [typesDependencies, otherDependencies] = _.partition(restOfTypeDetailedChangeIDs, id =>
+    isDependentAnnotationType({ id }),
+  )
+
+  const dependencyIDs = {
+    instancesDependencies,
+    typesDependencies,
+    referencesDependencies: instanceChangeIDs.concat(otherDependencies),
+  }
+
+  const topLevelDependencies = _.mapValues(dependencyIDs, ids => {
+    // top level type changes are dependencies in all groups
+    const groupDedendencies = ids.concat(typeTopLevelChangeIDs)
+    const topLevelIDs = groupDedendencies.map(id => id.createTopLevelParentID().parent)
+    return _.uniqBy(topLevelIDs, id => id.getFullName())
+  })
+
+  return topLevelDependencies
+}
+
+export const validateElementsAndDependents = async (
+  changes: ReadonlyArray<Change>,
+  elementsSource: ReadOnlyElementsSource,
+  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
+): Promise<{
+  errors: ValidationError[]
+  validatedElementsIDs: ElemID[]
+}> => {
+  const changeIDs = changes.map(change => getChangeData(change).elemID)
+  const { instancesDependencies, typesDependencies, referencesDependencies } = getDependencyIDs(changes)
+
+  const dependentInstanceIDs = await getDependentInstanceIDs(
+    instancesDependencies,
+    elementsSource,
+    referenceSourcesIndex,
+  )
+  const dependentTypeIDs = await getDependentIDs(typesDependencies, referenceSourcesIndex, isDependentAnnotationType)
+  const dependentByReferencesIDs = await getDependentIDs(
+    referencesDependencies,
+    referenceSourcesIndex,
+    isDependentReference,
+  )
+
+  const changeIDsSet = new Set(changeIDs.map(id => id.getFullName()))
+  const dependentIDs = dependentInstanceIDs
+    .concat(dependentTypeIDs)
+    .concat(dependentByReferencesIDs)
+    .filter(id => !changeIDsSet.has(id.getFullName()))
+
+  const uniqDependentIDs = _.uniqBy(dependentIDs, id => id.getFullName())
+
+  log.debug('found %d dependents for %d elements', uniqDependentIDs.length, changes.length)
+
+  const changedElements: Element[] = changes.filter(isAdditionOrModificationChange).map(getChangeData)
+  const dependentElements = (await Promise.all(uniqDependentIDs.map(id => elementsSource.get(id)))).filter(isElement)
+
+  const elementsToValidate = changedElements.concat(dependentElements)
+
+  return {
+    errors: await validateElements(elementsToValidate, elementsSource),
+    validatedElementsIDs: changeIDs.concat(dependentElements.map(element => element.elemID)),
+  }
+}

@@ -325,6 +325,15 @@ export class ElemID {
     return undefined
   }
 
+  getInnerTypeElemID(): ElemID {
+    const container = this.getContainerPrefixAndInnerType()
+    if (container === undefined) {
+      return this
+    }
+    const innerTypeElemID = ElemID.fromFullName(container.innerTypeName)
+    return innerTypeElemID.getInnerTypeElemID()
+  }
+
   isIDNestedInType(): boolean {
     // These id types represent "logical groups" of IDs that count towards the nesting level
     // e.g - adapter.type.field.bla is nested under adapter.type.field

@@ -519,6 +519,16 @@ describe('detailedCompare', () => {
       expect(hasChange(changes, 'modify', after.elemID.createNestedID('annotation', 'modify'))).toBeTruthy()
       expect(hasChange(changes, 'modify', after.elemID.createNestedID('attr', 'modify'))).toBeTruthy()
     })
+
+    describe("when the primitive type's primitive changed", () => {
+      it('should return a detailed change on the whole type', () => {
+        const afterWithDifferentPrimitive = after.clone()
+        afterWithDifferentPrimitive.primitive = PrimitiveTypes.NUMBER
+        const primitiveTypeChanges = detailedCompare(before, afterWithDifferentPrimitive)
+        expect(primitiveTypeChanges).toHaveLength(1)
+        expect(primitiveTypeChanges[0].id).toEqual(afterWithDifferentPrimitive.elemID)
+      })
+    })
   })
 
   describe('compare object types', () => {

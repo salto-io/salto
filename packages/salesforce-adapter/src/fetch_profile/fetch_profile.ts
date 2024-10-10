@@ -51,6 +51,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   performSideEffectDeletes: false,
   extendTriggersMetadata: false,
   removeReferenceFromFilterItemToRecordType: false,
+  picklistsAsMaps: false,
 }
 
 type BuildFetchProfileParams = {

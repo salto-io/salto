@@ -1249,7 +1249,29 @@ const createCustomizations = ({
         },
       },
     ],
-    resource: { directFetch: true },
+    resource: {
+      directFetch: true,
+      onError: {
+        custom:
+          () =>
+          ({ error }) => {
+            if (error instanceof fetchUtils.errors.MaxResultsExceeded) {
+              const message = `The number of users fetched exceeded the maximum allowed: ${error.maxResults}. Consider excluding this type or filtering users by specific status.`
+              return {
+                action: 'customSaltoError',
+                value: {
+                  message,
+                  detailedMessage: message,
+                  severity: 'Warning',
+                },
+              }
+            }
+            return { action: 'failEntireFetch', value: false }
+          },
+        action: 'failEntireFetch',
+        value: false,
+      },
+    },
     element: {
       topLevel: {
         isTopLevel: true,

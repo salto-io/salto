@@ -13,13 +13,16 @@ import { collections } from '@salto-io/lowerdash'
 import { PaginationFunction } from '../../../definitions/system/requests/pagination'
 import { DATA_FIELD_ENTIRE_OBJECT } from '../../../definitions'
 import { ResponseValue } from '../../../client'
+import { MaxResultsExceeded } from '../../errors'
 
 const log = logger(module)
 
-const getItems = (value: ResponseValue | ResponseValue[], dataField: string): unknown[] =>
+export const getItems = (value: ResponseValue | ResponseValue[], dataField: string): unknown[] =>
   collections.array
     .makeArray(value)
-    .map(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? item : _.get(item, dataField)))
+    .flatMap(item => (dataField === DATA_FIELD_ENTIRE_OBJECT ? item : _.get(item, dataField)))
+
+const defaultGetItems = (value: ResponseValue | ResponseValue[]): unknown[] => getItems(value, DATA_FIELD_ENTIRE_OBJECT)
 
 /**
  * Make paginated requests using the specified pagination field
@@ -297,4 +300,30 @@ export const tokenPagination = ({
     ]
   }
   return nextPageTokenPages
+}
+
+export const getPaginationWithLimitedResults = ({
+  maxResultsNumber,
+  paginationFunc,
+  getItemsFunc = defaultGetItems,
+}: {
+  maxResultsNumber: number
+  paginationFunc: PaginationFunction
+  getItemsFunc?: (value: ResponseValue | ResponseValue[]) => unknown[]
+}): PaginationFunction => {
+  const UNLIMITED_RESULTS = -1
+  let totalResults = 0
+  log.debug('creating pagination function with max results: %d', maxResultsNumber)
+  const paginationWithLimitedResults: PaginationFunction = args => {
+    if (maxResultsNumber !== UNLIMITED_RESULTS) {
+      const currentPageResults = getItemsFunc(args.responseData).length
+      totalResults += currentPageResults
+      if (totalResults > maxResultsNumber) {
+        log.error('reached max results for endpoint %s, stopping pagination', args.endpointIdentifier.path)
+        throw new MaxResultsExceeded({ endpoint: args.endpointIdentifier.path, maxResults: maxResultsNumber })
+      }
+    }
+    return paginationFunc(args)
+  }
+  return paginationWithLimitedResults
 }

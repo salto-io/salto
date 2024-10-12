@@ -5,6 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { ResponseValue } from '../../../../src/client'
+import { MaxResultsExceeded } from '../../../../src/fetch/errors'
 import {
   defaultPathChecker,
   noPagination,
@@ -14,6 +16,8 @@ import {
   cursorHeaderPagination,
   tokenPagination,
   offsetAndLimitPagination,
+  getPaginationWithLimitedResults,
+  getItems,
 } from '../../../../src/fetch/request/pagination/pagination_functions'
 
 describe('pagination functions', () => {
@@ -200,6 +204,78 @@ describe('pagination functions', () => {
           responseData: { a: [{ x: 'y' }], nextPageToken: 'second' },
         }),
       ).toEqual([{ queryParams: { pageToken: 'second' } }])
+    })
+  })
+
+  describe('getPaginationWithLimitedResults', () => {
+    it('should throw MaxResultsExceeded if the number of results exceeds the limit', async () => {
+      const paginate = getPaginationWithLimitedResults({
+        maxResultsNumber: 3,
+        paginationFunc: cursorPagination({ paginationField: 'next', pathChecker: defaultPathChecker }),
+        getItemsFunc: (value: ResponseValue | ResponseValue[]): unknown[] => getItems(value, 'data'),
+      })
+      expect(() =>
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: {},
+          responseData: {
+            data: [{ a: 'a' }, { a: 'b' }, { a: 'c' }, { a: 'd' }],
+            next: 'https://127.0.0.1/ep?arg=val',
+          },
+        }),
+      ).toThrow(new MaxResultsExceeded({ endpoint: '/ep', maxResults: 3 }))
+    })
+    it('should throw MaxResultsExceeded if the number of results exceeds the limit after multiple pages', async () => {
+      const paginate = getPaginationWithLimitedResults({
+        maxResultsNumber: 3,
+        paginationFunc: cursorPagination({ paginationField: 'next', pathChecker: defaultPathChecker }),
+        getItemsFunc: (value: ResponseValue | ResponseValue[]): unknown[] => getItems(value, 'data'),
+      })
+      paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: {},
+        responseData: { data: [{ a: 'a' }, { a: 'b' }, { a: 'c' }], next: 'https://127.0.0.1/ep?arg=val' },
+      })
+      expect(() =>
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: { queryParams: { arg: 'val' } },
+          responseData: { data: [{ a: 'd' }, { a: 'e' }, { a: 'f' }], next: 'https://127.0.0.1/ep?arg=val' },
+        }),
+      ).toThrow(new MaxResultsExceeded({ endpoint: '/ep', maxResults: 3 }))
+    })
+    it('should return results if the number of results does not exceed the limit', async () => {
+      const paginate = getPaginationWithLimitedResults({
+        maxResultsNumber: 3,
+        paginationFunc: cursorPagination({ paginationField: 'next', pathChecker: defaultPathChecker }),
+        getItemsFunc: (value: ResponseValue | ResponseValue[]): unknown[] => getItems(value, 'data'),
+      })
+      expect(
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: {},
+          responseData: { data: [{ a: 'a' }, { a: 'b' }, { a: 'c' }], next: 'https://127.0.0.1/ep?arg=val' },
+        }),
+      ).toEqual([{ queryParams: { arg: 'val' } }])
+    })
+    it('should not throw MaxResultsExceeded if maxResultsNumber is -1 (no limit)', async () => {
+      const paginate = getPaginationWithLimitedResults({
+        maxResultsNumber: -1,
+        paginationFunc: cursorPagination({ paginationField: 'next', pathChecker: defaultPathChecker }),
+        getItemsFunc: (value: ResponseValue | ResponseValue[]): unknown[] => getItems(value, 'data'),
+      })
+      paginate({
+        endpointIdentifier: { path: '/ep' },
+        currentParams: { queryParams: { arg: 'val' } },
+        responseData: { data: [{ a: 'a' }, { a: 'b' }, { a: 'c' }], next: 'https://127.0.0.1/ep?arg=val' },
+      })
+      expect(
+        paginate({
+          endpointIdentifier: { path: '/ep' },
+          currentParams: {},
+          responseData: { data: [{ a: 'd' }, { a: 'e' }, { a: 'f' }], next: 'https://127.0.0.1/ep?arg=val' },
+        }),
+      ).toEqual([{ queryParams: { arg: 'val' } }])
     })
   })
   // TODO extend tests for all pagination functions (can rely on previous tests)

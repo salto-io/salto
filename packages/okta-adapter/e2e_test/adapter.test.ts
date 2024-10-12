@@ -16,7 +16,6 @@ import {
   InstanceElement,
   isAdditionChange,
   isAdditionOrModificationChange,
-  isEqualValues,
   isInstanceChange,
   isInstanceElement,
   isObjectType,
@@ -32,7 +31,6 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   getParents,
-  inspectValue,
   invertNaclCase,
   naclCase,
   safeJsonStringify,
@@ -82,6 +80,7 @@ import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { OktaOptions } from '../src/definitions/types'
 import { createFetchQuery } from '../test/utils'
+import './jest_matchers'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -652,19 +651,6 @@ const getHiddenFieldsToOmit = (
 }
 
 describe('Okta adapter E2E', () => {
-  expect.extend({
-    toHaveEqualValues(received: Values, expected: InstanceElement) {
-      const pass = isEqualValues(received, expected.value)
-      return {
-        pass,
-        message: () =>
-          `Received unexpected result when fetching instance: ${expected.elemID.getFullName()}.\n` +
-          `Expected value: ${inspectValue(expected.value, { depth: 7 })},\n` +
-          `Received value: ${inspectValue(received, { depth: 7 })}`,
-      }
-    },
-  })
-
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals

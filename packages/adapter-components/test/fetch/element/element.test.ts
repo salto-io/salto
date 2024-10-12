@@ -269,6 +269,7 @@ describe('element', () => {
       describe('when onError defined with customSaltoError', () => {
         const customSaltoError: SaltoError = {
           message: 'custom error',
+          detailedMessage: 'custom error',
           severity: 'Warning',
           type: 'unresolvedReferences',
         }

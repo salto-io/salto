@@ -78,7 +78,13 @@ describe('filtersRunner', () => {
         deploy: async (changes, changeGroup) => ({
           deployResult: {
             appliedChanges: [changes[0]],
-            errors: [{ message: `${changeGroup?.groupID}/${changes.length.toString()}`, severity: 'Error' }],
+            errors: [
+              {
+                message: `${changeGroup?.groupID}/${changes.length.toString()}`,
+                severity: 'Error',
+                detailedMessage: '',
+              },
+            ],
           },
           leftoverChanges: changes.slice(1),
         }),

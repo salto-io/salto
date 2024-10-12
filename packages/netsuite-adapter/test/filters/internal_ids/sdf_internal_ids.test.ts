@@ -16,6 +16,7 @@ import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 import { clientscriptType } from '../../../src/autogen/types/standard_types/clientscript'
 import { savedsearchType } from '../../../src/autogen/types/standard_types/savedsearch'
+import { getTypesToInternalId } from '../../../src/data_elements/types'
 
 describe('sdf internal ids tests', () => {
   let filterOpts: RemoteFilterOpts
@@ -35,6 +36,7 @@ describe('sdf internal ids tests', () => {
   } as unknown as SuiteAppClient
   const savedsearch = savedsearchType().type
   const clientScriptType = clientscriptType().type
+  const { internalIdToTypes, typeToInternalId } = getTypesToInternalId([])
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
   beforeEach(async () => {
@@ -76,6 +78,8 @@ describe('sdf internal ids tests', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      internalIdToTypes,
+      typeToInternalId,
     }
   })
   describe('no suite app client', () => {
@@ -89,6 +93,8 @@ describe('sdf internal ids tests', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        internalIdToTypes,
+        typeToInternalId,
       }
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
@@ -109,6 +115,8 @@ describe('sdf internal ids tests', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        internalIdToTypes,
+        typeToInternalId,
       }
       await filterCreator(filterOpts).preDeploy?.(elements.map(element => toChange({ after: element })))
       expect(accountInstance.value.internalId).toBe('1')
@@ -125,6 +133,8 @@ describe('sdf internal ids tests', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        internalIdToTypes,
+        typeToInternalId,
       }
       await filterCreator(filterOpts).onDeploy?.(
         [

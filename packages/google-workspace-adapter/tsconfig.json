@@ -6,15 +6,7 @@
     "declaration": true,
     "resolveJsonModule": true
   },
-  "include": [
-    "src/**/*",
-    "src/**/*.json",
-    "test/**/*",
-    "test/**/*.json",
-    "index.ts",
-    "e2e_test/**/*",
-    "../adapter-components/src/definitions/system/helpers/utils.ts"
-  ],
+  "include": ["src/**/*", "src/**/*.json", "test/**/*", "test/**/*.json", "index.ts", "e2e_test/**/*"],
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },

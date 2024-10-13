@@ -195,7 +195,7 @@ export type InitFolderArgs = {
 }
 
 export type InitFolderResult = {
-  errors: ReadonlyArray<Error>
+  errors: ReadonlyArray<SaltoError>
 }
 
 export type LoadElementsFromFolderArgs = {

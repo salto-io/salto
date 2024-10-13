@@ -23,6 +23,8 @@ import { mockWorkspace } from '../common/workspace'
 import { createMockAdapter } from '../common/helpers'
 import {
   calculatePatch,
+  initFolder,
+  isInitializedFolder,
   syncWorkspaceToFolder,
   SyncWorkspaceToFolderResult,
   updateElementFolder,
@@ -30,6 +32,140 @@ import {
 } from '../../src/core/adapter_format'
 
 const { awu } = collections.asynciterable
+
+describe('isInitializedFolder', () => {
+  const mockAdapterName = 'mock'
+
+  let mockAdapter: ReturnType<typeof createMockAdapter>
+  let workspace: Workspace
+  beforeEach(() => {
+    mockAdapter = createMockAdapter(mockAdapterName)
+    adapterCreators[mockAdapterName] = mockAdapter
+
+    workspace = mockWorkspace({
+      name: 'workspace',
+      accounts: [mockAdapterName],
+      accountToServiceName: { [mockAdapterName]: mockAdapterName },
+    })
+  })
+  afterEach(() => {
+    delete adapterCreators[mockAdapterName]
+  })
+
+  describe('when adapter returns false', () => {
+    beforeEach(() => {
+      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce(false)
+    })
+
+    it('should return false', async () => {
+      const res = await isInitializedFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.result).toBeFalse()
+      expect(res.errors).toBeEmpty()
+    })
+  })
+
+  describe('when adapter returns true', () => {
+    beforeEach(() => {
+      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce(true)
+    })
+
+    it('should return true', async () => {
+      const res = await isInitializedFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.result).toBeTrue()
+      expect(res.errors).toBeEmpty()
+    })
+  })
+
+  describe('when used with an account that does not support isInitializedFolder', () => {
+    beforeEach(() => {
+      delete (mockAdapter as Adapter).adapterFormat
+    })
+
+    it('should return an error', async () => {
+      const res = await isInitializedFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.errors).toEqual([
+        {
+          severity: 'Error',
+          message: 'Format not supported',
+          detailedMessage: `Account ${mockAdapterName}'s adapter does not support checking a non-nacl format folder`,
+        },
+      ])
+    })
+  })
+})
+
+describe('initFolder', () => {
+  const mockAdapterName = 'mock'
+
+  let mockAdapter: ReturnType<typeof createMockAdapter>
+  let workspace: Workspace
+  beforeEach(() => {
+    mockAdapter = createMockAdapter(mockAdapterName)
+    adapterCreators[mockAdapterName] = mockAdapter
+
+    workspace = mockWorkspace({
+      name: 'workspace',
+      accounts: [mockAdapterName],
+      accountToServiceName: { [mockAdapterName]: mockAdapterName },
+    })
+  })
+  afterEach(() => {
+    delete adapterCreators[mockAdapterName]
+  })
+
+  describe('when adapter returns no errors', () => {
+    beforeEach(() => {
+      mockAdapter.adapterFormat.initFolder.mockResolvedValueOnce({ errors: [] })
+    })
+
+    it('should return no errors', async () => {
+      const res = await initFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.errors).toBeEmpty()
+    })
+  })
+
+  describe('when adapter returns errors', () => {
+    beforeEach(() => {
+      mockAdapter.adapterFormat.initFolder.mockResolvedValueOnce({
+        errors: [
+          {
+            severity: 'Error',
+            message: 'Failed initializing adapter format folder',
+            detailedMessage: 'Details on the error',
+          },
+        ],
+      })
+    })
+
+    it('should return errors', async () => {
+      const res = await initFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.errors).toEqual([
+        {
+          severity: 'Error',
+          message: 'Failed initializing adapter format folder',
+          detailedMessage: 'Details on the error',
+        },
+      ])
+    })
+  })
+
+  describe('when used with an account that does not support initFolder', () => {
+    beforeEach(() => {
+      delete (mockAdapter as Adapter).adapterFormat
+    })
+
+    it('should return an error', async () => {
+      const res = await initFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.errors).toEqual([
+        {
+          severity: 'Error',
+          message: 'Format not supported',
+          detailedMessage: `Account ${mockAdapterName}'s adapter does not support initializing a non-nacl format folder`,
+        },
+      ])
+    })
+  })
+})
 
 describe('calculatePatch', () => {
   const mockAdapterName = 'mock'

@@ -43,6 +43,14 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
     await templateService.create(TemplateType.Project, opts)
     return { errors: [] }
   } catch (error) {
-    return { errors: [error] }
+    return {
+      errors: [
+        {
+          severity: 'Error' as const,
+          message: 'Failed initializing SFDX project',
+          detailedMessage: error.message,
+        },
+      ],
+    }
   }
 }

@@ -19,17 +19,29 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-type GetAdapterAndContextArgs = {
+type GetAdapterArgs = {
   workspace: Workspace
   accountName: string
+}
+
+type GetAdapterAndContextArgs = {
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-}
+} & GetAdapterArgs
 
 type GetAdapterAndContextResult = {
   adapter: Adapter
   adapterContext: AdapterOperationsContext
   resolvedElements: Element[]
+}
+
+const getAdapter = ({ workspace, accountName }: GetAdapterArgs): { adapter: Adapter; adapterName: string } => {
+  const adapterName = workspace.getServiceFromAccountName(accountName)
+  if (adapterName !== accountName) {
+    throw new Error('Account name that is different from the adapter name is not supported')
+  }
+
+  return { adapter: adapterCreators[adapterName], adapterName }
 }
 
 const getAdapterAndContext = async ({
@@ -38,10 +50,7 @@ const getAdapterAndContext = async ({
   ignoreStateElemIdMapping,
   ignoreStateElemIdMappingForSelectors,
 }: GetAdapterAndContextArgs): Promise<GetAdapterAndContextResult> => {
-  const adapterName = workspace.getServiceFromAccountName(accountName)
-  if (adapterName !== accountName) {
-    throw new Error('Account name that is different from the adapter name is not supported')
-  }
+  const { adapter, adapterName } = getAdapter({ workspace, accountName })
   const workspaceElements = await workspace.elements()
   const resolvedElements = await expressions.resolve(
     await awu(await workspaceElements.getAll()).toArray(),
@@ -56,8 +65,68 @@ const getAdapterAndContext = async ({
     ignoreStateElemIdMappingForSelectors,
   })
   const adapterContext = adaptersCreatorConfigs[accountName]
-  const adapter = adapterCreators[adapterName]
   return { adapter, adapterContext, resolvedElements }
+}
+
+type IsInitializedFolderArgs = {
+  baseDir: string
+} & GetAdapterArgs
+
+export type IsInitializedFolderResult = {
+  result: boolean
+  errors: ReadonlyArray<SaltoError>
+}
+
+export const isInitializedFolder = async ({
+  baseDir,
+  workspace,
+  accountName,
+}: IsInitializedFolderArgs): Promise<IsInitializedFolderResult> => {
+  const { adapter } = getAdapter({ workspace, accountName })
+  if (adapter.adapterFormat === undefined || adapter.adapterFormat.isInitializedFolder === undefined) {
+    return {
+      result: false,
+      errors: [
+        {
+          severity: 'Error' as const,
+          message: 'Format not supported',
+          detailedMessage: `Account ${accountName}'s adapter does not support checking a non-nacl format folder`,
+        },
+      ],
+    }
+  }
+
+  return {
+    result: await adapter.adapterFormat.isInitializedFolder({ baseDir }),
+    errors: [],
+  }
+}
+
+type InitFolderArgs = {
+  baseDir: string
+} & GetAdapterArgs
+
+export type InitFolderResult = {
+  errors: ReadonlyArray<SaltoError>
+}
+
+export const initFolder = async ({ baseDir, workspace, accountName }: InitFolderArgs): Promise<InitFolderResult> => {
+  const { adapter } = getAdapter({ workspace, accountName })
+  if (adapter.adapterFormat === undefined || adapter.adapterFormat.initFolder === undefined) {
+    return {
+      errors: [
+        {
+          severity: 'Error' as const,
+          message: 'Format not supported',
+          detailedMessage: `Account ${accountName}'s adapter does not support initializing a non-nacl format folder`,
+        },
+      ],
+    }
+  }
+
+  return {
+    errors: (await adapter.adapterFormat.initFolder({ baseDir })).errors,
+  }
 }
 
 const loadElementsAndMerge = (
@@ -162,6 +231,7 @@ type SyncWorkspaceToFolderArgs = {
 export type SyncWorkspaceToFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
+
 export const syncWorkspaceToFolder = ({
   workspace,
   accountName,

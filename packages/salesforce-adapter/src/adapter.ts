@@ -241,7 +241,7 @@ export const allFilters: Array<FilterCreator> = [
   valueToStaticFileFilter,
   fieldReferencesFilter,
   // picklistReferences should run after convertMapsFilter and fieldReferencesFilter
-  { creator: picklistReferences },
+  picklistReferences,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,
   // foreignLeyReferences should come after referenceAnnotationsFilter

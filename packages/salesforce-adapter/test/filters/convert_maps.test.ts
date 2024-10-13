@@ -16,6 +16,7 @@ import {
   toChange,
   isObjectType,
   PrimitiveType,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, generatePermissionSetType, defaultFilterContext, createCustomObjectType } from '../utils'
@@ -678,7 +679,7 @@ describe('Convert maps filter', () => {
 
     it('should convert Picklist valueSet type to ordered map', async () => {
       expect(myCustomObj.fields.myPicklist.getTypeSync()).toEqual(picklistType)
-      const valueSetType = picklistType.annotationRefTypes.valueSet
+      const valueSetType = picklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
       expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
       expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
       expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
@@ -686,7 +687,7 @@ describe('Convert maps filter', () => {
 
     it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
       expect(myCustomObj.fields.myMultiselectPicklist.getTypeSync()).toEqual(multiselectPicklistType)
-      const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet
+      const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
       expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
       expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
       expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')

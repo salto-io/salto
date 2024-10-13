@@ -11,8 +11,8 @@ import { AdapterFormat } from '@salto-io/adapter-api'
 import { API_VERSION } from '../client/client'
 import { SfProject, SfError, TemplateService, TemplateType, ProjectOptions } from './salesforce_imports'
 
-type CheckAdapterFormatFolderFunc = AdapterFormat['isInitializedFolder']
-export const isProjectFolder: CheckAdapterFormatFolderFunc = async ({ baseDir }) => {
+type IsInitializedFolderFunc = NonNullable<AdapterFormat['isInitializedFolder']>
+export const isProjectFolder: IsInitializedFolderFunc = async ({ baseDir }) => {
   try {
     await SfProject.resolve(baseDir)
     return true
@@ -25,8 +25,8 @@ export const isProjectFolder: CheckAdapterFormatFolderFunc = async ({ baseDir })
   }
 }
 
-type InitAdapterFormatFolderFunc = AdapterFormat['initFolder']
-export const createProject: InitAdapterFormatFolderFunc = async ({ baseDir }) => {
+type InitFolderFunc = NonNullable<AdapterFormat['initFolder']>
+export const createProject: InitFolderFunc = async ({ baseDir }) => {
   const templateService = TemplateService.getInstance()
   const opts: ProjectOptions = {
     projectname: path.basename(baseDir),
@@ -38,5 +38,11 @@ export const createProject: InitAdapterFormatFolderFunc = async ({ baseDir }) =>
     defaultpackagedir: 'force-app',
     apiversion: API_VERSION,
   }
-  await templateService.create(TemplateType.Project, opts)
+
+  try {
+    await templateService.create(TemplateType.Project, opts)
+    return { errors: [] }
+  } catch (error) {
+    return { errors: [error] }
+  }
 }

@@ -31,7 +31,9 @@ export const inMemRemoteMapCreator = (): remoteMap.RemoteMapCreator => {
   }
 }
 
-export const createMockAdapter = (adapterName: string): jest.Mocked<Required<Adapter>> => {
+export const createMockAdapter = (
+  adapterName: string,
+): jest.Mocked<Required<Adapter>> & { adapterFormat: jest.Mocked<Required<AdapterFormat>> } => {
   const configType = new ObjectType({ elemID: new ElemID(adapterName) })
   const credentialsType = new ObjectType({ elemID: new ElemID(adapterName) })
   const optionsType = new ObjectType({ elemID: new ElemID(adapterName) })
@@ -53,12 +55,12 @@ export const createMockAdapter = (adapterName: string): jest.Mocked<Required<Ada
     },
     install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({ success: true, installedVersion: '1' }),
     adapterFormat: {
-      isInitializedFolder: mockFunction<AdapterFormat['isInitializedFolder']>().mockResolvedValue(false),
-      initFolder: mockFunction<AdapterFormat['initFolder']>().mockResolvedValue(undefined),
-      loadElementsFromFolder: mockFunction<AdapterFormat['loadElementsFromFolder']>().mockResolvedValue({
+      isInitializedFolder: mockFunction<NonNullable<AdapterFormat['isInitializedFolder']>>().mockResolvedValue(false),
+      initFolder: mockFunction<NonNullable<AdapterFormat['initFolder']>>().mockResolvedValue({ errors: [] }),
+      loadElementsFromFolder: mockFunction<NonNullable<AdapterFormat['loadElementsFromFolder']>>().mockResolvedValue({
         elements: [],
       }),
-      dumpElementsToFolder: mockFunction<AdapterFormat['dumpElementsToFolder']>().mockResolvedValue({
+      dumpElementsToFolder: mockFunction<NonNullable<AdapterFormat['dumpElementsToFolder']>>().mockResolvedValue({
         errors: [],
         unappliedChanges: [],
       }),

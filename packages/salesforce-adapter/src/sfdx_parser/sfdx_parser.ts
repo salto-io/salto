@@ -12,7 +12,7 @@ import { filter } from '@salto-io/adapter-utils'
 import type { FileProperties } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, FetchResult, LoadElementsFromFolderArgs } from '@salto-io/adapter-api'
+import { AdapterFormat, BuiltinTypes } from '@salto-io/adapter-api'
 import { fromRetrieveResult, isComplexType, METADATA_XML_SUFFIX } from '../transformers/xml_transformer'
 import {
   createInstanceElement,
@@ -88,10 +88,8 @@ const getXmlDestination = (component: SourceComponent): string | undefined => {
   return xmlDestination
 }
 
-export const loadElementsFromFolder = async ({
-  baseDir,
-  elementsSource,
-}: LoadElementsFromFolderArgs): Promise<FetchResult> => {
+type LoadElementsFromFolderFunc = NonNullable<AdapterFormat['loadElementsFromFolder']>
+export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseDir, elementsSource }) => {
   try {
     // Load current SFDX project
     // SFDX code has some issues when working with relative paths (some custom object files may get the wrong path)

@@ -176,10 +176,7 @@ export const adapter: Adapter = {
     }
   },
   adapterFormat: {
-    isInitializedFolder: async () => false,
-    initFolder: async () => undefined,
     loadElementsFromFolder,
-    dumpElementsToFolder: async () => ({ unappliedChanges: [], errors: [] }),
   },
   getCustomReferences: combineCustomReferenceGetters(
     _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences),

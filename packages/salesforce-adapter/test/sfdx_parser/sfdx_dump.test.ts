@@ -5,11 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import fs from 'fs'
 import path from 'path'
 import { collections } from '@salto-io/lowerdash'
 import { exists, readTextFile } from '@salto-io/file'
-import { setupTmpDir } from '@salto-io/test-utils'
 import {
   CORE_ANNOTATIONS,
   DumpElementsResult,
@@ -26,16 +24,9 @@ import { mockTypes, mockDefaultValues } from '../mock_elements'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { createCustomObjectType } from '../utils'
 import { xmlToValues } from '../../src/transformers/xml_transformer'
+import { setupTmpProject } from './utils'
 
 describe('dumpElementsToFolder', () => {
-  const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
-    const tmpDir = setupTmpDir('all')
-    beforeAll(async () => {
-      await fs.promises.cp(path.join(__dirname, 'test_sfdx_project'), tmpDir.name(), { recursive: true })
-    })
-    return tmpDir
-  }
-
   const getExistingCustomObject = (): ObjectType =>
     createCustomObjectType('Test__c', {
       fields: {

@@ -7,18 +7,12 @@
  */
 import fs from 'fs'
 import path from 'path'
+import { InitFolderResult } from '@salto-io/adapter-api'
 import { setupTmpDir } from '@salto-io/test-utils'
 import { isProjectFolder, createProject } from '../../src/sfdx_parser/project'
+import { setupTmpProject } from './utils'
 
-describe('checkProject', () => {
-  const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
-    const tmpDir = setupTmpDir('all')
-    beforeAll(async () => {
-      await fs.promises.cp(path.join(__dirname, 'test_sfdx_project'), tmpDir.name(), { recursive: true })
-    })
-    return tmpDir
-  }
-
+describe('isProjectFolder', () => {
   describe('when there is a project in the directory', () => {
     const project = setupTmpProject()
 
@@ -40,12 +34,14 @@ describe('checkProject', () => {
 
 describe('createProject', () => {
   const project = setupTmpDir('all')
+  let res: InitFolderResult
 
   beforeEach(async () => {
-    await createProject({ baseDir: project.name() })
+    res = await createProject({ baseDir: project.name() })
   })
 
   it('should create a project', () => {
+    expect(res.errors).toBeEmpty()
     expect(fs.existsSync(path.join(project.name(), 'sfdx-project.json'))).toBeTrue()
   })
 })

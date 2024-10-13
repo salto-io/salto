@@ -104,7 +104,7 @@ export const calculatePatch = async ({
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  if (adapter.adapterFormat === undefined) {
+  if (adapter.adapterFormat === undefined || adapter.adapterFormat.loadElementsFromFolder === undefined) {
     throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
   }
   const { loadElementsFromFolder } = adapter.adapterFormat
@@ -193,6 +193,28 @@ export const syncWorkspaceToFolder = ({
         }
       }
       const { loadElementsFromFolder, dumpElementsToFolder } = adapter.adapterFormat
+      if (loadElementsFromFolder === undefined) {
+        return {
+          errors: [
+            {
+              severity: 'Error' as const,
+              message: 'Format not supported',
+              detailedMessage: `Account ${accountName}'s adapter does not support loading a non-nacl format`,
+            },
+          ],
+        }
+      }
+      if (dumpElementsToFolder === undefined) {
+        return {
+          errors: [
+            {
+              severity: 'Error' as const,
+              message: 'Format not supported',
+              detailedMessage: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
+            },
+          ],
+        }
+      }
 
       const {
         mergedElements: folderElements,
@@ -254,13 +276,13 @@ export const updateElementFolder = ({
         workspace,
         accountName,
       })
-      if (adapter.adapterFormat === undefined) {
+      if (adapter.adapterFormat === undefined || adapter.adapterFormat.dumpElementsToFolder === undefined) {
         return {
           errors: [
             {
               severity: 'Error' as const,
               message: 'Format not supported',
-              detailedMessage: `Account ${accountName}'s adapter does not support a non-nacl format`,
+              detailedMessage: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
             },
           ],
         }

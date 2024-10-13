@@ -123,7 +123,7 @@ const filterCreator: FilterCreator = ({ client }) => {
     },
     onDeploy: async changes => {
       if (client === undefined) {
-        // We don't want to run this filter when the results aren't being sent to the service.
+        // We don't want to minify profiles in the SFDX flow.
         return
       }
 

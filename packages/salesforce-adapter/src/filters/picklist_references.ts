@@ -16,32 +16,47 @@ import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 const { isDefined } = values
 
 /**
- * This filter remodels picklists to allow references to their values, and adds such references to referencing fields.
- * TODO: maybe rename to "picklist_value_set_references"?
+ * This filter modifies picklist values in `RecordType` to be references to the original value definitions.
  */
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'picklistReferences',
   onFetch: async elements => {
+    if (!config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
+      return
+    }
     // Find record types with picklist fields and convert them to reference expressions
-    const recordTypes = elements.filter(isInstanceElement).filter(objectType => objectType.elemID.typeName === 'RecordType')
+    const recordTypes = elements
+      .filter(isInstanceElement)
+      .filter(objectType => objectType.elemID.typeName === 'RecordType')
     const picklistValuesItem = recordTypes.flatMap(rt => rt.value.picklistValues).filter(isDefined)
     picklistValuesItem.forEach(picklistValues => {
-      const picklistRef: ReferenceExpression = picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
+      const picklistRef: ReferenceExpression | undefined =
+        // Some picklist references are themselves references to value sets, while others are direct picklists references.
+        picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
+      if (picklistRef === undefined) {
+        return
+      }
       picklistValues.values = picklistValues.values.map((value: { fullName: string | undefined }) => {
         if (value.fullName === undefined) {
           throw new Error('Failed to find value name')
         }
         const valueName = naclCase(decodeURIComponent(value.fullName))
         if (picklistRef.elemID.typeName === GLOBAL_VALUE_SET) {
-          return new ReferenceExpression(picklistRef.elemID.createNestedID('customValue', ORDERED_MAP_VALUES_FIELD, valueName))
+          return new ReferenceExpression(
+            picklistRef.elemID.createNestedID('customValue', ORDERED_MAP_VALUES_FIELD, valueName),
+          )
         }
         if (picklistRef.elemID.typeName === STANDARD_VALUE_SET) {
-          return new ReferenceExpression(picklistRef.elemID.createNestedID('standardValue', ORDERED_MAP_VALUES_FIELD, valueName))
+          return new ReferenceExpression(
+            picklistRef.elemID.createNestedID('standardValue', ORDERED_MAP_VALUES_FIELD, valueName),
+          )
         }
-        return new ReferenceExpression(picklistRef.elemID.createNestedID('valueSet', ORDERED_MAP_VALUES_FIELD, valueName))
+        return new ReferenceExpression(
+          picklistRef.elemID.createNestedID('valueSet', ORDERED_MAP_VALUES_FIELD, valueName),
+        )
       })
     })
-  }
+  },
 })
 
 export default filterCreator

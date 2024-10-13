@@ -1579,6 +1579,7 @@ const createCustomizations = (): Record<
         id: { hide: true, fieldType: 'number' },
         position: { hide: true },
         author_id: { fieldType: 'unknown' },
+        draft: { omit: true },
         vote_sum: { omit: true },
         vote_count: { omit: true },
         edited_at: { omit: true },
@@ -1653,7 +1654,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true, extendsParent: true }] }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {

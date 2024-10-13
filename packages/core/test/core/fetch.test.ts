@@ -1711,7 +1711,7 @@ describe('fetch from workspace', () => {
     it('should fail if the source workspace has errors (not warnings) and fetch not from state', async () => {
       const sourceWS = mockWorkspace({
         accounts: ['salto'],
-        errors: [{ message: 'A glitch', severity: 'Error' }],
+        errors: [{ message: 'A glitch', severity: 'Error', detailedMessage: 'detailedMessage' }],
       })
 
       const fetchRes = await fetchChangesFromWorkspace(
@@ -2068,7 +2068,7 @@ describe('fetch from workspace', () => {
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
               stateElements,
-              errors: [{ message: 'A warnings', severity: 'Warning' }],
+              errors: [{ message: 'A warnings', severity: 'Warning', detailedMessage: 'detailedMessage' }],
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
@@ -2183,8 +2183,8 @@ describe('fetch from workspace', () => {
               accountConfigs: { salto: configs[0] },
               stateElements,
               errors: [
-                { message: 'what is this madness', severity: 'Error' },
-                { message: 'A warnings', severity: 'Warning' },
+                { message: 'what is this madness', severity: 'Error', detailedMessage: 'detailedMessage' },
+                { message: 'A warnings', severity: 'Warning', detailedMessage: 'detailedMessage' },
               ],
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),

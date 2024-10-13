@@ -279,7 +279,7 @@ describe('Salesforce Fetch With Changes Detection', () => {
         // No ApexClasses were updated
         jest.spyOn(customListFuncsModule, 'createListApexClassesDef').mockReturnValue({
           func: async _client => ({ result: [], errors: [] }),
-          isPartial: true,
+          mode: 'partial',
         })
         changedAtSingleton.value[APEX_CLASS_METADATA_TYPE] = {
           ApexClass1: '2023-11-01T00:00:00.000Z',

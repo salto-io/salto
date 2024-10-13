@@ -41,7 +41,12 @@ export const SCOPE_MAPPING: Record<AvailableMicrosoftSecurityServices, string[]>
     'RoleManagement.ReadWrite.Directory',
     'UserAuthenticationMethod.ReadWrite.All',
   ],
-  Intune: ['DeviceManagementApps.ReadWrite.All', 'DeviceManagementConfiguration.ReadWrite.All', 'User.Read'],
+  Intune: [
+    'DeviceManagementApps.ReadWrite.All',
+    'DeviceManagementConfiguration.ReadWrite.All',
+    'DeviceManagementRBAC.ReadWrite.All',
+    'User.Read',
+  ],
 }
 
 // Deprecated. This list should not be used as-is. Use getOAuthRequiredScopes instead.

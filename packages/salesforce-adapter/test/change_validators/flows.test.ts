@@ -32,7 +32,11 @@ describe('flows change validator', () => {
 
     it('should have info when trying to deactivate a flow', async () => {
       flowChanges = toChange({ before: beforeRecord, after: statusChange })
-      changeValidator = flowsChangeValidator({}, true, client)
+      changeValidator = flowsChangeValidator(
+        buildFetchProfile({ fetchParams: { preferActiveFlowVersions: true } }),
+        true,
+        client,
+      )
       const changeErrors = await changeValidator([flowChanges])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
@@ -69,7 +73,11 @@ describe('flows change validator', () => {
     })
     describe('sandbox env', () => {
       beforeEach(() => {
-        changeValidator = flowsChangeValidator({}, true, client)
+        changeValidator = flowsChangeValidator(
+          buildFetchProfile({ fetchParams: { preferActiveFlowVersions: true } }),
+          true,
+          client,
+        )
       })
       it('should have info message regarding the new flow version', async () => {
         const changeErrors = await changeValidator([flowChanges])
@@ -86,7 +94,11 @@ describe('flows change validator', () => {
       const elementsSource = buildElementsSourceFromElements([flowSettings])
       // const elementsSources = elementSource.createInMemoryElementSource([flowSettings])
       beforeEach(() => {
-        changeValidator = flowsChangeValidator({}, false, client)
+        changeValidator = flowsChangeValidator(
+          buildFetchProfile({ fetchParams: { preferActiveFlowVersions: true } }),
+          false,
+          client,
+        )
       })
       describe('active flow modifications', () => {
         it('should have info message and post deploy action regarding the new flow version', async () => {
@@ -154,7 +166,11 @@ describe('flows change validator', () => {
   })
   describe('deleting a flow', () => {
     beforeEach(() => {
-      changeValidator = flowsChangeValidator({}, false, client)
+      changeValidator = flowsChangeValidator(
+        buildFetchProfile({ fetchParams: { preferActiveFlowVersions: true } }),
+        false,
+        client,
+      )
       const beforeRecord = createInstanceElement({ fullName: 'flow', status: 'Active' }, mockTypes.Flow)
       flowChanges = toChange({ before: beforeRecord })
     })
@@ -168,7 +184,11 @@ describe('flows change validator', () => {
   })
   describe('adding and editing a draft flow', () => {
     beforeEach(() => {
-      changeValidator = flowsChangeValidator({}, false, client)
+      changeValidator = flowsChangeValidator(
+        buildFetchProfile({ fetchParams: { preferActiveFlowVersions: true } }),
+        false,
+        client,
+      )
     })
     describe('add a new draft flow', () => {
       beforeEach(() => {

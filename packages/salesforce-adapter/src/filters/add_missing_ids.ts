@@ -9,7 +9,7 @@ import { Element, isObjectType, isField, isInstanceElement } from '@salto-io/ada
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { RemoteFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import {
@@ -86,7 +86,7 @@ export const WARNING_MESSAGE =
 /**
  * Add missing env-specific ids using listMetadataObjects.
  */
-const filter: RemoteFilterCreator = ({ client, config }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'addMissingIdsFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -94,6 +94,9 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'addMissingIds',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
       const groupedElements = await groupByAsync(await elementsWithMissingIds(elements), metadataType)
       log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
       const errorElements = (

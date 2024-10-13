@@ -30,6 +30,7 @@ import { simpleReportDefinitionResult, simpleReportDefinition } from '../type_pa
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
 import { TypesMap } from '../../src/types/object_types'
 import { StandardType } from '../../src/autogen/types'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 const { awu } = collections.asynciterable
 
@@ -50,6 +51,7 @@ describe('parse_report_types filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
 
     const savedsearch = savedsearchType().type
@@ -114,6 +116,7 @@ describe('parse_report_types filter', () => {
         ]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
+        ...getTypesToInternalId([]),
       }
       await filterCreator(fetchOpts).onFetch?.([savedSearchInstance])
       expect(savedSearchInstance.value.definition).toEqual(emptyDefinition)

@@ -24,6 +24,7 @@ import {
 } from '../../src/type_parsers/analytics_parsers/analytics_constants'
 import { parsedWorkbookType } from '../../src/type_parsers/analytics_parsers/parsed_workbook'
 import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/parsed_dataset'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('analytics definition handle filter', () => {
   let fetchOpts: LocalFilterOpts
@@ -168,6 +169,7 @@ describe('analytics definition handle filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
   })
 

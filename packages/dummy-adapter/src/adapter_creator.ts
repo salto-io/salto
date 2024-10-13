@@ -20,7 +20,14 @@ import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-u
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
-import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, fetchErrorType } from './generator'
+import {
+  GeneratorParams,
+  DUMMY_ADAPTER,
+  defaultParams,
+  changeErrorType,
+  fetchErrorType,
+  generateExtraElementsFromPaths,
+} from './generator'
 
 const log = logger(module)
 
@@ -56,6 +63,10 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
         },
       ]
     : []
+
+const loadElementsFromFolder: Adapter['loadElementsFromFolder'] = async ({ baseDir }) => ({
+  elements: await generateExtraElementsFromPaths([baseDir]),
+})
 
 const objectFieldType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'objectFieldType'),
@@ -198,4 +209,5 @@ export const adapter: Adapter = {
   configType,
   getCustomReferences,
   configCreator,
+  loadElementsFromFolder,
 }

@@ -24,7 +24,7 @@ describe('diagnostics', () => {
     baseWs = await mockWorkspace()
     baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(
       mockErrors(
-        [{ severity: 'Error', message: 'Blabla' }],
+        [{ severity: 'Error', message: 'Blabla', detailedMessage: 'Blabla' }],
         [
           {
             message: 'parse',
@@ -36,6 +36,7 @@ describe('diagnostics', () => {
             subject: parseRange,
             severity: 'Error',
             summary: 'parse error',
+            detailedMessage: 'parse error',
           },
         ],
       ),
@@ -72,8 +73,8 @@ describe('diagnostics', () => {
   it('should not return wanrnings when errors exist', async () => {
     baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(
       mockErrors([
-        { severity: 'Error', message: 'Blabla' },
-        { severity: 'Warning', message: 'test' },
+        { severity: 'Error', message: 'Blabla', detailedMessage: 'Blabla' },
+        { severity: 'Warning', message: 'test', detailedMessage: 'test' },
       ]),
     )
     const workspace = new EditorWorkspace('bla', baseWs)
@@ -87,7 +88,7 @@ describe('diagnostics', () => {
   })
   it('should return wanrnings when there are no errors', async () => {
     baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(
-      mockErrors([{ severity: 'Warning', message: 'Blabla' }]),
+      mockErrors([{ severity: 'Warning', message: 'Blabla', detailedMessage: 'Blabla' }]),
     )
     const workspace = new EditorWorkspace('bla', baseWs)
     const diag = (await getDiagnostics(workspace)).errors['/parse_error.nacl']

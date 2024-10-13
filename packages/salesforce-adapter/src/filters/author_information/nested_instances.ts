@@ -8,7 +8,7 @@
 import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { RemoteFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import { apiNameSync, ensureSafeFilterFetch, isMetadataInstanceElementSync } from '../utils'
 import { WORKFLOW_FIELD_TO_TYPE } from '../workflow'
 import { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from '../custom_objects_to_object_type'
@@ -68,7 +68,7 @@ const setAuthorInformationForInstancesOfType = async ({
 /*
  * add author information on nested instances
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'nestedInstancesAuthorFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -76,6 +76,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
+
       const nestedInstancesByType = _.pick(
         _.groupBy(elements.filter(isMetadataInstanceElementSync), e => apiNameSync(e.getTypeSync())),
         NESTED_INSTANCES_METADATA_TYPES,

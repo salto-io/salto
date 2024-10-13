@@ -58,7 +58,7 @@ import {
   LOOKUP_FILTER_FIELDS,
   FILTER_ITEM_FIELDS,
 } from '../../src/constants'
-import { findElements, createValueSetEntry, defaultFilterContext, buildFilterContext } from '../utils'
+import { findElements, createValueSetEntry, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import filterCreator, {
   INSTANCE_REQUIRED_FIELD,
@@ -79,6 +79,7 @@ import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
 import { CustomField } from '../../src/client/types'
+import mockClient from '../client'
 
 export const generateCustomObjectType = (): ObjectType => {
   const generateInnerMetadataTypeFields = (name: string): Record<string, FieldDefinition> => {
@@ -1051,10 +1052,11 @@ describe('Custom Objects to Object Type filter', () => {
         )
         changes = [toChange({ before: testObject }), toChange({ before: sideEffectInst })]
       })
-      describe('when performSideEffectDeletes is false', () => {
+      describe('when a client is passed', () => {
         beforeAll(() => {
           filter = filterCreator({
             config: defaultFilterContext,
+            client: mockClient().client,
           }) as typeof filter
         })
         describe('preDeploy', () => {
@@ -1080,10 +1082,10 @@ describe('Custom Objects to Object Type filter', () => {
           })
         })
       })
-      describe('when performSideEffectDeletes is true', () => {
+      describe('when no client is passed', () => {
         beforeAll(() => {
           filter = filterCreator({
-            config: buildFilterContext({ optionalFeatures: { performSideEffectDeletes: true } }),
+            config: defaultFilterContext,
           }) as typeof filter
         })
         describe('preDeploy', () => {

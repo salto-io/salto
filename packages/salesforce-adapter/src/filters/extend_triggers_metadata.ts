@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { RemoteFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
@@ -116,7 +116,7 @@ type ValuesToRestoreOnDeploy = {
   parent?: unknown
 }
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => {
+const filterCreator: FilterCreator = ({ client, config }) => {
   const valuesToRestoreByElemId: Record<string, ValuesToRestoreOnDeploy> = {}
   return {
     name: 'extendTriggersMetadata',
@@ -126,6 +126,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => {
       filterName: 'extendTriggersMetadata',
       warningMessage: 'Failed to extend the Metadata on Apex Triggers',
       fetchFilterFunc: async elements => {
+        if (client === undefined) {
+          return
+        }
+
         const apexTriggerMetadataType = elements
           .filter(isObjectType)
           .find(type => apiNameSync(type) === APEX_TRIGGER_METADATA_TYPE)

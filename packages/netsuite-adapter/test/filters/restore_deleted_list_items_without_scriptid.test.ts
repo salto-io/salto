@@ -21,6 +21,7 @@ import filterCreator from '../../src/filters/restore_deleted_list_items_without_
 import { roleType } from '../../src/autogen/types/standard_types/role'
 import { CUSTOM_RECORD_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('restore deleted list items with scriptid filter', () => {
   let fetchOpts: LocalFilterOpts
@@ -83,6 +84,7 @@ describe('restore deleted list items with scriptid filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
   })
 

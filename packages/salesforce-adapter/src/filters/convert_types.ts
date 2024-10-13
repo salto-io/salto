@@ -8,14 +8,14 @@
 import { Element, isObjectType, isInstanceElement } from '@salto-io/adapter-api'
 import { transformValuesSync } from '@salto-io/adapter-utils'
 import wu from 'wu'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
 
 /**
  * Convert types of values in instance elements to match the expected types according to the
  * instance type definition.
  */
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: FilterCreator = () => ({
   name: 'convertTypeFilter',
   /**
    * Upon fetch, convert all instance values to their correct type according to the

@@ -16,7 +16,7 @@ import {
 import _ from 'lodash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { values, collections, multiIndex } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { FOREIGN_KEY_DOMAIN } from '../constants'
 import { metadataType, apiName } from '../transformers/transformer'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
@@ -64,7 +64,7 @@ const resolveReferences = async (
  * Use annotations generated from the DescribeValueType API foreignKeyDomain data to resolve
  * names into reference expressions.
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'foreignKeyReferencesFilter',
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)

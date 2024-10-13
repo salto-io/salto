@@ -25,7 +25,7 @@ import {
   Field,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import {
   buildElementsSourceForFetch,
   isCustomMetadataRecordInstance,
@@ -246,7 +246,7 @@ const toDeployableChange = async (
     : toChange({ after: deployableAfter })
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config }) => {
   let originalChangesByApiName: Record<string, Change>
   return {
     name: 'customMetadataRecordsFilter',

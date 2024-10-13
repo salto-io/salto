@@ -426,7 +426,7 @@ const convertFieldsBackToLists = async (
 
   const backToArrays = (baseElement: Element): Element => {
     const elementsToConvert = []
-    if (baseElement.elemID.typeName !== elementType && isObjectType(baseElement)) {
+    if (isObjectType(baseElement)) {
       Object.values(baseElement.fields)
         .filter(field => field.refType.elemID.typeName === elementType)
         .forEach(field => elementsToConvert.push(field))

@@ -127,6 +127,7 @@ export type OptionalFeatures = {
   logDiffsFromParsingXmlNumbers?: boolean
   extendTriggersMetadata?: boolean
   removeReferenceFromFilterItemToRecordType?: boolean
+  picklistsAsMaps?: boolean
 }
 
 export type ChangeValidatorName =
@@ -166,6 +167,7 @@ export type ChangeValidatorName =
   | 'cpqBillingStartDate'
   | 'cpqBillingTriggers'
   | 'managedApexComponent'
+  | 'orderedMaps'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -838,6 +840,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
     removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
+    picklistsAsMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -885,6 +888,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
     managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
+    orderedMaps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

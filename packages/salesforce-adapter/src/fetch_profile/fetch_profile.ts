@@ -50,6 +50,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   logDiffsFromParsingXmlNumbers: true,
   extendTriggersMetadata: false,
   removeReferenceFromFilterItemToRecordType: false,
+  picklistsAsMaps: false,
 }
 
 type BuildFetchProfileParams = {

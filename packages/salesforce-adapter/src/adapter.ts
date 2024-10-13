@@ -197,9 +197,10 @@ export const allFilters: Array<FilterCreator> = [
   profilePermissionsFilter,
   // emailTemplateFilter should run before convertMapsFilter
   emailTemplateFilter,
+  // standardValueSetFilter should run before convertMapsFilter
+  standardValueSetFilter,
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
-  standardValueSetFilter,
   flowFilter,
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,

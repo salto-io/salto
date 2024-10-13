@@ -3349,115 +3349,6 @@ salesforce.staticFile staticFileInstance {
     })
   })
 
-  describe('references', () => {
-    const defFile = `
-      type salesforce.lead {
-
-      }
-    `
-
-    const usedAsInstType = `
-      salesforce.lead inst {
-        key = "value"
-      }
-    `
-
-    const usedAsField = `
-      type salesforce.leader {
-        salesforce.lead lead {
-          
-        }
-      }
-    `
-
-    const usedAsInnerFieldType = `
-    type salesforce.leaders {
-      "List<salesforce.lead>" lead {
-      }
-    }
-  `
-
-    const usedAsReference = `
-      type salesforce.stam {
-        annotations {
-          string key {
-          }
-        }
-        key = salesforce.lead
-      }
-    `
-
-    const usedAsNestedReference = `
-      type salesforce.stam2 {
-        annotations {
-          string key {
-          }
-        }
-        key = salesforce.lead.attr.key
-      }
-    `
-
-    const usedInUnmerged = `
-      type salesforce.unmerged {
-        annotations {
-          string key {
-          }
-        }
-        whatami = salesforce.lead.attr.key
-      }
-    `
-    const files = {
-      'defFile.nacl': defFile,
-      'usedAsInstType.nacl': usedAsInstType,
-      'usedAsField.nacl': usedAsField,
-      'usedAsInnerFieldType.nacl': usedAsInnerFieldType,
-      'usedAsReference.nacl': usedAsReference,
-      'usedAsNestedReference.nacl': usedAsNestedReference,
-      'unmerged.nacl': usedInUnmerged,
-    }
-
-    describe('getElementReferencedFiles', () => {
-      let workspace: Workspace
-      let referencedFiles: string[]
-      const naclFileStore = mockDirStore(undefined, undefined, files)
-
-      beforeAll(async () => {
-        workspace = await createWorkspace({ dirStore: naclFileStore })
-        referencedFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
-      })
-
-      it('should find files in which the id is used as an instance type', () => {
-        expect(referencedFiles).toContain('usedAsInstType.nacl')
-      })
-
-      it('should find files in which the id is used as an field type', () => {
-        expect(referencedFiles).toContain('usedAsField.nacl')
-      })
-
-      it('should find files in which the id is used as an inner field type', () => {
-        expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
-      })
-
-      it('should find files in which the id is used as reference', () => {
-        expect(referencedFiles).toContain('usedAsReference.nacl')
-      })
-
-      it('should find files in which the id is used as nested reference', () => {
-        expect(referencedFiles).toContain('usedAsNestedReference.nacl')
-      })
-
-      it('should find nested attr referenced', async () => {
-        const attrRefFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-        expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
-      })
-
-      it('should find referenced in values of with no matching field in the type', async () => {
-        const attrRefFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-        expect(attrRefFiles).toContain('unmerged.nacl')
-      })
-    })
-  })
-
   describe('getElementIncomingReferenceInfos', () => {
     let targetElementId: ElemID
     let sourceInstance: InstanceElement
@@ -3838,16 +3729,14 @@ salesforce.staticFile staticFileInstance {
     })
   })
 
-  describe.each(['old', 'new', 'log-validations-diff'] as const)(
-    'iterative validation errors - with validateDependentsMode: %s',
-    validateDependentsMode => {
-      const primFile = `
+  describe('iterative validation errors', () => {
+    const primFile = `
         type salto.prim is number {
 
         }
       `
 
-      const baseFile = `
+    const baseFile = `
         type salto.base {
           string str {
 
@@ -3858,7 +3747,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-      const objFile = `
+    const objFile = `
         type salto.obj {
           salto.base baseField {
 
@@ -3866,7 +3755,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-      const instFile = `
+    const instFile = `
         salto.obj objInst {
           baseField = {
             str = "STR"
@@ -3875,7 +3764,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-      const inst2updateFile = `
+    const inst2updateFile = `
       salto.obj objInstToUpdate {
         baseField = {
           num = 12
@@ -3884,195 +3773,134 @@ salesforce.staticFile staticFileInstance {
       }
     `
 
-      const refFile = `
+    const refFile = `
         salto.base baseInst {
           str = salto.obj.instance.objInst.baseField.str
         }
       `
 
-      const refFile2 = `
+    const refFile2 = `
         salto.base baseInst2 {
           str = salto.base.instance.baseInst.str
         }
       `
 
-      const startsAsErr = `
+    const startsAsErr = `
         salto.base willBeFixed {
           str = "STR",
           num = "This will be string"
         }
       `
 
-      const willRemainErr = `
+    const willRemainErr = `
         salto.base willRemain {
           str = "STR",
           num = false
         }
       `
 
-      const files = {
-        primFile,
-        baseFile,
-        objFile,
-        instFile,
-        refFile,
-        refFile2,
-        inst2updateFile,
-        startsAsErr,
-        willRemainErr,
-      }
+    const files = {
+      primFile,
+      baseFile,
+      objFile,
+      instFile,
+      refFile,
+      refFile2,
+      inst2updateFile,
+      startsAsErr,
+      willRemainErr,
+    }
 
-      let workspace: Workspace
-      const primElemID = new ElemID('salto', 'prim')
-      const changes = [
-        {
-          id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
-          action: 'remove',
-          data: { before: 'STR' },
+    let workspace: Workspace
+    const primElemID = new ElemID('salto', 'prim')
+    const changes = [
+      {
+        id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
+        action: 'remove',
+        data: { before: 'STR' },
+      },
+      {
+        id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
+        action: 'modify',
+        data: { before: 'STR', after: 12 },
+      },
+      {
+        id: primElemID,
+        action: 'modify',
+        data: {
+          before: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.NUMBER }),
+          after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
         },
-        {
-          id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
-          action: 'modify',
-          data: { before: 'STR', after: 12 },
-        },
-        {
-          id: primElemID,
-          action: 'modify',
-          data: {
-            before: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.NUMBER }),
-            after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
-          },
-        },
-      ] as DetailedChange[]
+      },
+    ] as DetailedChange[]
 
-      let validationErrs: ReadonlyArray<ValidationError>
-      let resultNumber: UpdateNaclFilesResult
-      let getReferenceSourcesSpy: jest.SpyInstance
-      let getNaclReferencedSpy: jest.SpyInstance
+    let validationErrs: ReadonlyArray<ValidationError>
+    let resultNumber: UpdateNaclFilesResult
 
-      const getExpectedReferencesIndexesNumOfCalls = (): {
-        referenceSourceIndexNumOfCalls: number
-        naclReferencedIndexNumOfCalls: number
-        // eslint-disable-next-line consistent-return
-      } => {
-        // eslint-disable-next-line default-case
-        switch (validateDependentsMode) {
-          case 'new':
-            return {
-              referenceSourceIndexNumOfCalls: 24,
-              // the naclSource referenced index is always called in other parts of the flows.
-              // the low number of calls indicates that it wasn't called in the getElementsDependents flow
-              naclReferencedIndexNumOfCalls: 10,
-            }
-          case 'old':
-            return {
-              referenceSourceIndexNumOfCalls: 0,
-              naclReferencedIndexNumOfCalls: 28,
-            }
-          case 'log-validations-diff':
-            return {
-              referenceSourceIndexNumOfCalls: 20,
-              naclReferencedIndexNumOfCalls: 28,
-            }
-        }
-      }
+    beforeEach(async () => {
+      const naclFileStore = mockDirStore(undefined, undefined, files)
+      workspace = await createWorkspace({ dirStore: naclFileStore })
+      // Verify that the two errors we are starting with (that should be deleted in the update
+      // since the update resolves them ) are present. This check will help debug situations in
+      // which the entire flow is broken and errors are not created at all...
+      expect((await workspace.errors()).validation).toHaveLength(2)
+      resultNumber = await workspace.updateNaclFiles(changes)
+      validationErrs = (await workspace.errors()).validation
+    })
 
-      beforeEach(async () => {
-        const remoteMapCreator = persistentMockCreateRemoteMap()
-        const mockRemoteMapCreator = async <T, K extends string = string>(
-          opts: CreateRemoteMapParams<T>,
-        ): Promise<RemoteMap<T, K>> => {
-          const realRemoteMap = await remoteMapCreator(opts)
+    it('returns correct number of actual changes', () => {
+      expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
+    })
 
-          if (opts.namespace === 'workspace-default-referenceSources') {
-            if (validateDependentsMode === 'log-validations-diff') {
-              // making sure that the referenceSources index doesn't return anything, so we know that results of the
-              // validateElementsAndDependents function aren't used (we'll be missing validation errors in that case)
-              realRemoteMap.get = () => Promise.resolve(undefined)
-            }
-            getReferenceSourcesSpy = jest.spyOn(realRemoteMap, 'get')
-          } else if (opts.namespace === 'naclFileSource--referenced_index') {
-            getNaclReferencedSpy = jest.spyOn(realRemoteMap, 'get')
-          }
+    it('create validation errors in the updated elements', () => {
+      const objInstToUpdateErr = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
+      )
 
-          return realRemoteMap as RemoteMap<T, K>
-        }
-        const naclFileStore = mockDirStore(undefined, undefined, files)
-        workspace = await createWorkspace({
-          dirStore: naclFileStore,
-          validateDependentsMode,
-          remoteMapCreator: mockRemoteMapCreator,
-        })
-        // Verify that the two errors we are starting with (that should be deleted in the update
-        // since the update resolves them ) are present. This check will help debug situations in
-        // which the entire flow is broken and errors are not created at all...
-        expect((await workspace.errors()).validation).toHaveLength(2)
-        resultNumber = await workspace.updateNaclFiles(changes)
-        validationErrs = (await workspace.errors()).validation
-      })
+      expect(objInstToUpdateErr).toBeDefined()
+      expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
+    })
+    it('create validation errors where the updated elements are used as value type', () => {
+      const usedAsTypeErr = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
+      )
 
-      it('should call references indexes as expected', () => {
-        const { referenceSourceIndexNumOfCalls, naclReferencedIndexNumOfCalls } =
-          getExpectedReferencesIndexesNumOfCalls()
+      expect(usedAsTypeErr).toBeDefined()
+      expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
+    })
+    it('create validation errors where the updated elements are used as references', () => {
+      const usedAsReference = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
+      )
 
-        expect(getReferenceSourcesSpy).toHaveBeenCalledTimes(referenceSourceIndexNumOfCalls)
-        expect(getNaclReferencedSpy).toHaveBeenCalledTimes(naclReferencedIndexNumOfCalls)
-      })
+      expect(usedAsReference).toBeDefined()
+      expect(usedAsReference?.message).toContain('unresolved reference')
+    })
+    it('create validation errors in chained references', () => {
+      const usedAsChainedReference = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
+      )
 
-      it('returns correct number of actual changes', () => {
-        expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
-      })
+      expect(usedAsChainedReference).toBeDefined()
+      expect(usedAsChainedReference?.message).toContain('unresolved reference')
+    })
 
-      it('create validation errors in the updated elements', () => {
-        const objInstToUpdateErr = validationErrs.find(
-          err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
-        )
+    it('should not modify errors which were not effected by this update', () => {
+      const usedAsChainedReference = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
+      )
 
-        expect(objInstToUpdateErr).toBeDefined()
-        expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
-      })
-      it('create validation errors where the updated elements are used as value type', () => {
-        const usedAsTypeErr = validationErrs.find(
-          err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
-        )
+      expect(usedAsChainedReference).toBeDefined()
+    })
 
-        expect(usedAsTypeErr).toBeDefined()
-        expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
-      })
-      it('create validation errors where the updated elements are used as references', () => {
-        const usedAsReference = validationErrs.find(
-          err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
-        )
+    it('should remove errors that were resolved in the update', () => {
+      const usedAsChainedReference = validationErrs.find(
+        err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
+      )
 
-        expect(usedAsReference).toBeDefined()
-        expect(usedAsReference?.message).toContain('unresolved reference')
-      })
-      it('create validation errors in chained references', () => {
-        const usedAsChainedReference = validationErrs.find(
-          err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
-        )
-
-        expect(usedAsChainedReference).toBeDefined()
-        expect(usedAsChainedReference?.message).toContain('unresolved reference')
-      })
-
-      it('should not modify errors which were not effected by this update', () => {
-        const usedAsChainedReference = validationErrs.find(
-          err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
-        )
-
-        expect(usedAsChainedReference).toBeDefined()
-      })
-
-      it('should remove errors that were resolved in the update', () => {
-        const usedAsChainedReference = validationErrs.find(
-          err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
-        )
-
-        expect(usedAsChainedReference).not.toBeDefined()
-      })
-    },
-  )
+      expect(usedAsChainedReference).not.toBeDefined()
+    })
+  })
 
   describe('element commands', () => {
     const primarySourceName = 'default'

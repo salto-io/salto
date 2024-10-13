@@ -24,7 +24,6 @@ import {
   ReferenceInfo,
   ReferenceType,
   ReadOnlyElementsSource,
-  isAdditionOrModificationChange,
   StaticFile,
   isInstanceElement,
   isObjectType,
@@ -43,7 +42,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
-import { ValidationError, isUnresolvedRefError, validateElements, validateElementsAndDependents } from '../validator'
+import { ValidationError, isUnresolvedRefError, validateElementsAndDependents } from '../validator'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import {
@@ -241,7 +240,6 @@ export type Workspace = {
   removeNaclFiles: (names: string[], validate?: boolean) => Promise<EnvsChanges>
   getSourceMap: (filename: string) => Promise<parser.SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
-  getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ReferenceIndexEntry[]>>
   getElementOutgoingReferences: (
     id: ElemID,
@@ -506,7 +504,6 @@ export const loadWorkspace = async (
   persistent = true,
   mergedRecoveryMode: MergedRecoveryMode = 'rebuild',
   getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
-  validateDependentsMode: 'old' | 'new' | 'log-validations-diff' = 'old',
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -686,57 +683,7 @@ export const loadWorkspace = async (
 
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = naclFilesSource
-      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> =>
-        log.timeDebug(
-          async () => {
-            elemIDs.forEach(id => addedIDs.add(id.getFullName()))
-            const filesWithDependencies = await log.timeDebug(
-              async () =>
-                _.uniq(
-                  await awu(elemIDs)
-                    .flatMap(id => source.getElementReferencedFiles(envName, id))
-                    .toArray(),
-                ),
-              'running getElementReferencedFiles for %s elemIDs',
-              elemIDs.length,
-            )
-            const dependentsIDs = await log.timeDebug(
-              async () =>
-                awu(filesWithDependencies)
-                  .map(filename => source.getParsedNaclFile(filename))
-                  .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
-                  .filter(id => !addedIDs.has(id.getFullName()))
-                  .toArray(),
-              'get dependentsIDs from %s files',
-              filesWithDependencies.length,
-            )
-            const uniqDependentsIDs = _.uniqBy(dependentsIDs, id => id.getFullName())
-            return _.isEmpty(uniqDependentsIDs)
-              ? uniqDependentsIDs
-              : uniqDependentsIDs.concat(await getElementsDependents(uniqDependentsIDs, addedIDs))
-          },
-          'getElementsDependents for %s elemIDs',
-          elemIDs.length,
-        )
-      const oldValidateElementsAndDependents = async (
-        elements: ReadonlyArray<Element>,
-        elementSource: ReadOnlyElementsSource,
-        relevantElementIDs: ElemID[],
-      ): Promise<{
-        errors: ValidationError[]
-        validatedElementsIDs: ElemID[]
-      }> => {
-        const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
-        log.debug('found %d dependents for %d elements', dependentsID.length, relevantElementIDs.length)
-        const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
-        const elementsToValidate = elements.concat(dependents)
-        return {
-          errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(relevantElementIDs), e =>
-            e.getFullName(),
-          ),
-        }
-      }
+
       // When we load the workspace with a clean cache from existings nacls, we need
       // to add hidden elements from the state since they will not be a part of the nacl
       // changes. In any other load - the state changes will be reflected by the workspace
@@ -909,49 +856,12 @@ export const loadWorkspace = async (
         elements => getCustomReferences(elements, currentEnvConf().accountToServiceName ?? {}, adaptersConfig),
       )
 
-      const changedElements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
-      const changeIDs = changes.map(getChangeData).map(elem => elem.elemID)
       if (validate) {
-        const { errors: validationErrors, validatedElementsIDs } =
-          validateDependentsMode === 'new'
-            ? await validateElementsAndDependents(
-                changes,
-                stateToBuild.states[envName].merged,
-                stateToBuild.states[envName].referenceSources,
-              )
-            : await oldValidateElementsAndDependents(changedElements, stateToBuild.states[envName].merged, changeIDs)
-
-        if (validateDependentsMode === 'log-validations-diff') {
-          const { errors: newValidationErrors } = await validateElementsAndDependents(
-            changes,
-            stateToBuild.states[envName].merged,
-            stateToBuild.states[envName].referenceSources,
-          )
-
-          const validationErrorMessages = validationErrors.map(err => err.detailedMessage)
-          const newValidationErrorMessages = newValidationErrors.map(err => err.detailedMessage)
-          const addedErrors = _.difference(newValidationErrorMessages, validationErrorMessages)
-          const removedErrors = _.difference(validationErrorMessages, newValidationErrorMessages)
-
-          if (addedErrors.length > 0 || removedErrors.length > 0) {
-            log.debug(
-              'found mismatch in validation errors of the following validated elements: %o',
-              validatedElementsIDs,
-            )
-            log.debug(
-              'there are %d added validation errors and %d removed validation errors',
-              addedErrors.length,
-              removedErrors.length,
-            )
-            if (addedErrors.length > 0) {
-              log.debug('added validation errors: %s', addedErrors.join('; '))
-            }
-            if (removedErrors.length > 0) {
-              log.debug('removed validation errors: %s', removedErrors.join('; '))
-            }
-          }
-        }
-
+        const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
+          changes,
+          stateToBuild.states[envName].merged,
+          stateToBuild.states[envName].referenceSources,
+        )
         const validationErrorsById = await awu(validationErrors).groupBy(err =>
           err.elemID.createTopLevelParentID().parent.getFullName(),
         )
@@ -1382,8 +1292,6 @@ export const loadWorkspace = async (
         compacted,
       )
     },
-    getElementReferencedFiles: async id =>
-      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id),
     getReferenceSourcesIndex: async (envName = currentEnv()) =>
       (await getWorkspaceState()).states[envName].referenceSources,
     getElementOutgoingReferences: async (id, envName = currentEnv(), includeWeakReferences = true) => {

@@ -29,12 +29,7 @@ import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/sta
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import {
-  InMemoryRemoteMap,
-  RemoteMapCreator,
-  RemoteMap,
-  CreateRemoteMapParams,
-} from '../../../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
@@ -104,9 +99,9 @@ describe('Nacl Files Source', () => {
   let mockedStaticFilesSource: StaticFilesSource
 
   let createdMaps: Record<string, RemoteMap<Value>> = {}
-  const mockRemoteMapCreator: RemoteMapCreator = async <T, K extends string = string>({
+  const mockRemoteMapCreator = async <T, K extends string = string>({
     namespace,
-  }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+  }: Pick<CreateRemoteMapParams<T>, 'namespace'>): Promise<RemoteMap<T, K>> => {
     if (createdMaps[namespace] === undefined) {
       const realMap = new InMemoryRemoteMap()
       const getImpl = async (key: string): Promise<Value> => (key.endsWith('hash') ? 'HASH' : realMap.get(key))
@@ -195,6 +190,8 @@ describe('Nacl Files Source', () => {
   })
 
   describe('flush', () => {
+    const deprecatedReferencedIndex = 'naclFileSource--referenced_index'
+
     it('should flush everything by default', async () => {
       mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
@@ -203,8 +200,46 @@ describe('Nacl Files Source', () => {
       await naclSrc.load({})
       await naclSrc.flush()
       expect(mockDirStore.flush as jest.Mock).toHaveBeenCalledTimes(1)
-      Object.values(createdMaps).forEach(cache => expect(cache.flush).toHaveBeenCalledTimes(1))
+      Object.entries(createdMaps).forEach(([name, cache]) => {
+        if (name !== deprecatedReferencedIndex) {
+          expect(cache.flush).toHaveBeenCalledTimes(1)
+        }
+      })
       expect(mockedStaticFilesSource.flush).toHaveBeenCalledTimes(1)
+    })
+
+    it('should clear&flush referenced_index if it is not empty', async () => {
+      const wrappedRemoteMapCreator = async <T, K extends string = string>({
+        namespace,
+      }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+        const remoteMapCreator = await mockRemoteMapCreator({ namespace })
+        if (namespace === deprecatedReferencedIndex) {
+          ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(false)
+        }
+        return remoteMapCreator as RemoteMap<T, K>
+      }
+      const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, wrappedRemoteMapCreator, true)
+      await naclSrc.load({})
+      await naclSrc.flush()
+      expect(createdMaps[deprecatedReferencedIndex].clear).toHaveBeenCalled()
+      expect(createdMaps[deprecatedReferencedIndex].flush).toHaveBeenCalled()
+    })
+
+    it('should not clear&flush referenced_index if it is empty', async () => {
+      const wrappedRemoteMapCreator = async <T, K extends string = string>({
+        namespace,
+      }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+        const remoteMapCreator = await mockRemoteMapCreator({ namespace })
+        if (namespace === deprecatedReferencedIndex) {
+          ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(true)
+        }
+        return remoteMapCreator as RemoteMap<T, K>
+      }
+      const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, wrappedRemoteMapCreator, true)
+      await naclSrc.load({})
+      await naclSrc.flush()
+      expect(createdMaps[deprecatedReferencedIndex].clear).not.toHaveBeenCalled()
+      expect(createdMaps[deprecatedReferencedIndex].flush).not.toHaveBeenCalled()
     })
   })
 
@@ -327,7 +362,7 @@ describe('Nacl Files Source', () => {
       expect(mockedStaticFilesSource.rename).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.rename).toHaveBeenCalledWith(newName)
 
-      const cacheKeysToRename = ['elements_index', 'referenced_index', 'metadata', 'searchableNamesIndex']
+      const cacheKeysToRename = ['elements_index', 'metadata', 'searchableNamesIndex']
       cacheKeysToRename.forEach(key => {
         const mapNames = Object.keys(createdMaps)
           .filter(namespace => !namespace.includes('parsedResultCache'))

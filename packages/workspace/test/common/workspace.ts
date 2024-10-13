@@ -132,7 +132,6 @@ export const createWorkspace = async ({
   elementSources,
   remoteMapCreator,
   getCustomReferences,
-  validateDependentsMode,
   persistent = true,
 }: {
   dirStore?: DirectoryStore<string>
@@ -144,7 +143,6 @@ export const createWorkspace = async ({
   elementSources?: Record<string, EnvironmentSource>
   remoteMapCreator?: RemoteMapCreator
   getCustomReferences?: WorkspaceGetCustomReferencesFunc
-  validateDependentsMode?: 'old' | 'new' | 'log-validations-diff'
   persistent?: boolean
 }): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
@@ -176,6 +174,5 @@ export const createWorkspace = async ({
     undefined,
     undefined,
     getCustomReferences,
-    validateDependentsMode,
   )
 }

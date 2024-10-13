@@ -3959,7 +3959,7 @@ salesforce.staticFile staticFileInstance {
         switch (validateDependentsMode) {
           case 'new':
             return {
-              referenceSourceIndexNumOfCalls: 22,
+              referenceSourceIndexNumOfCalls: 24,
               // the naclSource referenced index is always called in other parts of the flows.
               // the low number of calls indicates that it wasn't called in the getElementsDependents flow
               naclReferencedIndexNumOfCalls: 10,
@@ -3971,7 +3971,7 @@ salesforce.staticFile staticFileInstance {
             }
           case 'log-validations-diff':
             return {
-              referenceSourceIndexNumOfCalls: 18,
+              referenceSourceIndexNumOfCalls: 20,
               naclReferencedIndexNumOfCalls: 28,
             }
         }

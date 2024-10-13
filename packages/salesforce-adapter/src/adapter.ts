@@ -110,6 +110,7 @@ import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, Salesfo
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
+import picklistReferences from './filters/picklist_references'
 import { getConfigFromConfigChanges } from './config_change'
 import {
   LocalFilterCreator,
@@ -249,6 +250,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: replaceFieldValuesFilter },
   { creator: valueToStaticFileFilter },
   { creator: fieldReferencesFilter },
+  // picklistReferences should run after convertMapsFilter and fieldReferencesFilter
+  { creator: picklistReferences },
   // should run after customObjectsInstancesFilter for now
   { creator: referenceAnnotationsFilter },
   // foreignLeyReferences should come after referenceAnnotationsFilter

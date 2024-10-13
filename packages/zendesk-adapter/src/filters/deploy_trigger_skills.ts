@@ -20,7 +20,7 @@ const restoreTriggerSkillToApi = async (
     .forEach((action: { value?: string; priority?: string }) => {
       if ('priority' in action && 'value' in action) {
         const { value, priority } = action as { value: string; priority: string }
-        action.value = `${value}#${priority === 'optional' ? '0' : '1'}`
+        action.value = `${value}#${priority === 'optional' ? '1' : '0'}`
         skillMapping[action.value] = { value, priority }
         delete action.priority
       }

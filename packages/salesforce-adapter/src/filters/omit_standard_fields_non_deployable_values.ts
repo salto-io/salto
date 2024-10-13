@@ -7,10 +7,10 @@
  */
 
 import { FIELD_ANNOTATIONS } from '../constants'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ensureSafeFilterFetch, isCustomObjectSync, isStandardField } from './utils'
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'omitStandardFieldsNonDeployableValues',
   onFetch: ensureSafeFilterFetch({
     config,

@@ -10,7 +10,7 @@ import { logger } from '@salto-io/logging'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { ArtificialTypes } from '../constants'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { buildElementsSourceForFetch, ensureSafeFilterFetch, getProfilesAndPermissionSetsBrokenPaths } from './utils'
 import {
   getProfilesAndPsBrokenReferenceFields,
@@ -19,7 +19,7 @@ import {
 
 const log = logger(module)
 
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'profilesAndPermissionSetsBrokenPaths',
   onFetch: ensureSafeFilterFetch({
     config,

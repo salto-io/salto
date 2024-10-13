@@ -17,7 +17,6 @@ import { allFilters, NESTED_METADATA_TYPES } from '../adapter'
 import { CUSTOM_METADATA, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS, API_NAME } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
-import SalesforceClient from '../client/client'
 import { createDeployPackage, DeployPackage, PACKAGE } from '../transformers/xml_transformer'
 import { addChangeToPackage, validateChanges } from '../metadata_deploy'
 import {
@@ -59,6 +58,10 @@ const getComponentsToDelete = async (
   pkg: DeployPackage,
   currentComponents: SourceComponent[],
 ): Promise<{ fullDelete: SourceComponent[]; partialDelete: SourceComponent[] }> => {
+  if (currentComponents.length === 0) {
+    return { fullDelete: [], partialDelete: [] }
+  }
+
   const manifestDeletions = await getManifestComponentsToDelete(tree, pkg)
   const isInDeleteManifest = (comp: SourceComponent): boolean =>
     manifestDeletions.has(`${comp.type.id}.${comp.fullName}`)
@@ -112,12 +115,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   const unappliedChanges = typeChanges.concat(customObjectInstanceChanges)
 
   const fetchProfile = buildFetchProfile({
-    fetchParams: {
-      optionalFeatures: {
-        // Needed to remove related instances of custom objects (e.g - layouts, sharing rules, etc...)
-        performSideEffectDeletes: true,
-      },
-    },
+    fetchParams: {},
   })
 
   const resolvedChanges = await awu(metadataChanges)
@@ -125,9 +123,6 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     .toArray()
   const filterRunner = filter.filtersRunner(
     {
-      // TODO: This is a hack that we want to replace with something more type-safe in the near future
-      // for now this works because non of the remote filters actually uses the client on preDeploy
-      client: {} as unknown as SalesforceClient,
       config: {
         unsupportedSystemFields: UNSUPPORTED_SYSTEM_FIELDS,
         systemFields: SYSTEM_FIELDS,
@@ -136,7 +131,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
         flsProfiles: [],
       },
     },
-    allFilters.map(({ creator }) => creator),
+    allFilters,
   )
   await filterRunner.preDeploy(resolvedChanges)
 

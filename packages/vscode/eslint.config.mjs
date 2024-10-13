@@ -14,7 +14,7 @@ import adapterApiRules from '../../eslint/adapter-api.rules.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const configs = ['./tsconfig.json', './e2e_test/tsconfig.json']
+const configs = ['./tsconfig.json']
 
 const config = baseConfig.concat(adapterApiRules).concat({
   languageOptions: {

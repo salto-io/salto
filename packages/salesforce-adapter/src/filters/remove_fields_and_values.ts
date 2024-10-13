@@ -7,7 +7,7 @@
  */
 import { isObjectType, Element, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiNameSync } from './utils'
 
 const TYPE_NAME_TO_FIELD_REMOVALS: Map<string, string[]> = new Map([['Profile', ['tabVisibilities']]])
@@ -60,7 +60,7 @@ const removeValuesFromInstances = (elements: Element[], typeNameToFieldRemovals:
  * their corresponding instances upon fetch.
  * */
 export const makeFilter =
-  (typeNameToFieldRemovals: Map<string, string[]>): LocalFilterCreator =>
+  (typeNameToFieldRemovals: Map<string, string[]>): FilterCreator =>
   () => ({
     name: 'removeFieldsAndValuesFilter',
     onFetch: async (elements: Element[]) => {

@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import filterCreator, { addReferences } from '../../src/filters/field_references'
+import filterCreator, { addReferences, createContextStrategyLookups } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
 import {
   OBJECTS_PATH,
@@ -512,7 +512,13 @@ describe('FieldReferences filter', () => {
     beforeAll(async () => {
       elements = generateElements()
       const modifiedDefs = fieldNameToTypeMappingDefs.map(def => _.omit(def, 'serializationStrategy'))
-      await addReferences(elements, buildElementsSourceFromElements(elements), modifiedDefs, [])
+      await addReferences(
+        elements,
+        buildElementsSourceFromElements(elements),
+        modifiedDefs,
+        [],
+        createContextStrategyLookups(defaultFilterContext.fetchProfile),
+      )
     })
     afterAll(() => {
       jest.clearAllMocks()

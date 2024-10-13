@@ -125,7 +125,6 @@ export type OptionalFeatures = {
   indexedEmailTemplateAttachments?: boolean
   skipParsingXmlNumbers?: boolean
   logDiffsFromParsingXmlNumbers?: boolean
-  performSideEffectDeletes?: boolean
   extendTriggersMetadata?: boolean
   storeProfilesAndPermissionSetsBrokenPaths?: boolean
   removeReferenceFromFilterItemToRecordType?: boolean
@@ -838,7 +837,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
     skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
-    performSideEffectDeletes: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
     storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
     removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },

@@ -13,6 +13,7 @@ import { NETSUITE, WORKFLOW } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_sdf_untyped_values'
 import { LocalFilterOpts } from '../../src/filter'
 import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('omit sdf untyped values filter', () => {
   let instance: InstanceElement
@@ -37,6 +38,7 @@ describe('omit sdf untyped values filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
   })
   it('should not omit untyped values by default', async () => {

@@ -19,7 +19,7 @@ import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
 import { generateReferenceResolverFinder } from '../transformers/reference_mapping'
 import { getInternalId, hasInternalId, buildElementsSourceForFetch } from './utils'
@@ -125,7 +125,7 @@ const replaceInstancesValues = async (
 /**
  * Replace specific field values that are fetched as ids, to their names.
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'replaceFieldValuesFilter',
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)

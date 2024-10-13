@@ -26,6 +26,7 @@ import { fileType } from '../../src/types/file_cabinet_types'
 import { getConfigurationTypes } from '../../src/types/configuration_types'
 import { bundleType } from '../../src/types/bundle_type'
 import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('add alias filter', () => {
   const { type: workflow } = workflowType()
@@ -36,6 +37,7 @@ describe('add alias filter', () => {
   const file = fileType()
   const customer = new ObjectType({ elemID: new ElemID(NETSUITE, 'customer') })
   const assemblyItem = new ObjectType({ elemID: new ElemID(NETSUITE, 'assemblyItem') })
+  const { internalIdToTypes, typeToInternalId } = getTypesToInternalId([])
 
   let standardInstance: InstanceElement
   let fileCabinetInstance: InstanceElement
@@ -210,6 +212,8 @@ describe('add alias filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      internalIdToTypes,
+      typeToInternalId,
     }
     optsWithoutAlias = {
       ...defaultOpts,

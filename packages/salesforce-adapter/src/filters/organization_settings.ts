@@ -9,7 +9,7 @@
 import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { RemoteFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ensureSafeFilterFetch, queryClient, safeApiName } from './utils'
 import { getSObjectFieldElement } from '../transformers/transformer'
 import { API_NAME, getTypePath, ORGANIZATION_SETTINGS, RECORDS_PATH, SALESFORCE, SETTINGS_PATH } from '../constants'
@@ -149,13 +149,17 @@ const addLatestSupportedAPIVersion = async ({
 const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: FILTER_NAME,
   remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async elements => {
+      if (client === undefined) {
+        return
+      }
+
       const objectType = createOrganizationType()
       const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
       await enrichTypeWithFields(client, objectType, fieldsToIgnore, config.fetchProfile)

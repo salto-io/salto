@@ -43,7 +43,7 @@ import {
   SBAA_APPROVAL_RULE,
   SBAA_INDEX_FIELD,
 } from '../../constants'
-import { LocalFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
@@ -231,7 +231,7 @@ const isCPQRuleChange = (change: Change): change is Change<InstanceElement> =>
   isInstanceOfCustomObjectChangeSync(change) &&
   ruleTypeNames.includes(apiNameSync(getChangeData(change).getTypeSync()) ?? '')
 
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config }) => {
   const templateMappingByRuleType: Partial<Record<string, Record<string, TemplateExpression>>> = {}
   return {
     name: 'cpqRulesAndConditionsFilter',

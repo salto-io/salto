@@ -62,7 +62,9 @@ describe('Element command group', () => {
       let result: CliExitCode
       beforeAll(async () => {
         const workspace = mocks.mockWorkspace({})
-        workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+        workspace.errors.mockResolvedValue(
+          mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+        )
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName),
           input: {
@@ -1388,7 +1390,9 @@ Moving the specified elements to common.
       let result: CliExitCode
       beforeAll(async () => {
         const workspace = mocks.mockWorkspace({})
-        workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+        workspace.errors.mockResolvedValue(
+          mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+        )
         const cliArgs = mocks.mockCliArgs()
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),

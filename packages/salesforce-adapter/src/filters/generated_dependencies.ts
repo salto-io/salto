@@ -7,7 +7,7 @@
  */
 import { ChangeDataType, CORE_ANNOTATIONS, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { DetailedDependency } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 
 type ElementWithGeneratedDependencies = ChangeDataType & {
   annotations: ChangeDataType['annotations'] & {
@@ -18,7 +18,7 @@ type ElementWithGeneratedDependencies = ChangeDataType & {
 /**
  * Remove generated dependencies before deploy.
  */
-const filterCreator: LocalFilterCreator = () => {
+const filterCreator: FilterCreator = () => {
   let generatedDependencies: Record<string, DetailedDependency[]>
 
   return {

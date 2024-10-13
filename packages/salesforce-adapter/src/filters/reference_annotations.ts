@@ -8,7 +8,7 @@
 import { Element, Field, ReferenceExpression, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, multiIndex } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN, CUSTOM_OBJECT, CUSTOM_OBJECT_TYPE_NAME } from '../constants'
 import { apiName, metadataType, isMetadataObjectType, isCustomObject } from '../transformers/transformer'
 import { apiNameSync, buildElementsSourceForFetch } from './utils'
@@ -64,7 +64,7 @@ const convertAnnotationsToReferences = async (
 /**
  * Convert referenceTo and foreignKeyDomain annotations into reference expressions.
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'referenceAnnotationsFilter',
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)

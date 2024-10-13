@@ -71,7 +71,13 @@ export type ZendeskDeployConfig = definitions.UserDeployConfig &
     createMissingOrganizations?: boolean
   }
 
-export const fixerNames = ['mergeLists', 'fallbackUsers', 'removeDupUsers', 'orderElements'] as const
+export const fixerNames = [
+  'mergeLists',
+  'fallbackUsers',
+  'removeDupUsers',
+  'orderElements',
+  'deployArticlesAsDraft',
+] as const
 
 type FixerNames = (typeof fixerNames)[number]
 

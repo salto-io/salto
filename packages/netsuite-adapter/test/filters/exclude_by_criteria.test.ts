@@ -13,6 +13,7 @@ import excludeCustomRecordTypes from '../../src/filters/exclude_by_criteria/excl
 import excludeInstances from '../../src/filters/exclude_by_criteria/exclude_instances'
 import { LocalFilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 const filters = [excludeCustomRecordTypes, excludeInstances]
 
@@ -90,6 +91,7 @@ describe('exclude by criteria filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
   })
   it('should quick return when there are no criteria', async () => {

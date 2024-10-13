@@ -64,7 +64,9 @@ describe('restore command', () => {
     let result: number
     beforeEach(async () => {
       const workspace = mocks.mockWorkspace({})
-      workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Error', message: 'some error', detailedMessage: 'some error' }]),
+      )
       result = await action({
         ...cliCommandArgs,
         input: {
@@ -333,7 +335,9 @@ describe('restore command', () => {
   it('should return error when update workspace fails', async () => {
     const workspace = mocks.mockWorkspace({})
     workspace.updateNaclFiles.mockImplementation(async () => {
-      workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error ' }]))
+      workspace.errors.mockResolvedValue(
+        mocks.mockErrors([{ severity: 'Error', message: 'some error ', detailedMessage: 'some error ' }]),
+      )
       return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
     })
     const result = await action({

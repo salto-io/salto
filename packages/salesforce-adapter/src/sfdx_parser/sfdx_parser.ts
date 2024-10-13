@@ -48,6 +48,9 @@ export const UNSUPPORTED_TYPES = new Set([
   // Unfortunately, unlike other types like this (e.g - workflow, sharing rules), the SFDX code does not handle deleting
   // instances of labels from the "merged" XML, so until we implement proper deletion support, we exclude this type
   'CustomLabels',
+  // Note - we exclude the type name of the internal type here as well even though it cannot be a SFDX component type
+  // we do this because we need to exclude changes in dumpElementsToFolder as well
+  'CustomLabel',
 ])
 
 const getXmlDestination = (component: SourceComponent): string | undefined => {

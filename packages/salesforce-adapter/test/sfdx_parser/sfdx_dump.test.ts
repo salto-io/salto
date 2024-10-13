@@ -11,10 +11,12 @@ import { collections } from '@salto-io/lowerdash'
 import { exists, readTextFile } from '@salto-io/file'
 import { setupTmpDir } from '@salto-io/test-utils'
 import {
+  Change,
   CORE_ANNOTATIONS,
   DumpElementsResult,
   ElemID,
   Field,
+  InstanceElement,
   ObjectType,
   ReferenceExpression,
   toChange,
@@ -108,54 +110,107 @@ describe('dumpElementsToFolder', () => {
   })
 
   describe('with nested instances', () => {
-    describe('when adding a new nested instance of a non-decomposed type', () => {
-      const project = setupTmpProject()
-      let dumpResult: DumpElementsResult
-      beforeAll(async () => {
-        // The SFDX code has special treatment for types that are "non-decomposed", meaning, remain nested within their parent XML
-        // this is in contrast to "decomposed" types, like, CustomField for example, where they are split into a different file
-        // Here we use an example of a WorkflowRule that is dumped into a Workflow xml
-        // Doing this makes us go through different code paths in SFDX, specifically, the flow that requires "readFileSync"
-        // to be implemented in our SyncZipTreeContainer
-        const workflowRuleType = createMetadataObjectType({
-          annotations: { metadataType: WORKFLOW_RULE_METADATA_TYPE },
-        })
-        const workflowRule = createInstanceElement(
-          { fullName: 'Test__c.Rule', actions: [], active: false },
-          workflowRuleType,
-          undefined,
-          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
-        )
-        dumpResult = await dumpElementsToFolder({
-          baseDir: project.name(),
-          changes: [toChange({ after: workflowRule })],
-          elementsSource: buildElementsSourceFromElements([workflowRuleType, workflowRule]),
-        })
-      })
-      it('should apply all changes and have no errors', () => {
-        expect(dumpResult.unappliedChanges).toHaveLength(0)
-        expect(dumpResult.errors).toHaveLength(0)
-      })
-      describe('workflow xml content', () => {
-        let values: Values
+    describe('with instances of a non-decomposed type', () => {
+      // The SFDX code has special treatment for types that are "non-decomposed", meaning, remain nested within their parent XML
+      // this is in contrast to "decomposed" types, like, CustomField for example, where they are split into a different file
+      describe('when adding a new nested instance', () => {
+        const project = setupTmpProject()
+        let dumpResult: DumpElementsResult
         beforeAll(async () => {
-          const parentXmlPath = path.join(project.name(), 'force-app/main/default/workflows/Test__c.workflow-meta.xml')
-          await expect(exists(parentXmlPath)).resolves.toBeTrue()
-          const xmlContent = await readTextFile(parentXmlPath)
-          values = xmlToValues(xmlContent, true)
-        })
-        it('should add the instance to the parent XML', async () => {
-          expect(collections.array.makeArray(values.values.rules)).toContainEqual(
-            expect.objectContaining({ fullName: 'Rule' }),
+          // Here we use an example of a WorkflowRule that is dumped into a Workflow xml
+          // Doing this makes us go through different code paths in SFDX, specifically, the flow that requires "readFileSync"
+          // to be implemented in our SyncZipTreeContainer
+          const workflowRuleType = createMetadataObjectType({
+            annotations: { metadataType: WORKFLOW_RULE_METADATA_TYPE },
+          })
+          const workflowRule = createInstanceElement(
+            { fullName: 'Test__c.Rule', actions: [], active: false },
+            workflowRuleType,
+            undefined,
+            { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
           )
+          dumpResult = await dumpElementsToFolder({
+            baseDir: project.name(),
+            changes: [toChange({ after: workflowRule })],
+            elementsSource: buildElementsSourceFromElements([workflowRuleType, workflowRule]),
+          })
         })
-        // eslint-disable-next-line jest/no-disabled-tests
-        it.skip('should keep the existing nested instances from before', async () => {
-          // This currently does not work, this is a bug that should be fixed
-          expect(collections.array.makeArray(values.values.rules)).toContainAllEntries([
-            expect.objectContaining({ fullName: 'TestRule1' }),
-            expect.objectContaining({ fullName: 'TestRule2' }),
-          ])
+        it('should apply all changes and have no errors', () => {
+          expect(dumpResult.unappliedChanges).toHaveLength(0)
+          expect(dumpResult.errors).toHaveLength(0)
+        })
+        describe('workflow xml content', () => {
+          let values: Values
+          beforeAll(async () => {
+            const parentXmlPath = path.join(
+              project.name(),
+              'force-app/main/default/workflows/Test__c.workflow-meta.xml',
+            )
+            await expect(exists(parentXmlPath)).resolves.toBeTrue()
+            const xmlContent = await readTextFile(parentXmlPath)
+            values = xmlToValues(xmlContent, true)
+          })
+          it('should add the instance to the parent XML', () => {
+            expect(collections.array.makeArray(values.values.rules)).toContainEqual(
+              expect.objectContaining({ fullName: 'Rule' }),
+            )
+          })
+          // eslint-disable-next-line jest/no-disabled-tests
+          it.skip('should keep the existing nested instances from before', () => {
+            // This currently does not work, this is a bug that should be fixed
+            expect(collections.array.makeArray(values.values.rules)).toContainAllEntries([
+              expect.objectContaining({ fullName: 'TestRule1' }),
+              expect.objectContaining({ fullName: 'TestRule2' }),
+            ])
+          })
+        })
+      })
+      // eslint-disable-next-line jest/no-disabled-tests
+      describe.skip('when deleting a nested instance', () => {
+        // This currently does not work, this is a bug that should be fixed
+        const project = setupTmpProject()
+        let dumpResult: DumpElementsResult
+        beforeAll(async () => {
+          const workflowRuleType = createMetadataObjectType({
+            annotations: { metadataType: WORKFLOW_RULE_METADATA_TYPE },
+          })
+          const workflowRule = createInstanceElement(
+            { fullName: 'Test__c.TestRule1', actions: [], active: false },
+            workflowRuleType,
+            undefined,
+            { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
+          )
+          dumpResult = await dumpElementsToFolder({
+            baseDir: project.name(),
+            changes: [toChange({ before: workflowRule })],
+            elementsSource: buildElementsSourceFromElements([workflowRuleType, workflowRule]),
+          })
+        })
+        it('should apply all changes and have no errors', () => {
+          expect(dumpResult.unappliedChanges).toHaveLength(0)
+          expect(dumpResult.errors).toHaveLength(0)
+        })
+        describe('workflow xml content', () => {
+          let values: Values
+          beforeAll(async () => {
+            const parentXmlPath = path.join(
+              project.name(),
+              'force-app/main/default/workflows/Test__c.workflow-meta.xml',
+            )
+            await expect(exists(parentXmlPath)).resolves.toBeTrue()
+            const xmlContent = await readTextFile(parentXmlPath)
+            values = xmlToValues(xmlContent, true)
+          })
+          it('should remove the nested instance from the parent XML', () => {
+            expect(collections.array.makeArray(values.values.rules)).not.toContainEqual(
+              expect.objectContaining({ fullName: 'TestRule1' }),
+            )
+          })
+          it('should keep nested instances that were not removed', () => {
+            expect(collections.array.makeArray(values.values.rules)).toContainAllEntries([
+              expect.objectContaining({ fullName: 'TestRule2' }),
+            ])
+          })
         })
       })
     })
@@ -288,6 +343,63 @@ describe('dumpElementsToFolder', () => {
       })
       it('should delete the entire object folder', async () => {
         await expect(exists(objectFolderPath)).resolves.toBeFalse()
+      })
+    })
+  })
+
+  describe('with unsupported changes', () => {
+    describe('with custom object instance change', () => {
+      const project = setupTmpProject()
+      let change: Change
+      let dumpResult: DumpElementsResult
+      beforeAll(async () => {
+        const customObject = getExistingCustomObject()
+        const customObjectInstance = new InstanceElement('test', customObject, { One__c: 1 })
+        change = toChange({ after: customObjectInstance })
+        dumpResult = await dumpElementsToFolder({
+          baseDir: project.name(),
+          changes: [change],
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      })
+      it('should return the change as unapplied', () => {
+        expect(dumpResult.unappliedChanges).toContain(change)
+      })
+    })
+    describe('with type change', () => {
+      const project = setupTmpProject()
+      let change: Change
+      let dumpResult: DumpElementsResult
+      beforeAll(async () => {
+        const before = mockTypes.ApexClass.clone()
+        const after = before.clone()
+        after.annotations.bla = 'foo'
+        change = toChange({ before, after })
+        dumpResult = await dumpElementsToFolder({
+          baseDir: project.name(),
+          changes: [change],
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      })
+      it('should return the change as unapplied', () => {
+        expect(dumpResult.unappliedChanges).toContain(change)
+      })
+    })
+    describe('with change to unsupported metadata type', () => {
+      const project = setupTmpProject()
+      let change: Change
+      let dumpResult: DumpElementsResult
+      beforeAll(async () => {
+        const labelInstance = new InstanceElement('label1', mockTypes.CustomLabel, { fullName: 'label1' })
+        change = toChange({ after: labelInstance })
+        dumpResult = await dumpElementsToFolder({
+          baseDir: project.name(),
+          changes: [change],
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      })
+      it('should return the change as unapplied', () => {
+        expect(dumpResult.unappliedChanges).toContain(change)
       })
     })
   })

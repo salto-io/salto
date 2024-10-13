@@ -45,7 +45,7 @@ export const transform: definitions.AdjustFunctionSingle = async ({ value }) => 
         }
       }
     }
-    return action
+    return { ...action }
   })
 
   return {

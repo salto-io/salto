@@ -173,7 +173,7 @@ describe('user filter', () => {
     })
     it('returns a warning if users query is forbidden, and does not replace anything', async () => {
       const elements = [macroType.clone(), macroInstance.clone()]
-      const errors: SaltoError[] = [{ message: 'Bad user, go away!', severity: 'Warning' }]
+      const errors: SaltoError[] = [{ message: 'Bad user, go away!', severity: 'Warning', detailedMessage: 'msg' }]
       getUsersMock.mockResolvedValueOnce({ users: [], errors })
       getIdByEmailMock.mockResolvedValueOnce({})
       const paginator = mockFunction<clientUtils.Paginator>()

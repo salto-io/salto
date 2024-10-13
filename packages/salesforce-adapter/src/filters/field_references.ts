@@ -79,7 +79,7 @@ const shareToMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
   return typeMapping[val]
 }
 
-const createContextStrategyLookups = (
+export const createContextStrategyLookups = (
   fetchProfile: FetchProfile,
 ): Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> => {
   const getLookupNameFunc = getLookUpName(fetchProfile)

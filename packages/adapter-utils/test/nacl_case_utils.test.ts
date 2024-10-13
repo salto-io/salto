@@ -19,7 +19,7 @@ import {
 describe('naclCase utils', () => {
   const generateRandomChar = (): string => String.fromCharCode(Math.random() * 65535)
 
-  describe(`${naclCase} func`, () => {
+  describe(`${naclCase.name} func`, () => {
     it('should return empty string for undefined', () => {
       expect(naclCase(undefined)).toEqual('')
     })
@@ -89,7 +89,7 @@ describe('naclCase utils', () => {
       })
     })
   })
-  describe(`${invertNaclCase} func`, () => {
+  describe(`${invertNaclCase.name} func`, () => {
     it('should return empty string for undefined', () => {
       expect(invertNaclCase('')).toEqual('')
     })
@@ -116,7 +116,7 @@ describe('naclCase utils', () => {
     })
   })
 
-  describe(`${pathNaclCase} func`, () => {
+  describe(`${pathNaclCase.name} func`, () => {
     describe('Without naclCase separator', () => {
       const noSeparatorNames = ['lalala', 'Lead', 'LALA__Lead__c', 'NameWithNumber2']
       it('Should remain the same', () => {
@@ -210,7 +210,7 @@ describe('naclCase utils', () => {
     })
   })
 
-  describe('prettifyName func', () => {
+  describe(`${prettifyName.name} func`, () => {
     it('should return if there is a space', () => {
       expect(prettifyName('prettify_camelCase_text@su')).toEqual('prettify camelCase_text')
     })

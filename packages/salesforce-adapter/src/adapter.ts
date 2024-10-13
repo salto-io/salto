@@ -125,6 +125,7 @@ import {
   apiNameSync,
   buildDataRecordsSoqlQueries,
   getFLSProfiles,
+  getMetadataIncludeFromFetchTargets,
   instanceInternalId,
   isCustomObjectSync,
   isCustomType,
@@ -191,10 +192,11 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
-  { creator: organizationWideDefaults, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },
+  // organizationWideDefaults depends on customObjectsToObjectTypeFilter
+  { creator: organizationWideDefaults, addsNewInformation: true },
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   { creator: customObjectsInstancesFilter, addsNewInformation: true },
   { creator: removeFieldsAndValuesFilter },
@@ -545,14 +547,18 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
     })
+    const targetedFetchInclude = fetchParams.target
+      ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
+      : undefined
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
+          targetedFetchInclude,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
           customObjectsWithDeletedFields: await this.getCustomObjectsWithDeletedFields(),
         })
-      : buildMetadataQuery({ fetchParams })
+      : buildMetadataQuery({ fetchParams, targetedFetchInclude })
     const fetchProfile = buildFetchProfile({
       fetchParams,
       customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],

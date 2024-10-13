@@ -211,8 +211,8 @@ export const adapter: Adapter = {
   getCustomReferences,
   configCreator,
   adapterFormat: {
-    checkAdapterFormatFolder: async () => false,
-    initAdapterFormatFolder: async () => undefined,
+    isInitializedFolder: async () => false,
+    initFolder: async () => undefined,
     loadElementsFromFolder,
     dumpElementsToFolder: async () => ({ unappliedChanges: [], errors: [] }),
   },

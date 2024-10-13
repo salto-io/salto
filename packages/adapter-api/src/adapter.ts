@@ -244,8 +244,8 @@ export type ReferenceInfo = {
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
 
 export type AdapterFormat = {
-  checkAdapterFormatFolder: (args: CheckAdapterFormatFolderArgs) => Promise<boolean>
-  initAdapterFormatFolder: (args: InitAdapterFormatFolderArgs) => Promise<void>
+  isInitializedFolder: (args: CheckAdapterFormatFolderArgs) => Promise<boolean>
+  initFolder: (args: InitAdapterFormatFolderArgs) => Promise<void>
   loadElementsFromFolder: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
   dumpElementsToFolder: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
 }

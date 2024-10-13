@@ -53,8 +53,8 @@ export const createMockAdapter = (adapterName: string): jest.Mocked<Required<Ada
     },
     install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({ success: true, installedVersion: '1' }),
     adapterFormat: {
-      checkAdapterFormatFolder: async () => false,
-      initAdapterFormatFolder: async () => undefined,
+      isInitializedFolder: mockFunction<AdapterFormat['isInitializedFolder']>().mockResolvedValue(false),
+      initFolder: mockFunction<AdapterFormat['initFolder']>().mockResolvedValue(undefined),
       loadElementsFromFolder: mockFunction<AdapterFormat['loadElementsFromFolder']>().mockResolvedValue({
         elements: [],
       }),

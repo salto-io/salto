@@ -100,7 +100,7 @@ const compactPathList = (paths: string[]): string[] => {
     .filter(values.isDefined)
 }
 
-type DumpElementsToFolderFunc = NonNullable<AdapterFormat['dumpElementsToFolder']>
+type DumpElementsToFolderFunc = AdapterFormat['dumpElementsToFolder']
 export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, changes, elementsSource }) => {
   const [customObjectInstanceChanges, metadataAndTypeChanges] = _.partition(changes, isInstanceOfCustomObjectChangeSync)
   const [metadataChanges, typeChanges] = _.partition(metadataAndTypeChanges, change => {

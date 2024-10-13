@@ -385,8 +385,8 @@ export const adapter: Adapter = {
   configType,
   configCreator,
   adapterFormat: {
-    checkAdapterFormatFolder: isProjectFolder,
-    initAdapterFormatFolder: createProject,
+    isInitializedFolder: isProjectFolder,
+    initFolder: createProject,
     loadElementsFromFolder,
     dumpElementsToFolder,
   },

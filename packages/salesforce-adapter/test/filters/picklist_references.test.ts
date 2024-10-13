@@ -11,7 +11,6 @@ import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import { mockTypes } from '../mock_elements'
-import { primitiveType } from '@salto-io/parser/dist/src/parser/internal/native/helpers'
 import { Types } from '../../src/transformers/transformer'
 import { VALUE_SET_FIELDS } from '../../src/constants'
 

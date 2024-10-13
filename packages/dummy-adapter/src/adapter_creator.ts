@@ -15,6 +15,7 @@ import {
   GetCustomReferencesFunc,
   ConfigCreator,
   createRestriction,
+  AdapterFormat,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -64,7 +65,7 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-const loadElementsFromFolder: Adapter['loadElementsFromFolder'] = async ({ baseDir }) => ({
+const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => ({
   elements: await generateExtraElementsFromPaths([baseDir]),
 })
 
@@ -209,5 +210,10 @@ export const adapter: Adapter = {
   configType,
   getCustomReferences,
   configCreator,
-  loadElementsFromFolder,
+  adapterFormat: {
+    checkAdapterFormatFolder: async () => false,
+    initAdapterFormatFolder: async () => undefined,
+    loadElementsFromFolder,
+    dumpElementsToFolder: async () => ({ unappliedChanges: [], errors: [] }),
+  },
 }

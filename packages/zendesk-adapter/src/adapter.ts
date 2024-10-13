@@ -120,6 +120,7 @@ import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
 import { dependencyChanger } from './dependency_changers'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
+import deployTriggerSkills from './filters/deploy_trigger_skills'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
 import guideTranslationFilter from './filters/guide_translation'
@@ -268,6 +269,7 @@ export const DEFAULT_FILTERS = [
   handleIdenticalAttachmentConflicts,
   omitCollisionFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
+  deployTriggerSkills,
   guideThemeFilter, // fetches a lot of data, so should be after omitCollisionFilter to remove theme collisions
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
   addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter

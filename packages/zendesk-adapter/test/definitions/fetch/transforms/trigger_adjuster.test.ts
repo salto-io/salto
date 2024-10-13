@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { logger } from '@salto-io/logging'
 import { transformTriggerItem } from '../../../../src/definitions/fetch/transforms'
 
 describe('trigger_adjuster', () => {
@@ -96,5 +97,35 @@ describe('trigger_adjuster', () => {
     const value = { a: 1 }
     const transformedItem = await transformTriggerItem({ value, context: {}, typeName: 'trigger' })
     expect(transformedItem).toEqual({ value: { a: 1 } })
+  })
+
+  it('should log a warning for invalid skill value', async () => {
+    const value = {
+      title: 'invalidTrigger',
+      actions: [
+        {
+          field: 'add_skills',
+          value: 'invalid#3',
+        },
+      ],
+    }
+    const logging = logger('zendesk-adapter/src/definitions/fetch/transforms/trigger_adjuster')
+    const logWarn = jest.spyOn(logging, 'warn')
+    const transformedItem = await transformTriggerItem({ value, context: {}, typeName: 'trigger' })
+    expect(transformedItem).toEqual({
+      value: {
+        title: 'invalidTrigger',
+        actions: [
+          {
+            field: 'add_skills',
+            value: 'invalid#3',
+          },
+        ],
+      },
+    })
+    expect(logWarn).toHaveBeenCalledWith(
+      'For trigger invalidTrigger - Failed to parse skill value with priority: %s',
+      'invalid#3',
+    )
   })
 })

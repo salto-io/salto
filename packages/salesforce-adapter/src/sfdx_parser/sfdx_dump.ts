@@ -9,7 +9,7 @@ import _ from 'lodash'
 import path from 'path'
 import { isSubDirectory, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
-import { Adapter, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
+import { AdapterFormat, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
 import { collections, objects, promises, values } from '@salto-io/lowerdash'
@@ -100,7 +100,7 @@ const compactPathList = (paths: string[]): string[] => {
     .filter(values.isDefined)
 }
 
-type DumpElementsToFolderFunc = NonNullable<Adapter['dumpElementsToFolder']>
+type DumpElementsToFolderFunc = NonNullable<AdapterFormat['dumpElementsToFolder']>
 export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, changes, elementsSource }) => {
   const [customObjectInstanceChanges, metadataAndTypeChanges] = _.partition(changes, isInstanceOfCustomObjectChangeSync)
   const [metadataChanges, typeChanges] = _.partition(metadataAndTypeChanges, change => {

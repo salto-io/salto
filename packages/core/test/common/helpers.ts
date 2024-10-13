@@ -5,7 +5,15 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Adapter, AdapterOperations, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import {
+  Adapter,
+  AdapterFormat,
+  AdapterOperations,
+  Element,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { elementSource, remoteMap } from '@salto-io/workspace'
 
@@ -44,13 +52,17 @@ export const createMockAdapter = (adapterName: string): jest.Mocked<Required<Ada
       optionsType,
     },
     install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({ success: true, installedVersion: '1' }),
-    loadElementsFromFolder: mockFunction<Required<Adapter>['loadElementsFromFolder']>().mockResolvedValue({
-      elements: [],
-    }),
-    dumpElementsToFolder: mockFunction<Required<Adapter>['dumpElementsToFolder']>().mockResolvedValue({
-      errors: [],
-      unappliedChanges: [],
-    }),
+    adapterFormat: {
+      checkAdapterFormatFolder: async () => false,
+      initAdapterFormatFolder: async () => undefined,
+      loadElementsFromFolder: mockFunction<AdapterFormat['loadElementsFromFolder']>().mockResolvedValue({
+        elements: [],
+      }),
+      dumpElementsToFolder: mockFunction<AdapterFormat['dumpElementsToFolder']>().mockResolvedValue({
+        errors: [],
+        unappliedChanges: [],
+      }),
+    },
     getAdditionalReferences: mockFunction<Required<Adapter>['getAdditionalReferences']>().mockResolvedValue([]),
     getCustomReferences: mockFunction<Required<Adapter>['getCustomReferences']>().mockResolvedValue([]),
   }

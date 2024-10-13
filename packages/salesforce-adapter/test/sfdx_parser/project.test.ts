@@ -8,7 +8,7 @@
 import fs from 'fs'
 import path from 'path'
 import { setupTmpDir } from '@salto-io/test-utils'
-import { checkProject, createProject } from '../../src/sfdx_parser/project'
+import { isProjectFolder, createProject } from '../../src/sfdx_parser/project'
 
 describe('checkProject', () => {
   const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
@@ -23,7 +23,7 @@ describe('checkProject', () => {
     const project = setupTmpProject()
 
     it('should return true', async () => {
-      const result = await checkProject({ baseDir: project.name() })
+      const result = await isProjectFolder({ baseDir: project.name() })
       expect(result).toBeTrue()
     })
   })
@@ -32,7 +32,7 @@ describe('checkProject', () => {
     const project = setupTmpDir('all')
 
     it('should return false', async () => {
-      const result = await checkProject({ baseDir: project.name() })
+      const result = await isProjectFolder({ baseDir: project.name() })
       expect(result).toBeFalse()
     })
   })

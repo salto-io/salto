@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Adapter, AdapterOperationsContext, Change, Element, SaltoError } from '@salto-io/adapter-api'
+import { Adapter, AdapterFormat, AdapterOperationsContext, Change, Element, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource } from '@salto-io/workspace'
@@ -62,7 +62,7 @@ const getAdapterAndContext = async ({
 
 const loadElementsAndMerge = (
   dir: string,
-  loadElementsFromFolder: NonNullable<Adapter['loadElementsFromFolder']>,
+  loadElementsFromFolder: NonNullable<AdapterFormat['loadElementsFromFolder']>,
   adapterContext: AdapterOperationsContext,
 ): Promise<{
   elements: Element[]
@@ -104,10 +104,10 @@ export const calculatePatch = async ({
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  const { loadElementsFromFolder } = adapter
-  if (loadElementsFromFolder === undefined) {
+  if (adapter.adapterFormat === undefined) {
     throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
   }
+  const { loadElementsFromFolder } = adapter.adapterFormat
 
   const {
     loadErrors: beforeLoadErrors,
@@ -181,29 +181,18 @@ export const syncWorkspaceToFolder = ({
         ignoreStateElemIdMapping,
         ignoreStateElemIdMappingForSelectors,
       })
-      const { loadElementsFromFolder, dumpElementsToFolder } = adapter
-      if (loadElementsFromFolder === undefined) {
+      if (adapter.adapterFormat === undefined) {
         return {
           errors: [
             {
               severity: 'Error' as const,
               message: 'Format not supported',
-              detailedMessage: `Account ${accountName}'s adapter does not support loading a non-nacl format`,
+              detailedMessage: `Account ${accountName}'s adapter does not support a non-nacl format`,
             },
           ],
         }
       }
-      if (dumpElementsToFolder === undefined) {
-        return {
-          errors: [
-            {
-              severity: 'Error' as const,
-              message: 'Format not supported',
-              detailedMessage: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
-            },
-          ],
-        }
-      }
+      const { loadElementsFromFolder, dumpElementsToFolder } = adapter.adapterFormat
 
       const {
         mergedElements: folderElements,
@@ -265,18 +254,18 @@ export const updateElementFolder = ({
         workspace,
         accountName,
       })
-      const { dumpElementsToFolder } = adapter
-      if (dumpElementsToFolder === undefined) {
+      if (adapter.adapterFormat === undefined) {
         return {
           errors: [
             {
               severity: 'Error' as const,
               message: 'Format not supported',
-              detailedMessage: `Account ${accountName}'s adapter does not support writing a non-nacl format`,
+              detailedMessage: `Account ${accountName}'s adapter does not support a non-nacl format`,
             },
           ],
         }
       }
+      const { dumpElementsToFolder } = adapter.adapterFormat
       return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
     },
     'updateElementFolder %s',

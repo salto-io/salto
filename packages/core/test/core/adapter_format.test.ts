@@ -15,6 +15,7 @@ import {
   toChange,
   SaltoError,
   Change,
+  AdapterFormat,
 } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -46,10 +47,12 @@ describe('calculatePatch', () => {
   instanceNacl.value.f = 'v2'
 
   let mockAdapter: ReturnType<typeof createMockAdapter>
+  let mockAdapterFormat: jest.Mocked<AdapterFormat>
   let workspace: Workspace
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
     adapterCreators[mockAdapterName] = mockAdapter
+    mockAdapterFormat = mockAdapter.adapterFormat as unknown as jest.Mocked<AdapterFormat>
 
     workspace = mockWorkspace({
       elements: [type, instanceWithHidden, instanceNacl],
@@ -71,7 +74,7 @@ describe('calculatePatch', () => {
       const afterNewInstance = new InstanceElement('instance2', type, { f: 'v' })
       const beforeElements = [instance]
       const afterElements = [afterModifyInstance, afterNewInstance]
-      mockAdapter.loadElementsFromFolder
+      mockAdapterFormat.loadElementsFromFolder
         .mockResolvedValueOnce({ elements: beforeElements })
         .mockResolvedValueOnce({ elements: afterElements })
       const res = await calculatePatch({
@@ -93,7 +96,7 @@ describe('calculatePatch', () => {
       afterModifyInstance.value.f = 'v3'
       const beforeElements: Element[] = []
       const afterElements = [afterModifyInstance]
-      mockAdapter.loadElementsFromFolder
+      mockAdapterFormat.loadElementsFromFolder
         .mockResolvedValueOnce({ elements: beforeElements })
         .mockResolvedValueOnce({ elements: afterElements })
       const res = await calculatePatch({
@@ -114,7 +117,7 @@ describe('calculatePatch', () => {
     it('should return with no changes and no errors', async () => {
       const beforeElements = [instance]
       const afterElements = [instance]
-      mockAdapter.loadElementsFromFolder
+      mockAdapterFormat.loadElementsFromFolder
         .mockResolvedValueOnce({ elements: beforeElements })
         .mockResolvedValueOnce({ elements: afterElements })
       const res = await calculatePatch({
@@ -133,7 +136,7 @@ describe('calculatePatch', () => {
   describe('when there is a merge error', () => {
     it('should return with merge error and success false', async () => {
       const beforeElements = [instance, instance]
-      mockAdapter.loadElementsFromFolder.mockResolvedValueOnce({ elements: beforeElements })
+      mockAdapterFormat.loadElementsFromFolder.mockResolvedValueOnce({ elements: beforeElements })
       const res = await calculatePatch({
         workspace,
         fromDir: 'before',
@@ -153,16 +156,18 @@ describe('calculatePatch', () => {
       afterModifyInstance.value.f = 'v3'
       const beforeElements = [instance]
       const afterElements = [afterModifyInstance]
-      mockAdapter.loadElementsFromFolder.mockResolvedValueOnce({ elements: beforeElements }).mockResolvedValueOnce({
-        elements: afterElements,
-        errors: [
-          {
-            message: 'err',
-            severity: 'Warning',
-            detailedMessage: 'err',
-          },
-        ],
-      })
+      mockAdapterFormat.loadElementsFromFolder
+        .mockResolvedValueOnce({ elements: beforeElements })
+        .mockResolvedValueOnce({
+          elements: afterElements,
+          errors: [
+            {
+              message: 'err',
+              severity: 'Warning',
+              detailedMessage: 'err',
+            },
+          ],
+        })
       const res = await calculatePatch({
         workspace,
         fromDir: 'before',
@@ -184,7 +189,7 @@ describe('calculatePatch', () => {
       afterConflictInstance.value.f = 'v4'
       const beforeElements = [beforeConflictInstance]
       const afterElements = [afterConflictInstance]
-      mockAdapter.loadElementsFromFolder
+      mockAdapterFormat.loadElementsFromFolder
         .mockResolvedValueOnce({ elements: beforeElements })
         .mockResolvedValueOnce({ elements: afterElements })
       const res = await calculatePatch({
@@ -204,7 +209,7 @@ describe('calculatePatch', () => {
 
   describe('when used with an account that does not support loadElementsFromFolder', () => {
     it('Should throw an error', async () => {
-      delete (mockAdapter as Adapter).loadElementsFromFolder
+      delete (mockAdapter as Adapter).adapterFormat
       await expect(
         calculatePatch({ workspace, fromDir: 'before', toDir: 'after', accountName: mockAdapterName }),
       ).rejects.toThrow()
@@ -216,10 +221,12 @@ describe('syncWorkspaceToFolder', () => {
   const mockAdapterName = 'mock'
 
   let mockAdapter: ReturnType<typeof createMockAdapter>
+  let mockAdapterFormat: jest.Mocked<AdapterFormat>
 
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
     adapterCreators[mockAdapterName] = mockAdapter
+    mockAdapterFormat = mockAdapter.adapterFormat as unknown as jest.Mocked<AdapterFormat>
   })
   afterEach(() => {
     delete adapterCreators[mockAdapterName]
@@ -247,7 +254,7 @@ describe('syncWorkspaceToFolder', () => {
         accounts: [mockAdapterName],
         accountToServiceName: { [mockAdapterName]: mockAdapterName },
       })
-      mockAdapter.loadElementsFromFolder.mockResolvedValue({ elements: folderElements })
+      mockAdapterFormat.loadElementsFromFolder.mockResolvedValue({ elements: folderElements })
     })
     describe('when adapter supports all required actions', () => {
       let result: SyncWorkspaceToFolderResult
@@ -258,7 +265,7 @@ describe('syncWorkspaceToFolder', () => {
         expect(result.errors).toBeEmpty()
       })
       it('should apply deletion changes for elements that exist in the folder and not the workspace', () => {
-        expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
+        expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
           changes: expect.arrayContaining([expect.objectContaining(toChange({ before: separateInstanceInFolder }))]),
           elementsSource: expect.anything(),
@@ -266,7 +273,7 @@ describe('syncWorkspaceToFolder', () => {
       })
       it('should apply modification changes for elements that exist in both the workspace and the folder', () => {
         // Note - we currently do not expect the function to filter out changes for elements that are identical
-        expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
+        expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
           changes: expect.arrayContaining([
             expect.objectContaining(toChange({ before: sameInstanceInFolder, after: sameInstanceInWorkspace })),
@@ -275,7 +282,7 @@ describe('syncWorkspaceToFolder', () => {
         })
       })
       it('should apply addition changes for elements that exist in the workspace and not the folder', () => {
-        expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
+        expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
           changes: expect.arrayContaining([expect.objectContaining(toChange({ after: separateInstanceInWorkspace }))]),
           elementsSource: expect.anything(),
@@ -286,7 +293,7 @@ describe('syncWorkspaceToFolder', () => {
     describe('when adapter does not support loading from folder', () => {
       let result: SyncWorkspaceToFolderResult
       beforeEach(async () => {
-        delete (mockAdapter as Adapter).loadElementsFromFolder
+        delete (mockAdapter as Adapter).adapterFormat
         result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return an error', () => {
@@ -298,7 +305,7 @@ describe('syncWorkspaceToFolder', () => {
     describe('when adapter does not support dumping to folder', () => {
       let result: SyncWorkspaceToFolderResult
       beforeEach(async () => {
-        delete (mockAdapter as Adapter).dumpElementsToFolder
+        delete (mockAdapter as Adapter).adapterFormat
         result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return an error', () => {
@@ -313,26 +320,26 @@ describe('syncWorkspaceToFolder', () => {
       let errors: SaltoError[]
       beforeEach(async () => {
         errors = [{ severity: 'Error', message: 'something failed', detailedMessage: 'something failed' }]
-        mockAdapter.loadElementsFromFolder.mockResolvedValue({ elements: [], errors })
+        mockAdapterFormat.loadElementsFromFolder.mockResolvedValue({ elements: [], errors })
         result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return the error without trying to update the folder', () => {
         expect(result.errors).toEqual(errors)
-        expect(mockAdapter.dumpElementsToFolder).not.toHaveBeenCalled()
+        expect(mockAdapter.adapterFormat.dumpElementsToFolder).not.toHaveBeenCalled()
       })
     })
 
     describe('when loading elements from folder returns elements that cannot be merged', () => {
       let result: SyncWorkspaceToFolderResult
       beforeEach(async () => {
-        mockAdapter.loadElementsFromFolder.mockResolvedValue({
+        mockAdapterFormat.loadElementsFromFolder.mockResolvedValue({
           elements: [separateInstanceInFolder, separateInstanceInFolder],
         })
         result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return error without trying to update the folder', () => {
         expect(result.errors).not.toHaveLength(0)
-        expect(mockAdapter.dumpElementsToFolder).not.toHaveBeenCalled()
+        expect(mockAdapter.adapterFormat.dumpElementsToFolder).not.toHaveBeenCalled()
       })
     })
 
@@ -347,7 +354,7 @@ describe('syncWorkspaceToFolder', () => {
             detailedMessage: 'something failed',
           },
         ]
-        mockAdapter.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
+        mockAdapterFormat.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
         result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return the error in the result', () => {
@@ -376,11 +383,15 @@ describe('syncWorkspaceToFolder', () => {
 describe('updateElementFolder', () => {
   const mockAdapterName = 'mock'
   let mockAdapter: ReturnType<typeof createMockAdapter>
+  let mockAdapterFormat: jest.Mocked<AdapterFormat>
   let workspace: Workspace
   let changes: ReadonlyArray<Change>
+
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
     adapterCreators[mockAdapterName] = mockAdapter
+    mockAdapterFormat = mockAdapter.adapterFormat as unknown as jest.Mocked<AdapterFormat>
+
     const type = new ObjectType({
       elemID: new ElemID(mockAdapterName, 'type'),
       fields: {
@@ -404,7 +415,7 @@ describe('updateElementFolder', () => {
       await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
     })
     it('should call dumpElementsToFolder with the correct parameters', async () => {
-      expect(mockAdapter.dumpElementsToFolder).toHaveBeenCalledWith({
+      expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
         baseDir: 'dir',
         changes,
         elementsSource: expect.anything(),
@@ -423,7 +434,7 @@ describe('updateElementFolder', () => {
           detailedMessage: 'something failed',
         },
       ]
-      mockAdapter.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
+      mockAdapterFormat.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
       result = await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
     })
     it('should return the error in the result', () => {
@@ -433,12 +444,12 @@ describe('updateElementFolder', () => {
   describe('when used with an account that does not support dumpElementsToFolder', () => {
     let result: UpdateElementFolderResult
     it('should return an error', async () => {
-      delete (mockAdapter as Adapter).dumpElementsToFolder
+      delete (mockAdapter as Adapter).adapterFormat
       result = await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
       expect(result).toEqual({
         errors: [
           {
-            detailedMessage: "Account mock's adapter does not support writing a non-nacl format",
+            detailedMessage: "Account mock's adapter does not support a non-nacl format",
             message: 'Format not supported',
             severity: 'Error',
           },

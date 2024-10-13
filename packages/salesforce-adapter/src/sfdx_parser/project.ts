@@ -7,12 +7,12 @@
  */
 
 import path from 'path'
-import { Adapter } from '@salto-io/adapter-api'
+import { AdapterFormat } from '@salto-io/adapter-api'
 import { API_VERSION } from '../client/client'
 import { SfProject, SfError, TemplateService, TemplateType, ProjectOptions } from './salesforce_imports'
 
-type CheckAdapterFormatFolderFunc = NonNullable<Adapter['checkAdapterFormatFolder']>
-export const checkProject: CheckAdapterFormatFolderFunc = async ({ baseDir }) => {
+type CheckAdapterFormatFolderFunc = NonNullable<AdapterFormat['checkAdapterFormatFolder']>
+export const isProjectFolder: CheckAdapterFormatFolderFunc = async ({ baseDir }) => {
   try {
     await SfProject.resolve(baseDir)
     return true
@@ -25,7 +25,7 @@ export const checkProject: CheckAdapterFormatFolderFunc = async ({ baseDir }) =>
   }
 }
 
-type InitAdapterFormatFolderFunc = NonNullable<Adapter['initAdapterFormatFolder']>
+type InitAdapterFormatFolderFunc = NonNullable<AdapterFormat['initAdapterFormatFolder']>
 export const createProject: InitAdapterFormatFolderFunc = async ({ baseDir }) => {
   const templateService = TemplateService.getInstance()
   const opts: ProjectOptions = {

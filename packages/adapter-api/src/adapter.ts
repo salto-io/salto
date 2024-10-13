@@ -243,6 +243,13 @@ export type ReferenceInfo = {
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
 
+export type AdapterFormat = {
+  checkAdapterFormatFolder: (args: CheckAdapterFormatFolderArgs) => Promise<boolean>
+  initAdapterFormatFolder: (args: InitAdapterFormatFolderArgs) => Promise<void>
+  loadElementsFromFolder: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
+  dumpElementsToFolder: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
+}
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
@@ -250,11 +257,8 @@ export type Adapter = {
   configType?: ObjectType
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
-  checkAdapterFormatFolder?: (args: CheckAdapterFormatFolderArgs) => Promise<boolean>
-  initAdapterFormatFolder?: (args: InitAdapterFormatFolderArgs) => Promise<void>
-  loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
-  dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
+  adapterFormat?: AdapterFormat
   getCustomReferences?: GetCustomReferencesFunc
 }
 

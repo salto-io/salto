@@ -70,4 +70,10 @@ export {
 } from './src/local-workspace/remote_map'
 export { NoWorkspaceConfig } from './src/local-workspace/errors'
 export * from './src/types'
-export { calculatePatch, syncWorkspaceToFolder, updateElementFolder } from './src/core/adapter_format'
+export {
+  calculatePatch,
+  syncWorkspaceToFolder,
+  updateElementFolder,
+  isInitializedFolder,
+  initFolder,
+} from './src/core/adapter_format'

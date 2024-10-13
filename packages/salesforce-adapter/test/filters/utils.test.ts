@@ -57,6 +57,7 @@ import {
   isCustomMetadataRecordTypeSync,
   isCustomField,
   isFieldOfTaskOrEvent,
+  getProfilesAndPermissionSetsBrokenPaths,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -78,6 +79,7 @@ import {
   UNIX_TIME_ZERO_STRING,
   VALUE_SETTINGS_FIELDS,
   VALUE_SET_FIELDS,
+  ArtificialTypes,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -1441,6 +1443,31 @@ describe('filter utils', () => {
     it('should return false for fields of other types', () => {
       expect(activity.fields.Name).not.toSatisfy(isFieldOfTaskOrEvent)
       expect(mockTypes.User.fields.Manager__c).not.toSatisfy(isFieldOfTaskOrEvent)
+    })
+  })
+  describe('getProfilesAndPermissionSetsBrokenPaths', () => {
+    let brokenPathsInstance: InstanceElement
+    const BROKEN_PATHS = ['classAccesses.BrokenApexClass1', 'classAccesses.BrokenApexClass2']
+    beforeEach(() => {
+      brokenPathsInstance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths,
+        {
+          paths: BROKEN_PATHS,
+        },
+      )
+    })
+    describe('when instance exists in the Elements Source', () => {
+      it('should return the broken paths', async () => {
+        expect(
+          await getProfilesAndPermissionSetsBrokenPaths(buildElementsSourceFromElements([brokenPathsInstance])),
+        ).toEqual(BROKEN_PATHS)
+      })
+    })
+    describe('when instance does not exist in the Elements Source', () => {
+      it('should return empty array', async () => {
+        expect(await getProfilesAndPermissionSetsBrokenPaths(buildElementsSourceFromElements([]))).toEqual([])
+      })
     })
   })
 })

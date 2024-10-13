@@ -111,7 +111,10 @@ describe('profile permission set map keys change validator', () => {
   let mapKeysValidator: ChangeValidator
 
   beforeEach(() => {
-    mapKeysValidator = changeValidatorCreator(getLookUpName(defaultFilterContext.fetchProfile))
+    mapKeysValidator = changeValidatorCreator(
+      getLookUpName(defaultFilterContext.fetchProfile),
+      defaultFilterContext.fetchProfile,
+    )
   })
   const runChangeValidator = (before?: InstanceElement, after?: InstanceElement): Promise<ReadonlyArray<ChangeError>> =>
     mapKeysValidator([toChange({ before, after })])

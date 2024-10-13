@@ -48,6 +48,7 @@ import {
   getTransitionKey,
 } from './transition_structure'
 import { decodeCloudFields, encodeCloudFields } from '../script_runner/workflow/workflow_cloud'
+import { WorkflowVersionType } from '../workflowV2/types'
 
 const log = logger(module)
 
@@ -97,10 +98,16 @@ const sameTransitionIds = (
   statusesMap: Map<string, string>,
 ): boolean => {
   const transitionIds = Object.fromEntries(
-    transitions.map(transition => [transition.id, getTransitionKey(transition, statusesMap)]),
+    transitions.map(transition => [
+      transition.id,
+      getTransitionKey({ transition, statusesMap, workflowVersion: WorkflowVersionType.V1 }),
+    ]),
   )
   const otherTransitionIds = Object.fromEntries(
-    otherTransitions.map(transition => [transition.id, getTransitionKey(transition, statusesMap)]),
+    otherTransitions.map(transition => [
+      transition.id,
+      getTransitionKey({ transition, statusesMap, workflowVersion: WorkflowVersionType.V1 }),
+    ]),
   )
   return _.isEqual(transitionIds, otherTransitionIds)
 }
@@ -146,7 +153,10 @@ const addTransitionIdsToInstance = (
   statusesMap: Map<string, string>,
 ): void => {
   const transitionIds = Object.fromEntries(
-    transitions.map(transition => [getTransitionKey(transition, statusesMap), transition.id]),
+    transitions.map(transition => [
+      getTransitionKey({ transition, statusesMap, workflowVersion: WorkflowVersionType.V1 }),
+      transition.id,
+    ]),
   )
   Object.entries(workflowInstance.value.transitions).forEach(([key, transition]) => {
     transition.id = transitionIds[key]
@@ -285,6 +295,7 @@ const verifyAndFixTransitionReferences = async ({
     transitions,
     expectedTransitionIds,
     statusesMap,
+    workflowVersion: WorkflowVersionType.V1,
   })
   if (Object.keys(transitionIdsMap).length === 0) {
     return transitions

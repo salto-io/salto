@@ -23,7 +23,7 @@ const { awu } = collections.asynciterable
 
 const getStatusesWithoutInboundTransitions = (instance: WorkflowV2Instance): ReferenceExpression[] => {
   const statusesRefsWithInboundTransitions = Object.values(instance.value.transitions)
-    .map(transition => transition.to?.statusReference)
+    .map(transition => transition.toStatusReference)
     .filter(isDefined)
     .filter(isResolvedReferenceExpression)
   const statusesRefs = instance.value.statuses

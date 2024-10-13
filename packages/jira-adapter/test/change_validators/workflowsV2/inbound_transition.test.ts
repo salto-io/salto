@@ -69,9 +69,7 @@ describe('inboundTransitionChangeValidator', () => {
           name: 'tran1',
           id: 'id',
           type: 'DIRECTED',
-          to: {
-            statusReference: status1Ref,
-          },
+          toStatusReference: status1Ref,
         },
         tran2: {
           name: 'tran1',
@@ -82,9 +80,7 @@ describe('inboundTransitionChangeValidator', () => {
           name: 'tran3',
           id: 'id',
           type: 'DIRECTED',
-          to: {
-            statusReference: status3Ref,
-          },
+          toStatusReference: status3Ref,
         },
       },
     })
@@ -109,9 +105,7 @@ describe('inboundTransitionChangeValidator', () => {
       name: 'tran4',
       id: 'id',
       type: 'DIRECTED',
-      to: {
-        statusReference: status2Ref,
-      },
+      toStatusReference: status2Ref,
     }
     expect(await inboundTransitionChangeValidator(changes)).toEqual([])
   })

@@ -50,6 +50,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   logDiffsFromParsingXmlNumbers: true,
   extendTriggersMetadata: false,
   removeReferenceFromFilterItemToRecordType: false,
+  storeProfilesAndPermissionSetsBrokenPaths: true,
   picklistsAsMaps: false,
 }
 

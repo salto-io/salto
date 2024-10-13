@@ -20,8 +20,8 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
-  metadataTypeToFieldToMapDef,
-  annotationDefsByType,
+  getMetadataTypeToFieldToMapDef,
+  getAnnotationDefsByType,
   findInstancesToConvert,
   getElementValueOrAnnotations,
   getChangesWithFieldType,
@@ -88,9 +88,9 @@ export const getOrderedMapErrors = (element: Element, fieldName: string): Change
 }
 
 const changeValidator: (fetchProfile: FetchProfile) => ChangeValidator = fetchProfile => {
-  if (!fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
-    return async () => []
-  }
+  const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(fetchProfile)
+  const annotationDefsByType = getAnnotationDefsByType(fetchProfile)
+
   return async changes => {
     const instanceErrors: ChangeError[] = await awu(Object.keys(metadataTypeToFieldToMapDef))
       .flatMap(async targetMetadataType => {

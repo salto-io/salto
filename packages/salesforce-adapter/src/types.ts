@@ -126,6 +126,7 @@ export type OptionalFeatures = {
   skipParsingXmlNumbers?: boolean
   logDiffsFromParsingXmlNumbers?: boolean
   extendTriggersMetadata?: boolean
+  storeProfilesAndPermissionSetsBrokenPaths?: boolean
   removeReferenceFromFilterItemToRecordType?: boolean
   picklistsAsMaps?: boolean
 }
@@ -839,6 +840,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
+    storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
     removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
     picklistsAsMaps: { refType: BuiltinTypes.BOOLEAN },
   },

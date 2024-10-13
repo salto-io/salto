@@ -9,7 +9,7 @@
 import _, { Dictionary } from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { Element, ElemID, InstanceElement, ReferenceInfo, Values } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, ReadOnlyElementsSource, ReferenceInfo, Values } from '@salto-io/adapter-api'
 import { invertNaclCase } from '@salto-io/adapter-utils'
 import { MetadataInstance, MetadataQuery, ProfileSection, WeakReferencesHandler } from '../types'
 import {
@@ -32,6 +32,7 @@ import {
   ENDS_WITH_CUSTOM_SUFFIX_REGEX,
   extractFlatCustomObjectFields,
   getNamespaceFromString,
+  getProfilesAndPermissionSetsBrokenPaths,
   isInstanceOfTypeSync,
 } from '../filters/utils'
 import { buildMetadataQuery } from '../fetch_profile/metadata_query'
@@ -43,7 +44,7 @@ const log = logger(module)
 
 const FIELD_NO_ACCESS = 'NoAccess'
 
-const isProfileOrPermissionSetInstance = isInstanceOfTypeSync(
+export const isProfileOrPermissionSetInstance = isInstanceOfTypeSync(
   PROFILE_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
   MUTING_PERMISSION_SET_METADATA_TYPE,
@@ -250,7 +251,7 @@ const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: Metad
       target,
     ]),
   )
-    .filter(([, target]) => metadataQuery?.isInstanceMatch(target) ?? true)
+    .filter(([, target]) => metadataQuery?.isInstanceIncluded(target) ?? true)
     .fromPairs()
     .value()
 
@@ -288,38 +289,57 @@ export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): Metadata
   }
 }
 
+export const getProfilesAndPsBrokenReferenceFields = async ({
+  profilesAndPermissionSets,
+  elementsSource,
+  metadataQuery,
+}: {
+  profilesAndPermissionSets: InstanceElement[]
+  elementsSource: ReadOnlyElementsSource
+  metadataQuery: MetadataQuery
+}): Promise<{ paths: string[]; entriesTargets: Record<string, ElemID> }> => {
+  const entriesTargets: Dictionary<ElemID> = _.merge(
+    {},
+    ...profilesAndPermissionSets.map(instance =>
+      instanceEntriesTargets(instance, buildElemIDMetadataQuery(metadataQuery)),
+    ),
+  )
+  const elementNames = new Set(
+    await awu(await elementsSource.getAll())
+      .flatMap(extractFlatCustomObjectFields)
+      .map(elem => elem.elemID.getFullName())
+      .toArray(),
+  )
+  const brokenPaths = new Set(await getProfilesAndPermissionSetsBrokenPaths(elementsSource))
+  const paths = Object.keys(await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())))
+    // Ignore broken paths that were calculated in fetch
+    .filter(path => !brokenPaths.has(path))
+    // fieldPermissions may contain standard values that are not referring to any field, we shouldn't omit these
+    .filter(path => !isStandardFieldPermissionsPath(path))
+    // Some standard objects are not managed in the metadata API and won't exist in the workspace.
+    .filter(path => !isStandardObjectPermissionsPath(path))
+  return { paths, entriesTargets }
+}
+
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
   ({ elementsSource, config }) =>
   async elements => {
-    const metadataQuery = buildElemIDMetadataQuery(buildMetadataQuery({ fetchParams: config.fetch ?? {} }))
-    const instances = elements.filter(isProfileOrPermissionSetInstance)
-    const entriesTargets: Dictionary<ElemID> = _.merge(
-      {},
-      ...instances.map(instance => instanceEntriesTargets(instance, metadataQuery)),
-    )
-    const elementNames = new Set(
-      await awu(await elementsSource.getAll())
-        .flatMap(extractFlatCustomObjectFields)
-        .map(elem => elem.elemID.getFullName())
-        .toArray(),
-    )
-    const brokenReferenceFields = Object.keys(
-      await pickAsync(entriesTargets, async target => !elementNames.has(target.getFullName())),
-      // fieldPermissions may contain standard values that are not referring to any field, we shouldn't omit these
-    )
-      .filter(path => !isStandardFieldPermissionsPath(path))
-      // Some standard objects are not managed in the metadata API and won't exist in the workspace.
-      .filter(path => !isStandardObjectPermissionsPath(path))
-    const instancesWithBrokenReferences = instances.filter(instance =>
-      brokenReferenceFields.some(field => _(instance.value).has(field)),
+    const profilesAndPermissionSets = elements.filter(isProfileOrPermissionSetInstance)
+    const { paths: brokenReferencePaths, entriesTargets } = await getProfilesAndPsBrokenReferenceFields({
+      profilesAndPermissionSets,
+      elementsSource,
+      metadataQuery: buildMetadataQuery({ fetchParams: config.fetch ?? {} }),
+    })
+    const instancesWithBrokenReferences = profilesAndPermissionSets.filter(instance =>
+      brokenReferencePaths.some(field => _(instance.value).has(field)),
     )
     const fixedElements = instancesWithBrokenReferences.map(instance => {
       const fixed = instance.clone()
-      fixed.value = _.omit(fixed.value, brokenReferenceFields)
+      fixed.value = _.omit(fixed.value, brokenReferencePaths)
       return fixed
     })
     const errors = instancesWithBrokenReferences.map(instance => {
-      const instanceBrokenReferenceFields = brokenReferenceFields
+      const instanceBrokenReferenceFields = brokenReferencePaths
         .filter(field => _(instance.value).has(field))
         .map(field => entriesTargets[field].getFullName())
         .sort()

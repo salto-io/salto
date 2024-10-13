@@ -7,7 +7,7 @@
  */
 import { Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { calculatePatch, syncWorkspaceToFolder } from '@salto-io/core'
+import { calculatePatch, initFolder, isInitializedFolder, syncWorkspaceToFolder } from '@salto-io/core'
 import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import * as mocks from '../mocks'
 import { applyPatchAction, syncWorkspaceToFolderAction } from '../../src/commands/adapter_format'
@@ -19,11 +19,15 @@ jest.mock('@salto-io/core', () => {
     ...actual,
     calculatePatch: jest.fn().mockImplementation(actual.calculatePatch),
     syncWorkspaceToFolder: jest.fn().mockImplementation(actual.syncWorkspaceToFolder),
+    isInitializedFolder: jest.fn().mockImplementation(actual.isInitializedFolder),
+    initFolder: jest.fn().mockImplementation(actual.initFolder),
   }
 })
 
 const mockCalculatePatch = calculatePatch as jest.MockedFunction<typeof calculatePatch>
 const mockSyncWorkspaceToFolder = syncWorkspaceToFolder as jest.MockedFunction<typeof syncWorkspaceToFolder>
+const mockIsInitializedFolder = isInitializedFolder as jest.MockedFunction<typeof isInitializedFolder>
+const mockInitFolder = initFolder as jest.MockedFunction<typeof initFolder>
 
 describe('apply-patch command', () => {
   const commandName = 'apply-patch'
@@ -238,28 +242,11 @@ describe('sync-to-workspace command', () => {
     })
   })
 
-  describe('when core sync returns without errors', () => {
+  describe('when isFolderInitialized returns errors', () => {
     let result: CliExitCode
     beforeEach(async () => {
-      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
-      result = await syncWorkspaceToFolderAction({
-        ...cliCommandArgs,
-        workspace,
-        input: {
-          accountName: 'salesforce',
-          toDir: 'someDir',
-        },
-      })
-    })
-    it('should return success exit code', () => {
-      expect(result).toEqual(CliExitCode.Success)
-    })
-  })
-
-  describe('when core sync returns with errors', () => {
-    let result: CliExitCode
-    beforeEach(async () => {
-      mockSyncWorkspaceToFolder.mockResolvedValueOnce({
+      mockIsInitializedFolder.mockResolvedValueOnce({
+        result: false,
         errors: [{ severity: 'Error', message: 'Not supported', detailedMessage: 'detailed Not Supported' }],
       })
       result = await syncWorkspaceToFolderAction({
@@ -268,6 +255,92 @@ describe('sync-to-workspace command', () => {
         input: {
           accountName: 'salesforce',
           toDir: 'someDir',
+          force: true,
+        },
+      })
+    })
+    it('should return non-success exit code', () => {
+      expect(result).toEqual(CliExitCode.AppError)
+    })
+  })
+
+  describe('when folder is not initialized and initFolder returns errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: false, errors: [] })
+      mockInitFolder.mockResolvedValueOnce({
+        errors: [{ severity: 'Error', message: 'Not supported', detailedMessage: 'detailed Not Supported' }],
+      })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+        },
+      })
+    })
+    it('should return non-success exit code', () => {
+      expect(result).toEqual(CliExitCode.AppError)
+    })
+  })
+
+  describe('when folder is initialized and core sync returns without errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+        },
+      })
+    })
+    it('should return success exit code', () => {
+      expect(result).toEqual(CliExitCode.Success)
+    })
+  })
+
+  describe('when folder is not initialized and folder init and core sync returns without errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({ errors: [] })
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: false, errors: [] })
+      mockInitFolder.mockResolvedValueOnce({ errors: [] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
+        },
+      })
+    })
+    it('should return success exit code', () => {
+      expect(result).toEqual(CliExitCode.Success)
+    })
+  })
+
+  describe('when folder is initialized and core sync returns with errors', () => {
+    let result: CliExitCode
+    beforeEach(async () => {
+      mockSyncWorkspaceToFolder.mockResolvedValueOnce({
+        errors: [{ severity: 'Error', message: 'Not supported', detailedMessage: 'detailed Not Supported' }],
+      })
+      mockIsInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
+      result = await syncWorkspaceToFolderAction({
+        ...cliCommandArgs,
+        workspace,
+        input: {
+          accountName: 'salesforce',
+          toDir: 'someDir',
+          force: true,
         },
       })
     })

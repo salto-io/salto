@@ -27,7 +27,8 @@ import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
 import { metadataType } from '../transformers/transformer'
-import { metadataTypeToFieldToMapDef } from './convert_maps'
+import { getMetadataTypeToFieldToMapDef } from './convert_maps'
+import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -153,7 +154,8 @@ export const convertList = async (type: ObjectType, values: Values): Promise<voi
   await castListRecursively(type, values)
 }
 
-const getMapFieldIds = async (types: ObjectType[]): Promise<Set<string>> => {
+const getMapFieldIds = async (types: ObjectType[], fetchProfile: FetchProfile): Promise<Set<string>> => {
+  const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(fetchProfile)
   const objectsWithMapFields = await awu(types)
     .filter(async obj => Object.keys(metadataTypeToFieldToMapDef).includes(await metadataType(obj)))
     .toArray()
@@ -186,7 +188,7 @@ export const makeFilter =
     unorderedListAnnotations: ReadonlyArray<UnorderedList>,
     hardcodedLists: ReadonlyArray<string>,
   ): FilterCreator =>
-  () => ({
+  ({ config }) => ({
     name: 'convertListsFilter',
     /**
      * Upon fetch, mark all list fields as list fields in all fetched types
@@ -200,7 +202,7 @@ export const makeFilter =
         .toArray()
       const objectTypes = elements.filter(isObjectType)
 
-      const mapFieldIds = await getMapFieldIds(objectTypes)
+      const mapFieldIds = await getMapFieldIds(objectTypes, config.fetchProfile)
       const knownListIds = new Set(
         [...hardcodedLists, ...unorderedListFields.map(sortDef => sortDef.elemID.getFullName())].filter(
           id => !mapFieldIds.has(id),

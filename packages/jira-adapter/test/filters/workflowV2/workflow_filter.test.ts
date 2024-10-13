@@ -73,6 +73,7 @@ describe('workflow filter', () => {
     Create: naclCase('Create::From: none::Initial'),
     Done: naclCase('Done::From: any status::Global'),
     ToStatus2: naclCase('ToStatus2::From: Create::Directed'),
+    GlobalTransition: naclCase('globalTransition::From: any status::Global'),
   }
 
   beforeEach(async () => {
@@ -130,21 +131,22 @@ describe('workflow filter', () => {
                   properties: {
                     'jira.issue.editable': 'true',
                   },
-                  to: {
-                    statusReference: '11',
-                  },
+                  toStatusReference: '11',
+                  links: [
+                    {
+                      toPort: 7,
+                    },
+                  ],
                 },
                 {
                   type: 'DIRECTED',
                   name: 'ToStatus2',
-                  from: [
+                  links: [
                     {
-                      statusReference: '11',
+                      fromStatusReference: '11',
                     },
                   ],
-                  to: {
-                    statusReference: '2',
-                  },
+                  toStatusReference: '2',
                 },
               ],
               statuses: [
@@ -181,9 +183,7 @@ describe('workflow filter', () => {
                 {
                   type: 'GLOBAL',
                   name: 'Done',
-                  to: {
-                    statusReference: '22',
-                  },
+                  toStatusReference: '22',
                 },
               ],
             },
@@ -233,21 +233,22 @@ describe('workflow filter', () => {
                 value: 'true',
               },
             ],
-            to: {
-              statusReference: '11',
-            },
+            toStatusReference: '11',
+            links: [
+              {
+                toPort: 7,
+              },
+            ],
           },
           [TRANSITION_NAME_TO_KEY.ToStatus2]: {
             type: 'DIRECTED',
             name: 'ToStatus2',
-            from: [
+            links: [
               {
-                statusReference: '11',
+                fromStatusReference: '11',
               },
             ],
-            to: {
-              statusReference: '2',
-            },
+            toStatusReference: '2',
           },
         },
         statuses: [
@@ -283,9 +284,7 @@ describe('workflow filter', () => {
           [TRANSITION_NAME_TO_KEY.Done]: {
             type: 'GLOBAL',
             name: 'Done',
-            to: {
-              statusReference: '22',
-            },
+            toStatusReference: '22',
           },
         },
         statuses: [
@@ -339,7 +338,11 @@ describe('workflow filter', () => {
         {
           workflowIds: ['1', '2'],
         },
-        undefined,
+        {
+          params: {
+            useTransitionLinksFormat: 'true',
+          },
+        },
       )
     })
     it('should not add workflow instances if new workflow api is disabled', async () => {
@@ -432,17 +435,13 @@ describe('workflow filter', () => {
                 {
                   id: '1',
                   name: 'Create',
-                  to: {
-                    statusReference: 'uuid1',
-                  },
+                  toStatusReference: 'uuid1',
                   type: 'INITIAL',
                 },
                 {
                   id: '2',
                   name: 'Create',
-                  to: {
-                    statusReference: 'uuid2',
-                  },
+                  toStatusReference: 'uuid2',
                   type: 'INITIAL',
                 },
               ],
@@ -504,21 +503,17 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     properties: {
                       'jira.issue.editable': 'true',
                     },
-                    to: {
-                      statusReference: '11',
-                    },
+                    toStatusReference: '11',
                   },
                   {
                     type: 'DIRECTED',
                     name: 'ToStatus2',
-                    from: [
+                    links: [
                       {
-                        statusReference: '11',
+                        fromStatusReference: '11',
                       },
                     ],
-                    to: {
-                      statusReference: '2',
-                    },
+                    toStatusReference: '2',
                     properties: {
                       'jira.field.resolution.exclude': '10000,10001',
                       'jira.field.resolution.include': '10002',
@@ -587,9 +582,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                   {
                     id: '1',
                     name: 'Create',
-                    to: {
-                      statusReference: 'uuid1',
-                    },
+                    toStatusReference: 'uuid1',
                     type: 'INITIAL',
                     conditions: {
                       operation: 'ALL',
@@ -836,9 +829,12 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             {
               id: '1',
               name: 'Create',
-              to: {
-                statusReference: 'uuid1',
-              },
+              toStatusReference: 'uuid1',
+              links: [
+                {
+                  toPort: 7,
+                },
+              ],
               type: 'INITIAL',
               conditions: {
                 operation: 'ALL',
@@ -852,16 +848,14 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             {
               id: '2',
               name: 'toStatus2',
-              from: [
+              links: [
                 {
-                  port: 3,
-                  statusReference: 'uuid1',
+                  fromPort: 3,
+                  fromStatusReference: 'uuid1',
+                  toPort: 7,
                 },
               ],
-              to: {
-                port: 7,
-                statusReference: 'uuid2',
-              },
+              toStatusReference: 'uuid2',
               type: 'DIRECTED',
               conditions: {
                 operation: 'ALL',
@@ -874,6 +868,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                   },
                 ],
               },
+            },
+            {
+              id: '3',
+              name: 'globalTransition',
+              links: [],
+              toStatusReference: 'uuid2',
+              type: 'GLOBAL',
             },
           ],
         },
@@ -912,7 +913,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
     }
 
     let workflowReferenceStatusType: ObjectType
-    let WorkflowStatusAndPortType: ObjectType
+    let WorkflowTransitionLinks: ObjectType
     let transitionType: ObjectType
     let statusMappingType: ObjectType
     let statusMigrationType: ObjectType
@@ -956,16 +957,18 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       workflowInstance.value.statusMappings = statusMapping
       workflowInstance.value.statuses.pop()
       delete workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
+      delete workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.GlobalTransition]
     }
     beforeEach(() => {
       // types
       statusCategoryType = createEmptyType(STATUS_CATEGORY_TYPE_NAME)
       statusType = createEmptyType(STATUS_TYPE_NAME)
-      WorkflowStatusAndPortType = new ObjectType({
-        elemID: new ElemID(JIRA, 'WorkflowStatusAndPort'),
+      WorkflowTransitionLinks = new ObjectType({
+        elemID: new ElemID(JIRA, 'WorkflowTransitionLinks'),
         fields: {
-          statusReference: { refType: BuiltinTypes.STRING },
-          port: { refType: BuiltinTypes.NUMBER },
+          fromPort: { refType: BuiltinTypes.NUMBER },
+          fromStatusReference: { refType: BuiltinTypes.STRING },
+          toPort: { refType: BuiltinTypes.NUMBER },
         },
       })
       transitionParametersType = new ObjectType({
@@ -1003,8 +1006,8 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           conditions: { refType: conditionGroupConfigurationType },
           name: { refType: BuiltinTypes.STRING },
           type: { refType: BuiltinTypes.STRING },
-          from: { refType: new ListType(WorkflowStatusAndPortType) },
-          to: { refType: WorkflowStatusAndPortType },
+          links: { refType: new ListType(WorkflowTransitionLinks) },
+          toStatusReference: { refType: BuiltinTypes.STRING },
         },
       })
 
@@ -1089,9 +1092,12 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             id: '1',
             type: 'INITIAL',
             name: 'Create',
-            to: {
-              statusReference: new ReferenceExpression(status1.elemID, status1),
-            },
+            toStatusReference: new ReferenceExpression(status1.elemID, status1),
+            links: [
+              {
+                toPort: 7,
+              },
+            ],
             conditions: {
               operation: 'ALL',
               conditions: [],
@@ -1107,16 +1113,14 @@ It is strongly recommended to rename these transitions so they are unique in Jir
             id: '2',
             type: 'DIRECTED',
             name: 'toStatus2',
-            from: [
+            links: [
               {
-                statusReference: new ReferenceExpression(status1.elemID, status1),
-                port: 3,
+                fromPort: 3,
+                fromStatusReference: new ReferenceExpression(status1.elemID, status1),
+                toPort: 7,
               },
             ],
-            to: {
-              statusReference: new ReferenceExpression(status2.elemID, status2),
-              port: 7,
-            },
+            toStatusReference: new ReferenceExpression(status2.elemID, status2),
             conditions: {
               operation: 'ALL',
               conditionGroups: [
@@ -1127,6 +1131,12 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               ],
               conditions: [],
             },
+          },
+          [TRANSITION_NAME_TO_KEY.GlobalTransition]: {
+            id: '3',
+            type: 'GLOBAL',
+            name: 'globalTransition',
+            toStatusReference: new ReferenceExpression(status2.elemID, status2),
           },
         },
       })
@@ -1189,9 +1199,8 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               {
                 id: '1',
                 name: 'Create',
-                to: {
-                  statusReference: 'uuid1',
-                },
+                toStatusReference: 'uuid1',
+                links: [{ toPort: 7 }],
                 type: 'INITIAL',
                 conditions: {
                   operation: 'ALL',
@@ -1208,16 +1217,14 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               {
                 id: '2',
                 name: 'toStatus2',
-                from: [
+                links: [
                   {
-                    port: 3,
-                    statusReference: 'uuid1',
+                    fromPort: 3,
+                    fromStatusReference: 'uuid1',
+                    toPort: 7,
                   },
                 ],
-                to: {
-                  port: 7,
-                  statusReference: 'uuid2',
-                },
+                toStatusReference: 'uuid2',
                 type: 'DIRECTED',
                 conditions: {
                   operation: 'ALL',
@@ -1229,6 +1236,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                   ],
                 },
+              },
+              {
+                id: '3',
+                name: 'globalTransition',
+                links: [],
+                toStatusReference: 'uuid2',
+                type: 'GLOBAL',
               },
             ],
             scope: {
@@ -1891,6 +1905,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       it('should undo the preDeploy changes', async () => {
         workflowInstanceBefore.value.statuses.pop()
         delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
+        delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.GlobalTransition]
         const { statuses: statusesBefore, transitions: transitionsBefore } = workflowInstanceBefore.value
         const { statuses: statusesAfter, transitions: transitionsAfter } = workflowInstance.value
         expect(statusesAfter).toEqual(statusesBefore)

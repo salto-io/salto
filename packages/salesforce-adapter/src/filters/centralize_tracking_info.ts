@@ -25,7 +25,7 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
@@ -202,7 +202,7 @@ const createHistoryTrackingFieldChange = (
  * Note: we assume this filter runs *after* custom objects are turned into types (custom_object_to_object_type) but
  * *before* these types are split up into different elements (custom_type_split)
  * */
-const filter: LocalFilterCreator = () => {
+const filter: FilterCreator = () => {
   let fieldsWithSyntheticChanges: Set<string> = new Set()
   return {
     name: 'centralizeTrackingInfo',

@@ -655,9 +655,9 @@ describe('Test utils.ts', () => {
         case PrimitiveTypes.NUMBER:
           return Number(value)
         case PrimitiveTypes.BOOLEAN:
-          return value.toString().toLowerCase() === 'true'
+          return value?.toString().toLowerCase() === 'true'
         case PrimitiveTypes.STRING:
-          return value.toString().length === 0 ? undefined : value.toString()
+          return value?.toString().length === 0 ? undefined : value?.toString()
         default:
           return value
       }
@@ -1294,9 +1294,9 @@ describe('Test utils.ts', () => {
         case PrimitiveTypes.NUMBER:
           return Number(value)
         case PrimitiveTypes.BOOLEAN:
-          return value.toString().toLowerCase() === 'true'
+          return value?.toString().toLowerCase() === 'true'
         case PrimitiveTypes.STRING:
-          return value.toString().length === 0 ? undefined : value.toString()
+          return value?.toString().length === 0 ? undefined : value?.toString()
         default:
           return value
       }

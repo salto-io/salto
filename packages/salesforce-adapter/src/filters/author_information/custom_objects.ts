@@ -13,7 +13,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { inspectValue } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELD, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../constants'
 import { getAuthorAnnotations, MetadataInstanceElement } from '../../transformers/transformer'
-import { RemoteFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
 import {
   apiNameSync,
@@ -132,7 +132,7 @@ export const WARNING_MESSAGE =
 /*
  * add author information to object types and fields.
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customObjectAuthorFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -140,6 +140,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
+
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
       const instancesByParent = _.groupBy(

@@ -38,7 +38,7 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import {
   API_NAME_SEPARATOR,
   PROFILE_METADATA_TYPE,
@@ -558,7 +558,7 @@ export const findTypeToConvert = async (
  * Convert certain elements' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'convertMapsFilter',
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {

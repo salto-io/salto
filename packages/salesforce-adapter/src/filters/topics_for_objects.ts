@@ -37,7 +37,7 @@ import {
   MetadataTypeAnnotations,
   isMetadataObjectType,
 } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
 import { apiNameSync, boolValue, getInstancesOfMetadataType, isCustomObjectSync, isInstanceOfTypeChange } from './utils'
 
@@ -130,7 +130,7 @@ const setTopicsForObjectsForFetchWithChangesDetection = async ({
   })
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'topicsForObjectsFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (!config.fetchProfile.metadataQuery.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)) {

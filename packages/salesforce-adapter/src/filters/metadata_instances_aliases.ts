@@ -8,14 +8,14 @@
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { getInstanceAlias } from './utils'
 import { isMetadataInstanceElement, MetadataInstanceElement } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'metadataInstancesAliases',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (config.fetchProfile.isFeatureEnabled('skipAliases')) {

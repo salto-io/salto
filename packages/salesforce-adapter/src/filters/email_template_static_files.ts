@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import path from 'path'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../constants'
 import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
@@ -114,7 +114,7 @@ const getAttachmentsFromChanges = async (changes: Change[]): Promise<Attachment[
 /**
  * Extract emailTemplate with attachments and save their content in a static file.
  */
-const filter: LocalFilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'emailTemplateFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)

@@ -7,6 +7,7 @@
  */
 import fs from 'fs'
 import path from 'path'
+import { collections } from '@salto-io/lowerdash'
 import { exists, readTextFile } from '@salto-io/file'
 import { setupTmpDir } from '@salto-io/test-utils'
 import {
@@ -17,6 +18,7 @@ import {
   ObjectType,
   ReferenceExpression,
   toChange,
+  Values,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { dumpElementsToFolder } from '../../src/sfdx_parser/sfdx_dump'
@@ -24,6 +26,7 @@ import { mockTypes, mockDefaultValues } from '../mock_elements'
 import { createInstanceElement, createMetadataObjectType, Types } from '../../src/transformers/transformer'
 import { createCustomObjectType } from '../utils'
 import { WORKFLOW_RULE_METADATA_TYPE } from '../../src/constants'
+import { xmlToValues } from '../../src/transformers/xml_transformer'
 
 describe('dumpElementsToFolder', () => {
   const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
@@ -133,10 +136,27 @@ describe('dumpElementsToFolder', () => {
         expect(dumpResult.unappliedChanges).toHaveLength(0)
         expect(dumpResult.errors).toHaveLength(0)
       })
-      it('should create the parent XML', async () => {
-        await expect(
-          exists(path.join(project.name(), 'force-app/main/default/workflows/Test__c.workflow-meta.xml')),
-        ).resolves.toBeTrue()
+      describe('workflow xml content', () => {
+        let values: Values
+        beforeAll(async () => {
+          const parentXmlPath = path.join(project.name(), 'force-app/main/default/workflows/Test__c.workflow-meta.xml')
+          await expect(exists(parentXmlPath)).resolves.toBeTrue()
+          const xmlContent = await readTextFile(parentXmlPath)
+          values = xmlToValues(xmlContent, true)
+        })
+        it('should add the instance to the parent XML', async () => {
+          expect(collections.array.makeArray(values.values.rules)).toContainEqual(
+            expect.objectContaining({ fullName: 'Rule' }),
+          )
+        })
+        // eslint-disable-next-line jest/no-disabled-tests
+        it.skip('should keep the existing nested instances from before', async () => {
+          // This currently does not work, this is a bug that should be fixed
+          expect(collections.array.makeArray(values.values.rules)).toContainAllEntries([
+            expect.objectContaining({ fullName: 'TestRule1' }),
+            expect.objectContaining({ fullName: 'TestRule2' }),
+          ])
+        })
       })
     })
     describe('when modifying an existing nested instance', () => {

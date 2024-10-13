@@ -896,7 +896,6 @@ describe('Zendesk adapter E2E', () => {
       const articleInstance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
@@ -1003,7 +1002,6 @@ describe('Zendesk adapter E2E', () => {
       const article2Instance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
@@ -1041,7 +1039,6 @@ describe('Zendesk adapter E2E', () => {
       const article3Instance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
           source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),

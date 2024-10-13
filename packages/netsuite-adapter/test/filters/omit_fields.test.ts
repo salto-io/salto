@@ -15,6 +15,7 @@ import { LocalFilterOpts } from '../../src/filter'
 import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../../src/config/config_creator'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('omit fields filter', () => {
   let type: ObjectType
@@ -41,6 +42,7 @@ describe('omit fields filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
     customRecordObjectType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord1'),

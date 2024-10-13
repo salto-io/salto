@@ -79,6 +79,7 @@ describe('email domain', () => {
         elementSource: buildElementsSourceFromElements([emailDomain, brand]),
         changeGroup: { groupID: '1', changes: [] },
         sharedContext: {},
+        errors: {},
       }
 
       const value = {}

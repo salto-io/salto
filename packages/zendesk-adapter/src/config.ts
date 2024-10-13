@@ -1909,6 +1909,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'edited_at' },
         { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
+        { fieldName: 'draft', fieldType: 'boolean' },
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -2807,6 +2808,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     fallbackUsers: true,
     removeDupUsers: true,
     orderElements: true,
+    deployArticlesAsDraft: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -3120,6 +3122,7 @@ const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfi
     fallbackUsers: { refType: BuiltinTypes.BOOLEAN },
     removeDupUsers: { refType: BuiltinTypes.BOOLEAN },
     orderElements: { refType: BuiltinTypes.BOOLEAN },
+    deployArticlesAsDraft: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

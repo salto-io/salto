@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import JSZip from 'jszip'
 import {
   ObjectType,
   ElemID,
@@ -1535,9 +1536,12 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
-                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
-                  }),
+                  Object.assign(
+                    await transformFieldAnnotations(f, Types.get({ name: f.type ?? '' }), objectInfo.fullName),
+                    {
+                      [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                    },
+                  ),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)
@@ -2070,9 +2074,12 @@ describe('Salesforce adapter E2E with real account', () => {
                 .filter(f => f[INSTANCE_TYPE_FIELD])
                 .map(async f => [
                   f.fullName,
-                  Object.assign(await transformFieldAnnotations(f, Types.get({ name: f.type }), objectInfo.fullName), {
-                    [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
-                  }),
+                  Object.assign(
+                    await transformFieldAnnotations(f, Types.get({ name: f.type ?? '' }), objectInfo.fullName),
+                    {
+                      [INSTANCE_TYPE_FIELD]: f[INSTANCE_TYPE_FIELD],
+                    },
+                  ),
                 ]),
             )) as [string, Values][]
             fields = Object.fromEntries(entries)
@@ -2243,7 +2250,11 @@ describe('Salesforce adapter E2E with real account', () => {
             const fieldWithoutName = _.omit(fieldInfo, constants.INSTANCE_FULL_NAME_FIELD)
             expect(
               Object.assign(
-                await transformFieldAnnotations(fieldWithoutName, Types.get({ name: fieldInfo.type }), accountApiName),
+                await transformFieldAnnotations(
+                  fieldWithoutName,
+                  Types.get({ name: fieldInfo.type ?? '' }),
+                  accountApiName,
+                ),
                 {
                   [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
                 },
@@ -2644,13 +2655,13 @@ describe('Salesforce adapter E2E with real account', () => {
             ...props,
             fileName: props.fileName.slice(packageName.length + 1),
           }))
-          const instances = await fromRetrieveResult(
-            retrieveResult,
+          const instances = await fromRetrieveResult({
+            zip: await JSZip.loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
             fileProps,
-            new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
-            new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
+            typesWithMetaFile: new Set((await instance.getType()).annotations.hasMetaFile ? [type] : []),
+            typesWithContent: new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
             fetchProfile,
-          )
+          })
           return awu(instances)
             .filter(async ({ file }) => file.fullName === (await apiName(instance)))
             .map(({ values }) => values)

@@ -241,6 +241,7 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
           message: '',
           severity: 'Error',
           elemID: new ElemID(''),
+          detailedMessage: '',
         }),
       ).toBeTruthy()
     })
@@ -250,6 +251,7 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
           message: '',
           severity: 'Error',
           elemID: undefined,
+          detailedMessage: '',
         }),
       ).toBeFalsy()
     })
@@ -258,6 +260,7 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
         isSaltoElementError({
           message: '',
           severity: 'Error',
+          detailedMessage: '',
         }),
       ).toBeFalsy()
     })

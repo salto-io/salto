@@ -70,10 +70,11 @@ export const changeGroupMock: ChangeGroup = {
 
 export const mockElementSource = buildElementsSourceFromElements([objectTypeMock, instanceElementMock])
 
-export const contextMock: definitions.deploy.ChangeAndContext & definitions.ContextParams = {
+export const contextMock: definitions.deploy.ChangeAndExtendedContext & definitions.ContextParams = {
   additionalContext: { parent_id: 'parent_id' },
   change: additionChangeMock,
   changeGroup: changeGroupMock,
   elementSource: mockElementSource,
   sharedContext: {},
+  errors: {},
 }

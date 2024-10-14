@@ -8,7 +8,7 @@
 import { isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
@@ -18,7 +18,7 @@ const { isDefined } = values
 /**
  * This filter modifies picklist values in `RecordType` to be references to the original value definitions.
  */
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'picklistReferences',
   onFetch: async elements => {
     if (!config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {

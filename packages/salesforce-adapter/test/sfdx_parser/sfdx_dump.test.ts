@@ -23,9 +23,8 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { dumpElementsToFolder } from '../../src/sfdx_parser/sfdx_dump'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
-import { createInstanceElement, createMetadataObjectType, Types } from '../../src/transformers/transformer'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { createCustomObjectType } from '../utils'
-import { WORKFLOW_RULE_METADATA_TYPE } from '../../src/constants'
 import { xmlToValues } from '../../src/transformers/xml_transformer'
 
 describe('dumpElementsToFolder', () => {
@@ -117,12 +116,9 @@ describe('dumpElementsToFolder', () => {
         // Here we use an example of a WorkflowRule that is dumped into a Workflow xml
         // Doing this makes us go through different code paths in SFDX, specifically, the flow that requires "readFileSync"
         // to be implemented in our SyncZipTreeContainer
-        const workflowRuleType = createMetadataObjectType({
-          annotations: { metadataType: WORKFLOW_RULE_METADATA_TYPE },
-        })
         const newWorkflowRule = createInstanceElement(
           { fullName: 'Test__c.Rule', actions: [], active: false },
-          workflowRuleType,
+          mockTypes.WorkflowRule,
           undefined,
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
         )
@@ -134,7 +130,7 @@ describe('dumpElementsToFolder', () => {
               formula: 'One__c > 2',
               triggerType: 'onCreateOrTriggeringUpdate',
             },
-            workflowRuleType,
+            mockTypes.WorkflowRule,
             undefined,
             { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
           ),
@@ -145,7 +141,7 @@ describe('dumpElementsToFolder', () => {
               formula: 'One__c < 10',
               triggerType: 'onCreateOrTriggeringUpdate',
             },
-            workflowRuleType,
+            mockTypes.WorkflowRule,
             undefined,
             { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
           ),
@@ -154,7 +150,7 @@ describe('dumpElementsToFolder', () => {
           baseDir: project.name(),
           changes: [toChange({ after: newWorkflowRule })],
           elementsSource: buildElementsSourceFromElements([
-            workflowRuleType,
+            mockTypes.WorkflowRule,
             newWorkflowRule,
             ...existingWorkflowRules,
           ]),

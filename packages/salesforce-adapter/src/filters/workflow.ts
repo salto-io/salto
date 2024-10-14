@@ -70,14 +70,14 @@ export const WORKFLOW_FIELD_TO_TYPE: Record<string, WorkflowField> = {
   [WORKFLOW_TASKS_FIELD]: WORKFLOW_TASK_METADATA_TYPE,
   [WORKFLOW_RULES_FIELD]: WORKFLOW_RULE_METADATA_TYPE,
 }
+const WORKFLOW_FIELDS = new Set<string>(Object.values(WORKFLOW_FIELD_TO_TYPE))
 
 export const WORKFLOW_TYPE_TO_FIELD: Record<string, string> = _.invert(WORKFLOW_FIELD_TO_TYPE)
 
 const isWorkflowInstance = isInstanceOfTypeSync(WORKFLOW_METADATA_TYPE)
 
 const isWorkflowChildInstance = async (elem: Element): Promise<boolean> =>
-  isInstanceElement(elem) &&
-  (Object.values(WORKFLOW_FIELD_TO_TYPE) as ReadonlyArray<string>).includes(await metadataType(elem))
+  isInstanceElement(elem) && WORKFLOW_FIELDS.has(await metadataType(elem))
 
 const isWorkflowRelatedInstance = async (elem: Element): Promise<boolean> =>
   isWorkflowInstance(elem) || isWorkflowChildInstance(elem)
@@ -239,7 +239,9 @@ const filterCreator: FilterCreator = ({ config, client }) => {
         // In the SFDX flow we need to get the entire flow to avoid part of it being dropped.
         const workflowNames = new Set(Object.keys(originalWorkflowChanges))
 
-        await awu(await config.elementsSource.getAll())
+        await awu(await config.elementsSource.list())
+          .filter(elemID => WORKFLOW_FIELDS.has(elemID.typeName))
+          .map(config.elementsSource.get)
           .filter(isWorkflowRelatedInstance)
           .map(async (elem): Promise<[string, InstanceElement]> => [await parentApiName(elem), elem as InstanceElement])
           .filter(([parent, _elem]) => workflowNames.has(parent))

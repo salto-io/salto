@@ -236,7 +236,7 @@ const filterCreator: FilterCreator = ({ config, client }) => {
       originalWorkflowChanges = await groupByAsync(allWorkflowRelatedChanges, getWorkflowApiName)
 
       if (client === undefined) {
-        // In the SFDX flow we need to get the entire flow to avoid part of it being dropped.
+        // In the SFDX flow we need to get the entire workflow to avoid part of it being dropped.
         const workflowNames = new Set(Object.keys(originalWorkflowChanges))
 
         await awu(await config.elementsSource.list())

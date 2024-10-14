@@ -257,12 +257,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: STATUS_TYPE_NAME },
   },
   {
-    src: { field: 'statusReference', parentTypes: ['WorkflowStatusAndPort'] },
-    serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
-    target: { type: STATUS_TYPE_NAME },
-  },
-  {
     src: { field: 'fromStatusReference', parentTypes: ['WorkflowTransitionLinks'] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',

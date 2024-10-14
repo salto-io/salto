@@ -101,7 +101,7 @@ describe('picklistReferences filter', () => {
         {
           picklist: 'invalid',
           values: [{ fullName: 'value1' }],
-        }
+        },
       ],
     })
     const elements = [recordType]
@@ -127,8 +127,12 @@ describe('picklistReferences filter', () => {
     })
     it('should create references to ObjectType custom fields', async () => {
       expect(recordType.value.picklistValues[3].values).toEqual([
-        new ReferenceExpression(accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High')),
-        new ReferenceExpression(accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low')),
+        new ReferenceExpression(
+          accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
+        ),
+        new ReferenceExpression(
+          accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
+        ),
       ])
     })
     it('should ignore invalid picklist references', async () => {

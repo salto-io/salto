@@ -15,8 +15,9 @@ import {
   Change,
   BuiltinTypes,
   ElemID,
+  toChange,
 } from '@salto-io/adapter-api'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
@@ -40,13 +41,14 @@ import {
   MetadataTypeAnnotations,
   toMetadataInfo,
 } from '../transformers/transformer'
-import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfType } from './utils'
+import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfTypeSync } from './utils'
 import { WorkflowField } from '../fetch_profile/metadata_types'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { makeArray } = collections.array
 const { mapValuesAsync } = promises.object
 const { removeAsync } = promises.array
+const { isDefined } = values
 const log = logger(module)
 
 export const WORKFLOW_ALERTS_FIELD = 'alerts'
@@ -71,16 +73,17 @@ export const WORKFLOW_FIELD_TO_TYPE: Record<string, WorkflowField> = {
 
 export const WORKFLOW_TYPE_TO_FIELD: Record<string, string> = _.invert(WORKFLOW_FIELD_TO_TYPE)
 
-const isWorkflowInstance = isInstanceOfType(WORKFLOW_METADATA_TYPE)
+const isWorkflowInstance = isInstanceOfTypeSync(WORKFLOW_METADATA_TYPE)
 
 const isWorkflowChildInstance = async (elem: Element): Promise<boolean> =>
   isInstanceElement(elem) &&
   (Object.values(WORKFLOW_FIELD_TO_TYPE) as ReadonlyArray<string>).includes(await metadataType(elem))
 
-const isWorkflowRelatedChange = async (change: Change): Promise<boolean> => {
-  const elem = getChangeData(change)
-  return (await isWorkflowInstance(elem)) || isWorkflowChildInstance(elem)
-}
+const isWorkflowRelatedInstance = async (elem: Element): Promise<boolean> =>
+  isWorkflowInstance(elem) || isWorkflowChildInstance(elem)
+
+const isWorkflowRelatedChange = async (change: Change): Promise<boolean> =>
+  isWorkflowRelatedInstance(getChangeData(change))
 
 const createPartialWorkflowInstance = async (
   fullInstance: InstanceElement,
@@ -161,10 +164,10 @@ const createWorkflowChange = async (
 
 const getWorkflowApiName = async (change: Change<InstanceElement>): Promise<string> => {
   const inst = getChangeData(change)
-  return (await isWorkflowInstance(inst)) ? apiName(inst) : parentApiName(inst)
+  return isWorkflowInstance(inst) ? apiName(inst) : parentApiName(inst)
 }
 
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config, client }) => {
   let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> = {}
   return {
     name: 'workflowFilter',
@@ -173,18 +176,34 @@ const filterCreator: FilterCreator = () => {
      * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)
      */
     onFetch: async (elements: Element[]) => {
-      const splitWorkflow = async (workflowInst: InstanceElement): Promise<InstanceElement[]> =>
-        (
+      const workflows = elements.filter(isWorkflowInstance)
+      if (workflows.length === 0) {
+        return
+      }
+
+      const fieldTypes = Object.fromEntries(
+        await awu(Object.entries(WORKFLOW_FIELD_TO_TYPE))
+          .map(async ([fieldName, fieldType]): Promise<[string, ObjectType] | undefined> => {
+            const objType = (await awu(elements).find(
+              async e => isObjectType(e) && (await metadataType(e)) === fieldType,
+            )) as ObjectType | undefined
+
+            if (objType === undefined) {
+              log.debug('failed to find object type for %s', fieldType)
+              return undefined
+            }
+
+            return [fieldName, objType]
+          })
+          .filter(isDefined)
+          .toArray(),
+      )
+
+      const splitWorkflow = async (workflowInst: InstanceElement): Promise<InstanceElement[]> => {
+        const workflowApiName = await apiName(workflowInst)
+        return (
           await Promise.all(
-            Object.entries(WORKFLOW_FIELD_TO_TYPE).map(async ([fieldName, fieldType]) => {
-              const objType = (await awu(elements).find(
-                async e => isObjectType(e) && (await metadataType(e)) === fieldType,
-              )) as ObjectType | undefined
-              if (_.isUndefined(objType)) {
-                log.debug('failed to find object type for %s', fieldType)
-                return []
-              }
-              const workflowApiName = await apiName(workflowInst)
+            Object.entries(fieldTypes).map(async ([fieldName, fieldType]) => {
               const innerInstances = await Promise.all(
                 makeArray(workflowInst.value[fieldName]).map(async innerValue =>
                   createInstanceElement(
@@ -192,7 +211,7 @@ const filterCreator: FilterCreator = () => {
                       ...innerValue,
                       [INSTANCE_FULL_NAME_FIELD]: fullApiName(workflowApiName, innerValue[INSTANCE_FULL_NAME_FIELD]),
                     },
-                    objType,
+                    fieldType,
                   ),
                 ),
               )
@@ -201,11 +220,9 @@ const filterCreator: FilterCreator = () => {
             }),
           )
         ).flat()
-      const additionalElements = await awu(elements)
-        .filter(isInstanceElement)
-        .filter(isWorkflowInstance)
-        .flatMap(wfInst => splitWorkflow(wfInst))
-        .toArray()
+      }
+
+      const additionalElements = await awu(workflows).flatMap(splitWorkflow).toArray()
 
       await removeAsync(elements, isWorkflowInstance)
       elements.push(...additionalElements)
@@ -217,6 +234,22 @@ const filterCreator: FilterCreator = () => {
       >
 
       originalWorkflowChanges = await groupByAsync(allWorkflowRelatedChanges, getWorkflowApiName)
+
+      if (client === undefined) {
+        // In the SFDX flow we need to get the entire flow to avoid part of it being dropped.
+        const workflowNames = new Set(Object.keys(originalWorkflowChanges))
+
+        await awu(await config.elementsSource.getAll())
+          .filter(isWorkflowRelatedInstance)
+          .map(async (elem): Promise<[string, InstanceElement]> => [await parentApiName(elem), elem as InstanceElement])
+          .filter(([parent, _elem]) => workflowNames.has(parent))
+          .filter(([parent, elem]) =>
+            originalWorkflowChanges[parent].every(change => !elem.elemID.isEqual(getChangeData(change).elemID)),
+          )
+          .forEach(([parent, elem]) => {
+            originalWorkflowChanges[parent].push(toChange({ after: elem }))
+          })
+      }
 
       const deployableWorkflowChanges = await awu(Object.values(originalWorkflowChanges))
         .map(createWorkflowChange)

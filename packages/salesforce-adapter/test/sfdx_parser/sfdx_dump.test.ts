@@ -18,7 +18,7 @@ import {
   ObjectType,
   ReferenceExpression,
   toChange,
-  Values,
+  Value,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { dumpElementsToFolder } from '../../src/sfdx_parser/sfdx_dump'
@@ -120,16 +120,44 @@ describe('dumpElementsToFolder', () => {
         const workflowRuleType = createMetadataObjectType({
           annotations: { metadataType: WORKFLOW_RULE_METADATA_TYPE },
         })
-        const workflowRule = createInstanceElement(
+        const newWorkflowRule = createInstanceElement(
           { fullName: 'Test__c.Rule', actions: [], active: false },
           workflowRuleType,
           undefined,
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
         )
+        const existingWorkflowRules = [
+          createInstanceElement(
+            {
+              fullName: 'Test__c.TestRule1',
+              active: false,
+              formula: 'One__c > 2',
+              triggerType: 'onCreateOrTriggeringUpdate',
+            },
+            workflowRuleType,
+            undefined,
+            { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
+          ),
+          createInstanceElement(
+            {
+              fullName: 'Test__c.TestRule2',
+              active: false,
+              formula: 'One__c < 10',
+              triggerType: 'onCreateOrTriggeringUpdate',
+            },
+            workflowRuleType,
+            undefined,
+            { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
+          ),
+        ]
         dumpResult = await dumpElementsToFolder({
           baseDir: project.name(),
-          changes: [toChange({ after: workflowRule })],
-          elementsSource: buildElementsSourceFromElements([workflowRuleType, workflowRule]),
+          changes: [toChange({ after: newWorkflowRule })],
+          elementsSource: buildElementsSourceFromElements([
+            workflowRuleType,
+            newWorkflowRule,
+            ...existingWorkflowRules,
+          ]),
         })
       })
       it('should apply all changes and have no errors', () => {
@@ -137,25 +165,24 @@ describe('dumpElementsToFolder', () => {
         expect(dumpResult.errors).toHaveLength(0)
       })
       describe('workflow xml content', () => {
-        let values: Values
+        let rules: Value[]
         beforeAll(async () => {
           const parentXmlPath = path.join(project.name(), 'force-app/main/default/workflows/Test__c.workflow-meta.xml')
           await expect(exists(parentXmlPath)).resolves.toBeTrue()
           const xmlContent = await readTextFile(parentXmlPath)
-          values = xmlToValues(xmlContent, true)
+          const values = xmlToValues(xmlContent, true)
+          rules = collections.array.makeArray(values.values.rules)
         })
         it('should add the instance to the parent XML', async () => {
-          expect(collections.array.makeArray(values.values.rules)).toContainEqual(
-            expect.objectContaining({ fullName: 'Rule' }),
-          )
+          expect(rules).toContainEqual(expect.objectContaining({ fullName: 'Rule' }))
         })
-        // eslint-disable-next-line jest/no-disabled-tests
-        it.skip('should keep the existing nested instances from before', async () => {
-          // This currently does not work, this is a bug that should be fixed
-          expect(collections.array.makeArray(values.values.rules)).toContainAllEntries([
-            expect.objectContaining({ fullName: 'TestRule1' }),
-            expect.objectContaining({ fullName: 'TestRule2' }),
-          ])
+        it('should keep the existing nested instances from before', async () => {
+          expect(rules).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({ fullName: 'TestRule1' }),
+              expect.objectContaining({ fullName: 'TestRule2' }),
+            ]),
+          )
         })
       })
     })

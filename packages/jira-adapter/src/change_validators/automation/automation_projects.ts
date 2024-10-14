@@ -27,5 +27,5 @@ export const automationProjectsValidator: ChangeValidator = async changes =>
       severity: 'Error' as SeverityLevel,
       message: 'Cannot deploy automation without projects.',
       detailedMessage:
-        'In order to deploy an automation it must be either global, assigned to at least one project type, or assigned to at least one project that exist in the current environment.',
+        'In order to deploy an automation it must be either global, assigned to at least one project type, or assigned to at least one project that exist in the current environment. To learn more, go to https://help.salto.io/en/articles/9763118-can-t-deploy-a-non-global-automation-without-projects',
     }))

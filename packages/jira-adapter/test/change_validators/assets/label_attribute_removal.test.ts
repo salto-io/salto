@@ -39,7 +39,6 @@ describe('labelAttributeValidator', () => {
     )
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableJSM = true
-    config.fetch.enableJsmExperimental = true
   })
   it('should return error if trying to remove the label attribute', async () => {
     const validator = deleteLabelAtttributeValidator(config)
@@ -87,8 +86,8 @@ describe('labelAttributeValidator', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should not do anything if enableJsmExperimental is false', async () => {
-    config.fetch.enableJsmExperimental = false
+  it('should not do anything if enableJSM is false', async () => {
+    config.fetch.enableJSM = false
     const validator = deleteLabelAtttributeValidator(config)
     const changeErrors = await validator(
       [toChange({ before: attributeInstance })],

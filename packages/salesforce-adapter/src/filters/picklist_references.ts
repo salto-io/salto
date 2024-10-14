@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       const picklistRef: ReferenceExpression | undefined =
         // Some picklist references are themselves references to value sets, while others are direct picklists references.
         picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
-      if (picklistRef === undefined) {
+      if (!isReferenceExpression(picklistRef)) {
         return
       }
       picklistValues.values = picklistValues.values.map((value: { fullName: string | undefined }) => {

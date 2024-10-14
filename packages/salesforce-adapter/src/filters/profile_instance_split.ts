@@ -84,9 +84,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const newProfileInstances = await awu(profileInstances).flatMap(splitProfile).toArray()
     elements.push(...newProfileInstances)
   },
+  // Splitting into files can cause the internal order of the profile to be affected by which files are changed.
+  // In order to maintain the order in SFDX we sort the value.
   preDeploy: async (changes: Change[]) => {
-    // Splitting into files can cause the internal order of the profile to be affected by which files are changed.
-    // In order to maintain the order in SFDX we sort the value.
+    // Skipping in the deploy flow since the service is indifferent to the order.
     if (client !== undefined) {
       return
     }

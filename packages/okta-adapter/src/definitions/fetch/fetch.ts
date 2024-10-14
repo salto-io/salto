@@ -1256,7 +1256,7 @@ const createCustomizations = ({
           () =>
           ({ error }) => {
             if (error instanceof fetchUtils.errors.MaxResultsExceeded) {
-              const message = `The number of users fetched exceeded the maximum allowed: ${error.maxResults}. Consider excluding this type or filtering users by specific status.`
+              const message = `The number of users fetched exceeded the maximum allowed: ${error.maxResults}. Consider excluding this type or filtering users by a specific status.`
               return {
                 action: 'customSaltoError',
                 value: {
@@ -1266,7 +1266,7 @@ const createCustomizations = ({
                 },
               }
             }
-            return { action: 'failEntireFetch', value: false }
+            return undefined
           },
         action: 'failEntireFetch',
         value: false,

@@ -70,7 +70,7 @@ export const createClientDefinitions = (
                 limit: '200', // maximum page size allowed
                 search: 'id pr', // The search query is needed to fetch deprovisioned users
               },
-              pagination: 'limitedCursorHeader',
+              pagination: 'usersCursorHeader',
             },
           },
           '/api/v1/apps/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,

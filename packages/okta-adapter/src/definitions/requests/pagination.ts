@@ -23,7 +23,7 @@ export const createPaginationDefinitions = (
   cursor: {
     funcCreator: () => cursorPagination({ paginationField: 'nextMappingsPageUrl', pathChecker: defaultPathChecker }),
   },
-  limitedCursorHeader: {
+  usersCursorHeader: {
     funcCreator: () =>
       getPaginationWithLimitedResults({
         maxResultsNumber: config.fetch.maxUsersResults ?? DEFAULT_MAX_ALLOWED_RESULTS,

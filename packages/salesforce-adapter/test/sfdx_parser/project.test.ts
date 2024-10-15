@@ -39,15 +39,34 @@ describe('isProjectFolder', () => {
 })
 
 describe('createProject', () => {
-  const project = setupTmpDir('all')
-  let res: InitFolderResult
+  describe('when given a valid directory', () => {
+    const project = setupTmpDir('all')
+    let res: InitFolderResult
 
-  beforeEach(async () => {
-    res = await createProject({ baseDir: project.name() })
+    beforeEach(async () => {
+      res = await createProject({ baseDir: project.name() })
+    })
+
+    it('should create a project', () => {
+      expect(res.errors).toBeEmpty()
+      expect(fs.existsSync(path.join(project.name(), 'sfdx-project.json'))).toBeTrue()
+    })
   })
 
-  it('should create a project', () => {
-    expect(res.errors).toBeEmpty()
-    expect(fs.existsSync(path.join(project.name(), 'sfdx-project.json'))).toBeTrue()
+  describe('when given an invalid directory', () => {
+    let res: InitFolderResult
+
+    beforeEach(async () => {
+      res = await createProject({ baseDir: '/dev/null' })
+    })
+
+    it('should create a project', () => {
+      expect(res.errors).toEqual([
+        expect.objectContaining({
+          severity: 'Error',
+          message: 'Failed initializing SFDX project',
+        }),
+      ])
+    })
   })
 })

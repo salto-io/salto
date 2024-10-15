@@ -255,7 +255,7 @@ describe('sync-to-workspace command', () => {
         input: {
           accountName: 'salesforce',
           toDir: 'someDir',
-          initializeFolder: true,
+          force: true,
         },
       })
     })
@@ -277,7 +277,7 @@ describe('sync-to-workspace command', () => {
         input: {
           accountName: 'salesforce',
           toDir: 'someDir',
-          initializeFolder: true,
+          force: true,
         },
       })
     })
@@ -297,7 +297,7 @@ describe('sync-to-workspace command', () => {
         input: {
           accountName: 'salesforce',
           toDir: 'someDir',
-          initializeFolder: true,
+          force: true,
         },
       })
     })
@@ -318,7 +318,7 @@ describe('sync-to-workspace command', () => {
         input: {
           accountName: 'salesforce',
           toDir: 'someDir',
-          initializeFolder: true,
+          force: true,
         },
       })
     })
@@ -340,7 +340,7 @@ describe('sync-to-workspace command', () => {
         input: {
           accountName: 'salesforce',
           toDir: 'someDir',
-          initializeFolder: true,
+          force: true,
         },
       })
     })

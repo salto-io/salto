@@ -137,7 +137,8 @@ export const initFolder = async ({ baseDir, workspace, accountName }: InitFolder
     return { errors: [error] }
   }
 
-  if (adapter.adapterFormat?.initFolder === undefined) {
+  const adapterInitFolder = adapter.adapterFormat?.initFolder
+  if (adapterInitFolder === undefined) {
     return {
       errors: [
         {
@@ -149,7 +150,7 @@ export const initFolder = async ({ baseDir, workspace, accountName }: InitFolder
     }
   }
 
-  return adapter.adapterFormat.initFolder({ baseDir })
+  return adapterInitFolder({ baseDir })
 }
 
 const loadElementsAndMerge = (

@@ -7,9 +7,12 @@
  */
 
 import path from 'path'
+import { logger } from '@salto-io/logging'
 import { AdapterFormat } from '@salto-io/adapter-api'
 import { API_VERSION } from '../client/client'
 import { SfProject, SfError, TemplateService, TemplateType, ProjectOptions } from './salesforce_imports'
+
+const log = logger(module)
 
 type IsInitializedFolderFunc = NonNullable<AdapterFormat['isInitializedFolder']>
 export const isProjectFolder: IsInitializedFolderFunc = async ({ baseDir }) => {
@@ -27,6 +30,7 @@ export const isProjectFolder: IsInitializedFolderFunc = async ({ baseDir }) => {
       }
     }
 
+    log.error(error)
     return {
       result: false,
       errors: [
@@ -58,6 +62,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
     await templateService.create(TemplateType.Project, opts)
     return { errors: [] }
   } catch (error) {
+    log.error(error)
     return {
       errors: [
         {

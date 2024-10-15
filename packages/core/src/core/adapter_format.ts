@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { Adapter, AdapterOperationsContext, Change, Element, SaltoError } from '@salto-io/adapter-api'
+import { Adapter, AdapterFormat, AdapterOperationsContext, Change, Element, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource } from '@salto-io/workspace'
@@ -19,12 +19,37 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-type GetAdapterAndContextArgs = {
+type GetAdapterArgs = {
   workspace: Workspace
   accountName: string
+}
+
+const getAdapter = ({
+  workspace,
+  accountName,
+}: GetAdapterArgs):
+  | { adapter: Adapter; adapterName: string; error: undefined }
+  | { adapter: undefined; adapterName: undefined; error: SaltoError } => {
+  const adapterName = workspace.getServiceFromAccountName(accountName)
+  if (adapterName !== accountName) {
+    return {
+      adapter: undefined,
+      adapterName: undefined,
+      error: {
+        severity: 'Error',
+        message: 'Account name that is different from the adapter name is not supported',
+        detailedMessage: '',
+      },
+    }
+  }
+
+  return { adapter: adapterCreators[adapterName], adapterName, error: undefined }
+}
+
+type GetAdapterAndContextArgs = {
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-}
+} & GetAdapterArgs
 
 type GetAdapterAndContextResult = {
   adapter: Adapter
@@ -38,10 +63,11 @@ const getAdapterAndContext = async ({
   ignoreStateElemIdMapping,
   ignoreStateElemIdMappingForSelectors,
 }: GetAdapterAndContextArgs): Promise<GetAdapterAndContextResult> => {
-  const adapterName = workspace.getServiceFromAccountName(accountName)
-  if (adapterName !== accountName) {
-    throw new Error('Account name that is different from the adapter name is not supported')
+  const { adapter, adapterName, error } = getAdapter({ workspace, accountName })
+  if (error !== undefined) {
+    throw new Error(error.message)
   }
+
   const workspaceElements = await workspace.elements()
   const resolvedElements = await expressions.resolve(
     await awu(await workspaceElements.getAll()).toArray(),
@@ -56,13 +82,80 @@ const getAdapterAndContext = async ({
     ignoreStateElemIdMappingForSelectors,
   })
   const adapterContext = adaptersCreatorConfigs[accountName]
-  const adapter = adapterCreators[adapterName]
   return { adapter, adapterContext, resolvedElements }
+}
+
+type IsInitializedFolderArgs = {
+  baseDir: string
+} & GetAdapterArgs
+
+export type IsInitializedFolderResult = {
+  result: boolean
+  errors: ReadonlyArray<SaltoError>
+}
+
+export const isInitializedFolder = async ({
+  baseDir,
+  workspace,
+  accountName,
+}: IsInitializedFolderArgs): Promise<IsInitializedFolderResult> => {
+  const { adapter, error } = getAdapter({ workspace, accountName })
+  if (error !== undefined) {
+    return {
+      result: false,
+      errors: [error],
+    }
+  }
+
+  if (adapter.adapterFormat?.isInitializedFolder === undefined) {
+    return {
+      result: false,
+      errors: [
+        {
+          severity: 'Error' as const,
+          message: 'Format not supported',
+          detailedMessage: `Account ${accountName}'s adapter does not support checking a non-nacl format folder`,
+        },
+      ],
+    }
+  }
+
+  return adapter.adapterFormat.isInitializedFolder({ baseDir })
+}
+
+type InitFolderArgs = {
+  baseDir: string
+} & GetAdapterArgs
+
+export type InitFolderResult = {
+  errors: ReadonlyArray<SaltoError>
+}
+
+export const initFolder = async ({ baseDir, workspace, accountName }: InitFolderArgs): Promise<InitFolderResult> => {
+  const { adapter, error } = getAdapter({ workspace, accountName })
+  if (error !== undefined) {
+    return { errors: [error] }
+  }
+
+  const adapterInitFolder = adapter.adapterFormat?.initFolder
+  if (adapterInitFolder === undefined) {
+    return {
+      errors: [
+        {
+          severity: 'Error' as const,
+          message: 'Format not supported',
+          detailedMessage: `Account ${accountName}'s adapter does not support initializing a non-nacl format folder`,
+        },
+      ],
+    }
+  }
+
+  return adapterInitFolder({ baseDir })
 }
 
 const loadElementsAndMerge = (
   dir: string,
-  loadElementsFromFolder: NonNullable<Adapter['loadElementsFromFolder']>,
+  loadElementsFromFolder: NonNullable<AdapterFormat['loadElementsFromFolder']>,
   adapterContext: AdapterOperationsContext,
 ): Promise<{
   elements: Element[]
@@ -104,7 +197,7 @@ export const calculatePatch = async ({
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  const { loadElementsFromFolder } = adapter
+  const loadElementsFromFolder = adapter.adapterFormat?.loadElementsFromFolder
   if (loadElementsFromFolder === undefined) {
     throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
   }
@@ -162,6 +255,7 @@ type SyncWorkspaceToFolderArgs = {
 export type SyncWorkspaceToFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
+
 export const syncWorkspaceToFolder = ({
   workspace,
   accountName,
@@ -181,7 +275,8 @@ export const syncWorkspaceToFolder = ({
         ignoreStateElemIdMapping,
         ignoreStateElemIdMappingForSelectors,
       })
-      const { loadElementsFromFolder, dumpElementsToFolder } = adapter
+      const loadElementsFromFolder = adapter.adapterFormat?.loadElementsFromFolder
+      const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
       if (loadElementsFromFolder === undefined) {
         return {
           errors: [
@@ -265,7 +360,7 @@ export const updateElementFolder = ({
         workspace,
         accountName,
       })
-      const { dumpElementsToFolder } = adapter
+      const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
       if (dumpElementsToFolder === undefined) {
         return {
           errors: [

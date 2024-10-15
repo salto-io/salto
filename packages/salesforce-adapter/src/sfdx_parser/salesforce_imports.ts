@@ -9,7 +9,7 @@
 // We have to have this import before any import from a @salesforce package
 import './salesforce_imports_fix'
 
-export { SfProject } from '@salesforce/core'
+export { SfProject, SfError } from '@salesforce/core'
 export {
   ComponentSet,
   ZipTreeContainer,
@@ -19,3 +19,4 @@ export {
   SourceComponent,
   SourcePath,
 } from '@salesforce/source-deploy-retrieve'
+export { TemplateService, TemplateType, ProjectOptions } from '@salesforce/templates'

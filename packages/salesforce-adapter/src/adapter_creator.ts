@@ -49,6 +49,7 @@ import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { dumpElementsToFolder } from './sfdx_parser/sfdx_dump'
+import { isProjectFolder, createProject } from './sfdx_parser/project'
 import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
@@ -383,8 +384,12 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
-  loadElementsFromFolder,
-  dumpElementsToFolder,
+  adapterFormat: {
+    isInitializedFolder: isProjectFolder,
+    initFolder: createProject,
+    loadElementsFromFolder,
+    dumpElementsToFolder,
+  },
   getAdditionalReferences,
   getCustomReferences,
 }

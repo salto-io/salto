@@ -86,7 +86,7 @@ describe('adapter creator', () => {
               },
             ]),
         )
-        loadedElements = await adapter.loadElementsFromFolder?.({
+        loadedElements = await adapter.adapterFormat?.loadElementsFromFolder?.({
           baseDir: 'some_path',
           elementsSource: buildElementsSourceFromElements([]),
         })

@@ -445,6 +445,37 @@ describe('element', () => {
           expect(() => generator.handleError({ typeName: 'myType', error: fetchError })).toThrow(AbortFetchOnFailure)
           expect(customErrorHandler).toHaveBeenCalledWith({ error: fetchError, typeName: 'myType' })
         })
+        it('should fallback to default behavior if custom error handler returns undefined', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                  },
+                },
+              },
+              default: {
+                resource: {
+                  onError: {
+                    custom: () => () => undefined,
+                  },
+                },
+              },
+            }),
+          })
+          generator.handleError({ typeName: 'myType', error: fetchError })
+          generator.generate()
+          expect(logErrorSpy).toHaveBeenCalledWith(
+            'unexpectedly failed to fetch type %s:%s: %s',
+            expect.any(String),
+            expect.any(String),
+            fetchError.message,
+            { adapterName: 'myAdapter', typeName: 'myType' },
+          )
+        })
       })
 
       describe('when onError is not provided', () => {

@@ -21,7 +21,6 @@ import {
   Value,
   Values,
   isReferenceExpression,
-  getField,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -39,13 +38,8 @@ type FieldDef = {
 const FIELD_NAME_TO_INNER_CONTEXT_FIELD: Record<string, FieldDef> = {
   applicationVisibilities: { name: 'application' },
   recordTypeVisibilities: { name: 'recordType', nested: true },
-
-  // TODO(SALTO-4990): Remove once picklistsAsMaps FF is deployed and removed.
   standardValue: { name: 'label' },
   customValue: { name: 'label' },
-
-  'standardValue.values': { name: 'label' },
-  'customValue.values': { name: 'label' },
 }
 
 type ValueSetInnerObject = {
@@ -53,31 +47,14 @@ type ValueSetInnerObject = {
   label: string
 } & Values[]
 
-type FieldWithValueSetList = Field & {
+type FieldWithValueSet = Field & {
   annotations: {
     valueSet: Array<ValueSetInnerObject>
   }
 }
 
-// TODO(SALTO-4990): Remove once picklistsAsMaps FF is deployed and removed.
-type FieldWithValueSetOrderedMap = Field & {
-  annotations: {
-    valueSet: {
-      values: Array<ValueSetInnerObject>
-    }
-  }
-}
-
-type FieldWithValueSet = FieldWithValueSetList | FieldWithValueSetOrderedMap
-
-const isFieldWithValueSetList = (field: Field): field is FieldWithValueSetList =>
-  _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
-
-const isFieldWithOrderedMapValueSet = (field: Field): field is FieldWithValueSetOrderedMap =>
-  _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET]?.order)
-
 const isFieldWithValueSet = (field: Field): field is FieldWithValueSet =>
-  isFieldWithValueSetList(field) || isFieldWithOrderedMapValueSet(field)
+  _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
 
 const formatContext = (context: Value): string => {
   if (isReferenceExpression(context)) {
@@ -107,9 +84,7 @@ const createFieldChangeError = (field: Field, contexts: string[]): ChangeError =
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
-  const contexts = (
-    isFieldWithValueSetList(field) ? field.annotations.valueSet : Object.values(field.annotations.valueSet.values)
-  )
+  const contexts = field.annotations.valueSet
     .filter(obj => obj.default)
     .map(obj => obj[LABEL])
     .map(formatContext)
@@ -137,9 +112,6 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     valueName: string,
   ): Promise<string[] | undefined> => {
     const defaultObjects = await getDefaultObjectsList(value, fieldType)
-    if (!_.isArray(defaultObjects)) {
-      return undefined
-    }
     const contexts = defaultObjects
       .filter(val => val.default)
       .map(obj => obj[valueName])
@@ -158,18 +130,17 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     return []
   }
 
-  const errors: ChangeError[] = await awu(Object.keys(FIELD_NAME_TO_INNER_CONTEXT_FIELD))
-    .filter(fieldPath => _.has(after.value, fieldPath))
-    .flatMap(async fieldPath => {
-      const value = _.get(after.value, fieldPath)
-      const field = await getField(await after.getType(), fieldPath.split('.'))
+  const errors: ChangeError[] = await awu(Object.entries(after.value))
+    .filter(([fieldName]) => Object.keys(FIELD_NAME_TO_INNER_CONTEXT_FIELD).includes(fieldName))
+    .flatMap(async ([fieldName, value]) => {
+      const field = (await after.getType()).fields[fieldName]
       if (field === undefined) {
         // Can happen if the field exists in the instance but not in the type.
         return []
       }
       const fieldType = await field.getType()
-      const valueName = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].name
-      if (_.isPlainObject(value) && FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].nested) {
+      const valueName = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldName].name
+      if (_.isPlainObject(value) && FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldName].nested) {
         return awu(Object.entries(value)).flatMap(async ([_key, innerValue]) => {
           const startLevelType = isMapType(fieldType) ? await fieldType.getInnerType() : fieldType
           const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)

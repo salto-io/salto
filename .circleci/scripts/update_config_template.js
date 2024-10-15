@@ -18,8 +18,8 @@ const generateE2eMatrix = (templateName, outputName) => {
     .split('\n')
     .filter(Boolean)
   console.log('e2ePackagesToTest:', e2ePackagesToTest)
-  const e2ePackages = e2ePackagesToTest.filter(pkg => !adaptersWithJava.includes(pkg))
-  const e2ePackagesWithJava = e2ePackagesToTest.filter(pkg => adaptersWithJava.includes(pkg))
+  const e2ePackages = e2ePackagesToTest.filter(pkg => !adaptersWithJava.includes(pkg)).map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
+  const e2ePackagesWithJava = e2ePackagesToTest.filter(pkg => adaptersWithJava.includes(pkg)).map((pkg) => { return `${pkg.split('/').pop()}:${pkg}` })
 
   const e2eTestMatrix = `
       - e2e_tests:
@@ -29,7 +29,7 @@ const generateE2eMatrix = (templateName, outputName) => {
             alias: e2e_tests_without_java
             parameters:
               package_name: 
-                - ${e2ePackages.join('\n                - ')}
+                - "${e2ePackages.join('"\n                - "')}"
               should_install_java: 
                 - false
 `
@@ -41,7 +41,7 @@ const generateE2eMatrix = (templateName, outputName) => {
             alias: e2e_tests_with_java
             parameters:
               package_name: 
-                - ${e2ePackagesWithJava.join('\n                - ')}
+                - "${e2ePackagesWithJava.join('"\n                - "')}"
               should_install_java: 
                 - true
 `

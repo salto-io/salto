@@ -17,7 +17,7 @@ import {
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, fileNameNaclCase } from '@salto-io/adapter-utils'
 import { JIRA } from '../constants'
 import JiraClient from '../client/client'
 
@@ -75,7 +75,7 @@ export const setIconContent = async ({
 }): Promise<void> => {
   const iconContent = await getIconContent(link, client)
   instance.value[fieldName] = new StaticFile({
-    filepath: `${JIRA}/${instance.elemID.typeName}/${pathNaclCase(naclCase(instance.value.name))}.png`,
+    filepath: `${JIRA}/${instance.elemID.typeName}/${fileNameNaclCase(instance.elemID.name)}.png`,
     content: iconContent,
   })
 }

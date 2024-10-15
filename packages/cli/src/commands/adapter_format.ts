@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { calculatePatch, syncWorkspaceToFolder } from '@salto-io/core'
+import { calculatePatch, syncWorkspaceToFolder, initFolder, isInitializedFolder } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand, createCommandGroupDef } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
@@ -168,6 +168,21 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   output,
 }) => {
   const { accountName, toDir } = input
+
+  const initializedResult = await isInitializedFolder({ workspace, accountName, baseDir: toDir })
+  if (initializedResult.errors.length > 0) {
+    outputLine(formatSyncToWorkspaceErrors(initializedResult.errors), output)
+    return CliExitCode.AppError
+  }
+
+  if (!initializedResult.result) {
+    outputLine(`Initializing adapter format folder at ${toDir}`, output)
+    const initResult = await initFolder({ workspace, accountName, baseDir: toDir })
+    if (initResult.errors.length > 0) {
+      outputLine(formatSyncToWorkspaceErrors(initResult.errors), output)
+      return CliExitCode.AppError
+    }
+  }
 
   outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
   const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir })

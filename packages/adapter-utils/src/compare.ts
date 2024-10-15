@@ -269,9 +269,11 @@ export const detailedCompare = (
 
   // A special case to handle type changes.
   // In fields, we have to modify the whole field.
+  // For primitive types, we have to modify the entire type.
   // For object type meta types, we have to modify the entire object.
   if (
     (isField(before) && isField(after) && !before.refType.elemID.isEqual(after.refType.elemID)) ||
+    (isPrimitiveType(before) && isPrimitiveType(after) && before.primitive !== after.primitive) ||
     (isObjectType(before) && isObjectType(after) && !before.isMetaTypeEqual(after))
   ) {
     return [toDetailedChangeFromBaseChange(baseChange, { before: before.elemID, after: after.elemID })]

@@ -142,7 +142,7 @@ describe('workspace', () => {
         getAdapter: jest.fn(),
         setAdapter: jest.fn(),
       }
-      await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects.toThrow(
+      await expect(createWorkspace({ configSource: noWorkspaceConfig })).rejects.toThrow(
         new Error('Workspace with no environments is illegal'),
       )
     })
@@ -170,7 +170,7 @@ describe('workspace', () => {
           elemID: new ElemID('salesforce', 'NotExistsInWorkspace'),
         }),
       ])
-      workspace = await createWorkspace(undefined, state)
+      workspace = await createWorkspace({ state })
     })
     describe('with hidden values and types', () => {
       beforeAll(async () => {
@@ -238,14 +238,9 @@ describe('workspace', () => {
         const secondaryEnvElemID = new ElemID('salesforce', 'secondaryObj')
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
-        const newWorkspace = await createWorkspace(
-          undefined,
-          undefined,
-          mockWorkspaceConfigSource(undefined, true),
-          undefined,
-          undefined,
-          undefined,
-          {
+        const newWorkspace = await createWorkspace({
+          configSource: mockWorkspaceConfigSource(undefined, true),
+          elementSources: {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -258,7 +253,7 @@ describe('workspace', () => {
               state: createState([secondaryEnvObj]),
             },
           },
-        )
+        })
         const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll()).toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
@@ -274,14 +269,9 @@ describe('workspace', () => {
         const secondaryEnvElemID = new ElemID('salesforce', 'secondaryObj')
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
-        const newWorkspace = await createWorkspace(
-          undefined,
-          undefined,
-          mockWorkspaceConfigSource(undefined, true),
-          undefined,
-          undefined,
-          undefined,
-          {
+        const newWorkspace = await createWorkspace({
+          configSource: mockWorkspaceConfigSource(undefined, true),
+          elementSources: {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -310,7 +300,7 @@ describe('workspace', () => {
               state: createState([]),
             },
           },
-        )
+        })
         const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll()).toArray()
         expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
         expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
@@ -334,13 +324,16 @@ describe('workspace', () => {
         createInMemoryElementSource([new ObjectType({ elemID: configElemId })]),
       )
       mockNaclFilesSource = createMockNaclFileSource([new ObjectType({ elemID: envsElemId })])
-      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig, undefined, undefined, {
-        '': {
-          naclFiles: createMockNaclFileSource([]),
-        },
-        default: {
-          naclFiles: mockNaclFilesSource,
-          state: createState([]),
+      workspace = await createWorkspace({
+        adaptersConfigSource: adaptersConfig,
+        elementSources: {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: mockNaclFilesSource,
+            state: createState([]),
+          },
         },
       })
     })
@@ -365,7 +358,7 @@ describe('workspace', () => {
   describe('sourceMap', () => {
     let workspace: Workspace
     beforeAll(async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace({})
     })
 
     it('should have definitions from all files', async () => {
@@ -379,13 +372,13 @@ describe('workspace', () => {
     const TOTAL_NUM_ELEMENTS = 62
 
     it('should return names of top level elements and fields', async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace({})
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.length).toEqual(TOTAL_NUM_ELEMENTS)
     })
 
     it('should remove object and fields from list if removed', async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace({})
       const accountIntSett = (await workspace.getValue(
         new ElemID('salesforce', 'AccountIntelligenceSettings'),
       )) as ObjectType
@@ -413,7 +406,7 @@ describe('workspace', () => {
     })
 
     it('should add object and fields to list if added', async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace({})
       const newElemID = new ElemID('salesforce', 'new')
       const newObject = new ObjectType({
         elemID: newElemID,
@@ -439,26 +432,28 @@ describe('workspace', () => {
     let workspace: Workspace
 
     it('should return names of top level elements and fields of desired sources', async () => {
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
-        [COMMON_ENV_PREFIX]: {
-          naclFiles: createMockNaclFileSource([new ObjectType({ elemID: new ElemID('salto', 'com') })]),
-        },
-        default: {
-          naclFiles: createMockNaclFileSource([
-            new ObjectType({
-              elemID: new ElemID('salto', 'obj'),
-              fields: {
-                field: {
-                  refType: BuiltinTypes.NUMBER,
+      workspace = await createWorkspace({
+        elementSources: {
+          [COMMON_ENV_PREFIX]: {
+            naclFiles: createMockNaclFileSource([new ObjectType({ elemID: new ElemID('salto', 'com') })]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([
+              new ObjectType({
+                elemID: new ElemID('salto', 'obj'),
+                fields: {
+                  field: {
+                    refType: BuiltinTypes.NUMBER,
+                  },
                 },
-              },
-            }),
-          ]),
-          state: createState([]),
-        },
-        inactive: {
-          naclFiles: createMockNaclFileSource([]),
-          state: createState([]),
+              }),
+            ]),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([]),
+          },
         },
       })
       const searchableNamesOfCommon = await workspace.getSearchableNamesOfEnv(COMMON_ENV_PREFIX)
@@ -470,12 +465,12 @@ describe('workspace', () => {
 
   describe('errors', () => {
     it('should be empty when there are no errors', async () => {
-      const workspace = await createWorkspace()
+      const workspace = await createWorkspace({})
       expect((await workspace.errors()).hasErrors()).toBeFalsy()
       expect(await workspace.hasErrors()).toBeFalsy()
     })
     it('should contain parse errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl', 'reference_error.nacl']))
+      const erroredWorkspace = await createWorkspace({ dirStore: mockDirStore(['dup.nacl', 'reference_error.nacl']) })
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -489,7 +484,7 @@ describe('workspace', () => {
       expect(workspaceErrors[0].sourceLocations).toHaveLength(1)
     })
     it('should contain validation errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl', 'error.nacl']))
+      const erroredWorkspace = await createWorkspace({ dirStore: mockDirStore(['dup.nacl', 'error.nacl']) })
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -504,7 +499,7 @@ describe('workspace', () => {
       expect(workspaceErrors[0].sourceLocations).toHaveLength(1)
     })
     it('should contain merge errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['error.nacl', 'reference_error.nacl']))
+      const erroredWorkspace = await createWorkspace({ dirStore: mockDirStore(['error.nacl', 'reference_error.nacl']) })
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -541,8 +536,8 @@ describe('workspace', () => {
         field: 1,
       })
       const state = createState([obj, inst])
-      const workspace = await createWorkspace(
-        mockDirStore([], false, {
+      const workspace = await createWorkspace({
+        dirStore: mockDirStore([], false, {
           'x.nacl': `type salto.t {
             number field {
               ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
@@ -553,7 +548,7 @@ describe('workspace', () => {
           }`,
         }),
         state,
-      )
+      })
       const wsErrors = await workspace.errors()
       expect(wsErrors.merge).toHaveLength(1)
     })
@@ -562,7 +557,7 @@ describe('workspace', () => {
   describe('transformError', () => {
     describe('when no source is available', () => {
       it('should return empty source fragments', async () => {
-        const ws = await createWorkspace()
+        const ws = await createWorkspace({})
         const wsError = await ws.transformError({ severity: 'Warning', message: '', detailedMessage: '' })
         expect(wsError.sourceLocations).toHaveLength(0)
       })
@@ -570,7 +565,7 @@ describe('workspace', () => {
 
     it('should use adapters config source for errors in the configuration', async () => {
       const mockAdaptersConfig = mockAdaptersConfigSource()
-      const ws = await createWorkspace(undefined, undefined, undefined, mockAdaptersConfig)
+      const ws = await createWorkspace({ adaptersConfigSource: mockAdaptersConfig })
       const error = new InvalidValueValidationError({
         elemID: new ElemID('someID'),
         value: 'val',
@@ -590,7 +585,7 @@ describe('workspace', () => {
 
     beforeEach(async () => {
       dirStore = mockDirStore()
-      workspace = await createWorkspace(dirStore)
+      workspace = await createWorkspace({ dirStore })
       await workspace.elements()
     })
 
@@ -624,7 +619,7 @@ describe('workspace', () => {
     })
 
     it('should also work if we do not call elements in advance', async () => {
-      const newWorkspace = await createWorkspace(mockDirStore())
+      const newWorkspace = await createWorkspace({ dirStore: mockDirStore() })
       await newWorkspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await newWorkspace.elements())
       expect(Object.keys(elemMap).sort()).toEqual(
@@ -640,14 +635,9 @@ describe('workspace', () => {
       let wsWithMultipleEnvs: Workspace
       const removedElemID = new ElemID('salesforce', 'RenamedType1')
       beforeEach(async () => {
-        wsWithMultipleEnvs = await createWorkspace(
-          undefined,
-          undefined,
-          mockWorkspaceConfigSource(undefined, true),
-          undefined,
-          undefined,
-          undefined,
-          {
+        wsWithMultipleEnvs = await createWorkspace({
+          configSource: mockWorkspaceConfigSource(undefined, true),
+          elementSources: {
             [COMMON_ENV_PREFIX]: {
               naclFiles: await naclFilesSource(
                 COMMON_ENV_PREFIX,
@@ -678,7 +668,7 @@ describe('workspace', () => {
               state: createState([]),
             },
           },
-        )
+        })
       })
       it('should return the changes of secondary envs as well', async () => {
         const envChanges = await wsWithMultipleEnvs.removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
@@ -722,7 +712,7 @@ describe('workspace', () => {
     beforeAll(async () => {
       mockAdaptersConfig = mockAdaptersConfigSource()
       mockAdaptersConfig.isConfigFile.mockImplementation(filePath => filePath === changedConfFile.filename)
-      workspace = await createWorkspace(naclFileStore, undefined, undefined, mockAdaptersConfig)
+      workspace = await createWorkspace({ dirStore: naclFileStore, adaptersConfigSource: mockAdaptersConfig })
       await workspace.elements()
       changes = await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile, changedConfFile])
       elemMap = await getElemMap(await workspace.elements())
@@ -785,14 +775,9 @@ describe('workspace', () => {
         },
       })
       beforeEach(async () => {
-        wsWithMultipleEnvs = await createWorkspace(
-          undefined,
-          undefined,
-          mockWorkspaceConfigSource(undefined, true),
-          undefined,
-          undefined,
-          undefined,
-          {
+        wsWithMultipleEnvs = await createWorkspace({
+          configSource: mockWorkspaceConfigSource(undefined, true),
+          elementSources: {
             [COMMON_ENV_PREFIX]: {
               naclFiles: await naclFilesSource(
                 COMMON_ENV_PREFIX,
@@ -823,7 +808,7 @@ describe('workspace', () => {
               state: createState([]),
             },
           },
-        )
+        })
       })
       it('should return the changes of secondary envs as well', async () => {
         const envChanges = await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
@@ -843,7 +828,7 @@ describe('workspace', () => {
 
     describe('when merge errors are fixed', () => {
       it('should delete fixed merge errors', async () => {
-        const ws = await createWorkspace(naclFileStore)
+        const ws = await createWorkspace({ dirStore: naclFileStore })
         await ws.setNaclFiles([
           {
             filename: 'mergeIssue.nacl',
@@ -941,16 +926,12 @@ salesforce.staticFile staticFileInstance {
       const otherDirStore = mockDirStore(undefined, undefined, otherNaclFiles)
       const state = createState([...Object.values(BuiltinTypes), staticFileInstanceType, staticFileInstanceBefore])
 
-      workspace = await createWorkspace(
-        otherDirStore,
+      workspace = await createWorkspace({
+        dirStore: otherDirStore,
         state,
-        undefined,
-        undefined,
-        undefined,
         staticFilesSource,
-        undefined,
-        inMemRemoteMapCreator(),
-      )
+        remoteMapCreator: inMemRemoteMapCreator(),
+      })
     }
     it('should have right number of results when there is only a change in 1 static file', async () => {
       await setUp()
@@ -1680,7 +1661,7 @@ salesforce.staticFile staticFileInstance {
     const dirStore = mockDirStore<string>()
 
     beforeAll(async () => {
-      const helperWorkspace = await createWorkspace(dirStore, createState([]))
+      const helperWorkspace = await createWorkspace({ dirStore, state: createState([]) })
       // We assume the state is synced with the workspace elements before we make changes
       // We also assume the state elements are updated before we call updateNaclFiles so that hidden
       // values can be taken from the state
@@ -1713,7 +1694,7 @@ salesforce.staticFile staticFileInstance {
         nonHiddenObjWithOnlyHiddenNotInNacl,
       ])
 
-      workspace = await createWorkspace(dirStore, state)
+      workspace = await createWorkspace({ dirStore, state })
 
       clonedChanges = _.cloneDeep(changes)
       updateNaclFileResults = await workspace.updateNaclFiles(clonedChanges)
@@ -2082,14 +2063,9 @@ salesforce.staticFile staticFileInstance {
       } as DetailedChange
 
       beforeEach(async () => {
-        wsWithMultipleEnvs = await createWorkspace(
-          undefined,
-          undefined,
-          mockWorkspaceConfigSource(undefined, true),
-          undefined,
-          undefined,
-          undefined,
-          {
+        wsWithMultipleEnvs = await createWorkspace({
+          configSource: mockWorkspaceConfigSource(undefined, true),
+          elementSources: {
             [COMMON_ENV_PREFIX]: {
               naclFiles: await naclFilesSource(
                 COMMON_ENV_PREFIX,
@@ -2120,7 +2096,7 @@ salesforce.staticFile staticFileInstance {
               state: createState([]),
             },
           },
-        )
+        })
       })
 
       it('should include added element in the secondary env', async () => {
@@ -2179,14 +2155,9 @@ salesforce.staticFile staticFileInstance {
         const modifiedWorkspaceType = workspaceType.clone()
         applyDetailedChanges(modifiedWorkspaceType, workspaceChanges)
 
-        workspace = await createWorkspace(
-          undefined,
-          undefined,
-          mockWorkspaceConfigSource(),
-          undefined,
-          undefined,
-          undefined,
-          {
+        workspace = await createWorkspace({
+          configSource: mockWorkspaceConfigSource(),
+          elementSources: {
             [COMMON_ENV_PREFIX]: {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -2206,7 +2177,7 @@ salesforce.staticFile staticFileInstance {
               state: createState([stateType]),
             },
           },
-        )
+        })
         await workspace.updateNaclFiles(workspaceChanges)
       })
 
@@ -2275,11 +2246,11 @@ salesforce.staticFile staticFileInstance {
       mockDateNow.mockRestore()
     })
     it('should return valid when the state is valid', async () => {
-      const ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }),
-      )
+      const ws = await createWorkspace({
+        configSource: mockWorkspaceConfigSource({
+          staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1,
+        }),
+      })
       ws.state().getAccountsUpdateDates = jest
         .fn()
         .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
@@ -2288,11 +2259,11 @@ salesforce.staticFile staticFileInstance {
       expect(recency.date).toBe(modificationDate)
     })
     it('should return old when the state is old', async () => {
-      const ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }),
-      )
+      const ws = await createWorkspace({
+        configSource: mockWorkspaceConfigSource({
+          staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1,
+        }),
+      })
       ws.state().getAccountsUpdateDates = jest
         .fn()
         .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
@@ -2301,7 +2272,7 @@ salesforce.staticFile staticFileInstance {
       expect(recency.date).toBe(modificationDate)
     })
     it('should return nonexistent when the state does not exist', async () => {
-      const ws = await createWorkspace()
+      const ws = await createWorkspace({})
       ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
       const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Nonexistent')
@@ -2324,7 +2295,7 @@ salesforce.staticFile staticFileInstance {
         .filter(values.isDefined)
         .map(state => jest.spyOn(state, 'updateConfig'))
       workspaceConfigSrc = mockWorkspaceConfigSource({ uid: 'wsId' }, true)
-      ws = await createWorkspace(undefined, undefined, workspaceConfigSrc, undefined, undefined, undefined, elemSources)
+      ws = await createWorkspace({ configSource: workspaceConfigSrc, elementSources: elemSources })
     })
 
     describe('when configuration changed', () => {
@@ -2376,16 +2347,11 @@ salesforce.staticFile staticFileInstance {
         getAll: jest.fn().mockResolvedValue([]),
         getHash: jest.fn().mockResolvedValue(undefined),
       }
-      const workspace = await createWorkspace(
-        flushable as unknown as DirectoryStore<string>,
-        flushable as unknown as State,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        mapCreatorWrapper as RemoteMapCreator,
-      )
+      const workspace = await createWorkspace({
+        dirStore: flushable as unknown as DirectoryStore<string>,
+        state: flushable as unknown as State,
+        remoteMapCreator: mapCreatorWrapper as RemoteMapCreator,
+      })
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)
       expect(mapFlushCounter['workspace-default-merged']).toEqual(1)
@@ -2401,19 +2367,15 @@ salesforce.staticFile staticFileInstance {
         const env2State = mockState()
         env1StateFlush = jest.spyOn(env1State, 'flush')
         env2StateFlush = jest.spyOn(env2State, 'flush')
-        workspace = await createWorkspace(
-          mockDirStore(),
-          undefined,
-          mockWorkspaceConfigSource(undefined, true),
-          undefined,
-          undefined,
-          undefined,
-          {
+        workspace = await createWorkspace({
+          dirStore: mockDirStore(),
+          configSource: mockWorkspaceConfigSource(undefined, true),
+          elementSources: {
             default: { naclFiles: createMockNaclFileSource([]), state: env1State },
             inactive: { naclFiles: createMockNaclFileSource([]), state: env2State },
             [COMMON_ENV_PREFIX]: { naclFiles: createMockNaclFileSource([]) },
           },
-        )
+        })
         await workspace.flush()
       })
       it('should flush all state files', () => {
@@ -2437,10 +2399,14 @@ salesforce.staticFile staticFileInstance {
       state = createState([])
       defNaclFiles = createMockNaclFileSource([])
       inactiveNaclFiles = createMockNaclFileSource([new ObjectType({ elemID: new ElemID('salto', 'inactive') })])
-      workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
-        '': { naclFiles: createMockNaclFileSource([]) },
-        default: { naclFiles: defNaclFiles, state },
-        inactive: { naclFiles: inactiveNaclFiles, state },
+      workspace = await createWorkspace({
+        configSource: workspaceConf,
+        credentials: credSource,
+        elementSources: {
+          '': { naclFiles: createMockNaclFileSource([]) },
+          default: { naclFiles: defNaclFiles, state },
+          inactive: { naclFiles: inactiveNaclFiles, state },
+        },
       })
     })
 
@@ -2486,7 +2452,7 @@ salesforce.staticFile staticFileInstance {
 
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
-      workspace = await createWorkspace(mockDirStore([], true), undefined, workspaceConf)
+      workspace = await createWorkspace({ dirStore: mockDirStore([], true), configSource: workspaceConf })
       const state = createState([])
       await workspace.addEnvironment(
         envName,
@@ -2558,19 +2524,22 @@ salesforce.staticFile staticFileInstance {
     const emptyFileStore = mockDirStore<string>(undefined, undefined, {})
     describe('empty index', () => {
       beforeEach(async () => {
-        workspace = await createWorkspace(emptyFileStore, undefined, undefined, undefined, undefined, undefined, {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-          },
-          default: {
-            naclFiles: await naclFilesSource(
-              'default',
-              emptyFileStore,
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true,
-            ),
-            state: createState([]),
+        workspace = await createWorkspace({
+          dirStore: emptyFileStore,
+          elementSources: {
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: await naclFilesSource(
+                'default',
+                emptyFileStore,
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+                true,
+              ),
+              state: createState([]),
+            },
           },
         })
       })
@@ -2583,19 +2552,22 @@ salesforce.staticFile staticFileInstance {
     })
     describe('populated index', () => {
       beforeEach(async () => {
-        workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
-          '': {
-            naclFiles: createMockNaclFileSource([]),
-          },
-          default: {
-            naclFiles: await naclFilesSource(
-              'default',
-              naclFileStore,
-              mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
-              true,
-            ),
-            state: createState([]),
+        workspace = await createWorkspace({
+          dirStore: naclFileStore,
+          elementSources: {
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: await naclFilesSource(
+                'default',
+                naclFileStore,
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+                true,
+              ),
+              state: createState([]),
+            },
           },
         })
       })
@@ -2668,19 +2640,22 @@ salesforce.staticFile staticFileInstance {
         filepath: 'static2.nacl',
         hash: 'FFFF',
       })
-      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: createMockNaclFileSource([]),
-        },
-        default: {
-          naclFiles: await naclFilesSource(
-            'default',
-            naclFileStore,
-            mockStaticFilesSource([firstStaticFile, secondStaticFile]),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-          state: createState([]),
+      workspace = await createWorkspace({
+        dirStore: naclFileStore,
+        elementSources: {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource([firstStaticFile, secondStaticFile]),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+            state: createState([]),
+          },
         },
       })
     })
@@ -2770,19 +2745,22 @@ salesforce.staticFile staticFileInstance {
       'someName2.nacl': secondInstance,
     })
     beforeEach(async () => {
-      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: createMockNaclFileSource([]),
-        },
-        default: {
-          naclFiles: await naclFilesSource(
-            'default',
-            naclFileStore,
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-          state: createState([]),
+      workspace = await createWorkspace({
+        dirStore: naclFileStore,
+        elementSources: {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+            state: createState([]),
+          },
         },
       })
     })
@@ -2824,19 +2802,22 @@ salesforce.staticFile staticFileInstance {
       'firstFile.nacl': firstFile,
     })
     beforeEach(async () => {
-      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: createMockNaclFileSource([]),
-        },
-        default: {
-          naclFiles: await naclFilesSource(
-            'default',
-            naclFileStore,
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-          state: createState([]),
+      workspace = await createWorkspace({
+        dirStore: naclFileStore,
+        elementSources: {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+            state: createState([]),
+          },
         },
       })
     })
@@ -2916,10 +2897,14 @@ salesforce.staticFile staticFileInstance {
         const state = createState([])
         stateClear = jest.spyOn(state, 'clear')
         naclFiles = createMockNaclFileSource([])
-        workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
-          inactive: { naclFiles, state },
-          '': { naclFiles: createMockNaclFileSource([]) },
-          default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+        workspace = await createWorkspace({
+          configSource: workspaceConf,
+          credentials: credSource,
+          elementSources: {
+            inactive: { naclFiles, state },
+            '': { naclFiles: createMockNaclFileSource([]) },
+            default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+          },
         })
       })
       describe('should delete nacl and state files if keepNacls is false', () => {
@@ -2965,7 +2950,7 @@ salesforce.staticFile staticFileInstance {
     describe('should fail to delete environment', () => {
       let workspace: Workspace
       beforeEach(async () => {
-        workspace = await createWorkspace()
+        workspace = await createWorkspace({})
       })
 
       it('should not be able to delete current environment', async () => {
@@ -3000,15 +2985,11 @@ salesforce.staticFile staticFileInstance {
           state: createState([]),
         },
       }
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        workspaceConf,
-        undefined,
-        credSource,
-        undefined,
+      workspace = await createWorkspace({
+        configSource: workspaceConf,
+        credentials: credSource,
         elementSources,
-      )
+      })
     })
     it('should clear specified workspace components, but not the environments', async () => {
       const origEnvs = _.clone(workspace.envs())
@@ -3100,9 +3081,13 @@ salesforce.staticFile staticFileInstance {
         const envName = 'default'
         const newEnvName = 'new-default'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
-            [envName]: { naclFiles, state },
-            '': { naclFiles: createMockNaclFileSource([]) },
+          workspace = await createWorkspace({
+            configSource: workspaceConf,
+            credentials: credSource,
+            elementSources: {
+              [envName]: { naclFiles, state },
+              '': { naclFiles: createMockNaclFileSource([]) },
+            },
           })
           await workspace.renameEnvironment(envName, newEnvName)
         })
@@ -3126,10 +3111,14 @@ salesforce.staticFile staticFileInstance {
         const envName = 'inactive'
         const newEnvName = 'new-inactive'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource, undefined, {
-            [envName]: { naclFiles, state },
-            '': { naclFiles: createMockNaclFileSource([]) },
-            default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+          workspace = await createWorkspace({
+            configSource: workspaceConf,
+            credentials: credSource,
+            elementSources: {
+              [envName]: { naclFiles, state },
+              '': { naclFiles: createMockNaclFileSource([]) },
+              default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+            },
           })
           await workspace.renameEnvironment(envName, newEnvName)
         })
@@ -3165,7 +3154,7 @@ salesforce.staticFile staticFileInstance {
     describe('should fail to rename environment', () => {
       let workspace: Workspace
       beforeEach(async () => {
-        workspace = await createWorkspace()
+        workspace = await createWorkspace({})
       })
 
       it('should not be able to delete unknown environment', async () => {
@@ -3185,7 +3174,7 @@ salesforce.staticFile staticFileInstance {
     describe('when creating an account', () => {
       beforeEach(async () => {
         workspaceConf = mockWorkspaceConfigSource({})
-        workspace = await createWorkspace(undefined, undefined, workspaceConf)
+        workspace = await createWorkspace({ configSource: workspaceConf })
         await workspace.addAccount('salto', 'new')
       })
 
@@ -3213,7 +3202,7 @@ salesforce.staticFile staticFileInstance {
     describe('when specifying an override environment', () => {
       beforeEach(async () => {
         workspaceConf = mockWorkspaceConfigSource({}, true)
-        workspace = await createWorkspace(undefined, undefined, workspaceConf)
+        workspace = await createWorkspace({ configSource: workspaceConf })
         await workspace.setCurrentEnv('inactive', false)
         await workspace.addAccount('salto')
       })
@@ -3245,7 +3234,7 @@ salesforce.staticFile staticFileInstance {
       resolveMock.mockClear()
       adaptersConfig = mockAdaptersConfigSource()
       adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([configObjectType]))
-      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig)
+      workspace = await createWorkspace({ adaptersConfigSource: adaptersConfig })
     })
     afterAll(() => {
       resolveMock.mockRestore()
@@ -3294,7 +3283,7 @@ salesforce.staticFile staticFileInstance {
 
     beforeEach(async () => {
       credsSource = mockCredentialsSource()
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, credsSource)
+      workspace = await createWorkspace({ credentials: credsSource })
       await workspace.updateAccountCredentials(services[0], newCreds)
     })
 
@@ -3316,7 +3305,7 @@ salesforce.staticFile staticFileInstance {
 
     beforeEach(async () => {
       adaptersConf = mockAdaptersConfigSource()
-      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConf)
+      workspace = await createWorkspace({ adaptersConfigSource: adaptersConf })
       await workspace.updateAccountConfig(services[0], newConf, services[0])
     })
 
@@ -3346,7 +3335,7 @@ salesforce.staticFile staticFileInstance {
         delete: jest.fn(),
         rename: jest.fn(),
       }
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, credsSource)
+      workspace = await createWorkspace({ credentials: credsSource })
     })
 
     it('should get creds', async () => {
@@ -3433,7 +3422,7 @@ salesforce.staticFile staticFileInstance {
       const naclFileStore = mockDirStore(undefined, undefined, files)
 
       beforeAll(async () => {
-        workspace = await createWorkspace(naclFileStore)
+        workspace = await createWorkspace({ dirStore: naclFileStore })
         referencedFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
       })
 
@@ -3503,17 +3492,10 @@ salesforce.staticFile staticFileInstance {
         // Case where the target is baseId
         { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
       ]
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+      workspace = await createWorkspace({
         elementSources,
-        undefined,
-        async (..._args) => customRefs,
-      )
+        getCustomReferences: async () => customRefs,
+      })
     })
 
     it('should return reference infos for both baseIds and nested Ids', async () => {
@@ -3592,17 +3574,10 @@ salesforce.staticFile staticFileInstance {
           type: 'strong',
         },
       ]
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+      workspace = await createWorkspace({
         elementSources,
-        undefined,
-        async (..._args) => customRefs,
-      )
+        getCustomReferences: async () => customRefs,
+      })
     })
 
     it('top level instance should return all references under it without duplicates', async () => {
@@ -3668,7 +3643,7 @@ salesforce.staticFile staticFileInstance {
     let workspace: Workspace
 
     beforeAll(async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace({})
     })
 
     it('None-base type should throw', async () => {
@@ -3686,7 +3661,7 @@ salesforce.staticFile staticFileInstance {
     let workspace: Workspace
 
     beforeAll(async () => {
-      workspace = await createWorkspace()
+      workspace = await createWorkspace({})
     })
 
     it('None-base type should throw', async () => {
@@ -3751,19 +3726,22 @@ salesforce.staticFile staticFileInstance {
       'testFile.nacl': testFile,
     })
     beforeEach(async () => {
-      workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: createMockNaclFileSource([]),
-        },
-        default: {
-          naclFiles: await naclFilesSource(
-            'default',
-            naclFileStore,
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-          state: createState([]),
+      workspace = await createWorkspace({
+        dirStore: naclFileStore,
+        elementSources: {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+            state: createState([]),
+          },
         },
       })
     })
@@ -3788,10 +3766,8 @@ salesforce.staticFile staticFileInstance {
     beforeEach(async () => {
       const staticFilesSource = mockStaticFilesSource()
       const remoteMapCreator = persistentMockCreateRemoteMap()
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
               { name: 'default', accounts: ['test'], accountToServiceName: { test: 'test' } },
@@ -3803,10 +3779,7 @@ salesforce.staticFile staticFileInstance {
           })),
           setWorkspaceConfig: jest.fn(),
         },
-        undefined,
-        undefined,
-        undefined,
-        {
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource('', mockDirStore(), staticFilesSource, remoteMapCreator, true),
           },
@@ -3819,7 +3792,7 @@ salesforce.staticFile staticFileInstance {
             state: createState([]),
           },
         },
-      )
+      })
     })
     it('should return false for empty env', async () => {
       await expect(workspace.hasElementsInEnv('empty')).resolves.toBeFalsy()
@@ -3837,14 +3810,9 @@ salesforce.staticFile staticFileInstance {
     beforeEach(async () => {
       const staticFilesSource = mockStaticFilesSource()
       const remoteMapCreator = persistentMockCreateRemoteMap()
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource('', mockDirStore(), staticFilesSource, remoteMapCreator, true),
           },
@@ -3857,7 +3825,7 @@ salesforce.staticFile staticFileInstance {
             state: createState([]),
           },
         },
-      )
+      })
     })
     it('should return the correct env if the file belongs to the current env', () => {
       expect(workspace.envOfFile('envs/default/test.nacl')).toEqual('default')
@@ -3870,14 +3838,16 @@ salesforce.staticFile staticFileInstance {
     })
   })
 
-  describe('iterative validation errors', () => {
-    const primFile = `
+  describe.each(['old', 'new', 'log-validations-diff'] as const)(
+    'iterative validation errors - with validateDependentsMode: %s',
+    validateDependentsMode => {
+      const primFile = `
         type salto.prim is number {
 
         }
       `
 
-    const baseFile = `
+      const baseFile = `
         type salto.base {
           string str {
 
@@ -3888,7 +3858,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-    const objFile = `
+      const objFile = `
         type salto.obj {
           salto.base baseField {
 
@@ -3896,7 +3866,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-    const instFile = `
+      const instFile = `
         salto.obj objInst {
           baseField = {
             str = "STR"
@@ -3905,7 +3875,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-    const inst2updateFile = `
+      const inst2updateFile = `
       salto.obj objInstToUpdate {
         baseField = {
           num = 12
@@ -3914,147 +3884,204 @@ salesforce.staticFile staticFileInstance {
       }
     `
 
-    const refFile = `
+      const refFile = `
         salto.base baseInst {
           str = salto.obj.instance.objInst.baseField.str
         }
       `
 
-    const refFile2 = `
+      const refFile2 = `
         salto.base baseInst2 {
           str = salto.base.instance.baseInst.str
         }
       `
 
-    const startsAsErr = `
+      const startsAsErr = `
         salto.base willBeFixed {
           str = "STR",
           num = "This will be string"
         }
       `
 
-    const willRemainErr = `
+      const willRemainErr = `
         salto.base willRemain {
           str = "STR",
           num = false
         }
       `
 
-    const files = {
-      primFile,
-      baseFile,
-      objFile,
-      instFile,
-      refFile,
-      refFile2,
-      inst2updateFile,
-      startsAsErr,
-      willRemainErr,
-    }
+      const files = {
+        primFile,
+        baseFile,
+        objFile,
+        instFile,
+        refFile,
+        refFile2,
+        inst2updateFile,
+        startsAsErr,
+        willRemainErr,
+      }
 
-    let workspace: Workspace
-    const naclFileStore = mockDirStore(undefined, undefined, files)
-    const primElemID = new ElemID('salto', 'prim')
-    const changes = [
-      {
-        id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
-        action: 'remove',
-        data: { before: 'STR' },
-      },
-      {
-        id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
-        action: 'modify',
-        data: { before: 'STR', after: 12 },
-      },
-      {
-        id: primElemID,
-        action: 'modify',
-        data: {
-          before: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.NUMBER }),
-          after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
+      let workspace: Workspace
+      const primElemID = new ElemID('salto', 'prim')
+      const changes = [
+        {
+          id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
+          action: 'remove',
+          data: { before: 'STR' },
         },
-      },
-    ] as DetailedChange[]
+        {
+          id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
+          action: 'modify',
+          data: { before: 'STR', after: 12 },
+        },
+        {
+          id: primElemID,
+          action: 'modify',
+          data: {
+            before: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.NUMBER }),
+            after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
+          },
+        },
+      ] as DetailedChange[]
 
-    let validationErrs: ReadonlyArray<ValidationError>
-    let resultNumber: UpdateNaclFilesResult
-    beforeAll(async () => {
-      workspace = await createWorkspace(naclFileStore)
-      // Verify that the two errors we are starting with (that should be deleted in the update
-      // since the update resolves them ) are present. This check will help debug situations in
-      // which the entire flow is broken and errors are not created at all...
-      expect((await workspace.errors()).validation).toHaveLength(2)
-      resultNumber = await workspace.updateNaclFiles(changes)
-      validationErrs = (await workspace.errors()).validation
-    })
+      let validationErrs: ReadonlyArray<ValidationError>
+      let resultNumber: UpdateNaclFilesResult
+      let getReferenceSourcesSpy: jest.SpyInstance
+      let getNaclReferencedSpy: jest.SpyInstance
 
-    it('returns correct number of actual changes', () => {
-      expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
-    })
+      const getExpectedReferencesIndexesNumOfCalls = (): {
+        referenceSourceIndexNumOfCalls: number
+        naclReferencedIndexNumOfCalls: number
+        // eslint-disable-next-line consistent-return
+      } => {
+        // eslint-disable-next-line default-case
+        switch (validateDependentsMode) {
+          case 'new':
+            return {
+              referenceSourceIndexNumOfCalls: 24,
+              // the naclSource referenced index is always called in other parts of the flows.
+              // the low number of calls indicates that it wasn't called in the getElementsDependents flow
+              naclReferencedIndexNumOfCalls: 10,
+            }
+          case 'old':
+            return {
+              referenceSourceIndexNumOfCalls: 0,
+              naclReferencedIndexNumOfCalls: 28,
+            }
+          case 'log-validations-diff':
+            return {
+              referenceSourceIndexNumOfCalls: 20,
+              naclReferencedIndexNumOfCalls: 28,
+            }
+        }
+      }
 
-    it('create validation errors in the updated elements', () => {
-      const objInstToUpdateErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
-      )
+      beforeEach(async () => {
+        const remoteMapCreator = persistentMockCreateRemoteMap()
+        const mockRemoteMapCreator = async <T, K extends string = string>(
+          opts: CreateRemoteMapParams<T>,
+        ): Promise<RemoteMap<T, K>> => {
+          const realRemoteMap = await remoteMapCreator(opts)
 
-      expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
-    })
-    it('create validation errors where the updated elements are used as value type', () => {
-      const usedAsTypeErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
-      )
+          if (opts.namespace === 'workspace-default-referenceSources') {
+            if (validateDependentsMode === 'log-validations-diff') {
+              // making sure that the referenceSources index doesn't return anything, so we know that results of the
+              // validateElementsAndDependents function aren't used (we'll be missing validation errors in that case)
+              realRemoteMap.get = () => Promise.resolve(undefined)
+            }
+            getReferenceSourcesSpy = jest.spyOn(realRemoteMap, 'get')
+          } else if (opts.namespace === 'naclFileSource--referenced_index') {
+            getNaclReferencedSpy = jest.spyOn(realRemoteMap, 'get')
+          }
 
-      expect(usedAsTypeErr).toBeDefined()
-      expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
-    })
-    it('create validation errors where the updated elements are used as references', () => {
-      const usedAsReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
-      )
+          return realRemoteMap as RemoteMap<T, K>
+        }
+        const naclFileStore = mockDirStore(undefined, undefined, files)
+        workspace = await createWorkspace({
+          dirStore: naclFileStore,
+          validateDependentsMode,
+          remoteMapCreator: mockRemoteMapCreator,
+        })
+        // Verify that the two errors we are starting with (that should be deleted in the update
+        // since the update resolves them ) are present. This check will help debug situations in
+        // which the entire flow is broken and errors are not created at all...
+        expect((await workspace.errors()).validation).toHaveLength(2)
+        resultNumber = await workspace.updateNaclFiles(changes)
+        validationErrs = (await workspace.errors()).validation
+      })
 
-      expect(usedAsReference).toBeDefined()
-      expect(usedAsReference?.message).toContain('unresolved reference')
-    })
-    it('create validation errors in chained references', () => {
-      const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
-      )
+      it('should call references indexes as expected', () => {
+        const { referenceSourceIndexNumOfCalls, naclReferencedIndexNumOfCalls } =
+          getExpectedReferencesIndexesNumOfCalls()
 
-      expect(usedAsChainedReference).toBeDefined()
-      expect(usedAsChainedReference?.message).toContain('unresolved reference')
-    })
+        expect(getReferenceSourcesSpy).toHaveBeenCalledTimes(referenceSourceIndexNumOfCalls)
+        expect(getNaclReferencedSpy).toHaveBeenCalledTimes(naclReferencedIndexNumOfCalls)
+      })
 
-    it('should not modify errors which were not effected by this update', () => {
-      const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
-      )
+      it('returns correct number of actual changes', () => {
+        expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
+      })
 
-      expect(usedAsChainedReference).toBeDefined()
-    })
+      it('create validation errors in the updated elements', () => {
+        const objInstToUpdateErr = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
+        )
 
-    it('should remove errors that were resolved in the update', () => {
-      const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
-      )
+        expect(objInstToUpdateErr).toBeDefined()
+        expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
+      })
+      it('create validation errors where the updated elements are used as value type', () => {
+        const usedAsTypeErr = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
+        )
 
-      expect(usedAsChainedReference).not.toBeDefined()
-    })
-  })
+        expect(usedAsTypeErr).toBeDefined()
+        expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
+      })
+      it('create validation errors where the updated elements are used as references', () => {
+        const usedAsReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
+        )
+
+        expect(usedAsReference).toBeDefined()
+        expect(usedAsReference?.message).toContain('unresolved reference')
+      })
+      it('create validation errors in chained references', () => {
+        const usedAsChainedReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
+        )
+
+        expect(usedAsChainedReference).toBeDefined()
+        expect(usedAsChainedReference?.message).toContain('unresolved reference')
+      })
+
+      it('should not modify errors which were not effected by this update', () => {
+        const usedAsChainedReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
+        )
+
+        expect(usedAsChainedReference).toBeDefined()
+      })
+
+      it('should remove errors that were resolved in the update', () => {
+        const usedAsChainedReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
+        )
+
+        expect(usedAsChainedReference).not.toBeDefined()
+      })
+    },
+  )
 
   describe('element commands', () => {
     const primarySourceName = 'default'
     const secondarySourceName = 'inactive'
     let ws: Workspace
     beforeEach(async () => {
-      ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      ws = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           [COMMON_ENV_PREFIX]: {
             naclFiles: await naclFilesSource(
               COMMON_ENV_PREFIX,
@@ -4085,7 +4112,7 @@ salesforce.staticFile staticFileInstance {
             state: createState([]),
           },
         },
-      )
+      })
     })
     describe('promote', () => {
       it('should update the elements correctly', async () => {
@@ -4135,7 +4162,7 @@ salesforce.staticFile staticFileInstance {
     let mockAdaptersConfig: MockInterface<AdaptersConfigSource>
     beforeEach(async () => {
       mockAdaptersConfig = mockAdaptersConfigSource()
-      ws = await createWorkspace(undefined, undefined, undefined, mockAdaptersConfig)
+      ws = await createWorkspace({ adaptersConfigSource: mockAdaptersConfig })
     })
 
     it('when the file is a config file should use the adapters config source', async () => {
@@ -4187,10 +4214,8 @@ salesforce.staticFile staticFileInstance {
     const inactiveStaticFileSource = mockStaticFilesSource([inactiveStaticFile])
 
     beforeEach(async () => {
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
               { name: 'default', accounts: ['salto'] },
@@ -4202,10 +4227,7 @@ salesforce.staticFile staticFileInstance {
           })),
           setWorkspaceConfig: jest.fn(),
         },
-        undefined,
-        undefined,
-        undefined,
-        {
+        elementSources: {
           '': {
             naclFiles: createMockNaclFileSource([]),
           },
@@ -4232,7 +4254,7 @@ salesforce.staticFile staticFileInstance {
             state: createState([]),
           },
         },
-      )
+      })
     })
     describe('deserialization', () => {
       it('should deserialize static files from the active env', async () => {
@@ -4275,20 +4297,20 @@ salesforce.staticFile staticFileInstance {
 
   describe('isEmpty', () => {
     it('should return true if the workspace is empty', async () => {
-      const ws = await createWorkspace(mockDirStore(undefined, undefined, {}), mockState([]))
+      const ws = await createWorkspace({ dirStore: mockDirStore(undefined, undefined, {}), state: mockState([]) })
       expect(await ws.isEmpty()).toBeTruthy()
     })
 
     it('should return false is the workspace is not empty', async () => {
-      const ws = await createWorkspace()
+      const ws = await createWorkspace({})
       expect(await ws.isEmpty()).toBeFalsy()
     })
 
     it('should return true if state is not empty but the withNaclFilesOnly flag is provided', async () => {
-      const ws = await createWorkspace(
-        mockDirStore(undefined, undefined, {}),
-        mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })]),
-      )
+      const ws = await createWorkspace({
+        dirStore: mockDirStore(undefined, undefined, {}),
+        state: mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })]),
+      })
       expect(await ws.isEmpty(true)).toBeTruthy()
     })
   })
@@ -4304,10 +4326,8 @@ salesforce.staticFile staticFileInstance {
       elemID: new ElemID('adapter', 'inactive'),
     })
     beforeEach(async () => {
-      ws = await createWorkspace(
-        undefined,
-        undefined,
-        {
+      ws = await createWorkspace({
+        configSource: {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
               { name: 'default', services: ['salto'] },
@@ -4319,10 +4339,7 @@ salesforce.staticFile staticFileInstance {
           })),
           setWorkspaceConfig: jest.fn(),
         },
-        undefined,
-        undefined,
-        undefined,
-        {
+        elementSources: {
           '': {
             naclFiles: createMockNaclFileSource([]),
           },
@@ -4335,7 +4352,7 @@ salesforce.staticFile staticFileInstance {
             state: createState([]),
           },
         },
-      )
+      })
     })
 
     it('When envName is passed should use the env', async () => {
@@ -4355,10 +4372,8 @@ salesforce.staticFile staticFileInstance {
   describe('getServiceFromAccountName', () => {
     let ws: Workspace
     beforeEach(async () => {
-      ws = await createWorkspace(
-        undefined,
-        undefined,
-        {
+      ws = await createWorkspace({
+        configSource: {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [{ name: 'default', accountToServiceName: { salto2: 'salto', salto1: 'salto' } }],
             uid: '',
@@ -4367,10 +4382,7 @@ salesforce.staticFile staticFileInstance {
           })),
           setWorkspaceConfig: jest.fn(),
         },
-        undefined,
-        undefined,
-        undefined,
-        {
+        elementSources: {
           '': {
             naclFiles: createMockNaclFileSource([]),
           },
@@ -4379,7 +4391,7 @@ salesforce.staticFile staticFileInstance {
             state: createState([]),
           },
         },
-      )
+      })
     })
 
     it('gets correct service from account name', () => {
@@ -4428,7 +4440,7 @@ describe('getElementNaclFiles', () => {
   })
 
   beforeAll(async () => {
-    workspace = await createWorkspace(naclFileStore)
+    workspace = await createWorkspace({ dirStore: naclFileStore })
   })
   it('should find all files for a top level id', async () => {
     const id = ElemID.fromFullName('salesforce.lead')
@@ -4490,29 +4502,32 @@ describe('getElementFileNames', () => {
   })
 
   beforeAll(async () => {
-    workspace = await createWorkspace(naclFileStore, undefined, undefined, undefined, undefined, undefined, {
-      '': {
-        naclFiles: createMockNaclFileSource([]),
-      },
-      default: {
-        naclFiles: await naclFilesSource(
-          'default',
-          naclFileStore,
-          mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
-          true,
-        ),
-        state: createState([]),
-      },
-      inactive: {
-        naclFiles: await naclFilesSource(
-          'inactive',
-          naclFileStoreOfInactive,
-          mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
-          true,
-        ),
-        state: createState([]),
+    workspace = await createWorkspace({
+      dirStore: naclFileStore,
+      elementSources: {
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+        },
+        default: {
+          naclFiles: await naclFilesSource(
+            'default',
+            naclFileStore,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+          state: createState([]),
+        },
+        inactive: {
+          naclFiles: await naclFilesSource(
+            'inactive',
+            naclFileStoreOfInactive,
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+          state: createState([]),
+        },
       },
     })
   })
@@ -4533,18 +4548,9 @@ describe('getElementFileNames', () => {
 
 describe('non persistent workspace', () => {
   it('should not allow flush when the ws is non-persistent', async () => {
-    const nonPWorkspace = await createWorkspace(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      false,
-    )
+    const nonPWorkspace = await createWorkspace({
+      persistent: false,
+    })
     await expect(() => nonPWorkspace.flush()).rejects.toThrow()
   })
 })
@@ -4649,7 +4655,7 @@ describe('stateOnly update', () => {
         }
       `,
     })
-    ws = await createWorkspace(dirStore, state)
+    ws = await createWorkspace({ dirStore, state })
     const changes: DetailedChange[] = [
       {
         action: 'add',
@@ -4816,23 +4822,25 @@ describe('listUnresolvedReferences', () => {
   describe('workspace with no references', () => {
     beforeAll(async () => {
       const elements = createEnvElements().slice(0, 1)
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: await naclFilesSource(
-            COMMON_ENV_PREFIX,
-            mockDirStore(),
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-        },
-        default: {
-          naclFiles: createMockNaclFileSource(elements),
-          state: createState(elements),
-        },
-        other: {
-          naclFiles: createMockNaclFileSource(elements),
-          state: createState(elements),
+      workspace = await createWorkspace({
+        elementSources: {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
+          other: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
         },
       })
       res = await workspace.listUnresolvedReferences()
@@ -4848,23 +4856,25 @@ describe('listUnresolvedReferences', () => {
     beforeAll(async () => {
       jest.resetAllMocks()
       const elements = createEnvElements()
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: await naclFilesSource(
-            COMMON_ENV_PREFIX,
-            mockDirStore(),
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-        },
-        default: {
-          naclFiles: createMockNaclFileSource(elements),
-          state: createState(elements),
-        },
-        other: {
-          naclFiles: createMockNaclFileSource(elements),
-          state: createState(elements),
+      workspace = await createWorkspace({
+        elementSources: {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
+          other: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
         },
       })
       res = await workspace.listUnresolvedReferences('other')
@@ -4881,23 +4891,25 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const defaultElements = createEnvElements().slice(3)
       const otherElements = createEnvElements()
-      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
-        '': {
-          naclFiles: await naclFilesSource(
-            COMMON_ENV_PREFIX,
-            mockDirStore(),
-            mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
-            true,
-          ),
-        },
-        default: {
-          naclFiles: createMockNaclFileSource(defaultElements),
-          state: createState(defaultElements),
-        },
-        other: {
-          naclFiles: createMockNaclFileSource(otherElements),
-          state: createState(otherElements),
+      workspace = await createWorkspace({
+        elementSources: {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true,
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          other: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
         },
       })
       res = await workspace.listUnresolvedReferences()
@@ -4914,14 +4926,9 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const defaultElements = createEnvElements().slice(3)
       const otherElements = createEnvElements()
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource(
               COMMON_ENV_PREFIX,
@@ -4940,7 +4947,7 @@ describe('listUnresolvedReferences', () => {
             state: createState(otherElements),
           },
         },
-      )
+      })
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
@@ -4972,14 +4979,9 @@ describe('listUnresolvedReferences', () => {
         val: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'instance2')),
       })
 
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource(
               COMMON_ENV_PREFIX,
@@ -4998,7 +5000,7 @@ describe('listUnresolvedReferences', () => {
             state: createState([instance1, instance2, instance3]),
           },
         },
-      )
+      })
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
@@ -5020,14 +5022,9 @@ describe('listUnresolvedReferences', () => {
         f3: new ReferenceExpression(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource(
               COMMON_ENV_PREFIX,
@@ -5046,7 +5043,7 @@ describe('listUnresolvedReferences', () => {
             state: createState(otherElements),
           },
         },
-      )
+      })
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
@@ -5061,14 +5058,9 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const defaultElements = createEnvElements().slice(3) as InstanceElement[]
       const otherElements = createEnvElements().slice(1)
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource(
               COMMON_ENV_PREFIX,
@@ -5087,7 +5079,7 @@ describe('listUnresolvedReferences', () => {
             state: createState(otherElements),
           },
         },
-      )
+      })
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
@@ -5104,14 +5096,9 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const defaultElements = createNetsuiteEnvElements().slice(0, 2)
       const otherElements = createNetsuiteEnvElements()
-      workspace = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource(undefined, true),
-        undefined,
-        undefined,
-        undefined,
-        {
+      workspace = await createWorkspace({
+        configSource: mockWorkspaceConfigSource(undefined, true),
+        elementSources: {
           '': {
             naclFiles: await naclFilesSource(
               COMMON_ENV_PREFIX,
@@ -5130,7 +5117,7 @@ describe('listUnresolvedReferences', () => {
             state: createState(otherElements),
           },
         },
-      )
+      })
       res = await workspace.listUnresolvedReferences('inactive')
     })
 
@@ -5177,7 +5164,7 @@ describe('update nacl files with invalid state cache', () => {
         },
       },
     ]
-    workspace = await createWorkspace(dirStore)
+    workspace = await createWorkspace({ dirStore })
     const state = workspace.state()
     await state.setHash('XXX')
     await workspace.updateNaclFiles(changes)
@@ -5209,15 +5196,10 @@ describe('nacl sources reuse', () => {
         state: createState([], true),
       },
     }
-    ws = await createWorkspace(
-      undefined,
-      undefined,
-      mockWorkspaceConfigSource(undefined, true),
-      undefined,
-      undefined,
-      undefined,
+    ws = await createWorkspace({
+      configSource: mockWorkspaceConfigSource(undefined, true),
       elementSources,
-    )
+    })
   })
 
   it('should create only one copy the multi env source', async () => {
@@ -5365,19 +5347,21 @@ describe('listElementsDependenciesInWorkspace', () => {
       instWithTypeAndFieldRefs,
       unrelatedFieldC,
     ]
-    workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
-      '': {
-        naclFiles: await naclFilesSource(
-          COMMON_ENV_PREFIX,
-          mockDirStore(),
-          mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
-          true,
-        ),
-      },
-      default: {
-        naclFiles: createMockNaclFileSource(elements),
-        state: createState(elements),
+    workspace = await createWorkspace({
+      elementSources: {
+        '': {
+          naclFiles: await naclFilesSource(
+            COMMON_ENV_PREFIX,
+            mockDirStore(),
+            mockStaticFilesSource(),
+            persistentMockCreateRemoteMap(),
+            true,
+          ),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource(elements),
+          state: createState(elements),
+        },
       },
     })
   })

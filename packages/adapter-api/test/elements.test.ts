@@ -1157,6 +1157,53 @@ describe('Test elements.ts', () => {
         ).toBe('salto.obj.instance._config.a')
       })
     })
+
+    describe('getInnerTypeElemID', () => {
+      const innerType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
+      const type = new ObjectType({
+        elemID: new ElemID('salto', 'type'),
+        fields: {
+          primitive: { refType: BuiltinTypes.STRING },
+          object: { refType: innerType },
+
+          primitivesList: { refType: new ListType(BuiltinTypes.STRING) },
+          primitivesMap: { refType: new MapType(BuiltinTypes.STRING) },
+
+          objectsList: { refType: new ListType(innerType) },
+          objectsMap: { refType: new MapType(innerType) },
+
+          primitivesNestedList: { refType: new ListType(new ListType(BuiltinTypes.STRING)) },
+          primitivesNestedMix: { refType: new MapType(new ListType(BuiltinTypes.STRING)) },
+
+          objectsNestedList: { refType: new ListType(new ListType(innerType)) },
+          objectsNestedMix: { refType: new MapType(new ListType(innerType)) },
+        },
+      })
+
+      it('should return elemID when there is no container', () => {
+        expect(type.fields.primitive.refType.elemID.getInnerTypeElemID()).toEqual(type.fields.primitive.refType.elemID)
+        expect(type.fields.primitive.refType.elemID.getInnerTypeElemID()).toEqual(BuiltinTypes.STRING.elemID)
+
+        expect(type.fields.object.refType.elemID.getInnerTypeElemID()).toEqual(type.fields.object.refType.elemID)
+        expect(type.fields.object.refType.elemID.getInnerTypeElemID()).toEqual(innerType.elemID)
+      })
+
+      it('should return inner type elemID', () => {
+        expect(type.fields.primitivesList.refType.elemID.getInnerTypeElemID()).toEqual(BuiltinTypes.STRING.elemID)
+        expect(type.fields.primitivesMap.refType.elemID.getInnerTypeElemID()).toEqual(BuiltinTypes.STRING.elemID)
+
+        expect(type.fields.objectsList.refType.elemID.getInnerTypeElemID()).toEqual(innerType.elemID)
+        expect(type.fields.objectsMap.refType.elemID.getInnerTypeElemID()).toEqual(innerType.elemID)
+      })
+
+      it('should return deep inner type elemID', () => {
+        expect(type.fields.primitivesNestedList.refType.elemID.getInnerTypeElemID()).toEqual(BuiltinTypes.STRING.elemID)
+        expect(type.fields.primitivesNestedMix.refType.elemID.getInnerTypeElemID()).toEqual(BuiltinTypes.STRING.elemID)
+
+        expect(type.fields.objectsNestedList.refType.elemID.getInnerTypeElemID()).toEqual(innerType.elemID)
+        expect(type.fields.objectsNestedMix.refType.elemID.getInnerTypeElemID()).toEqual(innerType.elemID)
+      })
+    })
   })
 
   describe('ListType', () => {

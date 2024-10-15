@@ -55,7 +55,7 @@ export const createSkipParentsOfSkippedInstancesValidator =
             elemID: ref.elemID,
             severity: 'Error',
             message: 'Element cannot be deployed due to an error in its dependency',
-            detailedMessage: `${ref.elemID.getFullName()} cannot be deployed due to an error in its dependency. Please resolve that error and try again.`,
+            detailedMessage: `${ref.elemID.getFullName()} cannot be deployed due to an error in its dependency. Please resolve that error and try again. To learn more, go to https://help.salto.io/en/articles/6947060-element-cannot-be-deployed-due-to-an-error-in-its-dependency`,
           }) as ChangeError,
       )
       .value()

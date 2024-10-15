@@ -40,7 +40,7 @@ export const screenValidator: ChangeValidator = async changes =>
           elemID: instance.elemID,
           severity: 'Error' as SeverityLevel,
           message: 'Can’t deploy screen which uses fields more than once',
-          detailedMessage: `This screen uses the following ${duplicateFields.length > 1 ? 'fields' : 'field'} more than once: ${duplicateFields.join(', ')}. Make sure each field is used only once, and try again.`,
+          detailedMessage: `This screen uses the following ${duplicateFields.length > 1 ? 'fields' : 'field'} more than once: ${duplicateFields.join(', ')}. Make sure each field is used only once, and try again. To learn more, go to https://help.salto.io/en/articles/9764037-error-when-deploying-a-screen-with-duplicate-fields`,
         }
       }
       return undefined

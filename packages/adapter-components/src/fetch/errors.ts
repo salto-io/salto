@@ -16,6 +16,14 @@ export class AbortFetchOnFailure extends FatalError {
   }
 }
 
+export class MaxResultsExceeded extends Error {
+  maxResults: number
+  constructor({ endpoint, maxResults }: { endpoint: string; maxResults: number }) {
+    super(`Reached max results for endpoint ${endpoint} (${maxResults})`)
+    this.maxResults = maxResults
+  }
+}
+
 export const getInsufficientPermissionsError = (typeName: string): SaltoError => {
   const message = `Salto could not access the ${typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`
   return {

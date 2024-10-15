@@ -87,7 +87,7 @@ import { isClassicEngineOrg, logUsersCount } from './utils'
 import { createFixElementFunctions } from './fix_elements'
 import { CLASSIC_ENGINE_UNSUPPORTED_TYPES, createFetchDefinitions } from './definitions/fetch'
 import { createDeployDefinitions } from './definitions/deploy/deploy'
-import { PAGINATION } from './definitions/requests/pagination'
+import { createPaginationDefinitions } from './definitions/requests/pagination'
 import { createClientDefinitions, shouldAccessPrivateAPIs } from './definitions/requests/clients'
 import { OktaOptions } from './definitions/types'
 import { OPEN_API_DEFINITIONS } from './definitions/sources'
@@ -214,7 +214,7 @@ export default class OktaAdapter implements AdapterOperations {
     const definitions = {
       // TODO - SALTO-5746 - only provide adminClient when it is defined
       clients: createClientDefinitions({ main: this.client, private: this.adminClient ?? this.client }),
-      pagination: PAGINATION,
+      pagination: createPaginationDefinitions(this.userConfig),
       fetch: createFetchDefinitions({
         userConfig: this.userConfig,
         fetchQuery: this.fetchQuery,

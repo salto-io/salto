@@ -22,7 +22,7 @@ import { DEFAULT_CONFIG, OktaUserConfig } from '../src/user_config'
 import { OLD_API_DEFINITIONS_CONFIG } from '../src/config'
 import { OktaOptions } from '../src/definitions/types'
 import { createClientDefinitions } from '../src/definitions/requests/clients'
-import { PAGINATION } from '../src/definitions/requests/pagination'
+import { createPaginationDefinitions } from '../src/definitions/requests/pagination'
 import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
 import { getAdminUrl } from '../src/client/admin'
 import fetchCriteria from '../src/fetch_criteria'
@@ -83,7 +83,7 @@ export const createDefinitions = ({
   const cli = client ?? mockClient().client
   return {
     clients: createClientDefinitions({ main: cli, private: cli }),
-    pagination: PAGINATION,
+    pagination: createPaginationDefinitions(DEFAULT_CONFIG),
     fetch: createFetchDefinitions({
       userConfig: DEFAULT_CONFIG,
       fetchQuery,

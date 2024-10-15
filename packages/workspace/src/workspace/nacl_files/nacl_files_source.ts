@@ -606,6 +606,14 @@ export const getDanglingStaticFiles = async (
   fileChanges: DetailedChange[],
   staticFileIndex?: Pick<RemoteMap<string[]>, 'get'>,
 ): Promise<StaticFile[]> => {
+  const beforeFilePaths = fileChanges
+    .filter(isRemovalOrModificationChange)
+    .map(({ id, data }) => ({ id, data: data.before }))
+    .flatMap(getNestedStaticFiles)
+  if (beforeFilePaths.length === 0) {
+    log.debug('no static files were found in the changes before')
+    return []
+  }
   const afterFilePaths = new Set<string>(
     fileChanges
       .filter(isAdditionOrModificationChange)
@@ -613,14 +621,18 @@ export const getDanglingStaticFiles = async (
       .flatMap(getNestedStaticFiles)
       .map(file => file.filepath),
   )
-  const danglingStaticFiles = fileChanges
-    .filter(isRemovalOrModificationChange)
-    .map(({ id, data }) => ({ id, data: data.before }))
-    .flatMap(getNestedStaticFiles)
-    .filter(staticFile => !afterFilePaths.has(staticFile.filepath))
-  return staticFileIndex === undefined
-    ? danglingStaticFiles
-    : filterStaticFilesByIndex(danglingStaticFiles, staticFileIndex)
+  const potentiallyDanglingStaticFiles = beforeFilePaths.filter(staticFile => !afterFilePaths.has(staticFile.filepath))
+  const danglingStaticFiles =
+    staticFileIndex === undefined
+      ? potentiallyDanglingStaticFiles
+      : await filterStaticFilesByIndex(potentiallyDanglingStaticFiles, staticFileIndex)
+  log.debug(
+    'found %d dangling static files, out of %d static files in the changes before. %d static files with multiple pointers were filtered out.',
+    danglingStaticFiles.length,
+    beforeFilePaths.length,
+    potentiallyDanglingStaticFiles.length - danglingStaticFiles.length,
+  )
+  return danglingStaticFiles
 }
 
 const buildNaclFilesSource = (

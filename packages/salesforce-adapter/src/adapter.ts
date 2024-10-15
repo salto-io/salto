@@ -106,6 +106,7 @@ import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard
 import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import extendTriggersMetadataFilter from './filters/extend_triggers_metadata'
+import profilesAndPermissionSetsBrokenPathsFilter from './filters/profiles_and_permission_sets_broken_paths'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
@@ -250,7 +251,9 @@ export const allFilters: Array<FilterCreator> = [
   // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
   customTypeSplit,
   mergeProfilesWithSourceValuesFilter,
-  // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter
+  // profilesAndPermissionSetsBrokenPathsFilter should run after mergeProfilesWithSourceValuesFilter
+  profilesAndPermissionSetsBrokenPathsFilter,
+  // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
   profileInstanceSplitFilter,
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   removeUnixTimeZeroFilter,

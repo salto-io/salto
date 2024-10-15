@@ -19,6 +19,7 @@ import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
   API_NAME,
+  ArtificialTypes,
   CUSTOM_APPLICATION_METADATA_TYPE,
   CUSTOM_OBJECT,
   FLOW_METADATA_TYPE,
@@ -761,6 +762,11 @@ describe('Profiles And Permission Sets Custom References', () => {
           apexClass: 'sbaa__ApexClass',
           enabled: true,
         },
+        // Make sure we don't omit values that are defined in the Broken Paths instance
+        BrokenApexClass: {
+          apexClass: 'sbaa__ApexClass',
+          enabled: true,
+        },
       },
       flowAccesses: {
         SomeFlow: {
@@ -850,6 +856,10 @@ describe('Profiles And Permission Sets Custom References', () => {
                 apexClass: 'sbaa__ApexClass',
                 enabled: true,
               },
+              BrokenApexClass: {
+                apexClass: 'sbaa__ApexClass',
+                enabled: true,
+              },
             },
             flowAccesses: {},
             layoutAssignments: {},
@@ -901,6 +911,9 @@ describe('Profiles And Permission Sets Custom References', () => {
           new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),
           new InstanceElement('Case_SomeCaseRecordType', mockTypes.RecordType, {}),
+          new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.ProfilesAndPermissionSetsBrokenPaths, {
+            paths: ['classAccesses.BrokenApexClass'],
+          }),
         ])
         fixElementsFunc = profilesAndPermissionSetsHandler.removeWeakReferences({
           elementsSource,

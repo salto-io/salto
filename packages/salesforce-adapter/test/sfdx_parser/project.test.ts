@@ -60,7 +60,7 @@ describe('createProject', () => {
       res = await createProject({ baseDir: '/dev/null' })
     })
 
-    it('should create a project', () => {
+    it('should return an error', () => {
       expect(res.errors).toEqual([
         expect.objectContaining({
           severity: 'Error',

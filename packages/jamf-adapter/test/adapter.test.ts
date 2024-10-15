@@ -79,7 +79,9 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onPost('baseUrl/api/oauth/token').reply(200, { access_token: 'mock_token', token_type: 'Bearer' })
+    mockAxiosAdapter
+      .onPost('https://baseUrl.com/api/oauth/token')
+      .reply(200, { access_token: 'mock_token', token_type: 'Bearer' })
     ;([...fetchMockReplies, ...deployMockReplies] as MockReply[]).forEach(({ url, method, params, response }) => {
       const mock = getMockFunction(method, mockAxiosAdapter).bind(mockAxiosAdapter)
       const handler = mock(url, !_.isEmpty(params) ? { params } : undefined)
@@ -103,7 +105,7 @@ describe('adapter', () => {
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', credentialsType, {
-              baseUrl: 'baseUrl',
+              baseUrl: 'https://baseUrl.com',
               clientId: 'clientId',
               clientSecret: 'clientSecret',
             }),
@@ -285,7 +287,7 @@ describe('adapter', () => {
       })
       operations = adapter.operations({
         credentials: new InstanceElement('config', credentialsType, {
-          baseUrl: 'baseUrl',
+          baseUrl: 'https://baseUrl.com',
           clientId: 'clientId',
           clientSecret: 'clientSecret',
         }),

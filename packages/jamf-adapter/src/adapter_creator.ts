@@ -26,10 +26,10 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     },
   },
   defaultConfig: DEFAULT_CONFIG,
-  definitionsCreator: ({ clients, userConfig }) => ({
+  definitionsCreator: ({ clients, userConfig, credentials: { baseUrl } }) => ({
     clients: createClientDefinitions(clients),
     pagination: PAGINATION,
-    fetch: createFetchDefinitions(userConfig.fetch),
+    fetch: createFetchDefinitions(userConfig.fetch, baseUrl),
     deploy: createDeployDefinitions(userConfig),
     references: REFERENCES,
   }),

@@ -35,7 +35,6 @@ export const createMockNaclFileSource = (): MockInterface<nacl.NaclFilesSource> 
   getElementNaclFiles: mockFunction<nacl.NaclFilesSource['getElementNaclFiles']>(),
   getElementFileNames: mockFunction<nacl.NaclFilesSource['getElementFileNames']>(),
   clone: mockFunction<nacl.NaclFilesSource['clone']>(),
-  getElementReferencedFiles: mockFunction<nacl.NaclFilesSource['getElementReferencedFiles']>(),
   load: mockFunction<nacl.NaclFilesSource['load']>(),
   getSearchableNames: mockFunction<nacl.NaclFilesSource['getSearchableNames']>(),
   getStaticFile: mockFunction<nacl.NaclFilesSource['getStaticFile']>(),

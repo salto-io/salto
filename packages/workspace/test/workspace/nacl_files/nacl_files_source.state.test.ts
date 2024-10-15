@@ -296,16 +296,6 @@ describe('Nacl Files Source', () => {
             .toArray(),
         ).toEqual(['dummy.test'])
       })
-      it('should remove elements from the indexes upon element removal', async () => {
-        const newFile = {
-          filename: 'file2.nacl',
-          buffer: '',
-        }
-        const removedElemId = new ElemID('dummy', 'test')
-        expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId)).toEqual(['file2.nacl'])
-        await naclFileSourceTest.setNaclFiles([newFile])
-        expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId)).toEqual([])
-      })
       describe('splitted elements', () => {
         describe('fragmented in all files', () => {
           let naclFileSourceWithFragments: NaclFilesSource

@@ -56,7 +56,7 @@ describe('createPathIndexForElement', () => {
   ]
 
   beforeAll(async () => {
-    workspace = await createWorkspace(naclFileStore)
+    workspace = await createWorkspace({ dirStore: naclFileStore })
   })
   it('should create path index for a top level id', async () => {
     const id = ElemID.fromFullName('salesforce.lead')

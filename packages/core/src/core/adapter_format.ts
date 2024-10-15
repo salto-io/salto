@@ -24,6 +24,28 @@ type GetAdapterArgs = {
   accountName: string
 }
 
+const getAdapter = ({
+  workspace,
+  accountName,
+}: GetAdapterArgs):
+  | { adapter: Adapter; adapterName: string; error: undefined }
+  | { adapter: undefined; adapterName: undefined; error: SaltoError } => {
+  const adapterName = workspace.getServiceFromAccountName(accountName)
+  if (adapterName !== accountName) {
+    return {
+      adapter: undefined,
+      adapterName: undefined,
+      error: {
+        severity: 'Error',
+        message: 'Account name that is different from the adapter name is not supported',
+        detailedMessage: '',
+      },
+    }
+  }
+
+  return { adapter: adapterCreators[adapterName], adapterName, error: undefined }
+}
+
 type GetAdapterAndContextArgs = {
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
@@ -35,22 +57,17 @@ type GetAdapterAndContextResult = {
   resolvedElements: Element[]
 }
 
-const getAdapter = ({ workspace, accountName }: GetAdapterArgs): { adapter: Adapter; adapterName: string } => {
-  const adapterName = workspace.getServiceFromAccountName(accountName)
-  if (adapterName !== accountName) {
-    throw new Error('Account name that is different from the adapter name is not supported')
-  }
-
-  return { adapter: adapterCreators[adapterName], adapterName }
-}
-
 const getAdapterAndContext = async ({
   workspace,
   accountName,
   ignoreStateElemIdMapping,
   ignoreStateElemIdMappingForSelectors,
 }: GetAdapterAndContextArgs): Promise<GetAdapterAndContextResult> => {
-  const { adapter, adapterName } = getAdapter({ workspace, accountName })
+  const { adapter, adapterName, error } = getAdapter({ workspace, accountName })
+  if (error !== undefined) {
+    throw new Error(error.message)
+  }
+
   const workspaceElements = await workspace.elements()
   const resolvedElements = await expressions.resolve(
     await awu(await workspaceElements.getAll()).toArray(),
@@ -82,8 +99,15 @@ export const isInitializedFolder = async ({
   workspace,
   accountName,
 }: IsInitializedFolderArgs): Promise<IsInitializedFolderResult> => {
-  const { adapter } = getAdapter({ workspace, accountName })
-  if (adapter.adapterFormat === undefined || adapter.adapterFormat.isInitializedFolder === undefined) {
+  const { adapter, error } = getAdapter({ workspace, accountName })
+  if (error !== undefined) {
+    return {
+      result: false,
+      errors: [error],
+    }
+  }
+
+  if (adapter.adapterFormat?.isInitializedFolder === undefined) {
     return {
       result: false,
       errors: [
@@ -96,10 +120,7 @@ export const isInitializedFolder = async ({
     }
   }
 
-  return {
-    result: await adapter.adapterFormat.isInitializedFolder({ baseDir }),
-    errors: [],
-  }
+  return adapter.adapterFormat.isInitializedFolder({ baseDir })
 }
 
 type InitFolderArgs = {
@@ -111,8 +132,12 @@ export type InitFolderResult = {
 }
 
 export const initFolder = async ({ baseDir, workspace, accountName }: InitFolderArgs): Promise<InitFolderResult> => {
-  const { adapter } = getAdapter({ workspace, accountName })
-  if (adapter.adapterFormat === undefined || adapter.adapterFormat.initFolder === undefined) {
+  const { adapter, error } = getAdapter({ workspace, accountName })
+  if (error !== undefined) {
+    return { errors: [error] }
+  }
+
+  if (adapter.adapterFormat?.initFolder === undefined) {
     return {
       errors: [
         {
@@ -124,9 +149,7 @@ export const initFolder = async ({ baseDir, workspace, accountName }: InitFolder
     }
   }
 
-  return {
-    errors: (await adapter.adapterFormat.initFolder({ baseDir })).errors,
-  }
+  return adapter.adapterFormat.initFolder({ baseDir })
 }
 
 const loadElementsAndMerge = (
@@ -173,10 +196,10 @@ export const calculatePatch = async ({
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  if (adapter.adapterFormat === undefined || adapter.adapterFormat.loadElementsFromFolder === undefined) {
+  const loadElementsFromFolder = adapter.adapterFormat?.loadElementsFromFolder
+  if (loadElementsFromFolder === undefined) {
     throw new Error(`Account ${accountName}'s adapter does not support loading a non-nacl format`)
   }
-  const { loadElementsFromFolder } = adapter.adapterFormat
 
   const {
     loadErrors: beforeLoadErrors,
@@ -251,18 +274,8 @@ export const syncWorkspaceToFolder = ({
         ignoreStateElemIdMapping,
         ignoreStateElemIdMappingForSelectors,
       })
-      if (adapter.adapterFormat === undefined) {
-        return {
-          errors: [
-            {
-              severity: 'Error' as const,
-              message: 'Format not supported',
-              detailedMessage: `Account ${accountName}'s adapter does not support a non-nacl format`,
-            },
-          ],
-        }
-      }
-      const { loadElementsFromFolder, dumpElementsToFolder } = adapter.adapterFormat
+      const loadElementsFromFolder = adapter.adapterFormat?.loadElementsFromFolder
+      const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
       if (loadElementsFromFolder === undefined) {
         return {
           errors: [
@@ -346,7 +359,8 @@ export const updateElementFolder = ({
         workspace,
         accountName,
       })
-      if (adapter.adapterFormat === undefined || adapter.adapterFormat.dumpElementsToFolder === undefined) {
+      const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
+      if (dumpElementsToFolder === undefined) {
         return {
           errors: [
             {
@@ -357,7 +371,6 @@ export const updateElementFolder = ({
           ],
         }
       }
-      const { dumpElementsToFolder } = adapter.adapterFormat
       return dumpElementsToFolder({ baseDir, changes, elementsSource: adapterContext.elementsSource })
     },
     'updateElementFolder %s',

@@ -15,13 +15,28 @@ type IsInitializedFolderFunc = NonNullable<AdapterFormat['isInitializedFolder']>
 export const isProjectFolder: IsInitializedFolderFunc = async ({ baseDir }) => {
   try {
     await SfProject.resolve(baseDir)
-    return true
+    return {
+      result: true,
+      errors: [],
+    }
   } catch (error) {
     if (error instanceof SfError && error.name === 'InvalidProjectWorkspaceError') {
-      return false
+      return {
+        result: false,
+        errors: [],
+      }
     }
 
-    throw error
+    return {
+      result: false,
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed checking if folder contains an SFDX project',
+          detailedMessage: error.message,
+        },
+      ],
+    }
   }
 }
 
@@ -46,7 +61,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
     return {
       errors: [
         {
-          severity: 'Error' as const,
+          severity: 'Error',
           message: 'Failed initializing SFDX project',
           detailedMessage: error.message,
         },

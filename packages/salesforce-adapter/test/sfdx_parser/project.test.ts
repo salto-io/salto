@@ -18,7 +18,10 @@ describe('isProjectFolder', () => {
 
     it('should return true', async () => {
       const result = await isProjectFolder({ baseDir: project.name() })
-      expect(result).toBeTrue()
+      expect(result).toEqual({
+        result: true,
+        errors: [],
+      })
     })
   })
 
@@ -27,7 +30,10 @@ describe('isProjectFolder', () => {
 
     it('should return false', async () => {
       const result = await isProjectFolder({ baseDir: project.name() })
-      expect(result).toBeFalse()
+      expect(result).toEqual({
+        result: false,
+        errors: [],
+      })
     })
   })
 })

@@ -55,7 +55,10 @@ export const createMockAdapter = (
     },
     install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({ success: true, installedVersion: '1' }),
     adapterFormat: {
-      isInitializedFolder: mockFunction<NonNullable<AdapterFormat['isInitializedFolder']>>().mockResolvedValue(false),
+      isInitializedFolder: mockFunction<NonNullable<AdapterFormat['isInitializedFolder']>>().mockResolvedValue({
+        result: false,
+        errors: [],
+      }),
       initFolder: mockFunction<NonNullable<AdapterFormat['initFolder']>>().mockResolvedValue({ errors: [] }),
       loadElementsFromFolder: mockFunction<NonNullable<AdapterFormat['loadElementsFromFolder']>>().mockResolvedValue({
         elements: [],

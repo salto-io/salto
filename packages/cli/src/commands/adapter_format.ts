@@ -16,6 +16,7 @@ import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace
 import { CliExitCode, CliOutput } from '../types'
 import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
 import { formatFetchWarnings, formatSyncToWorkspaceErrors } from '../formatter'
+import { getUserBooleanInput } from '../callbacks'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -161,13 +162,14 @@ const applyPatchCmd = createWorkspaceCommand({
 type SyncWorkspaceToFolderArgs = {
   toDir: string
   accountName: 'salesforce'
+  initializeFolder: boolean
 }
 export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceToFolderArgs> = async ({
   workspace,
   input,
   output,
 }) => {
-  const { accountName, toDir } = input
+  const { accountName, toDir, initializeFolder } = input
 
   const initializedResult = await isInitializedFolder({ workspace, accountName, baseDir: toDir })
   if (initializedResult.errors.length > 0) {
@@ -176,11 +178,19 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   }
 
   if (!initializedResult.result) {
-    outputLine(`Initializing adapter format folder at ${toDir}`, output)
-    const initResult = await initFolder({ workspace, accountName, baseDir: toDir })
-    if (initResult.errors.length > 0) {
-      outputLine(formatSyncToWorkspaceErrors(initResult.errors), output)
-      return CliExitCode.AppError
+    if (
+      initializeFolder ||
+      (await getUserBooleanInput('The folder is no initialized for the adapter format, initialize?'))
+    ) {
+      outputLine(`Initializing adapter format folder at ${toDir}`, output)
+      const initResult = await initFolder({ workspace, accountName, baseDir: toDir })
+      if (initResult.errors.length > 0) {
+        outputLine(formatSyncToWorkspaceErrors(initResult.errors), output)
+        return CliExitCode.AppError
+      }
+    } else {
+      outputLine('Folder not initialized for adapter format, aborting', output)
+      return CliExitCode.UserInputError
     }
   }
 
@@ -213,6 +223,13 @@ const syncToWorkspaceCmd = createWorkspaceCommand({
         description: 'The name of the account to synchronize to the project',
         choices: ['salesforce'],
         default: 'salesforce',
+      },
+      {
+        name: 'initializeFolder',
+        type: 'boolean',
+        alias: 'f',
+        description: 'Initialize the folder for adapter format if needed',
+        default: false,
       },
     ],
   },

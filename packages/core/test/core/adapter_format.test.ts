@@ -54,7 +54,7 @@ describe('isInitializedFolder', () => {
 
   describe('when adapter returns false', () => {
     beforeEach(() => {
-      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce(false)
+      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce({ result: false, errors: [] })
     })
 
     it('should return false', async () => {
@@ -66,13 +66,40 @@ describe('isInitializedFolder', () => {
 
   describe('when adapter returns true', () => {
     beforeEach(() => {
-      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce(true)
+      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce({ result: true, errors: [] })
     })
 
     it('should return true', async () => {
       const res = await isInitializedFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       expect(res.result).toBeTrue()
       expect(res.errors).toBeEmpty()
+    })
+  })
+
+  describe('when adapter returns an error', () => {
+    beforeEach(() => {
+      mockAdapter.adapterFormat.isInitializedFolder.mockResolvedValueOnce({
+        result: false,
+        errors: [
+          {
+            severity: 'Error',
+            message: 'Error message',
+            detailedMessage: 'Detailed message',
+          },
+        ],
+      })
+    })
+
+    it('should return an error', async () => {
+      const res = await isInitializedFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
+      expect(res.result).toBeFalse()
+      expect(res.errors).toEqual([
+        {
+          severity: 'Error',
+          message: 'Error message',
+          detailedMessage: 'Detailed message',
+        },
+      ])
     })
   })
 

@@ -190,6 +190,11 @@ export type IsInitializedFolderArgs = {
   baseDir: string
 }
 
+export type IsInitializedFolderResult = {
+  result: boolean
+  errors: ReadonlyArray<SaltoError>
+}
+
 export type InitFolderArgs = {
   baseDir: string
 }
@@ -248,7 +253,7 @@ export type ReferenceInfo = {
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
 
 export type AdapterFormat = {
-  isInitializedFolder?: (args: IsInitializedFolderArgs) => Promise<boolean>
+  isInitializedFolder?: (args: IsInitializedFolderArgs) => Promise<IsInitializedFolderResult>
   initFolder?: (args: InitFolderArgs) => Promise<InitFolderResult>
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
   dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>

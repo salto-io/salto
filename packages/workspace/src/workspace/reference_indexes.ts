@@ -17,7 +17,6 @@ import {
   isTemplateExpression,
   isObjectTypeChange,
   ReferenceInfo,
-  TemplateExpression,
   StaticFile,
   isStaticFile,
   ReferenceType,
@@ -27,7 +26,7 @@ import {
   isObjectType,
   isField,
   TypeReference,
-  BuiltinTypesByFullName,
+  GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -72,36 +71,73 @@ export type ReferenceTargetIndexValue = collections.treeMap.TreeMap<ReferenceInd
 
 export type ReferenceIndexesGetCustomReferencesFunc = (elements: Element[]) => Promise<ReferenceInfo[]>
 
-type AddReferenceInfoFunc = (refInfo: ReferenceInfo) => void
-
 const getReferenceDetailsIdentifier = (referenceDetails: ReferenceInfo): string =>
   `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
 
-const getReferencesFromTemplateExpression = (
-  source: ElemID,
-  template: TemplateExpression | undefined,
-  addReferenceInfo: AddReferenceInfoFunc,
-): void => {
-  template?.parts.forEach(part => {
-    if (isReferenceExpression(part)) {
-      addReferenceInfo({ source, target: part.elemID, type: 'strong' })
-    }
-  })
+const toRefTypeReference = ({
+  elemID,
+  refType,
+}: {
+  elemID: ElemID
+  refType: TypeReference
+}): ReferenceInfo | undefined => {
+  const target = ElemID.getTypeOrContainerTypeID(refType.elemID)
+  if (target.adapter !== GLOBAL_ADAPTER) {
+    return { source: elemID, target, type: 'strong' }
+  }
+  return undefined
 }
 
-const getReferencesFromElement = (
-  element: Element,
-  addReferenceInfo: AddReferenceInfoFunc,
-  templateStaticFiles: { value: StaticFile; source: ElemID }[],
-): void => {
+const getReferencesFromRefTypes = (element: Element): ReferenceInfo[] => {
+  if (isField(element)) {
+    const reference = toRefTypeReference(element)
+    return reference !== undefined ? [reference] : []
+  }
+
+  if (isObjectType(element)) {
+    const fieldRefTypeReferences = Object.values(element.fields).flatMap(field => toRefTypeReference(field) ?? [])
+    const annotationRefTypeReferences = Object.entries(element.annotationRefTypes).flatMap(
+      ([annoName, refType]) =>
+        toRefTypeReference({
+          elemID: element.elemID.createNestedID('annotation', annoName),
+          refType,
+        }) ?? [],
+    )
+    return fieldRefTypeReferences.concat(annotationRefTypeReferences)
+  }
+
+  return []
+}
+
+const getReferencesFromTemplateStaticFile = async ({
+  value,
+  source,
+}: {
+  value: StaticFile
+  source: ElemID
+}): Promise<ReferenceInfo[]> => {
+  const templateExpression = await parserUtils.staticFileToTemplateExpression(value)
+  if (templateExpression !== undefined) {
+    return templateExpression.parts
+      .filter(isReferenceExpression)
+      .map(ref => ({ source, target: ref.elemID, type: 'strong' }))
+  }
+  return []
+}
+
+const getReferences = async (element: Element, customReferences: ReferenceInfo[]): Promise<ReferenceInfo[]> => {
+  const referenceInfos: ReferenceInfo[] = []
+  const templateStaticFiles: { value: StaticFile; source: ElemID }[] = []
   walkOnElement({
     element,
     func: ({ value, path: source }) => {
       if (isReferenceExpression(value)) {
-        addReferenceInfo({ source, target: value.elemID, type: 'strong' })
+        referenceInfos.push({ source, target: value.elemID, type: 'strong' })
       }
       if (isTemplateExpression(value)) {
-        getReferencesFromTemplateExpression(source, value, addReferenceInfo)
+        value.parts.filter(isReferenceExpression).forEach(ref => {
+          referenceInfos.push({ source, target: ref.elemID, type: 'strong' })
+        })
       }
       if (isStaticFile(value) && value.isTemplate) {
         templateStaticFiles.push({ value, source })
@@ -109,56 +145,17 @@ const getReferencesFromElement = (
       return WALK_NEXT_STEP.RECURSE
     },
   })
-}
 
-const isNonBuiltinTypeElemID = (elemId: ElemID): boolean => BuiltinTypesByFullName[elemId.getFullName()] === undefined
+  const templateExpressionReferences = await Promise.all(
+    templateStaticFiles.map(getReferencesFromTemplateStaticFile),
+  ).then(res => res.flat())
 
-const addReferencesFromRefTypes = (element: Element, addReferenceInfo: AddReferenceInfoFunc): void => {
-  const addRefTypeDependency = ({ elemID, refType }: { elemID: ElemID; refType: TypeReference }): void => {
-    const target = ElemID.getTypeOrContainerTypeID(refType.elemID)
-    if (isNonBuiltinTypeElemID(target)) {
-      addReferenceInfo({ source: elemID, target, type: 'strong' })
-    }
-  }
+  const refTypesReferences = getReferencesFromRefTypes(element)
 
-  if (isField(element)) {
-    addRefTypeDependency(element)
-  }
-
-  if (isObjectType(element)) {
-    Object.values(element.fields).forEach(field => {
-      addRefTypeDependency(field)
-    })
-
-    Object.entries(element.annotationRefTypes).forEach(([annoName, refType]) => {
-      addRefTypeDependency({
-        elemID: element.elemID.createNestedID('annotation', annoName),
-        refType,
-      })
-    })
-  }
-}
-
-const getReferences = async (element: Element, customReferences: ReferenceInfo[]): Promise<ReferenceInfo[]> => {
-  const references: Record<string, ReferenceInfo> = {}
-  const templateStaticFiles: { value: StaticFile; source: ElemID }[] = []
-  const addReferenceInfo: AddReferenceInfoFunc = refInfo => {
-    references[getReferenceDetailsIdentifier(refInfo)] = refInfo
-  }
-  addReferencesFromRefTypes(element, addReferenceInfo)
-  getReferencesFromElement(element, addReferenceInfo, templateStaticFiles)
-  customReferences.forEach(addReferenceInfo)
-  const templateExpressions = await Promise.all(
-    templateStaticFiles.map(async fileObj => {
-      const expression = await parserUtils.staticFileToTemplateExpression(fileObj.value)
-      return { expression, source: fileObj.source }
-    }),
+  return _.uniqBy(
+    customReferences.concat(templateExpressionReferences).concat(referenceInfos).concat(refTypesReferences),
+    getReferenceDetailsIdentifier,
   )
-  templateExpressions.forEach(fileObj => {
-    getReferencesFromTemplateExpression(fileObj.source, fileObj.expression, addReferenceInfo)
-  })
-
-  return Object.values(references)
 }
 
 const getReferencesFromChange = async (

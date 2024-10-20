@@ -171,7 +171,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
 }) => {
   const { accountName, toDir, force } = input
 
-  const initializedResult = await isInitializedFolder({ workspace, accountName, baseDir: toDir })
+  const initializedResult = await isInitializedFolder({ adapterName: accountName, baseDir: toDir })
   if (initializedResult.errors.length > 0) {
     outputLine(formatSyncToWorkspaceErrors(initializedResult.errors), output)
     return CliExitCode.AppError
@@ -180,7 +180,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   if (!initializedResult.result) {
     if (force || (await getUserBooleanInput('The folder is no initialized for the adapter format, initialize?'))) {
       outputLine(`Initializing adapter format folder at ${toDir}`, output)
-      const initResult = await initFolder({ workspace, accountName, baseDir: toDir })
+      const initResult = await initFolder({ adapterName: accountName, baseDir: toDir })
       if (initResult.errors.length > 0) {
         outputLine(formatSyncToWorkspaceErrors(initResult.errors), output)
         return CliExitCode.AppError

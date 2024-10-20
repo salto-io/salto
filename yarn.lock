@@ -4978,7 +4978,7 @@ __metadata:
     "@salto-io/file": 0.4.3
     "@salto-io/logging": 0.4.3
     "@salto-io/lowerdash": 0.4.3
-    "@salto-io/suitecloud-cli": 1.9.0-salto-3
+    "@salto-io/suitecloud-cli": 1.9.0-salto-4
     "@salto-io/test-utils": 0.4.3
     "@tony.ganchev/eslint-plugin-header": ^3.1.2
     "@types/async-lock": ^1.1.2
@@ -5432,9 +5432,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/suitecloud-cli@npm:1.9.0-salto-3":
-  version: 1.9.0-salto-3
-  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-3"
+"@salto-io/suitecloud-cli@npm:1.9.0-salto-4":
+  version: 1.9.0-salto-4
+  resolution: "@salto-io/suitecloud-cli@npm:1.9.0-salto-4"
   dependencies:
     "@salto-io/logging": latest
     chalk: 4.1.2
@@ -5444,7 +5444,7 @@ __metadata:
     xml2js: 0.6.2
   bin:
     suitecloud: src/suitecloud.js
-  checksum: dcd126a8e26922854e186e4e3a965d92dc8033168d068de1f985dd33e673c3b723d8004a98e3f6c3c31dcf4bc848dd5b4708b2e49931a1ac1489598dffa03262
+  checksum: a84a5b0885c75c72e7b2a2b718b24d3d53ce05506bd31c469f020899688749e1e7cfc46cba1d0d386696be12c7d956702b34f3a79a0b5d912827f8584a6b4d38
   languageName: node
   linkType: hard
 

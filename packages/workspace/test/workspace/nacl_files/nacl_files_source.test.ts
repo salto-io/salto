@@ -16,12 +16,13 @@ import {
   BuiltinTypes,
   createRefToElmWithValue,
   InstanceElement,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -820,6 +821,29 @@ describe('Nacl Files Source', () => {
     })
     it('should not return removed static file if it is still referenced in another field', () => {
       expect(result).not.toContain(staticFile7)
+    })
+
+    describe('when there are no static files in the changes before', () => {
+      let mockStaticFilesIndex: Pick<RemoteMap<string[]>, 'get'>
+
+      beforeAll(async () => {
+        const beforeElemWithoutStaticFiles = await transformElement({
+          element: beforeElem,
+          strict: false,
+          transformFunc: ({ value }) => (isStaticFile(value) ? undefined : value),
+        })
+        mockStaticFilesIndex = { get: jest.fn() }
+        result = await getDanglingStaticFiles(
+          detailedCompare(beforeElemWithoutStaticFiles, afterElem),
+          mockStaticFilesIndex,
+        )
+      })
+      it('should return empty list', () => {
+        expect(result).toBeEmpty()
+      })
+      it('should not query staticFilesIndex', () => {
+        expect(mockStaticFilesIndex.get).not.toHaveBeenCalled()
+      })
     })
   })
 })

@@ -115,7 +115,7 @@ const isNonBuiltinTypeElemID = (elemId: ElemID): boolean => BuiltinTypesByFullNa
 
 const addReferencesFromRefTypes = (element: Element, addReferenceInfo: AddReferenceInfoFunc): void => {
   const addRefTypeDependency = ({ elemID, refType }: { elemID: ElemID; refType: TypeReference }): void => {
-    const target = refType.elemID.getInnerTypeElemID()
+    const target = ElemID.getTypeOrContainerTypeID(refType.elemID)
     if (isNonBuiltinTypeElemID(target)) {
       addReferenceInfo({ source: elemID, target, type: 'strong' })
     }

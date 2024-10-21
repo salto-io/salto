@@ -33,7 +33,7 @@ const filter: FilterCreator = ({ config }) => ({
       const { paths } = await getProfilesAndPsBrokenReferenceFields({
         elementsSource,
         profilesAndPermissionSets,
-        config,
+        metadataQuery: config.fetchProfile.metadataQuery,
       })
       if (paths.length === 0) {
         return

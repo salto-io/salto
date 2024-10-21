@@ -11,7 +11,7 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, InstanceElement, ReadOnlyElementsSource, ReferenceInfo, Values } from '@salto-io/adapter-api'
 import { invertNaclCase } from '@salto-io/adapter-utils'
-import { MetadataInstance, MetadataQuery, ProfileSection, WeakReferencesHandler, SalesforceConfig } from '../types'
+import { MetadataInstance, MetadataQuery, ProfileSection, WeakReferencesHandler } from '../types'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_PAGE_METADATA_TYPE,
@@ -251,7 +251,7 @@ const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: Metad
       target,
     ]),
   )
-    .filter(([, target]) => metadataQuery?.isInstanceMatch(target) ?? true)
+    .filter(([, target]) => metadataQuery?.isInstanceIncluded(target) ?? true)
     .fromPairs()
     .value()
 
@@ -292,16 +292,17 @@ export const buildElemIDMetadataQuery = (metadataQuery: MetadataQuery): Metadata
 export const getProfilesAndPsBrokenReferenceFields = async ({
   profilesAndPermissionSets,
   elementsSource,
-  config,
+  metadataQuery,
 }: {
   profilesAndPermissionSets: InstanceElement[]
   elementsSource: ReadOnlyElementsSource
-  config: SalesforceConfig
+  metadataQuery: MetadataQuery
 }): Promise<{ paths: string[]; entriesTargets: Record<string, ElemID> }> => {
-  const metadataQuery = buildElemIDMetadataQuery(buildMetadataQuery({ fetchParams: config.fetch ?? {} }))
   const entriesTargets: Dictionary<ElemID> = _.merge(
     {},
-    ...profilesAndPermissionSets.map(instance => instanceEntriesTargets(instance, metadataQuery)),
+    ...profilesAndPermissionSets.map(instance =>
+      instanceEntriesTargets(instance, buildElemIDMetadataQuery(metadataQuery)),
+    ),
   )
   const elementNames = new Set(
     await awu(await elementsSource.getAll())
@@ -327,7 +328,7 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
     const { paths: brokenReferencePaths, entriesTargets } = await getProfilesAndPsBrokenReferenceFields({
       profilesAndPermissionSets,
       elementsSource,
-      config,
+      metadataQuery: buildMetadataQuery({ fetchParams: config.fetch ?? {} }),
     })
     const instancesWithBrokenReferences = profilesAndPermissionSets.filter(instance =>
       brokenReferencePaths.some(field => _(instance.value).has(field)),

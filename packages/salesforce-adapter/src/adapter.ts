@@ -248,11 +248,11 @@ export const allFilters: Array<FilterCreator> = [
   omitStandardFieldsNonDeployableValuesFilter,
   // taskAndEventCustomFields should run before customTypeSplit
   taskAndEventCustomFields,
-  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
-  customTypeSplit,
   mergeProfilesWithSourceValuesFilter,
   // profilesAndPermissionSetsBrokenPathsFilter should run after mergeProfilesWithSourceValuesFilter
   profilesAndPermissionSetsBrokenPathsFilter,
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
+  customTypeSplit,
   // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
   profileInstanceSplitFilter,
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero

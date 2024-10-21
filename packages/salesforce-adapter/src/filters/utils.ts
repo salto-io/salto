@@ -96,6 +96,8 @@ import {
   SALESFORCE_CUSTOM_SUFFIX,
   TASK_CUSTOM_OBJECT,
   EVENT_CUSTOM_OBJECT,
+  PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS,
+  PATHS_FIELD,
 } from '../constants'
 import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -963,6 +965,18 @@ export const isCustomField = (field: Field): boolean => field.name.endsWith(SALE
 
 export const isFieldOfTaskOrEvent = ({ parent }: Field): boolean =>
   isCustomObjectSync(parent) && [TASK_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT].includes(apiNameSync(parent) ?? '')
+
+export const getProfilesAndPermissionSetsBrokenPaths = async (
+  elementsSource: ReadOnlyElementsSource,
+): Promise<string[]> => {
+  const instance = await elementsSource.get(
+    new ElemID(SALESFORCE, PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS, 'instance', ElemID.CONFIG_NAME),
+  )
+  if (!isInstanceElement(instance)) {
+    return []
+  }
+  return instance.value[PATHS_FIELD] ?? []
+}
 
 type CustomObjectsTargets = {
   customObjects: readonly string[]

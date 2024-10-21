@@ -48,9 +48,9 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   indexedEmailTemplateAttachments: false,
   skipParsingXmlNumbers: false,
   logDiffsFromParsingXmlNumbers: true,
-  performSideEffectDeletes: false,
   extendTriggersMetadata: false,
   removeReferenceFromFilterItemToRecordType: false,
+  storeProfilesAndPermissionSetsBrokenPaths: true,
 }
 
 type BuildFetchProfileParams = {

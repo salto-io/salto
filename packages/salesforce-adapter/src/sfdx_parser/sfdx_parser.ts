@@ -7,222 +7,226 @@
  */
 import _ from 'lodash'
 import path from 'path'
-import readdirp from 'readdirp'
-import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import JSZip from 'jszip'
 import { filter } from '@salto-io/adapter-utils'
+import type { FileProperties } from '@salto-io/jsforce-types'
+import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
+import { AdapterFormat, BuiltinTypes } from '@salto-io/adapter-api'
+import { fromRetrieveResult, isComplexType, METADATA_XML_SUFFIX } from '../transformers/xml_transformer'
 import {
-  ObjectType,
-  StaticFile,
-  isObjectType,
-  ReadOnlyElementsSource,
-  ElemID,
-  Element,
-  FetchResult,
-  LoadElementsFromFolderArgs,
-} from '@salto-io/adapter-api'
-import { readTextFile, readFile } from '@salto-io/file'
-import { allFilters } from '../adapter'
-import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transformers/xml_transformer'
-import {
-  METADATA_TYPES_TO_RENAME,
   createInstanceElement,
   createMetadataObjectType,
-  MetadataValues,
+  MetadataObjectType,
+  isMetadataObjectType,
+  metadataType,
+  MetadataInstanceElement,
 } from '../transformers/transformer'
+import { API_NAME, METADATA_CONTENT_FIELD, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS } from '../constants'
+import { ComponentSet, MetadataConverter, SourceComponent } from './salesforce_imports'
+import { allFilters } from '../adapter'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
-import {
-  CUSTOM_OBJECT,
-  METADATA_CONTENT_FIELD,
-  SALESFORCE,
-  RECORDS_PATH,
-  SYSTEM_FIELDS,
-  UNSUPPORTED_SYSTEM_FIELDS,
-} from '../constants'
-import { sfdxFilters } from './filters'
+import { metadataTypeSync } from '../filters/utils'
+import { getTypesWithContent, getTypesWithMetaFile } from '../fetch'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
+const { awu, keyByAsync } = collections.asynciterable
 
-const SUPPORTED_TYPE_NAMES = [
-  'ApexClass',
-  'ApexPage',
-  'ApexTrigger',
-  'AssignmentRules',
-  'AuraDefinitionBundle',
-  // 'CompactLayout', // TODO: handle instances that are nested under custom object
-  'ContentAsset',
-  'CustomApplication',
-  'CustomObject',
-  'CustomTab',
-  // 'EmailTemplate', // TODO: add folder name to fullName
-  // 'FieldSet', // TODO: handle instances that are nested under custom object
-  'FlexiPage',
-  'Flow',
-  'InstalledPackage',
-  // 'LanguageSettings', // TODO: generally handle settings
-  'Layout',
-  'LightningComponentBundle',
-  // 'ListView', // TODO: handle instances that are nested under custom object
-  'Profile',
-  // 'StaticResource', // TODO: handle static resources that have their content unzipped by SFDX
-  // 'Territory2Rule', // TODO: add folder name to fullName (should be <FolderName>.<FullName>)
-  'Territory2Type',
-  // 'TopicsForObjects', // TODO: handle this
-  // 'WebLink', // TODO: handle instances that are nested under custom object
-]
+export const UNSUPPORTED_TYPES = new Set([
+  // Salto uses non-standard type names here (SFDX names them all "Settings", we have a separate type for each one)
+  // This causes us to always think the settings in the project need to be deleted
+  'Settings',
+  // For documents with a file extension (e.g. bla.txt) the SF API returns their fullName with the extension (so "bla.txt")
+  // but the SFDX convert code loads them as a component with a fullName without the extension (so "bla").
+  // This causes us to always think documents with an extension in the project need to be deleted
+  'Document',
+  'DocumentFolder',
+  // Custom labels are separate instances (CustomLabel) that are all in the same xml file
+  // Unfortunately, unlike other types like this (e.g - workflow, sharing rules), the SFDX code does not handle deleting
+  // instances of labels from the "merged" XML, so until we implement proper deletion support, we exclude this type
+  'CustomLabels',
+])
 
-const getElementsFromFile = async (
-  packageDir: string,
-  fileName: string,
-  resolvedTypes: Record<string, ObjectType>,
-  staticFileNames: string[],
-): Promise<Element[]> => {
-  // Turns out we cannot rely on the folder name for most of the types
-  // some of the types (specifically aura definition bundle, but maybe other types as well...) do
-  // require to be in a specific folder, so we also cannot ignore the folder name unfortunately
-  const fileContent = await readTextFile.notFoundAsUndefined(path.join(packageDir, fileName))
-  if (fileContent === undefined) {
+const getXmlDestination = (component: SourceComponent): string | undefined => {
+  const { folderContentType, suffix } = component.type
+  if (!component.xml) {
     // Should never happen
-    log.warn('skipping %s because we could not get its content', fileName)
-    return []
+    log.error('getXmlDestination - got component without xml: %o', component)
+    return undefined
   }
-  const { typeName, values } = xmlToValues(fileContent, true)
-  const fullNameWithSuffix = path.basename(fileName).slice(0, -'-meta.xml'.length) as string
-  const fullName = fullNameWithSuffix.split('.').slice(0, -1).join('.')
-  values.fullName = fullName
+  let xmlDestination = component.getPackageRelativePath(component.xml, 'metadata')
 
-  // Check for static files
-  if (isComplexType(typeName)) {
-    const complexType = complexTypesMap[typeName]
-    const fileDir = path.dirname(fileName)
-    const relevantFileNames = staticFileNames.filter(name => name.startsWith(path.join(fileDir, fullName)))
-    const relevantFiles = Object.fromEntries(
-      await Promise.all(
-        relevantFileNames.map(async name => [
-          path.join(PACKAGE, complexType.folderName, path.relative(path.dirname(fileDir), name)),
-          await readFile(path.join(packageDir, name)),
-        ]),
-      ),
+  // A few cases that don't seem to be handled properly in getPackageRelativePath
+  if (folderContentType) {
+    // Folder types do not have the suffix in their file name
+    xmlDestination = xmlDestination.replace(`.${suffix}`, '')
+  } else if (suffix && component.type.name === 'Document' && component.content) {
+    // Document files include the original document extension instead of the type's suffix
+    // e.g - bla.txt will be in bla.txt-meta.xml and not in bla.document-meta.xml
+    // Note - it is valid to have no extension in the document (e.g, just "bla"), but it seems like the SFDX
+    // code does not fully support that
+    xmlDestination = xmlDestination.replace(
+      new RegExp(`.${suffix}${METADATA_XML_SUFFIX}$`),
+      `${path.extname(component.content)}${METADATA_XML_SUFFIX}`,
     )
-    Object.assign(values, complexType.getMissingFields?.(fullNameWithSuffix) ?? {})
-    complexType.addContentFields(relevantFiles, values, typeName)
-  } else {
-    // Handle simple case for single content static file
-    const contentFileName = path.join(path.dirname(fileName), fullNameWithSuffix)
-    const contentFile = await readFile(path.join(packageDir, contentFileName)).catch(() => undefined)
-    if (contentFile !== undefined) {
-      values[METADATA_CONTENT_FIELD] = new StaticFile({
-        filepath: path.join(SALESFORCE, RECORDS_PATH, typeName, fullNameWithSuffix),
-        content: contentFile,
-      })
-    }
   }
 
-  const type = resolvedTypes[typeName]
-  if (!isObjectType(type)) {
-    log.warn('Could not find type %s, skipping instance %s', typeName, fullName)
-    return []
+  // Even though most of the time it is correct to have the suffix, the current code in fromRetrieveResult
+  // assumes all the names we get don't have this suffix, so, in order to mimic responses from the API
+  // we always remove the suffix here, and we let fromRetrieveResult add it back where needed
+  if (xmlDestination.endsWith(METADATA_XML_SUFFIX)) {
+    xmlDestination = xmlDestination.slice(0, xmlDestination.lastIndexOf(METADATA_XML_SUFFIX))
   }
 
-  return [createInstanceElement(values as MetadataValues, type)]
+  if (isComplexType(component.type.name)) {
+    // When working with complex types, the API seems to return the folder name as the file name whereas the SFDX code
+    // returns the correct file name.
+    // So we remove the file name and keep only to folder name here
+    xmlDestination = path.dirname(xmlDestination)
+  }
+
+  return xmlDestination
 }
 
-const getElementsFromDXFolder = async (
-  packageDir: string,
-  workspaceElements: ReadOnlyElementsSource,
-  types: Record<string, ObjectType>,
-): Promise<Element[]> => {
-  const allFiles = await readdirp.promise(packageDir, {
-    directoryFilter: e => e.basename[0] !== '.',
-    type: 'files',
-  })
-  const fileNames = allFiles.map(entry => path.relative(packageDir, entry.fullPath))
-  const [sourceFileNames, staticFileNames] = _.partition(fileNames, name => name.endsWith('-meta.xml'))
-
-  const elements = await awu(sourceFileNames)
-    .flatMap(name => getElementsFromFile(packageDir, name, types, staticFileNames))
-    .toArray()
-
-  const localFilters = allFilters.filter(filter.isLocalFilterCreator).map(({ creator }) => creator)
-  const filtersToRun = sfdxFilters.concat(localFilters)
-  const filterRunner = filter.filtersRunner(
-    {
-      config: {
-        unsupportedSystemFields: UNSUPPORTED_SYSTEM_FIELDS,
-        systemFields: SYSTEM_FIELDS,
-        fetchProfile: buildFetchProfile({
-          fetchParams: {
-            target: ['hack to make filters think this is partial fetch'],
+type LoadElementsFromFolderFunc = NonNullable<AdapterFormat['loadElementsFromFolder']>
+export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseDir, elementsSource }) => {
+  try {
+    // Load current SFDX project
+    // SFDX code has some issues when working with relative paths (some custom object files may get the wrong path)
+    // normalizing the base dir to be an absolute path to work around those issues
+    const absBaseDir = path.resolve(baseDir)
+    const currentComponents = ComponentSet.fromSource(absBaseDir)
+    const converter = new MetadataConverter()
+    const convertResult = await converter.convert(
+      currentComponents.filter(component => !UNSUPPORTED_TYPES.has(component.type.name)),
+      'metadata',
+      { type: 'zip' },
+    )
+    if (convertResult.zipBuffer === undefined) {
+      return {
+        elements: [],
+        errors: [
+          {
+            severity: 'Error',
+            message: 'Failed to load project',
+            detailedMessage: `Failed to load project in path ${baseDir}`,
           },
-        }),
-        elementsSource: workspaceElements,
-        flsProfiles: [],
+        ],
+      }
+    }
+
+    const typesFromWorkspace = (
+      await awu(await elementsSource.list())
+        .filter(id => id.idType === 'type')
+        .map(id => elementsSource.get(id))
+        .toArray()
+    )
+      .filter(isMetadataObjectType)
+      // Things that have an api name are instances that we converted to types (CustomObject / CustomMetadata)
+      .filter(type => type.annotations[API_NAME] === undefined)
+
+    const typesByName = await keyByAsync(typesFromWorkspace, metadataType)
+
+    const zip = await new JSZip().loadAsync(convertResult.zipBuffer)
+    const zipFileNames = new Set(Object.keys(zip.files))
+    const componentExamplePerType = Object.values(
+      _.keyBy(currentComponents.getSourceComponents().toArray(), component => component.type.name),
+    )
+    // Some components may be of a type that is excluded in the workspace
+    // in these cases we need to infer the type from the component information
+    componentExamplePerType
+      .filter(component => typesByName[component.type.name] === undefined)
+      .forEach(component => {
+        const { name: metadataTypeName, folderType, folderContentType } = component.type
+        const xmlFileName = getXmlDestination(component)
+        const hasMetaFile = xmlFileName !== undefined && zipFileNames.has(`${xmlFileName}${METADATA_XML_SUFFIX}`)
+        const hasContentField = folderContentType === undefined && hasMetaFile && zipFileNames.has(xmlFileName)
+        typesByName[metadataTypeName] = createMetadataObjectType({
+          annotations: {
+            metadataType: metadataTypeName,
+            hasMetaFile,
+            folderType,
+            folderContentType,
+          },
+          fields: hasContentField
+            ? {
+                [METADATA_CONTENT_FIELD]: { refType: BuiltinTypes.STRING },
+              }
+            : undefined,
+        })
+      })
+
+    const allTypes = Object.values(typesByName)
+
+    const fileProps = currentComponents
+      .getSourceComponents()
+      .filter(component => component.xml !== undefined)
+      .map(
+        component =>
+          ({
+            fullName: component.fullName,
+            fileName: getXmlDestination(component) ?? '',
+            type: component.type.name,
+          }) as FileProperties,
+      )
+      .toArray()
+
+    const typesWithMetaFile = await getTypesWithMetaFile(allTypes)
+    const typesWithContent = await getTypesWithContent(allTypes)
+
+    const fetchProfile = buildFetchProfile({
+      fetchParams: {
+        // We set a fetch target here to make the filters think we are in partial fetch
+        // this should make the filters not assume all elements are in the elements list
+        // this is needed because, for example, we want to search for references to elements outside of the folder elements
+        target: allTypes.map(metadataTypeSync),
       },
-      files: {
-        baseDirName: packageDir,
-        sourceFileNames,
-        staticFileNames,
+    })
+
+    const propsAndValues = await fromRetrieveResult({
+      zip,
+      fileProps,
+      typesWithMetaFile,
+      typesWithContent,
+      packagePath: '',
+      fetchProfile,
+    })
+
+    const instancesFromZip = propsAndValues.map(({ values, file }) =>
+      createInstanceElement(values, typesByName[file.type]),
+    )
+
+    const filterRunner = filter.filtersRunner(
+      {
+        config: {
+          unsupportedSystemFields: UNSUPPORTED_SYSTEM_FIELDS,
+          systemFields: SYSTEM_FIELDS,
+          fetchProfile,
+          elementsSource,
+          flsProfiles: [],
+        },
       },
-    },
-    filtersToRun,
-  )
-  // Some filters assume the types have to come from the elements list
-  // so when running the filters we must provide the types as well
-  // we omit the CustomObject type because we faked it here so it is not compatible
-  const result = elements.concat(Object.values(_.omit(types, CUSTOM_OBJECT)))
-  await filterRunner.onFetch(result)
-  return result
-}
+      allFilters,
+      results => ({ errors: results.flatMap(res => collections.array.makeArray(res.errors)) }),
+    )
+    // Some filters assume the types have to come from the elements list
+    // so when running the filters we must provide the types as well
+    const elements = (instancesFromZip as (MetadataInstanceElement | MetadataObjectType)[]).concat(allTypes)
+    const res = await filterRunner.onFetch(elements)
+    const errors = collections.array.makeArray(res?.errors)
 
-const getElementTypesForSFDX = async (elementSource: ReadOnlyElementsSource): Promise<Record<string, ObjectType>> => {
-  const typeNames = Object.fromEntries(
-    SUPPORTED_TYPE_NAMES.map(typeName => [typeName, METADATA_TYPES_TO_RENAME.get(typeName) ?? typeName]),
-  )
-  const types = _.pickBy(
-    await promises.object.mapValuesAsync(typeNames, name => elementSource.get(new ElemID(SALESFORCE, name))),
-    isObjectType,
-  )
-
-  // We need to create explicit types for CustomObject and CustomField because
-  // we remove them when we fetch
-  types.CustomObject = createMetadataObjectType({
-    annotations: { metadataType: CUSTOM_OBJECT },
-  })
-
-  return types
-}
-
-type SFDXProjectPackageDir = {
-  path: string
-  default?: boolean
-}
-
-type SFDXProject = {
-  packageDirectories: SFDXProjectPackageDir[]
-}
-
-const PROJECT_MANIFEST_FILENAME = 'sfdx-project.json'
-
-const getDXPackageDirs = async (baseDir: string): Promise<string[]> => {
-  const projectFile = await readTextFile.notFoundAsUndefined(path.join(baseDir, PROJECT_MANIFEST_FILENAME))
-  if (projectFile === undefined) {
-    return []
-  }
-  // TODO: actually validate the JSON structure
-  const project = JSON.parse(projectFile) as SFDXProject
-  return project.packageDirectories.map(packageDir => path.join(baseDir, packageDir.path))
-}
-
-export const loadElementsFromFolder = async ({
-  baseDir,
-  elementsSource,
-}: LoadElementsFromFolderArgs): Promise<FetchResult> => {
-  const packages = await getDXPackageDirs(baseDir)
-  const types = await getElementTypesForSFDX(elementsSource)
-  return {
-    elements: await awu(packages)
-      .flatMap(pkg => getElementsFromDXFolder(pkg, elementsSource, types))
-      .toArray(),
+    return { elements, errors }
+  } catch (e) {
+    log.error(e)
+    return {
+      elements: [],
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed to load project',
+          detailedMessage: `Failed to load project due to error ${e}`,
+        },
+      ],
+    }
   }
 }

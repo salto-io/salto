@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { findObjectType, inspectValue, resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, FilterCreator } from '../filter'
 import {
   ACTIVE_VERSION_NUMBER,
   FLOW_DEFINITION_METADATA_TYPE,
@@ -185,10 +185,14 @@ const getFlowInstances = async (
   }
 }
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'flowsFilter',
   remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    if (client === undefined) {
+      return {}
+    }
+
     const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (!config.fetchProfile.metadataQuery.isTypeMatch(FLOW_METADATA_TYPE) || flowType === undefined) {
       return {}

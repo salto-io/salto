@@ -82,7 +82,7 @@ import {
   CUSTOM_SETTINGS_META_TYPE,
   CUSTOM_FIELD_DEPLOYABLE_TYPES,
 } from '../constants'
-import { FilterContext, LocalFilterCreator } from '../filter'
+import { FilterContext, FilterCreator } from '../filter'
 import {
   Types,
   isCustomObject,
@@ -912,7 +912,7 @@ const removeDuplicateElements = <T extends Element>(elements: T[]): T[] => {
 /**
  * Convert custom object instance elements into object types
  */
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config, client }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
     name: 'customObjectsToObjectTypeFilter',
@@ -967,7 +967,8 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         originalChangeMapping[name].filter(isObjectTypeChange).some(isRemovalChange),
       )
 
-      if (!config.fetchProfile.isFeatureEnabled('performSideEffectDeletes')) {
+      // We only want to perform side effect removals when deploying to the service.
+      if (client !== undefined) {
         const sideEffectRemovalsByObject = await groupByAsync(
           (await awu(changes).filter(isSideEffectRemoval(removedCustomObjectNames)).toArray()) as Change[],
           async c => (await getParentCustomObjectName(c)) ?? '',

@@ -37,7 +37,7 @@ describe('screenValidator', () => {
         severity: 'Error',
         message: 'Can’t deploy screen which uses fields more than once',
         detailedMessage:
-          'This screen uses the following fields more than once: 1, 2. Make sure each field is used only once, and try again.',
+          'This screen uses the following fields more than once: 1, 2. Make sure each field is used only once, and try again. To learn more, go to https://help.salto.io/en/articles/9764037-error-when-deploying-a-screen-with-duplicate-fields',
       },
     ])
   })
@@ -67,7 +67,7 @@ describe('screenValidator', () => {
         severity: 'Error',
         message: 'Can’t deploy screen which uses fields more than once',
         detailedMessage:
-          'This screen uses the following field more than once: 1. Make sure each field is used only once, and try again.',
+          'This screen uses the following field more than once: 1. Make sure each field is used only once, and try again. To learn more, go to https://help.salto.io/en/articles/9764037-error-when-deploying-a-screen-with-duplicate-fields',
       },
     ])
   })

@@ -7,7 +7,7 @@
  */
 import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ArtificialTypes, DATA_INSTANCES_CHANGED_AT_MAGIC } from '../constants'
 import {
   apiNameSync,
@@ -42,7 +42,7 @@ const dateStringOfMostRecentlyChangedInstance = (instances: InstanceElement[]): 
     .filter(_.isString)
     .maxBy(changedAt => new Date(changedAt).getTime())
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
     const { lastChangeDateOfTypesWithNestedInstances = {} } = config

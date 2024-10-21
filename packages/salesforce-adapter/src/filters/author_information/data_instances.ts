@@ -8,7 +8,7 @@
 import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObject } from '../../transformers/transformer'
-import { RemoteFilterCreator } from '../../filter'
+import { FilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
 import { conditionQueries, ensureSafeFilterFetch, queryClient } from '../utils'
 
@@ -50,7 +50,7 @@ export const WARNING_MESSAGE =
 /*
  * add author information to data instance elements.
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'dataInstancesAuthorFilter',
   remote: true,
   onFetch: ensureSafeFilterFetch({
@@ -58,6 +58,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
+      if (client === undefined) {
+        return
+      }
+
       const customObjectInstances = (await awu(elements)
         .filter(isInstanceOfCustomObject)
         .toArray()) as InstanceElement[]

@@ -9,7 +9,7 @@ import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
 
@@ -25,7 +25,7 @@ const trimKeys: MapKeyFunc = ({ key }) => {
   return trimmedKey
 }
 
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: FilterCreator = () => ({
   name: 'trimKeysFilter',
   /**
    * Remove the leading and trailing whitespaces and new line chars from the

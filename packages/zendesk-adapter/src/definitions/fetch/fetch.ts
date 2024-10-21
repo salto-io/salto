@@ -10,7 +10,7 @@ import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { BUSINESS_HOUR_SCHEDULE_HOLIDAY, EVERYONE_USER_TYPE } from '../../constants'
-import { transformGuideItem, transformQueueItem, transformSectionItem } from './transforms'
+import { transformGuideItem, transformQueueItem, transformSectionItem, transformTriggerItem } from './transforms'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -141,7 +141,7 @@ const createCustomizations = (): Record<
     requests: [
       {
         endpoint: { path: '/api/v2/triggers' },
-        transformation: { root: 'triggers' },
+        transformation: { root: 'triggers', adjust: transformTriggerItem },
       },
     ],
     resource: {
@@ -1579,6 +1579,7 @@ const createCustomizations = (): Record<
         id: { hide: true, fieldType: 'number' },
         position: { hide: true },
         author_id: { fieldType: 'unknown' },
+        draft: { omit: true },
         vote_sum: { omit: true },
         vote_count: { omit: true },
         edited_at: { omit: true },
@@ -1653,7 +1654,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true },
-        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true, extendsParent: true }] }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'locale', isReference: true }], extendsParent: true }] },
         // serviceUrl is created in help_center_service_url filter
       },
       fieldCustomizations: {

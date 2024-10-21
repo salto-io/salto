@@ -50,6 +50,7 @@ import {
   WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -178,6 +179,9 @@ export const mockTypes = {
       suffix: 'cls',
       hasMetaFile: true,
     },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
+    },
   }),
   ApexPage: createMetadataObjectType({
     annotations: {
@@ -185,6 +189,9 @@ export const mockTypes = {
       dirName: 'pages',
       suffix: 'page',
       hasMetaFile: true,
+    },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
     },
   }),
   ApexTrigger: createMetadataObjectType({
@@ -205,6 +212,9 @@ export const mockTypes = {
       hasMetaFile: true,
       dirName: 'components',
       suffix: 'component',
+    },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
     },
   }),
   AuraDefinitionBundle: createMetadataObjectType({
@@ -234,6 +244,9 @@ export const mockTypes = {
       dirName: 'staticresources',
       suffix: 'resource',
       hasMetaFile: true,
+    },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
     },
   }),
   LightningComponentBundle: createMetadataObjectType({
@@ -322,6 +335,18 @@ export const mockTypes = {
       metadataType: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
       dirName: 'workflows',
       suffix: 'workflow',
+    },
+  }),
+  WorkflowRule: createMetadataObjectType({
+    annotations: {
+      metadataType: WORKFLOW_RULE_METADATA_TYPE,
+      dirName: 'workflows',
+      suffix: 'workflow',
+    },
+    fields: {
+      active: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
     },
   }),
 
@@ -739,13 +764,13 @@ export const mockTypes = {
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
-        [constants.CPQ_INDEX_FIELD]: {
-          refType: BuiltinTypes.NUMBER,
-          annotations: {
-            [FIELD_ANNOTATIONS.QUERYABLE]: true,
-            [FIELD_ANNOTATIONS.CREATABLE]: true,
-            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-          },
+      },
+      [constants.CPQ_INDEX_FIELD]: {
+        refType: BuiltinTypes.NUMBER,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
     },

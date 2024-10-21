@@ -398,13 +398,13 @@ describe('XML Transformer', () => {
       })
 
       it('should transform zip to MetadataInfo', async () => {
-        const values = await fromRetrieveResult(
-          retrieveResult,
-          fileProperties,
-          new Set(['ApexClass']),
-          new Set(['ApexClass']),
+        const values = await fromRetrieveResult({
+          zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+          fileProps: fileProperties,
+          typesWithMetaFile: new Set(['ApexClass']),
+          typesWithContent: new Set(['ApexClass']),
           fetchProfile,
-        )
+        })
         expect(values).toHaveLength(1)
         const [apex] = values
         expect(apex.file).toEqual(fileProperties[0])
@@ -458,13 +458,13 @@ describe('XML Transformer', () => {
       })
 
       it('should transform zip to MetadataInfo', async () => {
-        const values = await fromRetrieveResult(
-          retrieveResult,
-          fileProperties,
-          new Set(['ApexClass']),
-          new Set(['ApexClass']),
+        const values = await fromRetrieveResult({
+          zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+          fileProps: fileProperties,
+          typesWithMetaFile: new Set(['ApexClass']),
+          typesWithContent: new Set(['ApexClass']),
           fetchProfile,
-        )
+        })
         expect(values).toHaveLength(1)
         const [apex] = values
         expect(apex.file).toEqual(fileProperties[0])
@@ -531,13 +531,13 @@ describe('XML Transformer', () => {
           ]),
         }
 
-        const values = await fromRetrieveResult(
-          retrieveResult,
-          fileProperties,
-          new Set(['EmailTemplate', 'EmailFolder']),
-          new Set(['EmailTemplate']),
+        const values = await fromRetrieveResult({
+          zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+          fileProps: fileProperties,
+          typesWithMetaFile: new Set(['EmailTemplate', 'EmailFolder']),
+          typesWithContent: new Set(['EmailTemplate']),
           fetchProfile,
-        )
+        })
         emailFolder = values.find(value => value.file.type === 'EmailFolder')?.values
         emailTemplate = values.find(value => value.file.type === 'EmailTemplate')?.values
       })
@@ -627,13 +627,14 @@ describe('XML Transformer', () => {
 
         it('should transform zip to MetadataInfo', async () => {
           const fileProperties = createFileProperties()
-          const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]),
-            [fileProperties],
-            new Set(),
-            new Set(),
+          const retrieveResult = await createRetrieveResult([fileProperties])
+          const values = await fromRetrieveResult({
+            zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+            fileProps: [fileProperties],
+            typesWithMetaFile: new Set(),
+            typesWithContent: new Set(),
             fetchProfile,
-          )
+          })
           await verifyMetadataValues(
             values,
             fileProperties,
@@ -643,13 +644,14 @@ describe('XML Transformer', () => {
 
         it('should transform zip to MetadataInfo for instance with namespace', async () => {
           const fileProperties = createFileProperties('myNamespace')
-          const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]),
-            [fileProperties],
-            new Set(),
-            new Set(),
+          const retrieveResult = await createRetrieveResult([fileProperties])
+          const values = await fromRetrieveResult({
+            zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+            fileProps: [fileProperties],
+            typesWithMetaFile: new Set(),
+            typesWithContent: new Set(),
             fetchProfile,
-          )
+          })
           await verifyMetadataValues(
             values,
             fileProperties,
@@ -768,13 +770,14 @@ describe('XML Transformer', () => {
 
         it('should transform zip to MetadataInfo', async () => {
           const fileProperties = createFileProperties()
-          const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]),
-            [fileProperties],
-            new Set(),
-            new Set(),
+          const retrieveResult = await createRetrieveResult([fileProperties])
+          const values = await fromRetrieveResult({
+            zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+            fileProps: [fileProperties],
+            typesWithMetaFile: new Set(),
+            typesWithContent: new Set(),
             fetchProfile,
-          )
+          })
           await verifyMetadataValues(
             values,
             fileProperties,
@@ -784,13 +787,14 @@ describe('XML Transformer', () => {
 
         it('should transform zip to MetadataInfo for instance with namespace', async () => {
           const fileProperties = createFileProperties('myNamespace')
-          const values = await fromRetrieveResult(
-            await createRetrieveResult([fileProperties]),
-            [fileProperties],
-            new Set(),
-            new Set(),
+          const retrieveResult = await createRetrieveResult([fileProperties])
+          const values = await fromRetrieveResult({
+            zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+            fileProps: [fileProperties],
+            typesWithMetaFile: new Set(),
+            typesWithContent: new Set(),
             fetchProfile,
-          )
+          })
           await verifyMetadataValues(
             values,
             fileProperties,
@@ -824,7 +828,13 @@ describe('XML Transformer', () => {
         }
       })
       it('should return empty object', async () => {
-        const values = await fromRetrieveResult(retrieveResult, fileProperties, new Set(), new Set(), fetchProfile)
+        const values = await fromRetrieveResult({
+          zip: await new JSZip().loadAsync(Buffer.from(retrieveResult.zipFile, 'base64')),
+          fileProps: fileProperties,
+          typesWithMetaFile: new Set(),
+          typesWithContent: new Set(),
+          fetchProfile,
+        })
         expect(values).toContainEqual(
           expect.objectContaining({
             values: expect.objectContaining({ fullName: 'MyReportType' }),

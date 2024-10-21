@@ -175,7 +175,9 @@ export const adapter: Adapter = {
       return { success: false, errors: [err.message ?? err] }
     }
   },
-  loadElementsFromFolder,
+  adapterFormat: {
+    loadElementsFromFolder,
+  },
   getCustomReferences: combineCustomReferenceGetters(
     _.mapValues(customReferenceHandlers, handler => handler.findWeakReferences),
   ),

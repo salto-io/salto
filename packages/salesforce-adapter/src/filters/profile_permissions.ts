@@ -31,7 +31,7 @@ import {
   metadataAnnotationTypes,
   MetadataTypeAnnotations,
 } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
 import { apiNameSync, isInstanceOfTypeChangeSync, isMasterDetailField } from './utils'
 
@@ -118,7 +118,7 @@ const addMissingPermissions = (
  * Do the same with added fields and fieldPermissions.
  * No reason to handle deleted Profiles.
  */
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config, client }) => {
   let originalProfileChangesByName: Record<
     string,
     AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
@@ -127,6 +127,11 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   return {
     name: 'profilePermissionsFilter',
     preDeploy: async changes => {
+      if (client === undefined) {
+        // We don't want to add extra permissions in the SFDX flow.
+        return
+      }
+
       const allAdditions = changes.filter(isAdditionChange)
 
       const newCustomObjects = (await awu(allAdditions)

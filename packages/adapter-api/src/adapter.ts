@@ -186,6 +186,23 @@ export type ConfigCreator = {
   getConfig: (options?: InstanceElement) => Promise<InstanceElement>
 }
 
+export type IsInitializedFolderArgs = {
+  baseDir: string
+}
+
+export type IsInitializedFolderResult = {
+  result: boolean
+  errors: ReadonlyArray<SaltoError>
+}
+
+export type InitFolderArgs = {
+  baseDir: string
+}
+
+export type InitFolderResult = {
+  errors: ReadonlyArray<SaltoError>
+}
+
 export type LoadElementsFromFolderArgs = {
   baseDir: string
 } & AdapterBaseContext
@@ -235,6 +252,13 @@ export type ReferenceInfo = {
 
 export type GetCustomReferencesFunc = (elements: Element[], adapterConfig?: InstanceElement) => Promise<ReferenceInfo[]>
 
+export type AdapterFormat = {
+  isInitializedFolder?: (args: IsInitializedFolderArgs) => Promise<IsInitializedFolderResult>
+  initFolder?: (args: InitFolderArgs) => Promise<InitFolderResult>
+  loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
+  dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
+}
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
@@ -242,9 +266,8 @@ export type Adapter = {
   configType?: ObjectType
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
-  loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
-  dumpElementsToFolder?: (args: DumpElementsToFolderArgs) => Promise<DumpElementsResult>
   getAdditionalReferences?: GetAdditionalReferencesFunc
+  adapterFormat?: AdapterFormat
   getCustomReferences?: GetCustomReferencesFunc
 }
 

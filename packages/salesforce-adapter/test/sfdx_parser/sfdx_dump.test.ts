@@ -5,10 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import fs from 'fs'
 import path from 'path'
+import { collections } from '@salto-io/lowerdash'
 import { exists, readTextFile } from '@salto-io/file'
-import { setupTmpDir } from '@salto-io/test-utils'
 import {
   CORE_ANNOTATIONS,
   DumpElementsResult,
@@ -17,23 +16,17 @@ import {
   ObjectType,
   ReferenceExpression,
   toChange,
+  Value,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { dumpElementsToFolder } from '../../src/sfdx_parser/sfdx_dump'
 import { mockTypes, mockDefaultValues } from '../mock_elements'
-import { createInstanceElement, createMetadataObjectType, Types } from '../../src/transformers/transformer'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { createCustomObjectType } from '../utils'
-import { WORKFLOW_RULE_METADATA_TYPE } from '../../src/constants'
+import { xmlToValues } from '../../src/transformers/xml_transformer'
+import { setupTmpProject } from './utils'
 
 describe('dumpElementsToFolder', () => {
-  const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
-    const tmpDir = setupTmpDir('all')
-    beforeAll(async () => {
-      await fs.promises.cp(path.join(__dirname, 'test_sfdx_project'), tmpDir.name(), { recursive: true })
-    })
-    return tmpDir
-  }
-
   const getExistingCustomObject = (): ObjectType =>
     createCustomObjectType('Test__c', {
       fields: {
@@ -74,6 +67,7 @@ describe('dumpElementsToFolder', () => {
 `)
       })
     })
+
     describe('when deleting an existing instance', () => {
       const project = setupTmpProject()
       let dumpResult: DumpElementsResult
@@ -114,31 +108,73 @@ describe('dumpElementsToFolder', () => {
         // Here we use an example of a WorkflowRule that is dumped into a Workflow xml
         // Doing this makes us go through different code paths in SFDX, specifically, the flow that requires "readFileSync"
         // to be implemented in our SyncZipTreeContainer
-        const workflowRuleType = createMetadataObjectType({
-          annotations: { metadataType: WORKFLOW_RULE_METADATA_TYPE },
-        })
-        const workflowRule = createInstanceElement(
+        const newWorkflowRule = createInstanceElement(
           { fullName: 'Test__c.Rule', actions: [], active: false },
-          workflowRuleType,
+          mockTypes.WorkflowRule,
           undefined,
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
         )
+        const existingWorkflowRules = [
+          createInstanceElement(
+            {
+              fullName: 'Test__c.TestRule1',
+              active: false,
+              formula: 'One__c > 2',
+              triggerType: 'onCreateOrTriggeringUpdate',
+            },
+            mockTypes.WorkflowRule,
+            undefined,
+            { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
+          ),
+          createInstanceElement(
+            {
+              fullName: 'Test__c.TestRule2',
+              active: false,
+              formula: 'One__c < 10',
+              triggerType: 'onCreateOrTriggeringUpdate',
+            },
+            mockTypes.WorkflowRule,
+            undefined,
+            { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Test__c'))] },
+          ),
+        ]
         dumpResult = await dumpElementsToFolder({
           baseDir: project.name(),
-          changes: [toChange({ after: workflowRule })],
-          elementsSource: buildElementsSourceFromElements([workflowRuleType, workflowRule]),
+          changes: [toChange({ after: newWorkflowRule })],
+          elementsSource: buildElementsSourceFromElements([
+            mockTypes.WorkflowRule,
+            newWorkflowRule,
+            ...existingWorkflowRules,
+          ]),
         })
       })
       it('should apply all changes and have no errors', () => {
         expect(dumpResult.unappliedChanges).toHaveLength(0)
         expect(dumpResult.errors).toHaveLength(0)
       })
-      it('should create the parent XML', async () => {
-        await expect(
-          exists(path.join(project.name(), 'force-app/main/default/workflows/Test__c.workflow-meta.xml')),
-        ).resolves.toBeTrue()
+      describe('workflow xml content', () => {
+        let rules: Value[]
+        beforeAll(async () => {
+          const parentXmlPath = path.join(project.name(), 'force-app/main/default/workflows/Test__c.workflow-meta.xml')
+          await expect(exists(parentXmlPath)).resolves.toBeTrue()
+          const xmlContent = await readTextFile(parentXmlPath)
+          const values = xmlToValues(xmlContent, true)
+          rules = collections.array.makeArray(values.values.rules)
+        })
+        it('should add the instance to the parent XML', async () => {
+          expect(rules).toContainEqual(expect.objectContaining({ fullName: 'Rule' }))
+        })
+        it('should keep the existing nested instances from before', async () => {
+          expect(rules).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({ fullName: 'TestRule1' }),
+              expect.objectContaining({ fullName: 'TestRule2' }),
+            ]),
+          )
+        })
       })
     })
+
     describe('when modifying an existing nested instance', () => {
       const project = setupTmpProject()
       let dumpResult: DumpElementsResult

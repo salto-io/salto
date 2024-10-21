@@ -106,20 +106,13 @@ import omitStandardFieldsNonDeployableValuesFilter from './filters/omit_standard
 import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import extendTriggersMetadataFilter from './filters/extend_triggers_metadata'
+import profilesAndPermissionSetsBrokenPathsFilter from './filters/profiles_and_permission_sets_broken_paths'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import { getConfigFromConfigChanges } from './config_change'
-import {
-  LocalFilterCreator,
-  Filter,
-  FilterResult,
-  RemoteFilterCreator,
-  LocalFilterCreatorDefinition,
-  RemoteFilterCreatorDefinition,
-  FilterContext,
-} from './filter'
+import { Filter, FilterResult, FilterContext, FilterCreator } from './filter'
 import {
   addDefaults,
   apiNameSync,
@@ -177,107 +170,103 @@ const { isDefined } = values
 
 const log = logger(module)
 
-export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
-  { creator: waveStaticFilesFilter },
-  {
-    creator: createMissingInstalledPackagesInstancesFilter,
-    addsNewInformation: true,
-  },
-  { creator: settingsFilter, addsNewInformation: true },
+export const allFilters: Array<FilterCreator> = [
+  waveStaticFilesFilter,
+  createMissingInstalledPackagesInstancesFilter,
+  settingsFilter,
   // should run before customObjectsFilter
-  { creator: workflowFilter },
+  workflowFilter,
   // fetchFlowsFilter should run before flowFilter
-  { creator: flowsFilter, addsNewInformation: true },
+  flowsFilter,
   // customMetadataToObjectTypeFilter should run before customObjectsFromDescribeFilter
-  { creator: customMetadataToObjectTypeFilter },
+  customMetadataToObjectTypeFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
-  { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  customObjectsFromDescribeFilter,
   // customSettingsFilter depends on customObjectsFilter
-  { creator: customSettingsFilter, addsNewInformation: true },
-  { creator: customObjectsToObjectTypeFilter },
+  customSettingsFilter,
+  customObjectsToObjectTypeFilter,
   // organizationWideDefaults depends on customObjectsToObjectTypeFilter
-  { creator: organizationWideDefaults, addsNewInformation: true },
+  organizationWideDefaults,
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
-  { creator: customObjectsInstancesFilter, addsNewInformation: true },
-  { creator: removeFieldsAndValuesFilter },
-  { creator: removeRestrictionAnnotationsFilter },
+  customObjectsInstancesFilter,
+  removeFieldsAndValuesFilter,
+  removeRestrictionAnnotationsFilter,
   // addMissingIdsFilter should run after customObjectsFilter
-  { creator: addMissingIdsFilter, addsNewInformation: true },
-  { creator: customMetadataRecordsFilter },
-  { creator: layoutFilter },
+  addMissingIdsFilter,
+  customMetadataRecordsFilter,
+  layoutFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
-  { creator: profilePermissionsFilter },
+  profilePermissionsFilter,
   // emailTemplateFilter should run before convertMapsFilter
-  { creator: emailTemplateFilter },
+  emailTemplateFilter,
   // convertMapsFilter should run before profile fieldReferencesFilter
-  { creator: convertMapsFilter },
-  { creator: standardValueSetFilter, addsNewInformation: true },
-  { creator: flowFilter },
-  { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
-  { creator: cpqReferencableFieldReferencesFilter },
-  { creator: cpqCustomScriptFilter },
-  { creator: cpqLookupFieldsFilter },
+  convertMapsFilter,
+  standardValueSetFilter,
+  flowFilter,
+  customObjectInstanceReferencesFilter,
+  cpqReferencableFieldReferencesFilter,
+  cpqCustomScriptFilter,
+  cpqLookupFieldsFilter,
   // cpqRulesAndConditionsFilter depends on cpqReferencableFieldReferencesFilter
-  { creator: cpqRulesAndConditionsRefsFilter },
-  { creator: animationRulesFilter },
-  { creator: samlInitMethodFilter },
-  { creator: topicsForObjectsFilter },
-  { creator: globalValueSetFilter },
-  { creator: staticResourceFileExtFilter },
-  { creator: extendTriggersMetadataFilter, addsNewInformation: true },
-  { creator: profilePathsFilter, addsNewInformation: true },
-  { creator: territoryFilter },
-  { creator: elementsUrlFilter, addsNewInformation: true },
-  { creator: nestedInstancesAuthorInformation, addsNewInformation: true },
-  { creator: customObjectAuthorFilter, addsNewInformation: true },
-  { creator: dataInstancesAuthorFilter, addsNewInformation: true },
-  { creator: sharingRulesAuthorFilter, addsNewInformation: true },
-  { creator: hideReadOnlyValuesFilter },
-  { creator: currencyIsoCodeFilter },
-  { creator: splitCustomLabels },
-  { creator: xmlAttributesFilter },
-  { creator: minifyDeployFilter },
-  { creator: formulaDepsFilter },
+  cpqRulesAndConditionsRefsFilter,
+  animationRulesFilter,
+  samlInitMethodFilter,
+  topicsForObjectsFilter,
+  globalValueSetFilter,
+  staticResourceFileExtFilter,
+  extendTriggersMetadataFilter,
+  profilePathsFilter,
+  territoryFilter,
+  elementsUrlFilter,
+  nestedInstancesAuthorInformation,
+  customObjectAuthorFilter,
+  dataInstancesAuthorFilter,
+  sharingRulesAuthorFilter,
+  hideReadOnlyValuesFilter,
+  currencyIsoCodeFilter,
+  splitCustomLabels,
+  xmlAttributesFilter,
+  minifyDeployFilter,
+  formulaDepsFilter,
   // centralizeTrackingInfoFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
-  { creator: centralizeTrackingInfoFilter },
+  centralizeTrackingInfoFilter,
   // The following filters should remain last in order to make sure they fix all elements
-  { creator: convertListsFilter },
-  { creator: convertTypeFilter },
+  convertListsFilter,
+  convertTypeFilter,
   // should be after convertTypeFilter & convertMapsFilter and before profileInstanceSplitFilter
-  { creator: enumFieldPermissionsFilter },
+  enumFieldPermissionsFilter,
   // should run after convertListsFilter
-  { creator: replaceFieldValuesFilter },
-  { creator: valueToStaticFileFilter },
-  { creator: fieldReferencesFilter },
+  replaceFieldValuesFilter,
+  valueToStaticFileFilter,
+  fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
-  { creator: referenceAnnotationsFilter },
+  referenceAnnotationsFilter,
   // foreignLeyReferences should come after referenceAnnotationsFilter
-  { creator: foreignKeyReferencesFilter },
+  foreignKeyReferencesFilter,
   // extraDependenciesFilter should run after addMissingIdsFilter
-  { creator: extraDependenciesFilter, addsNewInformation: true },
-  { creator: installedPackageGeneratedDependencies },
-  { creator: omitStandardFieldsNonDeployableValuesFilter },
+  extraDependenciesFilter,
+  installedPackageGeneratedDependencies,
+  omitStandardFieldsNonDeployableValuesFilter,
   // taskAndEventCustomFields should run before customTypeSplit
-  { creator: taskAndEventCustomFields },
-  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter
-  { creator: customTypeSplit },
-  { creator: mergeProfilesWithSourceValuesFilter },
-  // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter
-  { creator: profileInstanceSplitFilter },
+  taskAndEventCustomFields,
+  mergeProfilesWithSourceValuesFilter,
+  // profilesAndPermissionSetsBrokenPathsFilter should run after mergeProfilesWithSourceValuesFilter
+  profilesAndPermissionSetsBrokenPathsFilter,
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
+  customTypeSplit,
+  // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
+  profileInstanceSplitFilter,
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
-  { creator: removeUnixTimeZeroFilter },
-  { creator: metadataInstancesAliasesFilter },
-  { creator: importantValuesFilter },
-  { creator: hideTypesFolder },
-  { creator: generatedDependenciesFilter },
-  { creator: flowCoordinatesFilter },
+  removeUnixTimeZeroFilter,
+  metadataInstancesAliasesFilter,
+  importantValuesFilter,
+  hideTypesFolder,
+  generatedDependenciesFilter,
+  flowCoordinatesFilter,
   // createChangedAtSingletonInstanceFilter should run last
-  { creator: changedAtSingletonFilter },
+  changedAtSingletonFilter,
 ]
-
-// By default we run all filters and provide a client
-const defaultFilters = allFilters.map(({ creator }) => creator)
 
 export interface SalesforceAdapterParams {
   // Max items to fetch in one retrieve request
@@ -296,7 +285,7 @@ export interface SalesforceAdapterParams {
   nestedMetadataTypes?: Record<string, NestedMetadataTypeInfo>
 
   // Filters to deploy to all adapter operations
-  filterCreators?: Array<LocalFilterCreator | RemoteFilterCreator>
+  filterCreators?: Array<FilterCreator>
 
   // client to use
   client: SalesforceClient
@@ -463,7 +452,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = NESTED_METADATA_TYPES,
-    filterCreators = defaultFilters,
+    filterCreators = allFilters,
     client,
     getElemIdFunc,
     elementsSource,

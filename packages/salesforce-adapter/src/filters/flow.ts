@@ -7,7 +7,7 @@
  */
 import { Element, ElemID, getRestriction } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 
 export const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'FlowMetadataValue')
@@ -15,7 +15,7 @@ export const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'FlowMetadataValue')
 /**
  * Create filter that handles flow type/instances corner case.
  */
-const filterCreator: LocalFilterCreator = () => ({
+const filterCreator: FilterCreator = () => ({
   name: 'flowFilter',
   /**
    * Upon fetch remove restriction values from flowMetadataValue.name.

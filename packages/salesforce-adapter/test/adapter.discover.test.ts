@@ -239,6 +239,50 @@ describe('SalesforceAdapter fetch', () => {
       }
     }
 
+    describe('When a managed Instance with no namespace prefix has the same fullName as another Instance', () => {
+      const NAMESPACE1 = 'namespace1'
+      const NAMESPACE2 = 'namespace2'
+      beforeEach(() => {
+        mockMetadataType({ xmlName: 'Layout' }, { valueTypeFields: [] }, [
+          {
+            props: {
+              fullName: 'Account-Account Layout',
+              namespacePrefix: NAMESPACE1,
+            },
+            values: {
+              fullName: 'Account-Account Layout',
+            },
+          },
+          {
+            props: {
+              fullName: 'Account-Account Layout',
+              namespacePrefix: NAMESPACE2,
+            },
+            values: {
+              fullName: 'Account-Account Layout',
+            },
+          },
+          {
+            props: {
+              fullName: 'Account-Account Layout',
+            },
+            values: {
+              fullName: 'Account-Account Layout',
+            },
+          },
+        ])
+      })
+      it('should attempt to retrieve all the Instances', async () => {
+        await adapter.fetch(mockFetchOpts)
+        const request = connection.metadata.retrieve.mock.calls[0][0]
+        expect(request?.unpackaged?.types?.find(v => v.name === 'Layout')?.members).toIncludeSameMembers([
+          'Account-Account Layout',
+          `Account-${NAMESPACE1}__Account Layout`,
+          `Account-${NAMESPACE2}__Account Layout`,
+        ])
+      })
+    })
+
     describe('profiles fetch with changes detection', () => {
       const DATE = '2023-01-12T00:00:00.000Z'
       const GREATER_DATE = '2023-02-12T00:00:00.000Z'
@@ -264,14 +308,14 @@ describe('SalesforceAdapter fetch', () => {
                           </Profile>`,
         },
         [APEX_CLASS_FULL_NAME]: {
-          zipFileName: `apexClass/${APEX_CLASS_FULL_NAME}.apex_class`,
+          zipFileName: `apexClass/${APEX_CLASS_FULL_NAME}.cls`,
           zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
                           <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
                               <apiVersion>58.0</apiVersion>
                           </ApexClass>`,
         },
         [ANOTHER_APEX_CLASS_FULL_NAME]: {
-          zipFileName: `apexClass/${ANOTHER_APEX_CLASS_FULL_NAME}.apex_class`,
+          zipFileName: `apexClass/${ANOTHER_APEX_CLASS_FULL_NAME}.cls`,
           zipFileContent: `<?xml version="1.0" encoding="UTF-8"?>
                           <ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
                               <apiVersion>58.0</apiVersion>
@@ -371,11 +415,19 @@ describe('SalesforceAdapter fetch', () => {
               path: `unpackaged/${testData.apexClass.zipFileName}-meta.xml`,
               content: testData.apexClass.zipFileContent,
             })
+            zipFiles.push({
+              path: `unpackaged/${testData.apexClass.zipFileName}`,
+              content: 'Content',
+            })
           }
           if (fullNamesByType[APEX_CLASS_METADATA_TYPE]?.includes(ANOTHER_APEX_CLASS_FULL_NAME)) {
             zipFiles.push({
               path: `unpackaged/${testData.anotherApexClass.zipFileName}-meta.xml`,
               content: testData.anotherApexClass.zipFileContent,
+            })
+            zipFiles.push({
+              path: `unpackaged/${testData.anotherApexClass.zipFileName}`,
+              content: 'Content',
             })
           }
           if (fullNamesByType[constants.CUSTOM_METADATA]?.includes(CUSTOM_METADATA_FULL_NAME)) {
@@ -937,7 +989,8 @@ describe('SalesforceAdapter fetch', () => {
           1 /* value set */ +
           2 /* field dependency & value settings */ +
           7 /* range restrictions */ +
-          2 /* ChangedAtSingleton type & instance */,
+          2 /* ChangedAtSingleton type & instance */ +
+          1 /* ProfilesAndPermissionSetsBrokenPaths */,
       )
 
       const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
@@ -1365,20 +1418,18 @@ describe('SalesforceAdapter fetch', () => {
 
         // Validates `fromRetrieveResult` is called with correct file properties.
         expect(fromRetrieveResultSpy).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.arrayContaining([
-            expect.objectContaining({
-              fileName: 'layouts/Order-Order Layout.layout',
-              fullName: 'Order-Order Layout',
-            }),
-            expect.objectContaining({
-              fileName: 'layouts/SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout.layout',
-              fullName: 'SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout',
-            }),
-          ]),
-          expect.anything(),
-          expect.anything(),
-          expect.anything(),
+          expect.objectContaining({
+            fileProps: expect.arrayContaining([
+              expect.objectContaining({
+                fileName: 'layouts/Order-Order Layout.layout',
+                fullName: 'Order-Order Layout',
+              }),
+              expect.objectContaining({
+                fileName: 'layouts/SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout.layout',
+                fullName: 'SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout',
+              }),
+            ]),
+          }),
         )
       })
     })
@@ -2520,22 +2571,20 @@ public class LargeClass${index} {
         await adapter.fetch(mockFetchOpts)
         expect(fromRetrieveResultSpy).toHaveBeenCalledTimes(1)
         expect(fromRetrieveResultSpy).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.arrayContaining([
-            // unmodified file properties of instance from the org namespace
-            expect.objectContaining({
-              fileName: 'tests/OrgInstance.test',
-              fullName: 'OrgInstance',
-            }),
-            // modified file properties of instance from the installed package namespace
-            expect.objectContaining({
-              fileName: `tests/${INSTALLED_PACKAGE_NAMESPACE}__InstalledInstance.test`,
-              fullName: `${INSTALLED_PACKAGE_NAMESPACE}__InstalledInstance`,
-            }),
-          ]),
-          expect.anything(),
-          expect.anything(),
-          expect.anything(),
+          expect.objectContaining({
+            fileProps: expect.arrayContaining([
+              // unmodified file properties of instance from the org namespace
+              expect.objectContaining({
+                fileName: 'tests/OrgInstance.test',
+                fullName: 'OrgInstance',
+              }),
+              // modified file properties of instance from the installed package namespace
+              expect.objectContaining({
+                fileName: `tests/${INSTALLED_PACKAGE_NAMESPACE}__InstalledInstance.test`,
+                fullName: `${INSTALLED_PACKAGE_NAMESPACE}__InstalledInstance`,
+              }),
+            ]),
+          }),
         )
       })
     })
@@ -2577,13 +2626,13 @@ describe('Fetch via retrieve API', () => {
   const generateMockData = (instanceDefs: MockInstanceDef[]): { fileProps: FileProperties[]; zipFiles: ZipFile[] } => {
     const fileProps = instanceDefs.map(({ type, instanceName }) =>
       mockFileProperties({
-        type: type.elemID.typeName,
+        type: type.annotations.metadataType,
         fullName: instanceName,
       }),
     )
 
     const zipFiles = _.zip(fileProps, instanceDefs)
-      .map(([fileProp, instanceDef]) => {
+      .flatMap(([fileProp, instanceDef]) => {
         if (instanceDef?.excludeFromResult) {
           return undefined
         }
@@ -2591,13 +2640,21 @@ describe('Fetch via retrieve API', () => {
           // can't happen
           return { path: '', content: '' }
         }
-        return {
+        const metaFile = {
           path: createFilePath(fileProp.fileName, instanceDef.type),
           content: `<?xml version="1.0" encoding="UTF-8"?>
           <${fileProp.type} xmlns="http://soap.sforce.com/2006/04/metadata">
               <apiVersion>57.0</apiVersion>
           </${fileProp.type}>`,
         }
+        const contentFile =
+          instanceDef.type.fields.content === undefined
+            ? undefined
+            : {
+                path: `unpackaged/${fileProp.fileName}`,
+                content: 'Content',
+              }
+        return [metaFile, contentFile].filter(values.isDefined)
       })
       .filter(isDefined)
     return {
@@ -2694,10 +2751,10 @@ describe('Fetch via retrieve API', () => {
         expect(elements).toHaveLength(2)
         expect(elements).toIncludeAllPartialMembers([
           {
-            elemID: new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'),
+            elemID: mockTypes.ApexClass.elemID.createNestedID('instance', 'SomeApexClass'),
           },
           {
-            elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account'),
+            elemID: mockTypes.CustomObject.elemID.createNestedID('instance', 'Account'),
           },
         ])
       })

@@ -246,9 +246,11 @@ const closeTmpConnection = async (
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> =>
   log.timeDebug(
     async () => {
+      let didClose = false
       const persistentConnection = persistentDBConnections[location]
       if (await persistentConnection) {
         await closeConnection(location, persistentConnection, persistentDBConnections)
+        didClose = true
       }
       const tmpConnections = tmpDBConnections[location]
       if (tmpConnections) {
@@ -256,10 +258,12 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
           await closeTmpConnection(location, tmpLoc, tmpCon)
         })
         delete tmpDBConnections[location]
+        didClose = true
       }
       const readOnlyConnection = readonlyDBConnections[location]
       if (await readOnlyConnection) {
         await closeConnection(location, readOnlyConnection, readonlyDBConnections)
+        didClose = true
       }
       const roConnectionsPerMap = readonlyDBConnectionsPerRemoteMap[location]
       if (roConnectionsPerMap) {
@@ -267,9 +271,12 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
           await closeDanglingConnection(conn)
         })
         delete readonlyDBConnectionsPerRemoteMap[location]
+        didClose = true
         log.debug('closed read-only connections per remote map of location %s', location)
       }
-      remoteMapLocations.return(location)
+      if (didClose) {
+        remoteMapLocations.return(location)
+      }
     },
     'closeRemoteMapsOfLocation with location %s',
     location,

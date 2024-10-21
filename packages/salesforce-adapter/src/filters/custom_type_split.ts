@@ -10,7 +10,7 @@ import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isCustom, isCustomObject, apiName } from '../transformers/transformer'
-import { LocalFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 import { OBJECT_FIELDS_PATH } from '../constants'
 import { isCustomMetadataRecordType } from './utils'
@@ -72,7 +72,7 @@ const customObjectToSplitElements = async (
   return _.concat(fieldObjects, annotationsObject)
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'customTypeSplit',
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements)

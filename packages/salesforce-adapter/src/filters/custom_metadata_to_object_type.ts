@@ -20,7 +20,7 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterContext, LocalFilterCreator } from '../filter'
+import { FilterContext, FilterCreator } from '../filter'
 import { CUSTOM_METADATA, CUSTOM_METADATA_META_TYPE, CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT } from '../constants'
 import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
 import { apiName, createMetaType, isMetadataObjectType } from '../transformers/transformer'
@@ -70,7 +70,7 @@ const getApiNameOfRelatedChange = async (change: Change<ObjectType | Field>): Pr
   return isField(element) ? apiName(element.parent) : apiName(element)
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config }) => {
   let groupedOriginalChangesByApiName: Record<string, Change[]>
   return {
     name: 'customMetadataToObjectTypeFilter',

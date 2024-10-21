@@ -9,3 +9,4 @@
 export { transform as transformGuideItem } from './guide_adjuster'
 export { transform as transformSectionItem } from './section_adjuster'
 export { transform as transformQueueItem } from './queue_adjuster'
+export { transform as transformTriggerItem } from './trigger_adjuster'

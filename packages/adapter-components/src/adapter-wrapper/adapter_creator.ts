@@ -143,6 +143,7 @@ export const createAdapter = <
           referenceResolver: resolverCreator,
           filterCreators: Object.values(
             (customizeFilterCreators ?? createCommonFilters)({
+              adapterName,
               config,
               definitions,
               fieldReferenceResolverCreator: resolverCreator,

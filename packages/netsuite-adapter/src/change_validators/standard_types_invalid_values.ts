@@ -45,7 +45,8 @@ const invalidValues: InvalidValue[] = [
       detailedMessage:
         "Can't deploy a role with a 'subsidiary option' value set to 'SELECTED', due to NetSuite's SDF restrictions.\n" +
         "To continue with this deployment, you can edit this change in Salto and remove the whole row or replace 'SELECTED' with a valid value.\n" +
-        'After the Salto deployment succeeds, change the value back directly in the NetSuite UI.',
+        'After the Salto deployment succeeds, change the value back directly in the NetSuite UI.\n' +
+        'To learn how to edit NACL files, go to https://help.salto.io/en/articles/8553792-editing-files-during-deployments',
     },
   },
 ]

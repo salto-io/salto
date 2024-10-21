@@ -20,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { RemoteFilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import {
   apiNameSync,
   buildElementsSourceForFetch,
@@ -30,8 +30,8 @@ import {
   referenceFieldTargetTypes,
   safeApiName,
 } from './utils'
-import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
-import { API_NAME, ORGANIZATION_SETTINGS, RECORDS_PATH, SALESFORCE, SETTINGS_PATH } from '../constants'
+import { getSObjectFieldElement } from '../transformers/transformer'
+import { API_NAME, getTypePath, ORGANIZATION_SETTINGS, RECORDS_PATH, SALESFORCE, SETTINGS_PATH } from '../constants'
 import SalesforceClient from '../client/client'
 import { FetchProfile } from '../types'
 
@@ -213,13 +213,17 @@ const populateCustomObjects = ({
 const FILTER_NAME = 'organizationSettings'
 export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
-const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   name: FILTER_NAME,
   remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async elements => {
+      if (client === undefined) {
+        return
+      }
+
       const objectType = createOrganizationType()
       const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
       await enrichTypeWithFields(client, objectType, fieldsToIgnore, config.fetchProfile)

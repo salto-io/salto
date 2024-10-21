@@ -19,6 +19,7 @@ import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 import { bundleType } from '../../src/types/bundle_type'
+import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('add important values filter', () => {
   let workflow: ObjectType
@@ -56,6 +57,7 @@ describe('add important values filter', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      ...getTypesToInternalId([]),
     }
     optsWithoutImportantValues = {
       ...defaultOpts,

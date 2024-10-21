@@ -9,7 +9,7 @@ import _ from 'lodash'
 import path from 'path'
 import { isSubDirectory, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
-import { AdapterFormat, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
+import { AdapterFormat, Change, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
 import { collections, objects, promises, values } from '@salto-io/lowerdash'
@@ -35,13 +35,44 @@ import {
   SfProject,
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
-import { UNSUPPORTED_TYPES } from './sfdx_parser'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
 
 const FILE_DELETE_CONCURRENCY = 100
+
+export const UNSUPPORTED_TYPES = new Set([
+  // Salto uses non-standard type names here (SFDX names them all "Settings", we have a separate type for each one)
+  // This causes us to always think the settings in the project need to be deleted
+  'Settings',
+  // For documents with a file extension (e.g. bla.txt) the SF API returns their fullName with the extension (so "bla.txt")
+  // but the SFDX convert code loads them as a component with a fullName without the extension (so "bla").
+  // This causes us to always think documents with an extension in the project need to be deleted
+  'Document',
+  'DocumentFolder',
+  // Custom labels are separate instances (CustomLabel) that are all in the same xml file
+  // Unfortunately, unlike other types like this (e.g - workflow, sharing rules), the SFDX code does not handle deleting
+  // instances of labels from the "merged" XML, so until we implement proper deletion support, we exclude this type
+  'CustomLabels',
+  // Note - we exclude the type name of the internal type here as well even though it cannot be a SFDX component type
+  // we do this because we need to exclude changes in dumpElementsToFolder as well and in the workspace we do model each CustomLabel
+  // as a separate instance
+  'CustomLabel',
+])
+
+const isSupportedMetadataChange = (change: Change): boolean => {
+  const element = getChangeData(change)
+  const metadataTypeName = metadataTypeSync(element)
+  if (UNSUPPORTED_TYPES.has(metadataTypeName)) {
+    return false
+  }
+  if (UNSUPPORTED_TYPES.has('Settings') && element.elemID.isConfigInstance() && metadataTypeName.endsWith('Settings')) {
+    // Settings have all kinds of metadata type names, but they all end with "Settings"
+    return false
+  }
+  return true
+}
 
 const getManifestComponentsToDelete = async (tree: TreeContainer, pkg: DeployPackage): Promise<Set<string>> => {
   const deletionsFilename = `${PACKAGE}/${pkg.getDeletionsPackageName()}`
@@ -112,13 +143,14 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       (isField(data) && isCustomObjectSync(data.parent))
     )
   })
-  const unappliedChanges = typeChanges.concat(customObjectInstanceChanges)
+  const [supportedMetadataChanges, unsupportedMetadataChanges] = _.partition(metadataChanges, isSupportedMetadataChange)
+  const unappliedChanges = typeChanges.concat(customObjectInstanceChanges).concat(unsupportedMetadataChanges)
 
   const fetchProfile = buildFetchProfile({
     fetchParams: {},
   })
 
-  const resolvedChanges = await awu(metadataChanges)
+  const resolvedChanges = await awu(supportedMetadataChanges)
     .map(change => resolveChangeElement(change, getLookUpName(fetchProfile)))
     .toArray()
   const filterRunner = filter.filtersRunner(

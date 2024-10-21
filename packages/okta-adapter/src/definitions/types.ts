@@ -8,7 +8,7 @@
 export type StatusActionName = 'activate' | 'deactivate'
 export type AdditionalAction = StatusActionName
 export type ClientOptions = 'main' | 'private'
-type PaginationOptions = 'cursorHeader' | 'cursor'
+type PaginationOptions = 'cursorHeader' | 'cursor' | 'usersCursorHeader'
 export type OktaOptions = {
   clientOptions: ClientOptions
   paginationOptions: PaginationOptions

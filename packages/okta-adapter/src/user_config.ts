@@ -25,6 +25,7 @@ export type OktaUserFetchConfig = definitions.UserFetchConfig<{
   includeGroupMemberships?: boolean
   includeProfileMappingProperties?: boolean
   getUsersStrategy?: GetUsersStrategy
+  maxUsersResults?: number
 }
 
 export type OktaClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }
@@ -111,6 +112,7 @@ const additionalFetchConfigFields = {
     },
   },
   isClassicOrg: { refType: BuiltinTypes.BOOLEAN },
+  maxUsersResults: { refType: BuiltinTypes.NUMBER },
 }
 
 export const configType = definitions.createUserConfigType({

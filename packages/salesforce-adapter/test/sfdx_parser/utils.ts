@@ -5,8 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import fs from 'fs'
+import path from 'path'
+import { setupTmpDir } from '@salto-io/test-utils'
 
-export { transform as transformGuideItem } from './guide_adjuster'
-export { transform as transformSectionItem } from './section_adjuster'
-export { transform as transformQueueItem } from './queue_adjuster'
-export { transform as transformTriggerItem } from './trigger_adjuster'
+export const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
+  const tmpDir = setupTmpDir('all')
+  beforeAll(async () => {
+    await fs.promises.cp(path.join(__dirname, 'test_sfdx_project'), tmpDir.name(), { recursive: true })
+  })
+  return tmpDir
+}

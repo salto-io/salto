@@ -9,13 +9,14 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { calculatePatch, syncWorkspaceToFolder } from '@salto-io/core'
+import { calculatePatch, syncWorkspaceToFolder, initFolder, isInitializedFolder } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand, createCommandGroupDef } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
 import { CliExitCode, CliOutput } from '../types'
 import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
 import { formatFetchWarnings, formatSyncToWorkspaceErrors } from '../formatter'
+import { getUserBooleanInput } from '../callbacks'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -161,13 +162,34 @@ const applyPatchCmd = createWorkspaceCommand({
 type SyncWorkspaceToFolderArgs = {
   toDir: string
   accountName: 'salesforce'
+  force: boolean
 }
 export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceToFolderArgs> = async ({
   workspace,
   input,
   output,
 }) => {
-  const { accountName, toDir } = input
+  const { accountName, toDir, force } = input
+  const adapterName = workspace.getServiceFromAccountName(accountName)
+  const initializedResult = await isInitializedFolder({ adapterName, baseDir: toDir })
+  if (initializedResult.errors.length > 0) {
+    outputLine(formatSyncToWorkspaceErrors(initializedResult.errors), output)
+    return CliExitCode.AppError
+  }
+
+  if (!initializedResult.result) {
+    if (force || (await getUserBooleanInput('The folder is no initialized for the adapter format, initialize?'))) {
+      outputLine(`Initializing adapter format folder at ${toDir}`, output)
+      const initResult = await initFolder({ adapterName, baseDir: toDir })
+      if (initResult.errors.length > 0) {
+        outputLine(formatSyncToWorkspaceErrors(initResult.errors), output)
+        return CliExitCode.AppError
+      }
+    } else {
+      outputLine('Folder not initialized for adapter format, aborting', output)
+      return CliExitCode.UserInputError
+    }
+  }
 
   outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
   const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir })
@@ -198,6 +220,13 @@ const syncToWorkspaceCmd = createWorkspaceCommand({
         description: 'The name of the account to synchronize to the project',
         choices: ['salesforce'],
         default: 'salesforce',
+      },
+      {
+        name: 'force',
+        type: 'boolean',
+        alias: 'f',
+        description: 'Initialize the folder for adapter format if needed',
+        default: false,
       },
     ],
   },

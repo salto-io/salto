@@ -12,7 +12,7 @@ import { filter } from '@salto-io/adapter-utils'
 import type { FileProperties } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, FetchResult, LoadElementsFromFolderArgs } from '@salto-io/adapter-api'
+import { AdapterFormat, BuiltinTypes } from '@salto-io/adapter-api'
 import { fromRetrieveResult, isComplexType, METADATA_XML_SUFFIX } from '../transformers/xml_transformer'
 import {
   createInstanceElement,
@@ -36,9 +36,6 @@ export const UNSUPPORTED_TYPES = new Set([
   // Salto uses non-standard type names here (SFDX names them all "Settings", we have a separate type for each one)
   // This causes us to always think the settings in the project need to be deleted
   'Settings',
-  // SFDX convert does not preserve the order of values on its own, so currently every time we dump a profile
-  // the file changes because of random order changes
-  'Profile',
   // For documents with a file extension (e.g. bla.txt) the SF API returns their fullName with the extension (so "bla.txt")
   // but the SFDX convert code loads them as a component with a fullName without the extension (so "bla").
   // This causes us to always think documents with an extension in the project need to be deleted
@@ -91,10 +88,8 @@ const getXmlDestination = (component: SourceComponent): string | undefined => {
   return xmlDestination
 }
 
-export const loadElementsFromFolder = async ({
-  baseDir,
-  elementsSource,
-}: LoadElementsFromFolderArgs): Promise<FetchResult> => {
+type LoadElementsFromFolderFunc = NonNullable<AdapterFormat['loadElementsFromFolder']>
+export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseDir, elementsSource }) => {
   try {
     // Load current SFDX project
     // SFDX code has some issues when working with relative paths (some custom object files may get the wrong path)

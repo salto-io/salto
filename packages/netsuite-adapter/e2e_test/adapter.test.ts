@@ -939,7 +939,7 @@ describe('Netsuite adapter E2E with real account', () => {
         ])
         await createAdditionalFiles(projectPath, [ADDITINAL_NEW_FILE, ADDITINAL_EXISTING_FILE])
         logMessage('loading elements from SDF project')
-        const res = await adapterCreator.loadElementsFromFolder?.({
+        const res = await adapterCreator.adapterFormat?.loadElementsFromFolder?.({
           baseDir: projectPath,
           elementsSource: buildElementsSourceFromElements(existingFileCabinetInstances),
           config: new InstanceElement(ElemID.CONFIG_NAME, configType, {

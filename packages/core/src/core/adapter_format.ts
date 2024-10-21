@@ -87,7 +87,8 @@ const getAdapterAndContext = async ({
 
 type IsInitializedFolderArgs = {
   baseDir: string
-} & GetAdapterArgs
+  adapterName: string
+}
 
 export type IsInitializedFolderResult = {
   result: boolean
@@ -96,17 +97,9 @@ export type IsInitializedFolderResult = {
 
 export const isInitializedFolder = async ({
   baseDir,
-  workspace,
-  accountName,
+  adapterName,
 }: IsInitializedFolderArgs): Promise<IsInitializedFolderResult> => {
-  const { adapter, error } = getAdapter({ workspace, accountName })
-  if (error !== undefined) {
-    return {
-      result: false,
-      errors: [error],
-    }
-  }
-
+  const adapter = adapterCreators[adapterName]
   if (adapter.adapterFormat?.isInitializedFolder === undefined) {
     return {
       result: false,
@@ -114,7 +107,7 @@ export const isInitializedFolder = async ({
         {
           severity: 'Error' as const,
           message: 'Format not supported',
-          detailedMessage: `Account ${accountName}'s adapter does not support checking a non-nacl format folder`,
+          detailedMessage: `Adapter ${adapterName} does not support checking a non-nacl format folder`,
         },
       ],
     }
@@ -125,18 +118,15 @@ export const isInitializedFolder = async ({
 
 type InitFolderArgs = {
   baseDir: string
-} & GetAdapterArgs
+  adapterName: string
+}
 
 export type InitFolderResult = {
   errors: ReadonlyArray<SaltoError>
 }
 
-export const initFolder = async ({ baseDir, workspace, accountName }: InitFolderArgs): Promise<InitFolderResult> => {
-  const { adapter, error } = getAdapter({ workspace, accountName })
-  if (error !== undefined) {
-    return { errors: [error] }
-  }
-
+export const initFolder = async ({ baseDir, adapterName }: InitFolderArgs): Promise<InitFolderResult> => {
+  const adapter = adapterCreators[adapterName]
   const adapterInitFolder = adapter.adapterFormat?.initFolder
   if (adapterInitFolder === undefined) {
     return {
@@ -144,7 +134,7 @@ export const initFolder = async ({ baseDir, workspace, accountName }: InitFolder
         {
           severity: 'Error' as const,
           message: 'Format not supported',
-          detailedMessage: `Account ${accountName}'s adapter does not support initializing a non-nacl format folder`,
+          detailedMessage: `Adapter ${adapterName} does not support initializing a non-nacl format folder`,
         },
       ],
     }

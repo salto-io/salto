@@ -192,26 +192,22 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (client === undefined) {
       return {}
     }
+    // Hide the FlowDefinition type and its instances
+    const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE_ID)
+    const flowDefinitions = elements.filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE))
+    if (flowDefinitionType !== undefined) {
+      flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    }
+    flowDefinitions.forEach(flowDefinition => {
+      flowDefinition.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    })
 
     const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (!config.fetchProfile.metadataQuery.isTypeMatch(FLOW_METADATA_TYPE) || flowType === undefined) {
       return {}
     }
-    const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE_ID)
-    const instances = await getFlowInstances(
-      client,
-      config.fetchProfile,
-      flowType,
-      elements.filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE)),
-    )
+    const instances = await getFlowInstances(client, config.fetchProfile, flowType, flowDefinitions)
     instances.elements.forEach(e => elements.push(e))
-    // Hide the FlowDefinition type and it's instances
-    if (flowDefinitionType !== undefined) {
-      flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-    }
-    elements.filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE)).forEach(flowDefinition => {
-      flowDefinition.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-    })
     return {
       configSuggestions: [...instances.configChanges],
     }

@@ -12,7 +12,9 @@ import {
   createReadOnlyRemoteMapCreator,
   MAX_CONNECTIONS,
   closeAllRemoteMaps,
+  closeRemoteMapsOfLocation,
 } from '../../../../src/local-workspace/remote_map/remote_map'
+import { remoteMapLocations } from '../../../../src/local-workspace/remote_map/location_pool'
 
 describe('connection creation', () => {
   const DB_LOCATION = '/tmp/test_db'
@@ -35,10 +37,9 @@ describe('connection creation', () => {
     jest.mock('../../../../src/local-workspace/remote_map/rocksdb', () => ({
       default: mockedRocksdb,
     }))
-
-    await closeAllRemoteMaps()
   })
-  afterEach(() => {
+  afterEach(async () => {
+    await closeAllRemoteMaps()
     jest.clearAllMocks()
   })
   describe('createRemoteMapCreator', () => {
@@ -69,6 +70,35 @@ describe('connection creation', () => {
       expect(readOnlyCalls).toHaveLength(2)
       // 2 tmp connections
       expect(writeCalls).toHaveLength(2)
+    })
+    describe('closeRemoteMapsOfLocation', () => {
+      let cacheReturnSpy: jest.SpyInstance
+      beforeEach(() => {
+        cacheReturnSpy = jest.spyOn(remoteMapLocations, 'return')
+      })
+      describe('with a location that was opened as persistent', () => {
+        beforeEach(async () => {
+          await createMap('bla', true)
+          await closeRemoteMapsOfLocation(DB_LOCATION)
+        })
+        it('should close the connections to the main and tmp DBs', () => {
+          expect(mockClose).toHaveBeenCalledTimes(2)
+        })
+        it('should return the cache of the location', () => {
+          expect(cacheReturnSpy).toHaveBeenCalledWith(DB_LOCATION)
+        })
+      })
+      describe('with a location that was not opened', () => {
+        beforeEach(async () => {
+          await closeRemoteMapsOfLocation('dummy_location')
+        })
+        it('should not close anything', async () => {
+          expect(mockClose).not.toHaveBeenCalled()
+        })
+        it('should not return the cache of the location', () => {
+          expect(cacheReturnSpy).not.toHaveBeenCalled()
+        })
+      })
     })
   })
   describe('createReadOnlyRemoteMapCreator', () => {

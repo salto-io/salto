@@ -29,7 +29,6 @@ import { defaultDeployChange, deployChanges } from '../deployment/standard_deplo
 import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 import { findObject, isAllFreeLicense, setFieldDeploymentAnnotations } from '../utils'
-import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 import { JiraConfig } from '../config/config'
 import { ASSIGNEE_TYPE_FIELD, PROJECT_TYPE_TYPE_NAME, SERVICE_DESK } from '../constants'
 
@@ -256,7 +255,6 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
       setFieldDeploymentAnnotations(projectType, FIELD_CONFIG_SCHEME_FIELD)
       setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
       setFieldDeploymentAnnotations(projectType, COMPONENTS_FIELD)
-      setFieldDeploymentAnnotations(projectType, PROJECT_CONTEXTS_FIELD)
       setFieldDeploymentAnnotations(projectType, PROJECT_CATEGORY_FIELD)
 
       if (client.isDataCenter) {
@@ -323,13 +321,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
     )
 
     const getFieldsToIgnore = async (change: Change<InstanceElement>): Promise<string[]> => {
-      const fieldsToIgnore = [
-        COMPONENTS_FIELD,
-        FIELD_CONFIG_SCHEME_FIELD,
-        PROJECT_CONTEXTS_FIELD,
-        PRIORITY_SCHEME,
-        CUSTOMER_PERMISSIONS,
-      ]
+      const fieldsToIgnore = [COMPONENTS_FIELD, FIELD_CONFIG_SCHEME_FIELD, PRIORITY_SCHEME, CUSTOMER_PERMISSIONS]
       if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
         fieldsToIgnore.push(WORKFLOW_SCHEME_FIELD, ISSUE_TYPE_SCREEN_SCHEME_FIELD, ISSUE_TYPE_SCHEME)
       }

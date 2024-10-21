@@ -932,31 +932,30 @@ export const safeJsonStringify = (value: Value, replacer?: Replacer, space?: str
 export const inspectValue = (value: Value, options?: InspectOptions): string =>
   inspect(value, _.defaults({}, options ?? {}, { depth: 4 }))
 
-export const getParents = (instance: Element): Array<Value> =>
-  collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
+export const getParents = (element: Element): Array<Value> =>
+  collections.array.makeArray(element.annotations[CORE_ANNOTATIONS.PARENT])
 
-export const getParent = (instance: Element): InstanceElement => {
-  const parents = getParents(instance)
+const getRawParent = (element: Element): Value => {
+  const parents = getParents(element)
   if (parents.length !== 1) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+    throw new Error(`Expected ${element.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
   }
-
-  if (!isInstanceElement(parents[0].value)) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
-  }
-
-  return parents[0].value
+  return parents[0]
 }
 
-// This method is used to get the parent's elemID when the references are not neccessarily resolved
-export const getParentElemID = (instance: Element): ElemID => {
-  const parents = getParents(instance)
-  if (parents.length !== 1) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} to have exactly one parent, found ${parents.length}`)
+export const getParent = (element: Element): InstanceElement => {
+  const parent = getRawParent(element)
+  if (!isInstanceElement(parent.value)) {
+    throw new Error(`Expected ${element.elemID.getFullName()} parent to be an instance`)
   }
-  const parent = parents[0]
+
+  return parent.value
+}
+
+export const getParentElemID = (element: Element): ElemID => {
+  const parent = getRawParent(element)
   if (!isReferenceExpression(parent)) {
-    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
+    throw new Error(`Expected ${element.elemID.getFullName()} parent to be a reference expression`)
   }
   return parent.elemID
 }

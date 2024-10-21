@@ -94,7 +94,6 @@ export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
-  getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementFileNames: () => Promise<Map<string, string[]>>
   // TODO: this should be for single?
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
@@ -123,7 +122,6 @@ type NaclFilesState = {
   elementsIndex: RemoteMap<string[]>
   mergedElements: RemoteElementSource
   mergeErrors: RemoteMap<MergeError[]>
-  referencedIndex: RemoteMap<string[]>
   searchableNamesIndex: RemoteMap<boolean>
   staticFilesIndex: RemoteMap<string[]>
   metadata: RemoteMap<string>
@@ -317,12 +315,6 @@ const createNaclFilesState = async (
       staticFilesSource,
       persistent,
     ),
-  referencedIndex: await remoteMapCreator<string[]>({
-    namespace: getRemoteMapNamespace('referenced_index', sourceName),
-    serialize: async val => safeJsonStringify(val),
-    deserialize: data => JSON.parse(data),
-    persistent,
-  }),
   searchableNamesIndex: await remoteMapCreator<boolean>({
     namespace: getRemoteMapNamespace('searchableNamesIndex', sourceName),
     serialize: async val => (val === true ? '1' : '0'),
@@ -355,10 +347,8 @@ const buildNaclFilesState = async ({
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
   const elementsIndexAdditions: Record<string, Set<string>> = {}
-  const referencedIndexAdditions: Record<string, Set<string>> = {}
   const staticFilesIndexAdditions: Record<string, Set<string>> = {}
   const elementsIndexDeletions: Record<string, Set<string>> = {}
-  const referencedIndexDeletions: Record<string, Set<string>> = {}
   const staticFilesIndexDeletions: Record<string, Set<string>> = {}
   // We need to iterate over this twice - so no point in making this iterable :/
   const relevantElementIDs: ElemID[] = []
@@ -441,14 +431,6 @@ const buildNaclFilesState = async ({
         const parsedFile = await getNaclFile(naclFile)
         log.trace('Updating indexes of %s nacl file: %s', !parsedFile ? 'added' : 'modified', naclFile.filename)
         updateIndexOfFile(
-          referencedIndexAdditions,
-          referencedIndexDeletions,
-          naclFile.filename,
-          await parsedFile?.data.referenced(),
-          await naclFile.data.referenced(),
-        )
-
-        updateIndexOfFile(
           staticFilesIndexAdditions,
           staticFilesIndexDeletions,
           naclFile.filename,
@@ -490,11 +472,6 @@ const buildNaclFilesState = async ({
           return
         }
         log.trace('Updating indexes of deleted nacl file: %s', naclFile.filename)
-        const oldNaclFileReferenced = await oldNaclFile.data.referenced()
-        oldNaclFileReferenced.forEach((elementFullName: string) => {
-          referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName] ?? new Set<string>()
-          referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
-        })
         const oldNaclFileElements = (await oldNaclFile.elements()) ?? []
         oldNaclFileElements.forEach(element => {
           const elementFullName = element.elemID.getFullName()
@@ -536,7 +513,6 @@ const buildNaclFilesState = async ({
   const postChangeHash = await currentState.parsedNaclFiles.getHash()
   await Promise.all([
     updateIndex(currentState.elementsIndex, elementsIndexAdditions, elementsIndexDeletions),
-    updateIndex(currentState.referencedIndex, referencedIndexAdditions, referencedIndexDeletions),
     updateIndex(currentState.staticFilesIndex, staticFilesIndexAdditions, staticFilesIndexDeletions),
     updateSearchableNamesIndex(changes),
   ])
@@ -771,9 +747,6 @@ const buildNaclFilesSource = (
     ).filter(values.isDefined)
   }
 
-  const getElementReferencedFiles = async (elemID: ElemID): Promise<string[]> =>
-    (await (await getState()).referencedIndex.get(elemID.getFullName())) ?? []
-
   const getSourceMap = async (filename: string, useCache = true): Promise<parser.SourceMap> => {
     if (useCache) {
       const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
@@ -988,11 +961,23 @@ const buildNaclFilesSource = (
       await currentState.elementsIndex.flush()
       await currentState.mergeErrors.flush()
       await currentState.mergedElements.flush()
-      await currentState.referencedIndex.flush()
       await currentState.parsedNaclFiles.flush()
       await currentState.searchableNamesIndex.flush()
       await currentState.staticFilesIndex.flush()
       await currentState.metadata.flush()
+
+      // clear deprecated referenced index
+      const referencedIndex = await remoteMapCreator<string[]>({
+        namespace: getRemoteMapNamespace('referenced_index', sourceName),
+        serialize: async val => safeJsonStringify(val),
+        deserialize: data => JSON.parse(data),
+        persistent,
+      })
+      if (!(await referencedIndex.isEmpty())) {
+        log.debug('going to clear entries of deprecated index referenced_index')
+        await referencedIndex.clear()
+        await referencedIndex.flush()
+      }
     },
 
     getErrors: async (): Promise<Errors> => {
@@ -1054,7 +1039,6 @@ const buildNaclFilesSource = (
         await currentState.elementsIndex.clear()
         await currentState.mergeErrors.clear()
         await currentState.mergedElements.clear()
-        await currentState.referencedIndex.clear()
         await currentState.parsedNaclFiles.clear()
         await currentState.searchableNamesIndex.clear()
         await currentState.metadata.clear()
@@ -1082,8 +1066,6 @@ const buildNaclFilesSource = (
       await currentState.elementsIndex.clear()
       await newCurrentState.mergeErrors.setAll(currentState.mergeErrors.entries())
       await currentState.mergeErrors.clear()
-      await newCurrentState.referencedIndex.setAll(currentState.referencedIndex.entries())
-      await currentState.referencedIndex.clear()
       await newCurrentState.metadata.setAll(currentState.metadata.entries())
       await currentState.metadata.clear()
       await newCurrentState.searchableNamesIndex.setAll(currentState.searchableNamesIndex.entries())
@@ -1109,7 +1091,6 @@ const buildNaclFilesSource = (
     },
     getSourceMap,
     getElementNaclFiles,
-    getElementReferencedFiles,
     getElementFileNames: async () => {
       const { elementsIndex } = await getState()
       const elementsIndexEntries = await awu(elementsIndex.entries()).groupBy(entry => entry.key)

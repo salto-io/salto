@@ -9,6 +9,7 @@ import {
   BuiltinTypes,
   ElemID,
   InstanceElement,
+  ListType,
   ObjectType,
   ReferenceExpression,
   ReferenceInfo,
@@ -449,6 +450,115 @@ describe('updateReferenceIndexes', () => {
         'test.target1',
         'test.target2',
         'test.object',
+      ])
+    })
+  })
+
+  describe('save refType dependencies', () => {
+    const innerType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
+    const type = new ObjectType({
+      elemID: new ElemID('salto', 'type'),
+      fields: {
+        builtin: { refType: BuiltinTypes.STRING },
+        builtinList: { refType: new ListType(BuiltinTypes.STRING) },
+        inner: { refType: innerType },
+        innerList: { refType: new ListType(innerType) },
+      },
+      annotationRefsOrTypes: {
+        builtin: BuiltinTypes.STRING,
+        builtinList: new ListType(BuiltinTypes.STRING),
+        inner: innerType,
+        innerList: new ListType(innerType),
+      },
+    })
+    const anotherType = new ObjectType({
+      elemID: new ElemID('salto', 'another'),
+      fields: type.fields,
+    })
+
+    beforeEach(async () => {
+      const changes = [
+        toChange({ after: type }),
+        ...Object.values(anotherType.fields).map(field => toChange({ after: field })),
+      ]
+
+      await updateReferenceIndexes(
+        changes,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
+        mapVersions,
+        elementsSource,
+        true,
+        async () => [],
+      )
+    })
+
+    it('should add refTypes dependencies to the referenceTargets index', () => {
+      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: type.fields.inner.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: type.fields.innerList.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: type.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([
+            [
+              '',
+              [
+                { id: innerType.elemID, type: 'strong' },
+                { id: innerType.elemID, type: 'strong' },
+              ],
+            ],
+            ['inner', [{ id: innerType.elemID, type: 'strong' }]],
+            ['innerList', [{ id: innerType.elemID, type: 'strong' }]],
+          ]),
+        },
+        {
+          key: anotherType.fields.inner.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: anotherType.fields.innerList.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+      ])
+    })
+
+    it('should add the new references to the referenceSources index', () => {
+      expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: innerType.elemID.getFullName(),
+          value: [
+            {
+              id: type.fields.inner.elemID,
+              type: 'strong',
+            },
+            {
+              id: type.fields.innerList.elemID,
+              type: 'strong',
+            },
+            {
+              id: type.elemID.createNestedID('annotation', 'inner'),
+              type: 'strong',
+            },
+            {
+              id: type.elemID.createNestedID('annotation', 'innerList'),
+              type: 'strong',
+            },
+            {
+              id: anotherType.fields.inner.elemID,
+              type: 'strong',
+            },
+            {
+              id: anotherType.fields.innerList.elemID,
+              type: 'strong',
+            },
+          ],
+        },
       ])
     })
   })

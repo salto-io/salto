@@ -80,15 +80,6 @@ export const getSearchElementFullName = (context: PositionContext, token: string
   return undefined
 }
 
-export const getReferencingFiles = async (workspace: EditorWorkspace, fullName: string): Promise<string[]> => {
-  try {
-    const id = ElemID.fromFullName(fullName)
-    return await workspace.getElementReferencedFiles(id)
-  } catch (e) {
-    return []
-  }
-}
-
 export const getUsageInFile = async (workspace: EditorWorkspace, filename: string, id: ElemID): Promise<ElemID[]> =>
   awu(await workspace.getElements(filename))
     .flatMap(async e => getElemIDUsages(e, id))
@@ -104,21 +95,32 @@ export const getWorkspaceReferences = async (
   if (id === undefined) {
     return []
   }
-  const referencedByFiles = await getReferencingFiles(workspace, id.getFullName())
-  const usages = _.flatten(
-    await Promise.all(
-      referencedByFiles.map(async filename =>
-        (await getUsageInFile(workspace, filename, id)).flatMap(elemID => ({
-          filename,
-          fullname: elemID.getFullName(),
-        })),
-      ),
+
+  const referencedByElements = _.uniqBy(
+    (await workspace.getElementIncomingReferences(id.createTopLevelParentID().parent)).map(
+      elemId => elemId.createTopLevelParentID().parent,
     ),
+    elemId => elemId.getFullName(),
   )
+
+  const referencedByFiles = await Promise.all(
+    referencedByElements.map(elemId => workspace.getElementNaclFiles(elemId)),
+  ).then(res => _.uniq(res.flat()))
+
+  const usages = await Promise.all(
+    referencedByFiles.map(async filename =>
+      (await getUsageInFile(workspace, filename, id)).map(elemId => ({
+        filename,
+        fullname: elemId.getFullName(),
+      })),
+    ),
+  ).then(res => res.flat())
+
   const selfReferences = (await workspace.getElementNaclFiles(id)).map(filename => ({
     filename,
     fullname: id.getFullName(),
   }))
+
   return [...usages, ...selfReferences]
 }
 

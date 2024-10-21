@@ -7,6 +7,7 @@
  */
 
 import path from 'path'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { AdapterFormat } from '@salto-io/adapter-api'
 import { API_VERSION } from '../client/client'
@@ -62,7 +63,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
     await templateService.create(TemplateType.Project, opts)
     return { errors: [] }
   } catch (error) {
-    log.error(error)
+    log.error('Error occurred when creating SFDX project: %s', inspectValue(error))
     return {
       errors: [
         {

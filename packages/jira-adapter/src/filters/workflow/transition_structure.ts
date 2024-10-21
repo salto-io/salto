@@ -6,26 +6,15 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { invertNaclCase, naclCase, createSchemeGuard } from '@salto-io/adapter-utils'
+import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
 import { SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import Joi from 'joi'
 import _ from 'lodash'
 import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { WorkflowStatusAndPort, WorkflowV2Transition } from '../workflowV2/types'
+import { isWorkflowV2Transition, WorkflowV2Transition } from '../workflowV2/types'
 
 const { makeArray } = collections.array
-
-const TRANSITION_FROM_V2_SCHEME = Joi.array().items(
-  Joi.object({
-    statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
-    port: Joi.number(),
-  }),
-)
-
-// we already validate the workflow structure in workflow_filter, so we just want to differ between the two versions
-const isTransitionFromV2 = createSchemeGuard<WorkflowStatusAndPort[]>(TRANSITION_FROM_V2_SCHEME)
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -46,11 +35,20 @@ const getTransitionType = (transition: WorkflowTransitionV1 | WorkflowV2Transiti
   if (transition.type?.toLowerCase() === 'initial') {
     return 'Initial'
   }
-  if (transition.from !== undefined && transition.from.length !== 0) {
-    return 'Directed'
-  }
-  if ((transition.to ?? '') === '') {
-    return 'Circular'
+  if (isWorkflowV2Transition(transition)) {
+    if (transition.links !== undefined && transition.links.length !== 0) {
+      return 'Directed'
+    }
+    if (transition.toStatusReference === undefined) {
+      return 'Circular'
+    }
+  } else {
+    if (transition.from !== undefined && transition.from.length !== 0) {
+      return 'Directed'
+    }
+    if ((transition.to ?? '') === '') {
+      return 'Circular'
+    }
   }
   return 'Global'
 }
@@ -91,8 +89,8 @@ export const getTransitionKey = (
   const type = getTransitionType(transition)
   const fromSorted =
     type === 'Directed'
-      ? (isTransitionFromV2(transition.from)
-          ? makeArray(transition.from).map(from => from.statusReference)
+      ? (isWorkflowV2Transition(transition)
+          ? makeArray(transition.links).map(link => link.fromStatusReference)
           : makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
         )
           .map(from => (_.isString(from) && statusesMap.get(from) !== undefined ? statusesMap.get(from) : from))

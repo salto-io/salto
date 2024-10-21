@@ -230,6 +230,9 @@ const createWorkflowInstances = async ({
       data: {
         workflowIds,
       },
+      queryParams: {
+        useTransitionLinksFormat: true,
+      },
     })
     if (!isWorkflowResponse(response.data)) {
       return {
@@ -678,13 +681,11 @@ const insertConditionGroups: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
 const replaceStatusIdWithUuid =
   (statusIdToUuid: Record<string, string>): WalkOnFunc =>
   ({ value, path }): WALK_NEXT_STEP => {
-    const isValueToRecurse =
-      (_.isPlainObject(value) && (value.to || value.from || value.statusMigrations)) || _.isArray(value)
-    if (isInstanceElement(value) || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name) || isValueToRecurse) {
-      return WALK_NEXT_STEP.RECURSE
+    if (value.toStatusReference) {
+      value.toStatusReference = statusIdToUuid[value.toStatusReference]
     }
-    if (!_.isPlainObject(value)) {
-      return WALK_NEXT_STEP.SKIP
+    if (value.fromStatusReference) {
+      value.fromStatusReference = statusIdToUuid[value.fromStatusReference]
     }
     if (value.statusReference) {
       value.statusReference = statusIdToUuid[value.statusReference]
@@ -695,6 +696,11 @@ const replaceStatusIdWithUuid =
     if (value.newStatusReference) {
       value.newStatusReference = statusIdToUuid[value.newStatusReference]
     }
+    const isValueToRecurse = _.isPlainObject(value) && (value.links || value.statusMigrations)
+    if (isInstanceElement(value) || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name) || isValueToRecurse) {
+      return WALK_NEXT_STEP.RECURSE
+    }
+
     return WALK_NEXT_STEP.SKIP
   }
 

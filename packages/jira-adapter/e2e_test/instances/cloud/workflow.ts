@@ -26,10 +26,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     [naclCase('Build Broken::From: any status::Global')]: {
       name: 'Build Broken',
       description: '',
-      to: {
-        statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-        port: 7,
-      },
+      toStatusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
       type: 'GLOBAL',
       triggers: [
         {
@@ -80,10 +77,12 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     [naclCase('Create::From: none::Initial')]: {
       name: 'Create',
       description: '',
-      to: {
-        statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-        port: 7,
-      },
+      toStatusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+      links: [
+        {
+          toPort: 7,
+        },
+      ],
       type: 'INITIAL',
       validators: [
         {
@@ -151,16 +150,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     [naclCase('TransitionToShared::From: Done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
-      from: [
+      toStatusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
+      links: [
         {
-          statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-          port: 1,
+          toPort: 7,
+          fromPort: 1,
+          fromStatusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
         },
       ],
-      to: {
-        statusReference: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-        port: 7,
-      },
       type: 'DIRECTED',
       validators: [
         {

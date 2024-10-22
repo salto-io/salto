@@ -73,6 +73,7 @@ describe('workflow filter', () => {
     Create: naclCase('Create::From: none::Initial'),
     Done: naclCase('Done::From: any status::Global'),
     ToStatus2: naclCase('ToStatus2::From: Create::Directed'),
+    GlobalTransition: naclCase('globalTransition::From: any status::Global'),
   }
 
   beforeEach(async () => {
@@ -871,6 +872,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                 ],
               },
             },
+            {
+              id: '3',
+              name: 'globalTransition',
+              links: [],
+              toStatusReference: 'uuid2',
+              type: 'GLOBAL',
+            },
           ],
         },
       ],
@@ -952,6 +960,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       workflowInstance.value.statusMappings = statusMapping
       workflowInstance.value.statuses.pop()
       delete workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
+      delete workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.GlobalTransition]
     }
     beforeEach(() => {
       // types
@@ -1126,6 +1135,12 @@ It is strongly recommended to rename these transitions so they are unique in Jir
               conditions: [],
             },
           },
+          [TRANSITION_NAME_TO_KEY.GlobalTransition]: {
+            id: '3',
+            type: 'GLOBAL',
+            name: 'globalTransition',
+            toStatusReference: new ReferenceExpression(status2.elemID, status2),
+          },
         },
       })
       issueTypeInstance = new InstanceElement('issueType', createEmptyType(ISSUE_TYPE_NAME))
@@ -1224,6 +1239,13 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     },
                   ],
                 },
+              },
+              {
+                id: '3',
+                name: 'globalTransition',
+                links: [],
+                toStatusReference: 'uuid2',
+                type: 'GLOBAL',
               },
             ],
             scope: {
@@ -1886,6 +1908,7 @@ It is strongly recommended to rename these transitions so they are unique in Jir
       it('should undo the preDeploy changes', async () => {
         workflowInstanceBefore.value.statuses.pop()
         delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.ToStatus2]
+        delete workflowInstanceBefore.value.transitions[TRANSITION_NAME_TO_KEY.GlobalTransition]
         const { statuses: statusesBefore, transitions: transitionsBefore } = workflowInstanceBefore.value
         const { statuses: statusesAfter, transitions: transitionsAfter } = workflowInstance.value
         expect(statusesAfter).toEqual(statusesBefore)

@@ -678,6 +678,20 @@ const insertConditionGroups: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
   return WALK_NEXT_STEP.SKIP
 }
 
+// Jira has a bug that causes global transition with a destination status to become a looped transition without a status
+// as a workaround we add an empty links array
+// We should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-85033
+const insertEmptyLinksToGlobalTransition: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  const nameParts = path.getFullNameParts()
+  if (_.isPlainObject(value) && nameParts.length > 4 && nameParts[4] === 'transitions' && value?.type === 'GLOBAL') {
+    value.links = []
+  }
+  if (isInstanceElement(value) || path.name === 'transitions') {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const replaceStatusIdWithUuid =
   (statusIdToUuid: Record<string, string>): WalkOnFunc =>
   ({ value, path }): WALK_NEXT_STEP => {
@@ -719,6 +733,7 @@ const getWorkflowForDeploy = async (
   joinResolutionProperties(resolvedInstance.value.transitions)
   walkOnElement({ element: resolvedInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
   walkOnElement({ element: resolvedInstance, func: insertConditionGroups })
+  walkOnElement({ element: resolvedInstance, func: insertEmptyLinksToGlobalTransition })
   return resolvedInstance
 }
 

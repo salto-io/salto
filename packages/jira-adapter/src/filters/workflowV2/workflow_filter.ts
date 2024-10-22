@@ -71,6 +71,7 @@ import {
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
   TRANSITION_LIST_FIELDS,
   WorkflowV2Transition,
+  WorkflowVersionType,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_RETRY_PERIODS } from '../../constants'
@@ -252,7 +253,11 @@ const createWorkflowInstances = async ({
             return undefined
           }
           // convert transition list to map
-          const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
+          const [error] = transformTransitions({
+            value: workflow,
+            statuses: workflowIdToStatuses[workflow.id],
+            workflowVersion: WorkflowVersionType.V2,
+          })
           if (error) {
             errors.push(error)
           }

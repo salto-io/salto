@@ -339,4 +339,12 @@ export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(
 
 export const isTaskResponse = createSchemeGuard<TaskResponse>(TASK_RESPONSE_SCHEMA, 'Received an invalid task response')
 
-export const isWorkflowV2Transition = createSchemeGuard<WorkflowV2Transition>(TRANSITION_SCHEME)
+export const isWorkflowV2Transition = createSchemeGuard<WorkflowV2Transition>(
+  TRANSITION_SCHEME,
+  'Received an invalid workflowV2 transition',
+)
+
+export enum WorkflowVersionType {
+  V1 = 'V1',
+  V2 = 'V2',
+}

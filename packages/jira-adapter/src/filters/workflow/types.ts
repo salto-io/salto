@@ -204,6 +204,11 @@ const isWorkflowResponseValues = createSchemeGuard<WorkflowResponse>(
   'Received unexpected workflow response from service',
 )
 
+export const isWorkflowV1Transition = createSchemeGuard<Transition>(
+  transitionsSchema,
+  'Received an invalid workflowV1 transition',
+)
+
 export const isWorkflowValues = (values: unknown): values is Workflow => {
   const { error } = workflowSchema.validate(values)
   if (error !== undefined) {

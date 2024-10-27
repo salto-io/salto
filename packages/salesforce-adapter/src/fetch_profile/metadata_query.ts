@@ -132,9 +132,10 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     instance: MetadataInstance,
     { metadataType = '.*', namespace = '.*', name = '.*' }: MetadataQueryParams,
   ): boolean => {
-    const realNamespace = namespace === '' ? getDefaultNamespace(instance.metadataType) : namespace
+    const instanceMetadataType = nestedTypeToParentType[instance.metadataType] ?? instance.metadataType
+    const realNamespace = namespace === '' ? getDefaultNamespace(instanceMetadataType) : namespace
     if (
-      !regex.isFullRegexMatch(instance.metadataType, metadataType) ||
+      !regex.isFullRegexMatch(instanceMetadataType, metadataType) ||
       !regex.isFullRegexMatch(instance.namespace, realNamespace)
     ) {
       return false

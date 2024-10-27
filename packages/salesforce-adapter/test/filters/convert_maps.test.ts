@@ -17,6 +17,7 @@ import {
   isObjectType,
   PrimitiveType,
   TypeReference,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, generatePermissionSetType, defaultFilterContext, createCustomObjectType } from '../utils'
@@ -638,7 +639,7 @@ describe('Convert maps filter', () => {
     let multiselectPicklistType: PrimitiveType
     let myCustomObj: ObjectType
     let elements: Element[]
-    type FilterType = FilterWith<'onFetch'>
+    type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
     let filter: FilterType
     beforeEach(async () => {
       // Clone the types to avoid changing the original types and affecting other tests.
@@ -674,38 +675,92 @@ describe('Convert maps filter', () => {
           fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures: { picklistsAsMaps: true } } }),
         },
       }) as FilterType
-      await filter.onFetch(elements)
     })
 
-    it('should convert Picklist valueSet type to ordered map', async () => {
-      expect(myCustomObj.fields.myPicklist.getTypeSync()).toEqual(picklistType)
-      const valueSetType = picklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
-      expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
-      expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
-      expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
-    })
+    describe('onFetch', () => {
+      beforeEach(async () => {
+        await filter.onFetch(elements)
+      })
 
-    it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
-      expect(myCustomObj.fields.myMultiselectPicklist.getTypeSync()).toEqual(multiselectPicklistType)
-      const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
-      expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
-      expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
-      expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
-    })
+      it('should convert Picklist valueSet type to ordered map', async () => {
+        expect(myCustomObj.fields.myPicklist.getTypeSync()).toEqual(picklistType)
+        const valueSetType = picklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
+        expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+        expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
+        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+      })
 
-    it('should convert annotation value to map (Picklist)', () => {
-      expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toBeDefined()
-      expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toEqual({
-        val1: { fullName: 'val1', default: true, label: 'value1' },
-        val2: { fullName: 'val2', default: false, label: 'value2' },
+      it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
+        expect(myCustomObj.fields.myMultiselectPicklist.getTypeSync()).toEqual(multiselectPicklistType)
+        const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
+        expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
+        expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
+        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+      })
+
+      it('should convert annotation value to map (Picklist)', () => {
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toBeDefined()
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toEqual({
+          val1: { fullName: 'val1', default: true, label: 'value1' },
+          val2: { fullName: 'val2', default: false, label: 'value2' },
+        })
+      })
+
+      it('should convert annotation value to map (MultiselectPicklist)', () => {
+        expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toBeDefined()
+        expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toEqual({
+          val1: { fullName: 'val1', default: true, label: 'value1' },
+          val2: { fullName: 'val2', default: false, label: 'value2' },
+        })
       })
     })
 
-    it('should convert annotation value to map (MultiselectPicklist)', () => {
-      expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toBeDefined()
-      expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toEqual({
-        val1: { fullName: 'val1', default: true, label: 'value1' },
-        val2: { fullName: 'val2', default: false, label: 'value2' },
+    describe('preDeploy + onDeploy', () => {
+      let changes: Change[]
+      beforeEach(async () => {
+        // This fetch will convert the Picklist valueSet type to OrderedMap
+        await filter.onFetch([myCustomObj])
+        changes = [toChange({ after: myCustomObj })]
+        await filter.preDeploy(changes)
+      })
+
+      it('should convert the object back to list on preDeploy (Picklist)', () => {
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet).toBeDefined()
+        // The valueSet should be converted back to a list. Since we're not running reference resolution, we need to
+        // peel back the reference layer first.
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet.map((ref: ReferenceExpression) => ref.value)).toEqual(
+          [
+            { fullName: 'val1', default: true, label: 'value1' },
+            { fullName: 'val2', default: false, label: 'value2' },
+          ],
+        )
+      })
+
+      it('should convert the object back to list on preDeploy (MultiselectPicklist)', () => {
+        expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet).toBeDefined()
+        // The valueSet should be converted back to a list. Since we're not running reference resolution, we need to
+        // peel back the reference layer first.
+        expect(
+          myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.map((ref: ReferenceExpression) => ref.value),
+        ).toEqual([
+          { fullName: 'val1', default: true, label: 'value1' },
+          { fullName: 'val2', default: false, label: 'value2' },
+        ])
+      })
+
+      it('should convert the object back to map on onDeploy (Picklist)', async () => {
+        // Simulate reference resolution.
+        myCustomObj.fields.myPicklist.annotations.valueSet = [
+          { fullName: 'val1', default: true, label: 'value1' },
+          { fullName: 'val2', default: false, label: 'value2' },
+        ]
+
+        await filter.onDeploy(changes)
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toBeDefined()
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toEqual({
+          val1: { fullName: 'val1', default: true, label: 'value1' },
+          val2: { fullName: 'val2', default: false, label: 'value2' },
+        })
       })
     })
   })

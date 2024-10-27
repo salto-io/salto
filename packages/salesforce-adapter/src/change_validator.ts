@@ -74,7 +74,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   customObjectInstances: ({ getLookupNameFunc }) => customObjectInstancesValidator(getLookupNameFunc),
   customFieldType: () => customFieldTypeValidator,
   standardFieldLabel: () => standardFieldLabelValidator,
-  mapKeys: ({ getLookupNameFunc }) => mapKeysValidator(getLookupNameFunc),
+  mapKeys: ({ getLookupNameFunc, fetchProfile }) => mapKeysValidator(getLookupNameFunc, fetchProfile),
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,

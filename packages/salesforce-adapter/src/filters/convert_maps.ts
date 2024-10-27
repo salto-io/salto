@@ -53,6 +53,7 @@ import {
 import { metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
+import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -183,26 +184,38 @@ const STANDARD_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
   standardValue: PICKLIST_MAP_FIELD_DEF,
 }
 
-export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
+export const getMetadataTypeToFieldToMapDef: (
+  fetchProfile: FetchProfile,
+) => Record<string, Record<string, MapDef>> = fetchProfile => ({
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
   [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
   [PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
-  [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
-  [GLOBAL_VALUE_SET]: GLOBAL_VALUE_SET_MAP_FIELD_DEF,
-  [STANDARD_VALUE_SET]: STANDARD_VALUE_SET_MAP_FIELD_DEF,
-}
+  ...(fetchProfile.isFeatureEnabled('sharingRulesMaps') ? { [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF } : {}),
+  ...(fetchProfile.isFeatureEnabled('picklistsAsMaps')
+    ? {
+        [GLOBAL_VALUE_SET]: GLOBAL_VALUE_SET_MAP_FIELD_DEF,
+        [STANDARD_VALUE_SET]: STANDARD_VALUE_SET_MAP_FIELD_DEF,
+      }
+    : {}),
+})
 
-export const annotationDefsByType: Record<string, Record<string, MapDef>> = {
-  Picklist: {
-    valueSet: PICKLIST_MAP_FIELD_DEF,
-  },
-  MultiselectPicklist: {
-    valueSet: PICKLIST_MAP_FIELD_DEF,
-  },
-}
+export const getAnnotationDefsByType: (
+  fetchProfile: FetchProfile,
+) => Record<string, Record<string, MapDef>> = fetchProfile => ({
+  ...(fetchProfile.isFeatureEnabled('picklistsAsMaps')
+    ? {
+        Picklist: {
+          valueSet: PICKLIST_MAP_FIELD_DEF,
+        },
+        MultiselectPicklist: {
+          valueSet: PICKLIST_MAP_FIELD_DEF,
+        },
+      }
+    : {}),
+})
 
 export const getElementValueOrAnnotations = (element: Element): Values =>
   isInstanceElement(element) ? element.value : element.annotations
@@ -213,11 +226,16 @@ export const getElementValueOrAnnotations = (element: Element): Values =>
  * should use a unique map but fails due to conflicts, convert it to a list map, and include it
  * in the returned list so that it can be converted across the board.
  *
- * @param element             The instance to modify
+ * @param baseElement         The instance to modify
  * @param mapFieldDef         The definitions of the fields to covert
+ * @param elementType         The type of the elements to convert
  * @returns                   The list of fields that were converted to non-unique due to duplicates
  */
-const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDef>): string[] => {
+const convertArraysToMaps = (
+  baseElement: Element,
+  mapFieldDef: Record<string, MapDef>,
+  elementType: string,
+): string[] => {
   // fields that were intended to be unique, but have multiple values under to the same map key
   const nonUniqueMapFields: string[] = []
 
@@ -232,51 +250,67 @@ const convertArraysToMaps = (element: Element, mapFieldDef: Record<string, MapDe
     return _.groupBy(values, item => keyFunc(item))
   }
 
-  Object.entries(mapFieldDef)
-    .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
-    .forEach(([fieldName, mapDef]) => {
-      const mapper = mapDef.mapper ?? defaultMapper
-      const elementValues = getElementValueOrAnnotations(element)
-      if (mapDef.nested) {
-        const firstLevelGroups = _.groupBy(
-          makeArray(_.get(elementValues, fieldName)),
-          item => mapper(item[mapDef.key])[0],
-        )
-        _.set(
-          elementValues,
-          fieldName,
-          _.mapValues(firstLevelGroups, firstLevelValues =>
-            convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
-          ),
-        )
-      } else if (mapDef.maintainOrder) {
-        const originalFieldValue = makeArray(_.get(elementValues, fieldName))
-        _.set(elementValues, fieldName, {
-          [ORDERED_MAP_VALUES_FIELD]: convertField(
+  const elementsToConvert = []
+  if (isObjectType(baseElement)) {
+    Object.values(baseElement.fields)
+      .filter(field => field.refType.elemID.typeName === elementType)
+      .forEach(field => elementsToConvert.push(field))
+  } else {
+    elementsToConvert.push(baseElement)
+  }
+
+  elementsToConvert.forEach(element => {
+    Object.entries(mapFieldDef)
+      .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
+      .forEach(([fieldName, mapDef]) => {
+        const mapper = mapDef.mapper ?? defaultMapper
+        const elementValues = getElementValueOrAnnotations(element)
+        if (mapDef.nested) {
+          const firstLevelGroups = _.groupBy(
+            makeArray(_.get(elementValues, fieldName)),
+            item => mapper(item[mapDef.key])[0],
+          )
+          _.set(
+            elementValues,
+            fieldName,
+            _.mapValues(firstLevelGroups, firstLevelValues =>
+              convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
+            ),
+          )
+        } else if (mapDef.maintainOrder) {
+          const originalFieldValue = makeArray(_.get(elementValues, fieldName))
+          const convertedValues = convertField(
             originalFieldValue,
             item => mapper(item[mapDef.key])[0],
             !!mapDef.mapToList,
             fieldName,
-          ),
-          [ORDERED_MAP_ORDER_FIELD]: originalFieldValue
-            .map(item => mapper(item[mapDef.key])[0])
-            .map(
-              name => new ReferenceExpression(element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name)),
-            ),
-        })
-      } else {
-        _.set(
-          elementValues,
-          fieldName,
-          convertField(
-            makeArray(_.get(elementValues, fieldName)),
-            item => mapper(item[mapDef.key])[0],
-            !!mapDef.mapToList,
+          )
+          _.set(elementValues, fieldName, {
+            [ORDERED_MAP_VALUES_FIELD]: convertedValues,
+            [ORDERED_MAP_ORDER_FIELD]: originalFieldValue
+              .map(item => mapper(item[mapDef.key])[0])
+              .map(
+                name =>
+                  new ReferenceExpression(
+                    element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name),
+                    convertedValues[name],
+                  ),
+              ),
+          })
+        } else {
+          _.set(
+            elementValues,
             fieldName,
-          ),
-        )
-      }
-    })
+            convertField(
+              makeArray(_.get(elementValues, fieldName)),
+              item => mapper(item[mapDef.key])[0],
+              !!mapDef.mapToList,
+              fieldName,
+            ),
+          )
+        }
+      })
+  })
   return nonUniqueMapFields
 }
 
@@ -392,10 +426,11 @@ const updateAnnotationRefTypes = async (
 const convertElementFieldsToMaps = async (
   elementsToConvert: Element[],
   mapFieldDef: Record<string, MapDef>,
+  elementType: string,
 ): Promise<string[]> => {
   const nonUniqueMapFields = _.uniq(
     elementsToConvert.flatMap(element => {
-      const nonUniqueFields = convertArraysToMaps(element, mapFieldDef)
+      const nonUniqueFields = convertArraysToMaps(element, mapFieldDef, elementType)
       if (nonUniqueFields.length > 0) {
         log.info(`Instance ${element.elemID.getFullName()} has non-unique map fields: ${nonUniqueFields}`)
       }
@@ -467,14 +502,16 @@ const convertFieldsBackToLists = async (
  *
  * @param changes          The changes to deploy
  * @param mapFieldDef      The definitions of the fields to covert
+ * @param elementType      The type of the elements to convert
  */
 const convertFieldsBackToMaps = (
   changes: ReadonlyArray<Change<Element>>,
   mapFieldDef: Record<string, MapDef>,
+  elementType: string,
 ): void => {
   changes.forEach(change =>
     applyFunctionToChangeData(change, element => {
-      convertArraysToMaps(element, mapFieldDef)
+      convertArraysToMaps(element, mapFieldDef, elementType)
       return element
     }),
   )
@@ -524,7 +561,7 @@ export const getInstanceChanges = (
 export const getChangesWithFieldType = (changes: ReadonlyArray<Change>, fieldType: string): Change[] => {
   const fieldChanges: Change[] = changes
     .filter(isFieldChange)
-    .filter(async change => getChangeData(change).getTypeSync().elemID.typeName === fieldType)
+    .filter(change => getChangeData(change).getTypeSync().elemID.typeName === fieldType)
 
   const objectTypeChanges = changes
     .filter(isObjectTypeChange)
@@ -561,14 +598,10 @@ export const findTypeToConvert = async (
 const filter: FilterCreator = ({ config }) => ({
   name: 'convertMapsFilter',
   onFetch: async (elements: Element[]) => {
+    const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
+    const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
+
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      if (
-        (targetMetadataType === SHARING_RULES_TYPE && !config.fetchProfile.isFeatureEnabled('sharingRulesMaps')) ||
-        ([GLOBAL_VALUE_SET, STANDARD_VALUE_SET].includes(targetMetadataType) &&
-          !config.fetchProfile.isFeatureEnabled('picklistsAsMaps'))
-      ) {
-        return
-      }
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
       const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
@@ -576,7 +609,11 @@ const filter: FilterCreator = ({ config }) => ({
         if (instancesToConvert.length === 0) {
           await updateFieldTypes(typeToConvert, [], mapFieldDef)
         } else {
-          const nonUniqueMapFields = await convertElementFieldsToMaps(instancesToConvert, mapFieldDef)
+          const nonUniqueMapFields = await convertElementFieldsToMaps(
+            instancesToConvert,
+            mapFieldDef,
+            targetMetadataType,
+          )
           await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
         }
       }
@@ -584,22 +621,19 @@ const filter: FilterCreator = ({ config }) => ({
 
     const fields = elements.filter(isObjectType).flatMap(obj => Object.values(obj.fields))
     await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldType, annotationToMapDef]) => {
-      if (
-        ['Picklist', 'MultiselectPicklist'].includes(fieldType) &&
-        !config.fetchProfile.isFeatureEnabled('picklistsAsMaps')
-      ) {
-        return
-      }
       const fieldsToConvert = fields.filter(field => field.refType.elemID.typeName === fieldType)
       if (fieldsToConvert.length === 0) {
         return
       }
-      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef)
+      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef, fieldType)
       await updateAnnotationRefTypes(await fieldsToConvert[0].getType(), nonUniqueMapFields, annotationToMapDef)
     })
   },
 
   preDeploy: async changes => {
+    const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
+    const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
+
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
@@ -626,6 +660,9 @@ const filter: FilterCreator = ({ config }) => ({
   },
 
   onDeploy: async changes => {
+    const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
+    const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
+
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
@@ -633,7 +670,7 @@ const filter: FilterCreator = ({ config }) => ({
       }
 
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      convertFieldsBackToMaps(instanceChanges, mapFieldDef)
+      convertFieldsBackToMaps(instanceChanges, mapFieldDef, targetMetadataType)
 
       const instanceType = await getChangeData(instanceChanges[0]).getType()
       // after preDeploy, the fields with lists are exactly the ones that should be converted
@@ -650,7 +687,7 @@ const filter: FilterCreator = ({ config }) => ({
         return
       }
       const mapFieldDef = annotationDefsByType[fieldType]
-      convertFieldsBackToMaps(fieldsChanges, mapFieldDef)
+      convertFieldsBackToMaps(fieldsChanges, mapFieldDef, fieldType)
     })
   },
 })

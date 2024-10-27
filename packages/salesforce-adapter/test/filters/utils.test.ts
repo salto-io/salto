@@ -82,7 +82,8 @@ import {
   VALUE_SETTINGS_FIELDS,
   VALUE_SET_FIELDS,
   ArtificialTypes,
-  ORGANIZATION_SETTINGS,
+  CUSTOM_OBJECTS_FIELD,
+  CUSTOM_OBJECTS_LOOKUPS_FIELD,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -90,7 +91,6 @@ import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField, createValueSetEntry } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
-import { CUSTOM_OBJECTS_FIELD, CUSTOM_OBJECTS_LOOKUPS_FIELD } from '../../src/filters/organization_settings'
 import { SUPPORTED_METADATA_TYPES } from '../../src/fetch_profile/metadata_types'
 
 const { makeArray } = collections.array
@@ -1479,7 +1479,7 @@ describe('filter utils', () => {
     let elementsSource: ReadOnlyElementsSource
     describe('when Custom Objects Targets are invalid in the organization settings instance', () => {
       beforeEach(() => {
-        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, mockTypes[ORGANIZATION_SETTINGS], {
+        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
           [CUSTOM_OBJECTS_FIELD]: 'Invalid',
         })
         elementsSource = buildElementsSourceFromElements([invalidOrgSettings])
@@ -1494,13 +1494,13 @@ describe('filter utils', () => {
     })
     describe('when Custom Objects Targets are valid in the organization settings instance', () => {
       beforeEach(() => {
-        const orgSettings = new InstanceElement(ElemID.CONFIG_NAME, mockTypes[ORGANIZATION_SETTINGS], {
+        const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
           [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact'],
           [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
             Account: ['Contact'],
           },
         })
-        elementsSource = buildElementsSourceFromElements([orgSettings])
+        elementsSource = buildElementsSourceFromElements([fetchTargets])
       })
       it('should return correct fetch targets', async () => {
         expect(await getOrgFetchTargets(elementsSource)).toEqual({
@@ -1514,7 +1514,7 @@ describe('filter utils', () => {
   describe('getMetadataIncludeFromFetchTargets', () => {
     let elementsSource: ReadOnlyElementsSource
     beforeEach(() => {
-      const orgSettings = new InstanceElement(ElemID.CONFIG_NAME, mockTypes[ORGANIZATION_SETTINGS], {
+      const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
         [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact', 'Product2', 'User'],
         [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
           Account: ['Product2'],
@@ -1522,7 +1522,7 @@ describe('filter utils', () => {
           Contact: ['Account', 'Product2', 'User'],
         },
       })
-      elementsSource = buildElementsSourceFromElements([orgSettings])
+      elementsSource = buildElementsSourceFromElements([fetchTargets])
     })
     describe('When targets include Custom Objects', () => {
       describe('when type has lookups', () => {

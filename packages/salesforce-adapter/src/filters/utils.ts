@@ -98,6 +98,8 @@ import {
   EVENT_CUSTOM_OBJECT,
   PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS,
   PATHS_FIELD,
+  CUSTOM_OBJECTS_LOOKUPS_FIELD,
+  CUSTOM_OBJECTS_FIELD,
 } from '../constants'
 import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -114,12 +116,8 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
-import {
-  CUSTOM_OBJECTS_FIELD,
-  CUSTOM_OBJECTS_LOOKUPS_FIELD,
-  ORG_SETTINGS_INSTANCE_ELEM_ID,
-} from './organization_settings'
 import { getFetchTargetsWithDependencies, SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
+import { FETCH_TARGETS_INSTANCE_ELEM_ID } from './fetch_targets'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -994,7 +992,7 @@ const isCustomObjectsTargets = (val: Values): val is CustomObjectsTargets =>
   Object.values(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]).every(isStringArray)
 
 export const getOrgFetchTargets = async (elementsSource: ReadOnlyElementsSource): Promise<SalesforceFetchTargets> => {
-  const orgSettings = await elementsSource.get(ORG_SETTINGS_INSTANCE_ELEM_ID)
+  const orgSettings = await elementsSource.get(FETCH_TARGETS_INSTANCE_ELEM_ID)
   if (!isInstanceElement(orgSettings)) {
     log.warn('Expected org settings Instance to be in elements source. Fetch targets will only include metadata types')
     return {

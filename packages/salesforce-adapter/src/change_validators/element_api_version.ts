@@ -7,9 +7,9 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { ChangeValidator, getChangeData, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { FLOW_METADATA_TYPE } from '../constants'
-import { LATEST_SUPPORTED_API_VERSION_FIELD, ORG_SETTINGS_INSTANCE_ELEM_ID } from '../filters/organization_settings'
+import { ChangeValidator, ElemID, getChangeData, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { FLOW_METADATA_TYPE, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
+import { LATEST_SUPPORTED_API_VERSION_FIELD } from '../filters/organization_settings'
 import { isInstanceOfTypeSync } from '../filters/utils'
 
 const log = logger(module)
@@ -21,7 +21,7 @@ const getLatestSupportedApiVersion = async (elementsSource?: ReadOnlyElementsSou
     return undefined
   }
 
-  const orgSettings = await elementsSource.get(ORG_SETTINGS_INSTANCE_ELEM_ID)
+  const orgSettings = await elementsSource.get(new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance'))
   const latestApiVersion = orgSettings?.value[LATEST_SUPPORTED_API_VERSION_FIELD]
   if (latestApiVersion === undefined) {
     log.debug('Latest API version not found.')

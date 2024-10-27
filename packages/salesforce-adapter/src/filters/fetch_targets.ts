@@ -16,9 +16,17 @@ import {
   referenceFieldTargetTypes,
 } from './utils'
 import { FilterCreator } from '../filter'
-import { ArtificialTypes, CUSTOM_OBJECTS_FIELD, CUSTOM_OBJECTS_LOOKUPS_FIELD } from '../constants'
+import {
+  ArtificialTypes,
+  CUSTOM_OBJECTS_FIELD,
+  CUSTOM_OBJECTS_LOOKUPS_FIELD,
+  FETCH_TARGETS,
+  SALESFORCE,
+} from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
+
+export const FETCH_TARGETS_INSTANCE_ELEM_ID = new ElemID(SALESFORCE, FETCH_TARGETS, 'instance', ElemID.CONFIG_NAME)
 
 const getCustomObjectLookupTypes = (customObject: ObjectType): string[] =>
   _.uniq(Object.values(customObject.fields).flatMap(referenceFieldTargetTypes))

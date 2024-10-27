@@ -71,6 +71,7 @@ import {
   EMPTY_STRINGS_PATH_NAME_TO_RECURSE,
   TRANSITION_LIST_FIELDS,
   WorkflowV2Transition,
+  WorkflowVersionType,
 } from './types'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
 import { JIRA, PROJECT_TYPE, WORKFLOW_CONFIGURATION_TYPE, WORKFLOW_RETRY_PERIODS } from '../../constants'
@@ -230,6 +231,9 @@ const createWorkflowInstances = async ({
       data: {
         workflowIds,
       },
+      queryParams: {
+        useTransitionLinksFormat: true,
+      },
     })
     if (!isWorkflowResponse(response.data)) {
       return {
@@ -249,7 +253,11 @@ const createWorkflowInstances = async ({
             return undefined
           }
           // convert transition list to map
-          const [error] = transformTransitions(workflow, workflowIdToStatuses[workflow.id])
+          const [error] = transformTransitions({
+            value: workflow,
+            statuses: workflowIdToStatuses[workflow.id],
+            workflowVersion: WorkflowVersionType.V2,
+          })
           if (error) {
             errors.push(error)
           }
@@ -675,16 +683,28 @@ const insertConditionGroups: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
   return WALK_NEXT_STEP.SKIP
 }
 
+// Jira has a bug that causes global transition with a destination status to become a looped transition without a status
+// as a workaround we add an empty links array
+// We should remove this once the bug is fixed - https://jira.atlassian.com/browse/JRACLOUD-85033
+const insertEmptyLinksToGlobalTransition: WalkOnFunc = ({ value, path }): WALK_NEXT_STEP => {
+  const nameParts = path.getFullNameParts()
+  if (_.isPlainObject(value) && nameParts.length > 4 && nameParts[4] === 'transitions' && value?.type === 'GLOBAL') {
+    value.links = []
+  }
+  if (isInstanceElement(value) || path.name === 'transitions') {
+    return WALK_NEXT_STEP.RECURSE
+  }
+  return WALK_NEXT_STEP.SKIP
+}
+
 const replaceStatusIdWithUuid =
   (statusIdToUuid: Record<string, string>): WalkOnFunc =>
   ({ value, path }): WALK_NEXT_STEP => {
-    const isValueToRecurse =
-      (_.isPlainObject(value) && (value.to || value.from || value.statusMigrations)) || _.isArray(value)
-    if (isInstanceElement(value) || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name) || isValueToRecurse) {
-      return WALK_NEXT_STEP.RECURSE
+    if (value.toStatusReference) {
+      value.toStatusReference = statusIdToUuid[value.toStatusReference]
     }
-    if (!_.isPlainObject(value)) {
-      return WALK_NEXT_STEP.SKIP
+    if (value.fromStatusReference) {
+      value.fromStatusReference = statusIdToUuid[value.fromStatusReference]
     }
     if (value.statusReference) {
       value.statusReference = statusIdToUuid[value.statusReference]
@@ -695,6 +715,11 @@ const replaceStatusIdWithUuid =
     if (value.newStatusReference) {
       value.newStatusReference = statusIdToUuid[value.newStatusReference]
     }
+    const isValueToRecurse = _.isPlainObject(value) && (value.links || value.statusMigrations)
+    if (isInstanceElement(value) || ID_TO_UUID_PATH_NAME_TO_RECURSE.has(path.name) || isValueToRecurse) {
+      return WALK_NEXT_STEP.RECURSE
+    }
+
     return WALK_NEXT_STEP.SKIP
   }
 
@@ -713,6 +738,7 @@ const getWorkflowForDeploy = async (
   joinResolutionProperties(resolvedInstance.value.transitions)
   walkOnElement({ element: resolvedInstance, func: replaceStatusIdWithUuid(statusIdToUuid) })
   walkOnElement({ element: resolvedInstance, func: insertConditionGroups })
+  walkOnElement({ element: resolvedInstance, func: insertEmptyLinksToGlobalTransition })
   return resolvedInstance
 }
 

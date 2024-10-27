@@ -34,6 +34,7 @@ export const ID_TO_UUID_PATH_NAME_TO_RECURSE = new Set([
   'transitions',
   'statusMappings',
   'statusMigrations',
+  'links',
 ])
 export const CONDITION_GROUPS_PATH_NAME_TO_RECURSE = new Set(['transitions', 'conditions', 'conditionGroups'])
 export const EMPTY_STRINGS_PATH_NAME_TO_RECURSE = new Set([
@@ -75,6 +76,12 @@ export type WorkflowStatusAndPort = {
   port?: number
 }
 
+export type WorkflowTransitionLinks = {
+  fromPort?: number
+  fromStatusReference?: string | ReferenceExpression
+  toPort?: number
+}
+
 export type WorkflowV2TransitionRuleParameters = {
   appKey?: string
   key?: string
@@ -95,8 +102,8 @@ export type WorkflowV2Transition = {
   id?: string
   type: string
   name: string
-  from?: WorkflowStatusAndPort[]
-  to?: WorkflowStatusAndPort
+  links?: WorkflowTransitionLinks[]
+  toStatusReference?: string | ReferenceExpression
   actions?: WorkflowV2TransitionRule[]
   conditions?: WorkflowV2TransitionConditionGroup
   validators?: WorkflowV2TransitionRule[]
@@ -150,16 +157,16 @@ const TRANSITION_SCHEME = Joi.object({
   actions: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
   type: Joi.string().required(),
   name: Joi.string().required(),
-  from: Joi.array().items(
-    Joi.object({
-      statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
-      port: Joi.number(),
-    }),
-  ),
-  to: Joi.object({
-    statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
-    port: Joi.number(),
-  }),
+  links: Joi.array()
+    .items(
+      Joi.object({
+        fromPort: Joi.number(),
+        fromStatusReference: Joi.alternatives(Joi.object(), Joi.string()),
+        toPort: Joi.number(),
+      }),
+    )
+    .optional(),
+  toStatusReference: Joi.alternatives(Joi.object(), Joi.string()).optional(),
   conditions: TRANSITION_CONDITION_GROUP_SCHEME.optional(),
   validators: Joi.array().items(TRANSITION_RULE_SCHEME).optional(),
   properties: Joi.alternatives(Joi.array().items(Joi.object()), Joi.object()).optional(),
@@ -331,3 +338,13 @@ export const isWorkflowResponse = createSchemeGuard<WorkflowResponse>(
 )
 
 export const isTaskResponse = createSchemeGuard<TaskResponse>(TASK_RESPONSE_SCHEMA, 'Received an invalid task response')
+
+export const isWorkflowV2Transition = createSchemeGuard<WorkflowV2Transition>(
+  TRANSITION_SCHEME,
+  'Received an invalid workflowV2 transition',
+)
+
+export enum WorkflowVersionType {
+  V1 = 'V1',
+  V2 = 'V2',
+}

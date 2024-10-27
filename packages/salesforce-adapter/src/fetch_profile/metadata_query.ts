@@ -14,6 +14,8 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   SETTINGS_METADATA_TYPE,
 } from '../constants'
@@ -104,7 +106,9 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
         })
       return acc
     },
-    {},
+    {
+      [FLOW_DEFINITION_METADATA_TYPE]: FLOW_METADATA_TYPE,
+    },
   )
 
   const isIncludedInTargetedFetch = (type: string): boolean => {

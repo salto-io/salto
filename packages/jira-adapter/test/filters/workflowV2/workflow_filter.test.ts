@@ -583,9 +583,6 @@ It is strongly recommended to rename these transitions so they are unique in Jir
                     id: '1',
                     name: 'Create',
                     toStatusReference: 'uuid1',
-                    // to: {
-                    //   statusReference: 'uuid1',
-                    // },
                     type: 'INITIAL',
                     conditions: {
                       operation: 'ALL',

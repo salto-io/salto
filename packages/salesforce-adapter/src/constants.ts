@@ -8,7 +8,15 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import {ActionName, BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, MapType, ObjectType} from '@salto-io/adapter-api'
+import {
+  ActionName,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ListType,
+  MapType,
+  ObjectType,
+} from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 

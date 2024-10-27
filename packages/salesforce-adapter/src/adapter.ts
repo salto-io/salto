@@ -254,7 +254,8 @@ export const allFilters: Array<FilterCreator> = [
   mergeProfilesWithSourceValuesFilter,
   // profilesAndPermissionSetsBrokenPathsFilter should run after mergeProfilesWithSourceValuesFilter
   profilesAndPermissionSetsBrokenPathsFilter,
-  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
+  fetchTargetsFilter,
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter, profilesAndPermissionSetsBrokenPathsFilter and fetchTargetsFilter
   customTypeSplit,
   // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
   profileInstanceSplitFilter,
@@ -265,7 +266,6 @@ export const allFilters: Array<FilterCreator> = [
   hideTypesFolder,
   generatedDependenciesFilter,
   flowCoordinatesFilter,
-  fetchTargetsFilter,
   // createChangedAtSingletonInstanceFilter should run last
   changedAtSingletonFilter,
 ]

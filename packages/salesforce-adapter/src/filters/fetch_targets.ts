@@ -16,7 +16,7 @@ import {
   referenceFieldTargetTypes,
 } from './utils'
 import { FilterCreator } from '../filter'
-import {ArtificialTypes, CUSTOM_OBJECTS_FIELD, CUSTOM_OBJECTS_LOOKUPS_FIELD} from '../constants'
+import { ArtificialTypes, CUSTOM_OBJECTS_FIELD, CUSTOM_OBJECTS_LOOKUPS_FIELD } from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
 
@@ -61,6 +61,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         elements: await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
         fetchTargetsInstance,
       })
+      elements.push(fetchTargetsInstance)
     },
   }),
 })

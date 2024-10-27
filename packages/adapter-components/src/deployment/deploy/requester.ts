@@ -16,7 +16,7 @@ import {
   isModificationChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { elementExpressionStringifyReplacer, safeJsonStringify } from '@salto-io/adapter-utils'
+import { elementExpressionStringifyReplacer, inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ResponseValue, Response, ClientDataParams, executeWithPolling } from '../../client'
@@ -93,6 +93,16 @@ const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndEx
     )
   }
 }
+
+export type ResponseValidationError = Error & { response: Response<ResponseValue | ResponseValue[]> }
+
+const createResponseValidationError = (
+  message: string,
+  response: Response<ResponseValue | ResponseValue[]>,
+): ResponseValidationError => ({
+  ...new Error(message),
+  response,
+})
 
 const createValidateFunc = ({
   validate,
@@ -347,7 +357,10 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
       }
 
       if (!(await validateFunc({ change, ...changeContext, response }))) {
-        throw new Error(`Failed to validate response for change ${elemID.getFullName()}`)
+        throw createResponseValidationError(
+          `Response validation failed for action ${change.action} ${elemID.getFullName()}: ${inspectValue(response)}`,
+          response,
+        )
       }
       return response
     }

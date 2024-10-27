@@ -25,7 +25,7 @@ export const executeWithPolling = async <T>(
       const response = await singleClientCall(args)
       return polling.checkStatus(response) ? response : undefined
     } catch (e) {
-      if (e instanceof HTTPError && polling.retryOnStatus?.includes(e.response?.status)) {
+      if (polling.retryOnStatus?.includes(e.response?.status)) {
         return undefined
       }
       throw e

@@ -107,6 +107,7 @@ import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import extendTriggersMetadataFilter from './filters/extend_triggers_metadata'
 import profilesAndPermissionSetsBrokenPathsFilter from './filters/profiles_and_permission_sets_broken_paths'
+import fetchTargetsFilter from './filters/fetch_targets'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
@@ -264,6 +265,7 @@ export const allFilters: Array<FilterCreator> = [
   hideTypesFolder,
   generatedDependenciesFilter,
   flowCoordinatesFilter,
+  fetchTargetsFilter,
   // createChangedAtSingletonInstanceFilter should run last
   changedAtSingletonFilter,
 ]

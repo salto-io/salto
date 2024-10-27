@@ -51,6 +51,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendTriggersMetadata: false,
   removeReferenceFromFilterItemToRecordType: false,
   storeProfilesAndPermissionSetsBrokenPaths: true,
+  extendFetchTargets: true,
 }
 
 type BuildFetchProfileParams = {

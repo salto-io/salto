@@ -128,6 +128,7 @@ export type OptionalFeatures = {
   extendTriggersMetadata?: boolean
   storeProfilesAndPermissionSetsBrokenPaths?: boolean
   removeReferenceFromFilterItemToRecordType?: boolean
+  extendFetchTargets?: boolean
 }
 
 export type ChangeValidatorName =
@@ -840,6 +841,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
     storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
     removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
+    extendFetchTargets: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

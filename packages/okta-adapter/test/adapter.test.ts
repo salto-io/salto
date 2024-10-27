@@ -2511,8 +2511,12 @@ describe('adapter', () => {
           progressReporter: nullProgressReporter,
         })
         expect(result.errors).toHaveLength(1)
-        expect(result.errors[0].message).toEqual('Expected BrandTheme to be deleted')
-        expect(result.errors[0].detailedMessage).toEqual('Expected BrandTheme to be deleted')
+        expect(result.errors[0].message).toEqual(
+          'Error: Failed to validate response for change okta.BrandTheme.instance.brandTheme',
+        )
+        expect(result.errors[0].detailedMessage).toEqual(
+          'Error: Failed to validate response for change okta.BrandTheme.instance.brandTheme',
+        )
         expect(result.appliedChanges).toHaveLength(0)
         expect(nock.pendingMocks()).toHaveLength(0)
       })

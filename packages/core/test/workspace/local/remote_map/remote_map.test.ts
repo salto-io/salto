@@ -124,6 +124,27 @@ describe('test operations on remote db', () => {
         expect(element).toBeUndefined()
       })
     })
+    it('should read from cache in subsequent reads', async () => {
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(1)
+      expect(locationInfo.counters.LocationCacheHit.value()).toEqual(3)
+    })
+    it('should read from cache in concurrent reads', async () => {
+      await Promise.all([
+        remoteMap.get(elements[0].elemID.getFullName()),
+        remoteMap.get(elements[0].elemID.getFullName()),
+        remoteMap.get(elements[0].elemID.getFullName()),
+        remoteMap.get(elements[0].elemID.getFullName()),
+      ])
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(1)
+      expect(locationInfo.counters.LocationCacheHit.value()).toEqual(3)
+    })
   })
   describe('getMany', () => {
     it('should get items after set', async () => {

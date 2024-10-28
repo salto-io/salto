@@ -91,9 +91,7 @@ const toChangeErrors = (errors: SaltoElementError[]): ChangeError[] => {
       elemID: error.elemID,
       severity: error.severity,
       message: 'Error reported from NetSuite',
-      detailedMessage:
-        'SDF validation resulted in some errors. To learn more about SDF validations, visit https://help.salto.io/en/articles/10050892-understanding-sdf-validations-in-netsuite-deployments\n\n' +
-        error.detailedMessage,
+      detailedMessage: `SDF validation resulted in some errors. To learn more about SDF validations, visit https://help.salto.io/en/articles/10050892-understanding-sdf-validations-in-netsuite-deployments\n\n${error.detailedMessage}`,
     }))
     .concat(missingDependenciesChangeErrors)
     .concat(missingFeatureChangeErrors)

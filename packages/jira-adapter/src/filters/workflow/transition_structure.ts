@@ -6,26 +6,15 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { invertNaclCase, naclCase, createSchemeGuard } from '@salto-io/adapter-utils'
-import { SaltoError, Value } from '@salto-io/adapter-api'
+import { invertNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { ReferenceExpression, SaltoError, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import Joi from 'joi'
 import _ from 'lodash'
-import { Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
+import { isWorkflowV1Transition, Status, Transition as WorkflowTransitionV1, WorkflowV1Instance } from './types'
 import { SCRIPT_RUNNER_POST_FUNCTION_TYPE } from '../script_runner/workflow/workflow_cloud'
-import { WorkflowStatusAndPort, WorkflowV2Transition } from '../workflowV2/types'
+import { isWorkflowV2Transition, WorkflowV2Transition, WorkflowVersionType } from '../workflowV2/types'
 
 const { makeArray } = collections.array
-
-const TRANSITION_FROM_V2_SCHEME = Joi.array().items(
-  Joi.object({
-    statusReference: Joi.alternatives(Joi.object(), Joi.string()).required(),
-    port: Joi.number(),
-  }),
-)
-
-// we already validate the workflow structure in workflow_filter, so we just want to differ between the two versions
-const isTransitionFromV2 = createSchemeGuard<WorkflowStatusAndPort[]>(TRANSITION_FROM_V2_SCHEME)
 
 export const TRANSITION_PARTS_SEPARATOR = '::'
 
@@ -42,15 +31,28 @@ const getTransitionTypeFromKey = (key: string): string => {
   return type === 'Circular' ? 'Global' : type
 }
 
-const getTransitionType = (transition: WorkflowTransitionV1 | WorkflowV2Transition): TransitionType => {
+const getTransitionType = (
+  transition: WorkflowTransitionV1 | WorkflowV2Transition,
+  workflowVersion: WorkflowVersionType,
+): TransitionType => {
   if (transition.type?.toLowerCase() === 'initial') {
     return 'Initial'
   }
-  if (transition.from !== undefined && transition.from.length !== 0) {
-    return 'Directed'
+  if (workflowVersion === WorkflowVersionType.V2 && isWorkflowV2Transition(transition)) {
+    if (transition.links !== undefined && transition.links.length !== 0) {
+      return 'Directed'
+    }
+    if (transition.toStatusReference === undefined) {
+      return 'Circular'
+    }
   }
-  if ((transition.to ?? '') === '') {
-    return 'Circular'
+  if (workflowVersion === WorkflowVersionType.V1 && isWorkflowV1Transition(transition)) {
+    if (transition.from !== undefined && transition.from.length !== 0) {
+      return 'Directed'
+    }
+    if ((transition.to ?? '') === '') {
+      return 'Circular'
+    }
   }
   return 'Global'
 }
@@ -84,17 +86,26 @@ export const createStatusMap = (statuses: Status[]): Map<string, string> =>
       .map(status => [status.id, status.name]),
   )
 
-export const getTransitionKey = (
-  transition: WorkflowTransitionV1 | WorkflowV2Transition,
-  statusesMap: Map<string, string>,
-): string => {
-  const type = getTransitionType(transition)
+export const getTransitionKey = ({
+  transition,
+  statusesMap,
+  workflowVersion,
+}: {
+  transition: WorkflowTransitionV1 | WorkflowV2Transition
+  statusesMap: Map<string, string>
+  workflowVersion: WorkflowVersionType
+}): string => {
+  const type = getTransitionType(transition, workflowVersion)
+  let fromIds: (string | ReferenceExpression | undefined)[] = []
+  if (workflowVersion === WorkflowVersionType.V2 && isWorkflowV2Transition(transition)) {
+    fromIds = makeArray(transition.links).map(link => link.fromStatusReference)
+  }
+  if (workflowVersion === WorkflowVersionType.V1 && isWorkflowV1Transition(transition)) {
+    fromIds = makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
+  }
   const fromSorted =
     type === 'Directed'
-      ? (isTransitionFromV2(transition.from)
-          ? makeArray(transition.from).map(from => from.statusReference)
-          : makeArray(transition.from).map(from => (_.isString(from) ? from : from.id ?? ''))
-        )
+      ? fromIds
           .map(from => (_.isString(from) && statusesMap.get(from) !== undefined ? statusesMap.get(from) : from))
           .sort()
           .join(',')
@@ -103,10 +114,18 @@ export const getTransitionKey = (
   return naclCase([transition.name, `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
 }
 
-export const transformTransitions = (value: Value, statuses?: Pick<Status, 'id' | 'name'>[]): SaltoError[] => {
+export const transformTransitions = ({
+  value,
+  workflowVersion,
+  statuses,
+}: {
+  value: Value
+  workflowVersion: WorkflowVersionType
+  statuses?: Pick<Status, 'id' | 'name'>[]
+}): SaltoError[] => {
   const statusesMap = createStatusMap(statuses ?? value.statuses ?? [])
   const maxCounts = _(value.transitions)
-    .map(transition => getTransitionKey(transition, statusesMap))
+    .map(transition => getTransitionKey({ transition, statusesMap, workflowVersion }))
     .countBy()
     .value()
 
@@ -116,7 +135,7 @@ export const transformTransitions = (value: Value, statuses?: Pick<Status, 'id' 
     value.transitions
       // This is Value and not the actual type as we change types
       .map((transition: Value) => {
-        const key = getTransitionKey(transition, statusesMap)
+        const key = getTransitionKey({ transition, statusesMap, workflowVersion })
         counts[key] = (counts[key] ?? 0) + 1
         if (maxCounts[key] > 1) {
           return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
@@ -170,20 +189,22 @@ export const expectedToActualTransitionIds = ({
   transitions,
   expectedTransitionIds,
   statusesMap,
+  workflowVersion,
 }: {
   transitions: WorkflowTransitionV1[]
   expectedTransitionIds: Map<string, string>
   statusesMap: Map<string, string>
+  workflowVersion: WorkflowVersionType
 }): Record<string, string> =>
   Object.fromEntries(
     transitions
       // create a map of [expectedId, actualId]
       .map(
         transition =>
-          [expectedTransitionIds.get(getTransitionKey(transition, statusesMap)), transition.id] as [
-            string | undefined,
-            string | undefined,
-          ],
+          [
+            expectedTransitionIds.get(getTransitionKey({ transition, statusesMap, workflowVersion })),
+            transition.id,
+          ] as [string | undefined, string | undefined],
       )
       .filter(([expectedId, actualId]) => expectedId !== undefined && actualId !== undefined)
       .filter(([expectedId, actualId]) => expectedId !== actualId),

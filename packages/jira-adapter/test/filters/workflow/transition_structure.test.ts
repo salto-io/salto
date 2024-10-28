@@ -11,6 +11,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { Transition, TransitionFrom, WorkflowV1Instance } from '../../../src/filters/workflow/types'
 import { createEmptyType } from '../../utils'
 import { getTransitionKey, transitionKeysToExpectedIds } from '../../../src/filters/workflow/transition_structure'
+import { WorkflowVersionType } from '../../../src/filters/workflowV2/types'
 
 const keys = {
   t1: naclCase('transition1::From: Open::Directed'),
@@ -68,7 +69,7 @@ describe('transitionKeysToExpectedIds', () => {
       from: [{} as TransitionFrom],
       name: 'transition1',
     }
-    getTransitionKey(transition1, new Map())
-    getTransitionKey(transition2, new Map())
+    getTransitionKey({ transition: transition1, statusesMap: new Map(), workflowVersion: WorkflowVersionType.V1 })
+    getTransitionKey({ transition: transition2, statusesMap: new Map(), workflowVersion: WorkflowVersionType.V1 })
   })
 })

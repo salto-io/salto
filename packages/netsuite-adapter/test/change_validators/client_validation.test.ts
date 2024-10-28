@@ -75,8 +75,8 @@ describe('client validation', () => {
     expect(changeErrors).toEqual([
       {
         elemID: getChangeData(changes[0]).elemID,
-        message: 'SDF validation error',
-        detailedMessage: 'Some detailed Error',
+        message: 'Error reported from NetSuite',
+        detailedMessage: expect.stringContaining('Some detailed Error'),
         severity: 'Error',
       },
     ])
@@ -100,8 +100,8 @@ describe('client validation', () => {
       expect.arrayContaining(
         changes.map(change => ({
           elemID: getChangeData(change).elemID,
-          message: 'SDF validation error',
-          detailedMessage: 'Some detailed Error',
+          message: 'Error reported from NetSuite',
+          detailedMessage: expect.stringContaining('Some detailed Error'),
           severity: 'Error',
         })),
       ),
@@ -292,14 +292,14 @@ describe('client validation', () => {
           changes
             .map(change => ({
               elemID: getChangeData(change).elemID,
-              message: 'SDF validation error',
-              detailedMessage: 'detailed General Error',
+              message: 'Error reported from NetSuite',
+              detailedMessage: expect.stringContaining('detailed General Error'),
               severity: 'Error',
             }))
             .concat({
               elemID: getChangeData(changes[0]).elemID,
-              message: 'SDF validation error',
-              detailedMessage: 'detailed SDF Change Error',
+              message: 'Error reported from NetSuite',
+              detailedMessage: expect.stringContaining('detailed SDF Change Error'),
               severity: 'Error',
             }),
         ),

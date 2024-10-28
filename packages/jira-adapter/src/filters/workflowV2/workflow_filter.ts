@@ -232,7 +232,7 @@ const createWorkflowInstances = async ({
         workflowIds,
       },
       queryParams: {
-        useTransitionLinksFormat: true,
+        useTransitionLinksFormat: 'true',
       },
     })
     if (!isWorkflowResponse(response.data)) {

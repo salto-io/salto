@@ -340,7 +340,7 @@ describe('workflow filter', () => {
         },
         {
           params: {
-            useTransitionLinksFormat: true,
+            useTransitionLinksFormat: 'true',
           },
         },
       )

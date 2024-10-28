@@ -102,6 +102,11 @@ describe('picklistReferences filter', () => {
           picklist: 'invalid',
           values: [{ fullName: 'value1' }],
         },
+        {
+          picklist: new ReferenceExpression(new ElemID('field', 'priority__c')),
+          // Value without a fullName attribute is invalid and skipped
+          values: [{ default: false }],
+        },
       ],
     })
     const elements = [recordType]
@@ -137,6 +142,9 @@ describe('picklistReferences filter', () => {
     })
     it('should ignore invalid picklist references', async () => {
       expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'value1' }])
+    })
+    it('should ignore invalid picklist values', async () => {
+      expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
     })
   })
 })

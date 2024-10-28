@@ -76,7 +76,10 @@ describe('picklistReferences filter', () => {
       picklistValues: [
         {
           picklist: new ReferenceExpression(gvs.elemID, gvs),
-          values: [{ fullName: 'value1' }, { fullName: 'value2' }],
+          values: [
+            { fullName: 'value1', default: true },
+            { fullName: 'value2', default: false },
+          ],
         },
         {
           picklist: new ReferenceExpression(svs.elemID, svs),
@@ -116,28 +119,39 @@ describe('picklistReferences filter', () => {
   describe('modify picklist values to reference expressions', () => {
     it('should create references to GlobalValueSet', async () => {
       expect(recordType.value.picklistValues[0].values).toEqual([
-        new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'value1')),
-        new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'value2')),
+        { value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'value1')), default: true },
+        {
+          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'value2')),
+          default: false,
+        },
       ])
     })
     it('should create references to StandardValueSet', async () => {
       expect(recordType.value.picklistValues[1].values).toEqual([
-        new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'value2')),
+        {
+          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'value2')),
+        },
       ])
     })
     it('should create references to StandardValueSet (hopping an ObjectType reference)', async () => {
       expect(recordType.value.picklistValues[2].values).toEqual([
-        new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'value1')),
+        {
+          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'value1')),
+        },
       ])
     })
     it('should create references to ObjectType custom fields', async () => {
       expect(recordType.value.picklistValues[3].values).toEqual([
-        new ReferenceExpression(
-          accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
-        ),
-        new ReferenceExpression(
-          accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
-        ),
+        {
+          value: new ReferenceExpression(
+            accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
+          ),
+        },
+        {
+          value: new ReferenceExpression(
+            accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
+          ),
+        },
       ])
     })
     it('should ignore invalid picklist references', async () => {

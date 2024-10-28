@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, getChangeData, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -15,9 +15,57 @@ import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 import { isInstanceOfTypeSync } from './utils'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
+import { Promise } from '@salto-io/jsforce'
 
 const log = logger(module)
 const { isDefined } = values
+
+const getValueSetFieldName = (typeName: string): string => {
+  switch (typeName) {
+    case GLOBAL_VALUE_SET:
+      return 'customValue'
+    case STANDARD_VALUE_SET:
+      return 'standardValue'
+    default:
+      return 'valueSet'
+  }
+}
+
+type PicklistValuesItem = {
+  picklist: ReferenceExpression
+  values: { fullName: string }[]
+}
+
+type PicklistValuesItemWithReferences = {
+  picklist: ReferenceExpression
+  values: { value: ReferenceExpression }[]
+}
+
+const addReferencesToPicklistValues = (picklistValues: PicklistValuesItem): PicklistValuesItemWithReferences => ({
+    picklist: picklistValues.picklist,
+    values: picklistValues.values.map(value => {
+      const { fullName, ...rest } = value
+      return {
+        ...rest,
+        value: new ReferenceExpression(
+          picklistValues.picklist.elemID.createNestedID(
+            getValueSetFieldName(picklistValues.picklist.elemID.typeName),
+            ORDERED_MAP_VALUES_FIELD,
+            naclCase(decodeURIComponent(value.fullName)),
+          ),
+        )
+      }
+    })
+  })
+
+const resolveReferencesInPicklistValues = (picklistValues: PicklistValuesItemWithReferences): PicklistValuesItem => {
+  picklistValues.values = picklistValues.values.map(
+    (value: { value: ReferenceExpression }) => ({
+      ...value,
+      fullName: value.value.elemID.name,
+    }),
+  )
+}
 
 /**
  * This filter modifies picklist values in `RecordType` to be references to the original value definitions.
@@ -46,24 +94,55 @@ const filterCreator: FilterCreator = ({ config }) => ({
         )
         return
       }
-      picklistValues.values = picklistValues.values.map(({ fullName }: { fullName: string }) => {
-        const valueName = naclCase(decodeURIComponent(fullName))
-        if (picklistRef.elemID.typeName === GLOBAL_VALUE_SET) {
-          return new ReferenceExpression(
-            picklistRef.elemID.createNestedID('customValue', ORDERED_MAP_VALUES_FIELD, valueName),
+      picklistValues.values = picklistValues.values.map((value: {fullName: string}) => {
+        const { fullName, ...rest } = value
+        return {
+          ...rest,
+          value: new ReferenceExpression(
+            picklistRef.elemID.createNestedID(
+              getValueSetFieldName(picklistRef.elemID.typeName),
+              ORDERED_MAP_VALUES_FIELD,
+              naclCase(decodeURIComponent(value.fullName)),
+            ),
           )
         }
-        if (picklistRef.elemID.typeName === STANDARD_VALUE_SET) {
-          return new ReferenceExpression(
-            picklistRef.elemID.createNestedID('standardValue', ORDERED_MAP_VALUES_FIELD, valueName),
-          )
-        }
-        return new ReferenceExpression(
-          picklistRef.elemID.createNestedID('valueSet', ORDERED_MAP_VALUES_FIELD, valueName),
-        )
       })
     })
   },
+
+  preDeploy: async changes => {
+    changes
+      .map(getChangeData)
+      .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
+      .flatMap(rt => rt.value.picklistValues)
+      .filter(isDefined)
+      .forEach(picklistValues => {
+        picklistValues.values = picklistValues.values.map(
+          ({ value, default: isDefault }: { value: ReferenceExpression, default: boolean }) => ({
+            fullName: value.value.fullName,
+            default: isDefault,
+          }),
+        )
+      })
+    },
+
+  onDeploy: async changes => {
+    changes
+      .map(getChangeData)
+      .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
+      .flatMap(rt => rt.value.picklistValues)
+      .filter(isDefined)
+      .forEach(picklistValues => {
+        picklistValues.values = picklistValues.values.map(
+          ({ value, default: isDefault }: { value: ReferenceExpression, default: boolean }) => ({
+            fullName: value.value.fullName,
+            default: isDefault,
+          }),
+        )
+      })
+
+  }
+
 })
 
 export default filterCreator

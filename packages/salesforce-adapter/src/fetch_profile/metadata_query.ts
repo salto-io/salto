@@ -14,8 +14,6 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
-  FLOW_DEFINITION_METADATA_TYPE,
-  FLOW_METADATA_TYPE,
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   SETTINGS_METADATA_TYPE,
 } from '../constants'
@@ -37,7 +35,7 @@ import { getChangedAtSingletonInstance } from '../filters/utils'
 import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
-  TYPE_TO_NESTED_TYPES,
+  NESTED_TYPE_TO_PARENT_TYPE,
 } from '../last_change_date_of_types_with_nested_instances'
 import { getFetchTargetsWithDependencies } from './metadata_types'
 
@@ -97,19 +95,6 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   }
   const { include = [{}], exclude = [] } = metadata
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
-  const nestedTypeToParentType = Object.entries(TYPE_TO_NESTED_TYPES).reduce<Record<string, string>>(
-    (acc, [parentType, nestedTypes]) => {
-      nestedTypes
-        .filter(nestedType => nestedType !== parentType)
-        .forEach(nestedType => {
-          acc[nestedType] = parentType
-        })
-      return acc
-    },
-    {
-      [FLOW_DEFINITION_METADATA_TYPE]: FLOW_METADATA_TYPE,
-    },
-  )
 
   const isIncludedInTargetedFetch = (type: string): boolean => {
     if (target === undefined) {
@@ -119,20 +104,20 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   }
   const isTypeIncluded = (type: string): boolean =>
     include.some(({ metadataType = '.*' }) =>
-      new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+      new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
     ) && isIncludedInTargetedFetch(type)
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
         namespace === '.*' &&
         name === '.*' &&
-        new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+        new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
     )
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     { metadataType = '.*', namespace = '.*', name = '.*' }: MetadataQueryParams,
   ): boolean => {
-    const instanceMetadataType = nestedTypeToParentType[instance.metadataType] ?? instance.metadataType
+    const instanceMetadataType = NESTED_TYPE_TO_PARENT_TYPE[instance.metadataType] ?? instance.metadataType
     const realNamespace = namespace === '' ? getDefaultNamespace(instanceMetadataType) : namespace
     if (
       !regex.isFullRegexMatch(instanceMetadataType, metadataType) ||

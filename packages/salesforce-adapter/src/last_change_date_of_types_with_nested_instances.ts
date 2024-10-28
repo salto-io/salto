@@ -15,6 +15,8 @@ import {
   CUSTOM_LABEL_METADATA_TYPE,
   CUSTOM_OBJECT,
   ESCALATION_RULE_TYPE,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
   SHARING_RULES_TYPE,
   TYPES_WITH_NESTED_INSTANCES,
   TYPES_WITH_NESTED_INSTANCES_PER_PARENT,
@@ -58,6 +60,20 @@ export const TYPE_TO_NESTED_TYPES: TypeToNestedTypes = {
   SharingRules: [...SHARING_RULES_API_NAMES, SHARING_RULES_TYPE],
   Workflow: [...WORKFLOW_FIELDS],
 }
+
+export const NESTED_TYPE_TO_PARENT_TYPE = Object.entries(TYPE_TO_NESTED_TYPES).reduce<Record<string, string>>(
+  (acc, [parentType, nestedTypes]) => {
+    nestedTypes
+      .filter(nestedType => nestedType !== parentType)
+      .forEach(nestedType => {
+        acc[nestedType] = parentType
+      })
+    return acc
+  },
+  {
+    [FLOW_DEFINITION_METADATA_TYPE]: FLOW_METADATA_TYPE,
+  },
+)
 
 export const getLastChangeDateOfTypesWithNestedInstances = async ({
   client,

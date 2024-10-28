@@ -253,10 +253,13 @@ export const createDeployProgressReporter = async (
     let metadataProgress: string | undefined
     let dataProgress: string | undefined
     if (deployResult) {
+      const startTime = new Date(deployResult.createdDate).getTime()
+      const currentTime = new Date().getTime()
+      const elapsedTimeMinutes = ((currentTime - startTime) / (1000 * 60)).toFixed(1)
       metadataProgress =
         deployResult.status === METADATA_DEPLOY_PENDING_STATUS
-          ? 'Metadata: Waiting on another deploy or automated process to finish in Salesforce'
-          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests.${linkToSalesforce(deployResult)}`
+          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTimeMinutes} minutes`
+          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTimeMinutes} minutes.${linkToSalesforce(deployResult)}`
     }
     if (deployedDataInstances > 0) {
       dataProgress = `${deployedDataInstances} Data Instances`

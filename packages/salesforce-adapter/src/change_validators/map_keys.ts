@@ -21,7 +21,7 @@ import { GetLookupNameFunc, TransformFunc, transformValues } from '@salto-io/ada
 import { resolveValues } from '@salto-io/adapter-components'
 
 import { collections } from '@salto-io/lowerdash'
-import { defaultMapper, metadataTypeToFieldToMapDef } from '../filters/convert_maps'
+import { defaultMapper, getMetadataTypeToFieldToMapDef } from '../filters/convert_maps'
 import {
   API_NAME_SEPARATOR,
   MUTING_PERMISSION_SET_METADATA_TYPE,
@@ -30,6 +30,7 @@ import {
 } from '../constants'
 import { isInstanceOfTypeChange } from '../filters/utils'
 import { apiName } from '../transformers/transformer'
+import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -41,11 +42,11 @@ const metadataTypesToValidate = [
 
 const isNum = (str: string | undefined): boolean => !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
 
-const getMapKeyErrors = async (after: InstanceElement): Promise<ChangeError[]> => {
+const getMapKeyErrors = async (after: InstanceElement, fetchProfile: FetchProfile): Promise<ChangeError[]> => {
   const errors: ChangeError[] = []
   const type = await after.getType()
   const typeName = await apiName(type)
-  const mapper = metadataTypeToFieldToMapDef[typeName]
+  const mapper = getMetadataTypeToFieldToMapDef(fetchProfile)[typeName]
   await awu(Object.entries(after.value))
     .filter(
       async ([fieldName]) => isMapType(await type.fields[fieldName]?.getType()) && mapper[fieldName] !== undefined,
@@ -100,13 +101,15 @@ const getMapKeyErrors = async (after: InstanceElement): Promise<ChangeError[]> =
 }
 
 const changeValidator =
-  (getLookupNameFunc: GetLookupNameFunc): ChangeValidator =>
+  (getLookupNameFunc: GetLookupNameFunc, fetchProfile: FetchProfile): ChangeValidator =>
   async changes =>
     awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
-      .flatMap(async change => getMapKeyErrors(await resolveValues(getChangeData(change), getLookupNameFunc)))
+      .flatMap(async change =>
+        getMapKeyErrors(await resolveValues(getChangeData(change), getLookupNameFunc), fetchProfile),
+      )
       .toArray()
 
 export default changeValidator

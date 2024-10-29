@@ -62,4 +62,18 @@ describe('adjust configuration profile', () => {
       })
     })
   })
+  describe('removeSelfServiceSecurityPassword', () => {
+    it('should delete self service icon object under self_service field', async () => {
+      const value = {
+        general: {},
+        self_service: { security: { field: 'do not delete me please', password: 'this is a secret' } },
+      }
+      await expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).resolves.toEqual({
+        value: {
+          general: {},
+          self_service: { security: { field: 'do not delete me please' } },
+        },
+      })
+    })
+  })
 })

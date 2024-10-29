@@ -67,9 +67,8 @@ const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void =>
       naclCase(decodeURIComponent(value.fullName!)),
     ]
     const resValue = _.get(getElementValueOrAnnotations(picklistRef.value), valueRefPath)
-    const { fullName, ...rest } = value
     return {
-      ...rest,
+      ..._.omit(value, 'fullName'),
       value: new ReferenceExpression(
         picklistRef.elemID.createNestedID(
           getValueSetFieldName(picklistRef.elemID.typeName),

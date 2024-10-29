@@ -23,7 +23,7 @@ import {
   MetadataInstanceElement,
 } from '../transformers/transformer'
 import { API_NAME, METADATA_CONTENT_FIELD, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS } from '../constants'
-import { ComponentSet, MetadataConverter, SourceComponent } from './salesforce_imports'
+import { ComponentSet, ConvertResult, MetadataConverter, SourceComponent } from './salesforce_imports'
 import { UNSUPPORTED_TYPES } from './sfdx_dump'
 import { allFilters } from '../adapter'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
@@ -83,11 +83,25 @@ export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseD
     const absBaseDir = path.resolve(baseDir)
     const currentComponents = ComponentSet.fromSource(absBaseDir)
     const converter = new MetadataConverter()
-    const convertResult = await converter.convert(
-      currentComponents.filter(component => !UNSUPPORTED_TYPES.has(component.type.name)),
-      'metadata',
-      { type: 'zip' },
-    )
+    let convertResult: ConvertResult
+    try {
+      convertResult = await converter.convert(
+        currentComponents.filter(component => !UNSUPPORTED_TYPES.has(component.type.name)),
+        'metadata',
+        { type: 'zip' },
+      )
+    } catch (error) {
+      return {
+        elements: [],
+        errors: [
+          {
+            severity: 'Error',
+            message: 'Failed to load project',
+            detailedMessage: error.message ?? 'Internal error in Salesforce library',
+          },
+        ],
+      }
+    }
     if (convertResult.zipBuffer === undefined) {
       return {
         elements: [],

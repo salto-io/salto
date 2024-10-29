@@ -38,7 +38,7 @@ export const isProjectFolder: IsInitializedFolderFunc = async ({ baseDir }) => {
         {
           severity: 'Error',
           message: 'Failed checking if folder contains an SFDX project',
-          detailedMessage: error.message,
+          detailedMessage: error.message ?? 'Internal error in Salesforce library',
         },
       ],
     }
@@ -69,7 +69,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
         {
           severity: 'Error',
           message: 'Failed initializing SFDX project',
-          detailedMessage: error.message,
+          detailedMessage: error.message ?? 'Internal error in Salesforce library',
         },
       ],
     }

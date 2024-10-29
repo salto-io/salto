@@ -53,7 +53,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
     outputdir: path.dirname(baseDir),
     manifest: false,
     loginurl: 'https://login.salesforce.com',
-    template: 'standard',
+    template: 'empty',
     ns: '',
     defaultpackagedir: 'force-app',
     apiversion: API_VERSION,

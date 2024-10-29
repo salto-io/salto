@@ -5274,6 +5274,7 @@ __metadata:
     eslint-plugin-react-hooks: ^1.7.0
     fast-xml-parser: ^4.4.0
     globals: ^15.8.0
+    humanize-duration: ^3.22.0
     jest: ^29.7.0
     jest-circus: ^29.7.0
     jest-extended: ^4.0.2

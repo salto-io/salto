@@ -89,15 +89,15 @@ const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void =>
  * @param picklistValues    The picklistValues of a RecordType instance to modify
  */
 const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
-    if (picklistValues.values.some(({ value }: { value?: ReferenceExpression }) => value === undefined)) {
-      return
-    }
-
-    picklistValues.values = picklistValues.values.map(({ value: valueRef, ...rest }) => ({
-      fullName: valueRef!.value.fullName,
-      ...rest,
-    }))
+  if (picklistValues.values.some(({ value }: { value?: ReferenceExpression }) => value === undefined)) {
+    return
   }
+
+  picklistValues.values = picklistValues.values.map(({ value: valueRef, ...rest }) => ({
+    fullName: valueRef!.value.fullName,
+    ...rest,
+  }))
+}
 
 /**
  * This filter modifies picklist values in `RecordType` to be references to the original value definitions.

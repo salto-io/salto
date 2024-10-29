@@ -203,20 +203,13 @@ describe('picklistReferences filter', () => {
         ])
       })
       it('should resolve references to StandardValueSet', async () => {
-        expect(recordType.value.picklistValues[1].values).toEqual([
-          { fullName: 'val2' },
-        ])
+        expect(recordType.value.picklistValues[1].values).toEqual([{ fullName: 'val2' }])
       })
       it('should resolve references to StandardValueSet (hopping an ObjectType reference)', async () => {
-        expect(recordType.value.picklistValues[2].values).toEqual([
-          { fullName: 'val1' },
-        ])
+        expect(recordType.value.picklistValues[2].values).toEqual([{ fullName: 'val1' }])
       })
       it('should resolve references to ObjectType custom fields', async () => {
-        expect(recordType.value.picklistValues[3].values).toEqual([
-          { fullName: 'High' },
-          { fullName: 'Low' },
-        ])
+        expect(recordType.value.picklistValues[3].values).toEqual([{ fullName: 'High' }, { fullName: 'Low' }])
       })
       it('should ignore invalid picklist references', async () => {
         expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])

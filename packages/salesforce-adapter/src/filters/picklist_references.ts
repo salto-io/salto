@@ -12,10 +12,11 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
-import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
+import { getElementValueOrAnnotations, ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 import { isInstanceOfTypeSync } from './utils'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
 import { Promise } from '@salto-io/jsforce'
+import _ from 'lodash'
 
 const log = logger(module)
 const { isDefined } = values
@@ -42,29 +43,27 @@ type PicklistValuesItemWithReferences = {
 }
 
 const addReferencesToPicklistValues = (picklistValues: PicklistValuesItem): PicklistValuesItemWithReferences => ({
-    picklist: picklistValues.picklist,
-    values: picklistValues.values.map(value => {
-      const { fullName, ...rest } = value
-      return {
-        ...rest,
-        value: new ReferenceExpression(
-          picklistValues.picklist.elemID.createNestedID(
-            getValueSetFieldName(picklistValues.picklist.elemID.typeName),
-            ORDERED_MAP_VALUES_FIELD,
-            naclCase(decodeURIComponent(value.fullName)),
-          ),
-        )
-      }
-    })
-  })
+  picklist: picklistValues.picklist,
+  values: picklistValues.values.map(value => {
+    const { fullName, ...rest } = value
+    return {
+      ...rest,
+      value: new ReferenceExpression(
+        picklistValues.picklist.elemID.createNestedID(
+          getValueSetFieldName(picklistValues.picklist.elemID.typeName),
+          ORDERED_MAP_VALUES_FIELD,
+          naclCase(decodeURIComponent(value.fullName)),
+        ),
+      ),
+    }
+  }),
+})
 
 const resolveReferencesInPicklistValues = (picklistValues: PicklistValuesItemWithReferences): PicklistValuesItem => {
-  picklistValues.values = picklistValues.values.map(
-    (value: { value: ReferenceExpression }) => ({
-      ...value,
-      fullName: value.value.elemID.name,
-    }),
-  )
+  picklistValues.values = picklistValues.values.map((value: { value: ReferenceExpression }) => ({
+    ...value,
+    fullName: value.value.elemID.name,
+  }))
 }
 
 /**
@@ -94,7 +93,13 @@ const filterCreator: FilterCreator = ({ config }) => ({
         )
         return
       }
-      picklistValues.values = picklistValues.values.map((value: {fullName: string}) => {
+      picklistValues.values = picklistValues.values.map((value: { fullName: string }) => {
+        const valueRefPath = [
+          getValueSetFieldName(picklistRef.elemID.typeName),
+          ORDERED_MAP_VALUES_FIELD,
+          naclCase(decodeURIComponent(value.fullName)),
+        ]
+        const resValue = _.get(getElementValueOrAnnotations(picklistRef.value), valueRefPath)
         const { fullName, ...rest } = value
         return {
           ...rest,
@@ -104,7 +109,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
               ORDERED_MAP_VALUES_FIELD,
               naclCase(decodeURIComponent(value.fullName)),
             ),
-          )
+            resValue,
+          ),
         }
       })
     })
@@ -117,14 +123,15 @@ const filterCreator: FilterCreator = ({ config }) => ({
       .flatMap(rt => rt.value.picklistValues)
       .filter(isDefined)
       .forEach(picklistValues => {
-        picklistValues.values = picklistValues.values.map(
-          ({ value, default: isDefault }: { value: ReferenceExpression, default: boolean }) => ({
-            fullName: value.value.fullName,
-            default: isDefault,
-          }),
-        )
+        if (picklistValues.values.some(({ value }: { value?: ReferenceExpression }) => value === undefined)) {
+          return
+        }
+        picklistValues.values = picklistValues.values.map(({ value, ...rest }: { value: ReferenceExpression }) => ({
+          fullName: value.value.fullName,
+          ...rest,
+        }))
       })
-    },
+  },
 
   onDeploy: async changes => {
     changes
@@ -134,15 +141,13 @@ const filterCreator: FilterCreator = ({ config }) => ({
       .filter(isDefined)
       .forEach(picklistValues => {
         picklistValues.values = picklistValues.values.map(
-          ({ value, default: isDefault }: { value: ReferenceExpression, default: boolean }) => ({
+          ({ value, default: isDefault }: { value: ReferenceExpression; default: boolean }) => ({
             fullName: value.value.fullName,
             default: isDefault,
           }),
         )
       })
-
-  }
-
+  },
 })
 
 export default filterCreator

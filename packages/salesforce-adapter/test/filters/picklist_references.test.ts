@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ReferenceExpression, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ReferenceExpression, InstanceElement, ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/picklist_references'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
@@ -16,17 +16,21 @@ import { VALUE_SET_FIELDS } from '../../src/constants'
 
 describe('picklistReferences filter', () => {
   const gvs = new InstanceElement('MyGVS', mockTypes.GlobalValueSet, {
-    customValue: [
-      { fullName: 'val1', default: true, label: 'value1' },
-      { fullName: 'val2', default: false, label: 'value2' },
-    ],
+    customValue: {
+      values: {
+        val1: { fullName: 'val1', default: true, label: 'val1' },
+        val2: { fullName: 'val2', default: false, label: 'val2' },
+      },
+    },
   })
 
   const svs = new InstanceElement('MySVS', mockTypes.StandardValueSet, {
-    standardValue: [
-      { fullName: 'val1', default: true, label: 'value1' },
-      { fullName: 'val2', default: false, label: 'value2' },
-    ],
+    standardValue: {
+      values: {
+        val1: { fullName: 'val1', default: true, label: 'val1' },
+        val2: { fullName: 'val2', default: false, label: 'val2' },
+      },
+    },
   })
 
   const accountObjectType = new ObjectType({
@@ -60,7 +64,7 @@ describe('picklistReferences filter', () => {
     },
   })
 
-  type FilterType = FilterWith<'onFetch'>
+  type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let recordType: InstanceElement
 
@@ -77,14 +81,14 @@ describe('picklistReferences filter', () => {
         {
           picklist: new ReferenceExpression(gvs.elemID, gvs),
           values: [
-            { fullName: 'value1', default: true },
-            { fullName: 'value2', default: false },
+            { fullName: 'val1', default: true },
+            { fullName: 'val2', default: false },
           ],
         },
         {
           picklist: new ReferenceExpression(svs.elemID, svs),
           // Incomplete subset of values
-          values: [{ fullName: 'value2' }],
+          values: [{ fullName: 'val2' }],
         },
         {
           picklist: new ReferenceExpression(
@@ -92,7 +96,7 @@ describe('picklistReferences filter', () => {
             accountObjectType.fields.industry,
           ),
           // Incomplete subset of values
-          values: [{ fullName: 'value1' }],
+          values: [{ fullName: 'val1' }],
         },
         {
           picklist: new ReferenceExpression(
@@ -103,10 +107,13 @@ describe('picklistReferences filter', () => {
         },
         {
           picklist: 'invalid',
-          values: [{ fullName: 'value1' }],
+          values: [{ fullName: 'val1' }],
         },
         {
-          picklist: new ReferenceExpression(new ElemID('field', 'priority__c')),
+          picklist: new ReferenceExpression(
+            accountObjectType.elemID.createNestedID('field', 'priority__c'),
+            accountObjectType.fields.priority__c,
+          ),
           // Value without a fullName attribute is invalid and skipped
           values: [{ default: false }],
         },
@@ -119,9 +126,20 @@ describe('picklistReferences filter', () => {
   describe('modify picklist values to reference expressions', () => {
     it('should create references to GlobalValueSet', async () => {
       expect(recordType.value.picklistValues[0].values).toEqual([
-        { value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'value1')), default: true },
         {
-          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'value2')),
+          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1'), {
+            fullName: 'val1',
+            default: true,
+            label: 'val1',
+          }),
+          default: true,
+        },
+        {
+          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2'), {
+            fullName: 'val2',
+            default: false,
+            label: 'val2',
+          }),
           default: false,
         },
       ])
@@ -129,14 +147,22 @@ describe('picklistReferences filter', () => {
     it('should create references to StandardValueSet', async () => {
       expect(recordType.value.picklistValues[1].values).toEqual([
         {
-          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'value2')),
+          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val2'), {
+            fullName: 'val2',
+            default: false,
+            label: 'val2',
+          }),
         },
       ])
     })
     it('should create references to StandardValueSet (hopping an ObjectType reference)', async () => {
       expect(recordType.value.picklistValues[2].values).toEqual([
         {
-          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'value1')),
+          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val1'), {
+            fullName: 'val1',
+            default: true,
+            label: 'val1',
+          }),
         },
       ])
     })
@@ -145,20 +171,35 @@ describe('picklistReferences filter', () => {
         {
           value: new ReferenceExpression(
             accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
+            { fullName: 'High', default: false, label: 'High' },
           ),
         },
         {
           value: new ReferenceExpression(
             accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
+            { fullName: 'Low', default: false, label: 'Low' },
           ),
         },
       ])
     })
     it('should ignore invalid picklist references', async () => {
-      expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'value1' }])
+      expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])
     })
     it('should ignore invalid picklist values', async () => {
       expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
+    })
+  })
+
+  describe('deploy', () => {
+    beforeEach(async () => {
+      await filter.preDeploy([toChange({ after: recordType })])
+    })
+
+    it('should resolve references in picklist values', async () => {
+      expect(recordType.value.picklistValues[0].values).toEqual([
+        { fullName: 'val1', default: true },
+        { fullName: 'val2', default: false },
+      ])
     })
   })
 })

@@ -250,24 +250,17 @@ export const createDeployProgressReporter = async (
     return ` View ${deploymentOrValidation} status [in Salesforce](${deploymentUrl})`
   }
 
-  const linkToSalesforceDeploymentsPage = (): string => {
-    if (!baseUrl) {
-      return ''
-    }
-    return ` View deployments [in Salesforce](${baseUrl}lightning/setup/DeployStatus/home)`
-  }
-
   const reportProgress = (): void => {
     let metadataProgress: string | undefined
     let dataProgress: string | undefined
     if (deployResult) {
       const startTime = new Date(deployResult.createdDate).getTime()
       const currentTime = new Date().getTime()
-      const elapsedTimeMinutes = humanizeDuration(currentTime - startTime)
+      const elapsedTime = humanizeDuration(currentTime - startTime)
       metadataProgress =
         deployResult.status === METADATA_DEPLOY_PENDING_STATUS
-          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTimeMinutes}.${linkToSalesforceDeploymentsPage()}`
-          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTimeMinutes}.${linkToSalesforceDeployment(deployResult)}`
+          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTime}.${baseUrl ? ` View deployments [in Salesforce](${baseUrl}lightning/setup/DeployStatus/home)` : ''}`
+          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTime}.${linkToSalesforceDeployment(deployResult)}`
     }
     if (deployedDataInstances > 0) {
       dataProgress = `${deployedDataInstances} Data Instances`

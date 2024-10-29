@@ -20,6 +20,7 @@ import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
 import { values } from '@salto-io/lowerdash'
 import { inspectValue } from '@salto-io/adapter-utils'
+import humanizeDuration from 'humanize-duration'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -255,11 +256,11 @@ export const createDeployProgressReporter = async (
     if (deployResult) {
       const startTime = new Date(deployResult.createdDate).getTime()
       const currentTime = new Date().getTime()
-      const elapsedTimeMinutes = ((currentTime - startTime) / (1000 * 60)).toFixed(1)
+      const elapsedTimeMinutes = humanizeDuration(currentTime - startTime)
       metadataProgress =
         deployResult.status === METADATA_DEPLOY_PENDING_STATUS
-          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTimeMinutes} minutes`
-          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTimeMinutes} minutes.${linkToSalesforce(deployResult)}`
+          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTimeMinutes}`
+          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTimeMinutes}.${linkToSalesforce(deployResult)}`
     }
     if (deployedDataInstances > 0) {
       dataProgress = `${deployedDataInstances} Data Instances`

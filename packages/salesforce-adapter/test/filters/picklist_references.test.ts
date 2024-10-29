@@ -123,7 +123,7 @@ describe('picklistReferences filter', () => {
     await filter.onFetch(elements)
   })
 
-  describe('modify picklist values to reference expressions', () => {
+  describe('fetch: modify picklist values to reference expressions', () => {
     it('should create references to GlobalValueSet', async () => {
       expect(recordType.value.picklistValues[0].values).toEqual([
         {
@@ -195,11 +195,105 @@ describe('picklistReferences filter', () => {
       await filter.preDeploy([toChange({ after: recordType })])
     })
 
-    it('should resolve references in picklist values', async () => {
-      expect(recordType.value.picklistValues[0].values).toEqual([
-        { fullName: 'val1', default: true },
-        { fullName: 'val2', default: false },
-      ])
+    describe('preDeploy: resolve references in picklist values', () => {
+      it('should resolve references to GlobalValueSet', async () => {
+        expect(recordType.value.picklistValues[0].values).toEqual([
+          { fullName: 'val1', default: true },
+          { fullName: 'val2', default: false },
+        ])
+      })
+      it('should resolve references to StandardValueSet', async () => {
+        expect(recordType.value.picklistValues[1].values).toEqual([
+          { fullName: 'val2' },
+        ])
+      })
+      it('should resolve references to StandardValueSet (hopping an ObjectType reference)', async () => {
+        expect(recordType.value.picklistValues[2].values).toEqual([
+          { fullName: 'val1' },
+        ])
+      })
+      it('should resolve references to ObjectType custom fields', async () => {
+        expect(recordType.value.picklistValues[3].values).toEqual([
+          { fullName: 'High' },
+          { fullName: 'Low' },
+        ])
+      })
+      it('should ignore invalid picklist references', async () => {
+        expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])
+      })
+      it('should ignore invalid picklist values', async () => {
+        expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
+      })
+    })
+
+    describe('onDeploy: modify picklist values to reference expressions', () => {
+      beforeEach(async () => {
+        await filter.onDeploy([toChange({ after: recordType })])
+      })
+      it('should create references to GlobalValueSet', async () => {
+        expect(recordType.value.picklistValues[0].values).toEqual([
+          {
+            value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1'), {
+              fullName: 'val1',
+              default: true,
+              label: 'val1',
+            }),
+            default: true,
+          },
+          {
+            value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2'), {
+              fullName: 'val2',
+              default: false,
+              label: 'val2',
+            }),
+            default: false,
+          },
+        ])
+      })
+      it('should create references to StandardValueSet', async () => {
+        expect(recordType.value.picklistValues[1].values).toEqual([
+          {
+            value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val2'), {
+              fullName: 'val2',
+              default: false,
+              label: 'val2',
+            }),
+          },
+        ])
+      })
+      it('should create references to StandardValueSet (hopping an ObjectType reference)', async () => {
+        expect(recordType.value.picklistValues[2].values).toEqual([
+          {
+            value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val1'), {
+              fullName: 'val1',
+              default: true,
+              label: 'val1',
+            }),
+          },
+        ])
+      })
+      it('should create references to ObjectType custom fields', async () => {
+        expect(recordType.value.picklistValues[3].values).toEqual([
+          {
+            value: new ReferenceExpression(
+              accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
+              { fullName: 'High', default: false, label: 'High' },
+            ),
+          },
+          {
+            value: new ReferenceExpression(
+              accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
+              { fullName: 'Low', default: false, label: 'Low' },
+            ),
+          },
+        ])
+      })
+      it('should ignore invalid picklist references', async () => {
+        expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])
+      })
+      it('should ignore invalid picklist values', async () => {
+        expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
+      })
     })
   })
 })

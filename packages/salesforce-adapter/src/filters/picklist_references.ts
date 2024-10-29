@@ -5,7 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Change, getChangeData, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { getChangeData, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -15,8 +16,6 @@ import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { getElementValueOrAnnotations, ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 import { isInstanceOfTypeSync } from './utils'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
-import { Promise } from '@salto-io/jsforce'
-import _ from 'lodash'
 
 const log = logger(module)
 const { isDefined } = values
@@ -34,120 +33,109 @@ const getValueSetFieldName = (typeName: string): string => {
 
 type PicklistValuesItem = {
   picklist: ReferenceExpression
-  values: { fullName: string }[]
+  values: {
+    fullName?: string
+    value?: ReferenceExpression
+  }[]
 }
 
-type PicklistValuesItemWithReferences = {
-  picklist: ReferenceExpression
-  values: { value: ReferenceExpression }[]
-}
-
-const addReferencesToPicklistValues = (picklistValues: PicklistValuesItem): PicklistValuesItemWithReferences => ({
-  picklist: picklistValues.picklist,
-  values: picklistValues.values.map(value => {
+/**
+ * Replace all picklist value full names with a reference to the original value definition.
+ * Modifies the picklistValues in place.
+ *
+ * @param picklistValues    The picklistValues of a RecordType instance to modify
+ */
+const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
+  const picklistRef: ReferenceExpression | undefined =
+    // Some picklist references are themselves references to value sets, while others are direct picklists references.
+    picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
+  if (!isReferenceExpression(picklistRef)) {
+    log.warn('Expected RecordType picklist to be a reference expression, got: %s', picklistRef)
+    return
+  }
+  if (picklistValues.values.some(({ fullName }: { fullName?: string }) => fullName === undefined)) {
+    log.warn(
+      'Expected all RecordType picklist values to have a valid fullName, got undefined: %o',
+      picklistValues.values,
+    )
+    return
+  }
+  picklistValues.values = picklistValues.values.map(value => {
+    const valueRefPath = [
+      getValueSetFieldName(picklistRef.elemID.typeName),
+      ORDERED_MAP_VALUES_FIELD,
+      naclCase(decodeURIComponent(value.fullName!)),
+    ]
+    const resValue = _.get(getElementValueOrAnnotations(picklistRef.value), valueRefPath)
     const { fullName, ...rest } = value
     return {
       ...rest,
       value: new ReferenceExpression(
-        picklistValues.picklist.elemID.createNestedID(
-          getValueSetFieldName(picklistValues.picklist.elemID.typeName),
+        picklistRef.elemID.createNestedID(
+          getValueSetFieldName(picklistRef.elemID.typeName),
           ORDERED_MAP_VALUES_FIELD,
-          naclCase(decodeURIComponent(value.fullName)),
+          naclCase(decodeURIComponent(value.fullName!)),
         ),
+        resValue,
       ),
     }
-  }),
-})
-
-const resolveReferencesInPicklistValues = (picklistValues: PicklistValuesItemWithReferences): PicklistValuesItem => {
-  picklistValues.values = picklistValues.values.map((value: { value: ReferenceExpression }) => ({
-    ...value,
-    fullName: value.value.elemID.name,
-  }))
+  })
 }
+
+/**
+ * Resolve all picklist value references with the original full names.
+ * This is the reverse operation, to be used before deployment.
+ *
+ * @param picklistValues    The picklistValues of a RecordType instance to modify
+ */
+const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
+    if (picklistValues.values.some(({ value }: { value?: ReferenceExpression }) => value === undefined)) {
+      return
+    }
+
+    picklistValues.values = picklistValues.values.map(({ value: valueRef, ...rest }) => ({
+      fullName: valueRef!.value.fullName,
+      ...rest,
+    }))
+  }
 
 /**
  * This filter modifies picklist values in `RecordType` to be references to the original value definitions.
  */
-const filterCreator: FilterCreator = ({ config }) => ({
-  name: 'picklistReferences',
-  onFetch: async elements => {
-    if (!config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
-      return
+const filterCreator: FilterCreator = ({ config }) => {
+  if (!config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
+    return {
+      name: 'picklistReferences',
     }
-    // Find record types with picklist fields and convert them to reference expressions
-    const recordTypes = elements.filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-    const picklistValuesItem = recordTypes.flatMap(rt => rt.value.picklistValues).filter(isDefined)
-    picklistValuesItem.forEach(picklistValues => {
-      const picklistRef: ReferenceExpression | undefined =
-        // Some picklist references are themselves references to value sets, while others are direct picklists references.
-        picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
-      if (!isReferenceExpression(picklistRef)) {
-        log.warn('Expected RecordType picklist to be a reference expression, got: %s', picklistRef)
-        return
-      }
-      if (picklistValues.values.filter(({ fullName }: { fullName?: string }) => fullName === undefined).length > 0) {
-        log.warn(
-          'Expected all RecordType picklist values to have a valid fullName, got undefined: %o',
-          picklistValues.values,
-        )
-        return
-      }
-      picklistValues.values = picklistValues.values.map((value: { fullName: string }) => {
-        const valueRefPath = [
-          getValueSetFieldName(picklistRef.elemID.typeName),
-          ORDERED_MAP_VALUES_FIELD,
-          naclCase(decodeURIComponent(value.fullName)),
-        ]
-        const resValue = _.get(getElementValueOrAnnotations(picklistRef.value), valueRefPath)
-        const { fullName, ...rest } = value
-        return {
-          ...rest,
-          value: new ReferenceExpression(
-            picklistRef.elemID.createNestedID(
-              getValueSetFieldName(picklistRef.elemID.typeName),
-              ORDERED_MAP_VALUES_FIELD,
-              naclCase(decodeURIComponent(value.fullName)),
-            ),
-            resValue,
-          ),
-        }
-      })
-    })
-  },
+  }
 
-  preDeploy: async changes => {
-    changes
-      .map(getChangeData)
-      .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-      .flatMap(rt => rt.value.picklistValues)
-      .filter(isDefined)
-      .forEach(picklistValues => {
-        if (picklistValues.values.some(({ value }: { value?: ReferenceExpression }) => value === undefined)) {
-          return
-        }
-        picklistValues.values = picklistValues.values.map(({ value, ...rest }: { value: ReferenceExpression }) => ({
-          fullName: value.value.fullName,
-          ...rest,
-        }))
-      })
-  },
+  return {
+    name: 'picklistReferences',
+    onFetch: async elements =>
+      elements
+        .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
+        .flatMap(rt => rt.value.picklistValues)
+        .filter(isDefined)
+        .forEach(addPicklistValueReferences),
 
-  onDeploy: async changes => {
-    changes
-      .map(getChangeData)
-      .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-      .flatMap(rt => rt.value.picklistValues)
-      .filter(isDefined)
-      .forEach(picklistValues => {
-        picklistValues.values = picklistValues.values.map(
-          ({ value, default: isDefault }: { value: ReferenceExpression; default: boolean }) => ({
-            fullName: value.value.fullName,
-            default: isDefault,
-          }),
-        )
-      })
-  },
-})
+    preDeploy: async changes => {
+      changes
+        .map(getChangeData)
+        .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
+        .flatMap(rt => rt.value.picklistValues)
+        .filter(isDefined)
+        .forEach(resolvePicklistValueReferences)
+    },
+
+    onDeploy: async changes => {
+      changes
+        .map(getChangeData)
+        .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
+        .flatMap(rt => rt.value.picklistValues)
+        .filter(isDefined)
+        .forEach(addPicklistValueReferences)
+    },
+  }
+}
 
 export default filterCreator

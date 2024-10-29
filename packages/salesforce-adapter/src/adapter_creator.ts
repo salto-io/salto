@@ -241,13 +241,20 @@ export const createDeployProgressReporter = async (
   let deployedDataInstances = 0
   const baseUrl = await client.getUrl()
 
-  const linkToSalesforce = ({ id, checkOnly }: DeployResult): string => {
+  const linkToSalesforceDeployment = ({ id, checkOnly }: DeployResult): string => {
     if (!baseUrl) {
       return ''
     }
     const deploymentUrl = `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
     const deploymentOrValidation = checkOnly ? 'validation' : 'deployment'
     return ` View ${deploymentOrValidation} status [in Salesforce](${deploymentUrl})`
+  }
+
+  const linkToSalesforceDeploymentsPage = (): string => {
+    if (!baseUrl) {
+      return ''
+    }
+    return ` View deployments [in Salesforce](${baseUrl}lightning/setup/DeployStatus/home)`
   }
 
   const reportProgress = (): void => {
@@ -259,8 +266,8 @@ export const createDeployProgressReporter = async (
       const elapsedTimeMinutes = humanizeDuration(currentTime - startTime)
       metadataProgress =
         deployResult.status === METADATA_DEPLOY_PENDING_STATUS
-          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTimeMinutes}`
-          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTimeMinutes}.${linkToSalesforce(deployResult)}`
+          ? `Metadata: Waiting on another deploy or automated process to finish in Salesforce. Elapsed Time: ${elapsedTimeMinutes}.${linkToSalesforceDeploymentsPage()}`
+          : `${deployResult.numberComponentsDeployed}/${deployResult.numberComponentsTotal} Metadata Components, ${deployResult.numberTestsCompleted}/${deployResult.numberTestsTotal} Tests. Elapsed Time: ${elapsedTimeMinutes}.${linkToSalesforceDeployment(deployResult)}`
     }
     if (deployedDataInstances > 0) {
       dataProgress = `${deployedDataInstances} Data Instances`

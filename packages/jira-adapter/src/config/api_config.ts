@@ -1625,7 +1625,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Automation: {
     transformation: {
-      fieldsToOmit: [{ fieldName: 'ruleHome' }, { fieldName: 'schemaVersion' }, { fieldName: 'idUuid' }],
+      fieldsToOmit: [
+        { fieldName: 'ruleHome' },
+        { fieldName: 'schemaVersion' },
+        { fieldName: 'idUuid' },
+        // serviceDesk is referenced from the associated request type, so we don't need to keep it in the automation component
+        { fieldName: 'serviceDesk' },
+      ],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
       idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.
     },

@@ -70,8 +70,8 @@ const addPicklistValueReferences = (recordType: InstanceElement, picklistValues:
   }
   if (picklistValues.values.some(({ fullName }: { fullName?: string }) => fullName === undefined)) {
     log.warn(
-      'Expected all RecordType picklist values to have a valid fullName, got undefined: %o',
-      picklistValues.values,
+      'Expected all RecordType picklist values to have a valid fullName, got undefined: %s',
+      inspectValue(picklistValues.values),
     )
     return
   }

@@ -11,7 +11,7 @@ import {
   ObjectType,
   ElemID,
   toChange,
-  isReferenceExpression,
+  isReferenceExpression, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -117,10 +117,6 @@ describe('picklistReferences filter', () => {
           values: [{ fullName: 'High' }, { fullName: 'Low' }],
         },
         {
-          picklist: 'invalid',
-          values: [{ fullName: 'val1' }],
-        },
-        {
           picklist: new ReferenceExpression(
             accountObjectType.elemID.createNestedID('field', 'priority__c'),
             accountObjectType.fields.priority__c,
@@ -128,6 +124,10 @@ describe('picklistReferences filter', () => {
           // Value without a fullName attribute is invalid and skipped
           values: [{ default: false }],
         },
+      ],
+    }, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(accountObjectType.elemID, accountObjectType),
       ],
     })
     const elements = [recordType]
@@ -175,11 +175,8 @@ describe('picklistReferences filter', () => {
         },
       ])
     })
-    it('should ignore invalid picklist references', async () => {
-      expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])
-    })
     it('should ignore invalid picklist values', async () => {
-      expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
+      expect(recordType.value.picklistValues[4].values).toEqual([{ default: false }])
     })
   })
 
@@ -223,11 +220,8 @@ describe('picklistReferences filter', () => {
       it('should resolve references to ObjectType custom fields', async () => {
         expect(recordType.value.picklistValues[3].values).toEqual([{ fullName: 'High' }, { fullName: 'Low' }])
       })
-      it('should ignore invalid picklist references', async () => {
-        expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])
-      })
       it('should ignore invalid picklist values', async () => {
-        expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
+        expect(recordType.value.picklistValues[4].values).toEqual([{ default: false }])
       })
     })
 
@@ -275,11 +269,8 @@ describe('picklistReferences filter', () => {
           },
         ])
       })
-      it('should ignore invalid picklist references', async () => {
-        expect(recordType.value.picklistValues[4].values).toEqual([{ fullName: 'val1' }])
-      })
       it('should ignore invalid picklist values', async () => {
-        expect(recordType.value.picklistValues[5].values).toEqual([{ default: false }])
+        expect(recordType.value.picklistValues[4].values).toEqual([{ default: false }])
       })
     })
   })

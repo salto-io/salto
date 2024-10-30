@@ -36,7 +36,11 @@ const filter: FilterCreator = () => ({
             transformFunc: ({ value, field, path }) => {
               const isInArray = path?.getFullNameParts().some(isStringNumber)
               if (isInArray && field?.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]) {
-                log.warn('found hidden value in hidden field %s in list with path %s', field.elemID.getFullName(), path?.getFullName())
+                log.warn(
+                  'found hidden value in hidden field %s in list with path %s',
+                  field.elemID.getFullName(),
+                  path?.getFullName(),
+                )
                 return undefined
               }
               return value

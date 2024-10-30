@@ -5,14 +5,25 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ReferenceExpression, InstanceElement, ObjectType, ElemID, toChange } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/picklist_references'
+import {
+  ReferenceExpression,
+  InstanceElement,
+  ObjectType,
+  ElemID,
+  toChange,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+import filterCreator, { PicklistValuesItem } from '../../src/filters/picklist_references'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import { mockTypes } from '../mock_elements'
 import { Types } from '../../src/transformers/transformer'
 import { VALUE_SET_FIELDS } from '../../src/constants'
+
+const { awu } = collections.asynciterable
 
 describe('picklistReferences filter', () => {
   const gvs = new InstanceElement('MyGVS', mockTypes.GlobalValueSet, {
@@ -127,19 +138,11 @@ describe('picklistReferences filter', () => {
     it('should create references to GlobalValueSet', async () => {
       expect(recordType.value.picklistValues[0].values).toEqual([
         {
-          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1'), {
-            fullName: 'val1',
-            default: true,
-            label: 'val1',
-          }),
+          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
           default: true,
         },
         {
-          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2'), {
-            fullName: 'val2',
-            default: false,
-            label: 'val2',
-          }),
+          value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2')),
           default: false,
         },
       ])
@@ -147,22 +150,14 @@ describe('picklistReferences filter', () => {
     it('should create references to StandardValueSet', async () => {
       expect(recordType.value.picklistValues[1].values).toEqual([
         {
-          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val2'), {
-            fullName: 'val2',
-            default: false,
-            label: 'val2',
-          }),
+          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val2')),
         },
       ])
     })
     it('should create references to StandardValueSet (hopping an ObjectType reference)', async () => {
       expect(recordType.value.picklistValues[2].values).toEqual([
         {
-          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val1'), {
-            fullName: 'val1',
-            default: true,
-            label: 'val1',
-          }),
+          value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val1')),
         },
       ])
     })
@@ -171,13 +166,11 @@ describe('picklistReferences filter', () => {
         {
           value: new ReferenceExpression(
             accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
-            { fullName: 'High', default: false, label: 'High' },
           ),
         },
         {
           value: new ReferenceExpression(
             accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
-            { fullName: 'Low', default: false, label: 'Low' },
           ),
         },
       ])
@@ -192,6 +185,25 @@ describe('picklistReferences filter', () => {
 
   describe('deploy', () => {
     beforeEach(async () => {
+      // This filter's `preDeploy` runs _after_ references are already resolved by a different filter. We need to
+      // simulate this behavior by resolving the references here.
+      const elementsSource = buildElementsSourceFromElements([gvs, svs, accountObjectType])
+      await awu(recordType.value.picklistValues as PicklistValuesItem[]).forEach(
+        async (picklistValues: PicklistValuesItem) => {
+          picklistValues.values = await awu(picklistValues.values)
+            .map(async ({ value, ...rest }) => {
+              if (!isReferenceExpression(value)) {
+                return { value, ...rest }
+              }
+              return {
+                value: await (value as ReferenceExpression).getResolvedValue(elementsSource),
+                ...rest,
+              }
+            })
+            .toArray()
+        },
+      )
+
       await filter.preDeploy([toChange({ after: recordType })])
     })
 
@@ -226,19 +238,11 @@ describe('picklistReferences filter', () => {
       it('should create references to GlobalValueSet', async () => {
         expect(recordType.value.picklistValues[0].values).toEqual([
           {
-            value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1'), {
-              fullName: 'val1',
-              default: true,
-              label: 'val1',
-            }),
+            value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val1')),
             default: true,
           },
           {
-            value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2'), {
-              fullName: 'val2',
-              default: false,
-              label: 'val2',
-            }),
+            value: new ReferenceExpression(gvs.elemID.createNestedID('customValue', 'values', 'val2')),
             default: false,
           },
         ])
@@ -246,22 +250,14 @@ describe('picklistReferences filter', () => {
       it('should create references to StandardValueSet', async () => {
         expect(recordType.value.picklistValues[1].values).toEqual([
           {
-            value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val2'), {
-              fullName: 'val2',
-              default: false,
-              label: 'val2',
-            }),
+            value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val2')),
           },
         ])
       })
       it('should create references to StandardValueSet (hopping an ObjectType reference)', async () => {
         expect(recordType.value.picklistValues[2].values).toEqual([
           {
-            value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val1'), {
-              fullName: 'val1',
-              default: true,
-              label: 'val1',
-            }),
+            value: new ReferenceExpression(svs.elemID.createNestedID('standardValue', 'values', 'val1')),
           },
         ])
       })
@@ -270,13 +266,11 @@ describe('picklistReferences filter', () => {
           {
             value: new ReferenceExpression(
               accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'High'),
-              { fullName: 'High', default: false, label: 'High' },
             ),
           },
           {
             value: new ReferenceExpression(
               accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low'),
-              { fullName: 'Low', default: false, label: 'Low' },
             ),
           },
         ])

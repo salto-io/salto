@@ -13,7 +13,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
-import { getElementValueOrAnnotations, ORDERED_MAP_VALUES_FIELD } from './convert_maps'
+import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 import { isInstanceOfTypeSync } from './utils'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
 
@@ -31,11 +31,11 @@ const getValueSetFieldName = (typeName: string): string => {
   }
 }
 
-type PicklistValuesItem = {
+export type PicklistValuesItem = {
   picklist: ReferenceExpression
   values: {
     fullName?: string
-    value?: ReferenceExpression
+    value?: ReferenceExpression | { fullName: string }
   }[]
 }
 
@@ -60,25 +60,16 @@ const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void =>
     )
     return
   }
-  picklistValues.values = picklistValues.values.map(value => {
-    const valueRefPath = [
-      getValueSetFieldName(picklistRef.elemID.typeName),
-      ORDERED_MAP_VALUES_FIELD,
-      naclCase(decodeURIComponent(value.fullName!)),
-    ]
-    const resValue = _.get(getElementValueOrAnnotations(picklistRef.value), valueRefPath)
-    return {
-      ..._.omit(value, 'fullName'),
-      value: new ReferenceExpression(
-        picklistRef.elemID.createNestedID(
-          getValueSetFieldName(picklistRef.elemID.typeName),
-          ORDERED_MAP_VALUES_FIELD,
-          naclCase(decodeURIComponent(value.fullName!)),
-        ),
-        resValue,
+  picklistValues.values = picklistValues.values.map(value => ({
+    ..._.omit(value, 'fullName'),
+    value: new ReferenceExpression(
+      picklistRef.elemID.createNestedID(
+        getValueSetFieldName(picklistRef.elemID.typeName),
+        ORDERED_MAP_VALUES_FIELD,
+        naclCase(decodeURIComponent(value.fullName!)),
       ),
-    }
-  })
+    ),
+  }))
 }
 
 /**
@@ -88,12 +79,12 @@ const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void =>
  * @param picklistValues    The picklistValues of a RecordType instance to modify
  */
 const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
-  if (picklistValues.values.some(({ value }: { value?: ReferenceExpression }) => value === undefined)) {
+  if (picklistValues.values.every(value => value.fullName !== undefined || value.value === undefined)) {
     return
   }
 
-  picklistValues.values = picklistValues.values.map(({ value: valueRef, ...rest }) => ({
-    fullName: valueRef!.value.fullName,
+  picklistValues.values = picklistValues.values.map(({ value, ...rest }) => ({
+    fullName: (value as { fullName: string }).fullName,
     ...rest,
   }))
 }

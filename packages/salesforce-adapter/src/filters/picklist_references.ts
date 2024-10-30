@@ -95,8 +95,11 @@ const addPicklistValueReferences = (recordType: InstanceElement, picklistValues:
  */
 const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
   picklistValues.values = picklistValues.values.map(({ value, ...rest }) => {
-    if (value === undefined || isReferenceExpression(value) ) {
-      log.warn('Expected all RecordType picklist values to have a valid fullName, got undefined: %s', inspectValue(value))
+    if (value === undefined || isReferenceExpression(value)) {
+      log.warn(
+        'Expected all RecordType picklist values to have a valid fullName, got undefined: %s',
+        inspectValue(value),
+      )
       return { value, ...rest }
     }
     return {
@@ -121,7 +124,12 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async elements =>
       elements
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(recordType => recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [recordType, picklistValueItem]))
+        .flatMap(recordType =>
+          recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [
+            recordType,
+            picklistValueItem,
+          ]),
+        )
         .filter(isDefined)
         .forEach(([recordType, pvi]) => addPicklistValueReferences(recordType, pvi)),
 
@@ -137,7 +145,12 @@ const filterCreator: FilterCreator = ({ config }) => {
       changes
         .map(getChangeData)
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(recordType => recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [recordType, picklistValueItem]))
+        .flatMap(recordType =>
+          recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [
+            recordType,
+            picklistValueItem,
+          ]),
+        )
         .filter(isDefined)
         .forEach(([recordType, pvi]) => addPicklistValueReferences(recordType, pvi)),
   }

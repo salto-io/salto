@@ -16,9 +16,12 @@ import {
 } from '@handlebars/parser/types/ast'
 import { InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { PotentialReference } from './types'
 import { findLineStartIndexes, sourceLocationToIndexRange } from './utils'
+
+const log = logger(module)
 
 // These are the helper functions that may have potential references in their arguments:
 // https://developer.zendesk.com/api-reference/help_center/help-center-templates/helpers/
@@ -59,9 +62,18 @@ const extractPotentialIds = (node: Node): NumberLiteral[] | undefined => {
  * // Returns [{ value: 12345, loc: { start: { line: 1, column: 18 }, end: { line: 1, column: 23 } } }]
  */
 export const parseHandlebarPotentialReferencesFromString = (content: string): NumberLiteral[] => {
-  const ast = parse(content)
-  const potentialIds = ast.body.map(extractPotentialIds).filter(values.isDefined).flat()
-  return potentialIds
+  try {
+    const ast = parse(content)
+    const potentialIds = ast.body.map(extractPotentialIds).filter(values.isDefined).flat()
+    return potentialIds
+  } catch (e) {
+    if (e.hash?.loc) {
+      log.warn(`Failed to parse handlebar template on line ${e.hash.loc.first_line} with message: ${e.message}`)
+      return []
+    }
+    log.warn(`Failed to parse handlebar template: ${e.message}`)
+    return []
+  }
 }
 
 export const parseHandlebarPotentialReferences = (

@@ -60,6 +60,12 @@ describe('parse', () => {
     const parsed = parseHandlebarPotentialReferencesFromString(template)
     expect(parsed).toHaveLength(0)
   })
+
+  it('should fail gracefully on a template with a syntax error', () => {
+    const template = "Hello {{dc'feedback_confirmation_header'}}"
+    const parsed = parseHandlebarPotentialReferencesFromString(template)
+    expect(parsed).toHaveLength(0)
+  })
 })
 
 describe('parseHandlebarPotentialReferences', () => {

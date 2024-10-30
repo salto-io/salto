@@ -13,7 +13,7 @@ import {
   isReferenceExpression,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { inspectValue, naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -94,14 +94,16 @@ const addPicklistValueReferences = (recordType: InstanceElement, picklistValues:
  * @param picklistValues    The picklistValues of a RecordType instance to modify
  */
 const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
-  if (picklistValues.values.some(value => value.fullName !== undefined || value.value === undefined)) {
-    return
-  }
-
-  picklistValues.values = picklistValues.values.map(({ value, ...rest }) => ({
-    fullName: (value as { fullName: string }).fullName,
-    ...rest,
-  }))
+  picklistValues.values = picklistValues.values.map(({ value, ...rest }) => {
+    if (value === undefined || isReferenceExpression(value) ) {
+      log.warn('Expected all RecordType picklist values to have a valid fullName, got undefined: %s', inspectValue(value))
+      return { value, ...rest }
+    }
+    return {
+      fullName: value.fullName,
+      ...rest,
+    }
+  })
 }
 
 /**
@@ -119,15 +121,15 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async elements =>
       elements
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(rt => rt.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [rt, picklistValueItem]))
+        .flatMap(recordType => recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [recordType, picklistValueItem]))
         .filter(isDefined)
-        .forEach(([rt, pvi]) => addPicklistValueReferences(rt, pvi)),
+        .forEach(([recordType, pvi]) => addPicklistValueReferences(recordType, pvi)),
 
     preDeploy: async changes =>
       changes
         .map(getChangeData)
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(rt => rt.value.picklistValues)
+        .flatMap(recordType => recordType.value.picklistValues)
         .filter(isDefined)
         .forEach(resolvePicklistValueReferences),
 
@@ -135,9 +137,9 @@ const filterCreator: FilterCreator = ({ config }) => {
       changes
         .map(getChangeData)
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(rt => rt.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [rt, picklistValueItem]))
+        .flatMap(recordType => recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [recordType, picklistValueItem]))
         .filter(isDefined)
-        .forEach(([rt, pvi]) => addPicklistValueReferences(rt, pvi)),
+        .forEach(([recordType, pvi]) => addPicklistValueReferences(recordType, pvi)),
   }
 }
 

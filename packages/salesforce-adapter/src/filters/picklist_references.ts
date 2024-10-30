@@ -79,7 +79,7 @@ const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void =>
  * @param picklistValues    The picklistValues of a RecordType instance to modify
  */
 const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
-  if (picklistValues.values.every(value => value.fullName !== undefined || value.value === undefined)) {
+  if (picklistValues.values.some(value => value.fullName !== undefined || value.value === undefined)) {
     return
   }
 

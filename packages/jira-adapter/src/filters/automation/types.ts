@@ -187,12 +187,6 @@ export const createAutomationTypes = (): {
       objectTypeId: { refType: BuiltinTypes.STRING },
       templateFormsConfig: { refType: templateFormsConfigType },
       requestType: { refType: BuiltinTypes.UNKNOWN }, // can be string or { type: string; value: string }
-      serviceDesk: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-        },
-      },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPONENT_VALUE_TYPE],
   })

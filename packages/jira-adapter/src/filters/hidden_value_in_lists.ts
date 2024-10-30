@@ -7,9 +7,11 @@
  */
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
 const isStringNumber = (value: string): boolean => !Number.isNaN(Number(value))
@@ -34,6 +36,11 @@ const filter: FilterCreator = () => ({
             transformFunc: ({ value, field, path }) => {
               const isInArray = path?.getFullNameParts().some(isStringNumber)
               if (isInArray && field?.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]) {
+                log.warn(
+                  'found hidden value in hidden field %s in list with path %s',
+                  field.elemID.getFullName(),
+                  path?.getFullName(),
+                )
                 return undefined
               }
               return value

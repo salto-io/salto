@@ -81,7 +81,6 @@ import {
   gadgetValueSerialize,
   gadgetDashboradValueLookup,
 } from './references/dashboard_gadget_properties'
-import { RECORD_TYPE_METADATA_TYPE } from '@salto-io/salesforce-adapter/dist/src/constants'
 
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils

@@ -57,12 +57,12 @@ const addPicklistValueReferences = (recordType: InstanceElement, picklistValues:
   // 1. On onFetch, the picklist is a reference expression while on preDeploy and onDeploy it's a string with the parent field name.
   // 2. There's a possible second level of indirection where the picklist field in the parent doesn't contain the actual values but
   //    is a reference to the actual picklist.
-  const recordTypeParent = recordType.annotations[CORE_ANNOTATIONS.PARENT][0].value ?? recordType.annotations[CORE_ANNOTATIONS.PARENT][0]
-  const picklistRef: ReferenceExpression =
-    isReferenceExpression(picklistValues.picklist) ?
-      picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist :
-      (recordTypeParent.fields[picklistValues.picklist]?.annotations?.valueSetName ??
-    new ReferenceExpression(recordTypeParent.elemID.createNestedID('field', picklistValues.picklist)))
+  const recordTypeParent =
+    recordType.annotations[CORE_ANNOTATIONS.PARENT][0].value ?? recordType.annotations[CORE_ANNOTATIONS.PARENT][0]
+  const picklistRef: ReferenceExpression = isReferenceExpression(picklistValues.picklist)
+    ? picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
+    : recordTypeParent.fields[picklistValues.picklist]?.annotations?.valueSetName ??
+      new ReferenceExpression(recordTypeParent.elemID.createNestedID('field', picklistValues.picklist))
 
   if (!isReferenceExpression(picklistRef)) {
     log.warn('Expected RecordType picklist to be a reference expression, got: %s', picklistRef)

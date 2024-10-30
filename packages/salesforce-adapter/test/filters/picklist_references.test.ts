@@ -11,7 +11,8 @@ import {
   ObjectType,
   ElemID,
   toChange,
-  isReferenceExpression, CORE_ANNOTATIONS,
+  isReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -87,49 +88,53 @@ describe('picklistReferences filter', () => {
       },
     }) as FilterType
 
-    recordType = new InstanceElement('RecordType', mockTypes.RecordType, {
-      picklistValues: [
-        {
-          picklist: new ReferenceExpression(gvs.elemID, gvs),
-          values: [
-            { fullName: 'val1', default: true },
-            { fullName: 'val2', default: false },
-          ],
-        },
-        {
-          picklist: new ReferenceExpression(svs.elemID, svs),
-          // Incomplete subset of values
-          values: [{ fullName: 'val2' }],
-        },
-        {
-          picklist: new ReferenceExpression(
-            accountObjectType.elemID.createNestedID('field', 'industry'),
-            accountObjectType.fields.industry,
-          ),
-          // Incomplete subset of values
-          values: [{ fullName: 'val1' }],
-        },
-        {
-          picklist: new ReferenceExpression(
-            accountObjectType.elemID.createNestedID('field', 'priority__c'),
-            accountObjectType.fields.priority__c,
-          ),
-          values: [{ fullName: 'High' }, { fullName: 'Low' }],
-        },
-        {
-          picklist: new ReferenceExpression(
-            accountObjectType.elemID.createNestedID('field', 'priority__c'),
-            accountObjectType.fields.priority__c,
-          ),
-          // Value without a fullName attribute is invalid and skipped
-          values: [{ default: false }],
-        },
-      ],
-    }, undefined, {
-      [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(accountObjectType.elemID, accountObjectType),
-      ],
-    })
+    recordType = new InstanceElement(
+      'RecordType',
+      mockTypes.RecordType,
+      {
+        picklistValues: [
+          {
+            picklist: new ReferenceExpression(gvs.elemID, gvs),
+            values: [
+              { fullName: 'val1', default: true },
+              { fullName: 'val2', default: false },
+            ],
+          },
+          {
+            picklist: new ReferenceExpression(svs.elemID, svs),
+            // Incomplete subset of values
+            values: [{ fullName: 'val2' }],
+          },
+          {
+            picklist: new ReferenceExpression(
+              accountObjectType.elemID.createNestedID('field', 'industry'),
+              accountObjectType.fields.industry,
+            ),
+            // Incomplete subset of values
+            values: [{ fullName: 'val1' }],
+          },
+          {
+            picklist: new ReferenceExpression(
+              accountObjectType.elemID.createNestedID('field', 'priority__c'),
+              accountObjectType.fields.priority__c,
+            ),
+            values: [{ fullName: 'High' }, { fullName: 'Low' }],
+          },
+          {
+            picklist: new ReferenceExpression(
+              accountObjectType.elemID.createNestedID('field', 'priority__c'),
+              accountObjectType.fields.priority__c,
+            ),
+            // Value without a fullName attribute is invalid and skipped
+            values: [{ default: false }],
+          },
+        ],
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountObjectType.elemID, accountObjectType)],
+      },
+    )
     const elements = [recordType]
     await filter.onFetch(elements)
   })

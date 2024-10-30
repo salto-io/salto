@@ -103,57 +103,70 @@ type ReferenceSerializationStrategyName =
   | 'mapKey'
   | 'customLabel'
   | 'fromDataInstance'
-const ReferenceSerializationStrategyLookup: Record<ReferenceSerializationStrategyName, ReferenceSerializationStrategy> =
-  {
-    absoluteApiName: {
-      serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
-      lookup: val => val,
+  | 'recordField'
+export const ReferenceSerializationStrategyLookup: Record<
+  ReferenceSerializationStrategyName,
+  ReferenceSerializationStrategy
+> = {
+  absoluteApiName: {
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
+    lookup: val => val,
+  },
+  relativeApiName: {
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
+    lookup: (val, context) => (context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val),
+  },
+  configurationAttributeMapping: {
+    serialize: async ({ ref, path }) =>
+      _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
+    lookup: val => (_.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val),
+  },
+  lookupQueryMapping: {
+    serialize: async ({ ref, path }) =>
+      _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
+    lookup: val => (_.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val),
+  },
+  scheduleConstraintFieldMapping: {
+    serialize: async ({ ref, path }) => {
+      const relativeApiName = await safeApiName({ ref, path, relative: true })
+      return _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ?? relativeApiName
     },
-    relativeApiName: {
-      serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
-      lookup: (val, context) => (context !== undefined ? [context, val].join(API_NAME_SEPARATOR) : val),
+    lookup: (val, context) => {
+      const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
+      return context !== undefined ? [context, mappedValue].join(API_NAME_SEPARATOR) : mappedValue
     },
-    configurationAttributeMapping: {
-      serialize: async ({ ref, path }) =>
-        _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
-      lookup: val => (_.isString(val) ? DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val : val),
+  },
+  mapKey: {
+    serialize: async ({ ref }) => ref.elemID.name,
+    lookup: val => val,
+  },
+  customLabel: {
+    serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
+    lookup: val => {
+      if (val.includes('$Label')) {
+        return val.split(API_NAME_SEPARATOR)[1]
+      }
+      return val
     },
-    lookupQueryMapping: {
-      serialize: async ({ ref, path }) =>
-        _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })] ?? safeApiName({ ref, path }),
-      lookup: val => (_.isString(val) ? TEST_OBJECT_TO_API_MAPPING[val] ?? val : val),
+  },
+  fromDataInstance: {
+    serialize: async args =>
+      (await isMetadataInstanceElement(args.ref.value))
+        ? instanceInternalId(args.ref.value)
+        : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
+    lookup: val => val,
+  },
+  recordField: {
+    serialize: async ({ ref, path }) =>
+      `Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}`,
+    lookup: (val, context) => {
+      if (context !== undefined && _.isString(val) && val.startsWith('Record.')) {
+        return [context, val.split(API_NAME_SEPARATOR)[1]].join(API_NAME_SEPARATOR)
+      }
+      return val
     },
-    scheduleConstraintFieldMapping: {
-      serialize: async ({ ref, path }) => {
-        const relativeApiName = await safeApiName({ ref, path, relative: true })
-        return _.invert(SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING)[relativeApiName] ?? relativeApiName
-      },
-      lookup: (val, context) => {
-        const mappedValue = SCHEDULE_CONSTRAINT_FIELD_TO_API_MAPPING[val]
-        return context !== undefined ? [context, mappedValue].join(API_NAME_SEPARATOR) : mappedValue
-      },
-    },
-    mapKey: {
-      serialize: async ({ ref }) => ref.elemID.name,
-      lookup: val => val,
-    },
-    customLabel: {
-      serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
-      lookup: val => {
-        if (val.includes('$Label')) {
-          return val.split(API_NAME_SEPARATOR)[1]
-        }
-        return val
-      },
-    },
-    fromDataInstance: {
-      serialize: async args =>
-        (await isMetadataInstanceElement(args.ref.value))
-          ? instanceInternalId(args.ref.value)
-          : ReferenceSerializationStrategyLookup.absoluteApiName.serialize(args),
-      lookup: val => val,
-    },
-  }
+  },
+}
 
 export type ReferenceContextStrategyName =
   | 'instanceParent'
@@ -203,6 +216,15 @@ const FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF: FieldReferenceDefinition = {
     parentContext: 'instanceParent',
     type: RECORD_TYPE_METADATA_TYPE,
   },
+}
+
+const LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
+  src: {
+    field: 'fieldItem',
+    parentTypes: ['FieldInstance'],
+  },
+  serializationStrategy: 'recordField',
+  target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
 }
 
 /**
@@ -1048,27 +1070,30 @@ const getLookUpNameImpl = ({
   }
 }
 
+export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
+  fieldNameToTypeMappingDefs
+    .concat(
+      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
+        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
+        : [],
+    )
+    .concat(
+      fetchProfile.isFeatureEnabled('lightningPageFieldItemReference') ? [LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF] : [],
+    )
+
 /**
  * Translate a reference expression back to its original value before deploy.
  */
 export const getLookUpName = (fetchProfile: FetchProfile): GetLookupNameFunc =>
   getLookUpNameImpl({
-    defs: fieldNameToTypeMappingDefs.concat(
-      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
-        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
-        : [],
-    ),
+    defs: getDefsFromFetchProfile(fetchProfile),
     resolveToElementFallback: false,
     defaultStrategyName: 'absoluteApiName',
   })
 
 export const getLookupNameForDataInstances = (fetchProfile: FetchProfile): GetLookupNameFunc =>
   getLookUpNameImpl({
-    defs: fieldNameToTypeMappingDefs.concat(
-      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
-        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
-        : [],
-    ),
+    defs: getDefsFromFetchProfile(fetchProfile),
     resolveToElementFallback: true,
     defaultStrategyName: 'fromDataInstance',
   })

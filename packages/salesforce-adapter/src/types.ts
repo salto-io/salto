@@ -129,6 +129,7 @@ export type OptionalFeatures = {
   storeProfilesAndPermissionSetsBrokenPaths?: boolean
   removeReferenceFromFilterItemToRecordType?: boolean
   picklistsAsMaps?: boolean
+  lightningPageFieldItemReference?: boolean
 }
 
 export type ChangeValidatorName =
@@ -843,6 +844,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
     removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
     picklistsAsMaps: { refType: BuiltinTypes.BOOLEAN },
+    lightningPageFieldItemReference: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

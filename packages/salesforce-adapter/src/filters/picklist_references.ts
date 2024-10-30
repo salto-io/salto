@@ -6,7 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { getChangeData, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  CORE_ANNOTATIONS,
+  getChangeData,
+  InstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -32,7 +38,7 @@ const getValueSetFieldName = (typeName: string): string => {
 }
 
 export type PicklistValuesItem = {
-  picklist: ReferenceExpression
+  picklist: string
   values: {
     fullName?: string
     value?: ReferenceExpression | { fullName: string }
@@ -43,12 +49,15 @@ export type PicklistValuesItem = {
  * Replace all picklist value full names with a reference to the original value definition.
  * Modifies the picklistValues in place.
  *
+ * @param recordType        a RecordType instance to modify
  * @param picklistValues    The picklistValues of a RecordType instance to modify
  */
-const addPicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
-  const picklistRef: ReferenceExpression | undefined =
-    // Some picklist references are themselves references to value sets, while others are direct picklists references.
-    picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
+const addPicklistValueReferences = (recordType: InstanceElement, picklistValues: PicklistValuesItem): void => {
+  // TODO: Some picklist references are themselves references to value sets, while others are direct picklists references.
+  const recordTypeParent = recordType.annotations[CORE_ANNOTATIONS.PARENT][0].value ?? recordType.annotations[CORE_ANNOTATIONS.PARENT][0]
+  const picklistRef: ReferenceExpression =
+    recordTypeParent.fields[picklistValues.picklist]?.annotations?.valueSetName ??
+    new ReferenceExpression(recordTypeParent.elemID.createNestedID('field', picklistValues.picklist))
   if (!isReferenceExpression(picklistRef)) {
     log.warn('Expected RecordType picklist to be a reference expression, got: %s', picklistRef)
     return
@@ -104,27 +113,25 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async elements =>
       elements
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(rt => rt.value.picklistValues)
+        .flatMap(rt => rt.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [rt, picklistValueItem]))
         .filter(isDefined)
-        .forEach(addPicklistValueReferences),
+        .forEach(([rt, pvi]) => addPicklistValueReferences(rt, pvi)),
 
-    preDeploy: async changes => {
+    preDeploy: async changes =>
       changes
         .map(getChangeData)
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
         .flatMap(rt => rt.value.picklistValues)
         .filter(isDefined)
-        .forEach(resolvePicklistValueReferences)
-    },
+        .forEach(resolvePicklistValueReferences),
 
-    onDeploy: async changes => {
+    onDeploy: async changes =>
       changes
         .map(getChangeData)
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(rt => rt.value.picklistValues)
+        .flatMap(rt => rt.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [rt, picklistValueItem]))
         .filter(isDefined)
-        .forEach(addPicklistValueReferences)
-    },
+        .forEach(([rt, pvi]) => addPicklistValueReferences(rt, pvi)),
   }
 }
 

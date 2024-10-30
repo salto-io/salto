@@ -203,6 +203,8 @@ export const allFilters: Array<FilterCreator> = [
   standardValueSetFilter,
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
+  // picklistReferences should run after convertMapsFilter and before fieldReferencesFilter
+  picklistReferences,
   flowFilter,
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
@@ -240,8 +242,6 @@ export const allFilters: Array<FilterCreator> = [
   replaceFieldValuesFilter,
   valueToStaticFileFilter,
   fieldReferencesFilter,
-  // picklistReferences should run after convertMapsFilter and fieldReferencesFilter
-  picklistReferences,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,
   // foreignLeyReferences should come after referenceAnnotationsFilter

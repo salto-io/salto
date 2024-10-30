@@ -144,7 +144,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     defaultAdditionQueueValidator: defaultAdditionQueueValidator(config),
     automationToAssets: automationToAssetsValidator(config),
     defaultAttributeValidator: defaultAttributeValidator(config, client),
-    addJsmProject: addJsmProjectValidator,
+    addJsmProject: addJsmProjectValidator(client),
     deleteLabelAtttribute: deleteLabelAtttributeValidator(config),
     jsmPermissions: jsmPermissionsValidator(config, client),
     assetsObjectFieldConfigurationAql: assetsObjectFieldConfigurationAqlValidator(client),

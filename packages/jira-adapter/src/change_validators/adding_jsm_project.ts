@@ -14,31 +14,33 @@ import {
 } from '@salto-io/adapter-api'
 import { PROJECT_TYPE, SERVICE_DESK } from '../constants'
 import { hasJiraServiceDeskLicense } from '../utils'
+import JiraClient from '../client/client'
 
 /*
  * This validator prevents addition of jsm project when JSM is disabled in the service.
  */
-export const addJsmProjectValidator: ChangeValidator = async (changes, elementsSource) => {
-  if (elementsSource === undefined) {
-    return []
+export const addJsmProjectValidator: (client: JiraClient) => ChangeValidator =
+  client => async (changes, elementsSource) => {
+    if (client.isDataCenter || elementsSource === undefined) {
+      return []
+    }
+
+    const jsmProjectChangesData = changes
+      .filter(isInstanceChange)
+      .filter(isAdditionChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
+      .filter(project => project.value.projectTypeKey === SERVICE_DESK)
+
+    if (jsmProjectChangesData.length === 0 || (await hasJiraServiceDeskLicense(elementsSource)) === true) {
+      return []
+    }
+
+    return jsmProjectChangesData.map(instance => ({
+      elemID: instance.elemID,
+      severity: 'Error' as SeverityLevel,
+      message: 'JSM Project cannot be deployed to instance without JSM',
+      detailedMessage:
+        'This JSM project can not be deployed, as JSM is not enabled in the target instance. Enable JSM on your target first, then try again.',
+    }))
   }
-
-  const jsmProjectChangesData = changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
-    .filter(project => project.value.projectTypeKey === SERVICE_DESK)
-
-  if (jsmProjectChangesData.length === 0 || (await hasJiraServiceDeskLicense(elementsSource)) === true) {
-    return []
-  }
-
-  return jsmProjectChangesData.map(instance => ({
-    elemID: instance.elemID,
-    severity: 'Error' as SeverityLevel,
-    message: 'JSM Project cannot be deployed to instance without JSM',
-    detailedMessage:
-      'This JSM project can not be deployed, as JSM is not enabled in the target instance. Enable JSM on your target first, then try again.',
-  }))
-}

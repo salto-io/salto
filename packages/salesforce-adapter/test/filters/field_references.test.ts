@@ -24,7 +24,10 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator, { addReferences, createContextStrategyLookups } from '../../src/filters/field_references'
-import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
+import {
+  fieldNameToTypeMappingDefs,
+  ReferenceSerializationStrategyLookup,
+} from '../../src/transformers/reference_mapping'
 import {
   OBJECTS_PATH,
   SALESFORCE,
@@ -50,6 +53,7 @@ import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_objec
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 
@@ -753,6 +757,59 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
       expect(instanceFlowRecordLookup.value.filters[1].field).toEqual('unknown')
+    })
+  })
+})
+
+describe('Serialization Strategies', () => {
+  describe('recordField', () => {
+    const RESOLVED_VALUE = 'Record.SBQQ__Template__c'
+    let filter: FilterWith<'onFetch'>
+    let parentType: ObjectType
+    let instanceType: ObjectType
+    let instance: InstanceElement
+    beforeEach(() => {
+      parentType = mockTypes.SBQQ__LineColumn__c.clone()
+      instanceType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'MockType'),
+        fields: {
+          fieldInstances: {
+            refType: new ListType(mockTypes.FieldInstance),
+          },
+        },
+      })
+      instance = createInstanceElement(
+        {
+          fullName: 'TestInstance',
+          fieldInstances: [
+            {
+              fieldItem: RESOLVED_VALUE,
+            },
+          ],
+        },
+        instanceType,
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(parentType.elemID, parentType),
+        },
+      )
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { optionalFeatures: { lightningPageFieldItemReference: true } },
+          }),
+        },
+      }) as FilterWith<'onFetch'>
+    })
+    it('should create reference to the CustomField and deserialize it to the original value', async () => {
+      await filter.onFetch([instance, instanceType, parentType, mockTypes.FieldInstance])
+      const createdReference = instance.value.fieldInstances[0].fieldItem as ReferenceExpression
+      expect(createdReference).toBeInstanceOf(ReferenceExpression)
+      // Make sure serialization works on the created reference
+      expect(
+        await ReferenceSerializationStrategyLookup.recordField.serialize({ ref: createdReference, element: instance }),
+      ).toEqual(RESOLVED_VALUE)
     })
   })
 })

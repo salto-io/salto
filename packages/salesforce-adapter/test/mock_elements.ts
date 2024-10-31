@@ -691,6 +691,7 @@ export const mockTypes = {
       SBQQ__Template__c: {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
+          [API_NAME]: 'SBQQ__LineColumn__c.SBQQ__Template__c',
           [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SBQQ__Template__c'],
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
@@ -771,6 +772,14 @@ export const mockTypes = {
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
+    },
+  }),
+  FieldInstance: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FieldInstance',
+    },
+    fields: {
+      fieldItem: { refType: BuiltinTypes.STRING },
     },
   }),
 }

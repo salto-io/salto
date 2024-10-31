@@ -241,7 +241,7 @@ export const detailedCompare = (
   const baseChange = toChange({ before, after })
   const createFieldChanges = compareOptions?.createFieldChanges ?? false
 
-  const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
+  const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChangeWithBaseChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
       .filter(fieldName => afterObj.fields[fieldName] === undefined)
       .map(fieldName => ({
@@ -249,6 +249,7 @@ export const detailedCompare = (
         id: beforeObj.fields[fieldName].elemID,
         data: { before: beforeObj.fields[fieldName] },
         elemIDs: { before: beforeObj.fields[fieldName].elemID },
+        baseChange: toChange({ before: beforeObj.fields[fieldName] }),
       }))
 
     const addChanges = Object.keys(afterObj.fields)
@@ -258,13 +259,14 @@ export const detailedCompare = (
         id: afterObj.fields[fieldName].elemID,
         data: { after: afterObj.fields[fieldName] },
         elemIDs: { after: afterObj.fields[fieldName].elemID },
+        baseChange: toChange({ after: afterObj.fields[fieldName] }),
       }))
 
     const modifyChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] !== undefined)
-      .map(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName], compareOptions))
+      .flatMap(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName], compareOptions))
 
-    return [...removeChanges, ...addChanges, ...(_.flatten(modifyChanges) as DetailedChange[])]
+    return [...removeChanges, ...addChanges, ...modifyChanges]
   }
 
   // A special case to handle type changes.
@@ -314,14 +316,18 @@ export const detailedCompare = (
   const fieldChanges =
     createFieldChanges && isObjectType(before) && isObjectType(after) ? getFieldsChanges(before, after) : []
 
-  return annotationTypeChanges
+  const elementChanges = annotationTypeChanges
     .concat(annotationChanges)
-    .concat(fieldChanges)
     .concat(valueChanges)
     .map(detailedChange => ({ ...detailedChange, baseChange }))
+
+  return elementChanges.concat(fieldChanges)
 }
 
-export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChangeWithBaseChange[] => {
+export const getDetailedChanges = (
+  change: Change<Element>,
+  compareOptions?: CompareOptions,
+): DetailedChangeWithBaseChange[] => {
   if (change.action !== 'modify') {
     return [toDetailedChangeFromBaseChange(change)]
   }

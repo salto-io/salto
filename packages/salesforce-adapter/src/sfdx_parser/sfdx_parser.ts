@@ -29,6 +29,7 @@ import { allFilters } from '../adapter'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
 import { metadataTypeSync } from '../filters/utils'
 import { getTypesWithContent, getTypesWithMetaFile } from '../fetch'
+import { detailedMessageFromSfError } from './errors'
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
@@ -97,7 +98,7 @@ export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseD
           {
             severity: 'Error',
             message: 'Failed to load project',
-            detailedMessage: error.message ?? 'Internal error in Salesforce library',
+            detailedMessage: detailedMessageFromSfError(error),
           },
         ],
       }

@@ -35,6 +35,7 @@ import {
   SfProject,
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
+import { detailedMessageFromSfError } from './errors'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -224,8 +225,8 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
       unappliedChanges: changes,
       errors: errors.concat({
         severity: 'Error',
-        message: 'Failed merging changes',
-        detailedMessage: error.message ?? 'Internal error in Salesforce library',
+        message: 'Failed persisting changes to SFDX project',
+        detailedMessage: detailedMessageFromSfError(error),
       }),
     }
   }

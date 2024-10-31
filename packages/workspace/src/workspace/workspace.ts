@@ -32,6 +32,7 @@ import {
   DEFAULT_SOURCE_SCOPE,
   isElement,
   isAdditionOrModificationChange,
+  DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -224,7 +225,7 @@ export type Workspace = {
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T): Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
   updateNaclFiles: (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
     mode?: RoutingMode,
     stateOnly?: boolean,
   ) => Promise<UpdateNaclFilesResult>
@@ -964,7 +965,7 @@ export const loadWorkspace = async (
     stateOnly = false,
     validate = true,
   }: {
-    changes: DetailedChange[]
+    changes: DetailedChangeWithBaseChange[]
     mode?: RoutingMode
     validate?: boolean
     stateOnly?: boolean

@@ -24,6 +24,8 @@ import {
   TypeReference,
   isTypeReference,
   AdditionChange,
+  DetailedChangeWithBaseChange,
+  Change,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -53,12 +55,7 @@ type PositionInParent = {
   indexInParent?: number
 }
 
-const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): PositionInParent => {
-  if (change.baseChange === undefined) {
-    log.warn('No base change: %s', inspectValue(change))
-    return { followingElementIDs: [] }
-  }
-
+const getPositionInParent = <T>(change: DetailedChangeWithBaseChange & AdditionChange<T>): PositionInParent => {
   const changeData = getChangeData(change)
   const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
   const pathInParent = getPath(parent, change.id)
@@ -95,7 +92,10 @@ const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): 
   }
 }
 
-export const getChangeLocations = (change: DetailedChange, sourceMap: parser.SourceMap): DetailedChangeWithSource[] => {
+export const getChangeLocations = (
+  change: DetailedChangeWithBaseChange,
+  sourceMap: parser.SourceMap,
+): DetailedChangeWithSource[] => {
   const lastNestedLocation = (parentScope: parser.SourceRange): parser.SourceRange => {
     // We want to insert just before the scope's closing bracket, so we place the change
     // one byte before the closing bracket.
@@ -206,12 +206,13 @@ const fixEdgeIndentation = (data: string, action: ActionName, initialIndentation
 type DetailedAddition = AdditionDiff<Element> & {
   id: ElemID
   path: string[]
+  baseChange: Change<Element>
 }
 
 export const groupAnnotationTypeChanges = (
-  fileChanges: DetailedChange[],
+  fileChanges: DetailedChangeWithBaseChange[],
   existingFileSourceMap?: parser.SourceMap,
-): DetailedChange[] => {
+): DetailedChangeWithBaseChange[] => {
   const isAnnotationTypeAddChange = (change: DetailedChange): boolean =>
     change.id.isAnnotationTypeID() && isAdditionChange(change)
 
@@ -219,7 +220,9 @@ export const groupAnnotationTypeChanges = (
     !_.isUndefined(existingFileSourceMap) &&
     existingFileSourceMap.has(ElemID.fromFullName(topLevelIdFullName).createNestedID('annotation').getFullName())
 
-  const createGroupedAddAnnotationTypesChange = (annotationTypesAddChanges: DetailedChange[]): DetailedChange => {
+  const createGroupedAddAnnotationTypesChange = (
+    annotationTypesAddChanges: DetailedChangeWithBaseChange[],
+  ): DetailedChangeWithBaseChange => {
     const change = annotationTypesAddChanges[0]
     return {
       id: new ElemID(change.id.adapter, change.id.typeName, 'annotation'),
@@ -230,6 +233,7 @@ export const groupAnnotationTypeChanges = (
           .fromPairs()
           .value(),
       },
+      baseChange: change.baseChange,
     }
   }
 
@@ -412,18 +416,18 @@ const parentElementExistsInPath = (dc: DetailedChange, sourceMap: parser.SourceM
   return _.some(sourceMap.get(parent.getFullName())?.map(range => range.filename === createFileNameFromPath(dc.path)))
 }
 
-export const getChangesToUpdate = (changes: DetailedChange[], sourceMap: parser.SourceMap): DetailedChange[] => {
-  const isNestedAddition = (dc: DetailedChange): boolean =>
+export const getChangesToUpdate = (
+  changes: DetailedChangeWithBaseChange[],
+  sourceMap: parser.SourceMap,
+): DetailedChangeWithBaseChange[] => {
+  const isNestedAddition = (dc: DetailedChange): dc is DetailedAddition =>
     (dc.path || false) &&
     dc.action === 'add' &&
     dc.id.idType !== 'instance' &&
     dc.id.nestingLevel === (dc.id.isAnnotationTypeID() ? 2 : 1) &&
     !parentElementExistsInPath(dc, sourceMap)
 
-  const [nestedAdditionsWithPath, otherChanges] = _.partition(changes, isNestedAddition) as [
-    DetailedAddition[],
-    DetailedChange[],
-  ]
+  const [nestedAdditionsWithPath, otherChanges] = _.partition(changes, isNestedAddition)
   const wrappedNestedAdditions: DetailedAddition[] = _(nestedAdditionsWithPath)
     .groupBy(addition => [addition.path, addition.id.createTopLevelParentID().parent])
     .values()

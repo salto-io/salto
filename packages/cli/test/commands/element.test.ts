@@ -1775,6 +1775,10 @@ Moving the specified elements to common.
               before: typeWithFix.elemID.createNestedID('attr', 'fix1'),
               after: typeWithFix.elemID.createNestedID('attr', 'fix1'),
             },
+            baseChange: {
+              action: 'modify',
+              data: { before: type, after: typeWithFix },
+            },
           },
         ],
         errors: [
@@ -1805,6 +1809,10 @@ Moving the specified elements to common.
           elemIDs: {
             before: type.elemID.createNestedID('attr', 'fix1'),
             after: type.elemID.createNestedID('attr', 'fix1'),
+          },
+          baseChange: {
+            action: 'modify',
+            data: { before: type, after: typeWithFix },
           },
         },
       ])

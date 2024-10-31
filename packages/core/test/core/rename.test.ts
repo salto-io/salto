@@ -6,10 +6,17 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { DetailedChange, ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  DetailedChangeWithBaseChange,
+  ElemID,
+  InstanceElement,
+  isInstanceElement,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
+import { setPath } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import * as rename from '../../src/core/rename'
-
 import * as mockElements from '../common/elements'
 import { mockWorkspace } from '../common/workspace'
 
@@ -94,8 +101,8 @@ describe('rename.ts', () => {
     })
   })
   describe('renameElement', () => {
-    let expectedChanges: DetailedChange[]
-    let changes: DetailedChange[]
+    let expectedChanges: DetailedChangeWithBaseChange[]
+    let changes: DetailedChangeWithBaseChange[]
     let targetElement: InstanceElement
     beforeAll(async () => {
       const sourceElement = await ws.getValue(sourceElemId)
@@ -114,10 +121,24 @@ describe('rename.ts', () => {
       const beforeRef = new ReferenceExpression(sourceElemId)
       const afterRef = new ReferenceExpression(targetElement.elemID)
 
+      const elementWithReference = await ws.getValue(refElemId.createTopLevelParentID().parent)
+      const elementWithRenamedReference = elementWithReference.clone()
+      setPath(elementWithRenamedReference, refElemId, afterRef)
+
+      const baseRemoveChange = toChange({ before: sourceElement })
+      const baseAddChange = toChange({ after: targetElement })
+      const baseModifyChange = toChange({ before: elementWithReference, after: elementWithRenamedReference })
+
       expectedChanges = [
-        { id: sourceElemId, action: 'remove', data: { before: sourceElement } },
-        { id: targetElement.elemID, action: 'add', data: { after: targetElement } },
-        { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } },
+        { id: sourceElemId, baseChange: baseRemoveChange, ...baseRemoveChange },
+        { id: targetElement.elemID, baseChange: baseAddChange, ...baseAddChange },
+        {
+          id: refElemId,
+          action: 'modify',
+          data: { before: beforeRef, after: afterRef },
+          elemIDs: { before: refElemId, after: refElemId },
+          baseChange: baseModifyChange,
+        },
       ]
 
       changes = await rename.renameElement(elements, sourceElemId, targetElement.elemID)

@@ -29,6 +29,7 @@ import {
   isField,
   toChange,
   TypeReference,
+  DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -36,7 +37,6 @@ import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges, getElementHiddenParts } from '../../src/workspace/hidden_values'
 import { RemoteElementSource, createInMemoryElementSource } from '../../src/workspace/elements_source'
-import { createAddChange, createRemoveChange } from '../../src/workspace/nacl_files/multi_env/projections'
 import { State } from '../../src/workspace/state'
 
 const { awu } = collections.asynciterable
@@ -301,10 +301,14 @@ describe('handleHiddenChanges', () => {
         },
       })
       const { field } = objectType.fields
-      const change: DetailedChange = {
+      const change: DetailedChangeWithBaseChange = {
         id: field.elemID,
         action: 'add',
         data: { after: field },
+        baseChange: {
+          action: 'add',
+          data: { after: field },
+        },
       }
       const { hidden, visible } = await handleHiddenChanges(
         [change],
@@ -342,10 +346,14 @@ describe('handleHiddenChanges', () => {
       let visibleInstance: InstanceElement
       let hiddenInstance: InstanceElement
       beforeEach(async () => {
-        const change: DetailedChange = {
+        const change: DetailedChangeWithBaseChange = {
           id: instance.elemID,
           action: 'add',
           data: { after: instance },
+          baseChange: {
+            action: 'add',
+            data: { after: instance },
+          },
         }
 
         result = await handleHiddenChanges([change], mockState(), createInMemoryElementSource())
@@ -367,10 +375,11 @@ describe('handleHiddenChanges', () => {
     describe('when adding only the hidden annotation', () => {
       let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
       beforeAll(async () => {
-        const change: DetailedChange = {
+        const change: DetailedChangeWithBaseChange = {
           id: instance.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL),
           action: 'add',
           data: { after: instance.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] },
+          baseChange: { action: 'modify', data: { before: instance, after: instance } },
         }
 
         result = await handleHiddenChanges([change], mockState([instanceType, instance]), createInMemoryElementSource())
@@ -391,11 +400,17 @@ describe('handleHiddenChanges', () => {
       const inst = new InstanceElement('hidden', obj, {}, [], {
         [INSTANCE_ANNOTATIONS.HIDDEN]: true,
       })
-      const change: DetailedChange = {
+      const change: DetailedChangeWithBaseChange = {
         id: inst.elemID,
         action: 'remove',
         data: {
           before: inst,
+        },
+        baseChange: {
+          action: 'remove',
+          data: {
+            before: inst,
+          },
         },
       }
       it('should return the entire change and both hidden and visible', async () => {
@@ -424,10 +439,11 @@ describe('handleHiddenChanges', () => {
           },
         },
       })
-      const change: DetailedChange = {
+      const change: DetailedChangeWithBaseChange = {
         id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
         action: 'add',
         data: { after: 'someUrl' },
+        baseChange: { action: 'modify', data: { before: object.fields.field, after: object.fields.field } },
       }
       result = await handleHiddenChanges([change], mockState([object]), createInMemoryElementSource())
     })
@@ -462,12 +478,13 @@ describe('handleHiddenChanges', () => {
       let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
       let filteredValue: unknown
       beforeEach(async () => {
-        const change: DetailedChange = {
+        const change: DetailedChangeWithBaseChange = {
           id: instance.elemID.createNestedID('ref'),
           action: 'add',
           data: {
             after: new ReferenceExpression(new ElemID('a', 'b')),
           },
+          baseChange: { action: 'modify', data: { before: instance, after: instance } },
         }
 
         result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource())
@@ -483,13 +500,14 @@ describe('handleHiddenChanges', () => {
       let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
       let filteredValue: unknown
       beforeEach(async () => {
-        const change: DetailedChange = {
+        const change: DetailedChangeWithBaseChange = {
           id: instance.elemID.createNestedID('val'),
           action: 'modify',
           data: {
             before: 'asd',
             after: new ReferenceExpression(new ElemID('a', 'b')),
           },
+          baseChange: { action: 'modify', data: { before: instance, after: instance } },
         }
 
         result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource())
@@ -516,10 +534,11 @@ describe('handleHiddenChanges', () => {
       },
     )
 
-    const change: DetailedChange = {
+    const change: DetailedChangeWithBaseChange = {
       id: workspaceInstance.elemID,
       action: 'add',
       data: { after: workspaceInstance },
+      baseChange: { action: 'modify', data: { before: workspaceInstance, after: workspaceInstance } },
     }
 
     it('should not hide anything if there is no hidden part, even if nested values are undefined', async () => {
@@ -550,10 +569,11 @@ describe('handleHiddenChanges', () => {
       },
     })
 
-    const change: DetailedChange = {
+    const change: DetailedChangeWithBaseChange = {
       id: instance.elemID.createNestedID('val'),
       action: 'add',
       data: { after: instance.value.val },
+      baseChange: { action: 'modify', data: { before: instance, after: instance } },
     }
     const result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource([]))
     expect(result.visible).toEqual([change])
@@ -575,11 +595,15 @@ describe('handleHiddenChanges', () => {
 
     const stateInstance = new InstanceElement('instance', type, {})
 
-    const change: DetailedChange = {
+    const change: DetailedChangeWithBaseChange = {
       id: stateInstance.elemID.createNestedID('val'),
       action: 'add',
       data: {
         after: { inner: 'abc' },
+      },
+      baseChange: {
+        action: 'modify',
+        data: { before: stateInstance, after: stateInstance },
       },
     }
 
@@ -613,7 +637,7 @@ describe('handleHiddenChanges', () => {
     describe('with an addition of map with hidden value', () => {
       const stateInstance = new InstanceElement('instance', type, {})
 
-      const change: DetailedChange = {
+      const change: DetailedChangeWithBaseChange = {
         id: stateInstance.elemID.createNestedID('map'),
         action: 'add',
         data: {
@@ -624,6 +648,7 @@ describe('handleHiddenChanges', () => {
             },
           },
         },
+        baseChange: { action: 'modify', data: { before: stateInstance, after: stateInstance } },
       }
 
       it('should have a hidden change', async () => {
@@ -642,7 +667,7 @@ describe('handleHiddenChanges', () => {
         map: {},
       })
 
-      const change: DetailedChange = {
+      const change: DetailedChangeWithBaseChange = {
         id: stateInstance.elemID.createNestedID('map', 'val'),
         action: 'add',
         data: {
@@ -651,6 +676,7 @@ describe('handleHiddenChanges', () => {
             visible: 'visible',
           },
         },
+        baseChange: { action: 'modify', data: { before: stateInstance, after: stateInstance } },
       }
 
       it('should have a hidden change', async () => {
@@ -699,7 +725,12 @@ describe('handleHiddenChanges', () => {
 
       beforeEach(async () => {
         obj.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-        const toHiddenChange = createAddChange(true, obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE))
+        const toHiddenChange: DetailedChangeWithBaseChange = {
+          id: obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+          action: 'add',
+          data: { after: true },
+          baseChange: { action: 'modify', data: { before: obj, after: obj } },
+        }
         changes = (await handleHiddenChanges([toHiddenChange], state, visibleSource)).visible
       })
 
@@ -721,10 +752,12 @@ describe('handleHiddenChanges', () => {
           unmergedElements: [obj, hiddenObj, inst, hidden1, hidden2],
         })
 
-        const fromHiddenChange = createRemoveChange(
-          true,
-          hiddenObj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
-        )
+        const fromHiddenChange: DetailedChangeWithBaseChange = {
+          id: hiddenObj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+          action: 'remove',
+          data: { before: true },
+          baseChange: { action: 'modify', data: { before: hiddenObj, after: hiddenObj } },
+        }
         changes = (await handleHiddenChanges([fromHiddenChange], state, visibleSource)).visible
       })
       it('should create add changes with the instance value from the state', () => {
@@ -742,7 +775,7 @@ describe('handleHiddenChanges', () => {
 
   describe('field annotation change when the field is not in the state', () => {
     let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
-    let change: DetailedChange
+    let change: DetailedChangeWithBaseChange
     beforeAll(async () => {
       const stateObject = new ObjectType({ elemID: new ElemID('test', 'type') })
       const fullObject = new ObjectType({
@@ -757,6 +790,7 @@ describe('handleHiddenChanges', () => {
         id: fullObject.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
         action: 'add',
         data: { after: 'someUrl' },
+        baseChange: { action: 'modify', data: { before: fullObject.fields.field, after: fullObject.fields.field } },
       }
       result = await handleHiddenChanges([change], mockState([stateObject]), createInMemoryElementSource())
     })
@@ -788,7 +822,12 @@ describe('handleHiddenChanges', () => {
       let changes: DetailedChange[]
 
       beforeEach(async () => {
-        const toHiddenChange = createAddChange(true, obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN))
+        const toHiddenChange: DetailedChangeWithBaseChange = {
+          id: obj.elemID.createNestedID('attr', CORE_ANNOTATIONS.HIDDEN),
+          action: 'add',
+          data: { after: true },
+          baseChange: { action: 'modify', data: { before: obj, after: obj } },
+        }
         changes = (await handleHiddenChanges([toHiddenChange], state, visibleSource)).visible
       })
 

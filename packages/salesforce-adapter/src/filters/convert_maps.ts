@@ -76,8 +76,8 @@ type MapDef = {
   maintainOrder?: boolean
 }
 
-const ORDERED_MAP_VALUES_FIELD = 'values'
-const ORDERED_MAP_ORDER_FIELD = 'order'
+export const ORDERED_MAP_VALUES_FIELD = 'values'
+export const ORDERED_MAP_ORDER_FIELD = 'order'
 
 const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
   new ObjectType({

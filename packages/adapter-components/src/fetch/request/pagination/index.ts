@@ -17,5 +17,6 @@ export {
   PathCheckerFunc,
   tokenPagination,
   offsetAndLimitPagination,
+  getPaginationWithLimitedResults,
 } from './pagination_functions'
 export { traversePages } from './pagination'

@@ -23,5 +23,5 @@ export const detailedMessageFromSfError = (error: unknown): string => {
     return error.message
   }
 
-  return 'Internal error in Salesforce library'
+  return `Internal error in Salesforce library: ${error}`
 }

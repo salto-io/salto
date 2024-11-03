@@ -49,7 +49,7 @@ describe('detailedMessageFromSfError', () => {
     })
 
     it('should return a const message', () => {
-      expect(message).toEqual('Internal error in Salesforce library')
+      expect(message).toEqual('Internal error in Salesforce library: A string')
     })
   })
 })

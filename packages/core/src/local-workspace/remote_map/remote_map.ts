@@ -625,35 +625,34 @@ export const createRemoteMapCreator = (
           return
         }
         statCounters.LocationCacheMiss.inc()
-        const cachePromise =
-          new Promise<T | undefined>(resolveInner => {
-            const resolveRet = async (value: Buffer | string): Promise<void> => {
-              const ret = await deserialize(value.toString())
-              isNamespaceEmpty = false
-              resolveInner(ret)
-            }
-            tmpDB.get(keyToTempDBKey(key), async (error, value) => {
-              if (error) {
-                if (wasClearCalled) {
+        const cachePromise = new Promise<T | undefined>(resolveInner => {
+          const resolveRet = async (value: Buffer | string): Promise<void> => {
+            const ret = await deserialize(value.toString())
+            isNamespaceEmpty = false
+            resolveInner(ret)
+          }
+          tmpDB.get(keyToTempDBKey(key), async (error, value) => {
+            if (error) {
+              if (wasClearCalled) {
+                statCounters.RemoteMapMiss.inc()
+                resolveInner(undefined)
+                return
+              }
+              persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
+                if (innerError) {
                   statCounters.RemoteMapMiss.inc()
                   resolveInner(undefined)
                   return
                 }
-                persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
-                  if (innerError) {
-                    statCounters.RemoteMapMiss.inc()
-                    resolveInner(undefined)
-                    return
-                  }
-                  await resolveRet(innerValue)
-                  statCounters.RemoteMapHit.inc()
-                })
-              } else {
-                await resolveRet(value)
+                await resolveRet(innerValue)
                 statCounters.RemoteMapHit.inc()
-              }
-            })
+              })
+            } else {
+              await resolveRet(value)
+              statCounters.RemoteMapHit.inc()
+            }
           })
+        })
         locationCache.set(keyToTempDBKey(key), cachePromise)
         resolve(cachePromise)
       })

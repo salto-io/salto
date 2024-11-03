@@ -621,37 +621,41 @@ export const createRemoteMapCreator = (
           statCounters.LocationCacheHit.inc()
           statCounters.RemoteMapHit.inc()
           isNamespaceEmpty = false
-          resolve(locationCache.get(keyToTempDBKey(key)) as T)
+          resolve(locationCache.get(keyToTempDBKey(key)) as Promise<T>)
           return
         }
         statCounters.LocationCacheMiss.inc()
-        const resolveRet = async (value: Buffer | string): Promise<void> => {
-          const ret = await deserialize(value.toString())
-          locationCache.set(keyToTempDBKey(key), ret)
-          isNamespaceEmpty = false
-          resolve(ret)
-        }
-        tmpDB.get(keyToTempDBKey(key), async (error, value) => {
-          if (error) {
-            if (wasClearCalled) {
-              statCounters.RemoteMapMiss.inc()
-              resolve(undefined)
-              return
+        const cachePromise =
+          new Promise<T | undefined>(resolveInner => {
+            const resolveRet = async (value: Buffer | string): Promise<void> => {
+              const ret = await deserialize(value.toString())
+              isNamespaceEmpty = false
+              resolveInner(ret)
             }
-            persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
-              if (innerError) {
-                statCounters.RemoteMapMiss.inc()
-                resolve(undefined)
-                return
+            tmpDB.get(keyToTempDBKey(key), async (error, value) => {
+              if (error) {
+                if (wasClearCalled) {
+                  statCounters.RemoteMapMiss.inc()
+                  resolveInner(undefined)
+                  return
+                }
+                persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
+                  if (innerError) {
+                    statCounters.RemoteMapMiss.inc()
+                    resolveInner(undefined)
+                    return
+                  }
+                  await resolveRet(innerValue)
+                  statCounters.RemoteMapHit.inc()
+                })
+              } else {
+                await resolveRet(value)
+                statCounters.RemoteMapHit.inc()
               }
-              await resolveRet(innerValue)
-              statCounters.RemoteMapHit.inc()
             })
-          } else {
-            await resolveRet(value)
-            statCounters.RemoteMapHit.inc()
-          }
-        })
+          })
+        locationCache.set(keyToTempDBKey(key), cachePromise)
+        resolve(cachePromise)
       })
     const deleteImpl = async (key: string): Promise<void> => {
       delKeys.add(key)

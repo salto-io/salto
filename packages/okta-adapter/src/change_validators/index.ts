@@ -36,6 +36,7 @@ import { disabledAuthenticatorsInMfaPolicyValidator } from './disabled_authentic
 import { oidcIdentityProviderValidator } from './oidc_idp'
 import { everyoneGroupAssignments } from './everyone_group_assignments'
 import { emailDomainAdditionValidator } from './email_domain_addition'
+import { provisionedUserAdditions } from './provisioned_user_addition'
 import OktaClient from '../client/client'
 import {
   API_DEFINITIONS_CONFIG,
@@ -114,6 +115,7 @@ export default ({
     oidcIdentityProvider: oidcIdentityProviderValidator,
     everyoneGroupAssignments,
     emailDomainAddition: emailDomainAdditionValidator,
+    provisionedUserAdditions,
   }
 
   return createChangeValidator({

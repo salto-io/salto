@@ -222,7 +222,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     )
   } catch (error) {
     return {
-      unappliedChanges: changes,
+      unappliedChanges,
       errors: errors.concat({
         severity: 'Error',
         message: 'Failed persisting changes to SFDX project',

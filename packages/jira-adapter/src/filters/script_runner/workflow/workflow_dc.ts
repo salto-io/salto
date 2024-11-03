@@ -19,12 +19,15 @@ export const SCRIPT_RUNNER_DC_TYPES = [
 const DC_ENCODE_PREFIX = '`!`'
 const CANNED_SCRIPT = 'canned-script'
 const FIELD_COMMENT_TYPE = 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.CommentIssue'
+const LOGGED_SCRIPT_FIRST_CHARS = 200
 
 const decodeBase64 = (base64: string): string => {
   try {
     const decoded = Buffer.from(base64, 'base64').toString('utf8')
     if (!decoded.startsWith(DC_ENCODE_PREFIX)) {
-      log.info(`Could not decode DC ScriptRunner script, expected to start with ${DC_ENCODE_PREFIX}, got: ${decoded}`)
+      log.info(
+        `Could not decode DC ScriptRunner script, expected to start with ${DC_ENCODE_PREFIX}. The first ${LOGGED_SCRIPT_FIRST_CHARS} chars of the script are: ${decoded.substring(0, LOGGED_SCRIPT_FIRST_CHARS)}`,
+      )
       return base64
     }
     // all base64 strings of DC ScriptRunner scripts start with `!` (or YCFg in base 64)

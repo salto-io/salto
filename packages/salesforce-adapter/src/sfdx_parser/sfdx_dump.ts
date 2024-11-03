@@ -35,6 +35,7 @@ import {
   SfProject,
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
+import { detailedMessageFromSfError } from './errors'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -208,16 +209,27 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     'Starting SFDX convert of components: %o',
     componentsToDump.map(comp => `${comp.type.id}:${comp.fullName}`),
   )
-  const convertResult = await converter.convert(componentsToDump.concat(componentsToDelete.partialDelete), 'source', {
-    type: 'merge',
-    defaultDirectory: currentProject.getDefaultPackage().fullPath,
-    mergeWith: currentComponents.getSourceComponents(),
-  })
 
-  log.debug(
-    'Finished merging components with result, converted: %o',
-    convertResult.converted?.map(comp => `${comp.type.id}:${comp.fullName}`),
-  )
+  try {
+    const convertResult = await converter.convert(componentsToDump.concat(componentsToDelete.partialDelete), 'source', {
+      type: 'merge',
+      defaultDirectory: currentProject.getDefaultPackage().fullPath,
+      mergeWith: currentComponents.getSourceComponents(),
+    })
+    log.debug(
+      'Finished merging components with result, converted: %o',
+      convertResult.converted?.map(comp => `${comp.type.id}:${comp.fullName}`),
+    )
+  } catch (error) {
+    return {
+      unappliedChanges,
+      errors: errors.concat({
+        severity: 'Error',
+        message: 'Failed persisting changes to SFDX project',
+        detailedMessage: detailedMessageFromSfError(error),
+      }),
+    }
+  }
 
   // Remove paths that are nested under other paths to delete so we don't try to double-delete
   const pathsToDelete = compactPathList(allPathsToDelete)

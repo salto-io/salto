@@ -125,7 +125,7 @@ const filterCreator: FilterCreator = ({ config }) => {
       elements
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
         .flatMap(recordType =>
-          recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [
+          recordType.value.picklistValues?.map((picklistValueItem: PicklistValuesItem) => [
             recordType,
             picklistValueItem,
           ]),
@@ -146,7 +146,7 @@ const filterCreator: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
         .flatMap(recordType =>
-          recordType.value.picklistValues.map((picklistValueItem: PicklistValuesItem) => [
+          recordType.value.picklistValues?.map((picklistValueItem: PicklistValuesItem) => [
             recordType,
             picklistValueItem,
           ]),

@@ -79,6 +79,7 @@ describe('picklistReferences filter', () => {
   type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   let recordType: InstanceElement
+  let recordTypeWithoutPicklistValues: InstanceElement
 
   beforeEach(async () => {
     filter = filterCreator({
@@ -135,7 +136,14 @@ describe('picklistReferences filter', () => {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountObjectType.elemID, accountObjectType)],
       },
     )
-    const elements = [recordType]
+
+    recordTypeWithoutPicklistValues = new InstanceElement(
+      'RecordType',
+      mockTypes.RecordType,
+      { }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountObjectType.elemID, accountObjectType)],
+      },
+    )
+    const elements = [recordType, recordTypeWithoutPicklistValues]
     await filter.onFetch(elements)
   })
 
@@ -232,7 +240,7 @@ describe('picklistReferences filter', () => {
 
     describe('onDeploy: modify picklist values to reference expressions', () => {
       beforeEach(async () => {
-        await filter.onDeploy([toChange({ after: recordType })])
+        await filter.onDeploy([toChange({ after: recordType }), toChange({ after: recordTypeWithoutPicklistValues })])
       })
       it('should create references to GlobalValueSet', async () => {
         expect(recordType.value.picklistValues[0].values).toEqual([

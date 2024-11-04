@@ -627,6 +627,10 @@ export const createRemoteMapCreator = (
         statCounters.LocationCacheMiss.inc()
         const cachePromise = new Promise<T | undefined>(resolveInner => {
           const resolveRet = async (value: Buffer | string): Promise<void> => {
+            if (delKeys.has(key)) {
+              resolveInner(undefined)
+              return
+            }
             const ret = await deserialize(value.toString())
             isNamespaceEmpty = false
             resolveInner(ret)

@@ -137,12 +137,9 @@ describe('picklistReferences filter', () => {
       },
     )
 
-    recordTypeWithoutPicklistValues = new InstanceElement(
-      'RecordType',
-      mockTypes.RecordType,
-      { }, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountObjectType.elemID, accountObjectType)],
-      },
-    )
+    recordTypeWithoutPicklistValues = new InstanceElement('RecordType', mockTypes.RecordType, {}, undefined, {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(accountObjectType.elemID, accountObjectType)],
+    })
     const elements = [recordType, recordTypeWithoutPicklistValues]
     await filter.onFetch(elements)
   })

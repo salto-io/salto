@@ -167,8 +167,8 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
       await currentStateData.topLevelPathIndex.flush()
-      await currentStateData.accounts.clear()
-      await currentStateData.deprecated.accountsUpdateDate.clear()
+      await currentStateData.accounts.flush()
+      await currentStateData.deprecated.accountsUpdateDate.flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
     },

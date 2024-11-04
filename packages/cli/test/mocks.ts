@@ -304,6 +304,9 @@ export const mockWorkspace = ({
     accounts: new InMemoryRemoteMap([{ key: 'account_names', value: accounts }]),
     saltoMetadata: new InMemoryRemoteMap<string, wsState.StateMetadataKey>(),
     staticFilesSource: mockStateStaticFilesSource(),
+    deprecated: {
+      accountsUpdateDate: new InMemoryRemoteMap<Date>(),
+    },
   })
   const stateByEnv = Object.fromEntries(envs.map(env => [env, wsState.buildInMemState(mockStateData)]))
   let currentEnv = envs[0]

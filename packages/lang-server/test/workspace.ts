@@ -193,6 +193,9 @@ const buildMockWorkspace = async (
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
           staticFilesSource: staticFiles.buildStaticFilesSource(mockDirStore({}), mockStaticFilesCache),
+          deprecated: {
+            accountsUpdateDate: new InMemoryRemoteMap<Date>(),
+          },
         })),
       },
       inactive: {
@@ -211,6 +214,9 @@ const buildMockWorkspace = async (
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
           staticFilesSource: staticFiles.buildStaticFilesSource(mockDirStore({}), mockStaticFilesCache),
+          deprecated: {
+            accountsUpdateDate: new InMemoryRemoteMap<Date>(),
+          },
         })),
       },
     },

@@ -21,4 +21,7 @@ export const mockState = (elements: Element[] = []): State =>
     saltoVersion: '0.0.1',
     saltoMetadata: new InMemoryRemoteMap(),
     staticFilesSource: mockStaticFilesSource(),
+    deprecated: {
+      accountsUpdateDate: new InMemoryRemoteMap<Date>(),
+    },
   }))

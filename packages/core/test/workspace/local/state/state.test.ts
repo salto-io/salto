@@ -180,9 +180,9 @@ describe('localState', () => {
       })
       it('should write state file correctly', async () => {
         const res = await parseStateContent(contentProvider.readContents([]))
-        expect(new Set(Object.keys(res))).toEqual(new Set(['pathIndices', 'updateDates', 'versions', 'elements']))
+        expect(new Set(Object.keys(res))).toEqual(new Set(['accounts', 'pathIndices', 'elements']))
         expect(res.pathIndices).toEqual([])
-        expect(res.accounts).toEqual(['netsuite', 'salesforce'])
+        expect(res.accounts).toEqual(['netsuite', 'salesforce', 'salto'])
         const originalElements = nsElements.concat(sfElements).concat(mockElement)
         expect(res.elements).toHaveLength(originalElements.length)
         res.elements.forEach(resElement => {
@@ -474,7 +474,7 @@ describe('localState', () => {
 
       expect(contentProvider.writeContents).toHaveBeenCalled()
       const res = await parseStateContent(contentProvider.readContents([]))
-      expect(new Set(Object.keys(res))).toEqual(new Set(['pathIndices', 'updateDates', 'versions', 'elements']))
+      expect(new Set(Object.keys(res))).toEqual(new Set(['accounts', 'pathIndices', 'elements']))
       expect(res.pathIndices).toEqual([])
       expect(res.accounts).toEqual(['extra', 'noVersion', 'salto'])
       const originalElements = getTopLevelElements()

@@ -56,7 +56,7 @@ describe('state', () => {
       accounts: new InMemoryRemoteMap([{ key: 'account_names', value: [adapter] }]),
       pathIndex,
       topLevelPathIndex,
-      saltoMetadata: new InMemoryRemoteMap(),
+      saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
       staticFilesSource: stateStaticFilesSource,
       deprecated: {
         accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: new Date() }]),

@@ -14,6 +14,8 @@ import { serialize, deserializeSingleElement } from '../../serializer/elements'
 import { StateStaticFilesSource } from '../static_files/common'
 import { StateConfig } from '../config/workspace_config_types'
 
+export type StateMetadataKey = 'version' | 'hash'
+
 export type UpdateStateElementsArgs = {
   changes: DetailedChange[]
   unmergedElements?: Element[]
@@ -24,7 +26,7 @@ export type StateData = {
   elements: RemoteElementSource
   accounts: RemoteMap<string[], 'account_names'>
   pathIndex: PathIndex
-  saltoMetadata: RemoteMap<string, 'hash'>
+  saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
   topLevelPathIndex: PathIndex
   deprecated: {
@@ -91,7 +93,7 @@ export const buildStateData = async (
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  saltoMetadata: await remoteMapCreator<string, 'hash'>({
+  saltoMetadata: await remoteMapCreator<string, StateMetadataKey>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: async data => data,
     deserialize: async data => data,

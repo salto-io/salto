@@ -20,6 +20,8 @@ import {
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors, getMockTelemetry } from '../mocks'
 import { getCliTelemetry } from '../../src/telemetry'
 
+import { version } from '../../src/generated/version.json'
+
 const mockWsFunctions = {
   accounts: mockFunction<Workspace['accounts']>().mockReturnValue(['salesforce']),
   envs: mockFunction<Workspace['envs']>().mockReturnValue(['default']),
@@ -35,7 +37,15 @@ const mockWsFunctions = {
     Promise.resolve({ ...error, sourceLocations: [] }),
   ),
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
-  state: mockFunction<Workspace['state']>().mockReturnValue({} as state.State),
+  getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
+    accountName: 'salesforce',
+    serviceName: 'salesforce',
+    date: new Date(),
+    status: 'Valid',
+  }),
+  state: mockFunction<Workspace['state']>().mockReturnValue({
+    getStateSaltoVersion: () => Promise.resolve(version),
+  } as state.State),
 }
 
 const mockWs = mockWsFunctions as unknown as Workspace

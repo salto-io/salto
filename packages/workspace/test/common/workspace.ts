@@ -114,13 +114,10 @@ export const createState = (elements: Element[], persistent = true): State =>
       pathIndex: new InMemoryRemoteMap<Path[]>(),
       topLevelPathIndex: new InMemoryRemoteMap<Path[]>(),
       referenceSources: new InMemoryRemoteMap(),
-      accounts: new InMemoryRemoteMap([{ key: 'account_names', value: [] }]),
+      accountsUpdateDate: new InMemoryRemoteMap(),
       changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),
       saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
       staticFilesSource: mockStaticFilesSource(),
-      deprecated: {
-        accountsUpdateDate: new InMemoryRemoteMap(),
-      },
     }),
     persistent,
   )

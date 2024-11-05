@@ -38,11 +38,10 @@ export const mockState = (
   state.buildInMemState(async () => ({
     elements: elementSource.createInMemoryElementSource(elements),
     pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
-    accounts: new remoteMap.InMemoryRemoteMap([{ key: 'account_names', value: accounts }]),
+    accountsUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(
+      accounts.map(accountName => ({ key: accountName, value: new Date() })),
+    ),
     saltoMetadata: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
     staticFilesSource: mockStaticFilesSource(),
     topLevelPathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
-    deprecated: {
-      accountsUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(),
-    },
   }))

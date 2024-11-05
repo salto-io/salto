@@ -14,12 +14,14 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 
-const hasElemIDs = <T extends Change | DetailedChange>(change: T): change is T & Pick<DetailedChange, 'elemIDs'> =>
-  'elemIDs' in change
+const hasElemIDs = <T extends Change | DetailedChange>(
+  change: T,
+): change is T & Required<Pick<DetailedChange, 'elemIDs'>> => 'elemIDs' in change && change.elemIDs !== undefined
 
 const hasBaseChange = <T extends Change | DetailedChange>(
   change: T,
-): change is T & Pick<DetailedChange, 'baseChange'> => 'baseChange' in change
+): change is T & Required<Pick<DetailedChange, 'baseChange'>> =>
+  'baseChange' in change && change.baseChange !== undefined
 
 const reverseBaseChange = <T extends Element>(change: Change<T>): Change<T> => {
   const before = isAdditionOrModificationChange(change) ? change.data.after : undefined
@@ -30,13 +32,11 @@ const reverseBaseChange = <T extends Element>(change: Change<T>): Change<T> => {
 export const reverseChange = <T extends Change | DetailedChange>(change: T): T => {
   const reversedChange = reverseBaseChange(change)
 
-  const reversedElemIDs =
-    hasElemIDs(change) && change.elemIDs !== undefined
-      ? { elemIDs: { before: change.elemIDs.after, after: change.elemIDs.before } }
-      : {}
+  const reversedElemIDs = hasElemIDs(change)
+    ? { elemIDs: { before: change.elemIDs.after, after: change.elemIDs.before } }
+    : {}
 
-  const reversedBaseChange =
-    hasBaseChange(change) && change.baseChange !== undefined ? { baseChange: reverseBaseChange(change.baseChange) } : {}
+  const reversedBaseChange = hasBaseChange(change) ? { baseChange: reverseBaseChange(change.baseChange) } : {}
 
   return {
     ...change,

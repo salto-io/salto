@@ -525,7 +525,7 @@ describe('SalesforceAdapter fetch', () => {
           expect(profileInstances.length).toEqual(1)
           expect(profileInstances[0].value).toMatchObject({
             fullName: UPDATED_PROFILE_FULL_NAME,
-            apiVersion: 58,
+            apiVersion: '58.0',
           })
           // Make sure we fetch the CustomMetadata instance
           expect(fetchedInstances).toSatisfyAny(instance => apiNameSync(instance) === CUSTOM_METADATA_FULL_NAME)
@@ -554,11 +554,11 @@ describe('SalesforceAdapter fetch', () => {
           expect(nonUpdatedProfileInstance).toBeDefined()
           expect(updatedProfileInstance.value).toMatchObject({
             fullName: UPDATED_PROFILE_FULL_NAME,
-            apiVersion: 58,
+            apiVersion: '58.0',
           })
           expect(nonUpdatedProfileInstance.value).toMatchObject({
             fullName: NON_UPDATED_PROFILE_FULL_NAME,
-            apiVersion: 58,
+            apiVersion: '58.0',
           })
           const fetchedApexClasses = fetchedInstances.filter(isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE))
           expect(fetchedApexClasses).toHaveLength(1)

@@ -265,7 +265,7 @@ describe('Custom Object Instances References filter', () => {
   })
 
   describe('lookup ref to', () => {
-    describe('full fetch', () => {
+    describe('full fetch with ExcludeInstance behavior', () => {
       beforeEach(async () => {
         filter = filterCreator({
           client,
@@ -274,6 +274,9 @@ describe('Custom Object Instances References filter', () => {
             fetchProfile: buildFetchProfile({
               fetchParams: {
                 data: {
+                  brokenOutgoingReferencesSettings: {
+                    defaultBehavior: 'ExcludeInstance',
+                  },
                   includeObjects: ['*'],
                   saltoIDSettings: {
                     defaultIdFields: ['Name'],

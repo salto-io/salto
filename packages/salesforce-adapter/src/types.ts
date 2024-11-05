@@ -170,6 +170,7 @@ export type ChangeValidatorName =
   | 'cpqBillingTriggers'
   | 'managedApexComponent'
   | 'orderedMaps'
+  | 'layoutDuplicateFields'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -893,6 +894,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
     managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
     orderedMaps: { refType: BuiltinTypes.BOOLEAN },
+    layoutDuplicateFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

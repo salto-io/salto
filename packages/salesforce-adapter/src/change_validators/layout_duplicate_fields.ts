@@ -33,12 +33,10 @@ const hasDuplicatesFieldError = ({ elemID }: InstanceElement, objectName: string
 })
 
 const hasDuplicateFields = (instance: InstanceElement): boolean => {
-  // Check if layoutSections is defined
   if (!instance.value.layoutSections) {
     return false
   }
 
-  // Collect fields from layout items using map and flat
   const fields: string[] = instance.value.layoutSections.flatMap(
     (section: LayoutSection) =>
       section.layoutColumns?.flatMap(
@@ -46,9 +44,8 @@ const hasDuplicateFields = (instance: InstanceElement): boolean => {
       ) || [],
   )
 
-  // Check for duplicates
   const uniqueFields = _.uniq(fields)
-  return uniqueFields.length !== fields.length // If lengths differ, there are duplicates
+  return uniqueFields.length !== fields.length
 }
 
 const changeValidator: ChangeValidator = async changes =>

@@ -83,4 +83,55 @@ describe('reverseChange', () => {
       })
     })
   })
+
+  describe('reverse detailed change baseChange', () => {
+    it('should reverse addition change', () => {
+      const baseChange = toChange({ after: type })
+      const change: DetailedChange = {
+        id: type.elemID,
+        baseChange,
+        ...baseChange,
+      }
+      const reversedBaseChange = toChange({ before: type })
+      expect(reverseChange(change)).toEqual({
+        id: type.elemID,
+        baseChange: reversedBaseChange,
+        ...reversedBaseChange,
+      })
+    })
+
+    it('should reverse removal change', () => {
+      const baseChange = toChange({ before: type })
+      const change: DetailedChange = {
+        id: type.elemID,
+        baseChange,
+        ...baseChange,
+      }
+      const reversedBaseChange = toChange({ after: type })
+      expect(reverseChange(change)).toEqual({
+        id: type.elemID,
+        baseChange: reversedBaseChange,
+        ...reversedBaseChange,
+      })
+    })
+
+    it('should reverse modification change', () => {
+      const type2 = type.clone()
+      type2.annotations.test = 'test'
+      const baseChange = toChange({ before: type, after: type2 })
+      const change: DetailedChange = {
+        id: type.elemID.createNestedID('attr', 'test'),
+        action: 'add',
+        data: { after: 'test' },
+        baseChange,
+      }
+      const reversedBaseChange = toChange({ after: type, before: type2 })
+      expect(reverseChange(change)).toEqual({
+        id: type.elemID.createNestedID('attr', 'test'),
+        action: 'remove',
+        data: { before: 'test' },
+        baseChange: reversedBaseChange,
+      })
+    })
+  })
 })

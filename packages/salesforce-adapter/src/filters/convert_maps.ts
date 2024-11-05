@@ -241,13 +241,13 @@ const convertArraysToMaps = (
 
   const convertField = (values: Values[], keyFunc: MapKeyFunc, useList: boolean, fieldName: string): Values => {
     if (!useList) {
-      const res = _.keyBy(values, item => keyFunc(item))
+      const res = _.keyBy(values, keyFunc)
       if (Object.keys(res).length === values.length) {
         return res
       }
       nonUniqueMapFields.push(fieldName)
     }
-    return _.groupBy(values, item => keyFunc(item))
+    return _.groupBy(values, keyFunc)
   }
 
   const elementsToConvert = []
@@ -264,23 +264,29 @@ const convertArraysToMaps = (
       .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
       .forEach(([fieldName, mapDef]) => {
         const mapper = mapDef.mapper ?? defaultMapper
+        const isConvertibleValue = (item: Values): boolean => _.isPlainObject(item) && _.isString(item[mapDef.key])
         const elementValues = getElementValueOrAnnotations(element)
         if (mapDef.nested) {
           const firstLevelGroups = _.groupBy(
-            makeArray(_.get(elementValues, fieldName)),
+            makeArray(_.get(elementValues, fieldName)).filter(isConvertibleValue),
             item => mapper(item[mapDef.key])[0],
           )
           _.set(
             elementValues,
             fieldName,
             _.mapValues(firstLevelGroups, firstLevelValues =>
-              convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
+              convertField(
+                firstLevelValues.filter(isConvertibleValue),
+                item => mapper(item[mapDef.key])[1],
+                !!mapDef.mapToList,
+                fieldName,
+              ),
             ),
           )
         } else if (mapDef.maintainOrder) {
           const originalFieldValue = makeArray(_.get(elementValues, fieldName))
           const convertedValues = convertField(
-            originalFieldValue,
+            originalFieldValue.filter(isConvertibleValue),
             item => mapper(item[mapDef.key])[0],
             !!mapDef.mapToList,
             fieldName,
@@ -288,6 +294,7 @@ const convertArraysToMaps = (
           _.set(elementValues, fieldName, {
             [ORDERED_MAP_VALUES_FIELD]: convertedValues,
             [ORDERED_MAP_ORDER_FIELD]: originalFieldValue
+              .filter(isConvertibleValue)
               .map(item => mapper(item[mapDef.key])[0])
               .map(
                 name =>
@@ -302,7 +309,7 @@ const convertArraysToMaps = (
             elementValues,
             fieldName,
             convertField(
-              makeArray(_.get(elementValues, fieldName)),
+              makeArray(_.get(elementValues, fieldName)).filter(isConvertibleValue),
               item => mapper(item[mapDef.key])[0],
               !!mapDef.mapToList,
               fieldName,

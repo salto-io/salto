@@ -259,6 +259,96 @@ describe('Convert maps filter', () => {
           })
         })
       })
+
+      describe('with invalid values', () => {
+        const generateInstances = (objType: ObjectType): InstanceElement[] => [
+          generateProfileInstance({
+            profileObj: objType,
+            instanceName: 'aaa',
+            applications: ['app1', 'app2'],
+            fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
+            layoutAssignments: [
+              { layout: 'Account-Account Layout' },
+              // dots etc are escaped in the layout's name
+              {
+                layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                recordType: 'something',
+              },
+              {
+                layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                recordType: 'repetition',
+              },
+              {
+                layout: 12 as unknown as string,
+                recordType: 'repetition',
+              },
+              {
+                layout: undefined as unknown as string,
+                recordType: 'repetition',
+              },
+              {
+                layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                recordType: 'repetition',
+              },
+            ],
+          }),
+          generateProfileInstance({
+            profileObj: objType,
+            instanceName: 'bbb',
+            applications: ['someApp'],
+            fields: ['Account.AccountNumber'],
+            layoutAssignments: [{ layout: 'Account-Account Layout' }],
+          }),
+        ]
+
+        beforeAll(async () => {
+          profileObj = generateProfileType()
+          instances = generateInstances(profileObj)
+          await filter.onFetch([profileObj, ...instances])
+        })
+
+        it('should convert instance values to maps while dropping invalid keys', () => {
+          expect((instances[0] as InstanceElement).value).toEqual({
+            applicationVisibilities: {
+              app1: { application: 'app1', default: true, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [{ layout: 'Account-Account Layout' }],
+              'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
+                {
+                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  recordType: 'something',
+                },
+                {
+                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  recordType: 'repetition',
+                },
+                {
+                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  recordType: 'repetition',
+                },
+              ],
+            },
+          })
+        })
+      })
     })
 
     describe('deploy (pre + on)', () => {

@@ -36,13 +36,14 @@ import {
   formatActionInProgress,
   formatActionStart,
   deployPhaseEpilogue,
+  formatStateRecencies,
   formatDeployActions,
   formatGroups,
   deployErrorsOutput,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
-import { updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
+import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
@@ -231,9 +232,19 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const { force, dryRun, detailedPlan, accounts, checkOnly } = input
   await validateAndSetEnv(workspace, input, output)
   const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
+  const stateRecencies = await Promise.all(actualAccounts.map(account => workspace.getStateRecency(account)))
+  // Print state recencies
+  outputLine(formatStateRecencies(stateRecencies), output)
 
   const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
+    return CliExitCode.AppError
+  }
+
+  // Validate state recencies
+  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
+  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
+  if (!force && (await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output))) {
     return CliExitCode.AppError
   }
 

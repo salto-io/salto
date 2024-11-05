@@ -14,6 +14,8 @@ import { serialize, deserializeSingleElement } from '../../serializer/elements'
 import { StateStaticFilesSource } from '../static_files/common'
 import { StateConfig } from '../config/workspace_config_types'
 
+export type StateMetadataKey = 'version' | 'hash'
+
 export type UpdateStateElementsArgs = {
   changes: DetailedChange[]
   unmergedElements?: Element[]
@@ -22,14 +24,12 @@ export type UpdateStateElementsArgs = {
 
 export type StateData = {
   elements: RemoteElementSource
-  accounts: RemoteMap<string[], 'account_names'>
+  // The date of the last fetch
+  accountsUpdateDate: RemoteMap<Date>
   pathIndex: PathIndex
-  saltoMetadata: RemoteMap<string, 'hash'>
+  saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
   topLevelPathIndex: PathIndex
-  deprecated: {
-    accountsUpdateDate: RemoteMap<Date>
-  }
 }
 
 type UpdateConfigArgs = {
@@ -39,12 +39,14 @@ type UpdateConfigArgs = {
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
+  getAccountsUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
+  getStateSaltoVersion(): Promise<string | undefined>
   updateStateFromChanges(args: UpdateStateElementsArgs): Promise<void>
   updateConfig(args: UpdateConfigArgs): Promise<void>
 }
@@ -85,26 +87,17 @@ export const buildStateData = async (
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  accounts: await remoteMapCreator<string[], 'account_names'>({
-    namespace: createStateNamespace(envName, 'accounts'),
-    serialize: async data => safeJsonStringify(data),
-    deserialize: async data => JSON.parse(data),
+  accountsUpdateDate: await remoteMapCreator<Date>({
+    namespace: createStateNamespace(envName, 'service_update_date'),
+    serialize: async date => date.toISOString(),
+    deserialize: async data => new Date(data),
     persistent,
   }),
-  saltoMetadata: await remoteMapCreator<string, 'hash'>({
+  saltoMetadata: await remoteMapCreator<string, 'version'>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: async data => data,
     deserialize: async data => data,
     persistent,
   }),
   staticFilesSource,
-  deprecated: {
-    // TODO remove once all workspaces are converted to the new state format (cf. the 'accounts' member)
-    accountsUpdateDate: await remoteMapCreator<Date>({
-      namespace: createStateNamespace(envName, 'service_update_date'),
-      serialize: async date => date.toISOString(),
-      deserialize: async data => new Date(data),
-      persistent,
-    }),
-  },
 })

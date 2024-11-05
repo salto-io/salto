@@ -44,7 +44,7 @@ import {
   DeployError,
   GroupProperties,
 } from '@salto-io/core'
-import { errors, SourceLocation, WorkspaceComponents } from '@salto-io/workspace'
+import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
@@ -693,6 +693,15 @@ export const formatEnvDiff = async (
     changes.length > 0 ? await formatDetailedChanges([changes.map(change => change.change)], detailed) : 'No changes'
   return [emptyLine(), header(Prompts.DIFF_CALC_DIFF_RESULT_HEADER(toEnv, fromEnv)), changesStr, emptyLine()].join('\n')
 }
+
+export const formatStateRecencies = (stateRecencies: StateRecency[]): string =>
+  stateRecencies
+    .map(recency =>
+      recency.status === 'Nonexistent'
+        ? Prompts.NONEXISTENT_STATE(recency.accountName ?? recency.serviceName)
+        : Prompts.STATE_RECENCY(recency.accountName ?? recency.serviceName, recency.date as Date),
+    )
+    .join(EOL)
 
 export const formatAdapterProgress = (adapterName: string, progressMessage: string): string =>
   subHeader(indent(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage), 4))

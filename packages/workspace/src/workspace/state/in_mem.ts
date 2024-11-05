@@ -21,14 +21,8 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-type InMemoryState = State
-
-const getExistingAccounts = async (stateData: StateData): Promise<string[]> => {
-  const accounts = await stateData.accounts.get('account_names')
-  if (accounts !== undefined) {
-    return accounts
-  }
-  return awu(stateData.deprecated.accountsUpdateDate.keys()).toArray()
+type InMemoryState = State & {
+  setVersion(version: string): Promise<void>
 }
 
 export const buildInMemState = (loadData: () => Promise<StateData>, persistent = true): InMemoryState => {
@@ -51,12 +45,9 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
   }
 
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
-    if (!accounts) {
-      return
-    }
     const data = await stateData()
-    const existingAccounts = await getExistingAccounts(data)
-    await data.accounts.set('account_names', _.union(existingAccounts, accounts))
+    const newAccounts = accounts ?? (await awu(data.accountsUpdateDate.keys()).toArray())
+    return data.accountsUpdateDate.setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
   }
 
   const updateStatePathIndex = async (
@@ -146,7 +137,11 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    existingAccounts: async () => getExistingAccounts(await stateData()),
+    getAccountsUpdateDates: async () => {
+      const stateDataVal = await awu((await stateData()).accountsUpdateDate.entries()).toArray()
+      return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
+    },
+    existingAccounts: async (): Promise<string[]> => awu((await stateData()).accountsUpdateDate.keys()).toArray(),
     getPathIndex: async (): Promise<PathIndex> => (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> => (await stateData()).topLevelPathIndex,
     clear: async () => {
@@ -154,8 +149,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
       await currentStateData.topLevelPathIndex.clear()
-      await currentStateData.accounts.clear()
-      await currentStateData.deprecated.accountsUpdateDate.clear()
+      await currentStateData.accountsUpdateDate.clear()
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },
@@ -167,8 +161,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
       await currentStateData.topLevelPathIndex.flush()
-      await currentStateData.accounts.flush()
-      await currentStateData.deprecated.accountsUpdateDate.flush()
+      await currentStateData.accountsUpdateDate.flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
     },
@@ -177,6 +170,8 @@ export const buildInMemState = (loadData: () => Promise<StateData>, persistent =
     setHash: async newHash => (await stateData()).saltoMetadata.set('hash', newHash),
     // hash doesn't get calculated in memory
     calculateHash: async () => Promise.resolve(),
+    getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
+    setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
     updateStateFromChanges: async ({ changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
       await updateStateElements(changes)
       if (!_.isEmpty(fetchAccounts)) {

@@ -56,7 +56,7 @@ const hasDuplicatesFieldError = ({ elemID }: InstanceElement, objectName: string
 })
 
 const hasDuplicateFields = (instance: InstanceElement): boolean => {
-  const {layoutSections} = instance.value
+  const { layoutSections } = instance.value
   if (!isLayoutSections(layoutSections)) {
     return false
   }

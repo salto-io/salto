@@ -18,20 +18,20 @@ describe('provisionedUserAdditions', () => {
       const change = toChange({ after: instance })
       const result = await provisionedUserAdditions([change])
       expect(result).toHaveLength(1)
-      expect(result[0]).toMatchObject({
+      expect(result).toMatchObject([{
         elemID: instance.elemID,
         severity: 'Info',
         message: 'User will be emailed to complete the activation process',
         detailedMessage:
           'Salto does not configure authentication for newly added users. The user will receive an email with instructions to complete the activation process.',
-      })
+      }])
     })
 
     it('should not create change errors for users with STAGED status', async () => {
       const instance = new InstanceElement('user2', userType, { status: 'STAGED' })
       const change = toChange({ after: instance })
       const result = await provisionedUserAdditions([change])
-      expect(result).toHaveLength(0)
+      expect(result).toMatchObject([])
     })
   })
 
@@ -43,7 +43,7 @@ describe('provisionedUserAdditions', () => {
         toChange({ before: instanceBefore, after: instanceAfter }),
         toChange({ before: instanceAfter }),
       ])
-      expect(result).toHaveLength(0)
+      expect(result).toMatchObject([])
     })
   })
 })

@@ -15,7 +15,7 @@ import {
 } from '@salto-io/adapter-api'
 import { USER_TYPE_NAME } from '../constants'
 
-const isProvisionedUser = (change: AdditionChange<InstanceElement>): boolean =>
+const isProvisionedUserAdditionChange = (change: AdditionChange<InstanceElement>): boolean =>
   getChangeData(change).elemID.typeName === USER_TYPE_NAME && getChangeData(change).value.status === 'PROVISIONED'
 
 /**
@@ -25,7 +25,7 @@ export const provisionedUserAdditions: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
-    .filter(isProvisionedUser)
+    .filter(isProvisionedUserAdditionChange)
     .map(change => ({
       elemID: getChangeData(change).elemID,
       severity: 'Info' as const,

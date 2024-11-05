@@ -302,7 +302,7 @@ export const mockWorkspace = ({
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     accounts: new InMemoryRemoteMap([{ key: 'account_names', value: accounts }]),
-    saltoMetadata: new InMemoryRemoteMap<string, wsState.StateMetadataKey>(),
+    saltoMetadata: new InMemoryRemoteMap(),
     staticFilesSource: mockStateStaticFilesSource(),
     deprecated: {
       accountsUpdateDate: new InMemoryRemoteMap<Date>(),

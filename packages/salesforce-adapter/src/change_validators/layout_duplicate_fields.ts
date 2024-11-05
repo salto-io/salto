@@ -14,12 +14,12 @@ import {
   isInstanceChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { LAYOUT_TYPE_ID_METADATA_TYPE } from '../constants'
-import { isInstanceOfTypeSync } from '../filters/utils'
+import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
 
-const { awu } = collections.asynciterable
+const { isDefined } = lowerDashValues
 
 type LayoutItem = {
   field: string | ReferenceExpression
@@ -48,37 +48,51 @@ const isLayoutSection = (value: unknown): value is LayoutSection =>
 const isLayoutSections = (value: unknown): value is LayoutSection[] =>
   _.isArray(value) && _.every(value, isLayoutSection)
 
-const hasDuplicatesFieldError = ({ elemID }: InstanceElement, objectName: string): ChangeError => ({
+const hasDuplicatesFieldError = (
+  { elemID }: InstanceElement,
+  objectName: string,
+  duplicates: string[],
+): ChangeError => ({
   elemID,
   severity: 'Error',
-  message: 'Layout columns can not duplicate field as layout items',
-  detailedMessage: `The ${objectName} contains a layout column with duplicate layout items. Please remove the duplicate layout item in order to deploy.`,
+  message: 'Layout cannot contain multiple items for the same field',
+  detailedMessage: `The ${objectName} has duplicate items for the following fields: ${duplicates}. Please remove the duplicate layout item in order to deploy.`,
 })
 
-const hasDuplicateFields = (instance: InstanceElement): boolean => {
+const getDuplicateFields = (instance: InstanceElement): string[] | undefined => {
   const { layoutSections } = instance.value
   if (!isLayoutSections(layoutSections)) {
-    return false
+    return undefined
   }
 
-  const fields: (string | ReferenceExpression)[] = layoutSections.flatMap(
+  const fields: string[] = layoutSections.flatMap(
     (section: LayoutSection) =>
       section.layoutColumns?.flatMap(
-        column => column.layoutItems?.map(item => item.field).filter(field => field !== undefined) || [],
-      ) || [],
+        column =>
+          column.layoutItems
+            ?.map(item => {
+              if (isReferenceExpression(item.field)) {
+                return item.field.elemID.getFullName()
+              }
+              return item.field
+            })
+            .filter(field => field !== undefined) ?? [],
+      ) ?? [],
   )
 
-  const uniqueFields = _.uniq(fields)
-  return uniqueFields.length !== fields.length
+  const duplicateFields = fields.filter((field, index) => fields.indexOf(field) !== index)
+  return duplicateFields.length > 0 ? _.uniq(duplicateFields) : undefined
 }
 
 const changeValidator: ChangeValidator = async changes =>
-  awu(changes)
+  changes
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(LAYOUT_TYPE_ID_METADATA_TYPE))
-    .filter(hasDuplicateFields)
-    .map(instance => hasDuplicatesFieldError(instance, instance.value.fullName))
-    .toArray()
+    .map(instance => {
+      const duplicates = getDuplicateFields(instance)
+      return duplicates ? hasDuplicatesFieldError(instance, apiNameSync(instance) ?? 'Layout', duplicates) : undefined
+    })
+    .filter(isDefined)
 
 export default changeValidator

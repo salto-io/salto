@@ -624,11 +624,13 @@ describe('Convert maps filter', () => {
   })
 
   describe('Convert inner field to map', () => {
+    let lwcBefore: InstanceElement
+    let lwcAfter: InstanceElement
     let elements: Element[]
     type FilterType = FilterWith<'onFetch' | 'preDeploy'>
     let filter: FilterType
     beforeAll(async () => {
-      const lwc = createInstanceElement(
+      lwcBefore = createInstanceElement(
         {
           fullName: 'lwc',
           lwcResources: {
@@ -641,17 +643,17 @@ describe('Convert maps filter', () => {
         mockTypes.LightningComponentBundle,
       )
       const lwcType = mockTypes.LightningComponentBundle
-      elements = [lwc, lwcType]
+      elements = [lwcBefore.clone(), lwcType.clone()]
 
       filter = filterCreator({
         config: { ...defaultFilterContext },
       }) as FilterType
       await filter.onFetch(elements)
+      lwcAfter = elements[0] as InstanceElement
     })
     describe('on fetch', () => {
       it('should convert lwc resource inner field to map ', async () => {
-        const lwc = elements[0] as InstanceElement
-        const fieldType = await lwc.getType()
+        const fieldType = await lwcAfter.getType()
         const lwcResourcesType = await fieldType.fields.lwcResources.getType()
         if (isObjectType(lwcResourcesType)) {
           const lwcResourceType = await lwcResourcesType.fields.lwcResource.getType()
@@ -659,9 +661,19 @@ describe('Convert maps filter', () => {
         }
       })
       it('should use the custom mapper to create the key', async () => {
-        const lwc = elements[0] as InstanceElement
-        expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
-        expect(Object.keys(lwc.value.lwcResources.lwcResource)[1]).toEqual('__mocks___lwc_js@uuuudv')
+        expect(Object.keys(lwcAfter.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
+        expect(Object.keys(lwcAfter.value.lwcResources.lwcResource)[1]).toEqual('__mocks___lwc_js@uuuudv')
+      })
+    })
+    describe('pre deploy', () => {
+      let lwcDeploy: InstanceElement
+
+      beforeEach(async () => {
+        lwcDeploy = lwcAfter.clone()
+        await filter.preDeploy([toChange({ after: lwcDeploy })])
+      })
+      it('should return inner field back to list', async () => {
+        expect(lwcDeploy).toEqual(lwcBefore)
       })
     })
   })

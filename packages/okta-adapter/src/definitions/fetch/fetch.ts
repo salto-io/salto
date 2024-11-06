@@ -1144,7 +1144,7 @@ const createCustomizations = ({
           standalone: {
             typeName: 'AuthorizationServerPolicy',
             addParentAnnotation: true,
-            referenceFromParent: true,
+            referenceFromParent: false,
             nestPathUnderParent: true,
           },
         },
@@ -1152,7 +1152,7 @@ const createCustomizations = ({
           standalone: {
             typeName: 'OAuth2Scope',
             addParentAnnotation: true,
-            referenceFromParent: true,
+            referenceFromParent: false,
             nestPathUnderParent: true,
           },
         },
@@ -1160,7 +1160,7 @@ const createCustomizations = ({
           standalone: {
             typeName: 'OAuth2Claim',
             addParentAnnotation: true,
-            referenceFromParent: true,
+            referenceFromParent: false,
             nestPathUnderParent: true,
           },
         },

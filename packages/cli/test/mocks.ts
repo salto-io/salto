@@ -276,7 +276,6 @@ export const withEnvironmentParam = 'inactive'
 
 type MockWorkspaceArgs = {
   uid?: string
-  name?: string
   envs?: string[]
   accounts?: string[]
   getElements?: () => Element[]
@@ -293,7 +292,6 @@ export const mockStateStaticFilesSource = (): MockInterface<staticFiles.StateSta
 
 export const mockWorkspace = ({
   uid = '123',
-  name = '',
   envs = ['active', 'inactive'],
   accounts = ['salesforce', 'netsuite'],
   getElements = elements,
@@ -313,7 +311,6 @@ export const mockWorkspace = ({
   let currentEnv = envs[0]
   return {
     uid,
-    name,
     elements: mockFunction<Workspace['elements']>().mockResolvedValue(createInMemoryElementSource(getElements())),
     state: mockFunction<Workspace['state']>().mockImplementation(env => stateByEnv[env ?? currentEnv]),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),

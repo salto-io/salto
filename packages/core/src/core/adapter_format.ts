@@ -11,14 +11,14 @@ import {
   AdapterFormat,
   AdapterOperationsContext,
   Change,
-  CORE_ANNOTATIONS,
   Element,
   getChangeData,
+  ReadOnlyElementsSource,
   SaltoError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { merger, Workspace, ElementSelector, expressions, elementSource } from '@salto-io/workspace'
+import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
 import { FetchResult } from '../types'
 import { adapterCreators } from './adapters'
 import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
@@ -179,9 +179,14 @@ const loadElementsAndMerge = (
 
 // This is a naive approach, for a more complete implementations see workspace.filterOutHiddenChanges.
 // This is good enough for now since hidden value (etc.) changes will not affect adapter format (as far as we can tell).
-// For mixed mode, we need to partition on this test and add all the hidden changes to the unapplied changes.
-const filterHiddenChanges = (changes: ReadonlyArray<Change>): ReadonlyArray<Change> =>
-  changes.filter(change => !getChangeData(change).annotations[CORE_ANNOTATIONS.HIDDEN])
+// For mixed mode, we need to partition on the hidden elements test and add all the hidden changes to the unapplied changes.
+const filterHiddenChanges = async (
+  changes: ReadonlyArray<Change>,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<ReadonlyArray<Change>> =>
+  awu(changes)
+    .filter(async change => !(await hiddenValues.isHidden(getChangeData(change), elementsSource)))
+    .toArray()
 
 type CalculatePatchArgs = {
   fromDir: string
@@ -322,7 +327,7 @@ export const syncWorkspaceToFolder = ({
       // re-dump elements that are equal, so even though we do redundant work, the end result should be correct
       const plan = await getPlan({
         before: elementSource.createInMemoryElementSource(folderElements),
-        after: elementSource.createInMemoryElementSource(workspaceElements),
+        after: adapterContext.elementsSource,
         dependencyChangers: [],
       })
       const changes = Array.from(plan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
@@ -338,7 +343,7 @@ export const syncWorkspaceToFolder = ({
       )
       return dumpElementsToFolder({
         baseDir,
-        changes: filterHiddenChanges(changes),
+        changes: await filterHiddenChanges(changes, adapterContext.elementsSource),
         elementsSource: adapterContext.elementsSource,
       })
     },
@@ -383,7 +388,7 @@ export const updateElementFolder = ({
       }
       return dumpElementsToFolder({
         baseDir,
-        changes: filterHiddenChanges(changes),
+        changes: await filterHiddenChanges(changes, adapterContext.elementsSource),
         elementsSource: adapterContext.elementsSource,
       })
     },

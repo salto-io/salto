@@ -477,24 +477,24 @@ const convertFieldsBackToLists = async (
     }
     elementsToConvert.forEach(element => {
       Object.keys(mapFieldDef)
-        .filter(fieldName => getElementValueOrAnnotations(element)[fieldName] !== undefined)
-        .forEach(fieldName => {
+        .filter(fieldPath => _.get(getElementValueOrAnnotations(element), fieldPath) !== undefined)
+        .forEach(fieldPath => {
           const elementValues = getElementValueOrAnnotations(element)
-          if (Array.isArray(_.get(elementValues, fieldName))) {
+          if (Array.isArray(_.get(elementValues, fieldPath))) {
             // should not happen
             return
           }
 
-          if (mapFieldDef[fieldName].nested) {
+          if (mapFieldDef[fieldPath].nested) {
             // first convert the inner levels to arrays, then merge into one array
-            _.set(elementValues, fieldName, _.mapValues(elementValues[fieldName], toVals))
+            _.set(elementValues, fieldPath, _.mapValues(elementValues[fieldPath], toVals))
           }
-          if (mapFieldDef[fieldName].maintainOrder) {
+          if (mapFieldDef[fieldPath].maintainOrder) {
             // OrderedMap keeps the order in a list of references, so we just need to override the top-level OrderedMap
             // with this list.
-            _.set(elementValues, fieldName, elementValues[fieldName][ORDERED_MAP_ORDER_FIELD])
+            _.set(elementValues, fieldPath, elementValues[fieldPath][ORDERED_MAP_ORDER_FIELD])
           } else {
-            _.set(elementValues, fieldName, toVals(elementValues[fieldName]))
+            _.set(elementValues, fieldPath, toVals(_.get(elementValues, fieldPath)))
           }
         })
     })

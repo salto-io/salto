@@ -327,7 +327,7 @@ export const syncWorkspaceToFolder = ({
       // re-dump elements that are equal, so even though we do redundant work, the end result should be correct
       const plan = await getPlan({
         before: elementSource.createInMemoryElementSource(folderElements),
-        after: adapterContext.elementsSource,
+        after: elementSource.createInMemoryElementSource(workspaceElements),
         dependencyChangers: [],
       })
       const changes = Array.from(plan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))

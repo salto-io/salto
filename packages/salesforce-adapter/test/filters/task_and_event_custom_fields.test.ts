@@ -74,7 +74,8 @@ describe('taskAndEventCustomFieldsFilter', () => {
     })
     it('should not mutate custom fields to references if Activity is not found', async () => {
       const elements = [taskType, eventType, taskField, eventField]
-      await filter.onFetch(elements)
+      const res = await filter.onFetch(elements)
+      expect(res).toBeUndefined()
       ;[taskField, eventField].forEach(field => {
         expect(Object.keys(field.annotations).sort()).toEqual(
           [
@@ -89,6 +90,14 @@ describe('taskAndEventCustomFieldsFilter', () => {
           ].sort(),
         )
         expect(field.annotations.activityField).toBeUndefined()
+      })
+    })
+
+    describe('when types are missing', () => {
+      it('should not return errors', async () => {
+        const elements = [activityType, activityField, taskField, eventField]
+        const res = await filter.onFetch(elements)
+        expect(res).toBeUndefined()
       })
     })
   })

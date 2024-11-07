@@ -44,8 +44,13 @@ const getAccessToken = async ({ tenantId, clientId, clientSecret, refreshToken }
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
   })
-  const res = await httpClient.post(`${getAuthenticationBaseUrl(tenantId)}/token`, data)
-  return res.data.access_token
+  try {
+    const res = await httpClient.post(`${getAuthenticationBaseUrl(tenantId)}/token`, data)
+    return res.data.access_token
+  } catch (e) {
+    log.error('Failed to get access token: %s', e)
+    throw new clientUtils.UnauthorizedError(e)
+  }
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions =>

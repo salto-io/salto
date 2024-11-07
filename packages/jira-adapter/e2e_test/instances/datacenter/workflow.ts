@@ -32,6 +32,23 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
+    [naclCase('loop transition::From: any status::Circular')]: {
+      name: 'loop transition',
+      description: '',
+      type: 'global',
+      rules: {
+        postFunctions: [
+          {
+            type: 'com.atlassian.jira.workflow.function.event.FireIssueEventFunction',
+            configuration: {
+              event: {
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
+              },
+            },
+          },
+        ],
+      },
+    },
     [naclCase('Create::From: none::Initial')]: {
       name: 'Create',
       description: '',

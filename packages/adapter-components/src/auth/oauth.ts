@@ -9,8 +9,9 @@ import _ from 'lodash'
 import qs from 'qs'
 import axios, { AxiosRequestHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { RetryOptions } from '../client/http_connection'
+import { RetryOptions, UnauthorizedError } from '../client/http_connection'
 
 const log = logger(module)
 
@@ -99,21 +100,30 @@ export const oauthAccessTokenRefresh = async ({
   })
   axiosRetry(httpClient, retryOptions)
 
-  const res = await httpClient.post(
-    endpoint,
-    qs.stringify({
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  )
-  const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data
-  log.debug('refreshed access token: type %s, expires in %s', tokenType, expiresIn)
-  if (_.lowerCase(tokenType) !== BEARER_TOKEN_TYPE) {
-    throw new Error(`Unsupported token type ${tokenType}`)
-  }
-  return {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+  try {
+    const res = await httpClient.post(
+      endpoint,
+      qs.stringify({
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    )
+    const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data
+    log.debug('refreshed access token: type %s, expires in %s', tokenType, expiresIn)
+    if (_.lowerCase(tokenType) !== BEARER_TOKEN_TYPE) {
+      throw new Error(`Unsupported token type ${tokenType}`)
+    }
+    return {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  } catch (error) {
+    log.error(
+      'Failed to get access token, error: %s, stack: %s',
+      safeJsonStringify({ data: error?.response?.data, status: error?.response?.status }),
+      error.stack,
+    )
+    throw new UnauthorizedError(error)
   }
 }

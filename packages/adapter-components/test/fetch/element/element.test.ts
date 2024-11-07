@@ -21,6 +21,7 @@ import { getElementGenerator } from '../../../src/fetch/element/element'
 import { AbortFetchOnFailure } from '../../../src/fetch/errors'
 import { ConfigChangeSuggestion, queryWithDefault } from '../../../src/definitions'
 import { InstanceFetchApiDefinitions } from '../../../src/definitions/system/fetch'
+import { UnauthorizedError } from '../../../src/client'
 
 describe('element', () => {
   const typeID = new ElemID('myAdapter', 'myType')
@@ -327,6 +328,27 @@ describe('element', () => {
         })
       })
 
+      describe('when UnauthorizedError is thrown and no error hanlder is defined', () => {
+        it('should throw the error', () => {
+          const generator = getElementGenerator({
+            adapterName: 'myAdapter',
+            defQuery: queryWithDefault<InstanceFetchApiDefinitions, string>({
+              customizations: {
+                myType: {
+                  element: { topLevel: { isTopLevel: true } },
+                  resource: {
+                    directFetch: true,
+                  },
+                },
+              },
+            }),
+            customNameMappingFunctions: {},
+          })
+          expect(() =>
+            generator.handleError({ typeName: 'myType', error: new UnauthorizedError('invalid creds') }),
+          ).toThrow(UnauthorizedError)
+        })
+      })
       describe('when onError defined with configSuggestion', () => {
         const configSuggestion: ConfigChangeSuggestion = {
           reason: 'test',

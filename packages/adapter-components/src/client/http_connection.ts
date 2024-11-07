@@ -200,22 +200,21 @@ export const axiosConnection = <TCredentials>({
   timeout = 0,
 }: AxiosConnectionParams<TCredentials>): Connection<TCredentials> => {
   const login = async (credentials: TCredentials): Promise<AuthenticatedAPIConnection> => {
-    const httpClient = axios.create({
-      baseURL: await baseURLFunc(credentials),
-      ...(await authParamsFunc(credentials)),
-      maxBodyLength: Infinity,
-    })
-    httpClient.interceptors.request.use(
-      config => {
-        config.timeout = timeout
-        return config
-      },
-      null,
-      { runWhen: config => ['get', 'head', 'options'].includes(config.method ?? '') },
-    )
-    axiosRetry(httpClient, retryOptions)
-
     try {
+      const httpClient = axios.create({
+        baseURL: await baseURLFunc(credentials),
+        ...(await authParamsFunc(credentials)),
+        maxBodyLength: Infinity,
+      })
+      httpClient.interceptors.request.use(
+        config => {
+          config.timeout = timeout
+          return config
+        },
+        null,
+        { runWhen: config => ['get', 'head', 'options'].includes(config.method ?? '') },
+      )
+      axiosRetry(httpClient, retryOptions)
       const accountInfo = await credValidateFunc({ credentials, connection: httpClient })
       return Object.assign(httpClient, { accountInfo })
     } catch (e) {

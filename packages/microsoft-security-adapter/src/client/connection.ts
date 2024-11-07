@@ -54,7 +54,7 @@ const getAccessToken = async ({ tenantId, clientId, clientSecret, refreshToken }
       safeJsonStringify({ data: e?.response?.data, status: e?.response?.status }),
       e.stack,
     )
-    throw e
+    throw new clientUtils.UnauthorizedError('Invalid Credentials')
   }
 }
 

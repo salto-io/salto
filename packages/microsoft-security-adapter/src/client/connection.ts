@@ -9,6 +9,7 @@ import axios from 'axios'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { getAuthenticationBaseUrl } from './oauth'
 import { Credentials } from '../auth'
 
@@ -48,8 +49,12 @@ const getAccessToken = async ({ tenantId, clientId, clientSecret, refreshToken }
     const res = await httpClient.post(`${getAuthenticationBaseUrl(tenantId)}/token`, data)
     return res.data.access_token
   } catch (e) {
-    log.error(`Failed to get access token: ${e}`)
-    throw new clientUtils.UnauthorizedError(e)
+    log.error(
+      'Failed to get access token, error: %s, stack: %s',
+      safeJsonStringify({ data: e?.response?.data, status: e?.response?.status }),
+      e.stack,
+    )
+    throw new clientUtils.UnauthorizedError('Failed to get access token')
   }
 }
 

@@ -18,13 +18,15 @@ describe('provisionedUserAdditions', () => {
       const change = toChange({ after: instance })
       const result = await provisionedUserAdditions([change])
       expect(result).toHaveLength(1)
-      expect(result).toMatchObject([{
-        elemID: instance.elemID,
-        severity: 'Info',
-        message: 'User will be emailed to complete the activation process',
-        detailedMessage:
-          'Salto does not configure authentication for newly added users. The user will receive an email with instructions to complete the activation process.',
-      }])
+      expect(result).toMatchObject([
+        {
+          elemID: instance.elemID,
+          severity: 'Info',
+          message: 'User will be emailed to complete the activation process',
+          detailedMessage:
+            'Salto does not configure authentication for newly added users. The user will receive an email with instructions to complete the activation process.',
+        },
+      ])
     })
 
     it('should not create change errors for users with STAGED status', async () => {

@@ -991,11 +991,14 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     !isSystemScope(change),
               },
             },
+            // This request retrieves system scopes that are automatically created when an authorization server is created.
+            // We use a GET request to fetch the scope ID, and then subsequently modify it to match the requested values.
             {
               request: {
                 endpoint: {
                   path: '/api/v1/authorizationServers/{parent_id}/scopes',
                   method: 'get',
+                  // scopes names are unique within an authorization server
                   queryArgs: { q: '{name}' },
                 },
               },

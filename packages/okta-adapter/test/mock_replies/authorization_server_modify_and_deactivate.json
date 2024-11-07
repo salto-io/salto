@@ -33,7 +33,7 @@
       "id": "authorizationserver-fakeid1",
       "name": "default",
       "description": "Default Authorization Server for your Applications",
-      "audiences": ["api://default/deactivate"],
+      "audiences": ["api://default/change"],
       "issuerMode": "ORG_URL",
       "default": true
     },

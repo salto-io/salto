@@ -8,4 +8,5 @@
 
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 
+// System scopes are built-in default scopes that can't be added or removed.
 export const isSystemScope = (change: Change<InstanceElement>): boolean => getChangeData(change).value.system === true

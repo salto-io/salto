@@ -3227,14 +3227,13 @@ describe('adapter', () => {
     describe('deploy authorization servers', () => {
       it('should successfully add an authorization server', async () => {
         loadMockReplies('authorization_server_add.json')
-        const authServerAddition = authServerInstance.clone()
-        authServerAddition.value = {
+        const authServerAddition = new InstanceElement('authServerAddition', authServerType, {
           name: 'test',
           description: 'test',
-          audiences: authServerInstance.value.audiences,
+          audiences: ['api://default'],
           issuerMode: 'DYNAMIC',
           default: false,
-        }
+        })
         const result = await operations.deploy({
           changeGroup: {
             groupID: authServerAddition.elemID.getFullName(),
@@ -3253,7 +3252,7 @@ describe('adapter', () => {
         loadMockReplies('authorization_server_modify_and_activate.json')
         const afterAuthServerInstance = authServerInstance.clone()
         afterAuthServerInstance.value.status = 'ACTIVE'
-        afterAuthServerInstance.value.audiences = ['api://default/activate']
+        afterAuthServerInstance.value.audiences = ['api://default/change']
         const result = await operations.deploy({
           changeGroup: {
             groupID: authServerInstance.elemID.getFullName(),
@@ -3270,7 +3269,7 @@ describe('adapter', () => {
         authServerInstance.value.status = 'ACTIVE'
         const afterAuthServerInstance = authServerInstance.clone()
         afterAuthServerInstance.value.status = INACTIVE_STATUS
-        afterAuthServerInstance.value.audiences = ['api://default/deactivate']
+        afterAuthServerInstance.value.audiences = ['api://default/change']
         const result = await operations.deploy({
           changeGroup: {
             groupID: authServerInstance.elemID.getFullName(),

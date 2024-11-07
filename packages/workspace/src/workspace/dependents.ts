@@ -8,9 +8,9 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReadOnlyElementsSource, isElement } from '@salto-io/adapter-api'
-import { MultiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { ReferenceIndexEntry } from './reference_indexes'
 import { ReadOnlyRemoteMap } from './remote_map'
+import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -64,8 +64,8 @@ const getDependentIDsFromReferenceSourceIndex = async (
 
 const getDependentIDsFromReferencedFiles = async (
   elemIDs: ElemID[],
-  naclFilesSource: MultiEnvSource,
-  envName: string,
+  getElementReferencedFiles: (id: ElemID) => Promise<string[]>,
+  getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>,
 ): Promise<ElemID[]> =>
   log.timeDebug(
     async () => {
@@ -78,7 +78,7 @@ const getDependentIDsFromReferencedFiles = async (
             const filesWithDependencies = await log.timeTrace(
               async () =>
                 awu(ids)
-                  .flatMap(id => naclFilesSource.getElementReferencedFiles(envName, id))
+                  .flatMap(id => getElementReferencedFiles(id))
                   .uniquify(filename => filename)
                   .toArray(),
 
@@ -88,7 +88,7 @@ const getDependentIDsFromReferencedFiles = async (
             const dependentsIDs = await log.timeTrace(
               async () =>
                 awu(filesWithDependencies)
-                  .map(filename => naclFilesSource.getParsedNaclFile(filename))
+                  .map(filename => getParsedNaclFile(filename))
                   .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
                   .filter(id => !addedIDs.has(id.getFullName()))
                   .uniquify(id => id.getFullName())
@@ -114,8 +114,8 @@ export const getDependents = async (
   elemIDs: ElemID[],
   elementsSource: ReadOnlyElementsSource,
   referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
-  naclFilesSource: MultiEnvSource,
-  envName: string,
+  getElementReferencedFiles: (id: ElemID) => Promise<string[]>,
+  getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>,
 ): Promise<Element[]> => {
   const flagValue = process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION
   let parsedFlagValue: unknown
@@ -127,7 +127,7 @@ export const getDependents = async (
   const useOldDependentsCalculation = Boolean(parsedFlagValue)
 
   const dependentIDs = useOldDependentsCalculation
-    ? await getDependentIDsFromReferencedFiles(elemIDs, naclFilesSource, envName)
+    ? await getDependentIDsFromReferencedFiles(elemIDs, getElementReferencedFiles, getParsedNaclFile)
     : await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
 
   const dependents = (

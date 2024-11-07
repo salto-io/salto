@@ -48,7 +48,7 @@ const getAccessToken = async ({ tenantId, clientId, clientSecret, refreshToken }
     const res = await httpClient.post(`${getAuthenticationBaseUrl(tenantId)}/token`, data)
     return res.data.access_token
   } catch (e) {
-    log.error('Failed to get access token: %s', e)
+    log.error(`Failed to get access token: ${e}`)
     throw new clientUtils.UnauthorizedError(e)
   }
 }

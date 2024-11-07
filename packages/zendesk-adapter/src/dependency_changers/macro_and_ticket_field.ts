@@ -36,8 +36,8 @@ const getFieldsFromAction = (actions: unknown): string[] => {
     .map(action => action.field)
     .filter(field => isReferenceExpression(field))
     .filter(field => field.elemID.typeName === TICKET_FIELD_TYPE_NAME)
+    .filter(ref => !ref.elemID.name.startsWith(MISSING_REF_PREFIX))
     .map(ref => ref.elemID.getFullName())
-    .filter(name => !name.startsWith(MISSING_REF_PREFIX))
 }
 
 const getDependencies = (

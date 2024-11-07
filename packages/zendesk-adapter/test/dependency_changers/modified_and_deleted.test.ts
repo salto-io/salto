@@ -9,7 +9,7 @@ import { InstanceElement, toChange, ReferenceExpression, ObjectType, ElemID } fr
 import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { MACRO_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { macroAndTicketFieldDependencyChanger } from '../../src/dependency_changers/macro_and_ticket_field'
+import { modifiedAndDeletedDependencyChanger } from '../../src/dependency_changers/modified_and_deleted'
 
 const { createMissingInstance } = referencesUtils
 
@@ -36,7 +36,7 @@ describe('macroAndTicketFieldDependencyChanger', () => {
       [1, new Set()],
     ])
 
-    const dependencyChanges = [...(await macroAndTicketFieldDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(1)
     expect(dependencyChanges.every(change => change.action === 'add')).toBe(true)
     expect(dependencyChanges[0].dependency).toMatchObject({ source: 0, target: 1 })
@@ -56,7 +56,7 @@ describe('macroAndTicketFieldDependencyChanger', () => {
       [1, new Set()],
     ])
 
-    const dependencyChanges = [...(await macroAndTicketFieldDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(0)
   })
   it('should not add dependency if there is no reference from the macro', async () => {
@@ -73,7 +73,7 @@ describe('macroAndTicketFieldDependencyChanger', () => {
       [1, new Set()],
     ])
 
-    const dependencyChanges = [...(await macroAndTicketFieldDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(0)
   })
   it('should not add dependency if the reference is not to a ticket field', async () => {
@@ -95,7 +95,7 @@ describe('macroAndTicketFieldDependencyChanger', () => {
       [1, new Set()],
     ])
 
-    const dependencyChanges = [...(await macroAndTicketFieldDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(0)
   })
   it('should not add dependency if the actions are not in the right format', async () => {
@@ -112,7 +112,7 @@ describe('macroAndTicketFieldDependencyChanger', () => {
       [1, new Set()],
     ])
 
-    const dependencyChanges = [...(await macroAndTicketFieldDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(0)
   })
   it('should not add dependency if there are no actions', async () => {
@@ -128,7 +128,7 @@ describe('macroAndTicketFieldDependencyChanger', () => {
       [1, new Set()],
     ])
 
-    const dependencyChanges = [...(await macroAndTicketFieldDependencyChanger(inputChanges, inputDeps))]
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(0)
   })
 })

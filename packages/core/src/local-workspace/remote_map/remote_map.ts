@@ -556,7 +556,7 @@ export const createRemoteMapCreator = (
     ): Promise<void> => {
       const batchInsertIterator = awu(elementsEntries).map(async entry => {
         delKeys.delete(entry.key)
-        locationCache.set(keyToTempDBKey(entry.key), entry.value)
+        locationCache.set(keyToTempDBKey(entry.key), Promise.resolve(entry.value))
         return { key: entry.key, value: await serialize(entry.value) }
       })
       await batchUpdate(batchInsertIterator, temp)
@@ -566,7 +566,7 @@ export const createRemoteMapCreator = (
       value,
     }: remoteMap.RemoteMapEntry<string>): Promise<remoteMap.RemoteMapEntry<T, K>> => {
       const cacheKey = keyToTempDBKey(key)
-      const cacheValue = locationCache.get(cacheKey) as T | undefined
+      const cacheValue = await (locationCache.get(cacheKey) as Promise<T | undefined>)
       if (cacheValue !== undefined) {
         statCounters.LocationCacheHit.inc()
         return { key: key as K, value: cacheValue }
@@ -725,7 +725,11 @@ export const createRemoteMapCreator = (
     await withCreatorLock(createDBConnections)
     statCounters.RemoteMapCreated.inc()
     return {
-      get: getImpl,
+      get: (key: string): Promise<T | undefined> => {
+        const result = getImpl(key)
+        log.info('rachum: get(%s) = %o', key, result)
+        return result
+      },
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
         withLimitedConcurrency(
           keys.map(k => () => getImpl(k)),
@@ -747,7 +751,7 @@ export const createRemoteMapCreator = (
       },
       set: async (key: string, element: T): Promise<void> => {
         delKeys.delete(key)
-        locationCache.set(keyToTempDBKey(key), element)
+        locationCache.set(keyToTempDBKey(key), Promise.resolve(element))
         isNamespaceEmpty = false
         await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), await serialize(element))
       },

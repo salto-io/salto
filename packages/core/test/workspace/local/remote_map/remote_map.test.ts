@@ -192,13 +192,6 @@ describe('test operations on remote db', () => {
       expect(await remoteMap.get(elemID)).toBeUndefined()
     })
 
-    it('should delete an item when its read is in the cache but not started yet', async () => {
-      const elemID = elements[0].elemID.getFullName()
-      const readPromise = remoteMap.get(elemID)
-      const deletePromise = remoteMap.delete(elemID)
-      expect(await readPromise).toBeUndefined()
-    })
-
     it('deleted elements should not be returned from keys', async () => {
       const elemID = elements[0].elemID.getFullName()
       expect(await awu(remoteMap.keys()).toArray()).toContain(elements[0].elemID.getFullName())

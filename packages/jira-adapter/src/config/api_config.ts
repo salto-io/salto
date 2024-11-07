@@ -259,7 +259,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'contextIssueTypes', fieldType: 'list<IssueTypeToContextMapping>' },
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
       ],
-      fileNameFields: ['name'],
+      fileNameFields: ['name', 'isLocked'],
     },
     deployRequests: {
       add: {

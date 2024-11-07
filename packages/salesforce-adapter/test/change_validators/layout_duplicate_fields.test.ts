@@ -93,7 +93,7 @@ describe('layout duplicate fields change validator', () => {
         )
       })
 
-      it('should throw error', async () => {
+      it('should return error', async () => {
         layoutChanges = toChange({ after: layoutInstance })
         const changeErrors = await layoutChangeValidator([layoutChanges])
         expect(changeErrors).toHaveLength(1)
@@ -138,7 +138,7 @@ describe('layout duplicate fields change validator', () => {
         )
       })
 
-      it('should throw error', async () => {
+      it('should return error', async () => {
         layoutChanges = toChange({ after: layoutInstance })
         const changeErrors = await layoutChangeValidator([layoutChanges])
         expect(changeErrors).toHaveLength(1)

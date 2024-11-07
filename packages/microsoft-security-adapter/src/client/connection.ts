@@ -9,6 +9,7 @@ import axios from 'axios'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { getAuthenticationBaseUrl } from './oauth'
 import { Credentials } from '../auth'
 
@@ -44,8 +45,17 @@ const getAccessToken = async ({ tenantId, clientId, clientSecret, refreshToken }
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
   })
-  const res = await httpClient.post(`${getAuthenticationBaseUrl(tenantId)}/token`, data)
-  return res.data.access_token
+  try {
+    const res = await httpClient.post(`${getAuthenticationBaseUrl(tenantId)}/token`, data)
+    return res.data.access_token
+  } catch (e) {
+    log.error(
+      'Failed to get access token, error: %s, stack: %s',
+      safeJsonStringify({ data: e?.response?.data, status: e?.response?.status }),
+      e.stack,
+    )
+    throw e
+  }
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions =>

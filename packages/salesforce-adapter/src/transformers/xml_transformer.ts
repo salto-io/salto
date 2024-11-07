@@ -603,6 +603,10 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
   return {
     add: async (instance, withManifest = true) => {
       const instanceName = await apiName(instance)
+      const setAndLogZipFile = (fileName: string, content: string | Buffer): void => {
+        zipContent.set(fileName, content)
+        log.trace('Added XML file %s with content %s', fileName, content)
+      }
       try {
         if (withManifest) {
           addToManifest(assertMetadataObjectType(await instance.getType()), instanceName)
@@ -616,7 +620,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
 
           // Add instance metadata
           const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
-          zipContent.set(
+          setAndLogZipFile(
             complexType.getMetadataFilePath(instanceName, values),
             toMetadataXml(typeName, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues),
           )
@@ -624,7 +628,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           // Add instance content fields
           const fileNameToContentMaps = Object.values(fieldToFileToContent)
           fileNameToContentMaps.forEach(fileNameToContentMap =>
-            Object.entries(fileNameToContentMap).forEach(([fileName, content]) => zipContent.set(fileName, content)),
+            Object.entries(fileNameToContentMap).forEach(([fileName, content]) => setAndLogZipFile(fileName, content)),
           )
         } else {
           const { dirName, suffix, hasMetaFile } = (await instance.getType()).annotations
@@ -636,15 +640,15 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
             ]),
           ].join('/')
           if (hasMetaFile) {
-            zipContent.set(
+            setAndLogZipFile(
               `${instanceContentPath}${METADATA_XML_SUFFIX}`,
               toMetadataXml(typeName, _.omit(values, METADATA_CONTENT_FIELD)),
             )
             if (values[METADATA_CONTENT_FIELD] !== undefined) {
-              zipContent.set(instanceContentPath, values[METADATA_CONTENT_FIELD])
+              setAndLogZipFile(instanceContentPath, values[METADATA_CONTENT_FIELD])
             }
           } else {
-            zipContent.set(instanceContentPath, toMetadataXml(typeName, values))
+            setAndLogZipFile(instanceContentPath, toMetadataXml(typeName, values))
           }
         }
       } catch (e) {

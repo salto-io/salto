@@ -530,6 +530,9 @@ describe('adapter', () => {
     let orgSettingType: ObjectType
     let userTypeType: ObjectType
     let userSchemaType: ObjectType
+    let scopeType: ObjectType
+    let authServerType: ObjectType
+    let authServerInstance: InstanceElement
     const emailTemplateType = new ObjectType({
       elemID: new ElemID(OKTA, EMAIL_TEMPLATE_TYPE_NAME),
       fields: {
@@ -553,17 +556,6 @@ describe('adapter', () => {
       id: 'brand-fakeid1',
       name: 'subdomain.example.com',
       removePoweredByOkta: false,
-    })
-    const authorizationServerType = new ObjectType({
-      elemID: new ElemID(OKTA, AUTHORIZATION_SERVER),
-      fields: {
-        id: {
-          refType: BuiltinTypes.SERVICE_ID,
-        },
-      },
-    })
-    const authorizationServer = new InstanceElement('authorizationServer', authorizationServerType, {
-      id: 'authorizationserver-fakeid1',
     })
 
     beforeEach(() => {
@@ -608,6 +600,30 @@ describe('adapter', () => {
             refType: BuiltinTypes.SERVICE_ID,
           },
         },
+      })
+      scopeType = new ObjectType({
+        elemID: new ElemID(OKTA, 'OAuth2Scope'),
+        fields: {
+          id: { refType: BuiltinTypes.SERVICE_ID },
+          name: { refType: BuiltinTypes.STRING },
+        },
+      })
+      authServerType = new ObjectType({
+        elemID: new ElemID(OKTA, AUTHORIZATION_SERVER),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      authServerInstance = new InstanceElement('authorizationServer', authServerType, {
+        id: 'authorizationserver-fakeid1',
+        status: INACTIVE_STATUS,
+        name: 'default',
+        description: 'Default Authorization Server for your Applications',
+        default: true,
+        issuerMode: 'ORG_URL',
+        audiences: ['api://default'],
       })
     })
 
@@ -668,7 +684,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const result = await operations.deploy({
@@ -697,7 +713,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const result = await operations.deploy({
@@ -727,7 +743,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
@@ -758,7 +774,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
@@ -789,7 +805,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
@@ -818,7 +834,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
@@ -848,7 +864,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const activatedAuthorizationServerPolicy = authorizationServerPolicy.clone()
@@ -878,7 +894,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
         const result = await operations.deploy({
@@ -3119,7 +3135,6 @@ describe('adapter', () => {
     describe('deploy authorization server claims', () => {
       let claimType: ObjectType
       let claimInstance: InstanceElement
-      let scopeType: ObjectType
       let scopeInstance: InstanceElement
 
       beforeEach(() => {
@@ -3139,15 +3154,8 @@ describe('adapter', () => {
             },
           },
         })
-        scopeType = new ObjectType({
-          elemID: new ElemID(OKTA, 'OAuth2Scope'),
-          fields: {
-            id: { refType: BuiltinTypes.SERVICE_ID },
-            name: { refType: BuiltinTypes.STRING },
-          },
-        })
         scopeInstance = new InstanceElement('scope', scopeType, { name: 'address' }, undefined, {
-          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
         })
         claimInstance = new InstanceElement(
           'claim',
@@ -3166,7 +3174,7 @@ describe('adapter', () => {
           },
           undefined,
           {
-            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authorizationServer.elemID, authorizationServer)],
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
           },
         )
       })
@@ -3214,6 +3222,139 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy authorization servers', () => {
+      it('should successfully add an authorization server', async () => {
+        loadMockReplies('authorization_server_add.json')
+        const authServerAddition = new InstanceElement('authServerAddition', authServerType, {
+          name: 'test',
+          description: 'test',
+          audiences: ['api://default'],
+          issuerMode: 'DYNAMIC',
+          default: false,
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: authServerAddition.elemID.getFullName(),
+            changes: [toChange({ after: authServerAddition })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual(
+          'authorizationserver-fakeid1',
+        )
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should succeessfully modify and activate an authorization server', async () => {
+        loadMockReplies('authorization_server_modify_and_activate.json')
+        const afterAuthServerInstance = authServerInstance.clone()
+        afterAuthServerInstance.value.status = 'ACTIVE'
+        afterAuthServerInstance.value.audiences = ['api://default/change']
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: authServerInstance.elemID.getFullName(),
+            changes: [toChange({ before: authServerInstance, after: afterAuthServerInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify and deactivate an authorization server', async () => {
+        loadMockReplies('authorization_server_modify_and_deactivate.json')
+        authServerInstance.value.status = 'ACTIVE'
+        const afterAuthServerInstance = authServerInstance.clone()
+        afterAuthServerInstance.value.status = INACTIVE_STATUS
+        afterAuthServerInstance.value.audiences = ['api://default/change']
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: authServerInstance.elemID.getFullName(),
+            changes: [toChange({ before: authServerInstance, after: afterAuthServerInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove an authorization server', async () => {
+        loadMockReplies('authorization_server_remove.json')
+        authServerInstance.value.id = 'authorizationserver-fakeid1'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: authServerInstance.elemID.getFullName(),
+            changes: [toChange({ before: authServerInstance })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy authorization server scopes', () => {
+      it('should successfully add a custom authorization server scope', async () => {
+        const customScope = new InstanceElement(
+          'customScope',
+          scopeType,
+          {
+            name: 'custom',
+            system: false,
+            metadataPublish: 'NO_CLIENTS',
+            consent: 'IMPLICIT',
+            optional: false,
+            default: false,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
+          },
+        )
+        loadMockReplies('authorization_server_add_custom_scope.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: customScope.elemID.getFullName(),
+            changes: [toChange({ after: customScope })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('scope-fakeid')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully add a system authorization server scope', async () => {
+        const systemScope = new InstanceElement(
+          'systemScope',
+          scopeType,
+          {
+            name: 'address',
+            system: true,
+            metadataPublish: 'ALL_CLIENTS',
+            consent: 'IMPLICIT',
+            optional: false,
+            default: false,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
+          },
+        )
+        loadMockReplies('authorization_server_add_system_scope.json')
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: systemScope.elemID.getFullName(),
+            changes: [toChange({ after: systemScope })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('scope-fakeid')
       })
     })
   })

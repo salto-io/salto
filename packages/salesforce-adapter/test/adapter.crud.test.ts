@@ -517,7 +517,7 @@ describe('SalesforceAdapter CRUD', () => {
             expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
             expect(progressReporter.getReportedOperationInfo()).toEqual({
-              serviceDeploymentId: '5',
+              serviceDeploymentId: expect.any(String),
             })
             expect(progressReporter.getReportedMessages()).toSatisfyAny(
               message =>

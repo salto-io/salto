@@ -99,11 +99,11 @@ export const adapter: Adapter = {
     validateCredentials(credentialsFromConfig(config), {
       createConnection,
     }),
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: accessTokenCredentialsType,
     },
-  },
+  }),
   configType,
   getCustomReferences: combineCustomReferenceGetters(
     _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),

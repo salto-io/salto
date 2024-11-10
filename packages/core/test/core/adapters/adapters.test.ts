@@ -71,7 +71,7 @@ jest.mock('../../../src/core/adapters/creators', () => {
 describe('adapters.ts', () => {
   const { authenticationMethods } = adapter
   const accounts = ['salesforce']
-  const sfConfig = new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods.basic.credentialsType, {
+  const sfConfig = new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods().basic.credentialsType, {
     username: 'nacluser',
     password: 'naclpass',
     token: 'nacltoken',
@@ -89,12 +89,18 @@ describe('adapters.ts', () => {
     let credentials: Record<string, AdapterAuthentication>
 
     it('should return config for defined adapter', () => {
-      credentials = getAdaptersCredentialsTypes(accounts)
-      expect(credentials.salesforce).toEqual(authenticationMethods)
+      credentials = getAdaptersCredentialsTypes(Object.fromEntries(accounts.map(a => [a, a])))
+      const authMethods = authenticationMethods()
+      expect(credentials.salesforce.basic).toEqual(authMethods.basic)
+      expect(credentials.salesforce.oauth).toMatchObject({
+        ...authMethods.oauth,
+        createOAuthRequest: expect.toBeFunction(),
+        createFromOauthResponse: expect.toBeFunction(),
+      })
     })
 
     it('should throw error for non defined adapter', () => {
-      expect(() => getAdaptersCredentialsTypes(accounts.concat('fake'))).toThrow()
+      expect(() => getAdaptersCredentialsTypes(Object.fromEntries(accounts.concat('fake').map(a => [a, a])))).toThrow()
     })
   })
 

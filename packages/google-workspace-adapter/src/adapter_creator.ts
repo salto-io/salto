@@ -44,7 +44,7 @@ const clientDefaults = {
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: basicCredentialsType,
     },
@@ -54,7 +54,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
       oauthRequestParameters: oauthRequestParametersType,
       createFromOauthResponse,
     },
-  },
+  }),
   validateCredentials: async config =>
     validateCredentials(credentialsFromConfig(config), {
       createConnection: createConnectionForApp(DIRECTORY_APP_NAME),

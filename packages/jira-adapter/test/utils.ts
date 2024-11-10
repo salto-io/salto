@@ -26,7 +26,7 @@ import {
 } from '../src/filters/workflowV2/types'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
-  new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
+  new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods().basic.credentialsType, credentials)
 
 export const createConfigInstance = (config: JiraConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)

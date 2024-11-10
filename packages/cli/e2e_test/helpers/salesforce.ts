@@ -77,7 +77,7 @@ export const getSalesforceCredsInstance = (creds: UsernamePasswordCredentials): 
   }
   const { authenticationMethods } = salesforceAdapter
 
-  return new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods.basic.credentialsType, configValues)
+  return new InstanceElement(ElemID.CONFIG_NAME, authenticationMethods().basic.credentialsType, configValues)
 }
 
 export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): InstanceElement => {
@@ -95,7 +95,7 @@ export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): Ins
 
   return new InstanceElement(
     ElemID.CONFIG_NAME,
-    authenticationMethods.oauth?.credentialsType as ObjectType,
+    authenticationMethods().oauth?.credentialsType as ObjectType,
     configValues,
   )
 }

@@ -32,14 +32,14 @@ describe('adapter creator', () => {
     expect(Object.keys(config?.fields)).toEqual(Object.keys(configType.fields))
   })
   it('should use oauth token as the basic auth method', () => {
-    expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toEqual(
+    expect(Object.keys(adapter.authenticationMethods().basic.credentialsType.fields)).toEqual(
       Object.keys(oauthClientCredentialsType.fields),
     )
   })
   it('should return the zuora_billing adapter', () => {
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -61,7 +61,7 @@ describe('adapter creator', () => {
   it('should return the zuora_billing adapter if configuration is missing', () => {
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -72,7 +72,7 @@ describe('adapter creator', () => {
     ).toBeDefined()
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -86,7 +86,7 @@ describe('adapter creator', () => {
   it('should ignore unexpected configuration values', () => {
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -110,7 +110,7 @@ describe('adapter creator', () => {
   it('should throw error on invalid configuration', () => {
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -139,7 +139,7 @@ describe('adapter creator', () => {
 
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -173,7 +173,7 @@ describe('adapter creator', () => {
   it('should throw error on invalid credentials', () => {
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: 'sandbox.na',
@@ -196,7 +196,7 @@ describe('adapter creator', () => {
     ).toThrow(new Error("'sandbox.na' is a sandbox subdomain and cannot be used for production"))
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods.basic.credentialsType, {
+        credentials: new InstanceElement(ZUORA_BILLING, adapter.authenticationMethods().basic.credentialsType, {
           clientId: 'id',
           clientSecret: 'secret',
           subdomain: '',

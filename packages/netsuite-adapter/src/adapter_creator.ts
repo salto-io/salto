@@ -162,11 +162,11 @@ export const adapter: Adapter = {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: defaultCredentialsType,
     },
-  },
+  }),
   configType,
   install: async (): Promise<AdapterInstallResult> => {
     try {

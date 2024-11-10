@@ -11,6 +11,7 @@ import {
   AdapterAuthentication,
   AdapterFailureInstallResult,
   AdapterOperations,
+  AdapterOperationsContext,
   AdapterSuccessInstallResult,
   Change,
   ChangeDataType,
@@ -95,11 +96,14 @@ type VerifyCredentialsResult =
       error: Error
     }
 
-export const verifyCredentials = async (loginConfig: Readonly<InstanceElement>): Promise<VerifyCredentialsResult> => {
+export const verifyCredentials = async (
+  loginConfig: Readonly<InstanceElement>,
+  accountName?: string,
+): Promise<VerifyCredentialsResult> => {
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     try {
-      const account = await adapterCreator.validateCredentials(loginConfig)
+      const account = await adapterCreator.validateCredentials(loginConfig, accountName)
       return { success: true, ...account }
     } catch (error) {
       return {
@@ -240,6 +244,35 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
+const getAdapterCreatorInfo = async ({
+  workspace,
+  fetchAccounts,
+  ignoreStateElemIdMapping,
+  ignoreStateElemIdMappingForSelectors,
+}: {
+  workspace: Workspace
+  fetchAccounts: string[]
+  ignoreStateElemIdMapping?: boolean
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
+}): Promise<{
+  adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
+  currentConfigs: InstanceElement[]
+  accountToServiceNameMap: Record<string, string>
+}> => {
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
+  return {
+    ...(await getFetchAdapterAndServicesSetup({
+      workspace,
+      fetchAccounts,
+      accountToServiceNameMap,
+      elementsSource: await workspace.elements(),
+      ignoreStateElemIdMapping,
+      ignoreStateElemIdMappingForSelectors,
+    })),
+    accountToServiceNameMap,
+  }
+}
+
 export const fetch: FetchFunc = async (
   workspace,
   progressEmitter,
@@ -250,12 +283,9 @@ export const fetch: FetchFunc = async (
 ) => {
   log.debug('fetch starting..')
   const fetchAccounts = accounts ?? workspace.accounts()
-  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
-  const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
+  const { adaptersCreatorConfigs, currentConfigs, accountToServiceNameMap } = await getAdapterCreatorInfo({
     workspace,
     fetchAccounts,
-    accountToServiceNameMap,
-    elementsSource: await workspace.elements(),
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
@@ -511,7 +541,7 @@ class AdapterInstallError extends Error {
   }
 }
 
-const getAdapterCreator = (adapterName: string): Adapter => {
+export const getAdapterCreator = (adapterName: string): Adapter => {
   const adapter = adapterCreators[adapterName]
   if (adapter) {
     return adapter
@@ -545,7 +575,7 @@ export const addAdapter = async (
       await workspace.updateAccountConfig(adapterName, defaultConfig, adapterAccountName)
     }
   }
-  return adapter.authenticationMethods
+  return adapter.authenticationMethods(accountName)
 }
 
 export type LoginStatus = { configTypeOptions: AdapterAuthentication; isLoggedIn: boolean }
@@ -557,15 +587,14 @@ export const getLoginStatuses = async (
   const accountToServiceMap = Object.fromEntries(
     accounts.map(account => [account, workspace.getServiceFromAccountName(account)]),
   )
-  const relevantServices = _.uniq(Object.values(accountToServiceMap))
   const logins = await mapValuesAsync(
-    getAdaptersCredentialsTypes(relevantServices),
+    getAdaptersCredentialsTypes(accountToServiceMap),
     async (configTypeOptions, adapter) => ({
       configTypeOptions,
       isLoggedIn: !!creds[adapter],
     }),
   )
-  return Object.fromEntries(accounts.map(account => [account, logins[accountToServiceMap[account]]]))
+  return Object.fromEntries(accounts.map(account => [account, logins[account]]))
 }
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)

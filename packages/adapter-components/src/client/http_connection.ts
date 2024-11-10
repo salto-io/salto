@@ -179,17 +179,23 @@ export type AuthParams = {
   headers?: Partial<AxiosRequestHeaders>
 }
 
+export type CredValidateArgsType<TCredentials> = {
+  credentials: TCredentials
+  connection: APIConnection
+}
+
+export type CredValidateFuncType<TCredentials> = ({
+  credentials,
+  connection,
+}: CredValidateArgsType<TCredentials>) => Promise<AccountInfo>
+
+export type AuthParamsFunc<TCredentials> = (credentials: TCredentials) => Promise<AuthParams>
+
 type AxiosConnectionParams<TCredentials> = {
   retryOptions: RetryOptions
-  authParamsFunc: (credentials: TCredentials) => Promise<AuthParams>
+  authParamsFunc: AuthParamsFunc<TCredentials>
   baseURLFunc: (credentials: TCredentials) => Promise<string>
-  credValidateFunc: ({
-    credentials,
-    connection,
-  }: {
-    credentials: TCredentials
-    connection: APIConnection
-  }) => Promise<AccountInfo>
+  credValidateFunc: CredValidateFuncType<TCredentials>
   timeout?: number
 }
 

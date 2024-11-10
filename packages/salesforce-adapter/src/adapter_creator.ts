@@ -368,7 +368,7 @@ export const adapter: Adapter = {
     }
   },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: usernamePasswordCredentialsType,
     },
@@ -385,7 +385,7 @@ export const adapter: Adapter = {
         refreshToken: response.fields.refreshToken,
       }),
     },
-  },
+  }),
   configType,
   configCreator,
   adapterFormat: {

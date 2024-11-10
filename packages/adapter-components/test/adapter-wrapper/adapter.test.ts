@@ -277,7 +277,7 @@ describe('createAdapter', () => {
     adapter = createAdapter({
       adapterName: 'test',
       initialClients: { main: undefined },
-      authenticationMethods: { basic: { credentialsType } },
+      authenticationMethods: () => ({ basic: { credentialsType } }),
       defaultConfig: DEFAULT_CONFIG,
       definitionsCreator: ({ clients }) => ({
         ...definitions,

@@ -43,7 +43,10 @@ import { QueryCriterion } from '../fetch/query'
 import { DEFAULT_CRITERIA } from '../fetch/query/fetch_criteria'
 
 type ConfigCreator<Config> = (config?: Readonly<InstanceElement>) => Config
-type ConnectionCreatorFromConfig<Credentials> = (config?: Readonly<InstanceElement>) => ConnectionCreator<Credentials>
+type ConnectionCreatorFromConfig<Credentials> = (
+  config?: Readonly<InstanceElement>,
+  accountName?: string,
+) => ConnectionCreator<Credentials>
 
 export const createAdapter = <
   Credentials,
@@ -67,7 +70,7 @@ export const createAdapter = <
   adapterName: string
   // helper for determining the names of all clients that should be created
   initialClients: Record<ResolveClientOptionsType<Options>, undefined | ConnectionCreator<Credentials>>
-  authenticationMethods: AdapterAuthentication
+  authenticationMethods: () => AdapterAuthentication
   validateCredentials?: Adapter['validateCredentials']
   adapterImpl?: AdapterImplConstructor<Credentials, Options, Co>
   defaultConfig: Co
@@ -84,7 +87,7 @@ export const createAdapter = <
   operationsCustomizations: {
     adapterConfigCreator?: (config: Readonly<InstanceElement> | undefined) => Co
     credentialsFromConfig: (config: Readonly<InstanceElement>) => Credentials
-    connectionCreatorFromConfig: (config: Co['client']) => ConnectionCreator<Credentials>
+    connectionCreatorFromConfig: (config: Co['client'], accountName?: string) => ConnectionCreator<Credentials>
     customizeFilterCreators?: (
       args: FilterCreationArgs<Options, Co>,
     ) => Record<string, AdapterFilterCreator<Co, FilterResult, {}, Options>>
@@ -104,8 +107,8 @@ export const createAdapter = <
   } = operationsCustomizations
   const configCreator: ConfigCreator<Co> = config =>
     (adapterConfigCreator ?? adapterConfigFromConfig)(config, defaultConfig)
-  const connectionCreator: ConnectionCreatorFromConfig<Credentials> = config =>
-    connectionCreatorFromConfig(configCreator(config).client)
+  const connectionCreator: ConnectionCreatorFromConfig<Credentials> = (config, accountName) =>
+    connectionCreatorFromConfig(configCreator(config).client, accountName)
 
   return {
     operations: context => {
@@ -114,7 +117,7 @@ export const createAdapter = <
       const clients = _.mapValues(initialClients, createConnection =>
         createClient<Credentials>({
           adapterName,
-          createConnection: createConnection ?? connectionCreator(context.config),
+          createConnection: createConnection ?? connectionCreator(context.config, context.accountName),
           clientOpts: {
             credentials,
             config: config.client,
@@ -175,8 +178,10 @@ export const createAdapter = <
     },
     validateCredentials:
       validateCredentials ??
-      (config =>
-        defaultValidateCredentials({ createConnection: connectionCreator(config), credentialsFromConfig })(config)),
+      ((config, accountName) =>
+        defaultValidateCredentials({ createConnection: connectionCreator(config, accountName), credentialsFromConfig })(
+          config,
+        )),
     authenticationMethods,
     configType: (configTypeCreator ?? createUserConfigType)({
       adapterName,

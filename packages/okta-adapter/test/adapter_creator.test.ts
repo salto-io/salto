@@ -39,7 +39,7 @@ describe('adapter creator', () => {
   })
 
   it('should support basic auth', () => {
-    expect(adapter.authenticationMethods.basic.credentialsType).toBeInstanceOf(ObjectType)
+    expect(adapter.authenticationMethods().basic.credentialsType).toBeInstanceOf(ObjectType)
   })
 
   describe('validateCredentials', () => {

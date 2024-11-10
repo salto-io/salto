@@ -20,11 +20,11 @@ const { defaultCredentialsFromConfig } = credentials
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType,
     },
-  },
+  }),
   defaultConfig: DEFAULT_CONFIG,
   definitionsCreator: ({ clients, userConfig }) => ({
     clients: createClientDefinitions(clients),

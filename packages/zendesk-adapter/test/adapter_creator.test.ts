@@ -30,19 +30,19 @@ describe('adapter creator', () => {
     expect(Object.keys(config?.fields)).toEqual(Object.keys(configType.fields))
   })
   it('should use username+token as the basic auth method', () => {
-    expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toEqual(
+    expect(Object.keys(adapter.authenticationMethods().basic.credentialsType.fields)).toEqual(
       Object.keys(basicCredentialsType.fields),
     )
   })
   it('should use accessToken as the OAuth auth method', () => {
-    expect(adapter.authenticationMethods.oauth).toBeDefined()
-    expect(Object.keys((adapter.authenticationMethods.oauth as OAuthMethod).credentialsType.fields)).toEqual(
+    expect(adapter.authenticationMethods().oauth).toBeDefined()
+    expect(Object.keys((adapter.authenticationMethods().oauth as OAuthMethod).credentialsType.fields)).toEqual(
       Object.keys(oauthAccessTokenCredentialsType.fields),
     )
   })
   it('should return oauth params - only accessToken and subdomain', async () => {
     expect(
-      await (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+      await (adapter.authenticationMethods().oauth as OAuthMethod).createFromOauthResponse(
         {
           clientId: 'client',
           port: 8080,
@@ -63,7 +63,7 @@ describe('adapter creator', () => {
     // with basic auth method
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(ZENDESK, adapter.configType as ObjectType, {
           fetch: {
             include: [
@@ -84,11 +84,15 @@ describe('adapter creator', () => {
     // with OAuth auth method
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods.oauth?.credentialsType as ObjectType, {
-          authType: 'oauth',
-          accessToken: 'token',
-          subdomain: 'abc',
-        }),
+        credentials: new InstanceElement(
+          ZENDESK,
+          adapter.authenticationMethods().oauth?.credentialsType as ObjectType,
+          {
+            authType: 'oauth',
+            accessToken: 'token',
+            subdomain: 'abc',
+          },
+        ),
         config: new InstanceElement(ZENDESK, adapter.configType as ObjectType, {
           fetch: {
             include: [
@@ -110,7 +114,7 @@ describe('adapter creator', () => {
   it('should ignore unexpected configuration values', () => {
     expect(
       adapter.operations({
-        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(ZENDESK, adapter.configType as ObjectType, {
           fetch: {
             include: [
@@ -133,7 +137,7 @@ describe('adapter creator', () => {
   it('should throw error when deploy config is invalid', () => {
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(ZENDESK, adapter.configType as ObjectType, {
           fetch: { include: [{ type: '.*' }], exclude: [] },
           apiDefinitions: {
@@ -153,7 +157,7 @@ describe('adapter creator', () => {
     )
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(ZENDESK, adapter.configType as ObjectType, {
           fetch: { include: [{ type: '.*' }], exclude: [] },
           apiDefinitions: {
@@ -176,7 +180,7 @@ describe('adapter creator', () => {
   it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(ZENDESK, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(ZENDESK, adapter.configType as ObjectType, {
           fetch: {
             include: [{ type: 'a' }, { type: 'b' }],

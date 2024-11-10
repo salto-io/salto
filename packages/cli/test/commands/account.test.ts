@@ -44,8 +44,8 @@ jest.mock('@salto-io/core', () => {
     ...actual,
     getAdaptersCredentialsTypes: jest
       .fn()
-      .mockImplementation((serviceNames: string[]): Record<string, AdapterAuthentication> => {
-        if (serviceNames[0] === 'noAdapter') {
+      .mockImplementation((accountToServiceMap: Record<string, string>): Record<string, AdapterAuthentication> => {
+        if (Object.values(accountToServiceMap)[0] === 'noAdapter') {
           throw new Error('no adapter')
         }
         return {

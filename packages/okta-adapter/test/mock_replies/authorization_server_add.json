@@ -1,0 +1,32 @@
+[
+  {
+    "path": "/api/v1/authorizationServers",
+    "scope": "",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "authorizationserver-fakeid1",
+      "name": "test",
+      "description": "testtest",
+      "audiences": ["api://default"],
+      "issuerMode": "DYNAMIC",
+      "status": "ACTIVE",
+      "created": "2024-11-03T20:01:09.000Z",
+      "lastUpdated": "2024-11-03T20:01:09.000Z",
+      "default": false,
+      "_links": {}
+    },
+    "body": {
+      "name": "test",
+      "description": "test",
+      "audiences": ["api://default"],
+      "issuerMode": "DYNAMIC",
+      "default": false
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1730664128"
+    }
+  }
+]

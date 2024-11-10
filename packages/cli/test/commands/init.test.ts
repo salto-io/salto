@@ -15,10 +15,9 @@ import { CommandArgs } from '../../src/command_builder'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
-  initLocalWorkspace: jest.fn().mockImplementation((_baseDir: string, workspaceName: string): Workspace => {
-    if (workspaceName === 'error') throw new Error('failed')
+  initLocalWorkspace: jest.fn().mockImplementation((_baseDir: string, envName: string): Workspace => {
+    if (envName === 'error') throw new Error('failed')
     return {
-      name: workspaceName,
       uid: '',
       currentEnv: () => 'default',
       envs: () => ['default'],
@@ -66,9 +65,7 @@ describe('init command', () => {
     it("should invoke api's init", async () => {
       await action({
         ...cliCommandArgs,
-        input: {
-          workspaceName: 'test',
-        },
+        input: {},
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
       expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
@@ -79,7 +76,7 @@ describe('init command', () => {
       await action({
         ...cliCommandArgs,
         input: {
-          workspaceName: 'error',
+          envName: 'error',
         },
       })
       expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
@@ -93,7 +90,6 @@ describe('init command', () => {
       await action({
         ...cliCommandArgs,
         input: {
-          workspaceName: 'test',
           envName: 'userEnvInput',
         },
       })
@@ -101,14 +97,13 @@ describe('init command', () => {
       expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.success, 1, expect.objectContaining({}))
-      expect(mockInitLocalWorkspace).toHaveBeenCalledWith(expect.anything(), 'test', 'userEnvInput')
+      expect(mockInitLocalWorkspace).toHaveBeenCalledWith(expect.anything(), 'userEnvInput')
     })
     it('should print errors', async () => {
       await action({
         ...cliCommandArgs,
         input: {
-          workspaceName: 'error',
-          envName: 'userEnvInput',
+          envName: 'error',
         },
       })
       expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
@@ -123,9 +118,7 @@ describe('init command', () => {
     mockLocateWorkspaceRoot.mockResolvedValue(path)
     await action({
       ...cliCommandArgs,
-      input: {
-        workspaceName: 'test',
-      },
+      input: {},
     })
     expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n\n`)
     expect(output.stdout.content).toEqual('')

@@ -69,6 +69,7 @@ const changeValidatorNames = [
   'oidcIdentityProvider',
   'everyoneGroupAssignments',
   'emailDomainAddition',
+  'provisionedUserAdditions',
 ] as const
 
 export type ChangeValidatorName = (typeof changeValidatorNames)[number]

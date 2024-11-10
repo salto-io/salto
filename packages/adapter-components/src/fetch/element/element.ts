@@ -18,6 +18,7 @@ import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { ConfigChangeSuggestion, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 import { omitAllInstancesValues } from './instance_utils'
 import { AbortFetchOnFailure } from '../errors'
+import { UnauthorizedError } from '../../client'
 
 const log = logger(module)
 
@@ -75,9 +76,9 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   }
 
   const handleError: ElementGenerator['handleError'] = ({ typeName, error }) => {
-    // This can happen if the error was thrown inside a sub-type that has failEntireFetch set to true.
+    // AbortFetchOnFailure can happen if the error was thrown inside a sub-type that has failEntireFetch set to true.
     // In this case we should not call the parent's onError function.
-    if (error instanceof AbortFetchOnFailure) {
+    if (error instanceof AbortFetchOnFailure || error instanceof UnauthorizedError) {
       throw error
     }
 

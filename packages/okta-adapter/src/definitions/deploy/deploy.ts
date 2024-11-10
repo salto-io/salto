@@ -45,6 +45,7 @@ import {
   PROFILE_MAPPING_TYPE_NAME,
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  AUTHORIZATION_SERVER,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -56,6 +57,7 @@ import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
 import { addBrandIdToRequest } from './types/email_domain'
+import { isSystemScope } from './types/authorization_servers'
 
 const log = logger(module)
 
@@ -916,6 +918,61 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    [AUTHORIZATION_SERVER]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/authorizationServers', method: 'post' },
+                transformation: { omit: ['status'] },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/authorizationServers/{id}', method: 'put' },
+                transformation: { omit: ['status'] },
+              },
+              condition: simpleStatus.modificationCondition,
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/authorizationServers/{id}', method: 'delete' },
+              },
+            },
+          ],
+          activate: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/authorizationServers/{id}/lifecycle/activate', method: 'post' },
+              },
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+            },
+          ],
+          deactivate: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/authorizationServers/{id}/lifecycle/deactivate', method: 'post' },
+              },
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: simpleStatus.toActionNames,
+      actionDependencies: simpleStatus.actionDependencies,
+    },
     OAuth2Scope: {
       requestsByAction: {
         customizations: {
@@ -926,6 +983,30 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/api/v1/authorizationServers/{parent_id}/scopes',
                   method: 'post',
                 },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    !isSystemScope(change),
+              },
+            },
+            // This request retrieves system scopes that are automatically created when an authorization server is created.
+            // We use a GET request to fetch the scope ID, and then subsequently modify it to match the requested values.
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/scopes',
+                  method: 'get',
+                  // scopes names are unique within an authorization server
+                  queryArgs: { q: '{name}' },
+                },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isSystemScope(change),
               },
             },
           ],
@@ -951,6 +1032,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
+      toActionNames: ({ change }) =>
+        isAdditionChange(change) && isSystemScope(change) ? ['add', 'modify'] : [change.action],
+      actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     OAuth2Claim: {
       requestsByAction: {

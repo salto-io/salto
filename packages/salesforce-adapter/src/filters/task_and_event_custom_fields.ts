@@ -63,7 +63,7 @@ const filterCreator: FilterCreator = ({ config }) => {
               return []
             }
             const getMatchingField = (objectName: string): Field | undefined =>
-              Object.values(elementsByApiName[objectName]?.fields).find(
+              Object.values(elementsByApiName[objectName]?.fields ?? {}).find(
                 field => apiNameSync(field, true) === activityFieldName,
               )
             return [

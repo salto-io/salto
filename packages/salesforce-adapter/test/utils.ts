@@ -9,6 +9,8 @@ import _ from 'lodash'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
+  DeployOperationInfo,
+  DeployProgressReporter,
   Element,
   ElemID,
   FetchOptions,
@@ -18,7 +20,6 @@ import {
   ObjectType,
   PrimitiveType,
   PrimitiveTypes,
-  ProgressReporter,
   TypeElement,
   Values,
 } from '@salto-io/adapter-api'
@@ -32,7 +33,7 @@ import { annotationsFileName, customFieldsFileName, standardFieldsFileName } fro
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
-import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
+import { createDeployProgressReporter, SalesforceDeployProgressReporter } from '../src/adapter_creator'
 import { SalesforceClient } from '../index'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
@@ -399,24 +400,32 @@ export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateO
   CustomLabels: '2023-11-06T00:00:00.000Z',
 })
 
-export const nullProgressReporter: DeployProgressReporter = {
+export const nullProgressReporter: SalesforceDeployProgressReporter = {
   reportProgress: () => {},
   reportDataProgress: () => {},
   reportMetadataProgress: () => {},
 }
 
-export type MockDeployProgressReporter = DeployProgressReporter & { getReportedMessages: () => string[] }
+export type MockDeployProgressReporter = SalesforceDeployProgressReporter & {
+  getReportedMessages: () => string[]
+  getReportedOperationInfo: () => DeployOperationInfo | undefined
+}
 
 export const createMockProgressReporter = async (client: SalesforceClient): Promise<MockDeployProgressReporter> => {
   const reportedMessages: string[] = []
-  const mockProgressReporter: ProgressReporter = {
+  let reportedOperationInfo: DeployOperationInfo
+  const mockProgressReporter: DeployProgressReporter = {
     reportProgress: args => {
       reportedMessages.push(args.message)
+    },
+    reportDeployOperationInfo: info => {
+      reportedOperationInfo = info
     },
   }
   return {
     ...(await createDeployProgressReporter(mockProgressReporter, client)),
     getReportedMessages: () => reportedMessages,
+    getReportedOperationInfo: () => reportedOperationInfo,
   }
 }
 

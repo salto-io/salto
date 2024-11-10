@@ -382,11 +382,9 @@ export async function loadLocalWorkspace(
 
 export const initLocalWorkspace = async (
   baseDir: string,
-  name?: string,
   envName = 'default',
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
 ): Promise<Workspace> => {
-  const workspaceName = name ?? path.basename(path.resolve(baseDir))
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
@@ -417,11 +415,10 @@ export const initLocalWorkspace = async (
     remoteMapCreator,
     stateStaticFilesSource,
     persistent: persistentMode,
-    workspaceConfig: { uid, name: workspaceName },
+    workspaceConfig: { uid },
   })
 
   return initWorkspace(
-    workspaceName,
     uid,
     envName,
     workspaceConfigSrc,

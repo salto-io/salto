@@ -1,0 +1,46 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "authorizationserver-fakeid1",
+      "name": "default",
+      "description": "Default Authorization Server for your Applications",
+      "audiences": ["api://default/change"],
+      "issuerMode": "ORG_URL",
+      "status": "INACTIVE",
+      "created": "2022-09-08T12:57:31.000Z",
+      "lastUpdated": "2024-11-03T19:58:20.000Z",
+      "default": true,
+      "_links": {}
+    },
+    "body": {
+      "id": "authorizationserver-fakeid1",
+      "name": "default",
+      "description": "Default Authorization Server for your Applications",
+      "audiences": ["api://default/change"],
+      "issuerMode": "ORG_URL",
+      "default": true
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1730663959"
+    }
+  },
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "97",
+      "x-rate-limit-reset": "1730663959"
+    }
+  }
+]

@@ -27,6 +27,7 @@ import {
   isFieldChange,
   isRemovalChange,
   ObjectType,
+  DeployProgressReporter,
   ReferenceMapping,
   TopLevelElement,
 } from '@salto-io/adapter-api'
@@ -162,6 +163,7 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
+  reportDeployOperationInfo?: DeployProgressReporter['reportDeployOperationInfo'],
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
@@ -198,6 +200,7 @@ export const deploy = async (
     reportProgress,
     postDeployAction,
     checkOnly,
+    reportDeployOperationInfo,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve

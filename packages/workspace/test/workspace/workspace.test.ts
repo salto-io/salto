@@ -2217,13 +2217,12 @@ salesforce.staticFile staticFileInstance {
   })
 
   describe('init', () => {
-    const workspaceConf = mockWorkspaceConfigSource({ name: 'ws-name' })
+    const workspaceConf = mockWorkspaceConfigSource({ uid: 'uid' })
     afterEach(async () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
       const workspace = await initWorkspace(
-        'ws-name',
         'uid',
         'default',
         workspaceConf,
@@ -2250,12 +2249,11 @@ salesforce.staticFile staticFileInstance {
         async () => [],
       )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual({
-        name: 'ws-name',
         uid: 'uid',
         envs: [{ name: 'default', accountToServiceName: {} }],
         currentEnv: 'default',
       })
-      expect(workspace.name).toEqual('ws-name')
+      expect(workspace.uid).toEqual('uid')
     })
   })
 

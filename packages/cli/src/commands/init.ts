@@ -18,17 +18,16 @@ import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 const log = logger(module)
 
 type InitArgs = {
-  workspaceName?: string
   envName?: string
 }
 
 export const action: CommandDefAction<InitArgs> = async ({
-  input: { workspaceName, envName },
+  input: { envName },
   cliTelemetry,
   output,
   workspacePath,
 }): Promise<CliExitCode> => {
-  log.debug("running workspace init command on '%s'", workspaceName)
+  log.debug('running workspace init command')
   cliTelemetry.start()
   try {
     const baseDir = path.resolve(workspacePath)
@@ -38,7 +37,7 @@ export const action: CommandDefAction<InitArgs> = async ({
       return CliExitCode.AppError
     }
     const defaultEnvName = envName ?? (await getEnvName())
-    const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
+    const workspace = await initLocalWorkspace(baseDir, defaultEnvName)
     cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
     cliTelemetry.success()
     outputLine(Prompts.initCompleted(), output)
@@ -62,14 +61,6 @@ const initDef = createPublicCommandDef({
         alias: 'e',
         required: false,
         description: 'The name of the first environment in the workspace',
-        type: 'string',
-      },
-    ],
-    positionalOptions: [
-      {
-        name: 'workspaceName',
-        required: false,
-        description: 'The name of the workspace',
         type: 'string',
       },
     ],

@@ -343,7 +343,7 @@ export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> =
         baseDir: args.workspacePath,
         remoteMapCreator,
         persistent: true,
-        workspaceConfig: { uid: workspace.uid, name: workspace.name },
+        workspaceConfig: { uid: workspace.uid },
       })
     await workspace.addEnvironment(envName, rmcToEnvSource)
     await setEnvironment(envName, args.output, workspace)

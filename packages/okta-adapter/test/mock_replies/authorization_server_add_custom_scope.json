@@ -1,0 +1,30 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/scopes",
+    "scope": "",
+    "method": "POST",
+    "status": 201,
+    "response": {
+      "id": "scope-fakeid",
+      "name": "custom",
+      "system": false,
+      "metadataPublish": "NO_CLIENTS",
+      "consent": "IMPLICIT",
+      "optional": false,
+      "default": false
+    },
+    "body": {
+      "name": "custom",
+      "system": false,
+      "metadataPublish": "NO_CLIENTS",
+      "consent": "IMPLICIT",
+      "optional": false,
+      "default": false
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "98",
+      "x-rate-limit-reset": "1730893117"
+    }
+  }
+]

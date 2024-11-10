@@ -11,11 +11,13 @@ import {
   isAdditionChange,
   isInstanceChange,
   isInstanceElement,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
+  ISSUE_LINK_TYPE_NAME,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
   QUEUE_TYPE,
   SCRIPT_FRAGMENT_TYPE,
@@ -30,6 +32,11 @@ import { getContextParent } from './common/fields'
 export const getWorkflowGroup: deployment.grouping.ChangeIdFunction = async change =>
   isModificationChange(change) && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
     ? 'Workflow Modifications'
+    : undefined
+
+const getIssueLinkTypeGroup: deployment.grouping.ChangeIdFunction = async change =>
+  isRemovalChange(change) && getChangeData(change).elemID.typeName === ISSUE_LINK_TYPE_NAME
+    ? 'IssueLinkType Removals'
     : undefined
 
 export const getSecurityLevelGroup: deployment.grouping.ChangeIdFunction = async change => {
@@ -110,4 +117,5 @@ export const getChangeGroupIds = deployment.grouping.getChangeGroupIdsFunc([
   getAttributeAdditionByObjectTypeGroup,
   getFieldContextGroup,
   getSlaAdditionByProjectGroup,
+  getIssueLinkTypeGroup,
 ])

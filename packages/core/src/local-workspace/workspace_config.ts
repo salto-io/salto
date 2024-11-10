@@ -91,7 +91,6 @@ export const workspaceConfigSource = async (baseDir: string, localStorage?: stri
       const userData = userDataConfigInstance({ currentEnv: config.currentEnv })
       const workspaceMetadata = workspaceMetadataConfigInstance({
         uid: config.uid,
-        name: config.name,
         staleStateThresholdMinutes: config.staleStateThresholdMinutes,
         state: config.state,
       })

@@ -188,7 +188,6 @@ const isFromSourceWithEnv = (value: { source: FromSource } | FromSourceWithEnv):
 
 export type Workspace = {
   uid: string
-  name: string
 
   elements: (includeHidden?: boolean, env?: string) => Promise<ElementsSource>
   state: (envName?: string) => State
@@ -546,7 +545,7 @@ export const loadWorkspace = async (
   }): Promise<WorkspaceState> => {
     const initState = async (): Promise<WorkspaceState> => {
       const wsConfig = await config.getWorkspaceConfig()
-      log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
+      log.debug('initializing state for workspace %s', wsConfig.uid)
       log.debug('Full workspace config: %o', wsConfig)
       const states: Record<string, SingleState> = Object.fromEntries(
         await awu(envs())
@@ -1277,7 +1276,6 @@ export const loadWorkspace = async (
 
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
-    name: workspaceConfig.name,
     elements: elementsImpl,
     state,
     envs,
@@ -1671,7 +1669,6 @@ export const loadWorkspace = async (
 }
 
 export const initWorkspace = async (
-  name: string,
   uid: string,
   defaultEnvName: string,
   config: WorkspaceConfigSource,
@@ -1684,7 +1681,6 @@ export const initWorkspace = async (
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
     uid,
-    name,
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })

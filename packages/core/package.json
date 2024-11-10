@@ -48,7 +48,7 @@
     "@salto-io/microsoft-entra-adapter": "0.4.5",
     "@salto-io/microsoft-security-adapter": "0.4.5",
     "@salto-io/netsuite-adapter": "0.4.5",
-    "@salto-io/node-diff3": "3.1.0-salto.1",
+    "@salto-io/node-diff3": "3.1.2-salto.1",
     "@salto-io/okta-adapter": "0.4.5",
     "@salto-io/pagerduty-adapter": "0.4.5",
     "@salto-io/parser": "0.4.5",

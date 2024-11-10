@@ -4266,7 +4266,7 @@ __metadata:
     "@salto-io/microsoft-entra-adapter": 0.4.5
     "@salto-io/microsoft-security-adapter": 0.4.5
     "@salto-io/netsuite-adapter": 0.4.5
-    "@salto-io/node-diff3": 3.1.0-salto.1
+    "@salto-io/node-diff3": 3.1.2-salto.1
     "@salto-io/okta-adapter": 0.4.5
     "@salto-io/pagerduty-adapter": 0.4.5
     "@salto-io/parser": 0.4.5
@@ -5034,10 +5034,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@salto-io/node-diff3@npm:3.1.0-salto.1":
-  version: 3.1.0-salto.1
-  resolution: "@salto-io/node-diff3@npm:3.1.0-salto.1"
-  checksum: 01e6b3aede5edf95de0f63aaea0ed28abc95ca9088cffc8b29f4efb6e5c2ce6e59f1c1d68bb665ddd6c513907f0fa0cf830c6c0fdd4fcc0e4288977d0ce024a5
+"@salto-io/node-diff3@npm:3.1.2-salto.1":
+  version: 3.1.2-salto.1
+  resolution: "@salto-io/node-diff3@npm:3.1.2-salto.1"
+  checksum: bf1b08adec6e19e899bb4197dd5a12b2348b780636d00c7cbf915bfc35678cdc47b72e2dd05d10a4c6f029b07e0c753fb7f9b919d929e40f8743abe1aab79f64
   languageName: node
   linkType: hard
 

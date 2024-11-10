@@ -230,6 +230,7 @@ export type DeployProgressReporter = ProgressReporter & {
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
   progressReporter: DeployProgressReporter
+  deployRequestsToCancel?: string[]
 }
 
 export const createDeployProgressReporter = async (
@@ -286,6 +287,18 @@ export const createDeployProgressReporter = async (
   }
 }
 
+const getDeployRequestsToCancel = (deployOptions: DeployOptions['adapterSpecificInput']): string[] => {
+  const deployRequestsToCancel = deployOptions?.deployRequestsToCancel
+  if (deployRequestsToCancel === undefined) {
+    return []
+  }
+  if (_.isArray(deployRequestsToCancel) && deployRequestsToCancel.every(_.isString)) {
+    return deployRequestsToCancel
+  }
+  log.error('deployRequestsToCancel must be an array of strings. Received: %s', inspectValue(deployRequestsToCancel))
+  return []
+}
+
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
@@ -328,6 +341,7 @@ export const adapter: Adapter = {
         return salesforceAdapter.deploy({
           ...opts,
           progressReporter: await deployProgressReporterPromise,
+          deployRequestsToCancel: getDeployRequestsToCancel(opts.adapterSpecificInput),
         })
       },
 
@@ -338,6 +352,7 @@ export const adapter: Adapter = {
         return salesforceAdapter.validate({
           ...opts,
           progressReporter: await deployProgressReporterPromise,
+          deployRequestsToCancel: getDeployRequestsToCancel(opts.adapterSpecificInput),
         })
       },
 

@@ -71,6 +71,7 @@ export type FetchOptions = {
 export type DeployOptions = {
   progressReporter: ProgressReporter
   changeGroup: ChangeGroup
+  adapterSpecificInput?: Record<string, unknown>
 }
 
 export type PostFetchOptions = {

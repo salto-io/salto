@@ -568,6 +568,7 @@ interface ISalesforceClient {
   queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
   bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
+  cancelDeploy(deployRequestId: string): Promise<void>
 }
 
 type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
@@ -1109,5 +1110,34 @@ export default class SalesforceClient implements ISalesforceClient {
   @logDecorator()
   public async awaitCompletionOfAllListRequests(): Promise<void> {
     await Promise.all(Object.values(this.fullListPromisesByType))
+  }
+
+  @mapToUserFriendlyErrorMessages
+  @logDecorator()
+  @requiresLogin()
+  public async cancelDeploy(deployRequestId: string): Promise<void> {
+    log.debug('Attempting to cancel deployment with id %s', deployRequestId)
+
+    const checkStatus = async (): Promise<void> => {
+      try {
+        const cancelDeployResult = await this.conn.request({
+          method: 'PATCH',
+          url: `/services/data/v${API_VERSION}/metadata/deployRequest/${deployRequestId}`,
+          body: inspectValue({
+            deployResult: {
+              status: 'Canceling',
+            },
+          }),
+        })
+        log.debug('cancelDeploy result: %s', inspectValue(cancelDeployResult))
+        if (_.get(cancelDeployResult, 'deployResult', 'status') === 'Canceling') {
+          await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
+          await checkStatus()
+        }
+      } catch (e) {
+        log.warn('Failed to cancel deployment with id %s: %s', deployRequestId, inspectValue(e))
+      }
+    }
+    await checkStatus()
   }
 }

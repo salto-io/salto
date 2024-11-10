@@ -650,10 +650,20 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     }
   }
 
+  private async cancelRunningDeployRequests({ deployRequestsToCancel }: SalesforceAdapterDeployOptions): Promise<void> {
+    if (deployRequestsToCancel === undefined || deployRequestsToCancel.length === 0) {
+      return
+    }
+    log.debug('Attempting to cancel the following deploy requests: %s', inspectValue(deployRequestsToCancel))
+    await Promise.all(deployRequestsToCancel.map(deployRequestId => this.client.cancelDeploy(deployRequestId)))
+  }
+
   private async deployOrValidate(
-    { changeGroup, progressReporter }: SalesforceAdapterDeployOptions,
+    deployOptions: SalesforceAdapterDeployOptions,
     checkOnly: boolean,
   ): Promise<DeployResult> {
+    const { changeGroup, progressReporter } = deployOptions
+    await this.cancelRunningDeployRequests(deployOptions)
     const fetchParams = this.userConfig.fetch ?? {}
     const fetchProfile = buildFetchProfile({
       fetchParams,

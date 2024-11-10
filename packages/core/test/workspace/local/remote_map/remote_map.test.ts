@@ -133,6 +133,7 @@ describe('test operations on remote db', () => {
       const locationInfo = remoteMapLocations.get(DB_LOCATION)
       expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(1)
       expect(locationInfo.counters.LocationCacheHit.value()).toEqual(3)
+      expect(locationInfo.cache.length).toEqual(1)
     })
     it('should read from cache in concurrent reads', async () => {
       await Promise.all([
@@ -144,6 +145,7 @@ describe('test operations on remote db', () => {
       const locationInfo = remoteMapLocations.get(DB_LOCATION)
       expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(1)
       expect(locationInfo.counters.LocationCacheHit.value()).toEqual(3)
+      expect(locationInfo.cache.length).toEqual(1)
     })
     it('should read from cache in concurrent reads, after set', async () => {
       await remoteMap.set(elements[1].elemID.getFullName(), elements[1])

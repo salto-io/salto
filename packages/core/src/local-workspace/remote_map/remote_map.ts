@@ -611,58 +611,70 @@ export const createRemoteMapCreator = (
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       return awu(getDataIterableWithPages(opts)).map(entries => entries.map(entry => entry.key as K))
     }
-    const getImpl = (key: string): Promise<T | undefined> =>
-      new Promise(resolve => {
+    const getImpl = (key: string): Promise<T | undefined> => {
+      log.info('rachum: get(%s, %s), cache length = %o', namespace, key, locationCache.length)
+      locationCache.keys().forEach(k => log.info('rachum: cached key: %s', k))
+      return new Promise(resolve => {
         if (delKeys.has(key)) {
+          log.info('rachum: get: found key in delKeys, returning undefined')
           resolve(undefined)
           return
         }
         if (locationCache.has(keyToTempDBKey(key))) {
+          log.info('rachum: get: found key in cache, returning value')
           statCounters.LocationCacheHit.inc()
           statCounters.RemoteMapHit.inc()
           isNamespaceEmpty = false
-          resolve(locationCache.get(keyToTempDBKey(key)) as Promise<T>)
+          resolve(locationCache.get(keyToTempDBKey(key)) as Promise<T | undefined>)
           return
         }
+        log.info('rachum: get: key %s (%s) not in cache, fetching from DB', key, namespace)
         statCounters.LocationCacheMiss.inc()
         const cachePromise = new Promise<T | undefined>(resolveInner => {
           const resolveRet = async (value: Buffer | string): Promise<void> => {
-            if (delKeys.has(key)) {
-              resolveInner(undefined)
-              return
-            }
             const ret = await deserialize(value.toString())
             isNamespaceEmpty = false
+            log.info('rachum: get:resolveRet(%s) = %o', key, ret)
+            log.info('rachum: cache length = %o', locationCache.length)
             resolveInner(ret)
           }
           tmpDB.get(keyToTempDBKey(key), async (error, value) => {
             if (error) {
               if (wasClearCalled) {
                 statCounters.RemoteMapMiss.inc()
+                locationCache.del(keyToTempDBKey(key))
                 resolveInner(undefined)
                 return
               }
+              log.info('rachum: get: key not in temp db, fetching from persistent db')
               persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
                 if (innerError) {
                   statCounters.RemoteMapMiss.inc()
+                  log.info('rachum: get: key not in persistent db, returning undefined')
+                  locationCache.del(keyToTempDBKey(key))
                   resolveInner(undefined)
                   return
                 }
+                log.info('rachum: get: key found in persistent db, returning value')
                 await resolveRet(innerValue)
                 statCounters.RemoteMapHit.inc()
               })
             } else {
+              log.info('rachum: get: key found in temp db, returning value')
               await resolveRet(value)
               statCounters.RemoteMapHit.inc()
             }
           })
         })
+        log.info('rachum: get: setting key in cache')
         locationCache.set(keyToTempDBKey(key), cachePromise)
         resolve(cachePromise)
       })
+    }
     const deleteImpl = async (key: string): Promise<void> => {
       delKeys.add(key)
       locationCache.del(key)
+      log.info('rachum: delete (after): key %s (%s), cache length = %o', key, namespace, locationCache.length)
       isNamespaceEmpty = undefined
     }
     const createDBIfNotExist = async (loc: string): Promise<void> => {
@@ -727,7 +739,7 @@ export const createRemoteMapCreator = (
     return {
       get: (key: string): Promise<T | undefined> => {
         const result = getImpl(key)
-        log.info('rachum: get(%s) = %o', key, result)
+        log.info('rachum: (done) get(%s) = %o, cache length = %o', key, result, locationCache.length)
         return result
       },
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
@@ -792,6 +804,7 @@ export const createRemoteMapCreator = (
         await clearImpl(tmpDB, tempKeyPrefix)
         wasClearCalled = true
         isNamespaceEmpty = true
+        log.info('rachum: clear, cache length = %o', locationCache.length)
       },
       delete: deleteImpl,
       has: async (key: string): Promise<boolean> => {
@@ -822,6 +835,7 @@ export const createRemoteMapCreator = (
         if (isNamespaceEmpty === undefined) {
           isNamespaceEmpty = await awu(keysImpl({ first: 1 })).isEmpty()
         }
+        log.info('rachum: isEmpty(%s) = %o', namespace, isNamespaceEmpty)
         return isNamespaceEmpty
       },
     }

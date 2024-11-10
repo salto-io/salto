@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/netsuite-adapter",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Salto Netsuite adapter",
   "repository": {
@@ -30,12 +30,12 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.4.4",
-    "@salto-io/adapter-components": "0.4.4",
-    "@salto-io/adapter-utils": "0.4.4",
-    "@salto-io/file": "0.4.4",
-    "@salto-io/logging": "0.4.4",
-    "@salto-io/lowerdash": "0.4.4",
+    "@salto-io/adapter-api": "0.4.5",
+    "@salto-io/adapter-components": "0.4.5",
+    "@salto-io/adapter-utils": "0.4.5",
+    "@salto-io/file": "0.4.5",
+    "@salto-io/logging": "0.4.5",
+    "@salto-io/lowerdash": "0.4.5",
     "@salto-io/suitecloud-cli": "1.9.0-salto-4",
     "ajv": "^7.1.1",
     "async-lock": "^1.2.4",
@@ -62,8 +62,8 @@
     "@eslint/compat": "^1.1.0",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.6.0",
-    "@salto-io/e2e-credentials-store": "0.4.4",
-    "@salto-io/test-utils": "0.4.4",
+    "@salto-io/e2e-credentials-store": "0.4.5",
+    "@salto-io/test-utils": "0.4.5",
     "@tony.ganchev/eslint-plugin-header": "^3.1.2",
     "@types/async-lock": "^1.1.2",
     "@types/he": "^1.1.1",

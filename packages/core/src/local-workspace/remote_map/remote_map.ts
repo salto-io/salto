@@ -611,10 +611,10 @@ export const createRemoteMapCreator = (
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       return awu(getDataIterableWithPages(opts)).map(entries => entries.map(entry => entry.key as K))
     }
-    const getImpl = (key: string): Promise<T | undefined> => {
-      log.info('rachum: get(%s, %s), cache length = %o', namespace, key, locationCache.length)
+    const getImpl = (key: string): Promise<T | undefined> =>
+      // log.info('rachum: get(%s, %s), cache length = %o', namespace, key, locationCache.length)
       // locationCache.keys().forEach(k => log.info('rachum: cached key: %s', k))
-      return new Promise(resolve => {
+      new Promise(resolve => {
         if (delKeys.has(key)) {
           // log.info('rachum: get: found key in delKeys, returning undefined')
           resolve(undefined)
@@ -670,7 +670,6 @@ export const createRemoteMapCreator = (
         locationCache.set(keyToTempDBKey(key), cachePromise)
         resolve(cachePromise)
       })
-    }
     const deleteImpl = async (key: string): Promise<void> => {
       delKeys.add(key)
       locationCache.del(key)

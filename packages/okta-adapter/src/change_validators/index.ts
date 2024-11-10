@@ -82,6 +82,8 @@ export default ({
         oldApiDefsConfig[PRIVATE_API_DEFINITIONS_CONFIG].types,
       ),
       typesWithNoDeploy: [...typesDeployedWithNewInfra, ...typesHandledByFilters],
+      // Types that don't have deploy support at all (no config) will be caught by the definitions-based validator.
+      ignoreUnknownTypes: true,
     }),
     createCheckDeploymentBasedOnDefinitions: createCheckDeploymentBasedOnDefinitionsValidator<OktaOptions>({
       deployDefinitions: definitions.deploy ?? { instances: {} },

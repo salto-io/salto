@@ -50,6 +50,14 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
     ])
   })
 
+  it('should not return an error when type does not support deploy, when ignoring unknown types', async () => {
+    const instance = new InstanceElement('test2', new ObjectType({ elemID: new ElemID('dum', 'test2') }))
+    const errors = await createCheckDeploymentBasedOnConfigValidator({ typesConfig, ignoreUnknownTypes: true })([
+      toChange({ after: instance }),
+    ])
+    expect(errors).toEqual([])
+  })
+
   it('should return an error when type does not support specific method', async () => {
     const instance = new InstanceElement('test', type)
     const errors = await createCheckDeploymentBasedOnConfigValidator({ typesConfig })([toChange({ before: instance })])

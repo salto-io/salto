@@ -54,10 +54,12 @@ export const createCheckDeploymentBasedOnConfigValidator =
     typesConfig,
     typesDeployedViaParent = [],
     typesWithNoDeploy = [],
+    ignoreUnknownTypes = false,
   }: {
     typesConfig: Record<string, TypeConfig>
     typesDeployedViaParent?: string[]
     typesWithNoDeploy?: string[]
+    ignoreUnknownTypes?: boolean
   }): ChangeValidator =>
   async changes =>
     awu(changes)
@@ -67,6 +69,9 @@ export const createCheckDeploymentBasedOnConfigValidator =
           return []
         }
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
+          if (typesConfig[typeName] === undefined && ignoreUnknownTypes) {
+            return []
+          }
           const typeConfig = typesConfig[typeName]?.deployRequests ?? {}
           return createChangeErrors(typeConfig, element.elemID, change.action)
         }

@@ -72,6 +72,7 @@ import {
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
 } from '../src/constants'
+import * as logoModule from '../src/logo'
 
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
@@ -116,6 +117,18 @@ const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockA
       return mockAxiosAdapter.onGet
   }
 }
+
+const mockRefreshToken = jest.fn().mockReturnValue({ headers: {} })
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    auth: {
+      ...actual.auth,
+      oauthAccessTokenRefresh: jest.fn((...args) => mockRefreshToken(...args)),
+    },
+  }
+})
 
 describe('adapter', () => {
   describe('fetch', () => {
@@ -452,7 +465,20 @@ describe('adapter', () => {
     })
     describe('when connecting with oauth', () => {
       let fetchRes: FetchResult
+      let mockGetLogo: jest.SpyInstance
+
       beforeEach(async () => {
+        let getLogoCallCount = 0
+        mockGetLogo = jest.spyOn(logoModule, 'getLogo').mockImplementation(() => {
+          getLogoCallCount += 1
+          return Promise.resolve(
+            new InstanceElement(
+              `mockLogo${getLogoCallCount}`,
+              new ObjectType({ elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME) }),
+              { id: 'mockId', fileName: `mockLogo${getLogoCallCount}.png` },
+            ),
+          )
+        })
         fetchRes = await adapter
           .operations({
             credentials: new InstanceElement('config', accessTokenCredentialsType, {
@@ -467,6 +493,11 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: nullProgressReporter })
       })
+
+      afterEach(() => {
+        mockGetLogo.mockRestore()
+      })
+
       it('should not fetch any privateApi types', () => {
         const instances = fetchRes.elements.filter(isInstanceElement)
         const groupPush = instances.filter(inst => inst.elemID.typeName === 'GroupPush')

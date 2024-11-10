@@ -124,6 +124,6 @@ export const oauthAccessTokenRefresh = async ({
       safeJsonStringify({ data: error?.response?.data, status: error?.response?.status }),
       error.stack,
     )
-    throw new UnauthorizedError(error)
+    throw new UnauthorizedError(error?.message)
   }
 }

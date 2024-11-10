@@ -8,6 +8,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { oauthClientCredentialsBearerToken, oauthAccessTokenRefresh } from '../../src/auth'
+import { UnauthorizedError } from '../../src/client'
 
 describe('oauth', () => {
   describe('oauthClientCredentialsBearerToken', () => {
@@ -177,7 +178,7 @@ describe('oauth', () => {
           refreshToken: 'refresh',
           retryOptions: { retries: 2 },
         }),
-      ).rejects.toThrow(new Error('Request failed with status code 400'))
+      ).rejects.toThrow(new UnauthorizedError('Request failed with status code 400'))
     })
     it('should throw error on unexpected token type', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(200, {
@@ -196,7 +197,7 @@ describe('oauth', () => {
           refreshToken: 'refresh',
           retryOptions: { retries: 2 },
         }),
-      ).rejects.toThrow(new Error('Unsupported token type mac'))
+      ).rejects.toThrow(new UnauthorizedError('Unsupported token type mac'))
     })
     it('should retry on transient errors', async () => {
       mockAxiosAdapter.onPost('/oauth/token').reply(503).onPost('/oauth/token').reply(200, {

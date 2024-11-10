@@ -51,7 +51,7 @@ const getAccessToken = async ({ tenantId, clientId, clientSecret, refreshToken }
   } catch (e) {
     log.error(
       'Failed to get access token, error: %s, stack: %s',
-      safeJsonStringify({ data: e?.response?.data, status: e?.response?.status }),
+      safeJsonStringify({ message: e?.message, status: e?.response?.status }),
       e.stack,
     )
     throw new clientUtils.UnauthorizedError('Invalid Credentials')

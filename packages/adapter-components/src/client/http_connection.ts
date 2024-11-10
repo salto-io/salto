@@ -17,6 +17,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
+import { AdapterFetchError } from '../config_deprecated'
 import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)
@@ -221,6 +222,10 @@ export const axiosConnection = <TCredentials>({
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')
+      }
+      // TODO SALTO-6869 remove the special handling of AdapterFetchError
+      if (e instanceof AdapterFetchError) {
+        throw e
       }
       throw new Error(`Login failed with error: ${e.message ?? e}`)
     }

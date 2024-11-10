@@ -121,7 +121,7 @@ export const oauthAccessTokenRefresh = async ({
   } catch (error) {
     log.error(
       'Failed to get access token, error: %s, stack: %s',
-      safeJsonStringify({ data: error?.response?.data, status: error?.response?.status }),
+      safeJsonStringify({ message: error?.message, status: error?.response?.status }),
       error.stack,
     )
     throw new UnauthorizedError(error?.message)

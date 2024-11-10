@@ -17,6 +17,7 @@ import axiosRetry, { IAxiosRetryConfig } from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig, ClientTimeoutConfig } from '../definitions/user/client_config'
+import { AdapterFetchError } from '../config_deprecated'
 import { DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } from './constants'
 
 const log = logger(module)
@@ -200,28 +201,31 @@ export const axiosConnection = <TCredentials>({
   timeout = 0,
 }: AxiosConnectionParams<TCredentials>): Connection<TCredentials> => {
   const login = async (credentials: TCredentials): Promise<AuthenticatedAPIConnection> => {
-    const httpClient = axios.create({
-      baseURL: await baseURLFunc(credentials),
-      ...(await authParamsFunc(credentials)),
-      maxBodyLength: Infinity,
-    })
-    httpClient.interceptors.request.use(
-      config => {
-        config.timeout = timeout
-        return config
-      },
-      null,
-      { runWhen: config => ['get', 'head', 'options'].includes(config.method ?? '') },
-    )
-    axiosRetry(httpClient, retryOptions)
-
     try {
+      const httpClient = axios.create({
+        baseURL: await baseURLFunc(credentials),
+        ...(await authParamsFunc(credentials)),
+        maxBodyLength: Infinity,
+      })
+      httpClient.interceptors.request.use(
+        config => {
+          config.timeout = timeout
+          return config
+        },
+        null,
+        { runWhen: config => ['get', 'head', 'options'].includes(config.method ?? '') },
+      )
+      axiosRetry(httpClient, retryOptions)
       const accountInfo = await credValidateFunc({ credentials, connection: httpClient })
       return Object.assign(httpClient, { accountInfo })
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')
+      }
+      // TODO SALTO-6869 remove the special handling of AdapterFetchError
+      if (e instanceof AdapterFetchError) {
+        throw e
       }
       throw new Error(`Login failed with error: ${e.message ?? e}`)
     }

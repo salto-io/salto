@@ -10,7 +10,6 @@ import * as nacl from './src/workspace/nacl_files'
 import {
   Workspace,
   SourceLocation,
-  StateRecency,
   loadWorkspace,
   isValidEnvName,
   EnvironmentsSources,
@@ -92,7 +91,6 @@ export {
   // Workspace exports
   Workspace,
   SourceLocation,
-  StateRecency,
   loadWorkspace,
   EnvironmentSource,
   EnvironmentsSources,

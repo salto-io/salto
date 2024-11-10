@@ -2257,56 +2257,6 @@ salesforce.staticFile staticFileInstance {
     })
   })
 
-  describe('getStateRecency', () => {
-    let now: number
-    let modificationDate: Date
-    let mockDateNow: jest.SpiedFunction<typeof Date.now>
-    const durationAfterLastModificationMinutes = 7
-    const durationAfterLastModificationMs = 1000 * 60 * durationAfterLastModificationMinutes
-    beforeEach(async () => {
-      now = Date.now()
-      mockDateNow = jest.spyOn(Date, 'now')
-      mockDateNow.mockImplementation(() => now)
-      modificationDate = new Date(now - durationAfterLastModificationMs)
-    })
-    afterEach(() => {
-      mockDateNow.mockRestore()
-    })
-    it('should return valid when the state is valid', async () => {
-      const ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }),
-      )
-      ws.state().getAccountsUpdateDates = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
-      const recency = await ws.getStateRecency('salesforce')
-      expect(recency.status).toBe('Valid')
-      expect(recency.date).toBe(modificationDate)
-    })
-    it('should return old when the state is old', async () => {
-      const ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }),
-      )
-      ws.state().getAccountsUpdateDates = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
-      const recency = await ws.getStateRecency('salesforce')
-      expect(recency.status).toBe('Old')
-      expect(recency.date).toBe(modificationDate)
-    })
-    it('should return nonexistent when the state does not exist', async () => {
-      const ws = await createWorkspace()
-      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
-      const recency = await ws.getStateRecency('salesforce')
-      expect(recency.status).toBe('Nonexistent')
-      expect(recency.date).toBe(undefined)
-    })
-  })
-
   describe('updateStateProvider', () => {
     let ws: Workspace
     let stateUpdateConfigFuncs: jest.SpiedFunction<State['updateConfig']>[]

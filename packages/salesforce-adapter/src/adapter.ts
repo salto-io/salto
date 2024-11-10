@@ -655,6 +655,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       return
     }
     log.debug('Attempting to cancel the following deploy requests: %s', inspectValue(deployRequestsToCancel))
+    // TODO - Add progress report
     await Promise.all(deployRequestsToCancel.map(deployRequestId => this.client.cancelDeploy(deployRequestId)))
   }
 

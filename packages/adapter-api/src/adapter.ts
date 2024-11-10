@@ -63,13 +63,21 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
+export type DeployOperationInfo = Partial<{
+  serviceDeploymentId: string
+}>
+
+export type DeployProgressReporter = ProgressReporter & {
+  reportDeployOperationInfo?: (info: DeployOperationInfo) => void
+}
+
 export type FetchOptions = {
   progressReporter: ProgressReporter
   withChangesDetection?: boolean
 }
 
 export type DeployOptions = {
-  progressReporter: ProgressReporter
+  progressReporter: DeployProgressReporter
   changeGroup: ChangeGroup
 }
 

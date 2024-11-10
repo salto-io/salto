@@ -7,6 +7,7 @@
  */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
+import { inspectValue } from '@salto-io/adapter-utils'
 import {
   PlanItem,
   Plan,
@@ -168,6 +169,7 @@ const deployPlan = async (
         (item: PlanItem, step: ItemStatus, details?: string) => updateAction(item, step, details),
         accounts,
         checkOnly,
+        operationInfo => outputLine(`Reported operation info: ${inspectValue(operationInfo)}`, output),
       )
     : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions).filter(

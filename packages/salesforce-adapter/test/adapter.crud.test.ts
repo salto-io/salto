@@ -513,9 +513,12 @@ describe('SalesforceAdapter CRUD', () => {
               progressReporter,
             })
           })
-          it('should deploy', () => {
+          it('should deploy and report the operation info', () => {
             expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
+            expect(progressReporter.getReportedOperationInfo()).toEqual({
+              serviceDeploymentId: '5',
+            })
             expect(progressReporter.getReportedMessages()).toSatisfyAny(
               message =>
                 message.endsWith(ProgressReporterSuffix.QuickDeploy) &&

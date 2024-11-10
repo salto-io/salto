@@ -15,6 +15,7 @@ import {
   Values,
   ProgressReporter,
   DeployOptions,
+  DeployProgressReporter,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -223,19 +224,19 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-export type DeployProgressReporter = ProgressReporter & {
+export type SalesforceDeployProgressReporter = DeployProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
 }
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
-  progressReporter: DeployProgressReporter
+  progressReporter: SalesforceDeployProgressReporter
 }
 
 export const createDeployProgressReporter = async (
   progressReporter: ProgressReporter,
   client: SalesforceClient,
-): Promise<DeployProgressReporter> => {
+): Promise<SalesforceDeployProgressReporter> => {
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
@@ -295,7 +296,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
-    let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
+    let deployProgressReporterPromise: Promise<SalesforceDeployProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context

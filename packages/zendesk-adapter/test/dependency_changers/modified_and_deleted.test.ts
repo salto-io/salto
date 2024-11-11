@@ -98,6 +98,24 @@ describe('macroAndTicketFieldDependencyChanger', () => {
     const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
     expect(dependencyChanges.length).toBe(0)
   })
+  it('should not add dependency if the reference is not from a macro', async () => {
+    const trigger = new InstanceElement('trigger', new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) }), {
+      actions: [{ field: new ReferenceExpression(ticketField1.elemID) }],
+    })
+    const triggerAfter = trigger.clone()
+    trigger.value.actions = []
+    const inputChanges = new Map([
+      [0, toChange({ before: ticketField1 })],
+      [1, toChange({ before: trigger, after: triggerAfter })],
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+      [0, new Set()],
+      [1, new Set()],
+    ])
+
+    const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+    expect(dependencyChanges.length).toBe(0)
+  })
   it('should not add dependency if the actions are not in the right format', async () => {
     const macroBefore = macro.clone()
     macroBefore.value.actions = [{ value: new ReferenceExpression(ticketField1.elemID) }]

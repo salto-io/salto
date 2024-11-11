@@ -49,7 +49,7 @@ const getFieldsFromMacro = (change: ModificationChange<InstanceElement>, type: '
     .map(ref => ref.elemID.getFullName())
 }
 
-const dependencyTouple: Record<string, DeletedDependency> = {
+const dependencyTuple: Record<string, DeletedDependency> = {
   [MACRO_TYPE_NAME]: {
     typeName: TICKET_FIELD_TYPE_NAME,
     getDeletedTypeFullNameFromModificationChangeFunc: getFieldsFromMacro,
@@ -90,10 +90,10 @@ const getDependencies = ({
         return undefined
       }
 
-      const beforeDeletedTypeFullName = getDeletedTypeFullNameFromModificationChangeFunc(changeData, 'before')
-      const afterDeletedTypeFullName = getDeletedTypeFullNameFromModificationChangeFunc(changeData, 'after')
+      const beforeDeletedTypeFullNames = getDeletedTypeFullNameFromModificationChangeFunc(changeData, 'before')
+      const afterDeletedTypeFullNames = getDeletedTypeFullNameFromModificationChangeFunc(changeData, 'after')
 
-      const removedInstanceFullName = _.difference(beforeDeletedTypeFullName, afterDeletedTypeFullName)
+      const removedInstanceFullName = _.difference(beforeDeletedTypeFullNames, afterDeletedTypeFullNames)
 
       const newDependency = removedInstanceFullName
         .map(name => {
@@ -121,12 +121,13 @@ export const modifiedAndDeletedDependencyChanger: DependencyChanger = async chan
     .filter((change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
       isInstanceChange(change.change),
     )
-  return Object.entries(dependencyTouple).flatMap(([modificationTypeName, deleted]) =>
-    getDependencies({
-      changes: potentialChanges,
-      modificationTypeName,
-      deletedTypeName: deleted.typeName,
-      getDeletedTypeFullNameFromModificationChangeFunc: deleted.getDeletedTypeFullNameFromModificationChangeFunc,
-    }),
+  return Object.entries(dependencyTuple).flatMap(
+    ([modificationTypeName, { typeName: deletedTypeName, getDeletedTypeFullNameFromModificationChangeFunc }]) =>
+      getDependencies({
+        changes: potentialChanges,
+        modificationTypeName,
+        deletedTypeName,
+        getDeletedTypeFullNameFromModificationChangeFunc,
+      }),
   )
 }

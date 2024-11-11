@@ -118,6 +118,7 @@ import {
   addDefaults,
   apiNameSync,
   buildDataRecordsSoqlQueries,
+  getDeploymentUrl,
   getFLSProfiles,
   instanceInternalId,
   isCustomObjectSync,
@@ -650,12 +651,26 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     }
   }
 
-  private async cancelRunningDeployRequests({ deployRequestsToCancel }: SalesforceAdapterDeployOptions): Promise<void> {
+  private async cancelRunningDeployRequests({
+    deployRequestsToCancel,
+    progressReporter,
+  }: SalesforceAdapterDeployOptions): Promise<void> {
     if (deployRequestsToCancel === undefined || deployRequestsToCancel.length === 0) {
       return
     }
     log.debug('Attempting to cancel the following deploy requests: %s', inspectValue(deployRequestsToCancel))
-    // TODO - Add progress report
+    if (deployRequestsToCancel.length > 1) {
+      progressReporter.reportProgress({ message: 'Canceling previous deployments/validations.' })
+    } else {
+      const deploymentUrl = await getDeploymentUrl(this.client, deployRequestsToCancel[0])
+      if (deploymentUrl === undefined) {
+        progressReporter.reportProgress({ message: 'Canceling previous deployment/validation.' })
+      } else {
+        progressReporter.reportProgress({
+          message: `Canceling previous deployment/validation. [in Salesforce](${deploymentUrl})`,
+        })
+      }
+    }
     await Promise.all(deployRequestsToCancel.map(deployRequestId => this.client.cancelDeploy(deployRequestId)))
   }
 

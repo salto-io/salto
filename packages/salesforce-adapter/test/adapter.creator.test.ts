@@ -8,7 +8,7 @@
 import { InstanceElement, ElemID, ObjectType, OAuthMethod, FetchOptions, ProgressReporter } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { adapter, getConfigChange } from '../src/adapter_creator'
+import { adapter, getConfigChange, getDeployRequestsToCancel } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import {
@@ -702,6 +702,21 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
       it('return undefined', () => {
         expect(updatedConfig).toBe(undefined)
       })
+    })
+  })
+  describe('getDeployRequestsToCancel', () => {
+    const FIRST_VALIDATION_ID = '1'
+    const SECOND_VALIDATION_ID = '2'
+    it('should return the list of deployments to cancel when adapterSpecificInput is in the expected format', async () => {
+      expect(
+        getDeployRequestsToCancel({ deployRequestsToCancel: [FIRST_VALIDATION_ID, SECOND_VALIDATION_ID] }),
+      ).toEqual([FIRST_VALIDATION_ID, SECOND_VALIDATION_ID])
+    })
+    it('should return empty list when adapterSpecificInput is not in the expected format', async () => {
+      expect(getDeployRequestsToCancel({ deployRequestsToCancel: 'not an array' })).toEqual([])
+    })
+    it('should return empty list when adapterSpecificInput is undefined', async () => {
+      expect(getDeployRequestsToCancel(undefined)).toEqual([])
     })
   })
 })

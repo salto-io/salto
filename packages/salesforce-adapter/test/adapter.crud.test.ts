@@ -57,7 +57,7 @@ import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
-import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
+import { apiNameSync, getDeploymentUrl, metadataTypeSync } from '../src/filters/utils'
 import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
 import { SalesforceClient } from '../index'
 
@@ -68,6 +68,7 @@ describe('SalesforceAdapter CRUD', () => {
   let adapter: SalesforceAdapter
   let progressReporter: MockDeployProgressReporter
   let client: SalesforceClient
+  let cancelDeploySpy: jest.SpyInstance
 
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
@@ -126,6 +127,7 @@ describe('SalesforceAdapter CRUD', () => {
         },
       },
     }))
+    cancelDeploySpy = jest.spyOn(client, 'cancelDeploy')
     progressReporter = await createMockProgressReporter(client)
 
     connection.metadata.upsert.mockImplementation(async (_type, objects) =>
@@ -143,6 +145,49 @@ describe('SalesforceAdapter CRUD', () => {
     )
 
     connection.metadata.deploy.mockReturnValue(mockDeployResult({}))
+  })
+
+  describe('when deploy/validate is invoked with deployRequestsToCancel', () => {
+    const VALIDATION_ID = '1'
+    const OTHER_VALIDATION_ID = '2'
+
+    let validationInSalesforceUrl: string
+
+    beforeEach(async () => {
+      validationInSalesforceUrl = (await getDeploymentUrl(client, VALIDATION_ID)) as string
+      expect(validationInSalesforceUrl).toBeDefined()
+    })
+
+    describe('when invoked with single validation to cancel', () => {
+      it('should cancel the validation and report a message with link to the canceled validation', async () => {
+        await adapter.deploy({
+          changeGroup: {
+            groupID: 'Metadata Deploy',
+            changes: [toChange({ after: createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile) })],
+          },
+          progressReporter,
+          deployRequestsToCancel: [VALIDATION_ID],
+        })
+        expect(cancelDeploySpy).toHaveBeenCalledWith(VALIDATION_ID)
+        expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
+          message.includes(validationInSalesforceUrl),
+        )
+      })
+    })
+    describe('when invoked with multiple validations to cancel', () => {
+      it('should cancel the validations', async () => {
+        await adapter.deploy({
+          changeGroup: {
+            groupID: 'Metadata Deploy',
+            changes: [toChange({ after: createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile) })],
+          },
+          progressReporter,
+          deployRequestsToCancel: [VALIDATION_ID, OTHER_VALIDATION_ID],
+        })
+        expect(cancelDeploySpy).toHaveBeenCalledWith(VALIDATION_ID)
+        expect(cancelDeploySpy).toHaveBeenCalledWith(OTHER_VALIDATION_ID)
+      })
+    })
   })
 
   describe('Add operation', () => {

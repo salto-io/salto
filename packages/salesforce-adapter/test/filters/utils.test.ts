@@ -58,6 +58,7 @@ import {
   isCustomField,
   isFieldOfTaskOrEvent,
   getProfilesAndPermissionSetsBrokenPaths,
+  getDeploymentUrl,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -87,6 +88,8 @@ import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField, createValueSetEntry } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
+import mockClient from '../client'
+import { SalesforceClient } from '../../index'
 
 const { makeArray } = collections.array
 
@@ -1468,6 +1471,24 @@ describe('filter utils', () => {
       it('should return empty array', async () => {
         expect(await getProfilesAndPermissionSetsBrokenPaths(buildElementsSourceFromElements([]))).toEqual([])
       })
+    })
+  })
+  describe('getDeploymentUrl', () => {
+    const DEPLOYMENT_ID = '1337'
+    let client: SalesforceClient
+
+    beforeEach(() => {
+      client = mockClient().client
+    })
+
+    it('should return deployment URL when the client can resolve the baseUrl', async () => {
+      expect(await getDeploymentUrl(client, DEPLOYMENT_ID)).toEqual(
+        `https://url.com/lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${DEPLOYMENT_ID}`,
+      )
+    })
+    it('should return undefined when the client cannot resolve the baseUrl', async () => {
+      jest.spyOn(client, 'getUrl').mockResolvedValue(undefined)
+      expect(await getDeploymentUrl(client, DEPLOYMENT_ID)).toBeUndefined()
     })
   })
 })

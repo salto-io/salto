@@ -16,6 +16,7 @@ import {
   ProgressReporter,
   DeployOptions,
   DeployProgressReporter,
+  Progress,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -56,6 +57,7 @@ import { getAdditionalReferences } from './additional_references'
 import { getCustomReferences } from './custom_references/handlers'
 import { dependencyChanger } from './dependency_changer'
 import { METADATA_DEPLOY_PENDING_STATUS } from './constants'
+import { getDeploymentUrl } from './filters/utils'
 
 type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
@@ -243,11 +245,11 @@ export const createDeployProgressReporter = async (
   let deployedDataInstances = 0
   const baseUrl = await client.getUrl()
 
-  const linkToSalesforceDeployment = ({ id, checkOnly }: DeployResult): string => {
-    if (!baseUrl) {
+  const linkToSalesforceDeployment = async ({ id, checkOnly }: DeployResult): Promise<string> => {
+    const deploymentUrl = await getDeploymentUrl(client, id)
+    if (deploymentUrl === undefined) {
       return ''
     }
-    const deploymentUrl = `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
     const deploymentOrValidation = checkOnly ? 'validation' : 'deployment'
     return ` View ${deploymentOrValidation} status [in Salesforce](${deploymentUrl})`
   }
@@ -276,6 +278,10 @@ export const createDeployProgressReporter = async (
 
   return {
     ...progressReporter,
+    reportProgress(progress: Progress): void {
+      log.trace('reported message is: %s', progress.message)
+      progressReporter.reportProgress(progress)
+    },
     reportMetadataProgress: args => {
       deployResult = args.result
       suffix = args.suffix
@@ -288,7 +294,7 @@ export const createDeployProgressReporter = async (
   }
 }
 
-const getDeployRequestsToCancel = (deployOptions: DeployOptions['adapterSpecificInput']): string[] => {
+export const getDeployRequestsToCancel = (deployOptions: DeployOptions['adapterSpecificInput']): string[] => {
   const deployRequestsToCancel = deployOptions?.deployRequestsToCancel
   if (deployRequestsToCancel === undefined) {
     return []

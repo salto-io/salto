@@ -1129,8 +1129,7 @@ export default class SalesforceClient implements ISalesforceClient {
             },
           }),
         })
-        log.debug('cancelDeploy result: %s', inspectValue(cancelDeployResult))
-        if (_.get(cancelDeployResult, 'deployResult', 'status') === 'Canceling') {
+        if (_.get(cancelDeployResult, ['deployResult', 'status']) === 'Canceling') {
           await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
           await checkStatus()
         }

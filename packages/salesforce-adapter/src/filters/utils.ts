@@ -968,3 +968,10 @@ export const getProfilesAndPermissionSetsBrokenPaths = async (
   }
   return instance.value[PATHS_FIELD] ?? []
 }
+
+export const getDeploymentUrl = async (client: SalesforceClient, deploymentId: string): Promise<string | undefined> => {
+  const baseUrl = await client.getUrl()
+  return baseUrl
+    ? `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${deploymentId}`
+    : undefined
+}

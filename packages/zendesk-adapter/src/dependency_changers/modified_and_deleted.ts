@@ -21,7 +21,7 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { deployment, references as referencesUtils } from '@salto-io/adapter-components'
 import _, { isArray } from 'lodash'
-import { MACRO_TYPE_NAME, TICKET_FIELD_TYPE_NAME } from '../constants'
+import { MACRO_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
 const { MISSING_REF_PREFIX } = referencesUtils
@@ -49,10 +49,26 @@ const getFieldsFromMacro = (change: ModificationChange<InstanceElement>, type: '
     .map(ref => ref.elemID.getFullName())
 }
 
+const getCategoryFromtrigger = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
+  const data = change.data[type]
+  const category = data.value.category_id
+  if (!isReferenceExpression(category)) {
+    return []
+  }
+  if (category.elemID.name.startsWith(MISSING_REF_PREFIX)) {
+    return []
+  }
+  return [category.elemID.getFullName()]
+}
+
 const dependencyTuple: Record<string, DeletedDependency> = {
   [MACRO_TYPE_NAME]: {
     typeName: TICKET_FIELD_TYPE_NAME,
     getDeletedTypeFullNameFromModificationChangeFunc: getFieldsFromMacro,
+  },
+  [TRIGGER_TYPE_NAME]: {
+    typeName: TRIGGER_CATEGORY_TYPE_NAME,
+    getDeletedTypeFullNameFromModificationChangeFunc: getCategoryFromtrigger,
   },
 }
 

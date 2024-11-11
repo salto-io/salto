@@ -542,7 +542,7 @@ export const loadWorkspace = async (
     workspaceChanges?: Record<string, ChangeSet<Change>>
     stateOnlyChanges?: Record<string, ChangeSet<Change>>
     validate?: boolean
-  }): Promise<WorkspaceState> => {
+  }): Promise<WorkspaceState> => log.timeDebug(async () => {
     const initState = async (): Promise<WorkspaceState> => {
       const wsConfig = await config.getWorkspaceConfig()
       log.debug('initializing state for workspace %s', wsConfig.uid)
@@ -945,7 +945,7 @@ export const loadWorkspace = async (
       await updateWorkspace(envName)
     })
     return stateToBuild
-  }
+  }, 'buildWorkspaceState')
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {

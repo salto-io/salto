@@ -6,12 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { isInstanceElement } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { transformValuesSync } from '@salto-io/adapter-utils'
 import { DASHBOARD_GADGET_TYPE, NOTIFICATION_SCHEME_TYPE_NAME, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const RELEVANT_TYPES: string[] = [
   WORKFLOW_TYPE_NAME,
@@ -23,17 +20,17 @@ const RELEVANT_TYPES: string[] = [
 const filter: FilterCreator = () => ({
   name: 'removeEmptyValuesFilter',
   onFetch: async elements => {
-    await awu(elements)
+    elements
       .filter(isInstanceElement)
       .filter(instance => RELEVANT_TYPES.includes(instance.elemID.typeName))
-      .forEach(async instance => {
+      .forEach(instance => {
         instance.value =
-          (await transformValues({
+          transformValuesSync({
             values: instance.value,
-            type: await instance.getType(),
+            type: instance.getTypeSync(),
             transformFunc: ({ value }) => value,
             strict: false,
-          })) ?? {}
+          }) ?? {}
       })
   },
 })

@@ -967,12 +967,12 @@ export class FieldReferenceResolver {
   }
 }
 
-export type ReferenceResolverFinder = (field: Field, element: Element) => Promise<FieldReferenceResolver[]>
+type AsyncReferenceResolverFinder = (field: Field, element: Element) => Promise<FieldReferenceResolver[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
  */
-export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]): ReferenceResolverFinder => {
+export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]): AsyncReferenceResolverFinder => {
   const referenceDefinitions = defs.map(def => FieldReferenceResolver.create(def))
 
   const matchersByFieldName = _(referenceDefinitions)

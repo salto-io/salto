@@ -40,6 +40,7 @@ import {
   ReferenceSerializationStrategyLookup,
   ReferenceSourceTransformation,
   ReferenceIndexField,
+  AsyncReferenceResolverFinder,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 import { checkMissingRef } from './missing_references'
@@ -67,7 +68,9 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
   contextStrategyLookup = emptyContextStrategyLookup,
 }: {
   instance: InstanceElement
-  resolverFinder: ReferenceResolverFinder<TContext, CustomIndexField>
+  resolverFinder:
+    | ReferenceResolverFinder<TContext, CustomIndexField>
+    | AsyncReferenceResolverFinder<TContext, CustomIndexField>
   elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>
   fieldsWithResolvedReferences: Set<string>
   elemByElemID: multiIndex.Index<[string], Element>
@@ -305,15 +308,15 @@ export const generateLookupFunc = <
     GenericFieldReferenceDefinition
   >(defs, fieldReferenceResolverCreator)
 
-  const determineLookupStrategy = async (
+  const determineLookupStrategy = (
     args: GetLookupNameFuncArgs,
-  ): Promise<ReferenceSerializationStrategy<CustomIndexField> | undefined> => {
+  ): ReferenceSerializationStrategy<CustomIndexField> | undefined => {
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
 
-    const strategies = (await resolverFinder(args.field, args.element))
+    const strategies = resolverFinder(args.field, args.element)
       .filter(def => def.target?.type === undefined || args.ref.elemID.typeName === def.target.type)
       .map(def => def.serializationStrategy)
 
@@ -339,12 +342,12 @@ export const generateLookupFunc = <
     }
 
     const strategy =
-      (await determineLookupStrategy({
+      determineLookupStrategy({
         ref,
         path,
         field,
         element,
-      })) ?? ReferenceSerializationStrategyLookup.fullValue
+      }) ?? ReferenceSerializationStrategyLookup.fullValue
     if (!isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field, element, path })
     }

@@ -275,27 +275,37 @@ export const addReferences = async <
   const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
-  const proccessTimeByType = new Map<string, { time: number; elements: number }>()
-  await awu(instances).forEach(async instance => {
-    const startTime = Date.now()
-    instance.value = await replaceReferenceValues({
-      instance,
-      resolverFinder,
-      elemLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
-      fieldsWithResolvedReferences,
-      elemByElemID,
-      contextStrategyLookup,
-    })
+  // TODO SALTO-6889 - can remove once analysis is done
+  const processTimeByType = new Map<string, { time: number; elements: number }>()
+  await log.timeDebug(
+    async () =>
+      awu(instances).forEach(async instance => {
+        const startTime = Date.now()
+        instance.value = await replaceReferenceValues({
+          instance,
+          resolverFinder,
+          elemLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
+          fieldsWithResolvedReferences,
+          elemByElemID,
+          contextStrategyLookup,
+        })
 
-    const processTime = Date.now() - startTime
-    const current = proccessTimeByType.get(instance.elemID.typeName) ?? { time: 0, elements: 0 }
-    proccessTimeByType.set(instance.elemID.typeName, {
-      time: current.time + processTime,
-      elements: current.elements + 1,
-    })
-  })
+        const processTime = Date.now() - startTime
+        try {
+          const current = processTimeByType.get(instance.elemID.typeName) ?? { time: 0, elements: 0 }
+          processTimeByType.set(instance.elemID.typeName, {
+            time: current.time + processTime,
+            elements: current.elements + 1,
+          })
+        } catch (e) {
+          log.error('failed to update processing time for %s', instance.elemID.getFullName())
+        }
+      }),
+    'replaceReferenceValues for %d instances',
+    instances.length,
+  )
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
-  log.debug('references processing time by type: %s', inspectValue(proccessTimeByType))
+  log.debug('references processing time by type: %s', inspectValue(processTimeByType, { maxArrayLength: null }))
 }
 
 export const generateLookupFunc = <

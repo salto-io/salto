@@ -531,410 +531,411 @@ export const loadWorkspace = async (
     workspaceChanges?: Record<string, ChangeSet<Change>>
     stateOnlyChanges?: Record<string, ChangeSet<Change>>
     validate?: boolean
-  }): Promise<WorkspaceState> => {
-    const initState = async (): Promise<WorkspaceState> => {
-      const wsConfig = await config.getWorkspaceConfig()
-      log.debug('initializing state for workspace %s', wsConfig.uid)
-      log.debug('Full workspace config: %o', wsConfig)
-      const states: Record<string, SingleState> = Object.fromEntries(
-        await awu(envs())
-          .map(async envName => [
-            envName,
-            {
-              merged: new RemoteElementSource(
-                await remoteMapCreator<Element>({
-                  namespace: getRemoteMapNamespace('merged', envName),
-                  serialize: element => serialize([element], 'keepRef'),
-                  // TODO: we might need to pass static file reviver to the deserialization func
-                  deserialize: s =>
-                    deserializeSingleElement(
-                      s,
-                      async staticFile =>
-                        (await naclFilesSource.getStaticFile({
-                          filePath: staticFile.filepath,
-                          encoding: staticFile.encoding,
-                          env: envName,
-                          isTemplate: staticFile.isTemplate,
-                          hash: staticFile.hash,
-                        })) ?? staticFile,
-                    ),
+  }): Promise<WorkspaceState> =>
+    log.timeDebug(async () => {
+      const initState = async (): Promise<WorkspaceState> => {
+        const wsConfig = await config.getWorkspaceConfig()
+        log.debug('initializing state for workspace %s', wsConfig.uid)
+        log.debug('Full workspace config: %o', wsConfig)
+        const states: Record<string, SingleState> = Object.fromEntries(
+          await awu(envs())
+            .map(async envName => [
+              envName,
+              {
+                merged: new RemoteElementSource(
+                  await remoteMapCreator<Element>({
+                    namespace: getRemoteMapNamespace('merged', envName),
+                    serialize: element => serialize([element], 'keepRef'),
+                    // TODO: we might need to pass static file reviver to the deserialization func
+                    deserialize: s =>
+                      deserializeSingleElement(
+                        s,
+                        async staticFile =>
+                          (await naclFilesSource.getStaticFile({
+                            filePath: staticFile.filepath,
+                            encoding: staticFile.encoding,
+                            env: envName,
+                            isTemplate: staticFile.isTemplate,
+                            hash: staticFile.hash,
+                          })) ?? staticFile,
+                      ),
+                    persistent,
+                  }),
+                ),
+                errors: await remoteMapCreator<MergeError[]>({
+                  namespace: getRemoteMapNamespace('errors', envName),
+                  serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
+                  deserialize: async data => deserializeMergeErrors(data),
                   persistent,
                 }),
-              ),
-              errors: await remoteMapCreator<MergeError[]>({
-                namespace: getRemoteMapNamespace('errors', envName),
-                serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
-                deserialize: async data => deserializeMergeErrors(data),
-                persistent,
-              }),
-              validationErrors: await remoteMapCreator<ValidationError[]>({
-                namespace: getRemoteMapNamespace('validationErrors', envName),
-                serialize: validationErrors => serialize(validationErrors, 'keepRef'),
-                deserialize: async data => deserializeValidationErrors(data),
-                persistent,
-              }),
-              changedBy: await remoteMapCreator<ElemID[]>({
-                namespace: getRemoteMapNamespace('changedBy', envName),
-                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
-                persistent,
-              }),
-              changedAt: await remoteMapCreator<ElemID[]>({
-                namespace: getRemoteMapNamespace('changedAt', envName),
-                serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-                deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
-                persistent,
-              }),
-              authorInformation: await remoteMapCreator<AuthorInformation>({
-                namespace: getRemoteMapNamespace('authorInformation', envName),
-                serialize: async val => safeJsonStringify(val),
-                deserialize: data => JSON.parse(data),
-                persistent,
-              }),
-              alias: await remoteMapCreator<string>({
-                namespace: getRemoteMapNamespace('alias', envName),
-                serialize: async val => safeJsonStringify(val),
-                deserialize: data => JSON.parse(data),
-                persistent,
-              }),
-              referencedStaticFiles: await remoteMapCreator<string[]>({
-                namespace: getRemoteMapNamespace('referencedStaticFiles', envName),
-                serialize: async val => safeJsonStringify(val),
-                deserialize: data => JSON.parse(data),
-                persistent,
-              }),
-              referenceSources: await remoteMapCreator<ReferenceIndexEntry[]>({
-                namespace: getRemoteMapNamespace('referenceSources', envName),
-                serialize: serializeReferenceSourcesEntries,
-                deserialize: deserializeReferenceSourcesEntries,
-                persistent,
-              }),
-              referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
-                namespace: getRemoteMapNamespace('referenceTargets', envName),
-                serialize: serializeReferenceTree,
-                deserialize: deserializeReferenceTree,
-                persistent,
-              }),
-              mapVersions: await remoteMapCreator<number>({
-                namespace: getRemoteMapNamespace('mapVersions', envName),
-                serialize: async val => val.toString(),
-                deserialize: async data => parseInt(data, 10),
-                persistent,
-              }),
-            },
-          ])
-          .toArray(),
-      )
-      const sources: Record<string, ReadOnlyElementsSource> = {}
-      await awu(envs()).forEach(async envName => {
-        sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource.getElementsSource(envName)
-        sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(state(envName), async element =>
-          getElementHiddenParts(element, state(envName), await states[envName].merged.get(element.elemID)),
-        )
-      })
-      const initializedState = {
-        states,
-        mergeManager: await createMergeManager(
-          [...Object.values(states).flatMap(remoteMaps => Object.values(remoteMaps))],
-          sources,
-          remoteMapCreator,
-          'workspaceMergeManager',
-          persistent,
-          mergedRecoveryMode,
-        ),
-      }
-      return initializedState
-    }
-
-    /** HERE BE DRAGONS!
-     *
-     * Dragon 1: `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
-     * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
-     * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
-     *
-     * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence,
-     * setting wsChanges must happen after we set previousState, but before we call initState().
-     * Don't move the initialization of wsChanges.
-     */
-    const previousState = workspaceState
-
-    const wsChanges =
-      workspaceChanges !== undefined ? workspaceChanges : await naclFilesSource.load({ ignoreFileChanges })
-
-    const stateToBuild = previousState !== undefined ? await previousState : await initState()
-
-    const initBuild = previousState === undefined
-
-    if (ignoreFileChanges) {
-      // Skip all updates to the state since this flag means we are operating under the assumption
-      // that everything is already up to date and no action is required
-      return stateToBuild
-    }
-
-    const updateWorkspace = async (envName: string): Promise<void> => {
-      const source = naclFilesSource
-      const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> =>
-        log.timeDebug(
-          async () => {
-            elemIDs.forEach(id => addedIDs.add(id.getFullName()))
-            const filesWithDependencies = await log.timeDebug(
-              async () =>
-                _.uniq(
-                  await awu(elemIDs)
-                    .flatMap(id => source.getElementReferencedFiles(envName, id))
-                    .toArray(),
-                ),
-              'running getElementReferencedFiles for %s elemIDs',
-              elemIDs.length,
-            )
-            const dependentsIDs = await log.timeDebug(
-              async () =>
-                awu(filesWithDependencies)
-                  .map(filename => source.getParsedNaclFile(filename))
-                  .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
-                  .filter(id => !addedIDs.has(id.getFullName()))
-                  .toArray(),
-              'get dependentsIDs from %s files',
-              filesWithDependencies.length,
-            )
-            const uniqDependentsIDs = _.uniqBy(dependentsIDs, id => id.getFullName())
-            return _.isEmpty(uniqDependentsIDs)
-              ? uniqDependentsIDs
-              : uniqDependentsIDs.concat(await getElementsDependents(uniqDependentsIDs, addedIDs))
-          },
-          'getElementsDependents for %s elemIDs',
-          elemIDs.length,
-        )
-      const validateElementsAndDependents = async (
-        elements: ReadonlyArray<Element>,
-        elementSource: ReadOnlyElementsSource,
-        relevantElementIDs: ElemID[],
-      ): Promise<{
-        errors: ValidationError[]
-        validatedElementsIDs: ElemID[]
-      }> => {
-        const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
-        log.debug('found %d dependents for %d elements', dependentsID.length, relevantElementIDs.length)
-        const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
-        const elementsToValidate = elements.concat(dependents)
-        return {
-          errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(relevantElementIDs), e =>
-            e.getFullName(),
-          ),
-        }
-      }
-      // When we load the workspace with a clean cache from existings nacls, we need
-      // to add hidden elements from the state since they will not be a part of the nacl
-      // changes. In any other load - the state changes will be reflected by the workspace
-      // / hidden changes.
-      const completeStateOnlyChanges = async (
-        partialStateChanges: ChangeSet<Change<Element>>,
-      ): Promise<ChangeSet<Change<Element>>> => {
-        const cachedHash = await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
-        const stateHash = await state(envName).getHash()
-        const cacheValid = initBuild ? cachedHash === stateHash && partialStateChanges.cacheValid : true
-        if (!cacheValid) {
-          log.warn('Local state cache did not match local file system state. Resetting cache.')
-          log.debug(`Cached hash: ${cachedHash}, stateHash: ${stateHash}.`)
-        }
-        // We identify a first nacl load when the state is empty, and all of the changes
-        // are visible (which indicates a nacl load and not a first 'fetch' in which the
-        // hidden changes won't be empty)
-        const isFirstInitFromNacls =
-          _.isEmpty(partialStateChanges.changes) && (await stateToBuild.states[envName].merged.isEmpty())
-        const initHiddenElementsChanges = isFirstInitFromNacls
-          ? await awu(await state(envName).getAll())
-              .filter(element => isHidden(element, state(envName)))
-              .map(elem => toChange({ after: elem }))
-              .toArray()
-          : []
-        log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
-
-        const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
-          .filter(
-            async change =>
-              isRemovalChange(change) &&
-              getChangeData(change).elemID.isTopLevel() &&
-              !(await isHidden(getChangeData(change), state(envName))),
-          )
-          .toArray()
-        log.debug('got %d state removed element changes', stateRemovedElementChanges.length)
-
-        // To preserve the old ws functionality - hidden values should be added to the workspace
-        // cache only if their top level element is in the nacls, or they are marked as hidden
-        // (SAAS-2639)
-        const [stateChangesForExistingNaclElements, droppedStateOnlyChange] = await partition(
-          partialStateChanges.changes,
-          async change => {
-            const changeData = getChangeData(change)
-            const changeID = changeData.elemID
-            return (
-              isRemovalChange(change) ||
-              (await (await source.getElementsSource(envName)).get(changeID)) ||
-              isHidden(changeData, state(envName))
-            )
-          },
-        )
-
-        if (droppedStateOnlyChange.length > 0) {
-          log.debug(
-            'dropped hidden changes due to missing nacl element for ids: %s',
-            droppedStateOnlyChange
-              .map(getChangeData)
-              .map(elem => elem.elemID.getFullName())
-              .join(', '),
-          )
-        }
-
-        return {
-          changes: stateChangesForExistingNaclElements
-            .concat(initHiddenElementsChanges)
-            .concat(stateRemovedElementChanges),
-          cacheValid,
-          preChangeHash: partialStateChanges.preChangeHash ?? cachedHash,
-          postChangeHash: stateHash,
-        }
-      }
-
-      const workspaceChangedElements = Object.fromEntries(
-        await awu(wsChanges[envName]?.changes ?? [])
-          .map(async (change: Change): Promise<[string, Element | undefined]> => {
-            const workspaceElement = getChangeData(change)
-            const stateElement = await state(envName).get(workspaceElement.elemID)
-            const hiddenOnlyElement = isRemovalChange(change)
-              ? undefined
-              : await getElementHiddenParts(
-                  isElement(stateElement) ? stateElement : workspaceElement,
-                  state(envName),
-                  workspaceElement,
-                )
-            return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
-          })
-          .toArray(),
-      )
-
-      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements, src2) => {
-        const src1ElementsToMerge = await awu(src1RecElements).toArray()
-        const src1IDSet = new Set(src1ElementsToMerge.map(elemID => elemID.getFullName()))
-
-        const shouldIncludeStateElement = async (elemID: ElemID): Promise<boolean> =>
-          src1IDSet.has(elemID.getFullName()) || isHidden(await src2.get(elemID), state(envName))
-
-        const src2ElementsToMerge = awu(src2RecElements).filter(shouldIncludeStateElement)
-
-        return {
-          src1ElementsToMerge: awu(src1ElementsToMerge),
-          src2ElementsToMerge,
-        }
-      }
-
-      const changeResult = await stateToBuild.mergeManager.mergeComponents({
-        src1Changes: wsChanges[envName],
-        src2Changes: await completeStateOnlyChanges(
-          stateOnlyChanges[envName] ?? createEmptyChangeSet(await state(envName).getHash()),
-        ),
-        src2Overrides: workspaceChangedElements,
-        recoveryOverride: dropStateOnlyElementsRecovery,
-        src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
-        src2Prefix: STATE_SOURCE_PREFIX + envName,
-        mergeFunc: elements => mergeElements(elements),
-        currentElements: stateToBuild.states[envName].merged,
-        currentErrors: stateToBuild.states[envName].errors,
-      })
-      if (!changeResult.cacheValid) {
-        await stateToBuild.states[envName].validationErrors.clear()
-      }
-      const { changes } = changeResult
-      await updateChangedByIndex(
-        changes,
-        stateToBuild.states[envName].changedBy,
-        stateToBuild.states[envName].mapVersions,
-        stateToBuild.states[envName].merged,
-        changeResult.cacheValid,
-      )
-
-      await updateChangedAtIndex(
-        changes,
-        stateToBuild.states[envName].changedAt,
-        stateToBuild.states[envName].mapVersions,
-        stateToBuild.states[envName].merged,
-        changeResult.cacheValid,
-      )
-
-      await updateAuthorInformationIndex(
-        changes,
-        stateToBuild.states[envName].authorInformation,
-        stateToBuild.states[envName].mapVersions,
-        stateToBuild.states[envName].merged,
-        changeResult.cacheValid,
-      )
-
-      await updateAliasIndex(
-        changes,
-        stateToBuild.states[envName].alias,
-        stateToBuild.states[envName].mapVersions,
-        stateToBuild.states[envName].merged,
-        changeResult.cacheValid,
-      )
-
-      await updateReferencedStaticFilesIndex(
-        changes,
-        stateToBuild.states[envName].referencedStaticFiles,
-        stateToBuild.states[envName].mapVersions,
-        stateToBuild.states[envName].merged,
-        changeResult.cacheValid,
-      )
-
-      await updateReferenceIndexes(
-        changes,
-        stateToBuild.states[envName].referenceTargets,
-        stateToBuild.states[envName].referenceSources,
-        stateToBuild.states[envName].mapVersions,
-        stateToBuild.states[envName].merged,
-        changeResult.cacheValid,
-        elements => getCustomReferences(elements, currentEnvConf().accountToServiceName ?? {}, adaptersConfig),
-      )
-
-      const changedElements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
-      const changeIDs = changes.map(getChangeData).map(elem => elem.elemID)
-      if (validate) {
-        const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
-          changedElements,
-          stateToBuild.states[envName].merged,
-          changeIDs,
-        )
-        const validationErrorsById = await awu(validationErrors).groupBy(err =>
-          err.elemID.createTopLevelParentID().parent.getFullName(),
-        )
-
-        const errorsToUpdate = Object.entries(validationErrorsById).map(([elemID, errors]) => ({
-          key: elemID,
-          value: errors,
-        }))
-
-        const elementsWithNoErrors = validatedElementsIDs
-          .map(id => id.getFullName())
-          .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
-        const currentValidationErrors = Object.fromEntries(
-          await awu(stateToBuild.states[envName].validationErrors.entries())
-            .map(error => [error.key, error.value] as [string, ValidationError[]])
+                validationErrors: await remoteMapCreator<ValidationError[]>({
+                  namespace: getRemoteMapNamespace('validationErrors', envName),
+                  serialize: validationErrors => serialize(validationErrors, 'keepRef'),
+                  deserialize: async data => deserializeValidationErrors(data),
+                  persistent,
+                }),
+                changedBy: await remoteMapCreator<ElemID[]>({
+                  namespace: getRemoteMapNamespace('changedBy', envName),
+                  serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
+                  deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                  persistent,
+                }),
+                changedAt: await remoteMapCreator<ElemID[]>({
+                  namespace: getRemoteMapNamespace('changedAt', envName),
+                  serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
+                  deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+                  persistent,
+                }),
+                authorInformation: await remoteMapCreator<AuthorInformation>({
+                  namespace: getRemoteMapNamespace('authorInformation', envName),
+                  serialize: async val => safeJsonStringify(val),
+                  deserialize: data => JSON.parse(data),
+                  persistent,
+                }),
+                alias: await remoteMapCreator<string>({
+                  namespace: getRemoteMapNamespace('alias', envName),
+                  serialize: async val => safeJsonStringify(val),
+                  deserialize: data => JSON.parse(data),
+                  persistent,
+                }),
+                referencedStaticFiles: await remoteMapCreator<string[]>({
+                  namespace: getRemoteMapNamespace('referencedStaticFiles', envName),
+                  serialize: async val => safeJsonStringify(val),
+                  deserialize: data => JSON.parse(data),
+                  persistent,
+                }),
+                referenceSources: await remoteMapCreator<ReferenceIndexEntry[]>({
+                  namespace: getRemoteMapNamespace('referenceSources', envName),
+                  serialize: serializeReferenceSourcesEntries,
+                  deserialize: deserializeReferenceSourcesEntries,
+                  persistent,
+                }),
+                referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
+                  namespace: getRemoteMapNamespace('referenceTargets', envName),
+                  serialize: serializeReferenceTree,
+                  deserialize: deserializeReferenceTree,
+                  persistent,
+                }),
+                mapVersions: await remoteMapCreator<number>({
+                  namespace: getRemoteMapNamespace('mapVersions', envName),
+                  serialize: async val => val.toString(),
+                  deserialize: async data => parseInt(data, 10),
+                  persistent,
+                }),
+              },
+            ])
             .toArray(),
         )
-        await stateToBuild.states[envName].validationErrors.setAll(
-          errorsToUpdate.filter(error => !_.isEqual(error.value, currentValidationErrors[error.key] ?? [])),
-        )
-        await stateToBuild.states[envName].validationErrors.deleteAll(
-          elementsWithNoErrors.filter(error => !_.isEmpty(currentValidationErrors[error])),
-        )
+        const sources: Record<string, ReadOnlyElementsSource> = {}
+        await awu(envs()).forEach(async envName => {
+          sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource.getElementsSource(envName)
+          sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(state(envName), async element =>
+            getElementHiddenParts(element, state(envName), await states[envName].merged.get(element.elemID)),
+          )
+        })
+        const initializedState = {
+          states,
+          mergeManager: await createMergeManager(
+            [...Object.values(states).flatMap(remoteMaps => Object.values(remoteMaps))],
+            sources,
+            remoteMapCreator,
+            'workspaceMergeManager',
+            persistent,
+            mergedRecoveryMode,
+          ),
+        }
+        return initializedState
       }
-    }
 
-    await awu(envs()).forEach(async envName => {
-      await updateWorkspace(envName)
-    })
-    return stateToBuild
-  }
+      /** HERE BE DRAGONS!
+       *
+       * Dragon 1: `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
+       * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
+       * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
+       *
+       * Dragon 2: initState() uses naclFilesSource. One can't use naclFilesSource until load() was called on it. Hence,
+       * setting wsChanges must happen after we set previousState, but before we call initState().
+       * Don't move the initialization of wsChanges.
+       */
+      const previousState = workspaceState
+
+      const wsChanges =
+        workspaceChanges !== undefined ? workspaceChanges : await naclFilesSource.load({ ignoreFileChanges })
+
+      const stateToBuild = previousState !== undefined ? await previousState : await initState()
+
+      const initBuild = previousState === undefined
+
+      if (ignoreFileChanges) {
+        // Skip all updates to the state since this flag means we are operating under the assumption
+        // that everything is already up to date and no action is required
+        return stateToBuild
+      }
+
+      const updateWorkspace = async (envName: string): Promise<void> => {
+        const source = naclFilesSource
+        const getElementsDependents = async (elemIDs: ElemID[], addedIDs: Set<string>): Promise<ElemID[]> =>
+          log.timeDebug(
+            async () => {
+              elemIDs.forEach(id => addedIDs.add(id.getFullName()))
+              const filesWithDependencies = await log.timeDebug(
+                async () =>
+                  _.uniq(
+                    await awu(elemIDs)
+                      .flatMap(id => source.getElementReferencedFiles(envName, id))
+                      .toArray(),
+                  ),
+                'running getElementReferencedFiles for %s elemIDs',
+                elemIDs.length,
+              )
+              const dependentsIDs = await log.timeDebug(
+                async () =>
+                  awu(filesWithDependencies)
+                    .map(filename => source.getParsedNaclFile(filename))
+                    .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
+                    .filter(id => !addedIDs.has(id.getFullName()))
+                    .toArray(),
+                'get dependentsIDs from %s files',
+                filesWithDependencies.length,
+              )
+              const uniqDependentsIDs = _.uniqBy(dependentsIDs, id => id.getFullName())
+              return _.isEmpty(uniqDependentsIDs)
+                ? uniqDependentsIDs
+                : uniqDependentsIDs.concat(await getElementsDependents(uniqDependentsIDs, addedIDs))
+            },
+            'getElementsDependents for %s elemIDs',
+            elemIDs.length,
+          )
+        const validateElementsAndDependents = async (
+          elements: ReadonlyArray<Element>,
+          elementSource: ReadOnlyElementsSource,
+          relevantElementIDs: ElemID[],
+        ): Promise<{
+          errors: ValidationError[]
+          validatedElementsIDs: ElemID[]
+        }> => {
+          const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
+          log.debug('found %d dependents for %d elements', dependentsID.length, relevantElementIDs.length)
+          const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id)))).filter(values.isDefined)
+          const elementsToValidate = elements.concat(dependents)
+          return {
+            errors: await validateElements(elementsToValidate, elementSource),
+            validatedElementsIDs: _.uniqBy(elementsToValidate.map(elem => elem.elemID).concat(relevantElementIDs), e =>
+              e.getFullName(),
+            ),
+          }
+        }
+        // When we load the workspace with a clean cache from existings nacls, we need
+        // to add hidden elements from the state since they will not be a part of the nacl
+        // changes. In any other load - the state changes will be reflected by the workspace
+        // / hidden changes.
+        const completeStateOnlyChanges = async (
+          partialStateChanges: ChangeSet<Change<Element>>,
+        ): Promise<ChangeSet<Change<Element>>> => {
+          const cachedHash = await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
+          const stateHash = await state(envName).getHash()
+          const cacheValid = initBuild ? cachedHash === stateHash && partialStateChanges.cacheValid : true
+          if (!cacheValid) {
+            log.warn('Local state cache did not match local file system state. Resetting cache.')
+            log.debug(`Cached hash: ${cachedHash}, stateHash: ${stateHash}.`)
+          }
+          // We identify a first nacl load when the state is empty, and all of the changes
+          // are visible (which indicates a nacl load and not a first 'fetch' in which the
+          // hidden changes won't be empty)
+          const isFirstInitFromNacls =
+            _.isEmpty(partialStateChanges.changes) && (await stateToBuild.states[envName].merged.isEmpty())
+          const initHiddenElementsChanges = isFirstInitFromNacls
+            ? await awu(await state(envName).getAll())
+                .filter(element => isHidden(element, state(envName)))
+                .map(elem => toChange({ after: elem }))
+                .toArray()
+            : []
+          log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
+
+          const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
+            .filter(
+              async change =>
+                isRemovalChange(change) &&
+                getChangeData(change).elemID.isTopLevel() &&
+                !(await isHidden(getChangeData(change), state(envName))),
+            )
+            .toArray()
+          log.debug('got %d state removed element changes', stateRemovedElementChanges.length)
+
+          // To preserve the old ws functionality - hidden values should be added to the workspace
+          // cache only if their top level element is in the nacls, or they are marked as hidden
+          // (SAAS-2639)
+          const [stateChangesForExistingNaclElements, droppedStateOnlyChange] = await partition(
+            partialStateChanges.changes,
+            async change => {
+              const changeData = getChangeData(change)
+              const changeID = changeData.elemID
+              return (
+                isRemovalChange(change) ||
+                (await (await source.getElementsSource(envName)).get(changeID)) ||
+                isHidden(changeData, state(envName))
+              )
+            },
+          )
+
+          if (droppedStateOnlyChange.length > 0) {
+            log.debug(
+              'dropped hidden changes due to missing nacl element for ids: %s',
+              droppedStateOnlyChange
+                .map(getChangeData)
+                .map(elem => elem.elemID.getFullName())
+                .join(', '),
+            )
+          }
+
+          return {
+            changes: stateChangesForExistingNaclElements
+              .concat(initHiddenElementsChanges)
+              .concat(stateRemovedElementChanges),
+            cacheValid,
+            preChangeHash: partialStateChanges.preChangeHash ?? cachedHash,
+            postChangeHash: stateHash,
+          }
+        }
+
+        const workspaceChangedElements = Object.fromEntries(
+          await awu(wsChanges[envName]?.changes ?? [])
+            .map(async (change: Change): Promise<[string, Element | undefined]> => {
+              const workspaceElement = getChangeData(change)
+              const stateElement = await state(envName).get(workspaceElement.elemID)
+              const hiddenOnlyElement = isRemovalChange(change)
+                ? undefined
+                : await getElementHiddenParts(
+                    isElement(stateElement) ? stateElement : workspaceElement,
+                    state(envName),
+                    workspaceElement,
+                  )
+              return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
+            })
+            .toArray(),
+        )
+
+        const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements, src2) => {
+          const src1ElementsToMerge = await awu(src1RecElements).toArray()
+          const src1IDSet = new Set(src1ElementsToMerge.map(elemID => elemID.getFullName()))
+
+          const shouldIncludeStateElement = async (elemID: ElemID): Promise<boolean> =>
+            src1IDSet.has(elemID.getFullName()) || isHidden(await src2.get(elemID), state(envName))
+
+          const src2ElementsToMerge = awu(src2RecElements).filter(shouldIncludeStateElement)
+
+          return {
+            src1ElementsToMerge: awu(src1ElementsToMerge),
+            src2ElementsToMerge,
+          }
+        }
+
+        const changeResult = await stateToBuild.mergeManager.mergeComponents({
+          src1Changes: wsChanges[envName],
+          src2Changes: await completeStateOnlyChanges(
+            stateOnlyChanges[envName] ?? createEmptyChangeSet(await state(envName).getHash()),
+          ),
+          src2Overrides: workspaceChangedElements,
+          recoveryOverride: dropStateOnlyElementsRecovery,
+          src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
+          src2Prefix: STATE_SOURCE_PREFIX + envName,
+          mergeFunc: elements => mergeElements(elements),
+          currentElements: stateToBuild.states[envName].merged,
+          currentErrors: stateToBuild.states[envName].errors,
+        })
+        if (!changeResult.cacheValid) {
+          await stateToBuild.states[envName].validationErrors.clear()
+        }
+        const { changes } = changeResult
+        await updateChangedByIndex(
+          changes,
+          stateToBuild.states[envName].changedBy,
+          stateToBuild.states[envName].mapVersions,
+          stateToBuild.states[envName].merged,
+          changeResult.cacheValid,
+        )
+
+        await updateChangedAtIndex(
+          changes,
+          stateToBuild.states[envName].changedAt,
+          stateToBuild.states[envName].mapVersions,
+          stateToBuild.states[envName].merged,
+          changeResult.cacheValid,
+        )
+
+        await updateAuthorInformationIndex(
+          changes,
+          stateToBuild.states[envName].authorInformation,
+          stateToBuild.states[envName].mapVersions,
+          stateToBuild.states[envName].merged,
+          changeResult.cacheValid,
+        )
+
+        await updateAliasIndex(
+          changes,
+          stateToBuild.states[envName].alias,
+          stateToBuild.states[envName].mapVersions,
+          stateToBuild.states[envName].merged,
+          changeResult.cacheValid,
+        )
+
+        await updateReferencedStaticFilesIndex(
+          changes,
+          stateToBuild.states[envName].referencedStaticFiles,
+          stateToBuild.states[envName].mapVersions,
+          stateToBuild.states[envName].merged,
+          changeResult.cacheValid,
+        )
+
+        await updateReferenceIndexes(
+          changes,
+          stateToBuild.states[envName].referenceTargets,
+          stateToBuild.states[envName].referenceSources,
+          stateToBuild.states[envName].mapVersions,
+          stateToBuild.states[envName].merged,
+          changeResult.cacheValid,
+          elements => getCustomReferences(elements, currentEnvConf().accountToServiceName ?? {}, adaptersConfig),
+        )
+
+        const changedElements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
+        const changeIDs = changes.map(getChangeData).map(elem => elem.elemID)
+        if (validate) {
+          const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
+            changedElements,
+            stateToBuild.states[envName].merged,
+            changeIDs,
+          )
+          const validationErrorsById = await awu(validationErrors).groupBy(err =>
+            err.elemID.createTopLevelParentID().parent.getFullName(),
+          )
+
+          const errorsToUpdate = Object.entries(validationErrorsById).map(([elemID, errors]) => ({
+            key: elemID,
+            value: errors,
+          }))
+
+          const elementsWithNoErrors = validatedElementsIDs
+            .map(id => id.getFullName())
+            .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
+          const currentValidationErrors = Object.fromEntries(
+            await awu(stateToBuild.states[envName].validationErrors.entries())
+              .map(error => [error.key, error.value] as [string, ValidationError[]])
+              .toArray(),
+          )
+          await stateToBuild.states[envName].validationErrors.setAll(
+            errorsToUpdate.filter(error => !_.isEqual(error.value, currentValidationErrors[error.key] ?? [])),
+          )
+          await stateToBuild.states[envName].validationErrors.deleteAll(
+            elementsWithNoErrors.filter(error => !_.isEmpty(currentValidationErrors[error])),
+          )
+        }
+      }
+
+      await awu(envs()).forEach(async envName => {
+        await updateWorkspace(envName)
+      })
+      return stateToBuild
+    }, 'buildWorkspaceState')
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {

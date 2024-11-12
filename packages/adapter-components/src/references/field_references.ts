@@ -25,6 +25,7 @@ import {
   transformValues,
   safeJsonStringify,
   resolvePath,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
@@ -274,7 +275,9 @@ export const addReferences = async <
   const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
+  const proccessTimeByType = new Map<string, { time: number; elements: number }>()
   await awu(instances).forEach(async instance => {
+    const startTime = Date.now()
     instance.value = await replaceReferenceValues({
       instance,
       resolverFinder,
@@ -283,8 +286,16 @@ export const addReferences = async <
       elemByElemID,
       contextStrategyLookup,
     })
+
+    const processTime = Date.now() - startTime
+    const current = proccessTimeByType.get(instance.elemID.typeName) ?? { time: 0, elements: 0 }
+    proccessTimeByType.set(instance.elemID.typeName, {
+      time: current.time + processTime,
+      elements: current.elements + 1,
+    })
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
+  log.debug('references processing time by type: %s', inspectValue(proccessTimeByType))
 }
 
 export const generateLookupFunc = <

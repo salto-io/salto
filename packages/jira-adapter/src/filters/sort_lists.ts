@@ -6,8 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
-import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   AUTOMATION_TYPE,
@@ -22,8 +21,6 @@ import {
   WORKFLOW_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const WORKFLOW_CONDITION_SORT_BY = [
   'type',
@@ -137,18 +134,18 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
 
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
 
-const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Promise<void> => {
+const sortLists = (instance: InstanceElement, isDataCenter: boolean): void => {
   if (isDataCenter) {
     delete VALUES_TO_SORT[WORKFLOW_RULES_TYPE_NAME].postFunctions
   }
   instance.value =
-    (await transformValues({
+    transformValuesSync({
       values: instance.value,
-      type: await instance.getType(),
+      type: instance.getTypeSync(),
       strict: false,
       allowEmptyArrays: true,
       allowEmptyObjects: true,
-      transformFunc: async ({ value, field }) => {
+      transformFunc: ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
@@ -166,15 +163,13 @@ const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Prom
 
         return value
       },
-    })) ?? {}
+    }) ?? {}
 }
 
 const filter: FilterCreator = ({ client }) => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    await awu(elements)
-      .filter(isInstanceElement)
-      .forEach(instance => sortLists(instance, client.isDataCenter))
+    elements.filter(isInstanceElement).forEach(instance => sortLists(instance, client.isDataCenter))
   },
 })
 

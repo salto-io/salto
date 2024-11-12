@@ -1070,7 +1070,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'FIELD_SELECTED_FIELDS', parentTypes: [POST_FUNCTION_CONFIGURATION] },
     serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },
   },
   {

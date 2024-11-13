@@ -770,7 +770,7 @@ describe('Convert maps filter', () => {
         },
       })
 
-      elements = [myCustomObj]
+      elements = [myCustomObj, picklistType, multiselectPicklistType]
       filter = filterCreator({
         config: {
           ...defaultFilterContext,
@@ -790,6 +790,7 @@ describe('Convert maps filter', () => {
         expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
         expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(picklistType.annotationRefTypes.valueSet?.elemID.name).toEqual('OrderedMap<valueSet>')
       })
 
       it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
@@ -798,6 +799,7 @@ describe('Convert maps filter', () => {
         expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
         expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(multiselectPicklistType.annotationRefTypes.valueSet?.elemID.name).toEqual('OrderedMap<valueSet>')
       })
 
       it('should convert annotation value to map (Picklist)', () => {
@@ -821,7 +823,7 @@ describe('Convert maps filter', () => {
       let changes: Change[]
       beforeEach(async () => {
         // This fetch will convert the Picklist valueSet type to OrderedMap
-        await filter.onFetch([myCustomObj])
+        await filter.onFetch([myCustomObj, picklistType, multiselectPicklistType])
         changes = [toChange({ after: myCustomObj })]
         await filter.preDeploy(changes)
       })

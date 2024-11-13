@@ -116,6 +116,13 @@ const getDependentIDsFromReferencedFiles = async (
     elemIDs.length,
   )
 
+const getDependentElements = (elementsSource: ReadOnlyElementsSource, dependentIDs: ElemID[]): Promise<Element[]> =>
+  log.timeDebug(
+    () => Promise.all(dependentIDs.map(id => elementsSource.get(id))).then(res => res.filter(isElement)),
+    'getting %d dependents from elements source',
+    dependentIDs.length,
+  )
+
 export const getDependents = async (
   elemIDs: ElemID[],
   elementsSource: ReadOnlyElementsSource,
@@ -127,22 +134,15 @@ export const getDependents = async (
     ? await getDependentIDsFromReferencedFiles(elemIDs, getElementReferencedFiles, getParsedNaclFile)
     : await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
 
-  const dependents = (
-    await log.timeDebug(
-      () => Promise.all(dependentIDs.map(id => elementsSource.get(id))),
-      'getting %d dependents from elements source',
-      dependentIDs.length,
-    )
-  ).filter(isElement)
-
+  const dependents = await getDependentElements(elementsSource, dependentIDs)
   log.debug('found %d dependents of %d elements', dependents.length, elemIDs.length)
   if (dependentIDs.length !== dependents.length) {
+    const missingDependents = _.difference(
+      dependentIDs.map(id => id.getFullName()),
+      dependents.map(elem => elem.elemID.getFullName()),
+    )
     log.warn(
-      'there is a mismatch between the num of requested dependent IDs and the num of dependents in the elements source. missing elements: %s',
-      _.difference(
-        dependentIDs.map(id => id.getFullName()),
-        dependents.map(elem => elem.elemID.getFullName()),
-      ),
+      `there is a mismatch between the num of requested dependent IDs and the num of dependents in the elements source. missing dependents: ${missingDependents}`,
     )
   }
 

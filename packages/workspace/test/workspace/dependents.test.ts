@@ -73,7 +73,7 @@ describe('dependents', () => {
   describe.each([true, false] as const)(
     'getDependents (use old dependents calculation: %s)',
     useOldDependentsCalculation => {
-      const getDependentIDs = async (elemID: ElemID): Promise<string[]> => {
+      const getDependentIDs = async (elemID: ElemID): Promise<ElemID[]> => {
         const dependents = await getDependents(
           [elemID],
           await workspace.elements(),
@@ -81,7 +81,7 @@ describe('dependents', () => {
           id => workspace.getElementReferencedFiles(id),
           filename => workspace.getParsedNaclFile(filename),
         )
-        return dependents.map(element => element.elemID.getFullName()).sort()
+        return dependents.map(element => element.elemID)
       }
 
       beforeAll(async () => {
@@ -93,26 +93,55 @@ describe('dependents', () => {
         delete process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION
       })
 
-      it('should calculate dependents correctly for type elemID', async () => {
-        expect(await getDependentIDs(new ElemID('salto', 'prim'))).toEqual([
-          'salto.base',
-          'salto.base.instance.aBaseInst',
-          'salto.base.instance.bBaseInst',
-          'salto.base.instance.cBaseInst',
-          'salto.obj',
-          'salto.obj.instance.objInst',
-        ])
+      describe('type dependents', () => {
+        let dependentIDs: ElemID[]
+
+        beforeAll(async () => {
+          dependentIDs = await getDependentIDs(new ElemID('salto', 'prim'))
+        })
+        it('should have the correct amount of dependents', () => {
+          expect(dependentIDs).toHaveLength(6)
+        })
+        it('should have dependent type because of a field type', () => {
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.base')).toBeDefined()
+        })
+        it('should have dependent type because of a field type that is dependent too', () => {
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.obj')).toBeDefined()
+        })
+        it('should have dependent instances that their type is a dependent too', () => {
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.aBaseInst')).toBeDefined()
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.bBaseInst')).toBeDefined()
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.cBaseInst')).toBeDefined()
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.obj.instance.objInst')).toBeDefined()
+        })
       })
 
-      it('should calculate dependents correctly for referenced instance elemID', async () => {
-        expect(await getDependentIDs(new ElemID('salto', 'base', 'instance', 'aBaseInst'))).toEqual([
-          'salto.base.instance.bBaseInst',
-          'salto.base.instance.cBaseInst',
-        ])
+      describe('reference dependents', () => {
+        let dependentIDs: ElemID[]
+
+        beforeAll(async () => {
+          dependentIDs = await getDependentIDs(new ElemID('salto', 'base', 'instance', 'aBaseInst'))
+        })
+        it('should have the correct amount of dependents', () => {
+          expect(dependentIDs).toHaveLength(2)
+        })
+        it('should have a dependent that have a reference to the input ID', () => {
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.bBaseInst')).toBeDefined()
+        })
+        it('should have a dependent that have a reference to another dependent ID', () => {
+          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.cBaseInst')).toBeDefined()
+        })
       })
 
-      it('should have no dependents for non referenced instance elemID', async () => {
-        expect(await getDependentIDs(new ElemID('salto', 'obj', 'instance', 'objInst'))).toEqual([])
+      describe('when element is not referenced', () => {
+        let dependentIDs: ElemID[]
+
+        beforeAll(async () => {
+          dependentIDs = await getDependentIDs(new ElemID('salto', 'obj', 'instance', 'objInst'))
+        })
+        it('should have no dependents', () => {
+          expect(dependentIDs).toHaveLength(0)
+        })
       })
     },
   )

@@ -557,9 +557,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
       _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
     }
-    if (fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
-      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
-    }
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [

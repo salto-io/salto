@@ -29,7 +29,6 @@ const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fetchProfilesUsingReadApi: false,
-  generateRefsInProfiles: false,
   skipAliases: false,
   toolingDepsOfCurrentNamespace: false,
   extraDependenciesV2: true,

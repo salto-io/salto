@@ -33,6 +33,7 @@ import {
   ElemID,
   isObjectTypeChange,
   BuiltinTypes,
+  isPrimitiveType,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -627,13 +628,18 @@ const filter: FilterCreator = ({ config }) => ({
     })
 
     const fields = elements.filter(isObjectType).flatMap(obj => Object.values(obj.fields))
-    await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldType, annotationToMapDef]) => {
-      const fieldsToConvert = fields.filter(field => field.refType.elemID.typeName === fieldType)
+    await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldTypeName, annotationToMapDef]) => {
+      const fieldType = elements.filter(isPrimitiveType).find(e => e.elemID.name === fieldTypeName)
+      if (fieldType === undefined) {
+        log.warn('Cannot find PrimitiveType %s. Skipping converting Fields of this type to maps', fieldTypeName)
+        return
+      }
+      const fieldsToConvert = fields.filter(field => fieldType.elemID.isEqual(field.getTypeSync().elemID))
       if (fieldsToConvert.length === 0) {
         return
       }
-      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef, fieldType)
-      await updateAnnotationRefTypes(await fieldsToConvert[0].getType(), nonUniqueMapFields, annotationToMapDef)
+      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef, fieldTypeName)
+      await updateAnnotationRefTypes(fieldType, nonUniqueMapFields, annotationToMapDef)
     })
   },
 

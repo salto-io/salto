@@ -24,7 +24,7 @@ export default class ZendeskCsrfClient extends ZendeskClient {
     return subInstance
   }
 
-  async getCsrfToken(): Promise<string> {
+  private async getCsrfToken(): Promise<string> {
     const res = await this.get({ url: '/api/v2/users/me' })
     const meData = res.data
     const xCsrfToken = get(meData, 'user.authenticity_token', '')
@@ -49,6 +49,7 @@ export default class ZendeskCsrfClient extends ZendeskClient {
       'Content-Type': 'application/json',
       'X-CSRF-Token': this.csrfToken,
     }
+    // This is a hack because the fetch request doesn't have a data param.
     if (params.body) {
       params.data = params.body
       delete params.body

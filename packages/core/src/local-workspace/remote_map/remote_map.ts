@@ -620,7 +620,6 @@ export const createRemoteMapCreator = (
         if (locationCache.has(keyToTempDBKey(key))) {
           statCounters.LocationCacheHit.inc()
           statCounters.RemoteMapHit.inc()
-          isNamespaceEmpty = false
           resolve(locationCache.get(keyToTempDBKey(key)) as T)
           return
         }

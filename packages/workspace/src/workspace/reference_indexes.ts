@@ -108,6 +108,13 @@ const getReferencesFromAnnotationRefTypes = (element: Element): ReferenceInfo[] 
       }) ?? [],
   )
 
+const getReferenceFromMetaType = (element: Element): ReferenceInfo | undefined => {
+  if (isObjectType(element) && element.metaType !== undefined) {
+    return toRefTypeReference({ elemID: element.elemID, refType: element.metaType })
+  }
+  return undefined
+}
+
 const getReferencesFromTemplateStaticFile = async ({
   value,
   source,
@@ -145,19 +152,21 @@ const getReferences = async (element: Element, customReferences: ReferenceInfo[]
     },
   })
 
-  const templateExpressionReferences = await Promise.all(
-    templateStaticFiles.map(getReferencesFromTemplateStaticFile),
-  ).then(res => res.flat())
+  const templateExpressionReferences = await Promise.all(templateStaticFiles.map(getReferencesFromTemplateStaticFile))
 
   const fieldRefTypesReferences = getReferencesFromFieldRefTypes(element)
   const annotationRefTypesReferences = getReferencesFromAnnotationRefTypes(element)
+  const metaTypeRefTypeReference = getReferenceFromMetaType(element) ?? []
 
   return _.uniqBy(
+    // `customReferences` should be the first on this list, so in case that a referenceInfo appears more than
+    // once we'll take it from `customReferences` (uniqBy keeps the first occurrence of each unique item).
     customReferences
-      .concat(templateExpressionReferences)
+      .concat(templateExpressionReferences.flat())
       .concat(referenceInfos)
       .concat(fieldRefTypesReferences)
-      .concat(annotationRefTypesReferences),
+      .concat(annotationRefTypesReferences)
+      .concat(metaTypeRefTypeReference),
     getReferenceDetailsIdentifier,
   )
 }

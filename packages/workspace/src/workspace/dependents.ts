@@ -5,15 +5,19 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReadOnlyElementsSource, isElement } from '@salto-io/adapter-api'
+import { getSaltoFlagBool } from '../flags'
 import { ReferenceIndexEntry } from './reference_indexes'
 import { ReadOnlyRemoteMap } from './remote_map'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
+const USE_OLD_DEPENDENTS_CALCULATION_FLAG = 'USE_OLD_DEPENDENTS_CALCULATION'
 
 const getDependentIDsFromReferenceSourceIndex = async (
   elemIDs: ElemID[],
@@ -32,7 +36,6 @@ const getDependentIDsFromReferenceSourceIndex = async (
         const dependentIDs = await log.timeTrace(
           async () =>
             awu(ids)
-              // TODO: should we filter out weak referenecs or references that aren't in the element?
               .map(id => referenceSourcesIndex.get(id.getFullName()))
               .flatMap(references => references ?? [])
               .map(ref => ref.id.createTopLevelParentID().parent)
@@ -47,12 +50,15 @@ const getDependentIDsFromReferenceSourceIndex = async (
       }
 
       const dependentIDs = await getDependentIDs(elemIDs)
+
+      // in `referenceSourcesIndex` there are no references between types and their instances
+      // so we should add the instances of the types that are in `addedIDs` as well.
       const additionalDependentInstanceIDs = await awu(await elementsSource.list())
         .filter(
           id =>
             id.idType === 'instance' &&
             !addedIDs.has(id.getFullName()) &&
-            addedIDs.has(`${id.adapter}${ElemID.NAMESPACE_SEPARATOR}${id.typeName}`),
+            addedIDs.has(new ElemID(id.adapter, id.typeName).getFullName()),
         )
         .toArray()
 
@@ -117,16 +123,7 @@ export const getDependents = async (
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>,
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>,
 ): Promise<Element[]> => {
-  const flagValue = process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION
-  let parsedFlagValue: unknown
-  try {
-    parsedFlagValue = flagValue === undefined ? undefined : JSON.parse(flagValue)
-  } catch (e) {
-    parsedFlagValue = flagValue
-  }
-  const useOldDependentsCalculation = Boolean(parsedFlagValue)
-
-  const dependentIDs = useOldDependentsCalculation
+  const dependentIDs = getSaltoFlagBool(USE_OLD_DEPENDENTS_CALCULATION_FLAG)
     ? await getDependentIDsFromReferencedFiles(elemIDs, getElementReferencedFiles, getParsedNaclFile)
     : await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
 
@@ -139,6 +136,15 @@ export const getDependents = async (
   ).filter(isElement)
 
   log.debug('found %d dependents of %d elements', dependents.length, elemIDs.length)
+  if (dependentIDs.length !== dependents.length) {
+    log.warn(
+      'there is a mismatch between the num of requested dependent IDs and the num of dependents in the elements source. missing elements: %s',
+      _.difference(
+        dependentIDs.map(id => id.getFullName()),
+        dependents.map(elem => elem.elemID.getFullName()),
+      ),
+    )
+  }
 
   return dependents
 }

@@ -475,10 +475,15 @@ describe('updateReferenceIndexes', () => {
       elemID: new ElemID('salto', 'another'),
       fields: type.fields,
     })
+    const typeWithMetaType = new ObjectType({
+      elemID: new ElemID('salto', 'withMetaType'),
+      metaType: type,
+    })
 
     beforeEach(async () => {
       const changes = [
         toChange({ after: type }),
+        toChange({ after: typeWithMetaType }),
         ...Object.values(anotherType.fields).map(field => toChange({ after: field })),
       ]
 
@@ -513,9 +518,13 @@ describe('updateReferenceIndexes', () => {
                 { id: innerType.elemID, type: 'strong' },
               ],
             ],
-            ['inner', [{ id: innerType.elemID, type: 'strong' }]],
-            ['innerList', [{ id: innerType.elemID, type: 'strong' }]],
+            [type.fields.inner.elemID.name, [{ id: innerType.elemID, type: 'strong' }]],
+            [type.fields.innerList.elemID.name, [{ id: innerType.elemID, type: 'strong' }]],
           ]),
+        },
+        {
+          key: typeWithMetaType.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: type.elemID, type: 'strong' }]]]),
         },
         {
           key: anotherType.fields.inner.elemID.getFullName(),
@@ -555,6 +564,15 @@ describe('updateReferenceIndexes', () => {
             },
             {
               id: anotherType.fields.innerList.elemID,
+              type: 'strong',
+            },
+          ],
+        },
+        {
+          key: type.elemID.getFullName(),
+          value: [
+            {
+              id: typeWithMetaType.elemID,
               type: 'strong',
             },
           ],

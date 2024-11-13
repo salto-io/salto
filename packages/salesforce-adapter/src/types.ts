@@ -106,7 +106,6 @@ export type OptionalFeatures = {
   skipAliases?: boolean
   formulaDeps?: boolean
   fetchCustomObjectUsingRetrieveApi?: boolean
-  generateRefsInProfiles?: boolean
   fetchProfilesUsingReadApi?: boolean
   toolingDepsOfCurrentNamespace?: boolean
   useLabelAsAlias?: boolean
@@ -822,7 +821,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     skipAliases: { refType: BuiltinTypes.BOOLEAN },
     formulaDeps: { refType: BuiltinTypes.BOOLEAN },
     fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
-    generateRefsInProfiles: { refType: BuiltinTypes.BOOLEAN },
     fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
     toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
     useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },

@@ -97,6 +97,10 @@ const fieldRefsFromProfileOrPermissionSet = async (
   potentialTarget: AdditionOrModificationChange,
 ): Promise<ReferenceMapping[]> => {
   /**
+   * Note: if the adapter config `generateRefsInProfiles` is set then these fields will already contain the correct
+   * references, in which case we will create duplicate references and drop them. We won't crash because we don't
+   * actually look at the content of any field/annotation, only on the keys in the provided profile section.
+   *
    * Note: We use the section keys (as opposed to a field that contains the apiName of the referred entity) because
    * there is no such field in the fieldPermissions section
    */

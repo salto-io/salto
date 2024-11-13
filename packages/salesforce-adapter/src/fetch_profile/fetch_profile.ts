@@ -52,6 +52,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   storeProfilesAndPermissionSetsBrokenPaths: true,
   picklistsAsMaps: false,
   lightningPageFieldItemReference: true,
+  retrieveSettings: false,
 }
 
 type BuildFetchProfileParams = {

@@ -13,6 +13,7 @@ import {
   FLOW_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
   PROFILE_RELATED_METADATA_TYPES,
+  SETTINGS_METADATA_TYPE,
   TOPICS_FOR_OBJECTS_METADATA_TYPE,
 } from '../constants'
 
@@ -643,10 +644,14 @@ export const isMetadataTypeWithoutDependencies = (
 export const isMetadataTypeWithDependency = (metadataType: string): metadataType is MetadataTypeWithDependencies =>
   (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
 
+const isSettingsType = (typeName: string): boolean => typeName.endsWith(SETTINGS_METADATA_TYPE)
+export const includesSettingsTypes = (typeNames: readonly string[]): boolean => typeNames.some(isSettingsType)
+
 export const getFetchTargetsWithDependencies = (targets: string[]): string[] => {
   const result = [...targets]
   const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
   let typesWithDependencies = targets.filter(isMetadataTypeWithDependency)
+
   while (!_.isEmpty(typesWithDependencies)) {
     _(METADATA_TYPE_TO_DEPENDENCIES)
       .pick(typesWithDependencies)
@@ -658,5 +663,10 @@ export const getFetchTargetsWithDependencies = (targets: string[]): string[] => 
       .filter(isMetadataTypeWithDependency)
       .filter(typeWithDependency => !handledTypesWithDependencies.includes(typeWithDependency))
   }
+
+  if (includesSettingsTypes(result)) {
+    result.push(SETTINGS_METADATA_TYPE)
+  }
+
   return _(result).uniq().value()
 }

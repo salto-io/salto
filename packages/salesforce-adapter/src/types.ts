@@ -129,6 +129,7 @@ const OPTIONAL_FEATURES = [
   'removeReferenceFromFilterItemToRecordType',
   'picklistsAsMaps',
   'lightningPageFieldItemReference',
+  'retrieveSettings',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = ['generateRefsInProfiles'] as const
 export type OptionalFeatures = {

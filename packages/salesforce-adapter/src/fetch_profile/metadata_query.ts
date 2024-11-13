@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { regex, values } from '@salto-io/lowerdash'
+import { collections, regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
@@ -37,8 +37,9 @@ import {
   isTypeWithNestedInstancesPerParent,
   NESTED_TYPE_TO_PARENT_TYPE,
 } from '../last_change_date_of_types_with_nested_instances'
-import { getFetchTargetsWithDependencies } from './metadata_types'
+import { getFetchTargetsWithDependencies, includesSettingsTypes } from './metadata_types'
 
+const { makeArray } = collections.array
 const { isDefined } = values
 const log = logger(module)
 
@@ -48,7 +49,6 @@ const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // We have special treatment for this type
   { metadataType: 'CustomField' },
-  { metadataType: SETTINGS_METADATA_TYPE },
   // readMetadata and retrieve fail on this type when fetching by name
   { metadataType: 'CustomIndex' },
   // readMetadata fails on those and pass on the parents
@@ -93,8 +93,15 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   if (target !== undefined) {
     log.debug('targeted fetch types: %o', target)
   }
-  const { include = [{}], exclude = [] } = metadata
-  const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
+  const fullExcludeList = [
+    ...(metadata.exclude ?? []),
+    ...PERMANENT_SKIP_LIST,
+    ...makeArray(
+      fetchParams.optionalFeatures?.retrieveSettings
+        ? undefined
+        : ({ metadataType: SETTINGS_METADATA_TYPE } as MetadataQueryParams),
+    ),
+  ]
 
   const isIncludedInTargetedFetch = (type: string): boolean => {
     if (target === undefined) {
@@ -102,10 +109,20 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     }
     return target.includes(type)
   }
+
+  const include = metadata.include
+    ? metadata.include.concat(
+        fetchParams.optionalFeatures?.retrieveSettings &&
+          includesSettingsTypes(metadata.include.map(({ metadataType }) => metadataType).filter(isDefined) ?? [])
+          ? [{ metadataType: SETTINGS_METADATA_TYPE }]
+          : [],
+      )
+    : [{}]
   const isTypeIncluded = (type: string): boolean =>
     include.some(({ metadataType = '.*' }) =>
       new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
     ) && isIncludedInTargetedFetch(type)
+
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
@@ -113,11 +130,20 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
         name === '.*' &&
         new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
     )
+
+  const fixSettingsType = (metadataType: string, name: string): string =>
+    fetchParams.optionalFeatures?.retrieveSettings && metadataType === SETTINGS_METADATA_TYPE
+      ? name.concat(SETTINGS_METADATA_TYPE)
+      : metadataType
+
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     { metadataType = '.*', namespace = '.*', name = '.*' }: MetadataQueryParams,
   ): boolean => {
-    const instanceMetadataType = NESTED_TYPE_TO_PARENT_TYPE[instance.metadataType] ?? instance.metadataType
+    const instanceMetadataType = fixSettingsType(
+      NESTED_TYPE_TO_PARENT_TYPE[instance.metadataType] ?? instance.metadataType,
+      instance.name,
+    )
     const realNamespace = namespace === '' ? getDefaultNamespace(instanceMetadataType) : namespace
     if (
       !regex.isFullRegexMatch(instanceMetadataType, metadataType) ||
@@ -133,6 +159,7 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   const isInstanceIncluded = (instance: MetadataInstance): boolean =>
     include.some(params => isInstanceMatchQueryParams(instance, params)) &&
     !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+
   const isTargetedFetch = (): boolean => target !== undefined
   return {
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),

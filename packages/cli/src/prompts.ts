@@ -91,15 +91,14 @@ export default class Prompts {
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static initFailed(msg: string): string {
-    return `Could not initiate workspace: ${msg}\n`
+    return `Could not initiate workspace: ${msg}`
   }
 
   private static readonly ACCOUNT_ADD_HELP = 'Use `salto account add <service-name>` to add accounts to the environment'
 
   public static initCompleted(): string {
     return `Initiated empty workspace
-${Prompts.ACCOUNT_ADD_HELP}
-`
+${Prompts.ACCOUNT_ADD_HELP}`
   }
 
   public static readonly FETCH_HEADER = 'Fetching and applying changes from the account(s)'

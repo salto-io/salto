@@ -120,7 +120,7 @@ describe('init command', () => {
       ...cliCommandArgs,
       input: {},
     })
-    expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n\n`)
+    expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n`)
     expect(output.stdout.content).toEqual('')
   })
 })

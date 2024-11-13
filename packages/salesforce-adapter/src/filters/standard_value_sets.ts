@@ -199,7 +199,6 @@ export const makeFilter =
     const fieldToRemovedValueSetName = new Map<string, string>()
     return {
       name: 'standardValueSetFilter',
-      remote: true,
       /**
        * Upon fetch, retrieve standard value sets and
        * modify references to them in fetched elements

@@ -187,7 +187,6 @@ const getFlowInstances = async (
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'flowsFilter',
-  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (client === undefined) {
       return {}

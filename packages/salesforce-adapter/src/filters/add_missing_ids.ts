@@ -88,7 +88,6 @@ export const WARNING_MESSAGE =
  */
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'addMissingIdsFilter',
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

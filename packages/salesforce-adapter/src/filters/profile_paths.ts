@@ -46,7 +46,6 @@ export const WARNING_MESSAGE =
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'profilePathsFilter',
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

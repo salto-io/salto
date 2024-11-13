@@ -257,7 +257,7 @@ type FetchArgs = {
   regenerateSaltoIds: boolean
   regenerateSaltoIdsForSelectors?: string[]
   fromWorkspace?: string
-  fromEnv?: string
+  fromEnvironment?: string
   fromState: boolean
   withChangesDetection?: boolean
 } & AccountsArg &
@@ -280,13 +280,16 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     regenerateSaltoIds,
     regenerateSaltoIdsForSelectors: regenerateSaltoIdsForSelectorsInput = [],
     fromWorkspace,
-    fromEnv,
+    fromEnvironment,
     fromState,
     withChangesDetection,
   } = input
 
-  if ([fromEnv, fromWorkspace].some(values.isDefined) && ![fromEnv, fromWorkspace].every(values.isDefined)) {
-    errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
+  if (
+    [fromEnvironment, fromWorkspace].some(values.isDefined) &&
+    ![fromEnvironment, fromWorkspace].every(values.isDefined)
+  ) {
+    errorOutputLine('The fromEnvironment and fromWorkspace arguments must both be provided.', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
   }
@@ -322,8 +325,8 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     cliTelemetry,
     output,
     fetch:
-      fromWorkspace && fromEnv
-        ? createFetchFromWorkspaceCommand(fetchFromWorkspace, fromWorkspace, fromEnv, fromState)
+      fromWorkspace && fromEnvironment
+        ? createFetchFromWorkspaceCommand(fetchFromWorkspace, fromWorkspace, fromEnvironment, fromState)
         : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
@@ -381,10 +384,10 @@ const fetchDef = createWorkspaceCommand({
         type: 'string',
       },
       {
-        name: 'fromEnv',
+        name: 'fromEnvironment',
         alias: 'we',
         required: false,
-        description: 'Fetch the data from another workspace at this path from this env',
+        description: 'Fetch the data from another workspace at this path from this environment',
         type: 'string',
       },
       {

@@ -766,7 +766,7 @@ describe('fetch command', () => {
               stateOnly: false,
               fromState: false,
               regenerateSaltoIds: false,
-              fromEnv: env,
+              fromEnvironment: env,
               fromWorkspace: sourcePath,
             },
             workspace,
@@ -798,7 +798,7 @@ describe('fetch command', () => {
               stateOnly: false,
               fromState: true,
               regenerateSaltoIds: false,
-              fromEnv: env,
+              fromEnvironment: env,
               fromWorkspace: sourcePath,
             },
             workspace,
@@ -830,7 +830,7 @@ describe('fetch command', () => {
               stateOnly: false,
               fromState: false,
               regenerateSaltoIds: false,
-              fromEnv: 'what*env*er',
+              fromEnvironment: 'what*env*er',
               fromWorkspace: 'where*env*er',
             },
             workspace,
@@ -849,14 +849,14 @@ describe('fetch command', () => {
             stateOnly: false,
             fromState: false,
             regenerateSaltoIds: false,
-            fromEnv: 'what*env*er',
+            fromEnvironment: 'what*env*er',
           },
           workspace,
         })
         expect(retValue).toEqual(CliExitCode.UserInputError)
       })
 
-      it('should return user input error if the from fromWorkspace argument is provided without the from fromEnv argument', async () => {
+      it('should return user input error if the from fromWorkspace argument is provided without the from fromEnvironment argument', async () => {
         const workspace = mocks.mockWorkspace({ uid: 'target' })
         const retValue = await action({
           ...cliCommandArgs,

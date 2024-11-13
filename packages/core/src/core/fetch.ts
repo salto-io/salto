@@ -80,9 +80,10 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
+  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
-import { CORE_FLAGS, getCoreFlagBool } from './flags'
+import { CORE_FLAGS } from './flags'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
@@ -262,7 +263,7 @@ const autoMergeChange: ChangeTransformFunction = async change => {
     return [merged !== undefined ? toMergedChange(change, merged) : change]
   }
   if (_.isArray(current) && _.isArray(incoming) && isTypeOfOrUndefined(base, _.isArray)) {
-    if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+    if (flags.getSaltoFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
       log.debug('skipping list auto merge since the autoMergeListsDisabled core flag is true')
       return [change]
     }
@@ -305,7 +306,7 @@ const toListModificationChange = ({
   serviceChanges: types.NonEmptyArray<DetailedChangeWithBaseChange>
   pendingChanges: DetailedChangeWithBaseChange[]
 }): FetchChange | undefined => {
-  if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+  if (flags.getSaltoFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
     log.debug('skip creating list modification change since the autoMergeListsDisabled core flag is true')
     return undefined
   }
@@ -1477,7 +1478,7 @@ export const getFetchAdapterAndServicesSetup = async ({
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  const resolveTypes = !getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)
+  const resolveTypes = !flags.getSaltoFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchAccounts,
     await workspace.accountCredentials(fetchAccounts),

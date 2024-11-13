@@ -43,6 +43,7 @@ import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
+import * as flags from './src/flags'
 import { Author } from './src/workspace/changed_by_index'
 import {
   createElementSelector,
@@ -81,6 +82,7 @@ export {
   expressions,
   nacl,
   pathIndex,
+  flags,
   elementSource,
   remoteMap,
   WorkspaceConfig,

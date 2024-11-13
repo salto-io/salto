@@ -257,7 +257,7 @@ type FetchArgs = {
   regenerateSaltoIds: boolean
   regenerateSaltoIdsForSelectors?: string[]
   fromWorkspace?: string
-  fromEnv?: string
+  fromEnvironment?: string
   fromState: boolean
   withChangesDetection?: boolean
 } & AccountsArg &
@@ -381,7 +381,7 @@ const fetchDef = createWorkspaceCommand({
         type: 'string',
       },
       {
-        name: 'fromEnv',
+        name: 'fromEnvironment',
         alias: 'we',
         required: false,
         description: 'Fetch the data from another workspace at this path from this env',

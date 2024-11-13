@@ -9,6 +9,7 @@ import {
   BuiltinTypes,
   ElemID,
   InstanceElement,
+  ListType,
   ObjectType,
   ReferenceExpression,
   ReferenceInfo,
@@ -134,6 +135,13 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap([
+            [
+              'templateStaticFile',
+              [
+                { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+                { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+              ],
+            ],
             ['someAnnotation', [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }]],
             ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
             [
@@ -141,13 +149,6 @@ describe('updateReferenceIndexes', () => {
               [
                 { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
                 { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-              ],
-            ],
-            [
-              'templateStaticFile',
-              [
-                { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
-                { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
               ],
             ],
           ]),
@@ -193,6 +194,18 @@ describe('updateReferenceIndexes', () => {
     it('should add the new references to the referenceSources index', () => {
       expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
         {
+          key: 'test.article.instance.article',
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+            toReferenceIndexEntry,
+          ),
+        },
+        {
+          key: 'test.macro.instance.macro1',
+          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+            toReferenceIndexEntry,
+          ),
+        },
+        {
           key: 'test.target2.field.someField',
           value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
         },
@@ -207,18 +220,6 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.target2.field.anotherTemplateField',
           value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
-        },
-        {
-          key: 'test.article.instance.article',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
-            toReferenceIndexEntry,
-          ),
-        },
-        {
-          key: 'test.macro.instance.macro1',
-          value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
-            toReferenceIndexEntry,
-          ),
         },
         {
           key: 'test.target1',
@@ -301,12 +302,12 @@ describe('updateReferenceIndexes', () => {
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap([
             [
-              'someAnnotation2',
-              [{ id: new ElemID('test', 'target2', 'instance', 'someInstance', 'value'), type: 'strong' }],
-            ],
-            [
               'someValue',
               [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'weak', sourceScope: 'value' }],
+            ],
+            [
+              'someAnnotation2',
+              [{ id: new ElemID('test', 'target2', 'instance', 'someInstance', 'value'), type: 'strong' }],
             ],
           ]),
         },
@@ -318,12 +319,12 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.target2.instance.someInstance',
           value: [
-            { id: new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'), type: 'strong' },
             {
               id: new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
               type: 'weak',
               sourceScope: 'value',
             },
+            { id: new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'), type: 'strong' },
           ],
         },
       ])
@@ -331,11 +332,11 @@ describe('updateReferenceIndexes', () => {
 
     it('should remove old references from referenceSources index', () => {
       expect(referenceSourcesIndex.deleteAll).toHaveBeenCalledWith([
+        'test.article.instance.article',
+        'test.macro.instance.macro1',
         'test.target2.field.someField',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
-        'test.article.instance.article',
-        'test.macro.instance.macro1',
         'test.target2',
       ])
     })
@@ -440,15 +441,142 @@ describe('updateReferenceIndexes', () => {
 
     it('should remove the references from the referenceSources index', () => {
       expect(referenceSourcesIndex.deleteAll).toHaveBeenCalledWith([
+        'test.article.instance.article',
+        'test.macro.instance.macro1',
         'test.target2.field.someField',
         'test.target2.instance.someInstance',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
-        'test.article.instance.article',
-        'test.macro.instance.macro1',
         'test.target1',
         'test.target2',
         'test.object',
+      ])
+    })
+  })
+
+  describe('save refType dependencies', () => {
+    const innerType = new ObjectType({ elemID: new ElemID('salto', 'inner') })
+    const type = new ObjectType({
+      elemID: new ElemID('salto', 'type'),
+      fields: {
+        builtin: { refType: BuiltinTypes.STRING },
+        builtinList: { refType: new ListType(BuiltinTypes.STRING) },
+        inner: { refType: innerType },
+        innerList: { refType: new ListType(innerType) },
+      },
+      annotationRefsOrTypes: {
+        builtin: BuiltinTypes.STRING,
+        builtinList: new ListType(BuiltinTypes.STRING),
+        inner: innerType,
+        innerList: new ListType(innerType),
+      },
+    })
+    const anotherType = new ObjectType({
+      elemID: new ElemID('salto', 'another'),
+      fields: type.fields,
+    })
+    const typeWithMetaType = new ObjectType({
+      elemID: new ElemID('salto', 'withMetaType'),
+      metaType: type,
+    })
+
+    beforeEach(async () => {
+      const changes = [
+        toChange({ after: type }),
+        toChange({ after: typeWithMetaType }),
+        ...Object.values(anotherType.fields).map(field => toChange({ after: field })),
+      ]
+
+      await updateReferenceIndexes(
+        changes,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
+        mapVersions,
+        elementsSource,
+        true,
+        async () => [],
+      )
+    })
+
+    it('should add refTypes dependencies to the referenceTargets index', () => {
+      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: type.fields.inner.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: type.fields.innerList.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: type.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([
+            [
+              '',
+              [
+                { id: innerType.elemID, type: 'strong' },
+                { id: innerType.elemID, type: 'strong' },
+              ],
+            ],
+            [type.fields.inner.elemID.name, [{ id: innerType.elemID, type: 'strong' }]],
+            [type.fields.innerList.elemID.name, [{ id: innerType.elemID, type: 'strong' }]],
+          ]),
+        },
+        {
+          key: typeWithMetaType.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: type.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: anotherType.fields.inner.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+        {
+          key: anotherType.fields.innerList.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap([['', [{ id: innerType.elemID, type: 'strong' }]]]),
+        },
+      ])
+    })
+
+    it('should add the new references to the referenceSources index', () => {
+      expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: innerType.elemID.getFullName(),
+          value: [
+            {
+              id: type.fields.inner.elemID,
+              type: 'strong',
+            },
+            {
+              id: type.fields.innerList.elemID,
+              type: 'strong',
+            },
+            {
+              id: type.elemID.createNestedID('annotation', 'inner'),
+              type: 'strong',
+            },
+            {
+              id: type.elemID.createNestedID('annotation', 'innerList'),
+              type: 'strong',
+            },
+            {
+              id: anotherType.fields.inner.elemID,
+              type: 'strong',
+            },
+            {
+              id: anotherType.fields.innerList.elemID,
+              type: 'strong',
+            },
+          ],
+        },
+        {
+          key: type.elemID.getFullName(),
+          value: [
+            {
+              id: typeWithMetaType.elemID,
+              type: 'strong',
+            },
+          ],
+        },
       ])
     })
   })
@@ -473,6 +601,13 @@ describe('updateReferenceIndexes', () => {
             key: 'test.object.instance.instance',
             value: new collections.treeMap.TreeMap([
               [
+                'templateStaticFile',
+                [
+                  { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
+                  { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
+                ],
+              ],
+              [
                 'someAnnotation',
                 [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
               ],
@@ -484,13 +619,6 @@ describe('updateReferenceIndexes', () => {
                   { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
                 ],
               ],
-              [
-                'templateStaticFile',
-                [
-                  { id: new ElemID('test', 'article', 'instance', 'article'), type: 'strong' },
-                  { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
-                ],
-              ],
             ]),
           },
         ])
@@ -499,6 +627,18 @@ describe('updateReferenceIndexes', () => {
       it('should update referenceSources index using the element source', () => {
         expect(referenceSourcesIndex.clear).toHaveBeenCalled()
         expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
+          {
+            key: 'test.article.instance.article',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+              toReferenceIndexEntry,
+            ),
+          },
+          {
+            key: 'test.macro.instance.macro1',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
+              toReferenceIndexEntry,
+            ),
+          },
           {
             key: 'test.target2.field.someField',
             value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
@@ -514,18 +654,6 @@ describe('updateReferenceIndexes', () => {
           {
             key: 'test.target2.field.anotherTemplateField',
             value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
-          },
-          {
-            key: 'test.article.instance.article',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
-              toReferenceIndexEntry,
-            ),
-          },
-          {
-            key: 'test.macro.instance.macro1',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
-              toReferenceIndexEntry,
-            ),
           },
           {
             key: 'test.target2',
@@ -579,18 +707,6 @@ describe('updateReferenceIndexes', () => {
             key: 'test.object.instance.instance',
             value: new collections.treeMap.TreeMap([
               [
-                'someAnnotation',
-                [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
-              ],
-              ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
-              [
-                'templateValue',
-                [
-                  { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
-                  { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
-                ],
-              ],
-              [
                 'withoutSourceScope',
                 [{ id: new ElemID('test', 'type', 'instance', 'testSourceScope', 'without'), type: 'weak' }],
               ],
@@ -611,6 +727,18 @@ describe('updateReferenceIndexes', () => {
                   { id: new ElemID('test', 'macro', 'instance', 'macro1'), type: 'strong' },
                 ],
               ],
+              [
+                'someAnnotation',
+                [{ id: new ElemID('test', 'target2', 'field', 'someField', 'value'), type: 'strong' }],
+              ],
+              ['someValue', [{ id: new ElemID('test', 'target2', 'instance', 'someInstance'), type: 'strong' }]],
+              [
+                'templateValue',
+                [
+                  { id: new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'), type: 'strong' },
+                  { id: new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'), type: 'strong' },
+                ],
+              ],
             ]),
           },
         ])
@@ -619,22 +747,6 @@ describe('updateReferenceIndexes', () => {
       it('should update referenceSources index using the element source', () => {
         expect(referenceSourcesIndex.clear).toHaveBeenCalled()
         expect(referenceSourcesIndex.setAll).toHaveBeenCalledWith([
-          {
-            key: 'test.target2.field.someField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
-          },
-          {
-            key: 'test.target2.instance.someInstance',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry),
-          },
-          {
-            key: 'test.target2.field.someTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
-          },
-          {
-            key: 'test.target2.field.anotherTemplateField',
-            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
-          },
           {
             key: 'test.type.instance.testSourceScope',
             value: [
@@ -657,6 +769,22 @@ describe('updateReferenceIndexes', () => {
             value: [new ElemID('test', 'object', 'instance', 'instance', 'templateStaticFile')].map(
               toReferenceIndexEntry,
             ),
+          },
+          {
+            key: 'test.target2.field.someField',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation')].map(toReferenceIndexEntry),
+          },
+          {
+            key: 'test.target2.instance.someInstance',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'someValue')].map(toReferenceIndexEntry),
+          },
+          {
+            key: 'test.target2.field.someTemplateField',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
+          },
+          {
+            key: 'test.target2.field.anotherTemplateField',
+            value: [new ElemID('test', 'object', 'instance', 'instance', 'templateValue')].map(toReferenceIndexEntry),
           },
           {
             key: 'test.target2',
@@ -707,9 +835,9 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap([
-            ['val1', [{ id: new ElemID('test', 'type', 'instance', 'someInstance1'), type: 'strong' }]],
             ['val2', [{ id: new ElemID('test', 'type', 'instance', 'someInstance2'), type: 'weak' }]],
             ['val3', [{ id: new ElemID('test', 'type', 'instance', 'someInstance3'), type: 'weak' }]],
+            ['val1', [{ id: new ElemID('test', 'type', 'instance', 'someInstance1'), type: 'strong' }]],
           ]),
         },
       ])

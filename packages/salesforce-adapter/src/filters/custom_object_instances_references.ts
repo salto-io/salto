@@ -434,7 +434,6 @@ const buildCustomObjectPrefixKeyMap = async (elements: Element[]): Promise<Recor
 
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'customObjectInstanceReferencesFilter',
-  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (client === undefined) {
       return {}

@@ -30,7 +30,6 @@ const logInvalidCustomSettings = async (invalidCustomSettings: CustomObjectFetch
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customSettingsFilter',
-  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (client === undefined) {
       return {}

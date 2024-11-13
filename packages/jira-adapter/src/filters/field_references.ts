@@ -5,11 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
+import { PROJECT_COMPONENT_TYPE } from '../constants'
 
 /**
  * Convert field values into references, based on predefined rules.
@@ -20,8 +21,13 @@ const filter: FilterCreator = ({ config }) => ({
     const fixedDefs = referencesRules.map(def =>
       config.fetch.enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),
     )
+    const contextElements = elements
+      .filter(isInstanceElement)
+      // Remove once SALTO-6889 is done: ProjectComponents have no references, so don't need to scan them
+      .filter(instance => instance.elemID.typeName !== PROJECT_COMPONENT_TYPE)
     await referenceUtils.addReferences({
       elements,
+      contextElements,
       fieldsToGroupBy: ['id', 'name', 'originalName', 'groupId', 'key'],
       defs: fixedDefs,
       contextStrategyLookup,

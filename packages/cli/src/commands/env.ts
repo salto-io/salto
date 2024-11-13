@@ -125,7 +125,7 @@ const envDiffDef = createWorkspaceCommand({
     description: 'Compare two workspace environments',
     positionalOptions: [
       {
-        name: 'fromEnv',
+        name: 'fromEnvironment',
         type: 'string',
         required: true,
         description: 'The environment that serves as a baseline for the comparison',

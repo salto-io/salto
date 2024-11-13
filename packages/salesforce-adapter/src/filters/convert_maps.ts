@@ -628,8 +628,9 @@ const filter: FilterCreator = ({ config }) => ({
     })
 
     const fields = elements.filter(isObjectType).flatMap(obj => Object.values(obj.fields))
+    const primitiveTypesByName = _.keyBy(elements.filter(isPrimitiveType), e => e.elemID.name)
     await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldTypeName, annotationToMapDef]) => {
-      const fieldType = elements.filter(isPrimitiveType).find(e => e.elemID.name === fieldTypeName)
+      const fieldType = primitiveTypesByName[fieldTypeName]
       if (fieldType === undefined) {
         log.warn('Cannot find PrimitiveType %s. Skipping converting Fields of this type to maps', fieldTypeName)
         return

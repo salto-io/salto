@@ -153,7 +153,7 @@ salesforce {
 
 | Name                                           | Default when undefined  | Description                                                                                                                                                                                                                                    |
 | ---------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [metadata](#metadata-configuration-options)    | Fetch all metadata       | Specified the metadata fetch                                                                                                                                                                                                                   |
+| [metadata](#metadata-configuration-options)    | Fetch all metadata      | Specified the metadata fetch                                                                                                                                                                                                                   |
 | [data](#data-management-configuration-options) | {} (do not manage data) | Data management configuration object names will not be fetched in case they are matched in includeObjects                                                                                                                                      |
 | fetchAllCustomSettings                         | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                                                        |
 | [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved                          |
@@ -196,8 +196,8 @@ salesforce {
 
 ### Limits
 
-| Name                             | Default when undefined | Description                                                        |
-| -------------------------------- | ---------------------- | ------------------------------------------------------------------ |
+| Name                             | Default when undefined | Description                                                           |
+| -------------------------------- | ---------------------- | --------------------------------------------------------------------- |
 | maxExtraDependenciesQuerySize    | 500                    | Max size of each individual request in the extra dependencies filter  |
 | maxExtraDependenciesResponseSize | 1950                   | Max size of each individual response in the extra dependencies filter |
 
@@ -279,7 +279,7 @@ salesforce {
 | [retry](#client-retry-options)                                | `{}` (no overrides)                                   | Configuration for retrying on errors                                                               |
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)                                   | Limits on the number of concurrent requests of different types                                     |
 | [dataRetry](#client-data-retry-options)                       | `{}` (no overrides)                                   | Configuration for retrying on specific errors regarding data objects (for custom object instances) |
-| [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifying the size of the chunk in readMetadata                                  |
+| [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifying the size of the chunk in readMetadata                                 |
 
 #### Client polling options
 
@@ -300,7 +300,7 @@ salesforce {
 | testLevel          | `NoTestRun` (development) `RunLocalTests` (production) | Specifies which tests are run as part of a deployment. possible values are: `NoTestRun`, `RunSpecifiedTests`, `RunLocalTests` and `RunAllTestsInOrg`                                                                     |
 | runTests           | `[]` (no tests)                                        | A list of Apex tests to run during deployment, must configure `RunSpecifiedTests` in `testLevel` for this option to work                                                                                                 |
 | deleteBeforeUpdate | `false`                                                | If `true`, deploy will make deletions before any other deployed change                                                                                                                                                   |
-| flsProfiles        | `["System Administrator"]`                              | When deploying new CustomFields and CustomObjects, Salto will make them visible to the specified Profiles                                                                                                                |
+| flsProfiles        | `["System Administrator"]`                             | When deploying new CustomFields and CustomObjects, Salto will make them visible to the specified Profiles                                                                                                                |
 
 For more details see the DeployOptions section in the [salesforce documentation of the deploy API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_deploy.htm)
 

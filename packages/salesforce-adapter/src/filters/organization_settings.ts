@@ -151,7 +151,6 @@ export const WARNING_MESSAGE = 'Failed to fetch OrganizationSettings.'
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: FILTER_NAME,
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

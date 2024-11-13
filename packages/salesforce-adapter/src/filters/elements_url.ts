@@ -24,7 +24,6 @@ export const WARNING_MESSAGE =
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'elementsUrlFilter',
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

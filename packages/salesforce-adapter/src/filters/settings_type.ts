@@ -61,7 +61,6 @@ const getSettingsTypeName = (typeName: string): string => typeName.concat(SETTIN
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'settingsFilter',
-  remote: true,
   /**
    * Add all settings types and instances as filter.
    *

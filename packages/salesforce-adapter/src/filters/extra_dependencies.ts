@@ -332,7 +332,6 @@ export const WARNING_MESSAGE =
  */
 const creator: FilterCreator = ({ client, config }) => ({
   name: 'extraDependenciesFilter',
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

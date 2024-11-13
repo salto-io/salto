@@ -34,9 +34,11 @@ import {
   isObjectTypeChange,
   BuiltinTypes,
   isPrimitiveType,
+  isReferenceExpression,
+  isElement,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { FilterCreator } from '../filter'
@@ -55,6 +57,7 @@ import { metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { FetchProfile } from '../types'
+import { apiNameSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -62,7 +65,16 @@ const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
 const log = logger(module)
 
+type ReferenceExpressionToElement = ReferenceExpression & {
+  value: Element
+}
+
+const isResolvedReferenceExpressionToElement = (val: unknown): val is ReferenceExpressionToElement =>
+  isReferenceExpression(val) && isElement(val.value)
+
 type MapKeyFunc = (value: Values) => string
+type MapperInput = string | ReferenceExpressionToElement
+type MapperFunc = (val: MapperInput) => string[]
 type MapDef = {
   // the name of the field whose value should be used to generate the map key
   key: string
@@ -71,7 +83,7 @@ type MapDef = {
   // use lists as map values, in order to allow multiple values under the same map key
   mapToList?: boolean
   // with which mapper should we parse the key
-  mapper?: (string: string) => string[]
+  mapper?: MapperFunc
   // keep a separate list of references for each value to preserve the order
   // Note: this is only supported for one-level maps (nested maps are not supported)
   maintainOrder?: boolean
@@ -80,7 +92,7 @@ type MapDef = {
 export const ORDERED_MAP_VALUES_FIELD = 'values'
 export const ORDERED_MAP_ORDER_FIELD = 'order'
 
-const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
+export const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
   new ObjectType({
     elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
     fields: {
@@ -99,21 +111,22 @@ const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =
     },
   })
 
-/**
- * Convert a string value into the map index keys.
- * Note: Reference expressions are not supported yet (the resolved value is not populated in fetch)
- * so this filter has to run before any filter adding references on the objects with the specified
- * metadata types (e.g Profile).
- */
-export const defaultMapper = (val: string): string[] => val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
+const stringifyMapperInput = (mapperInput: MapperInput): string =>
+  _.isString(mapperInput) ? mapperInput : apiNameSync(mapperInput.value) ?? ''
+
+const isMapperInput = (val: unknown): val is MapperInput =>
+  _.isString(val) || isResolvedReferenceExpressionToElement(val)
+
+export const defaultMapper: MapperFunc = val =>
+  (_.isString(val) ? val : apiNameSync(val.value) ?? '').split(API_NAME_SEPARATOR).map(v => naclCase(v))
 
 /**
  * Convert a string value of a file path to the map index key.
  * In this case, we want to use the last part of the path as the key, and it's
  * unknown how many levels the path has. If there are less than two levels, take only the last.
  */
-const filePathMapper = (val: string): string[] => {
-  const splitPath = val.split('/')
+const filePathMapper = (val: MapperInput): string[] => {
+  const splitPath = stringifyMapperInput(val).split('/')
   if (splitPath.length >= 3) {
     return [naclCase(splitPath.slice(2).join('/'))]
   }
@@ -174,7 +187,7 @@ const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
 const PICKLIST_MAP_FIELD_DEF: MapDef = {
   key: 'fullName',
   maintainOrder: true,
-  mapper: (val: string): string[] => [naclCase(val)],
+  mapper: val => [naclCase(stringifyMapperInput(val))],
 }
 
 const GLOBAL_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
@@ -265,7 +278,17 @@ const convertArraysToMaps = (
       .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
       .forEach(([fieldName, mapDef]) => {
         const mapper = mapDef.mapper ?? defaultMapper
-        const isConvertibleValue = (item: Values): boolean => _.isPlainObject(item) && _.isString(item[mapDef.key])
+        const isConvertibleValue = (item: Values): boolean => {
+          const result = _.isPlainObject(item) && isMapperInput(item[mapDef.key])
+          if (!result) {
+            log.error(
+              'Received non convertible value %s for Element %s',
+              inspectValue(item[mapDef.key]),
+              element.elemID.getFullName(),
+            )
+          }
+          return result
+        }
         const elementValues = getElementValueOrAnnotations(element)
         if (mapDef.nested) {
           const firstLevelGroups = _.groupBy(

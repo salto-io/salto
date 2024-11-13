@@ -21,13 +21,13 @@ const filter: FilterCreator = ({ config }) => ({
     const fixedDefs = referencesRules.map(def =>
       config.fetch.enableMissingReferences ? def : _.omit(def, 'missingRefStrategy'),
     )
-    const contextElements = elements
+    // Remove once SALTO-6889 is done: ProjectComponents have no references, so don't need to scan them
+    const relevantElements = elements
       .filter(isInstanceElement)
-      // Remove once SALTO-6889 is done: ProjectComponents have no references, so don't need to scan them
       .filter(instance => instance.elemID.typeName !== PROJECT_COMPONENT_TYPE)
     await referenceUtils.addReferences({
-      elements,
-      contextElements,
+      elements: relevantElements,
+      contextElements: elements,
       fieldsToGroupBy: ['id', 'name', 'originalName', 'groupId', 'key'],
       defs: fixedDefs,
       contextStrategyLookup,

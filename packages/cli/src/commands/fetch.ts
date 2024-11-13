@@ -285,7 +285,10 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     withChangesDetection,
   } = input
 
-  if ([fromEnvironment, fromWorkspace].some(values.isDefined) && ![fromEnvironment, fromWorkspace].every(values.isDefined)) {
+  if (
+    [fromEnvironment, fromWorkspace].some(values.isDefined) &&
+    ![fromEnvironment, fromWorkspace].every(values.isDefined)
+  ) {
     errorOutputLine('The fromEnvironment and fromWorkspace arguments must both be provided.', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError

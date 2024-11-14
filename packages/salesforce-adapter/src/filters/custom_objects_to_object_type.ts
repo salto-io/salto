@@ -836,33 +836,37 @@ const isSideEffectRemoval =
 const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromInstance> => {
   const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
     const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS]
-    if (!isObjectType(listViewType)) {
+    if (isObjectType(listViewType)) {
+      listViewType.fields.columns.refType = createRefToElmWithValue(
+        toListType(listViewType.fields.columns.getTypeSync()),
+      )
+      listViewType.fields.filters.refType = createRefToElmWithValue(
+        toListType(listViewType.fields.filters.getTypeSync()),
+      )
+    } else {
       log.error('Expected list view to be an object type, got: %s', inspectValue(listViewType))
-      return
     }
-    listViewType.fields.columns.refType = createRefToElmWithValue(toListType(listViewType.fields.columns.getTypeSync()))
-    listViewType.fields.filters.refType = createRefToElmWithValue(toListType(listViewType.fields.filters.getTypeSync()))
 
     const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS]
-    if (!isObjectType(fieldSetType)) {
+    if (isObjectType(fieldSetType)) {
+      fieldSetType.fields.availableFields.refType = createRefToElmWithValue(
+        toListType(fieldSetType.fields.availableFields.getTypeSync()),
+      )
+      fieldSetType.fields.displayedFields.refType = createRefToElmWithValue(
+        toListType(fieldSetType.fields.displayedFields.getTypeSync()),
+      )
+    } else {
       log.error('Expected field set to be an object type, got: %s', inspectValue(listViewType))
-      return
     }
-    fieldSetType.fields.availableFields.refType = createRefToElmWithValue(
-      toListType(fieldSetType.fields.availableFields.getTypeSync()),
-    )
-    fieldSetType.fields.displayedFields.refType = createRefToElmWithValue(
-      toListType(fieldSetType.fields.displayedFields.getTypeSync()),
-    )
 
     const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS]
-    if (!isObjectType(compactLayoutType)) {
+    if (isObjectType(compactLayoutType)) {
+      compactLayoutType.fields.fields.refType = createRefToElmWithValue(
+        toListType(compactLayoutType.fields.fields.getTypeSync()),
+      )
+    } else {
       log.error('Expected compact layout to be an object type, got: %s', inspectValue(listViewType))
-      return
     }
-    compactLayoutType.fields.fields.refType = createRefToElmWithValue(
-      toListType(compactLayoutType.fields.fields.getTypeSync()),
-    )
 
     // internalId is also the name of a field on the custom object instances, therefore
     // we override it here to have the right type for the annotation.

@@ -35,7 +35,7 @@ import {
   setPath,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createAddChange, createRemoveChange, projectChange, projectElementOrValueToEnv } from './projections'
+import { projectChange, projectElementOrValueToEnv } from './projections'
 import { DetailedAddition, wrapAdditions, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, RoutingMode, toPathHint } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
@@ -175,7 +175,9 @@ const overrideIdInSource = (
   const beforeValue = resolvePath(before, id)
   if (beforeValue === undefined) {
     // Nothing to override, just need to add the new value
-    return [{ ...createAddChange(afterValue, id), baseChange: toChange({ before, after: topLevelElement }) }]
+    return [
+      { data: { after: afterValue }, action: 'add', id, baseChange: toChange({ before, after: topLevelElement }) },
+    ]
   }
   // The value exists in the target - override only the relevant part
   return detailedCompare(
@@ -452,7 +454,15 @@ export const routeIsolated = async (
   return {
     // No need to apply addToSource to primary env changes since it was handled by the original plan
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
-    commonSource: [{ ...createRemoveChange(currentCommonElement, change.id, pathHint), baseChange: change.baseChange }],
+    commonSource: [
+      {
+        data: { before: currentCommonElement },
+        action: 'remove',
+        id: change.id,
+        path: pathHint,
+        baseChange: change.baseChange,
+      },
+    ],
     secondarySources: secondaryChanges,
   }
 }

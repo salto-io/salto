@@ -15,7 +15,7 @@ const log = logger(module)
 
 export const TRIGGER_SKILL_FIELDS = ['add_skills', 'set_skills']
 const SKILL_WITH_PRIORITY_PATTERN = /^([a-zA-Z0-9-]+)#([0123])$/ // the regex is a uuid followed by a priority number
-const PRIORITY_NAMES: { [key: string]: string } = {
+export const PRIORITY_NAMES: { [key: string]: string } = {
   '0': 'required',
   '1': 'optional high',
   '2': 'optional medium',

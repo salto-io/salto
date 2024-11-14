@@ -19,8 +19,11 @@ const triggerInstance = new InstanceElement('instance', triggerType, {
   actions: [
     { field: 'set_skills', value: 'wakeBoarding', priority: 'required' },
     { field: 'no_skills_needed', value: 'breathing', priority: 'required' },
-    { field: 'add_skills', value: 'tyingShoes', priority: 'optional' },
+    { field: 'add_skills', value: 'tyingShoes', priority: 'optional high' },
     { field: 'always_fun', value: 'livingWithoutPriority' },
+    { field: 'add_skills', value: 'scubaDiving', priority: 'optional medium' },
+    { field: 'add_skills', value: 'cheeseMaking', priority: 'optional low' },
+    { field: 'set_skills', value: 'previousVersion', priority: 'optional' },
   ],
 })
 
@@ -40,6 +43,9 @@ describe('deploy trigger skills filter', () => {
         { field: 'no_skills_needed', value: 'breathing', priority: 'required' },
         { field: 'add_skills', value: 'tyingShoes#1' },
         { field: 'always_fun', value: 'livingWithoutPriority' },
+        { field: 'add_skills', value: 'scubaDiving#2' },
+        { field: 'add_skills', value: 'cheeseMaking#3' },
+        { field: 'set_skills', value: 'previousVersion#1' },
       ])
     })
   })

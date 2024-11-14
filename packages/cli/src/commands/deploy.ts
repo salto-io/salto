@@ -21,6 +21,7 @@ import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { mkdirp, writeFile } from '@salto-io/file'
 import path from 'path'
+import { DetailedChangeId, DeploySummaryResult } from '@salto-io/core/src/core/deploy'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -39,6 +40,7 @@ import {
   formatDeployActions,
   formatGroups,
   deployErrorsOutput,
+  formatDeploymentSummary,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
@@ -76,6 +78,13 @@ const printStartDeploy = async (output: CliOutput, executingDeploy: boolean, che
   } else {
     outputLine(cancelDeployOutput(checkOnly), output)
   }
+}
+
+const printDeploymentSummary = async (
+  summary: Record<DetailedChangeId, DeploySummaryResult>,
+  output: CliOutput,
+): Promise<void> => {
+  outputLine(formatDeploymentSummary(summary), output)
 }
 
 export const shouldDeploy = async (actions: Plan, checkOnly: boolean): Promise<boolean> => {
@@ -268,22 +277,22 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     changeError =>
       summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
   )
+  await printDeploymentSummary(summary, output)
+  // const postDeployActionsOutputPartialSuccess = Object.keys(summary).filter(key => summary[key] === 'partial-success')
+  // if (postDeployActionsOutputPartialSuccess.length > 0) {
+  //   outputLine('\n', output)
+  //   outputLine(`${postDeployActionsOutputPartialSuccess.length} elements partially succeeded deployment`, output)
+  //   outputLine(postDeployActionsOutputPartialSuccess.join('\n'), output)
+  //   outputLine('\n', output)
+  // }
 
-  const postDeployActionsOutputPartialSuccess = Object.keys(summary).filter(key => summary[key] === 'partial-success')
-  if (postDeployActionsOutputPartialSuccess.length > 0) {
-    outputLine('\n', output)
-    outputLine(`${postDeployActionsOutputPartialSuccess.length} elements partially succeeded deployment`, output)
-    outputLine(postDeployActionsOutputPartialSuccess.join('\n'), output)
-    outputLine('\n', output)
-  }
-
-  const postDeployActionsOutputFailures = Object.keys(summary).filter(key => summary[key] === 'failure')
-  if (postDeployActionsOutputFailures.length > 0) {
-    outputLine('\n', output)
-    outputLine(`${postDeployActionsOutputFailures.length} elements failed deployment`, output)
-    outputLine(postDeployActionsOutputFailures.join('\n'), output)
-    outputLine('\n', output)
-  }
+  // const postDeployActionsOutputFailures = Object.keys(summary).filter(key => summary[key] === 'failure')
+  // if (postDeployActionsOutputFailures.length > 0) {
+  //   outputLine('\n', output)
+  //   outputLine(`${postDeployActionsOutputFailures.length} elements failed deployment`, output)
+  //   outputLine(postDeployActionsOutputFailures.join('\n'), output)
+  //   outputLine('\n', output)
+  // }
 
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,

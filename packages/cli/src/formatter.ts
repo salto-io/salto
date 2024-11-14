@@ -9,6 +9,7 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import chalk from 'chalk'
 import wu, { WuIterable } from 'wu'
+import { DetailedChangeId, DeploySummaryResult } from '@salto-io/core/src/core/deploy'
 import {
   Element,
   isInstanceElement,
@@ -324,6 +325,13 @@ export const formatDeployActions = ({
       deployAction.documentationURL ?? '',
     ]),
   ]
+}
+
+export const formatDeploymentSummary = async (
+  summary: Record<DetailedChangeId, DeploySummaryResult>,
+): Promise<string> => {
+  const tempRet = 's'
+  return tempRet
 }
 
 export const formatExecutionPlan = async (

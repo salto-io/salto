@@ -290,10 +290,7 @@ const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, Ref
     const elemId = ElemID.fromFullName(targetId)
     if (elemId.idType === 'field') {
       const topLevelId = elemId.createTopLevelParentID().parent.getFullName()
-      if (referenceSourcesChanges[topLevelId] === undefined) {
-        referenceSourcesChanges[topLevelId] = []
-      }
-      referenceSourcesChanges[topLevelId].push(...sourceIds)
+      referenceSourcesChanges[topLevelId] = sourceIds.concat(referenceSourcesChanges[topLevelId])
     }
   })
   return referenceSourcesChanges

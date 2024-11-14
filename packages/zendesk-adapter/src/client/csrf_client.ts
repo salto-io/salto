@@ -49,11 +49,6 @@ export default class ZendeskCsrfClient extends ZendeskClient {
       'Content-Type': 'application/json',
       'X-CSRF-Token': this.csrfToken,
     }
-    // This is a hack because the fetch request doesn't have a data param.
-    if (params.body) {
-      params.data = params.body
-      delete params.body
-    }
     try {
       return await super.sendRequest(method, { ...params, headers })
     } catch (e) {

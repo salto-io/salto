@@ -270,14 +270,35 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       elemIdToResult[changeError.elemID.getFullName()] !== 'failure' ||
       changeError.deployActions?.postAction?.showOnFailure,
   )
+<<<<<<< HEAD
   const formattedDeploymentSummary = formatDeploymentSummary(resultToElemId)
   if (formattedDeploymentSummary) {
     outputLine(formattedDeploymentSummary, output)
   }
+=======
+
+  const postDeployActionsOutputPartialSuccess = Object.keys(summary).filter(key => summary[key] === 'partial-success')
+  if (postDeployActionsOutputPartialSuccess.length > 0) {
+    outputLine('\n', output)
+    outputLine(`${postDeployActionsOutputPartialSuccess.length} elements partially succeeded deployment`, output)
+    outputLine(postDeployActionsOutputPartialSuccess.join('\n'), output)
+    outputLine('\n', output)
+  }
+
+  const postDeployActionsOutputFailures = Object.keys(summary).filter(key => summary[key] === 'failure')
+  if (postDeployActionsOutputFailures.length > 0) {
+    outputLine('\n', output)
+    outputLine(`${postDeployActionsOutputFailures.length} elements failed deployment`, output)
+    outputLine(postDeployActionsOutputFailures.join('\n'), output)
+    outputLine('\n', output)
+  }
+
+>>>>>>> e2f863d97 (added post deployment failure and partial success messages)
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,
     isPreDeploy: false,
   })
+
   outputLine(postDeployActionsOutput.join('\n'), output)
   if (result.extraProperties?.groups !== undefined) {
     outputLine(formatGroups(result.extraProperties?.groups, checkOnly), output)

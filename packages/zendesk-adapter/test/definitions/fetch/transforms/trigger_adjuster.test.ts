@@ -38,7 +38,15 @@ describe('trigger_adjuster', () => {
           },
           {
             field: 'set_skills',
-            value: 'optionalSkill#1',
+            value: 'optionalSkillHigh#1',
+          },
+          {
+            field: 'set_skills',
+            value: 'optionalSkillMedium#2',
+          },
+          {
+            field: 'set_skills',
+            value: 'optionalSkillLow#3',
           },
         ],
       }
@@ -53,8 +61,18 @@ describe('trigger_adjuster', () => {
             },
             {
               field: 'set_skills',
-              value: 'optionalSkill',
-              priority: 'optional',
+              value: 'optionalSkillHigh',
+              priority: 'optional high',
+            },
+            {
+              field: 'set_skills',
+              value: 'optionalSkillMedium',
+              priority: 'optional medium',
+            },
+            {
+              field: 'set_skills',
+              value: 'optionalSkillLow',
+              priority: 'optional low',
             },
           ],
         },
@@ -105,7 +123,7 @@ describe('trigger_adjuster', () => {
       actions: [
         {
           field: 'add_skills',
-          value: 'invalid#3',
+          value: 'invalid#4',
         },
       ],
     }
@@ -118,14 +136,14 @@ describe('trigger_adjuster', () => {
         actions: [
           {
             field: 'add_skills',
-            value: 'invalid#3',
+            value: 'invalid#4',
           },
         ],
       },
     })
     expect(logWarn).toHaveBeenCalledWith(
       'For trigger invalidTrigger - Failed to parse skill value with priority: %s',
-      'invalid#3',
+      'invalid#4',
     )
   })
 })

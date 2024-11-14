@@ -14,7 +14,13 @@ import _ from 'lodash'
 const log = logger(module)
 
 export const TRIGGER_SKILL_FIELDS = ['add_skills', 'set_skills']
-const SKILL_WITH_PRIORITY_PATTERN = /^([a-zA-Z0-9-]+)#([01])$/ // the regex is a uuid followed by a priority number
+const SKILL_WITH_PRIORITY_PATTERN = /^([a-zA-Z0-9-]+)#([0123])$/ // the regex is a uuid followed by a priority number
+const PRIORITY_NAMES: { [key: string]: string } = {
+  '0': 'required',
+  '1': 'optional high',
+  '2': 'optional medium',
+  '3': 'optional low',
+}
 
 // This transformer parses skill priority in trigger actions.
 // See https://developer.zendesk.com/documentation/ticketing/using-the-zendesk-api/setting-skill-priority-with-skills-in-trigger-action/
@@ -36,7 +42,7 @@ export const transform: definitions.AdjustFunctionSingle = async ({ value }) => 
           return {
             ...action,
             value: skillWithPriority[1],
-            priority: skillWithPriority[2] === '1' ? 'optional' : 'required',
+            priority: PRIORITY_NAMES[skillWithPriority[2]],
           }
         }
         if (!skillValue.match(/^[a-zA-Z0-9-]+$/)) {

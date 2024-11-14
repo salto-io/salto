@@ -62,6 +62,9 @@ type BuildFetchProfileParams = {
   maxItemsInRetrieveRequest?: number
 }
 
+export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>
+  optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true
+
 export const buildFetchProfile = ({
   fetchParams,
   customReferencesSettings,
@@ -82,7 +85,7 @@ export const buildFetchProfile = ({
   const enabledCustomReferencesHandlers = customReferencesConfiguration(customReferencesSettings)
   return {
     dataManagement: data && buildDataManagement(data),
-    isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
+    isFeatureEnabled: name => isFeatureEnabled(name, optionalFeatures),
     isCustomReferencesHandlerEnabled: name => enabledCustomReferencesHandlers[name] ?? false,
     shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,

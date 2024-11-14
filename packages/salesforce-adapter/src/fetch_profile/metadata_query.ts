@@ -38,6 +38,7 @@ import {
   NESTED_TYPE_TO_PARENT_TYPE,
 } from '../last_change_date_of_types_with_nested_instances'
 import { getFetchTargetsWithDependencies, includesSettingsTypes } from './metadata_types'
+import { isFeatureEnabled } from './fetch_profile'
 
 const { makeArray } = collections.array
 const { isDefined } = values
@@ -96,7 +97,11 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   const fullExcludeList: MetadataQueryParams[] = [
     ...(metadata.exclude ?? []),
     ...PERMANENT_SKIP_LIST,
-    ...makeArray(fetchParams.optionalFeatures?.retrieveSettings ? undefined : { metadataType: SETTINGS_METADATA_TYPE }),
+    ...makeArray(
+      isFeatureEnabled('retrieveSettings', fetchParams.optionalFeatures)
+        ? undefined
+        : { metadataType: SETTINGS_METADATA_TYPE },
+    ),
   ]
 
   const isIncludedInTargetedFetch = (type: string): boolean => {
@@ -108,7 +113,7 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
 
   const include = metadata.include
     ? metadata.include.concat(
-        fetchParams.optionalFeatures?.retrieveSettings &&
+        isFeatureEnabled('retrieveSettings', fetchParams.optionalFeatures) &&
           includesSettingsTypes(metadata.include.map(({ metadataType }) => metadataType).filter(isDefined) ?? [])
           ? [{ metadataType: SETTINGS_METADATA_TYPE }]
           : [],
@@ -128,7 +133,7 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     )
 
   const fixSettingsType = (metadataType: string, name: string): string =>
-    fetchParams.optionalFeatures?.retrieveSettings && metadataType === SETTINGS_METADATA_TYPE
+    isFeatureEnabled('retrieveSettings', fetchParams.optionalFeatures) && metadataType === SETTINGS_METADATA_TYPE
       ? name.concat(SETTINGS_METADATA_TYPE)
       : metadataType
 

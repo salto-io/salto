@@ -6,14 +6,28 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { get, invert } from 'lodash'
 import { TRIGGER_TYPE_NAME } from '../constants'
 import { PRIORITY_NAMES, TRIGGER_SKILL_FIELDS } from '../definitions/fetch/transforms/trigger_adjuster'
 import { FilterCreator } from '../filter'
 
+const log = logger(module)
+
 const PRIORITY_NUMBERS: { [key: string]: string } = {
   ...invert(PRIORITY_NAMES),
   optional: '1', // 'optional' is for backwards compatibility
+}
+
+const extractPriorityNumber = (priority: string): string => {
+  if (priority in PRIORITY_NUMBERS) {
+    return PRIORITY_NUMBERS[priority]
+  }
+  if (priority.match(/unknown_\d+/)) {
+    return priority.split('_')[1]
+  }
+  log.warn('Received unknown priority: %s', priority)
+  return priority
 }
 
 const restoreTriggerSkillToApi = async (
@@ -25,7 +39,7 @@ const restoreTriggerSkillToApi = async (
     .forEach((action: { value?: string; priority?: string }) => {
       if ('priority' in action && 'value' in action) {
         const { value, priority } = action as { value: string; priority: string }
-        action.value = `${value}#${PRIORITY_NUMBERS[priority]}`
+        action.value = `${value}#${extractPriorityNumber(priority)}`
         skillMapping[action.value] = { value, priority }
         delete action.priority
       }

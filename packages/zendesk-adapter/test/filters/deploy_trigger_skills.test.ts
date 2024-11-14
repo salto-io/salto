@@ -24,6 +24,8 @@ const triggerInstance = new InstanceElement('instance', triggerType, {
     { field: 'add_skills', value: 'scubaDiving', priority: 'optional medium' },
     { field: 'add_skills', value: 'cheeseMaking', priority: 'optional low' },
     { field: 'set_skills', value: 'previousVersion', priority: 'optional' },
+    { field: 'set_skills', value: 'isItReallyASkill', priority: 'unknown_12' },
+    { field: 'set_skills', value: 'thisIsActuallyAn', priority: 'invalidCase' },
   ],
 })
 
@@ -46,6 +48,8 @@ describe('deploy trigger skills filter', () => {
         { field: 'add_skills', value: 'scubaDiving#2' },
         { field: 'add_skills', value: 'cheeseMaking#3' },
         { field: 'set_skills', value: 'previousVersion#1' },
+        { field: 'set_skills', value: 'isItReallyASkill#12' },
+        { field: 'set_skills', value: 'thisIsActuallyAn#invalidCase' },
       ])
     })
   })

@@ -79,6 +79,29 @@ describe('trigger_adjuster', () => {
       })
     })
 
+    it('should transform trigger item with a number as a priority that does not match skill priority', async () => {
+      const value = {
+        actions: [
+          {
+            field: 'add_skills',
+            value: 'skillWithLargePriority#44',
+          },
+        ],
+      }
+      const transformedItem = await transformTriggerItem({ value, context: {}, typeName: 'trigger' })
+      expect(transformedItem).toEqual({
+        value: {
+          actions: [
+            {
+              field: 'add_skills',
+              value: 'skillWithLargePriority',
+              priority: 'unknown_44',
+            },
+          ],
+        },
+      })
+    })
+
     it('should transform trigger item with mixed skill priority and non-priority skills', async () => {
       const value = {
         actions: [
@@ -123,7 +146,7 @@ describe('trigger_adjuster', () => {
       actions: [
         {
           field: 'add_skills',
-          value: 'invalid#4',
+          value: 'invalidWithABang!@?',
         },
       ],
     }
@@ -136,14 +159,14 @@ describe('trigger_adjuster', () => {
         actions: [
           {
             field: 'add_skills',
-            value: 'invalid#4',
+            value: 'invalidWithABang!@?',
           },
         ],
       },
     })
     expect(logWarn).toHaveBeenCalledWith(
       'For trigger invalidTrigger - Failed to parse skill value with priority: %s',
-      'invalid#4',
+      'invalidWithABang!@?',
     )
   })
 })

@@ -14,7 +14,7 @@ import _ from 'lodash'
 const log = logger(module)
 
 export const TRIGGER_SKILL_FIELDS = ['add_skills', 'set_skills']
-const SKILL_WITH_PRIORITY_PATTERN = /^([a-zA-Z0-9-]+)#([0123])$/ // the regex is a uuid followed by a priority number
+const SKILL_WITH_PRIORITY_PATTERN = /^([a-zA-Z0-9-]+)#(\d+)$/ // the regex is a uuid followed by a priority number
 export const PRIORITY_NAMES: { [key: string]: string } = {
   '0': 'required',
   '1': 'optional high',
@@ -39,10 +39,21 @@ export const transform: definitions.AdjustFunctionSingle = async ({ value }) => 
       if (typeof skillValue === 'string') {
         const skillWithPriority = skillValue.match(SKILL_WITH_PRIORITY_PATTERN)
         if (skillWithPriority !== null) {
+          const priority =
+            skillWithPriority[2] in PRIORITY_NAMES
+              ? PRIORITY_NAMES[skillWithPriority[2]]
+              : `unknown_${skillWithPriority[2]}`
+          if (priority.startsWith('unknown')) {
+            log.warn(
+              'For trigger %s - Received unknown priority: %s',
+              _.get(value, 'title', 'unknown'),
+              skillWithPriority[2],
+            )
+          }
           return {
             ...action,
             value: skillWithPriority[1],
-            priority: PRIORITY_NAMES[skillWithPriority[2]],
+            priority,
           }
         }
         if (!skillValue.match(/^[a-zA-Z0-9-]+$/)) {

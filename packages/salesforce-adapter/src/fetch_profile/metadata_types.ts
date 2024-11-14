@@ -644,8 +644,8 @@ export const isMetadataTypeWithoutDependencies = (
 export const isMetadataTypeWithDependency = (metadataType: string): metadataType is MetadataTypeWithDependencies =>
   (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
 
-const isSettingsType = (typeName: string): boolean => typeName.endsWith(SETTINGS_METADATA_TYPE)
-export const includesSettingsTypes = (typeNames: readonly string[]): boolean => typeNames.some(isSettingsType)
+export const includesSettingsTypes = (typeNames: readonly string[]): boolean =>
+  typeNames.some(typeName => typeName.endsWith(SETTINGS_METADATA_TYPE))
 
 export const getFetchTargetsWithDependencies = (targets: string[]): string[] => {
   const result = [...targets]

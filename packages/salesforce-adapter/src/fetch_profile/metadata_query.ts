@@ -93,14 +93,10 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   if (target !== undefined) {
     log.debug('targeted fetch types: %o', target)
   }
-  const fullExcludeList = [
+  const fullExcludeList: MetadataQueryParams[] = [
     ...(metadata.exclude ?? []),
     ...PERMANENT_SKIP_LIST,
-    ...makeArray(
-      fetchParams.optionalFeatures?.retrieveSettings
-        ? undefined
-        : ({ metadataType: SETTINGS_METADATA_TYPE } as MetadataQueryParams),
-    ),
+    ...makeArray(fetchParams.optionalFeatures?.retrieveSettings ? undefined : { metadataType: SETTINGS_METADATA_TYPE }),
   ]
 
   const isIncludedInTargetedFetch = (type: string): boolean => {

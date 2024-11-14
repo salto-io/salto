@@ -47,18 +47,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
     const oldInstances = elements.filter(isInstanceOfTypeSync(SETTINGS_METADATA_TYPE))
     const settingsTypes = elements.filter(isObjectType).filter(type => type.annotations.dirName === SETTINGS_DIR_NAME)
 
-    const settingsTypeByName = _(settingsTypes)
-      .keyBy(type => apiNameSync(type) ?? 'missing')
-      .value()
-    if (settingsTypeByName.missing) {
-      log.error('Got settings type with missing api name: %s', inspectValue(settingsTypeByName.missing))
-    }
+    const settingsTypeByName = _.keyBy(settingsTypes, type => apiNameSync(type) ?? '')
 
     const newInstances = oldInstances
-      .map((instance: InstanceElement): [string | undefined, InstanceElement] => [
-        getSettingsTypeName(instance),
-        instance,
-      ])
+      .map<[string | undefined, InstanceElement]>(instance => [getSettingsTypeName(instance), instance])
       .filter(
         (namedInstance: [string | undefined, InstanceElement]): namedInstance is [string, InstanceElement] =>
           namedInstance[0] !== undefined,
@@ -79,7 +71,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       })
       .filter(isDefined)
     _.pullAll(elements, oldInstances)
-    elements.push(...newInstances)
+    newInstances.forEach(instance => elements.push(instance))
   },
 
   // after onFetch, the settings types have annotations.metadataType === '<name>Settings',

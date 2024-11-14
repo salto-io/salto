@@ -16,8 +16,9 @@ import {
   elementAnnotationTypes,
   safeJsonStringify,
   resolvePath,
-  applyDetailedChanges,
   getDetailedChanges,
+  detailedCompare,
+  setPath,
 } from '@salto-io/adapter-utils'
 import {
   CORE_ANNOTATIONS,
@@ -51,10 +52,11 @@ import {
   isTypeReference,
   DetailedChangeWithBaseChange,
   toChange,
+  isFieldChange,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
-import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
 import { splitElementByPath } from './path_index'
 
@@ -449,7 +451,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   )
 
   const createHiddenValueChangeIfNeeded =
-    (hiddenValueChanges: DetailedChange[]): TransformFunc =>
+    (visibleElement: Element): TransformFunc =>
     ({ value, field, path }) => {
       if (path === undefined) {
         return value
@@ -463,9 +465,9 @@ const getHiddenFieldAndAnnotationValueChanges = async (
         if (annotationsToHide !== undefined || annotationsToUnHide !== undefined) {
           Object.entries(value.annotations).forEach(([name, attrValue]) => {
             if (annotationsToHide?.has(name)) {
-              hiddenValueChanges.push(createRemoveChange(attrValue, path.createNestedID(name)))
+              setPath(visibleElement, path.createNestedID(name), undefined)
             } else if (annotationsToUnHide?.has(name)) {
-              hiddenValueChanges.push(createAddChange(attrValue, path.createNestedID(name)))
+              setPath(visibleElement, path.createNestedID(name), attrValue)
             }
           })
         }
@@ -477,11 +479,11 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       const fieldId = field.elemID.getFullName()
       const fieldTypeId = field.refType.elemID.getFullName()
       if (hideFieldIds.has(fieldId)) {
-        hiddenValueChanges.push(createRemoveChange(value, path))
+        setPath(visibleElement, path, undefined)
         return undefined
       }
       if (unhideFieldIds.has(fieldId)) {
-        hiddenValueChanges.push(createAddChange(value, path))
+        setPath(visibleElement, path, value)
         return undefined
       }
       // Handle annotation values on types
@@ -489,11 +491,11 @@ const getHiddenFieldAndAnnotationValueChanges = async (
         const isInTypes = (id: ElemID, typeGroup: Record<string, Set<string>>): boolean =>
           typeGroup[id.createParentID().getFullName()]?.has(id.name)
         if (isInTypes(path, annotationTypesToHide) || hideTypeIds.has(fieldTypeId)) {
-          hiddenValueChanges.push(createRemoveChange(value, path))
+          setPath(visibleElement, path, undefined)
           return undefined
         }
         if (isInTypes(path, annotationTypesToUnHide) || unhideTypeIds.has(fieldTypeId)) {
-          hiddenValueChanges.push(createAddChange(value, path))
+          setPath(visibleElement, path, value)
           return undefined
         }
       }
@@ -501,9 +503,9 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       // itself has changed
       if (path.idType === 'field') {
         if (hideTypeIds.has(fieldTypeId)) {
-          hiddenValueChanges.push(createRemoveChange(value, path))
+          setPath(visibleElement, path, undefined)
         } else if (unhideTypeIds.has(fieldTypeId)) {
-          hiddenValueChanges.push(createAddChange(value, path))
+          setPath(visibleElement, path, value)
         }
       }
       return value
@@ -517,22 +519,22 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   // newly hidden, some of these remove changes may be redundant (if the value we
   // are trying to hide was already removed manually from the visible element)
   return awu(await state.getAll())
-    .filter(element => visibleElementSource.has(element.elemID))
     .flatMap(async element => {
-      const hiddenValueChanges: DetailedChange[] = []
+      const before = await visibleElementSource.get(element.elemID)
+      if (!isElement(before)) {
+        return []
+      }
+      const after = before.clone()
       await transformElement({
         element,
-        transformFunc: createHiddenValueChangeIfNeeded(hiddenValueChanges),
+        transformFunc: createHiddenValueChangeIfNeeded(after),
         strict: true,
         elementsSource: state,
         runOnFields: true,
         allowEmptyArrays: true,
         allowEmptyObjects: true,
       })
-      const after = element.clone()
-      applyDetailedChanges(after, hiddenValueChanges)
-      const baseChange = toChange({ before: element, after })
-      return hiddenValueChanges.map(change => ({ ...change, baseChange }))
+      return detailedCompare(before, after, { createFieldChanges: true })
     })
     .toArray()
 }
@@ -738,8 +740,9 @@ export const filterOutHiddenChanges = async (
       return { visible: change, hidden: change }
     }
 
-    const { parent, path } = change.id.createTopLevelParentID()
-    const baseElem = change.id.isTopLevel() ? change.data.after : await state.get(parent)
+    const baseElem = isFieldChange(change.baseChange)
+      ? getChangeData(change.baseChange).parent
+      : getChangeData(change.baseChange)
 
     if (baseElem === undefined) {
       // If something is not in the state it cannot be hidden
@@ -775,6 +778,7 @@ export const filterOutHiddenChanges = async (
         changeType: TypeElement | undefined
         changePath: ReadonlyArray<string>
       }> => {
+        const { path } = change.id.createTopLevelParentID()
         if (change.id.isAttrID()) {
           return {
             changeType: (await elementAnnotationTypes(baseElem, state))[path[0]],

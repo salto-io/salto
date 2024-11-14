@@ -20,7 +20,6 @@ import {
   isInstanceElement,
   getChangeData,
   Value,
-  ElemID,
   DetailedChange,
   DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
@@ -96,24 +95,6 @@ export const projectElementOrValueToEnv = (
   }
   return projectValue(value, targetElement)
 }
-
-export const createAddChange = (value: Element | Value, id: ElemID, path?: ReadonlyArray<string>): DetailedChange => ({
-  data: { after: value },
-  action: 'add',
-  id,
-  path,
-})
-
-export const createRemoveChange = (
-  value: Element | Value,
-  id: ElemID,
-  path?: ReadonlyArray<string>,
-): DetailedChange => ({
-  data: { before: value },
-  action: 'remove',
-  id,
-  path,
-})
 
 export const projectChange = async (
   change: DetailedChangeWithBaseChange,

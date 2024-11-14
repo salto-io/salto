@@ -56,6 +56,12 @@ type PositionInParent = {
 }
 
 const getPositionInParent = <T>(change: DetailedChangeWithBaseChange & AdditionChange<T>): PositionInParent => {
+  // this can happen only if there was a casting of a DetailedChange to a DetailedChangeWithBaseChange somewhere in the way.
+  if (change.baseChange === undefined) {
+    log.warn('No base change: %s', inspectValue(change))
+    return { followingElementIDs: [] }
+  }
+
   const changeData = getChangeData(change)
   const parent = isField(changeData) ? changeData.parent : getChangeData(change.baseChange)
   const pathInParent = getPath(parent, change.id)

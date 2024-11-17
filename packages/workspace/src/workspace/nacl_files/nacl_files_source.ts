@@ -364,6 +364,16 @@ const buildNaclFilesState = async ({
   const relevantElementIDs: ElemID[] = []
   const newElementsToMerge: AsyncIterable<Element>[] = []
 
+  const filenameToElementIDs = !_.isEmpty(newParsed)
+    ? _.mapValues(
+        await awu(currentState.elementsIndex.entries())
+          .flatMap(row => row.value.map(filename => ({ path: row.key, filename })))
+          .filter(row => newParsed[row.filename] !== undefined)
+          .groupBy(row => row.filename),
+        group => group.map(row => ElemID.fromFullName(row.path)),
+      )
+    : {}
+
   const updateIndex = async <T>(
     index: RemoteMap<T[]>,
     additions: Record<string, Set<T>>,
@@ -457,18 +467,15 @@ const buildNaclFilesState = async ({
         )
 
         const currentNaclFileElements = (await naclFile.elements()) ?? []
-        const oldNaclFileElements = (await parsedFile?.elements()) ?? []
+        const oldNaclFileElementIDs = filenameToElementIDs[naclFile.filename] ?? []
         updateIndexOfFile(
           elementsIndexAdditions,
           elementsIndexDeletions,
           naclFile.filename,
-          oldNaclFileElements.map(e => e.elemID.getFullName()),
+          oldNaclFileElementIDs.map(elemID => elemID.getFullName()),
           currentNaclFileElements.map(e => e.elemID.getFullName()),
         )
-        relevantElementIDs.push(
-          ...currentNaclFileElements.map(e => e.elemID),
-          ...oldNaclFileElements.map(e => e.elemID),
-        )
+        relevantElementIDs.push(...currentNaclFileElements.map(e => e.elemID), ...oldNaclFileElementIDs)
         if (!_.isEmpty(currentNaclFileElements)) {
           newElementsToMerge.push(awu(currentNaclFileElements as Element[]))
         }
@@ -495,13 +502,13 @@ const buildNaclFilesState = async ({
           referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName] ?? new Set<string>()
           referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        const oldNaclFileElements = (await oldNaclFile.elements()) ?? []
-        oldNaclFileElements.forEach(element => {
-          const elementFullName = element.elemID.getFullName()
+        const oldNaclFileElementIDs = filenameToElementIDs[oldNaclFile.filename] ?? []
+        oldNaclFileElementIDs.forEach(elemID => {
+          const elementFullName = elemID.getFullName()
           elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName] ?? new Set<string>()
           elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
+        relevantElementIDs.push(...oldNaclFileElementIDs)
         toDelete.push(naclFile.filename)
         log.trace('Finished updating indexes of %s', naclFile.filename)
       })

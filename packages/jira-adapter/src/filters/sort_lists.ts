@@ -136,6 +136,7 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
 }
 
+// Top level element type names of the above VALUES_TO_SORT
 const TYPES_TO_SORT = new Set<string>([
   PERMISSION_SCHEME_TYPE_NAME,
   ISSUE_TYPE_SCREEN_SCHEME_TYPE,

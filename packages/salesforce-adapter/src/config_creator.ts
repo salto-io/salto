@@ -224,7 +224,7 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
       refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: false,
-        [CORE_ANNOTATIONS.DESCRIPTION]: 'Manage Profiles, PermissionSets and MutingPermissionSets in the Environment',
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Manage Profiles, PermissionSets, MutingPermissionSets and PermissionSetGroups in the Environment',
       },
     },
   },

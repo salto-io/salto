@@ -327,11 +327,42 @@ export const formatDeployActions = ({
   ]
 }
 
-export const formatDeploymentSummary = async (
-  summary: Record<DetailedChangeId, DeploySummaryResult>,
-): Promise<string> => {
-  const tempRet = 's'
-  return tempRet
+export const formatDeploymentSummaryResult = (ids: DetailedChangeId[], result: DeploySummaryResult): string => {
+  const mapping: Record<DeploySummaryResult, DetailedChangeId | null> = {
+    failure: Prompts.DEPLOYMENT_STATUS['failure'],
+    'partial-success': Prompts.DEPLOYMENT_STATUS['partialSuccess'],
+    success: Prompts.DEPLOYMENT_STATUS['success'],
+  }
+
+  const sign: string | null = mapping[result]
+  const lines: string = ids.map(st => ` ${sign} ${st}`).join('\n')
+  return lines
+}
+
+export const formatDeploymentSummary = (summary: Record<DeploySummaryResult, DetailedChangeId[]>): string => {
+  const failure: DeploySummaryResult = 'failure'
+  const partialSuccess: DeploySummaryResult = 'partial-success'
+  const success: DeploySummaryResult = 'success'
+  const headline: string =
+    !Object.prototype.hasOwnProperty.call(summary, failure) &&
+    !Object.prototype.hasOwnProperty.call(summary, partialSuccess)
+      ? Prompts.SUCCESSFUL_DEPLOYMENT
+      : Prompts.NOT_SUCCESSFUL_DEPLOYMENT
+  const succeeded: string | null = Object.prototype.hasOwnProperty.call(summary, success)
+    ? formatDeploymentSummaryResult(summary[success], success)
+    : null
+  const partiallySucceeded: string | null = Object.prototype.hasOwnProperty.call(summary, partialSuccess)
+    ? formatDeploymentSummaryResult(summary[partialSuccess], partialSuccess)
+    : null
+  const failed: string | null = Object.prototype.hasOwnProperty.call(summary, failure)
+    ? formatDeploymentSummaryResult(summary[failure], failure)
+    : null
+  return [
+    emptyLine(),
+    headline,
+    [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
+    emptyLine(),
+  ].join('\n')
 }
 
 export const formatExecutionPlan = async (

@@ -55,6 +55,13 @@ export default class Prompts {
     eq: '|',
   }
 
+  public static readonly DEPLOYMENT_STATUS = {
+    partialSuccess: chalk.yellow.bold('P'),
+    success: chalk.green.bold('S'),
+    failure: chalk.red.bold('F'),
+    eq: '|',
+  }
+
   public static readonly START_ACTION = {
     modify: 'Changing',
     add: 'Creating',
@@ -89,6 +96,9 @@ export default class Prompts {
 
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
+
+  public static readonly SUCCESSFUL_DEPLOYMENT = 'Deployment was successful'
+  public static readonly NOT_SUCCESSFUL_DEPLOYMENT = "Couldn't deploy all elements\nDeployment summary:"
 
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`

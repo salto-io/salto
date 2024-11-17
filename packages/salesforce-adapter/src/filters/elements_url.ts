@@ -27,7 +27,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'elementsUrls',
     fetchFilterFunc: async (elements: Element[]) => {
       if (client === undefined) {
         return

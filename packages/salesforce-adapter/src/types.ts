@@ -96,7 +96,6 @@ export type MetadataParams = {
 }
 
 const OPTIONAL_FEATURES = [
-  'elementsUrls',
   'profilePaths',
   'addMissingIds',
   'authorInformation',
@@ -129,7 +128,12 @@ const OPTIONAL_FEATURES = [
   'lightningPageFieldItemReference',
   'retrieveSettings',
 ] as const
-const DEPRECATED_OPTIONAL_FEATURES = ['generateRefsInProfiles', 'extraDependencies', 'extraDependenciesV2'] as const
+const DEPRECATED_OPTIONAL_FEATURES = [
+  'elementsUrls',
+  'extraDependencies',
+  'extraDependenciesV2',
+  'generateRefsInProfiles',
+] as const
 export type OptionalFeatures = {
   [key in (typeof OPTIONAL_FEATURES)[number]]?: boolean
 }

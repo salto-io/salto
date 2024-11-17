@@ -80,6 +80,7 @@ export type WorkflowDiagramMaps = {
 const INITIAL_TRANSITION_TYPE = 'initial'
 
 const addObjectTypesAnnotation = async (objectTypes: ObjectType[]): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   objectTypes.forEach(async objectType => {
     await addAnnotationRecursively(objectType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(objectType, CORE_ANNOTATIONS.UPDATABLE)

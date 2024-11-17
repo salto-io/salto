@@ -66,6 +66,7 @@ const filterCreator: FilterCreator = () => {
       changes
         .map(getChangeData)
         .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME && Array.isArray(instance.value?.actions))
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         .forEach(async instance => {
           instance.value.actions = instance.value.actions.map((action: { value: string }) => {
             if (skillMapping[action.value]) {

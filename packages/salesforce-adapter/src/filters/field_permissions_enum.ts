@@ -266,6 +266,7 @@ const filter: FilterCreator = ({ config }) => ({
     if (relevantObjectTypes.length === 0) {
       return
     }
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     relevantObjectTypes.forEach(async element => {
       await fieldPermissionFieldToEnum(element)
     })
@@ -282,6 +283,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     log.info('Running enumFieldPermissions preDeploy')
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     instanceChangesWithFieldPermissions.forEach(instanceChange =>
       applyFunctionToChangeData(instanceChange, fieldPermissionValuesToObject),
     )
@@ -301,6 +303,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     log.info('Running enumFieldPermissions onDeploy')
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     instanceChangesWithFieldPermissions.forEach(instanceChange =>
       applyFunctionToChangeData(instanceChange, fieldPermissionValuesToEnum),
     )
@@ -309,6 +312,7 @@ const filter: FilterCreator = ({ config }) => ({
         .map(inst => inst.getType())
         .keyBy(type => apiName(type)),
     )
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     instanceTypes.forEach(fieldPermissionFieldToEnum)
   },
 })

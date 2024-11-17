@@ -238,6 +238,7 @@ describe('buildS3DirectoryStore', () => {
     })
     it('should delete a batch of 1000 files each API Call', async () => {
       const files = Array.from({ length: 2000 }, (_, i) => `a/${i}`)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       files.forEach(async file => directoryStore.delete(file))
 
       expect(deleteManyObjectsMock).not.toHaveBeenCalled()

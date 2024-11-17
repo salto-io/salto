@@ -1065,6 +1065,7 @@ describe('Test utils.ts', () => {
           const numArrayFieldType = mockType.fields.numArray.getTypeSync()
           expect(isListType(numArrayFieldType)).toBeTruthy()
           const numArrayValues = mockInstance.value.numArray as string[]
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           wu(numArrayValues).forEach(async value =>
             expect(transformFunc).toHaveBeenCalledWith({
               value,
@@ -1083,6 +1084,7 @@ describe('Test utils.ts', () => {
           const numMapFieldType = mockType.fields.numMap.getTypeSync()
           expect(isMapType(numMapFieldType)).toBeTruthy()
           const numMapValues = mockInstance.value.numMap as Map<string, number>
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           wu(Object.entries(numMapValues)).forEach(async ([key, value]) => {
             const calls = transformFunc.mock.calls.map(c => c[0]).filter(c => c.field && c.field.name === key)
             expect(calls).toHaveLength(1)
@@ -1124,6 +1126,7 @@ describe('Test utils.ts', () => {
             ['obj', 0, 'mapOfStringList', 'l1'],
             ['obj', 1, 'mapOfStringList', 'something'],
           ]
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           wu(nestedPrimitivePaths).forEach(async path => {
             const field = await getField(mockType, path, mockInstance.value)
             const calls = transformFunc.mock.calls
@@ -1226,6 +1229,7 @@ describe('Test utils.ts', () => {
               field: new Field(defaultFieldParent, 'numbers', BuiltinTypes.NUMBER),
             }),
           )
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           wu(Object.entries(origValue.numMap)).forEach(async ([key, value]) => {
             const field = new Field(
               toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),

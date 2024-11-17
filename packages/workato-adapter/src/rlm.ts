@@ -347,6 +347,7 @@ const convertChangesToRLMFormat = (
   )
 
   validConnections.map(getChangeData).forEach(connection => connectionToZipFormat(zip, connection))
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   validRecipes.map(getChangeData).forEach(recipe => recipeToZipFormat(zip, recipe))
 
   const invalidElements = [...invalidConnections, ...invalidRecipes].map(change => getChangeData(change).elemID)

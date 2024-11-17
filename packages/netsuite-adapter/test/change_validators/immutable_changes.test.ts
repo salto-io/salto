@@ -251,7 +251,7 @@ describe('customization type change validator', () => {
         BuiltinTypes.STRING,
         { [SCRIPT_ID]: 'custom_field' },
       )
-
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       new Array<ChangeDataType>(entityCustomFieldInstance, type, field).forEach(async element => {
         const change = await immutableChangesValidator([toChange({ after: element })], mockChangeValidatorParams())
         expect(change).toEqual([])

@@ -53,6 +53,7 @@ const filter: FilterCreator = () => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME)
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         .forEach(async instance => {
           originalChangeByElemID[instance.elemID.getFullName()] = instance.clone()
           const constraintsArray = resolvePath(
@@ -110,6 +111,7 @@ const filter: FilterCreator = () => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ACCESS_POLICY_RULE_TYPE_NAME)
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         .forEach(async instance => {
           // restore actions to its original value
           if (originalChangeByElemID[instance.elemID.getFullName()] !== undefined) {

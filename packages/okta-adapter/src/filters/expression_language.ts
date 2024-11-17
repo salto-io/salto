@@ -222,6 +222,7 @@ const filter: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         .forEach(async instance => {
           const { pathToContainer, fieldName, isIdentityEngine } = TYPE_TO_DEF[instance.elemID.typeName]
           const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
@@ -266,6 +267,7 @@ const filter: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         .forEach(async instance => {
           const { pathToContainer, fieldName } = TYPE_TO_DEF[instance.elemID.typeName]
           const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))

@@ -228,7 +228,7 @@ describe('sortListsFilter', () => {
 
     it('should sort inner lists', async () => {
       const type = new ObjectType({
-        elemID: new ElemID(JIRA, 'someType'),
+        elemID: new ElemID(JIRA, DASHBOARD_TYPE),
         fields: {
           schemes: {
             refType: new ListType(permissionSchemeType),

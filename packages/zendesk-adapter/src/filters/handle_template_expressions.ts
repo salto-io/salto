@@ -420,17 +420,12 @@ const replaceFormulasWithTemplates = ({
       const idRegex = /\d+/
       const match = expression.match(idRegex)
       if (!match || !match.index) {
-        log.error(`Error parsing id in expression, could not find a match: ${expression}`)
+        log.warn(`Error parsing id in expression, could not find a match: ${expression}`)
         return expression
       }
       const id = match[0]
       const prefix = expression.slice(0, match.index)
-      const suffix = expression.slice(match.index + id?.length, expression.length)
-      // should always be false, used for type check
-      if (id === undefined) {
-        log.error(`Error parsing id in expression: ${expression}`)
-        return expression
-      }
+      const suffix = expression.slice(match.index + id.length, expression.length)
       const instance = instancesById[id]
       if (instance === undefined && !enableMissingReferences) {
         return expression

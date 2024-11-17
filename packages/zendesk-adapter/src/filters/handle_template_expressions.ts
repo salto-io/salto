@@ -59,7 +59,7 @@ const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_t
 const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
 const SPLIT_REGEX = `${TICKET_FIELD_SPLIT}|${KEY_SPLIT}|${TITLE_SPLIT}`
-const ID_KEY_IN_JSON_REGEX = /("id"\s*:\s*\d+)/
+const ID_KEY_IN_JSON_REGEX = /("id"\s*:\s*"?\d+"?)/
 export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
 export const TICKET_TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 export const TICKET_ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
@@ -416,21 +416,23 @@ const replaceFormulasWithTemplates = ({
       if (!ID_KEY_IN_JSON_REGEX.test(expression)) {
         return expression
       }
+      // "id": "29607168675603" or "id": 29607168675603
       const idRegex = /\d+/
-      const id = expression.match(idRegex)?.[0]
-      // should always be false, used for type check
-      if (id === undefined) {
-        log.error(`Error parsing id in expression: ${expression}`)
+      const match = expression.match(idRegex)
+      if (!match || !match.index) {
+        log.warn(`Error parsing id in expression, could not find a match: ${expression}`)
         return expression
       }
+      const id = match[0]
+      const prefix = expression.slice(0, match.index)
+      const suffix = expression.slice(match.index + id.length, expression.length)
       const instance = instancesById[id]
       if (instance === undefined && !enableMissingReferences) {
         return expression
       }
 
-      const expressionWithoutId = expression.replace(idRegex, '')
       const idInstance = instance ?? createMissingInstance(ZENDESK, 'unknown', id)
-      return [expressionWithoutId, new ReferenceExpression(idInstance.elemID, idInstance)]
+      return [prefix, new ReferenceExpression(idInstance.elemID, idInstance), suffix ?? '']
     })
   }
 

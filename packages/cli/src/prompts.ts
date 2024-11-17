@@ -56,9 +56,15 @@ export default class Prompts {
   }
 
   public static readonly DEPLOYMENT_STATUS = {
+<<<<<<< HEAD
     partialSuccess: chalk.yellow('P'),
     success: chalk.green('S'),
     failure: chalk.red('F'),
+=======
+    partialSuccess: chalk.yellow.bold('P'),
+    success: chalk.green.bold('S'),
+    failure: chalk.red.bold('F'),
+>>>>>>> bb0af43de (better look, not printing if all successful)
     eq: '|',
   }
 

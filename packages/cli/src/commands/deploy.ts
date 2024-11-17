@@ -84,7 +84,35 @@ const printDeploymentSummary = async (
   summary: Record<DetailedChangeId, DeploySummaryResult>,
   output: CliOutput,
 ): Promise<void> => {
-  outputLine(formatDeploymentSummary(summary), output)
+  const dictionaryB = Object.entries(summary).reduce(
+    (acc, [key, value]) => {
+      acc[value] = acc[value] || [] // Ensure an array exists for this value
+      acc[value].push(key) // Add the key to the array
+      return acc
+    },
+    {} as Record<DeploySummaryResult, DetailedChangeId[]>,
+  )
+  outputLine(formatDeploymentSummary(dictionaryB), output)
+  // const failure: DeploySummaryResult = 'failure'
+  // const partialSuccess: DeploySummaryResult = 'partial-success'
+  // const success: DeploySummaryResult = 'success'
+  // if (
+  //   !Object.prototype.hasOwnProperty.call(dictionaryB, failure) &&
+  //   !Object.prototype.hasOwnProperty.call(dictionaryB, partialSuccess)
+  // ) {
+  //   outputLine(Prompts.SUCCESSFUL_DEPLOYMENT, output)
+  // } else {
+  //   outputLine(Prompts.NOT_SUCCESSFUL_DEPLOYMENT, output)
+  //   if (Object.prototype.hasOwnProperty.call(dictionaryB, success)) {
+  //     outputLine(formatDeploymentSummaryResult(dictionaryB[success], success), output)
+  //   }
+  //   if (Object.prototype.hasOwnProperty.call(dictionaryB, partialSuccess)) {
+  //     outputLine(formatDeploymentSummaryResult(dictionaryB[partialSuccess], partialSuccess), output)
+  //   }
+  //   if (Object.prototype.hasOwnProperty.call(dictionaryB, failure)) {
+  //     outputLine(formatDeploymentSummaryResult(dictionaryB[failure], failure), output)
+  //   }
+  // }
 }
 
 export const shouldDeploy = async (actions: Plan, checkOnly: boolean): Promise<boolean> => {

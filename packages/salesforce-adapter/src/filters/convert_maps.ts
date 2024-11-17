@@ -118,7 +118,9 @@ const isMapperInput = (val: unknown): val is MapperInput =>
   _.isString(val) || isResolvedReferenceExpressionToElement(val)
 
 export const defaultMapper: MapperFunc = val =>
-  (_.isString(val) ? val : apiNameSync(val.value) ?? '').split(API_NAME_SEPARATOR).map(v => naclCase(v))
+  stringifyMapperInput(val)
+    .split(API_NAME_SEPARATOR)
+    .map(v => naclCase(v))
 
 /**
  * Convert a string value of a file path to the map index key.

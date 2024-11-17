@@ -11,6 +11,7 @@ import { configType, MetadataInstance } from '../src/types'
 import { optionsType, getConfig, SalesforceConfigOptionsType } from '../src/config_creator'
 import {
   MUTING_PERMISSION_SET_METADATA_TYPE,
+  PERMISSION_SET_GROUP_METADATA_TYPE,
   PERMISSION_SET_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
 } from '../src/constants'
@@ -85,6 +86,7 @@ describe('config_creator', () => {
           PROFILE_METADATA_TYPE,
           PERMISSION_SET_METADATA_TYPE,
           MUTING_PERMISSION_SET_METADATA_TYPE,
+          PERMISSION_SET_GROUP_METADATA_TYPE,
         ])
       })
       it('should include Profiles and PermissionSets when value is true', async () => {
@@ -93,6 +95,7 @@ describe('config_creator', () => {
           PROFILE_METADATA_TYPE,
           PERMISSION_SET_METADATA_TYPE,
           MUTING_PERMISSION_SET_METADATA_TYPE,
+          PERMISSION_SET_GROUP_METADATA_TYPE,
         ])
       })
     })
@@ -105,6 +108,7 @@ describe('config_creator', () => {
           PROFILE_METADATA_TYPE,
           PERMISSION_SET_METADATA_TYPE,
           MUTING_PERMISSION_SET_METADATA_TYPE,
+          PERMISSION_SET_GROUP_METADATA_TYPE,
         ])
       })
       it('should include Profiles and PermissionSets when value is true', async () => {
@@ -115,6 +119,7 @@ describe('config_creator', () => {
           PROFILE_METADATA_TYPE,
           PERMISSION_SET_METADATA_TYPE,
           MUTING_PERMISSION_SET_METADATA_TYPE,
+          PERMISSION_SET_GROUP_METADATA_TYPE,
         ])
       })
     })

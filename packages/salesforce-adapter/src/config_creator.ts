@@ -24,19 +24,29 @@ import {
 } from '@salto-io/adapter-utils'
 import { configType } from './types'
 import * as constants from './constants'
-import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
+import {
+  CPQ_NAMESPACE,
+  CUSTOM_OBJECT_ID_FIELD,
+  MUTING_PERMISSION_SET_METADATA_TYPE,
+  PERMISSION_SET_GROUP_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+} from './constants'
 
 const log = logger(module)
 
 const excludeProfilesAndPermissionSets = [
   {
-    metadataType: 'Profile',
+    metadataType: PROFILE_METADATA_TYPE,
   },
   {
-    metadataType: 'PermissionSet',
+    metadataType: PERMISSION_SET_METADATA_TYPE,
   },
   {
-    metadataType: 'MutingPermissionSet',
+    metadataType: MUTING_PERMISSION_SET_METADATA_TYPE,
+  },
+  {
+    metadataType: PERMISSION_SET_GROUP_METADATA_TYPE,
   },
 ]
 
@@ -81,9 +91,6 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
         },
         {
           metadataType: 'DocumentFolder',
-        },
-        {
-          metadataType: 'PermissionSetGroup',
         },
         {
           metadataType: 'SiteDotCom',

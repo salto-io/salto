@@ -15,14 +15,30 @@ import {
   InstanceElement,
   ListType,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import {
   createDefaultInstanceFromType,
   createMatchingObjectType,
   createOptionsTypeGuard,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { configType } from './types'
 import * as constants from './constants'
 import { CPQ_NAMESPACE, CUSTOM_OBJECT_ID_FIELD } from './constants'
+
+const log = logger(module)
+
+const excludeProfilesAndPermissionSets = [
+  {
+    metadataType: 'Profile',
+  },
+  {
+    metadataType: 'PermissionSet',
+  },
+  {
+    metadataType: 'MutingPermissionSet',
+  },
+]
 
 export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType, {
   fetch: {
@@ -65,15 +81,6 @@ export const configWithCPQ = new InstanceElement(ElemID.CONFIG_NAME, configType,
         },
         {
           metadataType: 'DocumentFolder',
-        },
-        {
-          metadataType: 'Profile',
-        },
-        {
-          metadataType: 'PermissionSet',
-        },
-        {
-          metadataType: 'MutingPermissionSet',
         },
         {
           metadataType: 'PermissionSetGroup',
@@ -188,6 +195,7 @@ type ManagedPackage = (typeof MANAGED_PACKAGES)[number]
 export type SalesforceConfigOptionsType = {
   cpq?: boolean
   managedPackages?: ManagedPackage[]
+  manageProfilesAndPermissionSets?: boolean
 }
 
 export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>({
@@ -205,18 +213,38 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
           'Names of managed packages to fetch into the environment [Learn more](https://help.salto.io/en/articles/9164974-extending-your-salesforce-configuration-with-managed-packages)',
       },
     },
+    manageProfilesAndPermissionSets: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: false,
+        [CORE_ANNOTATIONS.DESCRIPTION]: 'Manage Profiles, PermissionSets and MutingPermissionSets in the Environment',
+      },
+    },
   },
 })
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
-  const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  let configInstance = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
   if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
-    return defaultConf
+    return configInstance
   }
+
   if (options.value.cpq === true || options.value.managedPackages?.includes(CPQ_MANAGED_PACKAGE)) {
-    return configWithCPQ
+    configInstance = configWithCPQ.clone()
   }
-  return defaultConf
+  const shouldIncludeProfilesAndPermissionSets = options.value.manageProfilesAndPermissionSets ?? false
+  if (!shouldIncludeProfilesAndPermissionSets) {
+    const excludeSection = configInstance.value?.fetch?.metadata?.exclude
+    if (Array.isArray(excludeSection)) {
+      configInstance.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfilesAndPermissionSets]
+    } else {
+      log.error(
+        'Failed to exclude Profiles and PermissionSets due to invalid exclude section in config instance: %s',
+        inspectValue(configInstance.value),
+      )
+    }
+  }
+  return configInstance
 }
 
 export const configCreator: ConfigCreator = {

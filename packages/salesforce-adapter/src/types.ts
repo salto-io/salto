@@ -940,7 +940,6 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DashboardFolder' },
               { metadataType: 'Document' },
               { metadataType: 'DocumentFolder' },
-              { metadataType: 'MutingPermissionSet' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',

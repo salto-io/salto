@@ -6,7 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { invertNaclCase, naclCase, normalizeFilePathPart, pathNaclCase, prettifyName } from '../src/nacl_case_utils'
+import {
+  invertNaclCase,
+  naclCase,
+  fileNameNaclCase,
+  normalizeFilePathPart,
+  pathNaclCase,
+  prettifyName,
+} from '../src/nacl_case_utils'
 
 describe('naclCase utils', () => {
   const generateRandomChar = (): string => String.fromCharCode(Math.random() * 65535)
@@ -134,6 +141,18 @@ describe('naclCase utils', () => {
       it('Should return the first 200 chars', () => {
         expect(pathNaclCase(longString)).toEqual(longString.slice(0, 200))
       })
+    })
+  })
+
+  describe('fileNameNaclCase func', () => {
+    it('should return empty string for empty input', () => {
+      expect(fileNameNaclCase('')).toEqual('')
+    })
+    it('should replace @ with . at the end of the input', () => {
+      expect(fileNameNaclCase('name@')).toEqual('name.')
+    })
+    it('should replace @ with . in the middle of the input', () => {
+      expect(fileNameNaclCase('name@name')).toEqual('name.name')
     })
   })
 

@@ -263,7 +263,7 @@ const getWorkatoErrors = (elemList: ElemID[], error: Error): SaltoError[] => {
   )
 }
 
-const recipeToZipFormat = async (zip: JSZip, recipe: InstanceElement): Promise<void> => {
+const recipeToZipFormat = (zip: JSZip, recipe: InstanceElement): void => {
   const configList = recipe.value.config.map((conf: RecipeConfig) => ({
     keyword: conf.keyword,
     provider: conf.provider,
@@ -347,7 +347,6 @@ const convertChangesToRLMFormat = (
   )
 
   validConnections.map(getChangeData).forEach(connection => connectionToZipFormat(zip, connection))
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   validRecipes.map(getChangeData).forEach(recipe => recipeToZipFormat(zip, recipe))
 
   const invalidElements = [...invalidConnections, ...invalidRecipes].map(change => getChangeData(change).elemID)

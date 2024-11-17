@@ -519,6 +519,7 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async (elements: Element[]) => handleTemplateExpressionsOnFetch(elements, config),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         getContainers(changes.map(getChangeData)).forEach(async container =>
           replaceTemplatesWithValues(container, deployTemplateMapping, prepRef),
         )

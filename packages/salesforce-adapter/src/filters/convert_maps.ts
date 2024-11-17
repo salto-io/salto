@@ -363,6 +363,7 @@ const updateFieldTypes = async (
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   Object.entries(instanceMapFieldDef).forEach(async ([fieldName, mapDef]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {
@@ -401,6 +402,7 @@ const updateAnnotationRefTypes = async (
   nonUniqueMapFields: string[],
   mapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   Object.entries(mapFieldDef).forEach(async ([fieldName, mapDef]) => {
     const fieldType = _.get(typeElement.annotationRefTypes, fieldName).type
     // navigate to the right field type
@@ -517,6 +519,7 @@ const convertFieldsBackToMaps = (
   mapFieldDef: Record<string, MapDef>,
   elementType: string,
 ): void => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   changes.forEach(change =>
     applyFunctionToChangeData(change, element => {
       convertArraysToMaps(element, mapFieldDef, elementType)
@@ -535,6 +538,7 @@ const convertFieldTypesBackToLists = async (
   instanceType: ObjectType,
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   Object.entries(instanceMapFieldDef).forEach(async ([fieldName]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {

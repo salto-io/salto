@@ -142,6 +142,7 @@ const transformObjectLookupValueSetFullNames = async (
   ) => ReferenceExpression | string | undefined,
 ): Promise<ObjectType> => {
   const lookupFields = await getLookupFields(object)
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   lookupFields.forEach(field => transformLookupValueSetFullNames(field, transformFullNameFn))
   return object
 }
@@ -172,6 +173,7 @@ const replaceLookupObjectValueSetValuesWithReferences = async (customObjects: Ob
       : apiNameToCustomObject[mappedFullName]
     return elementToRef !== undefined ? new ReferenceExpression(elementToRef.elemID) : fullName
   }
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   relevantObjects.forEach(object => transformObjectLookupValueSetFullNames(object, transformFullNameToRef))
 }
 

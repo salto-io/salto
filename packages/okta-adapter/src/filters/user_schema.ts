@@ -33,6 +33,7 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === USER_SCHEMA_TYPE_NAME)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       .forEach(async change => {
         const userTypeValues = getParents(getChangeData(change))?.[0]
         if (!isUserType(userTypeValues)) {
@@ -54,6 +55,7 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === USER_SCHEMA_TYPE_NAME)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       .forEach(async change => {
         // The id returned from the service includes the base url, update the field to include only the id
         const id = extractIdFromUrl(getChangeData(change).value.id)

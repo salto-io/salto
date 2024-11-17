@@ -304,6 +304,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           changes.forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
@@ -328,6 +329,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as enumFieldPermissions map type", async () => {
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           changes.forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
@@ -361,6 +363,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           changes.forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
@@ -385,6 +388,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           changes.forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()

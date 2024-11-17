@@ -32,7 +32,7 @@ const filter: FilterCreator = () => ({
           },
         }) ?? {}
     })
-
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     elements.filter(isObjectType).forEach(async type => {
       delete type.fields.self
     })

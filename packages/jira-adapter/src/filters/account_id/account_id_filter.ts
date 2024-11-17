@@ -269,6 +269,7 @@ const cacheAndSimplifyAccountId =
   }
 
 const convertType = async (objectType: ObjectType): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   ACCOUNT_ID_FIELDS_NAMES.forEach(async fieldName => {
     if (
       Object.prototype.hasOwnProperty.call(objectType.fields, fieldName) &&

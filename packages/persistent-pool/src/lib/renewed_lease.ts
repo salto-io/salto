@@ -43,6 +43,7 @@ export default class RenewedLease<T> extends types.Bean<RenewedLeaseOpts<T>> imp
   }
 
   private renewTimeout(): NodeJS.Timeout {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     return setTimeout(this.renew.bind(this), this.timeout - this.renewMargin)
   }
 

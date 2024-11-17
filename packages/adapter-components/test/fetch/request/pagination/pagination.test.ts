@@ -85,14 +85,14 @@ describe('pagination', () => {
           funcCreator: paginationFuncCreator,
         },
         callArgs: {
-          body: { something: 'SOMETHING' },
+          data: { something: 'SOMETHING' },
         },
         contexts: [],
       })
       expect(result).toEqual([{ context: {}, pages: [{ a: 'a' }] }])
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(client.post).toHaveBeenCalledTimes(1)
-      expect(client.post).toHaveBeenCalledWith({ url: '/ep', body: { something: 'SOMETHING' } })
+      expect(client.post).toHaveBeenCalledWith({ url: '/ep', data: { something: 'SOMETHING' } })
     })
     it('should pass query args in all requests', async () => {
       paginationFunc

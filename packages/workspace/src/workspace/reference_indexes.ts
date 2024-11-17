@@ -293,7 +293,7 @@ const getReferenceSourcesMap = (references: ReferenceInfo[]): Record<string, Ref
       if (referenceSourcesChanges[topLevelId] === undefined) {
         referenceSourcesChanges[topLevelId] = []
       }
-      referenceSourcesChanges[topLevelId].push(...sourceIds)
+      referenceSourcesChanges[topLevelId] = referenceSourcesChanges[topLevelId].concat(sourceIds)
     }
   })
   return referenceSourcesChanges

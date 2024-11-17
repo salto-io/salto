@@ -957,6 +957,18 @@ describe('Custom Objects to Object Type filter', () => {
         })
       })
     })
+
+    describe('missing custom object type fields', () => {
+      beforeEach(async () => {
+        customObjectType.fields = {}
+        await filter.onFetch(result)
+      })
+
+      it('should convert SObject', () => {
+        const caseElements = findElements(result, 'Case')
+        expect(caseElements).toHaveLength(1)
+      })
+    })
   })
 
   describe('preDeploy and onDeploy', () => {

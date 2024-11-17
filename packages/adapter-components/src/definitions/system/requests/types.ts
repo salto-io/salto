@@ -34,7 +34,7 @@ export type RequestArgs = {
     omitEmpty?: boolean
   }
   // TODO support x-www-form-urlencoded + URLSearchParams
-  body?: unknown
+  data?: unknown
 }
 
 export type PollingArgs = {

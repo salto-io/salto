@@ -11,9 +11,13 @@ import _ from 'lodash'
 import {
   AUTOMATION_TYPE,
   DASHBOARD_TYPE,
+  FIELD_CONFIGURATION_SCHEME_TYPE,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
   NOTIFICATION_EVENT_TYPE_NAME,
   NOTIFICATION_SCHEME_TYPE_NAME,
+  PERMISSION_SCHEME_TYPE_NAME,
   PROJECT_ROLE_TYPE,
+  REQUEST_TYPE_NAME,
   WORKFLOW_CONFIGURATION_TYPE,
   WORKFLOW_RULES_TYPE_NAME,
   WORKFLOW_STATUS_TYPE_NAME,
@@ -132,6 +136,19 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
 }
 
+const TYPES_TO_SORT = new Set<string>([
+  PERMISSION_SCHEME_TYPE_NAME,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
+  AUTOMATION_TYPE,
+  FIELD_CONFIGURATION_SCHEME_TYPE,
+  NOTIFICATION_SCHEME_TYPE_NAME,
+  DASHBOARD_TYPE,
+  PROJECT_ROLE_TYPE,
+  REQUEST_TYPE_NAME,
+  WORKFLOW_TYPE_NAME,
+  WORKFLOW_CONFIGURATION_TYPE,
+])
+
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
 
 const sortLists = (instance: InstanceElement, isDataCenter: boolean): void => {
@@ -169,7 +186,10 @@ const sortLists = (instance: InstanceElement, isDataCenter: boolean): void => {
 const filter: FilterCreator = ({ client }) => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    elements.filter(isInstanceElement).forEach(instance => sortLists(instance, client.isDataCenter))
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => TYPES_TO_SORT.has(instance.elemID.typeName))
+      .forEach(instance => sortLists(instance, client.isDataCenter))
   },
 })
 

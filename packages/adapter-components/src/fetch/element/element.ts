@@ -121,20 +121,20 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
 
   const generate: ElementGenerator['generate'] = () => {
     const entriesByTopLevelTypes = _.mapValues(
-      _.pickBy(defQuery.getAll(), def => def.element?.topLevel !== undefined),
-      (_def, typeName) => valuesByType[typeName] ?? []
+      _.pickBy(defQuery.getAll(), def => def.element?.topLevel?.isTopLevel),
+      (_def, typeName) => valuesByType[typeName] ?? [],
     )
     const allResults = Object.entries(entriesByTopLevelTypes).flatMap(([typeName, values]) => {
       try {
         return generateInstancesWithInitialTypes({
-              adapterName,
-              defQuery,
-              entries: values,
-              typeName,
-              definedTypes: predefinedTypes,
-              getElemIdFunc,
-              customNameMappingFunctions,
-            })
+          adapterName,
+          defQuery,
+          entries: values,
+          typeName,
+          definedTypes: predefinedTypes,
+          getElemIdFunc,
+          customNameMappingFunctions,
+        })
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5842)
         if (e instanceof InvalidSingletonType) {

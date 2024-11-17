@@ -446,7 +446,7 @@ const quickDeployOrDeploy = async (
 ): Promise<SFDeployResult> => {
   const createProgressReporterCallback =
     (suffix?: string) =>
-    async (deployResult: SFDeployResult): Promise<void> => {
+    (deployResult: SFDeployResult): void => {
       if (!progressReporter) {
         return
       }
@@ -457,7 +457,6 @@ const quickDeployOrDeploy = async (
     try {
       return await client.quickDeploy(
         quickDeployParams.requestId,
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         createProgressReporterCallback(ProgressReporterSuffix.QuickDeploy),
       )
     } catch (e) {
@@ -465,12 +464,10 @@ const quickDeployOrDeploy = async (
       return client.deploy(
         pkgData,
         { checkOnly },
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         createProgressReporterCallback(ProgressReporterSuffix.QuickDeployFailed),
       )
     }
   }
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   return client.deploy(pkgData, { checkOnly }, createProgressReporterCallback())
 }
 

@@ -38,7 +38,7 @@ import {
   NESTED_TYPE_TO_PARENT_TYPE,
 } from '../last_change_date_of_types_with_nested_instances'
 import { getFetchTargetsWithDependencies, includesSettingsTypes } from './metadata_types'
-import { isFeatureEnabled } from './fetch_profile'
+import { isFeatureEnabled } from './optional_features'
 
 const { makeArray } = collections.array
 const { isDefined } = values

@@ -11,7 +11,6 @@ import {
   FetchProfile,
   FetchParameters,
   METADATA_CONFIG,
-  OptionalFeatures,
   MetadataQuery,
   CustomReferencesSettings,
 } from '../types'
@@ -20,40 +19,9 @@ import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../constants'
 import { mergeWithDefaultImportantValues } from './important_values'
 import { customReferencesConfiguration } from '../custom_references/handlers'
-
-type OptionalFeaturesDefaultValues = {
-  [FeatureName in keyof OptionalFeatures]?: boolean
-}
+import { isFeatureEnabled } from './optional_features'
 
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
-
-const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
-  fetchProfilesUsingReadApi: false,
-  skipAliases: false,
-  toolingDepsOfCurrentNamespace: false,
-  extraDependenciesV2: true,
-  extendedCustomFieldInformation: false,
-  importantValues: true,
-  hideTypesFolder: true,
-  omitStandardFieldsNonDeployableValues: true,
-  metaTypes: false,
-  cpqRulesAndConditionsRefs: true,
-  flowCoordinates: true,
-  improvedDataBrokenReferences: true,
-  taskAndEventCustomFields: true,
-  sharingRulesMaps: true,
-  excludeNonRetrievedProfilesRelatedInstances: true,
-  waveMetadataSupport: true,
-  indexedEmailTemplateAttachments: true,
-  skipParsingXmlNumbers: true,
-  logDiffsFromParsingXmlNumbers: true,
-  extendTriggersMetadata: true,
-  removeReferenceFromFilterItemToRecordType: true,
-  storeProfilesAndPermissionSetsBrokenPaths: true,
-  picklistsAsMaps: false,
-  lightningPageFieldItemReference: true,
-  retrieveSettings: false,
-}
 
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
@@ -61,9 +29,6 @@ type BuildFetchProfileParams = {
   metadataQuery?: MetadataQuery
   maxItemsInRetrieveRequest?: number
 }
-
-export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>
-  optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true
 
 export const buildFetchProfile = ({
   fetchParams,

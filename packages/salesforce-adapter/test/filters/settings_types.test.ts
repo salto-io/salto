@@ -7,65 +7,58 @@
  */
 import { InstanceElement, isInstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/settings_types'
-import {
-  INSTANCE_FULL_NAME_FIELD,
-  METADATA_TYPE,
-  RECORDS_PATH,
-  SALESFORCE,
-  SETTINGS_DIR_NAME,
-} from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, SETTINGS_DIR_NAME } from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import { mockTypes } from '../mock_elements'
 
-const createSettingsType = (name: string): ObjectType =>
-  createMetadataTypeElement(name, {
-    annotations: {
-      dirName: SETTINGS_DIR_NAME,
-    },
-  })
-
-const createSettingsInstance = (name: string): InstanceElement =>
-  new InstanceElement(
-    name,
-    mockTypes.Settings,
-    {
-      [INSTANCE_FULL_NAME_FIELD]: name,
-    },
-    [SALESFORCE, RECORDS_PATH, SETTINGS_DIR_NAME, name],
-  )
-
 describe('Test Settings Types', () => {
-  const filter = filterCreator({
-    config: {
-      ...defaultFilterContext,
-      fetchProfile: buildFetchProfile({
-        fetchParams: {
-          optionalFeatures: {
-            retrieveSettings: true,
-          },
-        },
-      }),
-    },
-  }) as FilterWith<'onFetch'>
+  const createSettingsType = (name: string): ObjectType =>
+    createMetadataTypeElement(name, {
+      annotations: {
+        dirName: SETTINGS_DIR_NAME,
+      },
+    })
+
+  const createSettingsInstance = (name: string): InstanceElement =>
+    new InstanceElement(
+      name,
+      mockTypes.Settings,
+      {
+        [INSTANCE_FULL_NAME_FIELD]: name,
+      },
+      [SALESFORCE, RECORDS_PATH, SETTINGS_DIR_NAME, name],
+    )
 
   describe('on fetch', () => {
+    let filter: FilterWith<'onFetch'>
     let elements: Element[]
 
+    beforeEach(() => {
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: {
+              optionalFeatures: {
+                retrieveSettings: true,
+              },
+            },
+          }),
+        },
+      }) as FilterWith<'onFetch'>
+    })
+
     describe('when all settings instances have matching types', () => {
-      let types: ObjectType[]
+      let types: Element[]
       let beforeInstances: InstanceElement[]
 
       beforeEach(async () => {
         types = [createSettingsType('AccountSettings'), createSettingsType('CompanySettings')]
         beforeInstances = [createSettingsInstance('Account'), createSettingsInstance('Company')]
-        elements = (types as Element[]).concat(beforeInstances)
+        elements = types.concat(beforeInstances)
         await filter.onFetch(elements)
-      })
-
-      it('should include all settings types', () => {
-        expect(elements).toIncludeAllMembers(types)
       })
 
       it('should map all settings instances to the matching type', () => {
@@ -84,18 +77,31 @@ describe('Test Settings Types', () => {
       })
     })
 
-    describe('when settings type is missing an api name', () => {
-      let settingsType: ObjectType
+    describe('when optional feature is disabled', () => {
+      let types: Element[]
+      let beforeInstances: InstanceElement[]
 
       beforeEach(async () => {
-        settingsType = createSettingsType('AccountSettings')
-        delete settingsType.annotations[METADATA_TYPE]
-        elements = [settingsType, createSettingsInstance('Account')]
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                optionalFeatures: {
+                  retrieveSettings: false,
+                },
+              },
+            }),
+          },
+        }) as FilterWith<'onFetch'>
+        types = [createSettingsType('AccountSettings'), createSettingsType('CompanySettings')]
+        beforeInstances = [createSettingsInstance('Account'), createSettingsInstance('Company')]
+        elements = types.concat(beforeInstances)
         await filter.onFetch(elements)
       })
 
-      it('should drop the settings instance', () => {
-        expect(elements).toEqual([settingsType])
+      it('should leave all element unchanged', () => {
+        expect(elements).toEqual(types.concat(beforeInstances))
       })
     })
   })

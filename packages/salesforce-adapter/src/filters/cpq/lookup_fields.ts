@@ -45,6 +45,7 @@ import {
   CPQ_DISCOUNT_SCHEDULE,
   API_NAME_SEPARATOR,
 } from '../../constants'
+import { apiNameSync } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -142,17 +143,12 @@ const transformObjectLookupValueSetFullNames = async (
   ) => ReferenceExpression | string | undefined,
 ): Promise<ObjectType> => {
   const lookupFields = await getLookupFields(object)
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  lookupFields.forEach(field => transformLookupValueSetFullNames(field, transformFullNameFn))
+  await awu(lookupFields).forEach(field => transformLookupValueSetFullNames(field, transformFullNameFn))
   return object
 }
 
 const replaceLookupObjectValueSetValuesWithReferences = async (customObjects: ObjectType[]): Promise<void> => {
-  const apiNameToCustomObject = Object.fromEntries(
-    await awu(customObjects)
-      .map(async object => [await apiName(object), object])
-      .toArray(),
-  )
+  const apiNameToCustomObject = _.keyBy(customObjects, customObject => apiNameSync(customObject) ?? '')
   const relevantObjects = await awu(customObjects)
     .filter(async object => Object.keys(LOOKUP_FIELDS).includes(await apiName(object)))
     .toArray()
@@ -171,10 +167,9 @@ const replaceLookupObjectValueSetValuesWithReferences = async (customObjects: Ob
     const elementToRef = isCustomFieldLookupDef(lookupDef)
       ? apiNameToCustomObject[lookupDef.objectContext]?.fields[mappedFullName]
       : apiNameToCustomObject[mappedFullName]
-    return elementToRef !== undefined ? new ReferenceExpression(elementToRef.elemID) : fullName
+    return elementToRef !== undefined ? new ReferenceExpression(elementToRef.elemID, elementToRef) : fullName
   }
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  relevantObjects.forEach(object => transformObjectLookupValueSetFullNames(object, transformFullNameToRef))
+  await awu(relevantObjects).forEach(object => transformObjectLookupValueSetFullNames(object, transformFullNameToRef))
 }
 
 const transformFullNameToApiName = (

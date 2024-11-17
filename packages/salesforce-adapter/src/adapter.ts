@@ -23,9 +23,13 @@ import {
   PartialFetchData,
   Element,
   isInstanceElement,
+  Field,
+  isField,
+  isObjectType,
+  TypeReference,
 } from '@salto-io/adapter-api'
-import { filter, inspectValue, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
-import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
+import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -205,6 +209,7 @@ export const allFilters: Array<FilterCreator> = [
   emailTemplateFilter,
   // standardValueSetFilter should run before convertMapsFilter
   standardValueSetFilter,
+  cpqLookupFieldsFilter,
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
   // picklistReferences should run after convertMapsFilter and before fieldReferencesFilter
@@ -213,7 +218,6 @@ export const allFilters: Array<FilterCreator> = [
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
   cpqCustomScriptFilter,
-  cpqLookupFieldsFilter,
   // cpqRulesAndConditionsFilter depends on cpqReferencableFieldReferencesFilter
   cpqRulesAndConditionsRefsFilter,
   animationRulesFilter,
@@ -435,6 +439,40 @@ const getIncludedTypesFromElementsSource = async (
 type CreateFiltersRunnerParams = {
   fetchProfile: FetchProfile
   contextOverrides?: Partial<FilterContext>
+}
+
+const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
+  typeRef.elemID.name.startsWith('OrderedMap<')
+
+const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
+  Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)
+
+const isElementWithOrderedMap = (element: Element): boolean => {
+  if (isField(element)) {
+    return isFieldWithOrderedMapAnnotation(element)
+  }
+  if (isInstanceElement(element)) {
+    return Object.values(element.getTypeSync().fields).some(field => isOrderedMapTypeOrRefType(field.getTypeSync()))
+  }
+  if (isObjectType(element)) {
+    return Object.values(element.fields).some(isFieldWithOrderedMapAnnotation)
+  }
+  return false
+}
+
+export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
+  element,
+  getLookUpNameFunc,
+  elementsSource,
+  allowEmpty = true,
+) => {
+  const resolvedElement = await resolveValues(element, getLookUpNameFunc, elementsSource, allowEmpty)
+  // Since OrderedMaps' order values reference values that may contain references, we should resolve the Element twice
+  // in order to fully resolve it. An example use-case for this is the Field `SBQQ__ProductRule__c.SBQQ__LookupObject__c`
+  // Where the `fullName` of the Picklist values is a Reference to a Custom Object.
+  return isElementWithOrderedMap(resolvedElement)
+    ? resolveValues(resolvedElement, getLookUpNameFunc, elementsSource, allowEmpty)
+    : resolvedElement
 }
 
 type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
@@ -689,7 +727,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       ? getLookupNameForDataInstances(fetchProfile)
       : getLookUpName(fetchProfile)
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookupNameFunc))
+      .map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues))
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)

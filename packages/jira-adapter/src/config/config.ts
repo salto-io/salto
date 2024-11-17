@@ -76,6 +76,7 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   automationPageSize?: number
   splitFieldContextOptions?: boolean
   enableRequestTypeFieldNameAlignment?: boolean
+  removeFieldConfigurationDefaultValues?: boolean
 }
 
 export type MaskingConfig = {
@@ -171,6 +172,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableNewWorkflowAPI: true,
     allowUserCallFailure: false,
     enableAssetsObjectFieldConfiguration: false,
+    removeFieldConfigurationDefaultValues: false,
   },
   deploy: {
     forceDelete: false,
@@ -330,6 +332,7 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     automationPageSize: { refType: BuiltinTypes.NUMBER },
     splitFieldContextOptions: { refType: BuiltinTypes.BOOLEAN },
     enableRequestTypeFieldNameAlignment: { refType: BuiltinTypes.BOOLEAN },
+    removeFieldConfigurationDefaultValues: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchCriteriaType: fetchFiltersType,
   omitElemID: true,
@@ -386,6 +389,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'fetch.automationPageSize',
       'fetch.parseAdditionalAutomationExpressions',
       'fetch.enableRequestTypeFieldNameAlignment',
+      'fetch.removeFieldConfigurationDefaultValues',
       'deploy.taskMaxRetries',
       'deploy.taskRetryDelay',
       'deploy.ignoreMissingExtensions',

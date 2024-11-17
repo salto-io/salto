@@ -93,7 +93,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-      .map(instance => addFieldConfigurationItemDefaultValues(instance))
+      .map(addFieldConfigurationItemDefaultValues)
   },
   onDeploy: async changes => {
     if (!config.fetch.removeFieldConfigurationDefaultValues) {
@@ -104,7 +104,7 @@ const filter: FilterCreator = ({ config }) => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-      .map(instance => removeFieldConfigurationItemDefaultValues(instance))
+      .map(removeFieldConfigurationItemDefaultValues)
   },
 })
 

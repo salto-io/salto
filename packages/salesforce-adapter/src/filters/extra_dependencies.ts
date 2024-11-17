@@ -35,11 +35,6 @@ const log = logger(module)
 
 const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 
-// temporary workaround for SALTO-1162 until we switch to using bulk api v2 -
-// there is a max of 2000 entries returned per query, so we separate the heavy
-// types to their own queries to increase the limit (may extend / make this dynamic in the future)
-const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 'ApexPage', 'CustomField']
-
 // The current limit for using Bulk API V1 to query Tooling Records
 const TOOLING_QUERY_MAX_RECORDS = 1950
 const INITIAL_QUERY_CHUNK_SIZE = 500
@@ -70,73 +65,6 @@ type QueryDepsParams = {
 /**
  * Get a list of known dependencies between metadata components.
  */
-
-const createQueries = (
-  whereClauses: string[],
-  toolingDepsOfCurrentNamespace: boolean,
-  orgNamespace: string | undefined,
-): string[] => {
-  const baseQueries = whereClauses.map(
-    clause => `SELECT 
-    MetadataComponentId, MetadataComponentType, MetadataComponentName, 
-    RefMetadataComponentId, RefMetadataComponentType, RefMetadataComponentName 
-  FROM MetadataComponentDependency WHERE ${clause}`,
-  )
-  if (!toolingDepsOfCurrentNamespace) {
-    return baseQueries
-  }
-  const nonNamespaceDepsQueries = baseQueries.map(
-    query => `${query} AND MetadataComponentNamespace = '${orgNamespace}'`,
-  )
-  const namespaceDepsQueries = baseQueries.map(query => `${query} AND MetadataComponentNamespace != '${orgNamespace}'`)
-  return nonNamespaceDepsQueries.concat(namespaceDepsQueries)
-}
-
-const getDependencies = async (
-  client: SalesforceClient,
-  toolingDepsOfCurrentNamespace: boolean,
-): Promise<DependencyGroup[]> => {
-  const allTypes = REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `'${t}'`).join(', ')
-  const whereClauses = [
-    ...REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY.map(t => `MetadataComponentType='${t}'`),
-    `MetadataComponentType NOT IN (${allTypes})`,
-  ]
-  const allQueries = createQueries(whereClauses, toolingDepsOfCurrentNamespace, client.orgNamespace)
-  const allDepsIters = await Promise.all(allQueries.map(q => client.queryAll(q, true)))
-
-  const queriesRecordsCount: number[] = []
-  const allDepsResults = allDepsIters.map(iter =>
-    collections.asynciterable.mapAsync(iter, recs => {
-      queriesRecordsCount.push(recs.length)
-      return recs.map(rec => ({
-        from: {
-          type: rec.MetadataComponentType,
-          id: rec.MetadataComponentId,
-          name: rec.MetadataComponentName,
-        },
-        to: {
-          type: rec.RefMetadataComponentType,
-          id: rec.RefMetadataComponentId,
-          name: rec.RefMetadataComponentName,
-        },
-      }))
-    }),
-  )
-
-  const deps = (
-    await Promise.all(allDepsResults.map(async res => (await collections.asynciterable.toArrayAsync(res)).flat()))
-  ).flat()
-
-  log.debug('extra dependencies queries info: %o', {
-    queries: allQueries,
-    counts: queriesRecordsCount,
-  })
-
-  return _.values(_.groupBy(deps, dep => Object.entries(dep.from))).map(depArr => ({
-    from: depArr[0].from,
-    to: depArr.map(dep => dep.to),
-  }))
-}
 
 const queryDeps = async ({
   client,
@@ -219,7 +147,7 @@ const queryDeps = async ({
   return deps
 }
 
-const getDependenciesV2 = async (params: QueryDepsParams): Promise<DependencyGroup[]> => {
+const getDependencies = async (params: QueryDepsParams): Promise<DependencyGroup[]> => {
   const deps = await queryDeps(params)
   return _.values(_.groupBy(deps, dep => Object.entries(dep.from))).map(depArr => ({
     from: depArr[0].from,
@@ -335,20 +263,17 @@ const creator: FilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {
       if (client === undefined) {
         return
       }
 
-      const groupedDeps = config.fetchProfile.isFeatureEnabled('extraDependenciesV2')
-        ? await getDependenciesV2({
-            client,
-            elements,
-            initialChunkSize: config.fetchProfile.limits?.maxExtraDependenciesQuerySize ?? INITIAL_QUERY_CHUNK_SIZE,
-            maxResponseSize: config.fetchProfile.limits?.maxExtraDependenciesResponseSize ?? TOOLING_QUERY_MAX_RECORDS,
-          })
-        : await getDependencies(client, config.fetchProfile.isFeatureEnabled('toolingDepsOfCurrentNamespace'))
+      const groupedDeps = await getDependencies({
+        client,
+        elements,
+        initialChunkSize: config.fetchProfile.limits?.maxExtraDependenciesQuerySize ?? INITIAL_QUERY_CHUNK_SIZE,
+        maxResponseSize: config.fetchProfile.limits?.maxExtraDependenciesResponseSize ?? TOOLING_QUERY_MAX_RECORDS,
+      })
       const fetchedElements = buildElementsSourceFromElements(elements)
       const allElements = buildElementsSourceForFetch(elements, config)
 

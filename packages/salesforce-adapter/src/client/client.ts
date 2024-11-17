@@ -920,6 +920,7 @@ export default class SalesforceClient implements ISalesforceClient {
         log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
       }
     }
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
 
     const clearPollingInterval = (result: DeployResult): DeployResult => {

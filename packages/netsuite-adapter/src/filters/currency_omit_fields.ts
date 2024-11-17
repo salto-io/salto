@@ -21,6 +21,7 @@ const filterCreator: LocalFilterCreator = () => ({
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .filter(async change => getChangeData<InstanceElement>(change).elemID.typeName === CURRENCY)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       .forEach(change =>
         applyFunctionToChangeData<Change<InstanceElement>>(change, element => {
           element.value = _.omit(element.value, FIELDS_TO_OMIT)

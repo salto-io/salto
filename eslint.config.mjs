@@ -151,9 +151,7 @@ export default [{
         "@typescript-eslint/return-await": ["error", "in-try-catch"],
         "@typescript-eslint/no-floating-promises": ["error"],
 
-        "@typescript-eslint/no-misused-promises": ["error", {
-            checksVoidReturn: false,
-        }],
+        "@typescript-eslint/no-misused-promises": ["error"],
 
         "jest/valid-describe": ["off"],
 

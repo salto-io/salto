@@ -43,6 +43,8 @@ import {
   createInstanceElement,
   isCustom,
   MetadataMetaType,
+  createMetadataTypeElements,
+  StandardSettingsMetaType,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -68,7 +70,8 @@ import flowFilter from './filters/flow'
 import addMissingIdsFilter from './filters/add_missing_ids'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
-import settingsFilter from './filters/settings_type'
+import legacySettingsFilter from './filters/settings_type'
+import settingsFilter from './filters/settings_types'
 import workflowFilter, { WORKFLOW_FIELD_TO_TYPE } from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
@@ -127,6 +130,7 @@ import {
   isCustomObjectSync,
   isCustomType,
   isInstanceOfCustomObjectSync,
+  isInstanceOfTypeSync,
   isMetadataInstanceElementSync,
   listMetadataObjects,
   metadataTypeSync,
@@ -167,7 +171,6 @@ import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './c
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
-const { makeArray } = collections.array
 const { partition } = promises.array
 const { concatObjects } = objects
 const { isDefined } = values
@@ -177,6 +180,7 @@ const log = logger(module)
 export const allFilters: Array<FilterCreator> = [
   waveStaticFilesFilter,
   createMissingInstalledPackagesInstancesFilter,
+  legacySettingsFilter,
   settingsFilter,
   // should run before customObjectsFilter
   workflowFilter,
@@ -345,6 +349,7 @@ const METADATA_TO_RETRIEVE = [
   'ReportFolder',
   'ReportType',
   'Scontrol', // contains encoded zip content
+  'Settings',
   'SharingRules',
   'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
@@ -606,32 +611,44 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
+    const hardCodedTypesMap = new Map(
+      hardCodedTypes
+        .map(type => [apiNameSync(type), type] as [string | undefined, TypeElement])
+        .filter((namedType): namedType is [string, TypeElement] => namedType[0] !== undefined),
+    )
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
-    const metadataTypesPromise = this.fetchTypes({
+
+    progressReporter.reportProgress({ message: 'Fetching types' })
+    const metadataTypes = await this.fetchTypes({
       metadataQuery,
       withChangesDetection,
       metadataTypeInfosPromise,
-      hardCodedTypes,
+      hardCodedTypes: hardCodedTypesMap,
       metadataMetaType,
     })
-    progressReporter.reportProgress({ message: 'Fetching types' })
-    const metadataTypes = await metadataTypesPromise
 
-    const metadataInstancesPromise = this.fetchMetadataInstances(
-      metadataTypeInfosPromise,
-      metadataTypesPromise,
-      fetchProfile,
-    )
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
-      await metadataInstancesPromise
+      await this.fetchMetadataInstances(metadataTypeInfosPromise, metadataTypes, fetchProfile)
+
+    progressReporter.reportProgress({ message: 'Fetching Metadata Settings types' })
+    const standardSettingsMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? StandardSettingsMetaType : undefined
+    const settingsTypes = fetchProfile.isFeatureEnabled('retrieveSettings')
+      ? await this.fetchMetadataSettingsTypes({
+          instances: metadataInstancesElements,
+          knownTypes: hardCodedTypesMap,
+          standardSettingsMetaType,
+        })
+      : []
+
     const elements = [
-      ...makeArray(metadataMetaType),
+      ...[metadataMetaType, standardSettingsMetaType].filter(isDefined),
       ...fieldTypes,
       ...hardCodedTypes,
       ...metadataTypes,
       ...metadataInstancesElements,
+      ...settingsTypes,
     ]
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
@@ -802,7 +819,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     metadataQuery: MetadataQuery
     withChangesDetection: boolean
     metadataTypeInfosPromise: Promise<MetadataObject[]>
-    hardCodedTypes: TypeElement[]
+    hardCodedTypes: Map<string, TypeElement>
     metadataMetaType?: ObjectType
   }): Promise<TypeElement[]> {
     if (!withChangesDetection) {
@@ -827,15 +844,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   @logDuration('fetching metadata types')
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
-    knownMetadataTypes: TypeElement[],
+    knownTypes: Map<string, TypeElement>,
     metaType?: ObjectType,
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
-    const knownTypes = new Map<string, TypeElement>(
-      await awu(knownMetadataTypes)
-        .map(async mdType => [await apiName(mdType), mdType] as [string, TypeElement])
-        .toArray(),
-    )
     const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
     const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined))
     return (
@@ -850,7 +862,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   @logDuration('fetching instances')
   private async fetchMetadataInstances(
     typeInfoPromise: Promise<MetadataObject[]>,
-    types: Promise<TypeElement[]>,
+    types: TypeElement[],
     fetchProfile: FetchProfile,
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypes: ObjectType[]): Promise<FetchElements<InstanceElement[]>> => {
@@ -868,7 +880,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
     const typeInfos = await typeInfoPromise
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
-    const topLevelTypes = await awu(await types)
+    const topLevelTypes = await awu(types)
       .filter(isMetadataObjectType)
       .filter(async t => topLevelTypeNames.includes(await apiName(t)) || t.annotations.folderContentType !== undefined)
       .toArray()
@@ -894,6 +906,50 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       elements: _.flatten(allInstances.map(instances => instances.elements)),
       configChanges: _.flatten(allInstances.map(instances => instances.configChanges)),
     }
+  }
+
+  @logDuration('fetching Metadata Settings types')
+  private async fetchMetadataSettingsTypes({
+    instances,
+    knownTypes,
+    standardSettingsMetaType,
+  }: {
+    instances: InstanceElement[]
+    knownTypes: Map<string, TypeElement>
+    standardSettingsMetaType?: ObjectType
+  }): Promise<TypeElement[]> {
+    const fetchSettingsType = async (settingsTypeName: string): Promise<ObjectType[]> => {
+      const typeFields = await this.client.describeMetadataType(settingsTypeName)
+      try {
+        return await createMetadataTypeElements({
+          name: settingsTypeName,
+          fields: typeFields.valueTypeFields,
+          knownTypes,
+          baseTypeNames: new Set([settingsTypeName]),
+          childTypeNames: new Set(),
+          client: this.client,
+          isSettings: true,
+          annotations: {
+            suffix: 'settings',
+            dirName: constants.SETTINGS_DIR_NAME,
+          },
+          metaType: standardSettingsMetaType,
+        })
+      } catch (e) {
+        log.error('Failed to fetch settings type %s reason: %s', settingsTypeName, inspectValue(e))
+        return []
+      }
+    }
+
+    return (
+      await Promise.all(
+        instances
+          .filter(isInstanceOfTypeSync(constants.SETTINGS_METADATA_TYPE))
+          .map(instance => apiNameSync(instance))
+          .filter(isDefined)
+          .map(typeName => fetchSettingsType(`${typeName}${constants.SETTINGS_METADATA_TYPE}`)),
+      )
+    ).flat()
   }
 
   private async createMetadataInstances(

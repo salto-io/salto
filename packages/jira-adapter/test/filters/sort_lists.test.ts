@@ -228,7 +228,7 @@ describe('sortListsFilter', () => {
 
     it('should sort inner lists', async () => {
       const type = new ObjectType({
-        elemID: new ElemID(JIRA, 'someType'),
+        elemID: new ElemID(JIRA, DASHBOARD_TYPE),
         fields: {
           schemes: {
             refType: new ListType(permissionSchemeType),
@@ -261,6 +261,47 @@ describe('sortListsFilter', () => {
               },
               {
                 permission: 'B',
+              },
+            ],
+          },
+        ],
+      })
+    })
+
+    it('should not sort inner lists if type not in supported-type list', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID(JIRA, 'some_type'),
+        fields: {
+          schemes: {
+            refType: new ListType(permissionSchemeType),
+          },
+        },
+      })
+      const inst = new InstanceElement('instance', type, {
+        schemes: [
+          {
+            permissions: [
+              {
+                permission: 'B',
+              },
+              {
+                permission: 'A',
+              },
+            ],
+          },
+        ],
+      })
+
+      await filter.onFetch?.([inst])
+      expect(inst.value).toEqual({
+        schemes: [
+          {
+            permissions: [
+              {
+                permission: 'B',
+              },
+              {
+                permission: 'A',
               },
             ],
           },

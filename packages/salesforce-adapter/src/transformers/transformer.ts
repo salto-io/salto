@@ -102,6 +102,7 @@ import {
   SALESFORCE_DATE_PLACEHOLDER,
   SECURITY_CLASSIFICATION,
   SETTINGS_PATH,
+  STANDARD_SETTINGS_META_TYPE,
   TYPES_PATH,
   VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS,
@@ -1492,6 +1493,11 @@ export const createMetaType = (
   })
 
 export const MetadataMetaType = createMetaType(METADATA_META_TYPE, metadataAnnotationTypes, 'Metadata type')
+export const StandardSettingsMetaType = createMetaType(
+  STANDARD_SETTINGS_META_TYPE,
+  metadataAnnotationTypes,
+  'Standard Settings',
+)
 
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations

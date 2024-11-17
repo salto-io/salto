@@ -15,7 +15,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   fetchProfilesUsingReadApi: false,
   skipAliases: false,
   toolingDepsOfCurrentNamespace: false,
-  extraDependenciesV2: true,
   extendedCustomFieldInformation: false,
   importantValues: true,
   hideTypesFolder: true,

@@ -227,6 +227,21 @@ const LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
   target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
 }
 
+const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'genAiFunctionName', parentTypes: ['GenAiPlannerFunctionDef'] },
+    target: { type: 'GenAiFunction' },
+  },
+  {
+    src: { field: 'genAiPluginName', parentTypes: ['GenAiPlannerFunctionDef'] },
+    target: { type: 'GenAiPlugin' },
+  },
+  {
+    src: { field: 'functionName', parentTypes: ['GenAiPluginFunctionDef'] },
+    target: { type: 'GenAiFunction' },
+  },
+]
+
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
@@ -1080,6 +1095,7 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
     .concat(
       fetchProfile.isFeatureEnabled('lightningPageFieldItemReference') ? [LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF] : [],
     )
+    .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

@@ -37,6 +37,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   picklistsAsMaps: false,
   lightningPageFieldItemReference: true,
   retrieveSettings: false,
+  genAiReferences: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

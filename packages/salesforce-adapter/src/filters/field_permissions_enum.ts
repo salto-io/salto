@@ -193,9 +193,9 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
   return instance
 }
 
-const fieldPermissionFieldToEnum = async (objectType: ObjectType): Promise<void> => {
+const fieldPermissionFieldToEnum = (objectType: ObjectType): void => {
   if (isTypeWithFieldPermissions(objectType)) {
-    const fieldType = await objectType.fields.fieldPermissions.getType()
+    const fieldType = objectType.fields.fieldPermissions.getTypeSync()
     if (!isMapType(fieldType)) {
       log.warn('Type %s does not have fieldPermissions field as Map (as expected)', objectType.elemID.typeName)
       return
@@ -266,10 +266,7 @@ const filter: FilterCreator = ({ config }) => ({
     if (relevantObjectTypes.length === 0) {
       return
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    relevantObjectTypes.forEach(async element => {
-      await fieldPermissionFieldToEnum(element)
-    })
+    relevantObjectTypes.forEach(element => fieldPermissionFieldToEnum(element))
     elements.push(enumFieldPermissions)
   },
   preDeploy: async changes => {
@@ -283,8 +280,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     log.info('Running enumFieldPermissions preDeploy')
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    instanceChangesWithFieldPermissions.forEach(instanceChange =>
+    await awu(instanceChangesWithFieldPermissions).forEach(instanceChange =>
       applyFunctionToChangeData(instanceChange, fieldPermissionValuesToObject),
     )
     const instanceTypes = Object.values(
@@ -303,8 +299,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     log.info('Running enumFieldPermissions onDeploy')
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    instanceChangesWithFieldPermissions.forEach(instanceChange =>
+    await awu(instanceChangesWithFieldPermissions).forEach(instanceChange =>
       applyFunctionToChangeData(instanceChange, fieldPermissionValuesToEnum),
     )
     const instanceTypes = Object.values(
@@ -312,7 +307,6 @@ const filter: FilterCreator = ({ config }) => ({
         .map(inst => inst.getType())
         .keyBy(type => apiName(type)),
     )
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     instanceTypes.forEach(fieldPermissionFieldToEnum)
   },
 })

@@ -388,8 +388,7 @@ const updateFieldTypes = async (
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  Object.entries(instanceMapFieldDef).forEach(async ([fieldName, mapDef]) => {
+  await awu(Object.entries(instanceMapFieldDef)).forEach(async ([fieldName, mapDef]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {
       const fieldType = await field.getType()
@@ -427,8 +426,7 @@ const updateAnnotationRefTypes = async (
   nonUniqueMapFields: string[],
   mapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  Object.entries(mapFieldDef).forEach(async ([fieldName, mapDef]) => {
+  await awu(Object.entries(mapFieldDef)).forEach(async ([fieldName, mapDef]) => {
     const fieldType = _.get(typeElement.annotationRefTypes, fieldName).type
     // navigate to the right field type
     if (isDefined(fieldType) && !isMapType(fieldType)) {
@@ -539,13 +537,12 @@ const convertFieldsBackToLists = async (
  * @param mapFieldDef      The definitions of the fields to covert
  * @param elementType      The type of the elements to convert
  */
-const convertFieldsBackToMaps = (
+const convertFieldsBackToMaps = async (
   changes: ReadonlyArray<Change<Element>>,
   mapFieldDef: Record<string, MapDef>,
   elementType: string,
-): void => {
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  changes.forEach(change =>
+): Promise<void> => {
+  await awu(changes).forEach(change =>
     applyFunctionToChangeData(change, element => {
       convertArraysToMaps(element, mapFieldDef, elementType)
       return element
@@ -563,8 +560,7 @@ const convertFieldTypesBackToLists = async (
   instanceType: ObjectType,
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  Object.entries(instanceMapFieldDef).forEach(async ([fieldName]) => {
+  await awu(Object.entries(instanceMapFieldDef)).forEach(async ([fieldName]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {
       const fieldType = await field.getType()
@@ -713,7 +709,7 @@ const filter: FilterCreator = ({ config }) => ({
       }
 
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      convertFieldsBackToMaps(instanceChanges, mapFieldDef, targetMetadataType)
+      await convertFieldsBackToMaps(instanceChanges, mapFieldDef, targetMetadataType)
 
       const instanceType = await getChangeData(instanceChanges[0]).getType()
       // after preDeploy, the fields with lists are exactly the ones that should be converted
@@ -730,7 +726,7 @@ const filter: FilterCreator = ({ config }) => ({
         return
       }
       const mapFieldDef = annotationDefsByType[fieldType]
-      convertFieldsBackToMaps(fieldsChanges, mapFieldDef, fieldType)
+      await convertFieldsBackToMaps(fieldsChanges, mapFieldDef, fieldType)
     })
   },
 })

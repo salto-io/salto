@@ -29,6 +29,7 @@ import {
   isEqualElements,
   isPrimitiveType,
   isTypeReference,
+  isElement,
 } from '@salto-io/adapter-api'
 import { TransformFuncSync, getSubtypes, inspectValue, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -397,9 +398,9 @@ export const createRemainingTypes = <Options extends FetchApiDefinitionsOptions>
   defQuery: ElementAndResourceDefFinder<Options>
 }): Record<string, ObjectType> => {
   const topLevelTypeNames = Object.keys(_.pickBy(defQuery.getAll(), def => def.element?.topLevel?.isTopLevel))
-  const missingTypes = topLevelTypeNames.filter(typeName => definedTypes[typeName] === undefined)
+  const missingTypes = topLevelTypeNames.filter(typeName => !isElement(definedTypes[typeName]))
   if (missingTypes.length > 0) {
-    log.debug('creating empty types for the following types: %s', inspectValue(missingTypes))
+    log.debug('creating empty types for the %d types: %s', missingTypes.length, inspectValue(missingTypes))
   }
   return _.keyBy(
     missingTypes.map(

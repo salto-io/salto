@@ -329,9 +329,9 @@ export const formatDeployActions = ({
 
 export const formatDeploymentSummaryResult = (ids: DetailedChangeId[], result: DeploySummaryResult): string => {
   const mapping: Record<DeploySummaryResult, DetailedChangeId | null> = {
-    failure: Prompts.DEPLOYMENT_STATUS['failure'],
-    'partial-success': Prompts.DEPLOYMENT_STATUS['partialSuccess'],
-    success: Prompts.DEPLOYMENT_STATUS['success'],
+    failure: Prompts.DEPLOYMENT_STATUS.failure,
+    'partial-success': Prompts.DEPLOYMENT_STATUS.partialSuccess,
+    success: Prompts.DEPLOYMENT_STATUS.success,
   }
 
   const sign: string | null = mapping[result]
@@ -342,21 +342,21 @@ export const formatDeploymentSummaryResult = (ids: DetailedChangeId[], result: D
 export const formatDeploymentSummary = (
   summary: Record<DeploySummaryResult, DetailedChangeId[]>,
 ): string | undefined => {
-  const failure: DeploySummaryResult = 'failure'
-  const partialSuccess: DeploySummaryResult = 'partial-success'
-  const success: DeploySummaryResult = 'success'
+  const failureResult: DeploySummaryResult = 'failure'
+  const partialSuccessResult: DeploySummaryResult = 'partial-success'
+  const successResult: DeploySummaryResult = 'success'
   const headline: string = Prompts.DEPLOYMENT_SUMMARY_HEADLINE
-  const succeeded: string | null = Object.prototype.hasOwnProperty.call(summary, success)
-    ? formatDeploymentSummaryResult(summary[success], success)
+  const succeeded: string | null = Object.prototype.hasOwnProperty.call(summary, successResult)
+    ? formatDeploymentSummaryResult(summary[successResult], successResult)
     : null
-  const partiallySucceeded: string | null = Object.prototype.hasOwnProperty.call(summary, partialSuccess)
-    ? formatDeploymentSummaryResult(summary[partialSuccess], partialSuccess)
+  const partiallySucceeded: string | null = Object.prototype.hasOwnProperty.call(summary, partialSuccessResult)
+    ? formatDeploymentSummaryResult(summary[partialSuccessResult], partialSuccessResult)
     : null
-  const failed: string | null = Object.prototype.hasOwnProperty.call(summary, failure)
-    ? formatDeploymentSummaryResult(summary[failure], failure)
+  const failed: string | null = Object.prototype.hasOwnProperty.call(summary, failureResult)
+    ? formatDeploymentSummaryResult(summary[failureResult], failureResult)
     : null
-  return !Object.prototype.hasOwnProperty.call(summary, failure) &&
-    !Object.prototype.hasOwnProperty.call(summary, partialSuccess)
+  return !Object.prototype.hasOwnProperty.call(summary, failureResult) &&
+    !Object.prototype.hasOwnProperty.call(summary, partialSuccessResult)
     ? undefined
     : [
         emptyLine(),

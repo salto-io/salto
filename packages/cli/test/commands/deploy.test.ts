@@ -10,12 +10,12 @@ import * as saltoCoreModule from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
 import { Artifact, Change } from '@salto-io/adapter-api'
+import chalk from 'chalk'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
-import chalk from 'chalk'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -544,8 +544,8 @@ describe('deploy command', () => {
       })
       it('should print all failed elements as failed', async () => {
         expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
-        expect(output.stdout.content).toContain(chalk.red.bold('F') + ' instance_test')
-        expect(output.stdout.content).toContain(chalk.red.bold('F') + ' test_instance')
+        expect(output.stdout.content).toContain(`${chalk.red.bold('F')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.red.bold('F')} test_instance`)
       })
       it('should not print succeeded or partially succeeded', async () => {
         expect(output.stdout.content).not.toContain(chalk.green.bold('S'))
@@ -572,9 +572,9 @@ describe('deploy command', () => {
         })
       })
       it('should print all the elements and their deployment status', async () => {
-        expect(output.stdout.content).toContain(chalk.red.bold('F') + ' instance_test')
-        expect(output.stdout.content).toContain(chalk.green.bold('S') + ' test_instance')
-        expect(output.stdout.content).toContain(chalk.yellow.bold('P') + ' tester_instance')
+        expect(output.stdout.content).toContain(`${chalk.red.bold('F')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.green.bold('S')} test_instance`)
+        expect(output.stdout.content).toContain(`${chalk.yellow.bold('P')} tester_instance`)
       })
     })
   })

@@ -73,13 +73,7 @@ import policyPrioritiesFilter, {
 } from './filters/policy_priority'
 import groupPushFilter from './filters/group_push'
 import addImportantValues from './filters/add_important_values'
-import {
-  APP_LOGO_TYPE_NAME,
-  BRAND_LOGO_TYPE_NAME,
-  FAV_ICON_TYPE_NAME,
-  OKTA,
-  USER_TYPE_NAME,
-} from './constants'
+import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA, USER_TYPE_NAME } from './constants'
 import { getLookUpNameCreator } from './reference_mapping'
 import { User, getUsers, getUsersFromInstances, shouldConvertUserIds } from './user_utils'
 import { isClassicEngineOrg, logUsersCount } from './utils'

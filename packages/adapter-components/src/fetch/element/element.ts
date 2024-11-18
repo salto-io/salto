@@ -12,7 +12,13 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FetchElements } from '../types'
 import { generateInstancesWithInitialTypes } from './instance_element'
-import { InvalidSingletonType, getReachableTypes, hideAndOmitFields, overrideFieldTypes } from './type_utils'
+import {
+  InvalidSingletonType,
+  getReachableTypes,
+  hideAndOmitFields,
+  overrideFieldTypes,
+  createRemainingTypes,
+} from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { ConfigChangeSuggestion, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
@@ -120,21 +126,19 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   }
 
   const generate: ElementGenerator['generate'] = () => {
-    const entriesByTopLevelTypes = _.mapValues(
-      _.pickBy(defQuery.getAll(), def => def.element?.topLevel?.isTopLevel),
-      (_def, typeName) => valuesByType[typeName] ?? [],
-    )
-    const allResults = Object.entries(entriesByTopLevelTypes).flatMap(([typeName, values]) => {
+    const allResults = Object.entries(valuesByType).flatMap(([typeName, values]) => {
       try {
-        return generateInstancesWithInitialTypes({
-          adapterName,
-          defQuery,
-          entries: values,
-          typeName,
-          definedTypes: predefinedTypes,
-          getElemIdFunc,
-          customNameMappingFunctions,
-        })
+        return defQuery.query(typeName)?.element?.topLevel === undefined
+          ? { instances: [], types: [] }
+          : generateInstancesWithInitialTypes({
+              adapterName,
+              defQuery,
+              entries: values,
+              typeName,
+              definedTypes: predefinedTypes,
+              getElemIdFunc,
+              customNameMappingFunctions,
+            })
       } catch (e) {
         // TODO decide how to handle error based on args (SALTO-5842)
         if (e instanceof InvalidSingletonType) {
@@ -150,15 +154,13 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const instances = allResults.flatMap(e => e.instances)
     const [finalTypeLists, typeListsToAdjust] = _.partition(allResults, t => t.typesAreFinal)
     const finalTypeNames = new Set(finalTypeLists.flatMap(t => t.types).map(t => t.elemID.name))
-    const definedTypes = _.defaults(
-      {},
-      _.keyBy(
-        // concatenating in this order so that the final types will take precedence
-        typeListsToAdjust.concat(finalTypeLists).flatMap(t => t.types),
-        t => t.elemID.name,
-      ),
-      predefinedTypes,
+    const typesByTypeName = _.keyBy(
+      // concatenating in this order so that the final types will take precedence
+      typeListsToAdjust.concat(finalTypeLists).flatMap(t => t.types),
+      t => t.elemID.name,
     )
+    const remainingTypes = createRemainingTypes({ adapterName, definedTypes: typesByTypeName, defQuery })
+    const definedTypes = _.defaults({}, typesByTypeName, predefinedTypes, remainingTypes)
 
     overrideFieldTypes({ definedTypes, defQuery, finalTypeNames })
     // omit fields based on the adjusted types

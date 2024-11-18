@@ -30,11 +30,12 @@ import {
   isPrimitiveType,
   isTypeReference,
 } from '@salto-io/adapter-api'
-import { TransformFuncSync, getSubtypes, transformValuesSync } from '@salto-io/adapter-utils'
+import { TransformFuncSync, getSubtypes, inspectValue, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
+import { generateType } from './type_element'
 
 const { isDefined } = lowerdashValues
 const log = logger(module)
@@ -379,3 +380,38 @@ export const removeNullValues = ({
     allowEmptyArrays,
     allowEmptyObjects,
   }) ?? {}
+
+/**
+ * Add empty object types for all types that can have instances in the workspace,
+ *  even if no instances will be created for them in the current fetch.
+ * This is needed because if instances are added / cloned from another environment,
+ *  they need to have a type in order to be deployed.
+ */
+export const createRemainingTypes = <Options extends FetchApiDefinitionsOptions>({
+  adapterName,
+  definedTypes,
+  defQuery,
+}: {
+  adapterName: string
+  definedTypes: Record<string, ObjectType>
+  defQuery: ElementAndResourceDefFinder<Options>
+}): Record<string, ObjectType> => {
+  const topLevelTypeNames = Object.keys(_.pickBy(defQuery.getAll(), def => def.element?.topLevel?.isTopLevel))
+  const missingTypes = topLevelTypeNames.filter(typeName => definedTypes[typeName] === undefined)
+  if (missingTypes.length > 0) {
+    log.debug('creating empty types for the following types: %s', inspectValue(missingTypes))
+  }
+  return _.keyBy(
+    missingTypes.map(
+      typeName =>
+        generateType({
+          adapterName,
+          defQuery,
+          typeName,
+          definedTypes,
+          entries: [],
+        }).type,
+    ),
+    type => type.elemID.name,
+  )
+}

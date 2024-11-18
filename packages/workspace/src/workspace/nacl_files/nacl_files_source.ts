@@ -137,6 +137,22 @@ export const toPathHint = (filename: string): string[] => {
   return [...dirPathSplitted, osPath.basename(filename, osPath.extname(filename))]
 }
 
+const createFilenamesToElementIDsMapping = async (
+  currentState: NaclFilesState,
+  naclFilesByName: Record<string, ParsedNaclFile>,
+): Promise<Record<string, ElemID[]>> =>
+  log.timeDebug(
+    async () =>
+      _.mapValues(
+        await awu(currentState.elementsIndex.entries())
+          .flatMap(row => row.value.map(filename => ({ path: row.key, filename })))
+          .filter(row => naclFilesByName[row.filename] !== undefined)
+          .groupBy(row => row.filename),
+        group => group.map(row => ElemID.fromFullName(row.path)),
+      ),
+    'create filenames to element ids mapping from elements index',
+  )
+
 export const getElementReferenced = async (
   element: Element,
 ): Promise<{
@@ -365,13 +381,7 @@ const buildNaclFilesState = async ({
   const newElementsToMerge: AsyncIterable<Element>[] = []
 
   const filenameToElementIDs = !_.isEmpty(newParsed)
-    ? _.mapValues(
-        await awu(currentState.elementsIndex.entries())
-          .flatMap(row => row.value.map(filename => ({ path: row.key, filename })))
-          .filter(row => newParsed[row.filename] !== undefined)
-          .groupBy(row => row.filename),
-        group => group.map(row => ElemID.fromFullName(row.path)),
-      )
+    ? await createFilenamesToElementIDsMapping(currentState, newParsed)
     : {}
 
   const updateIndex = async <T>(

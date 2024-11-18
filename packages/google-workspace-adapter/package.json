@@ -36,10 +36,8 @@
     "@salto-io/logging": "0.4.5",
     "@salto-io/lowerdash": "0.4.5",
     "axios": "^1.7.2",
-    "form-data": "^4.0.0",
     "google-auth-library": "^9.7.0",
     "lodash": "^4.17.21",
-    "node-html-parser": "^6.1.5",
     "uuid": "^10.0.0"
   },
   "devDependencies": {

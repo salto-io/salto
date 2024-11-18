@@ -11,7 +11,6 @@
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
-    { "path": "../logging" },
-    { "path": "../lowerdash" }
+    { "path": "../logging" }
   ]
 }

@@ -27,10 +27,6 @@
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
-  "dependencies": {
-    "lodash": "^4.17.21",
-    "wu": "^2.1.0"
-  },
   "devDependencies": {
     "@eslint/compat": "^1.1.0",
     "@eslint/eslintrc": "^3.1.0",

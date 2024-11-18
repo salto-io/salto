@@ -97,7 +97,7 @@ export default class Prompts {
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
-  public static readonly NOT_SUCCESSFUL_DEPLOYMENT = chalk.bgBlack.bold('Deployment summary:')
+  public static readonly DEPLOYMENT_SUMMARY_HEADLINE = chalk.bgBlack.bold('Deployment summary:')
   public static readonly EXPLAIN_DEPLOYMENT_RESULT =
     chalk.gray(`Deployment status is indicated with the following symbols:
   ${Prompts.DEPLOYMENT_STATUS.success} success

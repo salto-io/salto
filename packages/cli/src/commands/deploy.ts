@@ -92,27 +92,10 @@ const printDeploymentSummary = async (
     },
     {} as Record<DeploySummaryResult, DetailedChangeId[]>,
   )
-  outputLine(formatDeploymentSummary(dictionaryB), output)
-  // const failure: DeploySummaryResult = 'failure'
-  // const partialSuccess: DeploySummaryResult = 'partial-success'
-  // const success: DeploySummaryResult = 'success'
-  // if (
-  //   !Object.prototype.hasOwnProperty.call(dictionaryB, failure) &&
-  //   !Object.prototype.hasOwnProperty.call(dictionaryB, partialSuccess)
-  // ) {
-  //   outputLine(Prompts.SUCCESSFUL_DEPLOYMENT, output)
-  // } else {
-  //   outputLine(Prompts.NOT_SUCCESSFUL_DEPLOYMENT, output)
-  //   if (Object.prototype.hasOwnProperty.call(dictionaryB, success)) {
-  //     outputLine(formatDeploymentSummaryResult(dictionaryB[success], success), output)
-  //   }
-  //   if (Object.prototype.hasOwnProperty.call(dictionaryB, partialSuccess)) {
-  //     outputLine(formatDeploymentSummaryResult(dictionaryB[partialSuccess], partialSuccess), output)
-  //   }
-  //   if (Object.prototype.hasOwnProperty.call(dictionaryB, failure)) {
-  //     outputLine(formatDeploymentSummaryResult(dictionaryB[failure], failure), output)
-  //   }
-  // }
+  const formattedDeploymentSummary: string | undefined = formatDeploymentSummary(dictionaryB)
+  if (formattedDeploymentSummary != undefined) {
+    outputLine(formattedDeploymentSummary, output)
+  }
 }
 
 export const shouldDeploy = async (actions: Plan, checkOnly: boolean): Promise<boolean> => {

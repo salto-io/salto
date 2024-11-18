@@ -339,11 +339,13 @@ export const formatDeploymentSummaryResult = (ids: DetailedChangeId[], result: D
   return lines
 }
 
-export const formatDeploymentSummary = (summary: Record<DeploySummaryResult, DetailedChangeId[]>): string => {
+export const formatDeploymentSummary = (
+  summary: Record<DeploySummaryResult, DetailedChangeId[]>,
+): string | undefined => {
   const failure: DeploySummaryResult = 'failure'
   const partialSuccess: DeploySummaryResult = 'partial-success'
   const success: DeploySummaryResult = 'success'
-  const headline: string = Prompts.NOT_SUCCESSFUL_DEPLOYMENT
+  const headline: string = Prompts.DEPLOYMENT_SUMMARY_HEADLINE
   const succeeded: string | null = Object.prototype.hasOwnProperty.call(summary, success)
     ? formatDeploymentSummaryResult(summary[success], success)
     : null
@@ -355,7 +357,7 @@ export const formatDeploymentSummary = (summary: Record<DeploySummaryResult, Det
     : null
   return !Object.prototype.hasOwnProperty.call(summary, failure) &&
     !Object.prototype.hasOwnProperty.call(summary, partialSuccess)
-    ? ''
+    ? undefined
     : [
         emptyLine(),
         headline,

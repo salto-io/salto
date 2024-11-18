@@ -21,10 +21,11 @@ import {
   Value,
   isModificationChange,
   ReadOnlyElementsSource,
+  isElement,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
-import { detailedCompare, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { detailedCompare, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
 const { validateElements } = validator
 
@@ -137,57 +138,75 @@ export class EditorWorkspace {
       .toArray()
   }
 
-  private async getUnresolvedRefOfFile(
-    filename: string,
-    elements: ElemID[],
+  private static async getUnresolvedReferencesOfElement(
+    elementsSource: elementSource.ElementsSource,
+    elemId: ElemID,
+    referenced: ElemID[],
   ): Promise<errors.UnresolvedReferenceValidationError[]> {
-    const fileElements =
-      (await (await this.workspace.getParsedNaclFile(this.workspaceFilename(filename)))?.elements()) ?? awu([])
-    const validationErrors: errors.UnresolvedReferenceValidationError[] = []
-    const getReferenceExpressions: WalkOnFunc = ({ value, path: elemPath }) => {
-      if (isReferenceExpression(value)) {
-        elements.forEach(elem => {
-          if (elem.isEqual(value.elemID) || elem.isParentOf(value.elemID)) {
-            validationErrors.push(
-              new errors.UnresolvedReferenceValidationError({ elemID: elemPath, target: value.elemID }),
-            )
-          }
-        })
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
+    const element = await elementsSource.get(elemId)
+    if (!isElement(element) || isContainerType(element)) {
+      return []
     }
-    await awu(fileElements)
-      .filter(e => !isContainerType(e))
-      .forEach(async element =>
-        walkOnElement({
-          element,
-          func: getReferenceExpressions,
-        }),
-      )
+
+    const validationErrors: errors.UnresolvedReferenceValidationError[] = []
+
+    walkOnElement({
+      element,
+      func: ({ value, path: elemPath }) => {
+        if (
+          isReferenceExpression(value) &&
+          referenced.some(id => id.isEqual(value.elemID) || id.isParentOf(value.elemID))
+        ) {
+          validationErrors.push(
+            new errors.UnresolvedReferenceValidationError({ elemID: elemPath, target: value.elemID }),
+          )
+        }
+        return WALK_NEXT_STEP.RECURSE
+      },
+    })
+
     return validationErrors
   }
 
-  private async getUnresolvedRefForElement(ids: ElemID[]): Promise<errors.UnresolvedReferenceValidationError[]> {
-    const fileToReferencedIds = _(
-      await Promise.all(ids.map(async id => (await this.getElementReferencedFiles(id)).map(file => ({ id, file })))),
+  private async getReferencesToElementIDs(elemIDs: ElemID[]): Promise<
+    {
+      source: ElemID
+      target: ElemID[]
+    }[]
+  > {
+    const elemIdsByTopLevel = _.groupBy(elemIDs, elemId => elemId.createTopLevelParentID().parent.getFullName())
+    const references = await Promise.all(
+      Object.entries(elemIdsByTopLevel).map(async ([topLevelId, target]) =>
+        (await this.getElementIncomingReferences(ElemID.fromFullName(topLevelId))).map(source => ({
+          source,
+          target,
+        })),
+      ),
     )
-      .flatten()
-      .groupBy('file')
-      .mapValues(val =>
-        _.uniqBy(
-          val.map(ref => ref.id),
-          e => e.getFullName(),
-        ),
-      )
-      .value()
-    return (
-      await Promise.all(
-        Object.entries(fileToReferencedIds).map(([filename, elemIds]) =>
-          this.getUnresolvedRefOfFile(filename, elemIds),
-        ),
-      )
-    ).flat()
+    return references.flat()
+  }
+
+  private async getUnresolvedReferencesFromRemovals(
+    removedElemIds: ElemID[],
+  ): Promise<errors.UnresolvedReferenceValidationError[]> {
+    const references = await this.getReferencesToElementIDs(removedElemIds)
+    if (references.length === 0) {
+      return []
+    }
+
+    const elemIdToReferencedIDs = _(references)
+      .groupBy(ref => ref.source.createTopLevelParentID().parent.getFullName())
+      .mapValues(refs => refs.flatMap(ref => ref.target))
+      .mapValues(ids => _.uniqBy(ids, id => id.getFullName()))
+
+    const elementsSource = await this.workspace.elements()
+    const validationErrors = await Promise.all(
+      Object.entries(elemIdToReferencedIDs).map(([elemId, referenced]) =>
+        EditorWorkspace.getUnresolvedReferencesOfElement(elementsSource, ElemID.fromFullName(elemId), referenced),
+      ),
+    )
+
+    return validationErrors.flat()
   }
 
   private async validateElements(ids: Set<string>): Promise<errors.ValidationError[]> {
@@ -227,7 +246,7 @@ export class EditorWorkspace {
       .flatMap(c => detailedCompare(c.data.before, c.data.after, { createFieldChanges: true }))
       .filter(isRemovalChange)
       .map(c => c.id)
-    const unresolvedReferences = await this.getUnresolvedRefForElement([
+    const unresolvedReferences = await this.getUnresolvedReferencesFromRemovals([
       ...removalChangesOfTopLevels,
       ...removalChangesOfNonTopLevels,
     ])
@@ -343,8 +362,8 @@ export class EditorWorkspace {
     return this.workspace.hasErrors()
   }
 
-  async getElementReferencedFiles(id: ElemID): Promise<string[]> {
-    return (await this.workspace.getElementReferencedFiles(id)).map(filename => this.editorFilename(filename))
+  async getElementIncomingReferences(id: ElemID): Promise<ElemID[]> {
+    return this.workspace.getElementIncomingReferences(id)
   }
 
   async getElementNaclFiles(id: ElemID): Promise<string[]> {

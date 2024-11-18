@@ -9,11 +9,15 @@
 import { ElemID } from '@salto-io/adapter-api'
 import { Workspace } from '../../src/workspace/workspace'
 import { mockDirStore } from '../common/nacl_file_store'
-import { createWorkspace } from '../common/workspace'
+import { createWorkspace, createState } from '../common/workspace'
 import { getDependents } from '../../src/workspace/dependents'
+import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
+import { createMockNaclFileSource } from '../common/nacl_file_source'
 
 describe('dependents', () => {
   let workspace: Workspace
+  let naclFiles: NaclFilesSource
 
   const primFile = `
   type salto.prim is string {
@@ -78,7 +82,7 @@ describe('dependents', () => {
           [elemID],
           await workspace.elements(),
           await workspace.getReferenceSourcesIndex(),
-          id => workspace.getElementReferencedFiles(id),
+          id => naclFiles.getElementReferencedFiles(id),
           filename => workspace.getParsedNaclFile(filename),
         )
         return dependents.map(element => element.elemID)
@@ -86,7 +90,22 @@ describe('dependents', () => {
 
       beforeAll(async () => {
         process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION = useOldDependentsCalculation ? '1' : '0'
-        workspace = await createWorkspace(mockDirStore(undefined, undefined, files))
+        naclFiles = await naclFilesSource(
+          '',
+          mockDirStore(undefined, undefined, files),
+          mockStaticFilesSource(),
+          persistentMockCreateRemoteMap(),
+          true,
+        )
+        workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+          '': {
+            naclFiles,
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([], true),
+          },
+        })
       })
 
       afterAll(() => {

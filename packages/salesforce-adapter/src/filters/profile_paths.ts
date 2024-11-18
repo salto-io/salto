@@ -49,7 +49,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'profilePaths',
     fetchFilterFunc: async (elements: Element[]) => {
       if (client === undefined) {
         return

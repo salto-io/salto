@@ -10,96 +10,42 @@ import filterCreator, { WAVE_TYPES_WITH_STATIC_FILES } from '../../src/filters/w
 import { INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('waveStaticFilesFilter', () => {
   let filter: FilterWith<'onFetch'>
   beforeEach(() => {
     filter = filterCreator({
-      config: {
-        ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({
-          fetchParams: {
-            optionalFeatures: {
-              waveMetadataSupport: true,
-            },
-          },
-        }),
-      },
+      config: defaultFilterContext,
     }) as FilterWith<'onFetch'>
   })
   describe('onFetch', () => {
     const content = 'eyJuYW1lIjoiSm9obiIsImFnZSI6MzB9'
-    describe('when waveMetadataSupport is enabled', () => {
-      beforeEach(() => {
-        filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                optionalFeatures: {
-                  waveMetadataSupport: true,
-                },
-              },
-            }),
-          },
-        }) as FilterWith<'onFetch'>
-      })
-      it.each(WAVE_TYPES_WITH_STATIC_FILES)('should convert %s instance content to static file', async typeName => {
-        const instance = new InstanceElement(
-          'TestInstance',
-          new ObjectType({
-            elemID: new ElemID(SALESFORCE, typeName),
-            annotations: {
-              metadataType: typeName,
-            },
-          }),
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
-            content,
-          },
-        )
-        await filter.onFetch([instance])
-        expect(instance.value.content).toEqual(
-          new StaticFile({
-            filepath: `${SALESFORCE}/${RECORDS_PATH}/${typeName}/TestInstance`,
-            content: Buffer.from(content, 'base64'),
-          }),
-        )
-      })
+    beforeEach(() => {
+      filter = filterCreator({
+        config: defaultFilterContext,
+      }) as FilterWith<'onFetch'>
     })
-    describe('when waveMetadataSupport is disabled', () => {
-      beforeEach(() => {
-        filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                optionalFeatures: {
-                  waveMetadataSupport: false,
-                },
-              },
-            }),
+    it.each(WAVE_TYPES_WITH_STATIC_FILES)('should convert %s instance content to static file', async typeName => {
+      const instance = new InstanceElement(
+        'TestInstance',
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, typeName),
+          annotations: {
+            metadataType: typeName,
           },
-        }) as FilterWith<'onFetch'>
-      })
-      it.each(WAVE_TYPES_WITH_STATIC_FILES)('should not convert %s instance content to static file', async typeName => {
-        const instance = new InstanceElement(
-          'TestInstance',
-          new ObjectType({
-            elemID: new ElemID(SALESFORCE, typeName),
-            annotations: {
-              metadataType: typeName,
-            },
-          }),
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
-            content,
-          },
-        )
-        await filter.onFetch([instance])
-        expect(instance.value.content).toEqual(content)
-      })
+        }),
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'TestInstance',
+          content,
+        },
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.content).toEqual(
+        new StaticFile({
+          filepath: `${SALESFORCE}/${RECORDS_PATH}/${typeName}/TestInstance`,
+          content: Buffer.from(content, 'base64'),
+        }),
+      )
     })
   })
 })

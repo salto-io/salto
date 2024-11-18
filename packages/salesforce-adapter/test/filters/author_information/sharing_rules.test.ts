@@ -7,7 +7,6 @@
  */
 import { CORE_ANNOTATIONS, ElemID, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
@@ -78,22 +77,6 @@ describe('sharing rules author information test', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-    })
-  })
-  describe('when feature is disabled', () => {
-    it('should not add any annotations', async () => {
-      filter = sharingRules({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { authorInformation: false } },
-          }),
-        },
-      })
-      await filter.onFetch?.([sharingRulesInstance])
-      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
     })
   })
 })

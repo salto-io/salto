@@ -209,24 +209,6 @@ export type FieldReferenceDefinition = {
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
-const FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF: FieldReferenceDefinition = {
-  src: { field: 'value', parentTypes: ['FilterItem'] },
-  serializationStrategy: 'relativeApiName',
-  target: {
-    parentContext: 'instanceParent',
-    type: RECORD_TYPE_METADATA_TYPE,
-  },
-}
-
-const LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
-  src: {
-    field: 'fieldItem',
-    parentTypes: ['FieldInstance'],
-  },
-  serializationStrategy: 'recordField',
-  target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-}
-
 const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
   {
     src: { field: 'genAiFunctionName', parentTypes: ['GenAiPlannerFunctionDef'] },
@@ -942,6 +924,22 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
+  {
+    src: { field: 'value', parentTypes: ['FilterItem'] },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: RECORD_TYPE_METADATA_TYPE,
+    },
+  },
+  {
+    src: {
+      field: 'fieldItem',
+      parentTypes: ['FieldInstance'],
+    },
+    serializationStrategy: 'recordField',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
@@ -1086,16 +1084,7 @@ const getLookUpNameImpl = ({
 }
 
 export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
-  fieldNameToTypeMappingDefs
-    .concat(
-      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
-        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
-        : [],
-    )
-    .concat(
-      fetchProfile.isFeatureEnabled('lightningPageFieldItemReference') ? [LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF] : [],
-    )
-    .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
+  fieldNameToTypeMappingDefs.concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

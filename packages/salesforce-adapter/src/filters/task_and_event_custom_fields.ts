@@ -43,7 +43,6 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: ensureSafeFilterFetch({
       warningMessage:
         'Error occurred when attempting to remodel CustomFields of Task and Event to reference their respective Activity fields.',
-      filterName: 'taskAndEventCustomFields',
       config,
       fetchFilterFunc: async (elements: Element[]) => {
         const elementsSource = buildElementsSourceForFetch(elements, config)

@@ -25,10 +25,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     await awu(elements)
       .filter(isMetadataInstanceElement)
       .forEach(async instance => {
-        instance.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(
-          instance as MetadataInstanceElement,
-          config.fetchProfile.isFeatureEnabled('useLabelAsAlias'),
-        )
+        instance.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(instance as MetadataInstanceElement)
       })
   },
 })

@@ -42,7 +42,9 @@ Salesforce data configuration includes the following information:
 - `saltoIDSettings`: Define cross environment id for data records by providing a list of object fields to construct the cross environment id from. Use `##allMasterDetailFields##` in order to include the SaltoID of referenced MasterDetail records.
 - `saltoAliasSettings`: Define the fields to create the alias for data records by providing a list of object fields to construct the alias from. Use `##allMasterDetailFields##` in order to include the Alias of referenced MasterDetail records.
 
-### Example Salto Salesforce/CPQ Configuration
+### Examples Salto Salesforce/CPQ Configuration
+
+#### Using internal Id as Salto Id:
 
 ```
 salesforce {
@@ -94,11 +96,17 @@ salesforce {
           metadataType = "PermissionSet"
         },
         {
+          metadataType = "MutingPermissionSet"
+        },
+        {
+          metadataType = "PermissionSetGroup"
+        },
+        {
           metadataType = "SiteDotCom"
         },
         {
           metadataType = "EmailTemplate"
-          name = "MarketoEmailTemplates/.*"
+          name = "Marketo_?Email_?Templates/.*"
         },
         {
           metadataType = "ContentAsset"
@@ -129,17 +137,181 @@ salesforce {
           name = "CaseInteraction-Case Feed Layout"
         },
         {
-          metadataType: 'EclairGeoData',
+          metadataType = "EclairGeoData"
         },
         {
-          metadataType:
-            'OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript',
+          metadataType = "OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript"
         },
         {
-          metadataType: 'DiscoveryAIModel',
+          metadataType = "DiscoveryAIModel"
         },
         {
-          metadataType: 'Translations',
+          metadataType = "Translations"
+        },
+        {
+          metadataType = "ManagedEventSubscription"
+        },
+      ]
+    }
+    data = {
+      includeObjects = [
+        "SBQQ__.*",
+        "sbaa__ApprovalChain__c",
+        "sbaa__ApprovalCondition__c",
+        "sbaa__ApprovalRule__c",
+        "sbaa__ApprovalVariable__c",
+        "sbaa__Approver__c",
+        "sbaa__EmailTemplate__c",
+        "sbaa__TrackedField__c",
+      ]
+      excludeObjects = [
+        "SBQQ__ContractedPrice__c",
+        "SBQQ__Quote__c",
+        "SBQQ__QuoteDocument__c",
+        "SBQQ__QuoteLine__c",
+        "SBQQ__QuoteLineGroup__c",
+        "SBQQ__Subscription__c",
+        "SBQQ__SubscribedAsset__c",
+        "SBQQ__SubscribedQuoteLine__c",
+        "SBQQ__SubscriptionConsumptionRate__c",
+        "SBQQ__SubscriptionConsumptionSchedule__c",
+        "SBQQ__WebQuote__c",
+        "SBQQ__WebQuoteLine__c",
+        "SBQQ__QuoteLineConsumptionSchedule__c",
+        "SBQQ__QuoteLineConsumptionRate__c",
+        "SBQQ__InstallProcessorLog__c",
+        "SBQQ__ProcessInputValue__c",
+        "SBQQ__RecordJob__c",
+        "SBQQ__TimingLog__c",
+      ]
+      allowReferenceTo = [
+        "Product2",
+        "Pricebook2",
+        "PricebookEntry",
+      ]
+      saltoIDSettings = {
+        defaultIdFields = [
+          "Id",
+        ]
+      }
+      brokenOutgoingReferencesSettings = {
+        defaultBehavior = "BrokenReference"
+        perTargetTypeOverrides = {
+          User = "InternalId"
+        }
+      }
+    }
+  }
+  maxItemsInRetrieveRequest = 2500
+}
+```
+
+#### Using value-based Salto Id:
+
+```
+salesforce {
+  fetch = {
+    metadata = {
+      include = [
+        {
+          metadataType = ".*"
+          namespace = ""
+          name = ".*"
+        },
+        {
+          metadataType = ".*"
+          namespace = "SBQQ"
+          name = ".*"
+        },
+        {
+          metadataType = ".*"
+          namespace = "sbaa"
+          name = ".*"
+        },
+      ]
+      exclude = [
+        {
+          metadataType = "Report"
+        },
+        {
+          metadataType = "ReportType"
+        },
+        {
+          metadataType = "ReportFolder"
+        },
+        {
+          metadataType = "Dashboard"
+        },
+        {
+          metadataType = "DashboardFolder"
+        },
+        {
+          metadataType = "Document"
+        },
+        {
+          metadataType = "DocumentFolder"
+        },
+        {
+          metadataType = "Profile"
+        },
+        {
+          metadataType = "PermissionSet"
+        },
+        {
+          metadataType = "MutingPermissionSet"
+        },
+        {
+          metadataType = "PermissionSetGroup"
+        },
+        {
+          metadataType = "SiteDotCom"
+        },
+        {
+          metadataType = "EmailTemplate"
+          name = "Marketo_?Email_?Templates/.*"
+        },
+        {
+          metadataType = "ContentAsset"
+        },
+        {
+          metadataType = "CustomObjectTranslation"
+        },
+        {
+          metadataType = "AnalyticSnapshot"
+        },
+        {
+          metadataType = "WaveDashboard"
+        },
+        {
+          metadataType = "WaveDataflow"
+        },
+        {
+          metadataType = "StandardValueSet"
+          name = "^(AddressCountryCode)|(AddressStateCode)$"
+          namespace = ""
+        },
+        {
+          metadataType = "Layout"
+          name = "CollaborationGroup-Group Layout"
+        },
+        {
+          metadataType = "Layout"
+          name = "CaseInteraction-Case Feed Layout"
+        },
+        {
+          metadataType = "EclairGeoData"
+        },
+        {
+          metadataType = "OmniUiCard|OmniDataTransform|OmniIntegrationProcedure|OmniInteractionAccessConfig|OmniInteractionConfig|OmniScript"
+        },
+        {
+          metadataType = "DiscoveryAIModel"
+        },
+        {
+          metadataType = "Translations"
+        },
+        {
+          metadataType = "ManagedEventSubscription"
         },
       ]
     }

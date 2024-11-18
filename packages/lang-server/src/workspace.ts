@@ -198,6 +198,7 @@ export class EditorWorkspace {
       .groupBy(ref => ref.source.createTopLevelParentID().parent.getFullName())
       .mapValues(refs => refs.flatMap(ref => ref.target))
       .mapValues(ids => _.uniqBy(ids, id => id.getFullName()))
+      .value()
 
     const elementsSource = await this.workspace.elements()
     const validationErrors = await Promise.all(

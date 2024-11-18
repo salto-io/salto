@@ -113,6 +113,7 @@ describe('adapter', () => {
           'confluence.blog_post__version',
           'confluence.global_template',
           'confluence.group',
+          'confluence.label',
           'confluence.page',
           'confluence.page.instance.My_first_space_Getting_started_in_Confluence@ssusss',
           'confluence.page__authorId',
@@ -122,11 +123,14 @@ describe('adapter', () => {
           'confluence.permission',
           'confluence.restriction',
           'confluence.restriction__restrictions',
+          'confluence.settings',
           'confluence.space',
           'confluence.space.instance.My_first_space@s',
           'confluence.space.instance.Omri_Farkash@s',
           'confluence.space__authorId',
           'confluence.space__permissionInternalIdMap',
+          'confluence.space_settings',
+          'confluence.template',
         ])
         expect(
           Object.fromEntries(

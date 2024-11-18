@@ -429,9 +429,9 @@ describe('element', () => {
         it('should not return any error', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           const res = generator.generate()
-          expect(res.elements).toHaveLength(0)
           expect(res.errors).toHaveLength(0)
           expect(res.configChanges).toHaveLength(0)
+          expect(res.elements).toHaveLength(1) // only the empty type is created
         })
 
         it('should not log "failed to fetch type" error', () => {
@@ -518,9 +518,9 @@ describe('element', () => {
         it('should not return any error', () => {
           generator.handleError({ typeName: 'myType', error: fetchError })
           const res = generator.generate()
-          expect(res.elements).toHaveLength(0)
           expect(res.errors).toHaveLength(0)
           expect(res.configChanges).toHaveLength(0)
+          expect(res.elements).toHaveLength(1) // only the empty type is created
         })
 
         it('should log "unexpectedly failed to fetch type" error by default', () => {

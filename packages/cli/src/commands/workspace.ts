@@ -16,8 +16,6 @@ import {
   formatStepStart,
   formatStepFailed,
   formatStepCompleted,
-  error,
-  warn,
 } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
@@ -209,13 +207,13 @@ export const wsValidateAction: WorkspaceCommandAction = async ({ workspace, outp
   const { status, errors } = await validateWorkspace(workspace)
 
   if (status === 'Error') {
-    spinner.fail(error(`Workspace has ${errors.length === 1 ? 'an error' : 'errors'}:`))
+    spinner.fail(`Workspace has ${errors.length === 1 ? 'an error' : 'errors'}:`)
     await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
     return CliExitCode.Success
   }
 
   if (status === 'Warning') {
-    spinner.fail(warn(`Workspace has ${errors.length === 1 ? 'a warning' : 'warnings'}:`))
+    spinner.fail(`Workspace has ${errors.length === 1 ? 'a warning' : 'warnings'}:`)
     await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
     return CliExitCode.Success
   }

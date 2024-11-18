@@ -97,8 +97,12 @@ export default class Prompts {
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
-  public static readonly SUCCESSFUL_DEPLOYMENT = 'Deployment was successful'
-  public static readonly NOT_SUCCESSFUL_DEPLOYMENT = "Couldn't deploy all elements\nDeployment summary:"
+  public static readonly NOT_SUCCESSFUL_DEPLOYMENT = chalk.bgBlack.bold('Deployment summary:')
+  public static readonly EXPLAIN_DEPLOYMENT_RESULT =
+    chalk.gray(`Deployment status is indicated with the following symbols:
+  ${Prompts.DEPLOYMENT_STATUS.success} success
+  ${Prompts.DEPLOYMENT_STATUS.partialSuccess} partial success
+  ${Prompts.DEPLOYMENT_STATUS.failure} failure`)
 
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`

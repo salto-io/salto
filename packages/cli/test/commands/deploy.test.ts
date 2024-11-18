@@ -15,6 +15,7 @@ import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
+import { summarizeDeployChanges } from '../../../core/src/core/deploy/deploy_summary'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -52,6 +53,7 @@ describe('deploy command', () => {
   let workspace: mocks.MockWorkspace
   let output: mocks.MockCliOutput
   let cliCommandArgs: mocks.MockCommandArgs
+  let summarizeDeployChangesSpy: jest.SpyInstance
   const accounts = ['salesforce']
   const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
   const mockShouldCancel = callbacks.shouldCancelCommand as jest.Mock
@@ -65,6 +67,7 @@ describe('deploy command', () => {
     workspace = mocks.mockWorkspace({})
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
+    jest.spyOn(saltoCoreModule, 'summarizeDeployChanges')
   })
 
   describe('when deploying changes', () => {
@@ -490,6 +493,31 @@ describe('deploy command', () => {
         workspace,
       })
       expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
+    })
+  })
+  describe('Post deployment summary', () => {
+    describe('when deployment is successful', () => {
+      beforeEach(async () => {
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should not print anything', async () => {})
+    })
+    describe('when deployment failed', () => {
+      it('should print all failed elements as failed', async () => {})
+      it('should not print succeeded or partially succeeded', async () => {})
+    })
+    describe('when deployment is partially successful', () => {
+      it('should print all the elements and their deployment status', async () => {})
     })
   })
 })

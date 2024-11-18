@@ -343,11 +343,7 @@ export const formatDeploymentSummary = (summary: Record<DeploySummaryResult, Det
   const failure: DeploySummaryResult = 'failure'
   const partialSuccess: DeploySummaryResult = 'partial-success'
   const success: DeploySummaryResult = 'success'
-  const headline: string =
-    !Object.prototype.hasOwnProperty.call(summary, failure) &&
-    !Object.prototype.hasOwnProperty.call(summary, partialSuccess)
-      ? Prompts.SUCCESSFUL_DEPLOYMENT
-      : Prompts.NOT_SUCCESSFUL_DEPLOYMENT
+  const headline: string = Prompts.NOT_SUCCESSFUL_DEPLOYMENT
   const succeeded: string | null = Object.prototype.hasOwnProperty.call(summary, success)
     ? formatDeploymentSummaryResult(summary[success], success)
     : null
@@ -357,12 +353,17 @@ export const formatDeploymentSummary = (summary: Record<DeploySummaryResult, Det
   const failed: string | null = Object.prototype.hasOwnProperty.call(summary, failure)
     ? formatDeploymentSummaryResult(summary[failure], failure)
     : null
-  return [
-    emptyLine(),
-    headline,
-    [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
-    emptyLine(),
-  ].join('\n')
+  return !Object.prototype.hasOwnProperty.call(summary, failure) &&
+    !Object.prototype.hasOwnProperty.call(summary, partialSuccess)
+    ? ''
+    : [
+        emptyLine(),
+        headline,
+        [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
+        emptyLine(),
+        Prompts.EXPLAIN_DEPLOYMENT_RESULT,
+        emptyLine(),
+      ].join('\n')
 }
 
 export const formatExecutionPlan = async (

@@ -86,8 +86,8 @@ const printDeploymentSummary = async (
 ): Promise<void> => {
   const dictionaryB = Object.entries(summary).reduce(
     (acc, [key, value]) => {
-      acc[value] = acc[value] || [] // Ensure an array exists for this value
-      acc[value].push(key) // Add the key to the array
+      acc[value] = acc[value] || []
+      acc[value].push(key)
       return acc
     },
     {} as Record<DeploySummaryResult, DetailedChangeId[]>,
@@ -306,21 +306,6 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
   )
   await printDeploymentSummary(summary, output)
-  // const postDeployActionsOutputPartialSuccess = Object.keys(summary).filter(key => summary[key] === 'partial-success')
-  // if (postDeployActionsOutputPartialSuccess.length > 0) {
-  //   outputLine('\n', output)
-  //   outputLine(`${postDeployActionsOutputPartialSuccess.length} elements partially succeeded deployment`, output)
-  //   outputLine(postDeployActionsOutputPartialSuccess.join('\n'), output)
-  //   outputLine('\n', output)
-  // }
-
-  // const postDeployActionsOutputFailures = Object.keys(summary).filter(key => summary[key] === 'failure')
-  // if (postDeployActionsOutputFailures.length > 0) {
-  //   outputLine('\n', output)
-  //   outputLine(`${postDeployActionsOutputFailures.length} elements failed deployment`, output)
-  //   outputLine(postDeployActionsOutputFailures.join('\n'), output)
-  //   outputLine('\n', output)
-  // }
 
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,

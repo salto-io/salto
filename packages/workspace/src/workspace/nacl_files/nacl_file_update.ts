@@ -45,7 +45,7 @@ export type DetailedChangeWithSource = DetailedChange & {
   requiresIndent?: boolean
 }
 
-const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
+export const createFileNameFromPath = (pathParts?: ReadonlyArray<string>): string =>
   `${path.join(...(pathParts ?? ['unsorted']))}${FILE_EXTENSION}`
 
 type PositionInParent = {

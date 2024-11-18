@@ -16,6 +16,7 @@ import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
+import { summarizeDeployChanges } from '../../../core/src/core/deploy/deploy_summary'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -58,6 +59,7 @@ describe('deploy command', () => {
   let workspace: mocks.MockWorkspace
   let output: mocks.MockCliOutput
   let cliCommandArgs: mocks.MockCommandArgs
+  let summarizeDeployChangesSpy: jest.SpyInstance
   const accounts = ['salesforce']
   const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
   const mockShouldCancel = callbacks.shouldCancelCommand as jest.Mock
@@ -71,6 +73,7 @@ describe('deploy command', () => {
     workspace = mocks.mockWorkspace({})
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
+    jest.spyOn(saltoCoreModule, 'summarizeDeployChanges')
   })
 
   describe('when deploying changes', () => {
@@ -499,6 +502,7 @@ describe('deploy command', () => {
     })
   })
   describe('Post deployment summary', () => {
+<<<<<<< HEAD
     describe('when all elements deployed successfully', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
@@ -508,6 +512,10 @@ describe('deploy command', () => {
           },
           resultToElemId: { success: ['a', 'b'], failure: [], 'partial-success': [] },
         })
+=======
+    describe('when deployment is successful', () => {
+      beforeEach(async () => {
+>>>>>>> 97211b4ce (tests)
         await action({
           ...cliCommandArgs,
           input: {

@@ -86,8 +86,8 @@ const printDeploymentSummary = async (
 ): Promise<void> => {
   const dictionaryB = Object.entries(summary).reduce(
     (acc, [key, value]) => {
-      acc[value] = acc[value] || [] // Ensure an array exists for this value
-      acc[value].push(key) // Add the key to the array
+      acc[value] = acc[value] || []
+      acc[value].push(key)
       return acc
     },
     {} as Record<DeploySummaryResult, DetailedChangeId[]>,

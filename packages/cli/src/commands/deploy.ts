@@ -93,7 +93,7 @@ const printDeploymentSummary = async (
     {} as Record<DeploySummaryResult, DetailedChangeId[]>,
   )
   const formattedDeploymentSummary: string | undefined = formatDeploymentSummary(dictionaryB)
-  if (formattedDeploymentSummary != undefined) {
+  if (formattedDeploymentSummary !== undefined) {
     outputLine(formattedDeploymentSummary, output)
   }
 }

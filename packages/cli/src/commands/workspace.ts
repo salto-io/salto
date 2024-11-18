@@ -16,11 +16,14 @@ import {
   formatStepStart,
   formatStepFailed,
   formatStepCompleted,
+  error,
+  warn,
 } from '../formatter'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
 import { CliExitCode } from '../types'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
+import { formatWorkspaceErrors, printWorkspaceErrors, validateWorkspace } from '../workspace/workspace'
 
 type CleanArgs = {
   force: boolean
@@ -201,13 +204,41 @@ const setStateProviderDef = createWorkspaceCommand({
   },
 })
 
+export const wsValidateAction: WorkspaceCommandAction = async ({ workspace, output, spinnerCreator }) => {
+  const spinner = spinnerCreator('Checking workspace...', {})
+  const { status, errors } = await validateWorkspace(workspace)
+
+  if (status === 'Error') {
+    spinner.fail(error(`Workspace has ${errors.length === 1 ? 'an error' : 'errors'}:`))
+    await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
+    return CliExitCode.Success
+  }
+
+  if (status === 'Warning') {
+    spinner.fail(warn(`Workspace has ${errors.length === 1 ? 'a warning' : 'warnings'}:`))
+    await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
+    return CliExitCode.Success
+  }
+
+  spinner.succeed('Workspace is valid')
+  return CliExitCode.Success
+}
+
+const wsValidateDef = createWorkspaceCommand({
+  properties: {
+    name: 'validate',
+    description: 'Log the errors on the workspace',
+  },
+  action: wsValidateAction,
+})
+
 // Group definition
 const wsGroupDef = createCommandGroupDef({
   properties: {
     name: 'workspace',
     description: 'Workspace administration commands',
   },
-  subCommands: [wsCleanDef, cacheGroupDef, setStateProviderDef],
+  subCommands: [wsCleanDef, cacheGroupDef, setStateProviderDef, wsValidateDef],
 })
 
 export default wsGroupDef

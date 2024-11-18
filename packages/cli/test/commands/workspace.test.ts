@@ -8,8 +8,17 @@
 import * as core from '@salto-io/core'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
-import { cleanAction, cacheUpdateAction, setStateProviderAction } from '../../src/commands/workspace'
+import { cleanAction, cacheUpdateAction, setStateProviderAction, wsValidateAction } from '../../src/commands/workspace'
 import { CliExitCode } from '../../src/types'
+import * as workspaceFunctions from '../../src/workspace/workspace'
+
+jest.mock('../../src/workspace/workspace', () => ({
+  ...jest.requireActual('../../src/workspace/workspace'),
+  validateWorkspace: jest.fn(),
+  printWorkspaceErrors: jest.fn(),
+}))
+
+const mockedWorkspaceFunctions = jest.mocked(workspaceFunctions)
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
@@ -305,6 +314,64 @@ describe('workspace command group', () => {
         })
         expect(result).toEqual(CliExitCode.UserInputError)
         expect(workspace.updateStateProvider).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('validate command', () => {
+    const commandName = 'validate'
+    const cliCommandArgs: mocks.MockCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
+    const workspace: mocks.MockWorkspace = mocks.mockWorkspace({})
+
+    describe('when workspace is valid', () => {
+      it('should indicate the workspace is valid', async () => {
+        mockedWorkspaceFunctions.validateWorkspace.mockResolvedValueOnce(
+          Promise.resolve({
+            status: 'Valid',
+            errors: [],
+          }),
+        )
+        const result = await wsValidateAction({
+          ...cliCommandArgs,
+          input: {},
+          workspace,
+        })
+        expect(workspaceFunctions.printWorkspaceErrors).not.toHaveBeenCalled()
+        expect(result).toEqual(CliExitCode.Success)
+      })
+    })
+    describe('when workspace is not valid', () => {
+      describe('when workspace has a warning', () => {
+        it('should indicate the workspace is not valid and specify the warnings', async () => {
+          mockedWorkspaceFunctions.validateWorkspace.mockResolvedValueOnce(
+            Promise.resolve({
+              status: 'Warning',
+              errors: [],
+            }),
+          )
+          const result = await wsValidateAction({
+            ...cliCommandArgs,
+            input: {},
+            workspace,
+          })
+          expect(workspaceFunctions.printWorkspaceErrors).toHaveBeenCalled()
+          expect(result).toEqual(CliExitCode.Success)
+        })
+      })
+      describe('when workspace has an error', () => {
+        it('should indicate the workspace is not valid and specify the errors', async () => {
+          mockedWorkspaceFunctions.validateWorkspace.mockResolvedValueOnce({
+            status: 'Error',
+            errors: [],
+          })
+          const result = await wsValidateAction({
+            ...cliCommandArgs,
+            input: {},
+            workspace,
+          })
+          expect(workspaceFunctions.printWorkspaceErrors).toHaveBeenCalled()
+          expect(result).toEqual(CliExitCode.Success)
+        })
       })
     })
   })

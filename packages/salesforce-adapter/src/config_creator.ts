@@ -233,7 +233,19 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
 
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   let configInstance = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  const appendProfilesAndPermissionSetsExclude = (instance: InstanceElement): void => {
+    const excludeSection = instance.value.fetch.metadata.exclude
+    if (Array.isArray(excludeSection)) {
+      instance.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfilesAndPermissionSets]
+    } else {
+      log.error(
+        'Failed to exclude Profiles and PermissionSets due to invalid exclude section in config instance: %s',
+        inspectValue(instance.value),
+      )
+    }
+  }
   if (options === undefined || !createOptionsTypeGuard<SalesforceConfigOptionsType>(optionsElemId)(options)) {
+    appendProfilesAndPermissionSetsExclude(configInstance)
     return configInstance
   }
 
@@ -242,15 +254,7 @@ export const getConfig = async (options?: InstanceElement): Promise<InstanceElem
   }
   const shouldIncludeProfilesAndPermissionSets = options.value.manageProfilesAndPermissionSets ?? false
   if (!shouldIncludeProfilesAndPermissionSets) {
-    const excludeSection = configInstance.value?.fetch?.metadata?.exclude
-    if (Array.isArray(excludeSection)) {
-      configInstance.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfilesAndPermissionSets]
-    } else {
-      log.error(
-        'Failed to exclude Profiles and PermissionSets due to invalid exclude section in config instance: %s',
-        inspectValue(configInstance.value),
-      )
-    }
+    appendProfilesAndPermissionSetsExclude(configInstance)
   }
   return configInstance
 }

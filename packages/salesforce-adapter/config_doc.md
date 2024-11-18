@@ -181,9 +181,9 @@ salesforce {
 
 ### Optional Features
 
-| Name                              | Default when undefined | Description                                                                                                                                                           |
-| --------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| skipAliases                       | false                  | Do not create aliases for Metadata Elements                                                                                                                           |
+| Name        | Default when undefined | Description                                 |
+| ----------- | ---------------------- | ------------------------------------------- |
+| skipAliases | false                  | Do not create aliases for Metadata Elements |
 
 ### Limits
 

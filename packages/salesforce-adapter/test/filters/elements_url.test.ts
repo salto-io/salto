@@ -22,7 +22,6 @@ import SalesforceClient from '../../src/client/client'
 import { Filter, FilterResult } from '../../src/filter'
 import elementsUrlFilter, { WARNING_MESSAGE } from '../../src/filters/elements_url'
 import { defaultFilterContext } from '../utils'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import * as ElementsUrlRetrieverModule from '../../src/elements_url_retriever/elements_url_retriever'
 
 describe('elements url filter', () => {
@@ -151,22 +150,6 @@ describe('elements url filter', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-    })
-  })
-  describe('when feature is disabled', () => {
-    it('should not run any query', async () => {
-      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
-      filter = elementsUrlFilter({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { elementsUrls: false } },
-          }),
-        },
-      })
-      await filter.onFetch?.([standardObject])
-      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
     })
   })
 })

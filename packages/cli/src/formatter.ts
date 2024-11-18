@@ -363,7 +363,7 @@ export const formatDeploymentSummary = (
         headline,
         [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
         emptyLine(),
-        Prompts.EXPLAIN_DEPLOYMENT_RESULT,
+        Prompts.EXPLAIN_DEPLOYMENT_SUMMARY,
         emptyLine(),
       ].join('\n')
 }

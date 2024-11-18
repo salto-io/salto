@@ -98,7 +98,7 @@ export default class Prompts {
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static readonly DEPLOYMENT_SUMMARY_HEADLINE = chalk.bgBlack.bold('Deployment summary:')
-  public static readonly EXPLAIN_DEPLOYMENT_RESULT =
+  public static readonly EXPLAIN_DEPLOYMENT_SUMMARY =
     chalk.gray(`Deployment status is indicated with the following symbols:
   ${Prompts.DEPLOYMENT_STATUS.success} success
   ${Prompts.DEPLOYMENT_STATUS.partialSuccess} partial success

@@ -33,9 +33,7 @@
     "@salto-io/adapter-components": "0.4.5",
     "@salto-io/adapter-utils": "0.4.5",
     "@salto-io/logging": "0.4.5",
-    "@salto-io/lowerdash": "0.4.5",
     "axios": "^1.7.2",
-    "axios-retry": "^4.4.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

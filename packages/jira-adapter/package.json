@@ -37,16 +37,12 @@
     "@salto-io/dag": "0.4.5",
     "@salto-io/logging": "0.4.5",
     "@salto-io/lowerdash": "0.4.5",
-    "form-data": "^4.0.0",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
-    "moment": "^2.24.0",
     "node-html-parser": "^6.1.5",
     "pako": "^1.0.11",
     "semver": "^7.3.2",
-    "uuid": "^10.0.0",
-    "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.0",

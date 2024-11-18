@@ -40,9 +40,7 @@
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
     "parse-link-header": "^2.0.0",
-    "uuid": "^10.0.0",
-    "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.0",

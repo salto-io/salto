@@ -7,9 +7,9 @@
  */
 import _ from 'lodash'
 import {
-  CORE_ANNOTATIONS,
+  CORE_ANNOTATIONS, Field,
   getChangeData,
-  InstanceElement,
+  InstanceElement, isInstanceElement,
   isReferenceExpression,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -20,8 +20,8 @@ import { FilterCreator } from '../filter'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
-import { isInstanceOfTypeSync } from './utils'
-import { RECORD_TYPE_METADATA_TYPE } from '../constants'
+import { apiNameSync, isInstanceOfTypeSync } from './utils'
+import { FIELD_ANNOTATIONS, RECORD_TYPE_METADATA_TYPE, VALUE_SET_FIELDS } from '../constants'
 
 const log = logger(module)
 const { isDefined } = values
@@ -45,13 +45,50 @@ export type PicklistValuesItem = {
   }[]
 }
 
-/**
- * Replace all picklist value full names with a reference to the original value definition.
- * Modifies the picklistValues in place.
- *
- * @param recordType        a RecordType instance to modify
- * @param picklistValues    The picklistValues of a RecordType instance to modify
- */
+
+type OrderedValueSet = {
+  values: Record<string,{
+    fullName: string | ReferenceExpression
+  }>
+}
+
+const isOrderedValueSet = (value: unknown): value is OrderedValueSet => {
+  const picklistValues: unknown = _.get(value, 'values')
+  return _.isObject(picklistValues) && Object.values(picklistValues).every(v => {
+    const fullName = _.get(v, 'fullName')
+      return _.isString(fullName) || isReferenceExpression(fullName)
+  })
+}
+
+const getValuesFromOrderedValueSet = (orderedValueSet: OrderedValueSet): string[] => (
+  Object.values(orderedValueSet.values).map(v => (_.isString(v.fullName) ? v.fullName : apiNameSync(v.fullName.value) ?? ''))
+)
+
+const getValueSetValuesFromPicklistField = (field: Field): string[] | undefined => {
+  const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  if (isOrderedValueSet(valueSet)) {
+    return getValuesFromOrderedValueSet(valueSet)
+  }
+  const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  if (isReferenceExpression(valueSetName)) {
+    const standardOrGlobalValueSet = valueSetName.value
+    if (isInstanceElement(standardOrGlobalValueSet)) {
+      if (apiNameSync(standardOrGlobalValueSet.getTypeSync()) === STANDARD_VALUE_SET) {
+        const {standardValueSet} = standardOrGlobalValueSet.value
+        if (isOrderedValueSet(standardValueSet)) {
+          return Object.keys(standardValueSet.values)
+        }
+      } else if (apiNameSync(standardOrGlobalValueSet.getTypeSync()) === GLOBAL_VALUE_SET) {
+        const {customValueSet} = standardOrGlobalValueSet.value
+        if (isOrderedValueSet(customValueSet)) {
+          return Object.keys(customValueSet.values)
+        }
+      }
+    }
+  }
+  return undefined
+}
+
 const addPicklistValueReferences = (recordType: InstanceElement, picklistValues: PicklistValuesItem): void => {
   // Get a reference to the underlying picklist that contains the values. We need to handle several cases:
   // 1. On onFetch, the picklist is a reference expression while on preDeploy and onDeploy it's a string with the parent field name.
@@ -59,9 +96,14 @@ const addPicklistValueReferences = (recordType: InstanceElement, picklistValues:
   //    is a reference to the actual picklist.
   const recordTypeParent =
     recordType.annotations[CORE_ANNOTATIONS.PARENT][0].value ?? recordType.annotations[CORE_ANNOTATIONS.PARENT][0]
+  const picklistField = recordTypeParent.fields[picklistValues.picklist]
+  if (picklistField === undefined) {
+    return
+  }
+  const valueSetValues = new Set(getValueSetValuesFromPicklistField(picklistField) ?? [])
   const picklistRef: ReferenceExpression = isReferenceExpression(picklistValues.picklist)
     ? picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
-    : recordTypeParent.fields[picklistValues.picklist]?.annotations?.valueSetName ??
+    : picklistField.annotations?.valueSetName ??
       new ReferenceExpression(recordTypeParent.elemID.createNestedID('field', picklistValues.picklist))
 
   if (!isReferenceExpression(picklistRef)) {
@@ -75,7 +117,9 @@ const addPicklistValueReferences = (recordType: InstanceElement, picklistValues:
     )
     return
   }
-  picklistValues.values = picklistValues.values.map(value => ({
+  picklistValues.values = picklistValues.values
+    .filter(({ fullName }) => valueSetValues.has(decodeURIComponent(fullName!)))
+    .map(value => ({
     ..._.omit(value, 'fullName'),
     value: new ReferenceExpression(
       picklistRef.elemID.createNestedID(

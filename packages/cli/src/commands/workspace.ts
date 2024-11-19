@@ -202,30 +202,37 @@ const setStateProviderDef = createWorkspaceCommand({
   },
 })
 
-export const wsValidateAction: WorkspaceCommandAction = async ({ workspace, output, spinnerCreator }) => {
+type wsValidateArgs = {}
+export const wsValidateAction: WorkspaceCommandAction<wsValidateArgs> = async ({
+  workspace,
+  output,
+  spinnerCreator,
+}) => {
   const spinner = spinnerCreator('Checking workspace...', {})
   const { status, errors } = await validateWorkspace(workspace)
 
-  if (status === 'Error') {
-    spinner.fail(`Workspace has ${errors.length === 1 ? 'an error' : 'errors'}:`)
-    await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
-    return CliExitCode.Success
+  switch (status) {
+    case 'Error': {
+      spinner.fail(`Workspace has ${errors.length > 1 ? 'errors' : 'an error'}:`)
+      await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
+      break
+    }
+    case 'Warning': {
+      spinner.fail(`Workspace has ${errors.length > 1 ? 'warnings' : 'a warning'}:`)
+      await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
+      break
+    }
+    default: {
+      spinner.succeed('Workspace is valid')
+    }
   }
-
-  if (status === 'Warning') {
-    spinner.fail(`Workspace has ${errors.length === 1 ? 'a warning' : 'warnings'}:`)
-    await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), output)
-    return CliExitCode.Success
-  }
-
-  spinner.succeed('Workspace is valid')
   return CliExitCode.Success
 }
 
 const wsValidateDef = createWorkspaceCommand({
   properties: {
     name: 'validate',
-    description: 'Log the errors on the workspace',
+    description: 'Log the workspace errors',
   },
   action: wsValidateAction,
 })

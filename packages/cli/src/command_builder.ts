@@ -65,7 +65,7 @@ type CommandInnerDef<T> = {
 
 export type WorkspaceCommandArgs<T> = Omit<DefActionInput<T>, 'workspacePath'> & { workspace: Workspace }
 
-export type WorkspaceCommandAction<T = {}> = (args: WorkspaceCommandArgs<T>) => Promise<CliExitCode>
+export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promise<CliExitCode>
 
 export type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>

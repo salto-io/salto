@@ -61,6 +61,7 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { createParseResultCache, ParsedNaclFileCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
+import { getSaltoFlagBool } from '../../flags'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -73,6 +74,8 @@ export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
 export const HASH_KEY = 'hash'
+
+const CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING_FLAG = 'CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING'
 
 const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
@@ -136,6 +139,21 @@ export const toPathHint = (filename: string): string[] => {
   const dirPathSplitted = dirName === '.' ? [] : dirName.split(osPath.sep)
   return [...dirPathSplitted, osPath.basename(filename, osPath.extname(filename))]
 }
+
+// not returning `Record<string, ElemID[]>` on purpose, so we'll run `ElemID.fromFullName(..)`
+// only when the element ids of a specific filename are requested
+const createFilenameToElementIDFullNamesMapping = (
+  currentState: NaclFilesState,
+  naclFilesByName: Record<string, ParsedNaclFile>,
+): Promise<Record<string, { path: string }[]>> =>
+  log.timeDebug(
+    () =>
+      awu(currentState.elementsIndex.entries())
+        .flatMap(({ key, value }) => value.map(filename => ({ path: key, filename })))
+        .filter(({ filename }) => naclFilesByName[filename] !== undefined)
+        .groupBy(({ filename }) => filename),
+    'create filename to element id full names mapping from elements index',
+  )
 
 export const getElementReferenced = async (
   element: Element,
@@ -364,6 +382,23 @@ const buildNaclFilesState = async ({
   const relevantElementIDs: ElemID[] = []
   const newElementsToMerge: AsyncIterable<Element>[] = []
 
+  const shouldCreateFilenameToElementIDsMapping = getSaltoFlagBool(CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING_FLAG)
+  log.debug('shouldCreateFilenameToElementIDsMapping is %s', shouldCreateFilenameToElementIDsMapping)
+
+  const filenameToElementIDFullNames =
+    !_.isEmpty(newParsed) && shouldCreateFilenameToElementIDsMapping
+      ? await createFilenameToElementIDFullNamesMapping(currentState, newParsed)
+      : {}
+
+  const getElementIDsFromNaclFile = async (naclFile: ParsedNaclFile): Promise<ElemID[]> => {
+    if (shouldCreateFilenameToElementIDsMapping) {
+      const elementIDFullnamesInNaclFile = filenameToElementIDFullNames[naclFile.filename] ?? []
+      return elementIDFullnamesInNaclFile.map(({ path }) => ElemID.fromFullName(path))
+    }
+    const elementsInNaclFile = (await naclFile.elements()) ?? []
+    return elementsInNaclFile.map(element => element.elemID)
+  }
+
   const updateIndex = async <T>(
     index: RemoteMap<T[]>,
     additions: Record<string, Set<T>>,
@@ -457,18 +492,15 @@ const buildNaclFilesState = async ({
         )
 
         const currentNaclFileElements = (await naclFile.elements()) ?? []
-        const oldNaclFileElements = (await parsedFile?.elements()) ?? []
+        const oldNaclFileElementIDs = parsedFile !== undefined ? await getElementIDsFromNaclFile(parsedFile) : []
         updateIndexOfFile(
           elementsIndexAdditions,
           elementsIndexDeletions,
           naclFile.filename,
-          oldNaclFileElements.map(e => e.elemID.getFullName()),
+          oldNaclFileElementIDs.map(elemID => elemID.getFullName()),
           currentNaclFileElements.map(e => e.elemID.getFullName()),
         )
-        relevantElementIDs.push(
-          ...currentNaclFileElements.map(e => e.elemID),
-          ...oldNaclFileElements.map(e => e.elemID),
-        )
+        relevantElementIDs.push(...currentNaclFileElements.map(e => e.elemID), ...oldNaclFileElementIDs)
         if (!_.isEmpty(currentNaclFileElements)) {
           newElementsToMerge.push(awu(currentNaclFileElements as Element[]))
         }
@@ -495,13 +527,13 @@ const buildNaclFilesState = async ({
           referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName] ?? new Set<string>()
           referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        const oldNaclFileElements = (await oldNaclFile.elements()) ?? []
-        oldNaclFileElements.forEach(element => {
-          const elementFullName = element.elemID.getFullName()
+        const oldNaclFileElementIDs = await getElementIDsFromNaclFile(oldNaclFile)
+        oldNaclFileElementIDs.forEach(elemID => {
+          const elementFullName = elemID.getFullName()
           elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName] ?? new Set<string>()
           elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
+        relevantElementIDs.push(...oldNaclFileElementIDs)
         toDelete.push(naclFile.filename)
         log.trace('Finished updating indexes of %s', naclFile.filename)
       })

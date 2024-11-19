@@ -84,7 +84,7 @@ const printDeploymentSummary = async (
   summary: Record<DetailedChangeId, DeploySummaryResult>,
   output: CliOutput,
 ): Promise<void> => {
-  const dictionaryB = Object.entries(summary).reduce(
+  const summaryResultToId = Object.entries(summary).reduce(
     (acc, [key, value]) => {
       acc[value] = acc[value] || []
       acc[value].push(key)
@@ -92,7 +92,7 @@ const printDeploymentSummary = async (
     },
     {} as Record<DeploySummaryResult, DetailedChangeId[]>,
   )
-  const formattedDeploymentSummary: string | undefined = formatDeploymentSummary(dictionaryB)
+  const formattedDeploymentSummary: string | undefined = formatDeploymentSummary(summaryResultToId)
   if (formattedDeploymentSummary !== undefined) {
     outputLine(formattedDeploymentSummary, output)
   }

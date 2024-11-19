@@ -51,7 +51,8 @@ const getContextsToProjectsReferences: GetCustomReferencesFunc = async elements 
 /**
  * Remove invalid projects (not references or missing references) from contexts.
  */
-export const removeMissingContextProjects: WeakReferencesHandler['removeWeakReferences'] =
+export const removeMissingContextProjects =
+  (changeInvalidContexts: boolean = true): WeakReferencesHandler['removeWeakReferences'] =>
   ({ elementsSource }) =>
   async elements => {
     const fixedElements = await awu(elements)
@@ -73,7 +74,11 @@ export const removeMissingContextProjects: WeakReferencesHandler['removeWeakRefe
           )
           .toArray()
 
-        if (fixedInstance.value[PROJECT_IDS].length === instance.value[PROJECT_IDS].length) {
+        if (
+          fixedInstance.value[PROJECT_IDS].length === instance.value[PROJECT_IDS].length ||
+          // if all projects are missing, the context is invalid. We handle it in a change validator
+          (fixedInstance.value[PROJECT_IDS].length === 0 && !changeInvalidContexts)
+        ) {
           return undefined
         }
 
@@ -82,27 +87,17 @@ export const removeMissingContextProjects: WeakReferencesHandler['removeWeakRefe
       .filter(values.isDefined)
       .toArray()
 
-    const errors = fixedElements.map(instance =>
-      instance.value[PROJECT_IDS].length === 0
-        ? {
-            elemID: instance.elemID,
-            severity: 'Error' as const,
-            message: 'Project scoped context must have at least one project in the target environment',
-            detailedMessage:
-              'This context is attached to projects that do not exist in the target environment. It cannot be deployed without referencing at least one project in the target environment.',
-          }
-        : {
-            elemID: instance.elemID.createNestedID('projectIds'),
-            severity: 'Info' as const,
-            message: 'Deploying context without all attached projects',
-            detailedMessage:
-              'This context is attached to some projects that do not exist in the target environment. It will be deployed without referencing these projects.',
-          },
-    )
+    const errors = fixedElements.map(instance => ({
+      elemID: instance.elemID.createNestedID('projectIds'),
+      severity: 'Info' as const,
+      message: 'Deploying context without all attached projects',
+      detailedMessage:
+        'This context is attached to some projects that do not exist in the target environment. It will be deployed without referencing these projects.',
+    }))
     return { fixedElements, errors }
   }
 
 export const contextProjectsHandler: WeakReferencesHandler = {
   findWeakReferences: getContextsToProjectsReferences,
-  removeWeakReferences: removeMissingContextProjects,
+  removeWeakReferences: removeMissingContextProjects(false),
 }

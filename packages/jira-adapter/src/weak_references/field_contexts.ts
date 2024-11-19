@@ -59,7 +59,7 @@ const isContextWithValidProjects = async (
     return false
   }
   const context = await elementsSource.get(fieldContext.elemID)
-  const { fixedElements } = await removeMissingContextProjects({ elementsSource })([context])
+  const { fixedElements } = await removeMissingContextProjects()({ elementsSource })([context])
   // if there was no fix (includes also global context) the context will be valid
   return (
     fixedElements.length === 0 ||

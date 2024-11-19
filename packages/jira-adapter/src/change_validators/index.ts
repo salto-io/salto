@@ -72,6 +72,7 @@ import { fieldContextDefaultValueValidator } from './field_contexts/field_contex
 import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
 import { optionValueValidator } from './field_contexts/option_value'
 import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_search_deployment'
+import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -152,6 +153,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
     optionValue: optionValueValidator(config),
     enhancedSearchDeployment: enhancedSearchDeploymentValidator,
+    emptyProjectScopedContext: emptyProjectScopedContextValidator,
   }
 
   return createChangeValidator({

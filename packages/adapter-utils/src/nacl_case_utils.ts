@@ -25,9 +25,6 @@ const allCapsCamelCaseRegex = /[A-Z]([A-Z][a-z])/g
 export const pathNaclCase = (name?: string): string =>
   (name ? name.split(NACL_ESCAPING_SUFFIX_SEPARATOR)[0] : '').slice(0, MAX_PATH_LENGTH)
 
-// Converts a nacl case to a file system safe name. Use it (instead of pathNaclCase) if the file name must be unique
-export const fileNameNaclCase = (name: string): string => name.replace('@', '.')
-
 // Trim part of a file name to comply with filesystem restrictions
 // This assumes the filesystem does not allow path parts to be over
 // MAX_PATH_LENGTH long in byte length

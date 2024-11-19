@@ -140,20 +140,19 @@ export const toPathHint = (filename: string): string[] => {
   return [...dirPathSplitted, osPath.basename(filename, osPath.extname(filename))]
 }
 
-const createFilenamesToElementIDsMapping = async (
+// not returning `Record<string, ElemID[]>` on purpose, so we'll run `ElemID.fromFullName(..)`
+// only when the element ids of a specific filename are requested
+const createFilenameToElementIDFullNamesMapping = (
   currentState: NaclFilesState,
   naclFilesByName: Record<string, ParsedNaclFile>,
-): Promise<Record<string, ElemID[]>> =>
+): Promise<Record<string, { path: string }[]>> =>
   log.timeDebug(
-    async () =>
-      _.mapValues(
-        await awu(currentState.elementsIndex.entries())
-          .flatMap(row => row.value.map(filename => ({ path: row.key, filename })))
-          .filter(row => naclFilesByName[row.filename] !== undefined)
-          .groupBy(row => row.filename),
-        group => group.map(row => ElemID.fromFullName(row.path)),
-      ),
-    'create filenames to element ids mapping from elements index',
+    () =>
+      awu(currentState.elementsIndex.entries())
+        .flatMap(({ key, value }) => value.map(filename => ({ path: key, filename })))
+        .filter(({ filename }) => naclFilesByName[filename] !== undefined)
+        .groupBy(({ filename }) => filename),
+    'create filename to element id full names mapping from elements index',
   )
 
 export const getElementReferenced = async (
@@ -383,15 +382,18 @@ const buildNaclFilesState = async ({
   const relevantElementIDs: ElemID[] = []
   const newElementsToMerge: AsyncIterable<Element>[] = []
 
-  const shouldCreateFilenamesToElementIDsMapping = getSaltoFlagBool(CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING_FLAG)
-  const filenameToElementIDs =
-    !_.isEmpty(newParsed) && shouldCreateFilenamesToElementIDsMapping
-      ? await createFilenamesToElementIDsMapping(currentState, newParsed)
+  const shouldCreateFilenameToElementIDsMapping = getSaltoFlagBool(CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING_FLAG)
+  log.debug('shouldCreateFilenameToElementIDsMapping is %s', shouldCreateFilenameToElementIDsMapping)
+
+  const filenameToElementIDFullNames =
+    !_.isEmpty(newParsed) && shouldCreateFilenameToElementIDsMapping
+      ? await createFilenameToElementIDFullNamesMapping(currentState, newParsed)
       : {}
 
   const getElementIDsFromNaclFile = async (naclFile: ParsedNaclFile): Promise<ElemID[]> => {
-    if (shouldCreateFilenamesToElementIDsMapping) {
-      return filenameToElementIDs[naclFile.filename] ?? []
+    if (shouldCreateFilenameToElementIDsMapping) {
+      const elementIDFullnamesInNaclFile = filenameToElementIDFullNames[naclFile.filename] ?? []
+      return elementIDFullnamesInNaclFile.map(({ path }) => ElemID.fromFullName(path))
     }
     const elementsInNaclFile = (await naclFile.elements()) ?? []
     return elementsInNaclFile.map(element => element.elemID)

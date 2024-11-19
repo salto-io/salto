@@ -26,6 +26,7 @@ import {
 } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
+import { TMP_PROJECT_PATH } from './utils'
 
 describe('loadElementsFromFolder', () => {
   describe('when called with valid project folder', () => {
@@ -35,7 +36,7 @@ describe('loadElementsFromFolder', () => {
         Object.values(_.omit(mockTypes, 'EmailTemplate', 'EmailFolder', 'Role')),
       )
       const loadElementsRes = await loadElementsFromFolder({
-        baseDir: path.join(__dirname, 'test_sfdx_project'),
+        baseDir: TMP_PROJECT_PATH,
         elementsSource,
       })
       elements = loadElementsRes.elements

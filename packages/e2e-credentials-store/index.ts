@@ -5,12 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import cliMain from './cli'
+import cliMain from './src/cli'
 
-export { default as creds, CredsSpec, CredsLease } from './jest-environment/creds'
+export { default as creds, CredsSpec, CredsLease } from './src/jest-environment/creds'
 
-export { default as createEnvUtils } from './process_env'
-export { SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from './jest-environment/index'
-export { default as IntervalScheduler } from './jest-environment/interval_scheduler'
-export * from './types'
+export { default as createEnvUtils } from './src/process_env'
+export { SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from './src/jest-environment/index'
+export { default as IntervalScheduler } from './src/jest-environment/interval_scheduler'
+export * from './src/types'
 export const cli = { main: cliMain }

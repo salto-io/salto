@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { RenewedLease, Pool, Lease, LeaseUpdateOpts, InstanceNotLeasedError } from '../../src/index'
+import { RenewedLease, Pool, Lease, LeaseUpdateOpts, InstanceNotLeasedError } from '../..'
 import { createMockPool } from '../mock_repo'
 
 jest.useFakeTimers({ legacyFakeTimers: true })

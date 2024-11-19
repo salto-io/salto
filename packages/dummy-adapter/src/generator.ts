@@ -51,12 +51,7 @@ import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
 import { merger, expressions, elementSource } from '@salto-io/workspace'
 import { parser, parserUtils } from '@salto-io/parser'
-import {
-  createMatchingObjectType,
-  createTemplateExpression,
-  ImportantValues,
-  inspectValue,
-} from '@salto-io/adapter-utils'
+import { createMatchingObjectType, createTemplateExpression, ImportantValues } from '@salto-io/adapter-utils'
 
 const { isDefined } = lowerDashValues
 const { mapValuesAsync } = promises.object
@@ -301,7 +296,6 @@ export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promis
   const elements = await awu(
     allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
-      log.debug('content of file %s is %s', file.path, content)
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
           parse: async funcParams => {
@@ -321,7 +315,6 @@ export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promis
           isSerializedAsFunction: () => true,
         },
       })
-      log.debug(`parsedNaclFile of file ${file.fullPath} is equal ${inspectValue(parsedNaclFile)}`)
       await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
@@ -331,7 +324,6 @@ export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promis
     .flat()
     .toArray()
   const mergedElements = await merger.mergeElements(awu(elements))
-  log.debug(`mergedElements is equal ${inspectValue(mergedElements)}`)
   const inMemElemSource = elementSource.createInMemoryElementSource(await awu(mergedElements.merged.values()).toArray())
   return (await Promise.all(elements.map(async elem => expressions.resolve([elem], inMemElemSource)))).flat()
 }

@@ -525,7 +525,7 @@ const buildNaclFilesState = async ({
           referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName] ?? new Set<string>()
           referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        const oldNaclFileElementIDs = (await getElementIDsFromNaclFile(oldNaclFile)) ?? []
+        const oldNaclFileElementIDs = await getElementIDsFromNaclFile(oldNaclFile)
         oldNaclFileElementIDs.forEach(elemID => {
           const elementFullName = elemID.getFullName()
           elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName] ?? new Set<string>()

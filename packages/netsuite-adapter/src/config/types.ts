@@ -105,15 +105,8 @@ export type FetchParams = {
   }
   strictInstanceStructure?: boolean
   fieldsToOmit?: FieldToOmitParams[]
-  addAlias?: boolean
-  addBundles?: boolean
-  addImportantValues?: boolean
-  addLockedCustomRecordTypes?: boolean
+  // should be removed next
   resolveAccountSpecificValues?: boolean
-  // SALTO-6145: should be removed
-  forceFileCabinetExclude?: boolean
-  calculateNewReferencesInSuiteScripts?: boolean
-  useNewReferencesInSuiteScripts?: boolean
   findReferencesInFilesWithExtension?: string[]
 } & LockedElementsConfig['fetch']
 
@@ -124,14 +117,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   authorInformation: 'authorInformation',
   strictInstanceStructure: 'strictInstanceStructure',
   fieldsToOmit: 'fieldsToOmit',
-  addAlias: 'addAlias',
-  addBundles: 'addBundles',
-  addImportantValues: 'addImportantValues',
-  addLockedCustomRecordTypes: 'addLockedCustomRecordTypes',
   resolveAccountSpecificValues: 'resolveAccountSpecificValues',
-  forceFileCabinetExclude: 'forceFileCabinetExclude',
-  calculateNewReferencesInSuiteScripts: 'calculateNewReferencesInSuiteScripts',
-  useNewReferencesInSuiteScripts: 'useNewReferencesInSuiteScripts',
   findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
 }
 
@@ -240,8 +226,6 @@ export type NetsuiteConfig = {
   fetch: FetchParams
   fetchTarget?: NetsuiteQueryParameters
   skipList?: NetsuiteQueryParameters
-  withPartialDeletion?: boolean
-  deployReferencedElements?: boolean
 }
 
 export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
@@ -260,8 +244,6 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   fetch: 'fetch',
   fetchTarget: 'fetchTarget',
   skipList: 'skipList',
-  withPartialDeletion: 'withPartialDeletion',
-  deployReferencedElements: 'deployReferencedElements',
 }
 
 export type NetsuiteValidatorName =
@@ -632,14 +614,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     authorInformation: { refType: authorInfoConfig },
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
-    addAlias: { refType: BuiltinTypes.BOOLEAN },
-    addBundles: { refType: BuiltinTypes.BOOLEAN },
-    addImportantValues: { refType: BuiltinTypes.BOOLEAN },
-    addLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
     resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
-    forceFileCabinetExclude: { refType: BuiltinTypes.BOOLEAN },
-    calculateNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
-    useNewReferencesInSuiteScripts: { refType: BuiltinTypes.BOOLEAN },
     findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
@@ -834,17 +809,11 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
     fetchTarget: {
       refType: queryConfigType,
     },
-    withPartialDeletion: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
     typesToSkip: {
       refType: new ListType(BuiltinTypes.STRING),
     },
     skipList: {
       refType: queryConfigType,
-    },
-    deployReferencedElements: {
-      refType: BuiltinTypes.BOOLEAN,
     },
   },
   annotations: {

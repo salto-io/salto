@@ -12,7 +12,6 @@ import NetsuiteClient from '../client/client'
 export type NetsuiteChangeValidator = (
   changes: ReadonlyArray<Change>,
   params: {
-    deployReferencedElements: boolean
     elementsSource: ReadOnlyElementsSource
     config: NetsuiteConfig
     client: NetsuiteClient

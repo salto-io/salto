@@ -11,6 +11,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { isStandardInstanceOrCustomRecordType } from '../types'
 import { getReferencedElements } from '../reference_dependencies'
 import { NetsuiteChangeValidator } from './types'
+import { NetsuiteConfig } from '../config/types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -23,12 +24,12 @@ type ElementToReferenceElements = {
 
 export const getReferencedElementsForReferrers = async (
   elements: ChangeDataType[],
-  deployAllReferencedElements: boolean,
+  config: NetsuiteConfig,
 ): Promise<ElementToReferenceElements[]> => {
   const sourceElemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
   return awu(elements)
     .map(async element => {
-      const referencedElements = await getReferencedElements([element], deployAllReferencedElements)
+      const referencedElements = await getReferencedElements([element], config.deploy?.deployReferencedElements)
       const references = referencedElements
         .filter(referencedElement => !sourceElemIdSet.has(referencedElement.elemID.getFullName()))
         .map(referencedElement => referencedElement.elemID.getFullName())
@@ -45,13 +46,13 @@ export const getReferencedElementsForReferrers = async (
     .toArray()
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, { deployReferencedElements }) => {
+const changeValidator: NetsuiteChangeValidator = async (changes, { config }) => {
   const sdfChangesData = changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isStandardInstanceOrCustomRecordType)
 
-  const refererToReferenceElements = await getReferencedElementsForReferrers(sdfChangesData, deployReferencedElements)
+  const refererToReferenceElements = await getReferencedElementsForReferrers(sdfChangesData, config)
 
   return refererToReferenceElements.map(refererToReferenceElement => {
     const pluralRefElement = refererToReferenceElement.referencesNumber > 1 ? 's' : ''

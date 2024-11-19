@@ -443,14 +443,9 @@ const getElementsWithoutAlias = (elementsMap: ElementsMap): ElementsMap =>
       .filter(([_group, elems]) => elems.length > 0),
   )
 
-const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }) => ({
+const filterCreator: LocalFilterCreator = ({ elementsSource, isPartial }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config.fetch.addAlias === false) {
-      log.info('not running addAlias filter as addAlias in the config is false')
-      return
-    }
-
     const instances = elements.filter(isInstanceElement)
     const { fileCabinetInstances, customRecordInstances, subInstances, otherInstances } =
       await splitInstancesToGroups(instances)

@@ -777,7 +777,6 @@ describe('Adapter', () => {
           ...config,
           fetch: {
             ...config.fetch,
-            addLockedCustomRecordTypes: true,
             lockedElementsToExclude: {
               types: [
                 {
@@ -1193,90 +1192,6 @@ describe('Adapter', () => {
       })
     })
 
-    describe('warnOnStaleWorkspaceData', () => {
-      it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData is undefined in config', async () => {
-        const configWithoutWarnStaleData = {
-          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
-          fetchAllTypesAtOnce: true,
-          deploy: {},
-          fetch: fullFetchConfig(),
-        }
-        const elementsSource = buildElementsSourceFromElements([])
-        const adapter = new NetsuiteAdapter({
-          client: new NetsuiteClient(client),
-          elementsSource,
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
-          config: configWithoutWarnStaleData,
-          getElemIdFunc: mockGetElemIdFunc,
-        })
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        adapter.deployModifiers
-
-        expect(getChangeValidatorMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            warnStaleData: false,
-          }),
-        )
-      })
-
-      it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData=false in config', async () => {
-        const configWithoutWarnStaleData = {
-          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
-          fetchAllTypesAtOnce: true,
-          deploy: {
-            warnOnStaleWorkspaceData: false,
-          },
-          fetch: fullFetchConfig(),
-        }
-        const elementsSource = buildElementsSourceFromElements([])
-        const adapter = new NetsuiteAdapter({
-          client: new NetsuiteClient(client),
-          elementsSource,
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
-          config: configWithoutWarnStaleData,
-          getElemIdFunc: mockGetElemIdFunc,
-        })
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        adapter.deployModifiers
-
-        expect(getChangeValidatorMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            warnStaleData: false,
-          }),
-        )
-      })
-
-      it('should call getChangeValidator with warnStaleData=true if warnOnStaleWorkspaceData=true in config', async () => {
-        const configWithoutWarnStaleData = {
-          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
-          fetchAllTypesAtOnce: true,
-          deploy: {
-            warnOnStaleWorkspaceData: true,
-          },
-          fetch: fullFetchConfig(),
-        }
-        const elementsSource = buildElementsSourceFromElements([])
-        const adapter = new NetsuiteAdapter({
-          client: new NetsuiteClient(client),
-          elementsSource,
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
-          config: configWithoutWarnStaleData,
-          getElemIdFunc: mockGetElemIdFunc,
-        })
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        adapter.deployModifiers
-
-        expect(getChangeValidatorMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            warnStaleData: true,
-          }),
-        )
-      })
-    })
-
     describe('deploy errors', () => {
       let adapter: NetsuiteAdapter
       const mockClientDeploy = jest.fn()
@@ -1428,13 +1343,9 @@ describe('Adapter', () => {
 
     it('should use suiteAppFileCabinet importFileCabinet and pass it the right params', async () => {
       await adapter.fetch(mockFetchOpts)
-      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(
-        suiteAppClient,
-        expect.anything(),
-        3,
-        ['.*\\.(csv|pdf|png)'],
-        true,
-      )
+      expect(suiteAppImportFileCabinetMock).toHaveBeenCalledWith(suiteAppClient, expect.anything(), 3, [
+        '.*\\.(csv|pdf|png)',
+      ])
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {

@@ -29,8 +29,9 @@ import { isStandardInstanceOrCustomRecordType, isFileCabinetInstance } from '../
 import { CUSTOM_RECORD_TYPE, PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { getReferencedElements } from '../reference_dependencies'
-import { NetsuiteQueryParameters } from '../config/types'
+import { NetsuiteConfig, NetsuiteQueryParameters } from '../config/types'
 import { FetchByQueryFunc, buildNetsuiteQuery, convertToQueryParams } from '../config/query'
+import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from '../config/constants'
 
 type DependencyType = 'referenced' | 'required'
 type AdditionalElement = {
@@ -97,7 +98,7 @@ const getMatchingServiceElements = async (
 
 const getAdditionalElements = async (
   elements: ChangeDataType[],
-  deployAllReferencedElements: boolean,
+  deployAllReferencedElements = DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 ): Promise<AdditionalElement[]> => {
   const dependency: DependencyType = deployAllReferencedElements ? 'referenced' : 'required'
   const elementsElemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
@@ -168,7 +169,7 @@ const toTopLevelChange = (change: Change): Change =>
 const changeValidator = async (
   changes: ReadonlyArray<Change>,
   fetchByQuery: FetchByQueryFunc,
-  deployAllReferencedElements = false,
+  config: NetsuiteConfig,
 ): Promise<ReadonlyArray<ChangeError>> => {
   const elements = changes
     .map(getChangeData)
@@ -176,7 +177,7 @@ const changeValidator = async (
 
   const additionalElements = await getAdditionalElements(
     elements.filter(isStandardInstanceOrCustomRecordType),
-    deployAllReferencedElements,
+    config.deploy?.deployReferencedElements,
   )
 
   const serviceElements = await getMatchingServiceElements(

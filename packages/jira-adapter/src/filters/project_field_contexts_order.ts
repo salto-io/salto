@@ -5,45 +5,25 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { Element, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import {
-  Element,
-  ReferenceExpression,
-  getChangeData,
-  isAdditionOrModificationChange,
-  isInstanceChange,
-  isInstanceElement,
-} from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { PROJECT_TYPE } from '../constants'
+import { PROJECT_IDS } from '../constants'
+import { FIELD_CONTEXT_TYPE_NAME } from './fields/constants'
 
 /**
  * sorting project field contexts to avoid unnecessary noise
  */
 const filter: FilterCreator = () => ({
-  name: 'projectFieldContexts',
+  name: 'ProjectsIdContextOrder',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
-      .filter(instance => instance.value.fieldContexts !== undefined)
+      .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(instance => Array.isArray(instance.value[PROJECT_IDS]))
+      .filter(instance => instance.value[PROJECT_IDS].every(isReferenceExpression))
       .forEach(instance => {
-        instance.value.fieldContexts = _.sortBy(instance.value.fieldContexts, (ref: ReferenceExpression) =>
-          ref.elemID.getFullName(),
-        )
-      })
-  },
-  onDeploy: async changes => {
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(element => element.elemID.typeName === PROJECT_TYPE)
-      .filter(element => element.value.fieldContexts !== undefined)
-      .forEach(element => {
-        element.value.fieldContexts = _.sortBy(element.value.fieldContexts, (ref: ReferenceExpression) =>
-          ref.elemID.getFullName(),
-        )
+        instance.value[PROJECT_IDS] = _.sortBy(instance.value[PROJECT_IDS], ref => ref.elemID.getFullName())
       })
   },
 })

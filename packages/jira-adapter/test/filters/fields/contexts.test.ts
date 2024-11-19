@@ -106,14 +106,7 @@ describe('deployContextChange', () => {
       change: await resolveChangeElement(change, getLookUpName),
       client,
       endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.CustomFieldContext.deployRequests,
-      fieldsToIgnore: [
-        'defaultValue',
-        'options',
-        'isGlobalContext',
-        'AssetsObjectFieldConfiguration',
-        'issueTypeIds',
-        'projectIds',
-      ],
+      fieldsToIgnore: ['defaultValue', 'options', 'AssetsObjectFieldConfiguration', 'issueTypeIds', 'projectIds'],
     })
   })
   it('should not call setOptions and setDefaultValue if splitFieldContextOptions is false', async () => {

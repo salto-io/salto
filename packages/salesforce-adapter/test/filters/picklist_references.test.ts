@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ReferenceExpression, InstanceElement, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/picklist_references'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
@@ -13,7 +14,6 @@ import { FilterWith } from './mocks'
 import { mockTypes } from '../mock_elements'
 import { Types } from '../../src/transformers/transformer'
 import { VALUE_SET_FIELDS } from '../../src/constants'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 describe('picklistReferences filter', () => {
   const gvs = new InstanceElement('MyGVS', mockTypes.GlobalValueSet, {
@@ -71,6 +71,24 @@ describe('picklistReferences filter', () => {
           },
         },
       },
+      // Make sure the filter does not create references to the old format.
+      Old_Format_Picklist__c: {
+        refType: Types.primitiveDataTypes.Picklist,
+        annotations: {
+          valueSet:
+              [{
+                fullName: 'val1',
+                default: false,
+                label: 'High',
+              },
+              {
+                fullName: 'val2',
+                default: false,
+                label: 'Low',
+              },
+            ],
+        },
+      },
     },
   })
 
@@ -83,7 +101,7 @@ describe('picklistReferences filter', () => {
     filter = filterCreator({
       config: {
         ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ fetchParams: { target: [], optionalFeatures: { picklistsAsMaps: true } } }),
+        fetchProfile: buildFetchProfile({ fetchParams: { target: [] } }),
         elementsSource: buildElementsSourceFromElements([gvs, svs]),
       },
     }) as FilterType
@@ -115,7 +133,7 @@ describe('picklistReferences filter', () => {
               { fullName: 'val2', default: false },
             ],
           },
-          // ValueSet Field
+          // Field with valueSet
           {
             picklist: new ReferenceExpression(
               accountObjectType.fields.priority__c.elemID,
@@ -124,6 +142,17 @@ describe('picklistReferences filter', () => {
             values: [
               { fullName: 'High', default: false },
               { fullName: 'Low', default: false },
+            ],
+          },
+          // Field in old format
+          {
+            picklist: new ReferenceExpression(
+              accountObjectType.fields.Old_Format_Picklist__c.elemID,
+              accountObjectType.fields.Old_Format_Picklist__c,
+            ),
+            values: [
+              { fullName: 'val1', default: false },
+              { fullName: 'val2', default: false },
             ],
           },
         ],
@@ -179,7 +208,7 @@ describe('picklistReferences filter', () => {
         },
       ])
     })
-    it('should create references to ObjectType custom fields', async () => {
+    it('should create references to Field valueSet value', async () => {
       expect(recordType.value.picklistValues[2].values).toEqual([
         {
           fullName: new ReferenceExpression(
@@ -195,6 +224,12 @@ describe('picklistReferences filter', () => {
           ),
           default: false,
         },
+      ])
+    })
+    it('should not create references to Field in the old format (Array of values instead of map)', async () => {
+      expect(recordType.value.picklistValues[3].values).toEqual([
+        { fullName: 'val1', default: false },
+        { fullName: 'val2', default: false },
       ])
     })
   })

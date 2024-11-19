@@ -108,6 +108,9 @@ const createReferencesForRecordType = (
   })
 }
 
+
+// Create reference index from baseElements full names (either Field, GlobalValueSet or StandardValueSet instances)
+// with references to each of their valueSet values.
 const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValuesReferenceIndex => {
   const result: PicklistValuesReferenceIndex = {}
   elements.filter(isInstanceOfTypeSync(GLOBAL_VALUE_SET, STANDARD_VALUE_SET)).forEach(instance => {

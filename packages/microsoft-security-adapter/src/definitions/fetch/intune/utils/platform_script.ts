@@ -99,6 +99,7 @@ export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async
       ..._.omit(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
       [SCRIPT_CONTENT_FIELD_NAME]: createStaticFileFromBase64Blob({
         typeName,
+        // SALTO-6935: handle custom elemIds
         fullName: value[NAME_ID_FIELD.fieldName],
         fileName: value.fileName,
         content: _.get(scriptContent[0], SCRIPT_CONTENT_FIELD_NAME),

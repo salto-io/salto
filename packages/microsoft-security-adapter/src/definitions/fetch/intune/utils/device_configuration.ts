@@ -27,6 +27,7 @@ export const extractPayloadToStaticFile: AdjustFunctionSingle = async ({ value }
       ...value,
       payload: createStaticFileFromBase64Blob({
         typeName: DEVICE_CONFIGURATION_TYPE_NAME,
+        // SALTO-6935: handle custom elemIds
         fullName: value[NAME_ID_FIELD.fieldName],
         fileName: value.payloadFileName,
         content: payload,

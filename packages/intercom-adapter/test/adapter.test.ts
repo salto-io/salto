@@ -76,6 +76,7 @@ describe('Intercom adapter', () => {
           'intercom.article.instance.Test_collection_This_is_a_test_article@sussss',
           'intercom.collection',
           'intercom.collection.instance.Test_collection@s',
+          'intercom.company',
           'intercom.data_attribute',
           'intercom.data_attribute.instance.name',
           'intercom.help_center',

@@ -127,6 +127,7 @@ const OPTIONAL_FEATURES = [
   'picklistsAsMaps',
   'lightningPageFieldItemReference',
   'retrieveSettings',
+  'genAiReferences',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'elementsUrls',

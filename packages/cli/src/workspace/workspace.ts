@@ -100,7 +100,7 @@ export const formatWorkspaceErrors = async (workspace: Workspace, errors: Iterab
     )
   ).join(EOL)
 
-const printWorkspaceErrors = async (
+export const printWorkspaceErrors = async (
   status: WorkspaceStatusErrors['status'],
   errorsStr: string,
   { stdout, stderr }: CliOutput,

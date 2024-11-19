@@ -41,6 +41,13 @@ import {
   SaltoError,
   SaltoElementError,
   ReadOnlyElementsSource,
+  DeploySummaryResult,
+  ChangeDataType,
+  Change,
+  DeployResult,
+  getChangeData,
+  isRemovalChange,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -228,6 +235,7 @@ export type GeneratorParams = {
   listLengthStd: number
   changeErrors?: ChangeErrorFromConfigFile[]
   fetchErrors?: FetchErrorFromConfigFile[]
+  deployResult?: DeploySummaryResult
   extraNaclPaths?: string[]
   generateEnvName?: string
   fieldsToOmitOnDeploy?: string[]
@@ -1148,3 +1156,77 @@ export const generateFetchErrorsFromConfig = (
         ...error,
         elemID: ElemID.fromFullName(error.elemID),
       }))
+
+const generateChangeError = (change: Change<ChangeDataType>): SaltoElementError => ({
+  elemID: getChangeData(change).elemID,
+  severity: 'Error',
+  message: 'Failed to deploy',
+  detailedMessage: 'Failed to deploy',
+})
+
+/**
+ * Generate a partial success deploy result.
+ * Partial success requires a removal change or at least 2 changes.
+ * If there's at least one removal change, it's transformed into a modification with an empty "after" value.
+ * The remaining (non-removal) changes are applied successfully.
+ * Without removal changes, the first change generates an error, and the rest succeed.
+ */
+const generatePartialSuccessDeployResult = (changes: readonly Change<ChangeDataType>[]): DeployResult => {
+  const hasRemovalChange = changes.some(isRemovalChange)
+  const changesWithPartialSuccess = changes.map((change): Change<ChangeDataType> => {
+    if (!isRemovalChange(change)) {
+      return change
+    }
+
+    const before = getChangeData(change)
+    const after = before.clone()
+    if (isObjectType(after)) {
+      after.fields = {}
+    }
+    if (isInstanceElement(after)) {
+      after.value = {}
+    }
+    return {
+      action: 'modify',
+      data: { before, after },
+    }
+  })
+
+  if (hasRemovalChange) {
+    return {
+      appliedChanges: changesWithPartialSuccess,
+      errors: [],
+    }
+  }
+
+  if (changes.length < 2) {
+    log.error('Expected at removal change or at least 2 changes for partial success. Falling back to error result')
+  }
+
+  return {
+    appliedChanges: changes.slice(1),
+    errors: changes[0] ? [generateChangeError(changes[0])] : [],
+  }
+}
+
+export const generateDeployResult = (
+  changes: readonly Change<ChangeDataType>[],
+  deployResult: DeploySummaryResult,
+): DeployResult => {
+  switch (deployResult) {
+    case 'success':
+      return {
+        appliedChanges: changes,
+        errors: [],
+      }
+    case 'failure':
+      return {
+        appliedChanges: [],
+        errors: changes.map(generateChangeError),
+      }
+    case 'partial-success':
+      return generatePartialSuccessDeployResult(changes)
+    default:
+      throw new Error('Unexpected dummy deploy result')
+  }
+}

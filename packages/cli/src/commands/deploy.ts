@@ -17,13 +17,13 @@ import {
   deploy,
   summarizeDeployChanges,
   GroupProperties,
-  DeploySummaryResult,
   DetailedChangeId,
 } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { mkdirp, writeFile } from '@salto-io/file'
 import path from 'path'
+import { DeploySummaryResult } from '@salto-io/adapter-api'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'

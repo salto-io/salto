@@ -25,9 +25,6 @@ const config = baseConfig.concat(adapterApiRules).concat([
       },
     },
   },
-  {
-    ignores: ['test/sfdx_parser/test_sfdx_project/'],
-  },
 ])
 
 export default config

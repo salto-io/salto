@@ -43,6 +43,7 @@ import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { getUserBooleanInput } from '../callbacks'
+import { getParentElemID } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
@@ -528,14 +529,24 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input
     errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
     return CliExitCode.UserInputError
   }
+  if (!isElement(element)) {
+    errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
+    return CliExitCode.AppError
+  }
+  const parentElemId = getParentElemID(element)
+  const parentElem = await workspace.getValue(parentElemId)
+  const parentUrl = parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL]
 
-  const serviceUrl = isElement(element) ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
+  const serviceUrl =
+    element.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
+      ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+      : parentUrl
   if (serviceUrl === undefined) {
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     return CliExitCode.AppError
   }
 
-  await open(serviceUrl)
+  await open(parentUrl)
   return CliExitCode.Success
 }
 

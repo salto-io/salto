@@ -49,6 +49,3 @@ export const getContextAndFieldIds = (change: Change<InstanceElement>): { contex
 
 export const getOrderNameFromOption = (option: InstanceElement): string =>
   naclCase(`${invertNaclCase(getParent(option).elemID.name)}_${ORDER_INSTANCE_SUFFIX}`)
-
-export const isGlobalContext = (instance: InstanceElement): boolean =>
-  instance.value.projectIds === undefined || instance.value.projectIds.length === 0

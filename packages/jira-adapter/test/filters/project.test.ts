@@ -22,6 +22,7 @@ import JiraClient from '../../src/client/client'
 import { JIRA, PROJECT_TYPE_TYPE_NAME } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
 import { createEmptyType, getFilterParams, getLicenseElementSource, mockClient } from '../utils'
+import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -301,6 +302,7 @@ describe('projectFilter', () => {
         fieldsToIgnore: [
           'components',
           'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
           'priorityScheme',
           'customerPermissions',
           'workflowScheme',
@@ -498,6 +500,7 @@ describe('projectFilter', () => {
         fieldsToIgnore: [
           'components',
           'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
           'priorityScheme',
           'customerPermissions',
           'permissionScheme',
@@ -619,6 +622,7 @@ describe('projectFilter', () => {
         fieldsToIgnore: [
           'components',
           'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
           'priorityScheme',
           'customerPermissions',
           'permissionScheme',
@@ -703,6 +707,7 @@ describe('projectFilter', () => {
         fieldsToIgnore: [
           'components',
           'fieldConfigurationScheme',
+          PROJECT_CONTEXTS_FIELD,
           'priorityScheme',
           'customerPermissions',
           'permissionScheme',
@@ -796,6 +801,7 @@ describe('projectFilter', () => {
           fieldsToIgnore: [
             'components',
             'fieldConfigurationScheme',
+            PROJECT_CONTEXTS_FIELD,
             'priorityScheme',
             'customerPermissions',
             'workflowScheme',

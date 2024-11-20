@@ -5,20 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  InstanceElement,
-  ElemID,
-  ObjectType,
-  ReadOnlyElementsSource,
-  Value,
-  isReferenceExpression,
-} from '@salto-io/adapter-api'
-import {
-  buildElementsSourceFromElements,
-  createDefaultInstanceFromType,
-  WALK_NEXT_STEP,
-  walkOnValue,
-} from '@salto-io/adapter-utils'
+import { InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
@@ -178,25 +166,6 @@ export const createForgeTransitionRule = (extensionId: string): WorkflowV2Transi
   parameters: { key: `${EXTENSION_ID_ARI_PREFIX}${extensionId}/some-suffix` },
 })
 export const createSystemTransitionRule = (): WorkflowV2TransitionRule => ({ ruleKey: 'system:some-rule' })
-
-// Should be used instead of the default buildElementsSourceFromElements in order to better mock
-// the elementsSource in real scenarios
-export const createMockElementsSource = (elements: InstanceElement[]): ReadOnlyElementsSource => {
-  const mockedElements = elements.map(instance => instance.clone())
-  mockedElements.forEach(instance => {
-    walkOnValue({
-      value: instance.value,
-      elemId: instance.elemID,
-      func: ({ value }) => {
-        if (isReferenceExpression(value)) {
-          value.value = undefined
-        }
-        return WALK_NEXT_STEP.RECURSE
-      },
-    })
-  })
-  return buildElementsSourceFromElements(mockedElements)
-}
 
 export const FAULTY_CLOUD_ID_RESPONSE = (url: string): Value => {
   if (url === GET_CLOUD_ID_URL) {

@@ -39,7 +39,7 @@ const isAutomationProjects = createSchemeGuard<AutomationProjects>(
   'Received an invalid automation projects value',
 )
 
-const getProjectReferences = (instance: InstanceElement): ReferenceInfo[] => {
+const getProjectReferences = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
   const automationProjects = instance.value.projects
   if (automationProjects === undefined || !isAutomationProjects(automationProjects)) {
     log.warn(
@@ -48,8 +48,8 @@ const getProjectReferences = (instance: InstanceElement): ReferenceInfo[] => {
     return []
   }
 
-  return automationProjects
-    .map((proj, index) =>
+  return awu(automationProjects)
+    .map(async (proj, index) =>
       isReferenceExpression(proj.projectId)
         ? {
             source: instance.elemID.createNestedID(index.toString(), 'projectId'),
@@ -59,6 +59,7 @@ const getProjectReferences = (instance: InstanceElement): ReferenceInfo[] => {
         : undefined,
     )
     .filter(values.isDefined)
+    .toArray()
 }
 
 /**
@@ -94,7 +95,6 @@ const removeMissingAutomationProjects: WeakReferencesHandler['removeWeakReferenc
           .filter(
             async proj =>
               proj.projectId === undefined ||
-              // consider changing, if it is not a reference expression it is not a weak reference
               (isReferenceExpression(proj.projectId) &&
                 // eslint-disable-next-line no-return-await
                 (await elementsSource.has(proj.projectId.elemID))),

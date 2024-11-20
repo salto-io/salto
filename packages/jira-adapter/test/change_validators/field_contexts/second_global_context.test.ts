@@ -8,15 +8,18 @@
 import {
   ObjectType,
   ElemID,
+  ReadOnlyElementsSource,
   InstanceElement,
   ReferenceExpression,
   toChange,
+  Change,
+  ChangeDataType,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
-import { JIRA } from '../../../src/constants'
+import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 import { fieldSecondGlobalContextValidator } from '../../../src/change_validators/field_contexts/second_global_context'
-import { createEmptyType, createMockElementsSource } from '../../utils'
 
 const mockLogError = jest.fn()
 jest.mock('@salto-io/logging', () => ({
@@ -29,255 +32,310 @@ jest.mock('@salto-io/logging', () => ({
 describe('Field second global contexts', () => {
   let contextType: ObjectType
   let fieldType: ObjectType
+  let elementsSource: ReadOnlyElementsSource
   let elements: InstanceElement[]
-  let projectScopeContext1a: InstanceElement
-  let projectScopeContext2a: InstanceElement
-  let projectScopeContext3a: InstanceElement
-  let projectScopeContext3b: InstanceElement
-  let globalContext1a: InstanceElement
-  let globalContext2a: InstanceElement
-  let globalContext3a: InstanceElement
+  let firstGlobalContextInstance: InstanceElement
+  let secondGlobalContextInstance: InstanceElement
   let fieldInstance: InstanceElement
-  let fieldInstance2: InstanceElement
-  let fieldInstance3: InstanceElement
+  let changes: ReadonlyArray<Change<ChangeDataType>>
 
-  const createGlobalContext = (name: string, parent: InstanceElement): InstanceElement =>
-    new InstanceElement(name, contextType, {}, undefined, { _parent: [new ReferenceExpression(parent.elemID, parent)] })
-  const createProjectContext = (name: string, parent: InstanceElement): InstanceElement =>
-    new InstanceElement(
-      name,
-      contextType,
-      {
-        projectIds: ['projAA', 'projBB'],
-      },
-      undefined,
-      { _parent: [new ReferenceExpression(parent.elemID, parent)] },
-    )
   beforeEach(() => {
     jest.clearAllMocks()
     contextType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME) })
     fieldType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) })
+
     fieldInstance = new InstanceElement('field_name', fieldType)
-    fieldInstance2 = new InstanceElement('field_name2', fieldType)
-    fieldInstance3 = new InstanceElement('field_name3', fieldType)
 
-    projectScopeContext1a = createProjectContext('proj1', fieldInstance)
-    projectScopeContext2a = createProjectContext('proj2', fieldInstance2)
-    projectScopeContext3a = createProjectContext('proj3a', fieldInstance3)
-    projectScopeContext3b = createProjectContext('proj3b', fieldInstance3)
-    globalContext1a = createGlobalContext('global1', fieldInstance)
-    globalContext2a = createGlobalContext('global2', fieldInstance2)
-    globalContext3a = createGlobalContext('global3', fieldInstance3)
-    elements = [
-      fieldInstance,
-      fieldInstance2,
-      fieldInstance3,
-      globalContext1a,
-      globalContext2a,
-      globalContext3a,
-      projectScopeContext1a,
-      projectScopeContext2a,
-      projectScopeContext3a,
-      projectScopeContext3b,
+    firstGlobalContextInstance = new InstanceElement(
+      'instance',
+      contextType,
+      {
+        isGlobalContext: true,
+      },
+      undefined,
+      { _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)] },
+    )
+    fieldInstance.value.contexts = [
+      new ReferenceExpression(firstGlobalContextInstance.elemID, firstGlobalContextInstance),
     ]
-  })
 
-  it('should not return error when setting one global context to the field', async () => {
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: globalContext1a })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([])
-  })
-  it('should not return changes when its not global context change', async () => {
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: projectScopeContext3a })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([])
-  })
-  it('should log error if elementSource is undefined', async () => {
-    const addedGlobalContext1 = toChange({ after: createGlobalContext('global4', fieldInstance) })
-    expect(await fieldSecondGlobalContextValidator([addedGlobalContext1])).toEqual([])
-    expect(mockLogError).toHaveBeenCalledWith(
-      'Failed to run fieldSecondGlobalContextValidator because element source is undefined',
+    secondGlobalContextInstance = new InstanceElement(
+      'instance2',
+      contextType,
+      {
+        isGlobalContext: true,
+      },
+      undefined,
+      { _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)] },
     )
   })
-  it('should return error when setting two global contexts to a field', async () => {
-    const addedGlobalInstance1 = createGlobalContext('global2b', fieldInstance2)
-    elements.push(addedGlobalInstance1)
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: addedGlobalInstance1 })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([
-      {
-        elemID: addedGlobalInstance1.elemID,
-        severity: 'Error',
-        message: 'A field can only have a single global context',
-        detailedMessage:
-          "Can't deploy this global context because the deployment will result in more than a single global context for field field_name2.",
-      },
-    ])
-  })
-  it('should return error when setting two global contexts to a field with alias', async () => {
-    fieldInstance.annotations[CORE_ANNOTATIONS.ALIAS] = 'beautiful name'
-    const addedGlobalInstance1 = createGlobalContext('global1b', fieldInstance)
-    elements.push(addedGlobalInstance1)
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: addedGlobalInstance1 })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([
-      {
-        elemID: addedGlobalInstance1.elemID,
-        severity: 'Error',
-        message: 'A field can only have a single global context',
-        detailedMessage:
-          "Can't deploy this global context because the deployment will result in more than a single global context for field beautiful name.",
-      },
-    ])
-  })
-  it('should return error when adding two global contexts to a field without global context', async () => {
-    const addedGlobalContext1 = createGlobalContext('global2b', fieldInstance2)
-    elements.push(addedGlobalContext1)
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: addedGlobalContext1 }), toChange({ after: globalContext1a })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([
-      {
-        elemID: addedGlobalContext1.elemID,
-        severity: 'Error',
-        message: 'A field can only have a single global context',
-        detailedMessage:
-          "Can't deploy this global context because the deployment will result in more than a single global context for field field_name2.",
-      },
-    ])
-  })
-  it('should return an error when modifying a context to become a second global', async () => {
-    const preModifiedGlobalContext = projectScopeContext1a.clone()
-    delete projectScopeContext1a.value.projectIds
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ before: preModifiedGlobalContext, after: projectScopeContext1a })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([
-      {
-        elemID: preModifiedGlobalContext.elemID,
-        severity: 'Error',
-        message: 'A field can only have a single global context',
-        detailedMessage:
-          "Can't deploy this global context because the deployment will result in more than a single global context for field field_name.",
-      },
-    ])
-  })
-  it('should return the correct errors for multiple changes', async () => {
-    const addedGlobalContext1b = createGlobalContext('global1b', fieldInstance)
-    const addedGlobalContext1c = createGlobalContext('global1c', fieldInstance)
-    const addedGlobalContext2b = createGlobalContext('global2b', fieldInstance2)
+  describe('field context change', () => {
+    beforeEach(() => {
+      elements = [fieldInstance, firstGlobalContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = elements.map(element => toChange({ after: element }))
+    })
 
-    const modifiedContext2c = createProjectContext('proj2c', fieldInstance2)
-    const postContext2c = modifiedContext2c.clone()
-    delete postContext2c.value.projectIds
-    const modifiedContext3c = createProjectContext('proj3c', fieldInstance3)
-    const postContext3c = modifiedContext3c.clone()
-    delete postContext3c.value.projectIds
-    const modifiedContext3d = createProjectContext('proj3d', fieldInstance3)
-    const postContext3d = modifiedContext3d.clone()
-    delete postContext3d.value.projectIds
-    elements.push(
-      addedGlobalContext1b,
-      addedGlobalContext1c,
-      addedGlobalContext2b,
-      postContext2c,
-      postContext3c,
-      postContext3d,
-    )
-    const changes = [
-      toChange({ after: addedGlobalContext1b }),
-      toChange({ after: addedGlobalContext1c }),
-      toChange({ after: addedGlobalContext2b }),
-      toChange({ before: modifiedContext2c, after: postContext2c }),
-      toChange({ before: modifiedContext3c, after: postContext3c }),
-      toChange({ before: modifiedContext3d, after: postContext3d }),
-    ]
-    const results = await fieldSecondGlobalContextValidator(changes, createMockElementsSource(elements))
-    expect(results).toHaveLength(6)
-    expect(results[0]).toEqual({
-      elemID: addedGlobalContext1b.elemID,
-      severity: 'Error',
-      message: 'A field can only have a single global context',
-      detailedMessage:
-        "Can't deploy this global context because the deployment will result in more than a single global context for field field_name.",
+    it('should not return error when setting one global context to the field', async () => {
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([])
     })
-    expect(results[1]).toEqual({
-      elemID: addedGlobalContext1c.elemID,
-      severity: 'Error',
-      message: 'A field can only have a single global context',
-      detailedMessage:
-        "Can't deploy this global context because the deployment will result in more than a single global context for field field_name.",
+    it('should not return changes when its not global context change', async () => {
+      const notGlobalContextInstance = new InstanceElement('notGlobal', contextType, undefined, undefined, {
+        _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)],
+      })
+      elements = [notGlobalContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [toChange({ after: notGlobalContextInstance })]
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([])
     })
-    expect(results[2]).toEqual({
-      elemID: addedGlobalContext2b.elemID,
-      severity: 'Error',
-      message: 'A field can only have a single global context',
-      detailedMessage:
-        "Can't deploy this global context because the deployment will result in more than a single global context for field field_name2.",
+    it('should log error if elementSource is undefined', async () => {
+      expect(await fieldSecondGlobalContextValidator(changes)).toEqual([])
+      expect(mockLogError).toHaveBeenCalledWith(
+        'Failed to run fieldSecondGlobalContextValidator because element source is undefined',
+      )
     })
-    expect(results[3]).toEqual({
-      elemID: modifiedContext2c.elemID,
-      severity: 'Error',
-      message: 'A field can only have a single global context',
-      detailedMessage:
-        "Can't deploy this global context because the deployment will result in more than a single global context for field field_name2.",
+
+    it('should return error when setting two global contexts to a field', async () => {
+      fieldInstance.value.contexts.push(
+        new ReferenceExpression(secondGlobalContextInstance.elemID, secondGlobalContextInstance),
+      )
+      elements = [fieldInstance, firstGlobalContextInstance, secondGlobalContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = elements.map(element => toChange({ after: element }))
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: firstGlobalContextInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't deploy this global context because the deployment will result in more than a single global context for field jira.Field.instance.field_name.",
+        },
+        {
+          elemID: secondGlobalContextInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't deploy this global context because the deployment will result in more than a single global context for field jira.Field.instance.field_name.",
+        },
+      ])
     })
-    expect(results[4]).toEqual({
-      elemID: modifiedContext3c.elemID,
-      severity: 'Error',
-      message: 'A field can only have a single global context',
-      detailedMessage:
-        "Can't deploy this global context because the deployment will result in more than a single global context for field field_name3.",
+    it('should return error when setting two global contexts to a field with alias', async () => {
+      fieldInstance.annotations[CORE_ANNOTATIONS.ALIAS] = 'beautiful name'
+      fieldInstance.value.contexts.push(
+        new ReferenceExpression(secondGlobalContextInstance.elemID, secondGlobalContextInstance),
+      )
+      elements = [fieldInstance, firstGlobalContextInstance, secondGlobalContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = elements.map(element => toChange({ after: element }))
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: firstGlobalContextInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't deploy this global context because the deployment will result in more than a single global context for field beautiful name.",
+        },
+        {
+          elemID: secondGlobalContextInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't deploy this global context because the deployment will result in more than a single global context for field beautiful name.",
+        },
+      ])
     })
-    expect(results[5]).toEqual({
-      elemID: modifiedContext3d.elemID,
-      severity: 'Error',
-      message: 'A field can only have a single global context',
-      detailedMessage:
-        "Can't deploy this global context because the deployment will result in more than a single global context for field field_name3.",
+    it('should return error when adding two global contexts to a field without global context', async () => {
+      fieldInstance.value.contexts = []
+      elements = [firstGlobalContextInstance, secondGlobalContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = elements.map(element => toChange({ after: element }))
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: firstGlobalContextInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't deploy this global context because the deployment will result in more than a single global context for field jira.Field.instance.field_name.",
+        },
+        {
+          elemID: secondGlobalContextInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't deploy this global context because the deployment will result in more than a single global context for field jira.Field.instance.field_name.",
+        },
+      ])
     })
   })
-  it('should treat a context as global when it has empty projectIds', async () => {
-    const addedGlobalContext = createGlobalContext('global4', fieldInstance)
-    addedGlobalContext.value.projectIds = []
-    elements.push(addedGlobalContext)
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: addedGlobalContext })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([
-      {
-        elemID: addedGlobalContext.elemID,
-        severity: 'Error',
-        message: 'A field can only have a single global context',
-        detailedMessage:
-          "Can't deploy this global context because the deployment will result in more than a single global context for field field_name.",
-      },
-    ])
-  })
-  it('should not return an error when there are no relevant changes', async () => {
-    expect(
-      await fieldSecondGlobalContextValidator(
-        [toChange({ after: new InstanceElement('not_context', createEmptyType('Other')) })],
-        createMockElementsSource(elements),
-      ),
-    ).toEqual([])
+  describe('project field contexts change', () => {
+    let projectType: ObjectType
+    let projectInstance: InstanceElement
+    let projectInstance2: InstanceElement
+    let afterProjectInstance: InstanceElement
+    let afterProjectInstance2: InstanceElement
+    let fieldContextInstance: InstanceElement
+    let fieldContextInstance2: InstanceElement
+    beforeEach(() => {
+      projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
+      fieldContextInstance = new InstanceElement(
+        'fieldContextInstance',
+        contextType,
+        {
+          isGlobalContext: false,
+        },
+        undefined,
+        { _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)] },
+      )
+      fieldContextInstance2 = new InstanceElement(
+        'fieldContextInstance2',
+        contextType,
+        {
+          isGlobalContext: false,
+        },
+        undefined,
+        { _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)] },
+      )
+      projectInstance = new InstanceElement('project', projectType, {
+        fieldContexts: [new ReferenceExpression(fieldContextInstance.elemID, fieldContextInstance)],
+      })
+      projectInstance2 = new InstanceElement('project2', projectType, {
+        fieldContexts: [new ReferenceExpression(fieldContextInstance2.elemID, fieldContextInstance2)],
+      })
+      afterProjectInstance = projectInstance.clone()
+      afterProjectInstance.value.fieldContexts = []
+      afterProjectInstance2 = projectInstance2.clone()
+      afterProjectInstance2.value.fieldContexts = []
+      elements = [
+        fieldInstance,
+        firstGlobalContextInstance,
+        afterProjectInstance,
+        fieldContextInstance,
+        fieldContextInstance2,
+      ]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [toChange({ before: projectInstance, after: afterProjectInstance })]
+    })
+    it('should return an error when removing field context from a project when the field has a global context', async () => {
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: afterProjectInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+        },
+      ])
+    })
+    it('should return errors when removing some field contexts of the same field from different projects when the field has a global context', async () => {
+      changes = [
+        toChange({ before: projectInstance, after: afterProjectInstance }),
+        toChange({ before: projectInstance2, after: afterProjectInstance2 }),
+      ]
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: afterProjectInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+        },
+        {
+          elemID: afterProjectInstance2.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance2 from this project as it will result in more than a single global context.",
+        },
+      ])
+    })
+    it('should not return errors when removing a field context from different projects when the field does not have a global context', async () => {
+      projectInstance2.value.fieldContexts = [
+        new ReferenceExpression(fieldContextInstance.elemID, fieldContextInstance),
+      ]
+      afterProjectInstance2 = projectInstance2.clone()
+      afterProjectInstance2.value.fieldContexts = []
+      elements = [fieldInstance, afterProjectInstance, afterProjectInstance2, fieldContextInstance]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [
+        toChange({ before: projectInstance, after: afterProjectInstance }),
+        toChange({ before: projectInstance2, after: afterProjectInstance2 }),
+      ]
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([])
+    })
+    it('should return errors when removing a field context from different projects when the field has a global context', async () => {
+      projectInstance2.value.fieldContexts = [
+        new ReferenceExpression(fieldContextInstance.elemID, fieldContextInstance),
+      ]
+      afterProjectInstance2 = projectInstance2.clone()
+      afterProjectInstance2.value.fieldContexts = []
+      elements = [
+        firstGlobalContextInstance,
+        fieldInstance,
+        afterProjectInstance,
+        afterProjectInstance2,
+        fieldContextInstance,
+      ]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [
+        toChange({ before: projectInstance, after: afterProjectInstance }),
+        toChange({ before: projectInstance2, after: afterProjectInstance2 }),
+      ]
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: afterProjectInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+        },
+        {
+          elemID: afterProjectInstance2.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+        },
+      ])
+    })
+    it('should return errors when removing some field contexts of the same field from different projects when the field does not have a global context', async () => {
+      elements = [
+        fieldInstance,
+        afterProjectInstance,
+        afterProjectInstance2,
+        fieldContextInstance,
+        fieldContextInstance2,
+      ]
+      elementsSource = buildElementsSourceFromElements(elements)
+      changes = [
+        toChange({ before: projectInstance, after: afterProjectInstance }),
+        toChange({ before: projectInstance2, after: afterProjectInstance2 }),
+      ]
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([
+        {
+          elemID: afterProjectInstance.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance from this project as it will result in more than a single global context.",
+        },
+        {
+          elemID: afterProjectInstance2.elemID,
+          severity: 'Error',
+          message: 'A field can only have a single global context',
+          detailedMessage:
+            "Can't remove the field context fieldContextInstance2 from this project as it will result in more than a single global context.",
+        },
+      ])
+    })
+    it('should not return an error when removing field context from a project when the field does not have a global context', async () => {
+      firstGlobalContextInstance.value.isGlobalContext = false
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([])
+    })
+    it('should not return an error when deleting a project that had no fieldContexts', async () => {
+      firstGlobalContextInstance.value.isGlobalContext = false
+      delete projectInstance.value.fieldContexts
+      changes = [toChange({ before: projectInstance })]
+      expect(await fieldSecondGlobalContextValidator(changes, elementsSource)).toEqual([])
+    })
   })
 })

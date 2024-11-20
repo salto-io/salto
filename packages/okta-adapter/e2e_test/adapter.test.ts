@@ -615,7 +615,7 @@ const removeAllApps = async (adapterAttr: Reals, changes: Change<InstanceElement
 const getChangesForInitialCleanup = async (elements: Element[]): Promise<Change<InstanceElement>[]> => {
   const removalChanges: Change<InstanceElement>[] = elements
     .filter(isInstanceElement)
-    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX))
+    .filter(inst => inst.elemID.name.startsWith(TEST_PREFIX) || inst.elemID.name.includes(`__${TEST_PREFIX}`))
     .filter(inst => ![APP_USER_SCHEMA_TYPE_NAME, APP_LOGO_TYPE_NAME].includes(inst.elemID.typeName))
     .map(instance => toChange({ before: instance }))
 

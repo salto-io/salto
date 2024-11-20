@@ -8,11 +8,26 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { InstanceElement, ReferenceExpression, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ReferenceExpression,
+  Element,
+  CORE_ANNOTATIONS,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+} from '@salto-io/adapter-api'
 import { getDefaultConfig } from '../../src/config/config'
 import jsmTypesFetchFilter from '../../src/filters/jsm_types_fetch_filter'
 import { createEmptyType, getFilterParams } from '../utils'
-import { CUSTOMER_PERMISSIONS_TYPE, PROJECT_TYPE } from '../../src/constants'
+import {
+  CUSTOMER_PERMISSIONS_TYPE,
+  JIRA,
+  PROJECT_TYPE,
+  SLA_CONDITIONS_PAUSE_TYPE,
+  SLA_CONDITIONS_START_TYPE,
+  SLA_CONDITIONS_STOP_TYPE,
+} from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -78,6 +93,89 @@ describe('jsmTypesFetchFilter', () => {
       expect(customerPermissionsInstance.value.projectKey).toEqual(
         new ReferenceExpression(projectInstance.elemID, projectInstance),
       )
+    })
+    it('should disable deployment of icon field in object type icon', async () => {
+      const objectTypeIconType = new ObjectType({
+        elemID: new ElemID(JIRA, 'ObjectTypeIcon'),
+        fields: {
+          icon: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.UPDATABLE]: true },
+          },
+        },
+      })
+      elements.push(objectTypeIconType)
+      await filter.onFetch(elements)
+      expect(objectTypeIconType.fields.icon.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBe(false)
+    })
+    it('should change conditionId refType to unknown in SLA types', async () => {
+      const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE]
+      const slaTypes = slaTypeNames.map(
+        typeName =>
+          new ObjectType({
+            elemID: new ElemID(JIRA, typeName),
+            fields: {
+              conditionId: {
+                refType: BuiltinTypes.STRING,
+              },
+              name: {
+                refType: BuiltinTypes.STRING,
+                annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+              },
+            },
+          }),
+      )
+      elements.push(...slaTypes)
+      await filter.onFetch(elements)
+      expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual('unknown')
+      expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual('unknown')
+      expect(slaTypes[2].fields.conditionId.refType.elemID.name).toEqual('unknown')
+    })
+    it('should not change field type if not all sla types are present', async () => {
+      const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE]
+      const slaTypes = slaTypeNames.map(
+        typeName =>
+          new ObjectType({
+            elemID: new ElemID(JIRA, typeName),
+            fields: {
+              conditionId: {
+                refType: BuiltinTypes.STRING,
+              },
+              name: {
+                refType: BuiltinTypes.STRING,
+                annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+              },
+            },
+          }),
+      )
+      elements.push(...slaTypes)
+      await filter.onFetch(elements)
+      expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
+      expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
+    })
+    it('should disable deployment of name field in SLA types', async () => {
+      const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE]
+      const slaTypes = slaTypeNames.map(
+        typeName =>
+          new ObjectType({
+            elemID: new ElemID(JIRA, typeName),
+            fields: {
+              conditionId: {
+                refType: BuiltinTypes.STRING,
+              },
+              name: {
+                refType: BuiltinTypes.STRING,
+                annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+              },
+            },
+          }),
+      )
+      elements.push(...slaTypes)
+      await filter.onFetch(elements)
+      slaTypes.forEach(slaType => {
+        expect(slaType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE]).toBe(false)
+        expect(slaType.fields.name.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBe(false)
+      })
     })
   })
 })

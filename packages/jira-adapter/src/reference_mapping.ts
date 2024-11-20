@@ -72,6 +72,9 @@ import {
   OBJECT_TYPE_ICON_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
+  SLA_CONDITIONS_STOP_TYPE,
+  SLA_CONDITIONS_START_TYPE,
+  SLA_CONDITIONS_PAUSE_TYPE,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -1397,6 +1400,15 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: {
+      field: 'conditionId',
+      parentTypes: [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE],
+    },
+    serializationStrategy: 'id',
+    // no missing references strategy - field can have string values as well
+    target: { type: STATUS_TYPE_NAME },
   },
   // Hack to handle missing references when the type is unknown
   {

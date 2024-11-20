@@ -59,6 +59,16 @@ export const findObject = (elements: Element[], name: string): ObjectType | unde
   return type
 }
 
+export const findObjects = (elements: Element[], names: string[]): ObjectType[] | undefined => {
+  const types = elements.filter(isObjectType).filter(element => names.includes(element.elemID.name))
+
+  if (types.length !== names.length) {
+    log.warn(`some of ${names.join(',')} types not found`)
+    return undefined
+  }
+  return types
+}
+
 export const addAnnotationRecursively = async (type: ObjectType, annotation: string): Promise<void> =>
   awu(Object.values(type.fields)).forEach(async field => {
     if (!field.annotations[annotation]) {

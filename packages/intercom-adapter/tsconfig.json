@@ -12,7 +12,6 @@
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
     { "path": "../logging" },
-    { "path": "../lowerdash" },
-    { "path": "../test-utils" }
+    { "path": "../lowerdash" }
   ]
 }

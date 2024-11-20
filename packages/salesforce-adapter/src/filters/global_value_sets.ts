@@ -48,7 +48,6 @@ const filterCreator: FilterCreator = ({ config }) => ({
       iter: await referenceElements.getAll(),
       filter: isInstanceOfType(GLOBAL_VALUE_SET),
       key: async inst => [await apiName(inst)],
-      map: inst => inst,
     })
     const customObjects = elements.filter(isObjectType).filter(isCustomObject)
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))

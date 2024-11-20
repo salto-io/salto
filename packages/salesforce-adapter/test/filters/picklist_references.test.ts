@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ReferenceExpression, InstanceElement, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/picklist_references'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
@@ -66,6 +66,12 @@ describe('picklistReferences filter', () => {
                 fullName: 'Low',
                 default: false,
                 label: 'Low',
+              },
+              // Make sure we make the references by encoding the RecordType Picklist values
+              [naclCase('High & Low')]: {
+                fullName: 'High & Low',
+                default: false,
+                label: 'High & Low',
               },
             },
           },
@@ -142,6 +148,7 @@ describe('picklistReferences filter', () => {
             values: [
               { fullName: 'High', default: false },
               { fullName: 'Low', default: false },
+              { fullName: 'High %26 Low', default: false },
             ],
           },
           // Field in old format
@@ -221,6 +228,18 @@ describe('picklistReferences filter', () => {
           fullName: new ReferenceExpression(
             accountObjectType.fields.priority__c.elemID.createNestedID('valueSet', 'values', 'Low', 'fullName'),
             'Low',
+          ),
+          default: false,
+        },
+        {
+          fullName: new ReferenceExpression(
+            accountObjectType.fields.priority__c.elemID.createNestedID(
+              'valueSet',
+              'values',
+              naclCase('High & Low'),
+              'fullName',
+            ),
+            'High & Low',
           ),
           default: false,
         },

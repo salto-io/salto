@@ -98,7 +98,9 @@ const createReferencesForRecordType = (
     const valueSetElement = getValueSetElementFromPicklistField(field)
     values.forEach(value => {
       const ref: ReferenceExpression | undefined =
-        picklistValuesReferenceIndex[valueSetElement.elemID.getFullName()]?.[value.fullName]
+        // Using URI decode since RecordType Picklist values return as encoded URI string.
+        // e.g. 'You %26 Me' instead of 'You & Me'.
+        picklistValuesReferenceIndex[valueSetElement.elemID.getFullName()]?.[decodeURIComponent(value.fullName)]
       if (ref) {
         _.set(value, 'fullName', ref)
       } else {
@@ -111,42 +113,37 @@ const createReferencesForRecordType = (
 // Create reference index from baseElements full names (either Field, GlobalValueSet or StandardValueSet instances)
 // with references to each of their valueSet values.
 const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValuesReferenceIndex => {
-  const result: PicklistValuesReferenceIndex = {}
-  elements.filter(isInstanceOfTypeSync(GLOBAL_VALUE_SET, STANDARD_VALUE_SET)).forEach(instance => {
-    const fieldName = getValueSetFieldName(metadataTypeSync(instance))
-    const values = instance.value[fieldName]
+  const createRefIndexForElement = (
+    element: InstanceElement | Field,
+  ): Record<string, ReferenceExpression> | undefined => {
+    const fieldName = getValueSetFieldName(metadataTypeSync(element))
+    const values = isInstanceElement(element) ? element.value[fieldName] : element.annotations[fieldName]
     if (!isOrderedValueSet(values)) {
-      return
+      return undefined
     }
-    const refIndex: Record<string, ReferenceExpression> = {}
-    Object.entries(values.values).forEach(([key, value]) => {
+    return Object.entries(values.values).reduce<Record<string, ReferenceExpression>>((acc, [key, value]) => {
       const fullName = _.isString(value.fullName) ? value.fullName : apiNameSync(value.fullName.value) ?? ''
-      refIndex[fullName] = new ReferenceExpression(
-        instance.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, key, 'fullName'),
+      acc[fullName] = new ReferenceExpression(
+        element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, key, 'fullName'),
         fullName,
       )
-    })
-    result[instance.elemID.getFullName()] = refIndex
-  })
-  elements
+      return acc
+    }, {})
+  }
+  const instances: (InstanceElement | Field)[] = elements.filter(
+    isInstanceOfTypeSync(STANDARD_VALUE_SET, GLOBAL_VALUE_SET),
+  )
+  const picklistFields = elements
     .filter(isObjectType)
-    .flatMap(object => Object.values(object.fields))
-    .forEach(field => {
-      const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-      if (!isOrderedValueSet(valueSet)) {
-        return
-      }
-      const refIndex: Record<string, ReferenceExpression> = {}
-      Object.entries(valueSet.values).forEach(([key, value]) => {
-        const fullName = _.isString(value.fullName) ? value.fullName : apiNameSync(value.fullName.value) ?? ''
-        refIndex[fullName] = new ReferenceExpression(
-          field.elemID.createNestedID(FIELD_ANNOTATIONS.VALUE_SET, ORDERED_MAP_VALUES_FIELD, key, 'fullName'),
-          fullName,
-        )
-      })
-      result[field.elemID.getFullName()] = refIndex
-    })
-  return result
+    .flatMap(obj => Object.values(obj.fields))
+    .filter(field => field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined)
+  return instances.concat(picklistFields).reduce<PicklistValuesReferenceIndex>((acc, element) => {
+    const elementRefIndex = createRefIndexForElement(element)
+    if (elementRefIndex) {
+      acc[element.elemID.getFullName()] = elementRefIndex
+    }
+    return acc
+  }, {})
 }
 
 /**

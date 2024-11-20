@@ -70,11 +70,9 @@ const setAuthorInformationForInstancesOfType = async ({
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'nestedInstancesAuthorFilter',
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
       if (client === undefined) {
         return

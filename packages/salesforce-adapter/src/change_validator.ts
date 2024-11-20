@@ -50,6 +50,7 @@ import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, FetchProfile, SalesforceConfig } from './types'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import { getLookUpName } from './transformers/reference_mapping'
+import layoutDuplicateFields from './change_validators/layout_duplicate_fields'
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
@@ -106,6 +107,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   cpqBillingTriggers: () => cpqBillingTriggers,
   managedApexComponent: () => managedApexComponent,
   orderedMaps: ({ fetchProfile }) => orderedMaps(fetchProfile),
+  layoutDuplicateFields: () => layoutDuplicateFields,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

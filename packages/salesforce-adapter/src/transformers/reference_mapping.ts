@@ -209,23 +209,20 @@ export type FieldReferenceDefinition = {
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
-const FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF: FieldReferenceDefinition = {
-  src: { field: 'value', parentTypes: ['FilterItem'] },
-  serializationStrategy: 'relativeApiName',
-  target: {
-    parentContext: 'instanceParent',
-    type: RECORD_TYPE_METADATA_TYPE,
+const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'genAiFunctionName', parentTypes: ['GenAiPlannerFunctionDef'] },
+    target: { type: 'GenAiFunction' },
   },
-}
-
-const LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
-  src: {
-    field: 'fieldItem',
-    parentTypes: ['FieldInstance'],
+  {
+    src: { field: 'genAiPluginName', parentTypes: ['GenAiPlannerFunctionDef'] },
+    target: { type: 'GenAiPlugin' },
   },
-  serializationStrategy: 'recordField',
-  target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-}
+  {
+    src: { field: 'functionName', parentTypes: ['GenAiPluginFunctionDef'] },
+    target: { type: 'GenAiFunction' },
+  },
+]
 
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
@@ -927,6 +924,22 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'object', parentTypes: ['PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
+  {
+    src: { field: 'value', parentTypes: ['FilterItem'] },
+    serializationStrategy: 'relativeApiName',
+    target: {
+      parentContext: 'instanceParent',
+      type: RECORD_TYPE_METADATA_TYPE,
+    },
+  },
+  {
+    src: {
+      field: 'fieldItem',
+      parentTypes: ['FieldInstance'],
+    },
+    serializationStrategy: 'recordField',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
@@ -967,12 +980,12 @@ export class FieldReferenceResolver {
   }
 }
 
-export type ReferenceResolverFinder = (field: Field, element: Element) => Promise<FieldReferenceResolver[]>
+type AsyncReferenceResolverFinder = (field: Field, element: Element) => Promise<FieldReferenceResolver[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
  */
-export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]): ReferenceResolverFinder => {
+export const generateReferenceResolverFinder = (defs: FieldReferenceDefinition[]): AsyncReferenceResolverFinder => {
   const referenceDefinitions = defs.map(def => FieldReferenceResolver.create(def))
 
   const matchersByFieldName = _(referenceDefinitions)
@@ -1071,15 +1084,7 @@ const getLookUpNameImpl = ({
 }
 
 export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
-  fieldNameToTypeMappingDefs
-    .concat(
-      !fetchProfile.isFeatureEnabled('removeReferenceFromFilterItemToRecordType')
-        ? [FILTER_ITEM_RECORD_TYPE_FIELD_REFERENCE_DEF]
-        : [],
-    )
-    .concat(
-      fetchProfile.isFeatureEnabled('lightningPageFieldItemReference') ? [LIGHTNING_PAGE_FIELD_ITEM_REFERENCE_DEF] : [],
-    )
+  fieldNameToTypeMappingDefs.concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

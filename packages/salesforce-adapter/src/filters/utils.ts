@@ -682,12 +682,9 @@ export const isStandardField = (field: Field): boolean => {
   return fieldApiName !== undefined && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(fieldApiName)
 }
 
-export const getInstanceAlias = async (
-  instance: MetadataInstanceElement,
-  useLabelAsAlias: boolean,
-): Promise<string> => {
+export const getInstanceAlias = async (instance: MetadataInstanceElement): Promise<string> => {
   const label = instance.value[LABEL]
-  if (!useLabelAsAlias || label === undefined) {
+  if (label === undefined) {
     return instance.value[INSTANCE_FULL_NAME_FIELD]
   }
   const namespace = await getNamespace(instance)

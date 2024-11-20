@@ -638,6 +638,7 @@ export const createRemoteMapCreator = (
             isNamespaceEmpty = false
             resolveInner(ret)
           }
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
           tmpDB.get(keyToTempDBKey(key), async (error, value) => {
             if (error) {
               if (wasClearCalled) {
@@ -646,6 +647,7 @@ export const createRemoteMapCreator = (
                 resolveInner(undefined)
                 return
               }
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
               persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
                 if (innerError) {
                   statCounters.RemoteMapMiss.inc()
@@ -802,6 +804,7 @@ export const createRemoteMapCreator = (
         }
         const hasKeyImpl = async (k: string, db: rocksdb): Promise<boolean> =>
           new Promise(resolve => {
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
             db.get(k, async (error, value) => {
               const ret = !error && value !== undefined
               resolve(ret)
@@ -872,6 +875,7 @@ export const createReadOnlyRemoteMapCreator = (location: string): remoteMap.Read
         const resolveRet = async (value: Buffer | string): Promise<void> => {
           resolve(await deserialize(value.toString()))
         }
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         db.get(keyToDBKey(key), async (error, value) => {
           if (error) {
             resolve(undefined)
@@ -962,6 +966,7 @@ export const createReadOnlyRemoteMapCreator = (location: string): remoteMap.Read
       },
       has: async (key: string): Promise<boolean> =>
         new Promise(resolve => {
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           db.get(keyToDBKey(key), async (error, value) => {
             resolve(!error && value !== undefined)
           })

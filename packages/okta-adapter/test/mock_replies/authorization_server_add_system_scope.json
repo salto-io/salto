@@ -1,0 +1,63 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/scopes?q=address",
+    "scope": "",
+    "method": "GET",
+    "status": 200,
+    "response": [
+      {
+        "id": "scope-fakeid",
+        "name": "address",
+        "system": true,
+        "metadataPublish": "ALL_CLIENTS",
+        "consent": "IMPLICIT",
+        "optional": false,
+        "default": false,
+        "_links": {}
+      }
+    ],
+    "body": {
+      "name": "address",
+      "system": true,
+      "metadataPublish": "ALL_CLIENTS",
+      "consent": "IMPLICIT",
+      "optional": false,
+      "default": false
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "76",
+      "x-rate-limit-reset": "1730887858"
+    }
+  },
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/scopes/scope-fakeid",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "scope-fakeid",
+      "name": "address",
+      "system": true,
+      "metadataPublish": "ALL_CLIENTS",
+      "consent": "IMPLICIT",
+      "optional": false,
+      "default": false,
+      "_links": {}
+    },
+    "body": {
+      "id": "scope-fakeid",
+      "name": "address",
+      "system": true,
+      "metadataPublish": "ALL_CLIENTS",
+      "consent": "IMPLICIT",
+      "optional": false,
+      "default": false
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "34",
+      "x-rate-limit-reset": "1730887858"
+    }
+  }
+]

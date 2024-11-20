@@ -2871,13 +2871,13 @@ const ThemesReferenceJavascriptReferenceLookupStrategyType = createMatchingObjec
     minimumDigitAmount: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
-        _required: true,
+        _required: false,
       },
     },
     prefix: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        _required: true,
+        _required: false,
       },
     },
   },

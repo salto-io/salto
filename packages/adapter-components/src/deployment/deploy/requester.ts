@@ -359,7 +359,7 @@ export const getRequester = <TOptions extends APIDefinitionsOptions>({
         if (!request.earlySuccess) {
           const { client, path, method } = request.endpoint
           log.trace(
-            'skipping call s.%s(%s) for change %s action %s because the condition was not met',
+            'skipping call %s.%s(%s) for change %s action %s because the condition was not met',
             client,
             path,
             method,

@@ -18,7 +18,9 @@ import {
   PrimitiveType,
   TypeReference,
   ReferenceExpression,
+  getChangeData,
 } from '@salto-io/adapter-api'
+import { resolveChangeElement } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, generatePermissionSetType, defaultFilterContext, createCustomObjectType } from '../utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
@@ -26,6 +28,8 @@ import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FIELD_ANNOTATIONS } from '../../src/constants'
+import { getLookUpName } from '../../src/transformers/reference_mapping'
+import { salesforceAdapterResolveValues } from '../../src/adapter'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -256,6 +260,96 @@ describe('Convert maps filter', () => {
               { layout: 'too.many.separators', recordType: 'something' },
               { layout: 'too.many.wrongIndexing', recordType: 'something' },
             ],
+          })
+        })
+      })
+
+      describe('with invalid values', () => {
+        const generateInstances = (objType: ObjectType): InstanceElement[] => [
+          generateProfileInstance({
+            profileObj: objType,
+            instanceName: 'aaa',
+            applications: ['app1', 'app2'],
+            fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
+            layoutAssignments: [
+              { layout: 'Account-Account Layout' },
+              // dots etc are escaped in the layout's name
+              {
+                layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                recordType: 'something',
+              },
+              {
+                layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                recordType: 'repetition',
+              },
+              {
+                layout: 12 as unknown as string,
+                recordType: 'repetition',
+              },
+              {
+                layout: undefined as unknown as string,
+                recordType: 'repetition',
+              },
+              {
+                layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                recordType: 'repetition',
+              },
+            ],
+          }),
+          generateProfileInstance({
+            profileObj: objType,
+            instanceName: 'bbb',
+            applications: ['someApp'],
+            fields: ['Account.AccountNumber'],
+            layoutAssignments: [{ layout: 'Account-Account Layout' }],
+          }),
+        ]
+
+        beforeAll(async () => {
+          profileObj = generateProfileType()
+          instances = generateInstances(profileObj)
+          await filter.onFetch([profileObj, ...instances])
+        })
+
+        it('should convert instance values to maps while dropping invalid keys', () => {
+          expect((instances[0] as InstanceElement).value).toEqual({
+            applicationVisibilities: {
+              app1: { application: 'app1', default: true, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [{ layout: 'Account-Account Layout' }],
+              'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
+                {
+                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  recordType: 'something',
+                },
+                {
+                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  recordType: 'repetition',
+                },
+                {
+                  layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb',
+                  recordType: 'repetition',
+                },
+              ],
+            },
           })
         })
       })
@@ -534,11 +628,13 @@ describe('Convert maps filter', () => {
   })
 
   describe('Convert inner field to map', () => {
+    let lwcBefore: InstanceElement
+    let lwcAfter: InstanceElement
     let elements: Element[]
     type FilterType = FilterWith<'onFetch' | 'preDeploy'>
     let filter: FilterType
     beforeAll(async () => {
-      const lwc = createInstanceElement(
+      lwcBefore = createInstanceElement(
         {
           fullName: 'lwc',
           lwcResources: {
@@ -551,17 +647,17 @@ describe('Convert maps filter', () => {
         mockTypes.LightningComponentBundle,
       )
       const lwcType = mockTypes.LightningComponentBundle
-      elements = [lwc, lwcType]
+      elements = [lwcBefore.clone(), lwcType.clone()]
 
       filter = filterCreator({
         config: { ...defaultFilterContext },
       }) as FilterType
       await filter.onFetch(elements)
+      lwcAfter = elements[0] as InstanceElement
     })
     describe('on fetch', () => {
       it('should convert lwc resource inner field to map ', async () => {
-        const lwc = elements[0] as InstanceElement
-        const fieldType = await lwc.getType()
+        const fieldType = await lwcAfter.getType()
         const lwcResourcesType = await fieldType.fields.lwcResources.getType()
         if (isObjectType(lwcResourcesType)) {
           const lwcResourceType = await lwcResourcesType.fields.lwcResource.getType()
@@ -569,9 +665,19 @@ describe('Convert maps filter', () => {
         }
       })
       it('should use the custom mapper to create the key', async () => {
-        const lwc = elements[0] as InstanceElement
-        expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
-        expect(Object.keys(lwc.value.lwcResources.lwcResource)[1]).toEqual('__mocks___lwc_js@uuuudv')
+        expect(Object.keys(lwcAfter.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
+        expect(Object.keys(lwcAfter.value.lwcResources.lwcResource)[1]).toEqual('__mocks___lwc_js@uuuudv')
+      })
+    })
+    describe('pre deploy', () => {
+      let lwcDeploy: InstanceElement
+
+      beforeEach(async () => {
+        lwcDeploy = lwcAfter.clone()
+        await filter.preDeploy([toChange({ after: lwcDeploy })])
+      })
+      it('should return inner field back to list', async () => {
+        expect(lwcDeploy).toEqual(lwcBefore)
       })
     })
   })
@@ -641,17 +747,20 @@ describe('Convert maps filter', () => {
     let elements: Element[]
     type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
     let filter: FilterType
+    let mappedReference: ReferenceExpression
     beforeEach(async () => {
       // Clone the types to avoid changing the original types and affecting other tests.
       picklistType = Types.primitiveDataTypes.Picklist.clone()
       multiselectPicklistType = Types.primitiveDataTypes.MultiselectPicklist.clone()
+      const referencedInstance = createInstanceElement({ fullName: 'val1' }, mockTypes.ApexClass)
+      mappedReference = new ReferenceExpression(referencedInstance.elemID, referencedInstance)
       myCustomObj = createCustomObjectType('MyCustomObj', {
         fields: {
           myPicklist: {
             refType: picklistType,
             annotations: {
               [FIELD_ANNOTATIONS.VALUE_SET]: [
-                { fullName: 'val1', default: true, label: 'value1' },
+                { fullName: mappedReference, default: true, label: 'value1' },
                 { fullName: 'val2', default: false, label: 'value2' },
               ],
             },
@@ -668,7 +777,7 @@ describe('Convert maps filter', () => {
         },
       })
 
-      elements = [myCustomObj]
+      elements = [myCustomObj, picklistType, multiselectPicklistType]
       filter = filterCreator({
         config: {
           ...defaultFilterContext,
@@ -688,6 +797,7 @@ describe('Convert maps filter', () => {
         expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
         expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(picklistType.annotationRefTypes.valueSet?.elemID.name).toEqual('OrderedMap<valueSet>')
       })
 
       it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
@@ -696,12 +806,13 @@ describe('Convert maps filter', () => {
         expect(valueSetType.elemID.typeName).toEqual('OrderedMap<valueSet>')
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
         expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(multiselectPicklistType.annotationRefTypes.valueSet?.elemID.name).toEqual('OrderedMap<valueSet>')
       })
 
       it('should convert annotation value to map (Picklist)', () => {
         expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toBeDefined()
         expect(myCustomObj.fields.myPicklist.annotations.valueSet.values).toEqual({
-          val1: { fullName: 'val1', default: true, label: 'value1' },
+          val1: { fullName: mappedReference, default: true, label: 'value1' },
           val2: { fullName: 'val2', default: false, label: 'value2' },
         })
       })
@@ -719,8 +830,14 @@ describe('Convert maps filter', () => {
       let changes: Change[]
       beforeEach(async () => {
         // This fetch will convert the Picklist valueSet type to OrderedMap
-        await filter.onFetch([myCustomObj])
-        changes = [toChange({ after: myCustomObj })]
+        await filter.onFetch([myCustomObj, picklistType, multiselectPicklistType])
+        const resolvedChange = await resolveChangeElement(
+          toChange({ after: myCustomObj }),
+          getLookUpName(buildFetchProfile({ fetchParams: {} })),
+          salesforceAdapterResolveValues,
+        )
+        changes = [resolvedChange]
+        myCustomObj = getChangeData(resolvedChange)
         await filter.preDeploy(changes)
       })
 
@@ -728,21 +845,17 @@ describe('Convert maps filter', () => {
         expect(myCustomObj.fields.myPicklist.annotations.valueSet).toBeDefined()
         // The valueSet should be converted back to a list. Since we're not running reference resolution, we need to
         // peel back the reference layer first.
-        expect(myCustomObj.fields.myPicklist.annotations.valueSet.map((ref: ReferenceExpression) => ref.value)).toEqual(
-          [
-            { fullName: 'val1', default: true, label: 'value1' },
-            { fullName: 'val2', default: false, label: 'value2' },
-          ],
-        )
+        expect(myCustomObj.fields.myPicklist.annotations.valueSet).toEqual([
+          { fullName: 'val1', default: true, label: 'value1' },
+          { fullName: 'val2', default: false, label: 'value2' },
+        ])
       })
 
       it('should convert the object back to list on preDeploy (MultiselectPicklist)', () => {
         expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet).toBeDefined()
         // The valueSet should be converted back to a list. Since we're not running reference resolution, we need to
         // peel back the reference layer first.
-        expect(
-          myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.map((ref: ReferenceExpression) => ref.value),
-        ).toEqual([
+        expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet).toEqual([
           { fullName: 'val1', default: true, label: 'value1' },
           { fullName: 'val2', default: false, label: 'value2' },
         ])

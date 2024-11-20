@@ -9,10 +9,12 @@ import fs from 'fs'
 import path from 'path'
 import { setupTmpDir } from '@salto-io/test-utils'
 
+export const TMP_PROJECT_PATH = path.join(__dirname, 'test_data/test_sfdx_project')
+
 export const setupTmpProject = (): ReturnType<typeof setupTmpDir> => {
   const tmpDir = setupTmpDir('all')
   beforeAll(async () => {
-    await fs.promises.cp(path.join(__dirname, 'test_sfdx_project'), tmpDir.name(), { recursive: true })
+    await fs.promises.cp(TMP_PROJECT_PATH, tmpDir.name(), { recursive: true })
   })
   return tmpDir
 }

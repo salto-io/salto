@@ -26,7 +26,7 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   sbaa__ApprovalCondition__c: ['sbaa__ApprovalRule__c', 'sbaa__Index__c'],
 }
 
-const DEFAULT_BROKEN_REFS_BEHAVIOR: OutgoingReferenceBehavior = 'ExcludeInstance'
+const DEFAULT_BROKEN_REFS_BEHAVIOR: OutgoingReferenceBehavior = 'BrokenReference'
 const DEFAULT_PER_TYPE_BROKEN_REFS_BEHAVIOR: Record<string, OutgoingReferenceBehavior> = {
   User: 'InternalId',
 }

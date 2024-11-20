@@ -1307,6 +1307,34 @@ It is strongly recommended to rename these transitions so they are unique in Jir
           })
         })
 
+        it('should add empty links to transitions when links are missing', async () => {
+          workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.Create].links = undefined
+          workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.GlobalTransition].links = undefined
+          await filter.preDeploy([toChange({ after: workflowInstance })])
+
+          // transitions without links should have an empty array
+          expect(workflowInstance.value.workflows[0].transitions[0]).toEqual({
+            ...WORKFLOW_PAYLOAD.workflows[0].transitions[0],
+            links: [],
+          })
+          expect(workflowInstance.value.workflows[0].transitions[2]).toEqual({
+            ...WORKFLOW_PAYLOAD.workflows[0].transitions[2],
+            links: [],
+          })
+
+          // transitions with links should have the same links
+          expect(workflowInstance.value.workflows[0].transitions[1]).toEqual({
+            ...WORKFLOW_PAYLOAD.workflows[0].transitions[1],
+            links: [
+              {
+                fromPort: 3,
+                fromStatusReference: 'uuid1',
+                toPort: 7,
+              },
+            ],
+          })
+        })
+
         describe('resolution properties', () => {
           beforeEach(() => {
             workflowInstance.value.transitions[TRANSITION_NAME_TO_KEY.Create].properties = [

@@ -214,7 +214,7 @@ export type DumpElementsToFolderArgs = {
 }
 
 export type DumpElementsResult = {
-  unappliedChanges: Change[]
+  unappliedChanges: ReadonlyArray<Change>
   errors: ReadonlyArray<SaltoError | SaltoElementError>
 }
 

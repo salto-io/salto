@@ -21,12 +21,24 @@ export type TemplateEngineCreator = (
   javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
 ) => string | TemplateExpression
 
+const isNumericValuesStrategy = (
+  javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
+): javascriptReferenceLookupStrategy is { strategy: 'numericValues'; minimumDigitAmount: number } =>
+  javascriptReferenceLookupStrategy?.strategy === 'numericValues' &&
+  javascriptReferenceLookupStrategy?.minimumDigitAmount !== undefined
+
+const isVarNamePrefixStrategy = (
+  javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
+): javascriptReferenceLookupStrategy is { strategy: 'varNamePrefix'; prefix: string } =>
+  javascriptReferenceLookupStrategy?.strategy === 'varNamePrefix' &&
+  javascriptReferenceLookupStrategy?.prefix !== undefined
+
 const extractOrParseByStrategy = (
   scripts: PotentialReference<string>[],
   idsToElements: Record<string, InstanceElement>,
   javascriptReferenceLookupStrategy: Themes['referenceOptions']['javascriptReferenceLookupStrategy'],
 ): PotentialReference<string | TemplateExpression>[] => {
-  if (javascriptReferenceLookupStrategy?.strategy === 'numericValues') {
+  if (isNumericValuesStrategy(javascriptReferenceLookupStrategy)) {
     return scripts.map(script => ({
       value: extractNumericValueIdsFromScripts(
         idsToElements,
@@ -36,7 +48,7 @@ const extractOrParseByStrategy = (
       loc: script.loc,
     }))
   }
-  if (javascriptReferenceLookupStrategy?.strategy === 'varNamePrefix') {
+  if (isVarNamePrefixStrategy(javascriptReferenceLookupStrategy)) {
     return scripts.flatMap(script => {
       const parsedScripts = parsePotentialReferencesByPrefix(
         script.value,

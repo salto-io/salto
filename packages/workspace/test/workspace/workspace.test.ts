@@ -2217,13 +2217,12 @@ salesforce.staticFile staticFileInstance {
   })
 
   describe('init', () => {
-    const workspaceConf = mockWorkspaceConfigSource({ name: 'ws-name' })
+    const workspaceConf = mockWorkspaceConfigSource({ uid: 'uid' })
     afterEach(async () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
       const workspace = await initWorkspace(
-        'ws-name',
         'uid',
         'default',
         workspaceConf,
@@ -2250,62 +2249,11 @@ salesforce.staticFile staticFileInstance {
         async () => [],
       )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual({
-        name: 'ws-name',
         uid: 'uid',
         envs: [{ name: 'default', accountToServiceName: {} }],
         currentEnv: 'default',
       })
-      expect(workspace.name).toEqual('ws-name')
-    })
-  })
-
-  describe('getStateRecency', () => {
-    let now: number
-    let modificationDate: Date
-    let mockDateNow: jest.SpiedFunction<typeof Date.now>
-    const durationAfterLastModificationMinutes = 7
-    const durationAfterLastModificationMs = 1000 * 60 * durationAfterLastModificationMinutes
-    beforeEach(async () => {
-      now = Date.now()
-      mockDateNow = jest.spyOn(Date, 'now')
-      mockDateNow.mockImplementation(() => now)
-      modificationDate = new Date(now - durationAfterLastModificationMs)
-    })
-    afterEach(() => {
-      mockDateNow.mockRestore()
-    })
-    it('should return valid when the state is valid', async () => {
-      const ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }),
-      )
-      ws.state().getAccountsUpdateDates = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
-      const recency = await ws.getStateRecency('salesforce')
-      expect(recency.status).toBe('Valid')
-      expect(recency.date).toBe(modificationDate)
-    })
-    it('should return old when the state is old', async () => {
-      const ws = await createWorkspace(
-        undefined,
-        undefined,
-        mockWorkspaceConfigSource({ staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }),
-      )
-      ws.state().getAccountsUpdateDates = jest
-        .fn()
-        .mockImplementation(() => Promise.resolve({ salesforce: modificationDate }))
-      const recency = await ws.getStateRecency('salesforce')
-      expect(recency.status).toBe('Old')
-      expect(recency.date).toBe(modificationDate)
-    })
-    it('should return nonexistent when the state does not exist', async () => {
-      const ws = await createWorkspace()
-      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
-      const recency = await ws.getStateRecency('salesforce')
-      expect(recency.status).toBe('Nonexistent')
-      expect(recency.date).toBe(undefined)
+      expect(workspace.uid).toEqual('uid')
     })
   })
 
@@ -3870,14 +3818,16 @@ salesforce.staticFile staticFileInstance {
     })
   })
 
-  describe('iterative validation errors', () => {
-    const primFile = `
+  describe.each([true, false] as const)(
+    'iterative validation errors (use old dependents calculation: %s)',
+    useOldDependentsCalculation => {
+      const primFile = `
         type salto.prim is number {
 
         }
       `
 
-    const baseFile = `
+      const baseFile = `
         type salto.base {
           string str {
 
@@ -3888,7 +3838,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-    const objFile = `
+      const objFile = `
         type salto.obj {
           salto.base baseField {
 
@@ -3896,7 +3846,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-    const instFile = `
+      const instFile = `
         salto.obj objInst {
           baseField = {
             str = "STR"
@@ -3905,7 +3855,7 @@ salesforce.staticFile staticFileInstance {
         }
       `
 
-    const inst2updateFile = `
+      const inst2updateFile = `
       salto.obj objInstToUpdate {
         baseField = {
           num = 12
@@ -3914,133 +3864,139 @@ salesforce.staticFile staticFileInstance {
       }
     `
 
-    const refFile = `
+      const refFile = `
         salto.base baseInst {
           str = salto.obj.instance.objInst.baseField.str
         }
       `
 
-    const refFile2 = `
+      const refFile2 = `
         salto.base baseInst2 {
           str = salto.base.instance.baseInst.str
         }
       `
 
-    const startsAsErr = `
+      const startsAsErr = `
         salto.base willBeFixed {
           str = "STR",
           num = "This will be string"
         }
       `
 
-    const willRemainErr = `
+      const willRemainErr = `
         salto.base willRemain {
           str = "STR",
           num = false
         }
       `
 
-    const files = {
-      primFile,
-      baseFile,
-      objFile,
-      instFile,
-      refFile,
-      refFile2,
-      inst2updateFile,
-      startsAsErr,
-      willRemainErr,
-    }
+      const files = {
+        primFile,
+        baseFile,
+        objFile,
+        instFile,
+        refFile,
+        refFile2,
+        inst2updateFile,
+        startsAsErr,
+        willRemainErr,
+      }
 
-    let workspace: Workspace
-    const naclFileStore = mockDirStore(undefined, undefined, files)
-    const primElemID = new ElemID('salto', 'prim')
-    const changes = [
-      {
-        id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
-        action: 'remove',
-        data: { before: 'STR' },
-      },
-      {
-        id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
-        action: 'modify',
-        data: { before: 'STR', after: 12 },
-      },
-      {
-        id: primElemID,
-        action: 'modify',
-        data: {
-          before: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.NUMBER }),
-          after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
+      let workspace: Workspace
+      const naclFileStore = mockDirStore(undefined, undefined, files)
+      const primElemID = new ElemID('salto', 'prim')
+      const changes = [
+        {
+          id: new ElemID('salto', 'obj', 'instance', 'objInst', 'baseField', 'str'),
+          action: 'remove',
+          data: { before: 'STR' },
         },
-      },
-    ] as DetailedChange[]
+        {
+          id: new ElemID('salto', 'obj', 'instance', 'objInstToUpdate', 'baseField', 'str'),
+          action: 'modify',
+          data: { before: 'STR', after: 12 },
+        },
+        {
+          id: primElemID,
+          action: 'modify',
+          data: {
+            before: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.NUMBER }),
+            after: new PrimitiveType({ elemID: primElemID, primitive: PrimitiveTypes.STRING }),
+          },
+        },
+      ] as DetailedChange[]
 
-    let validationErrs: ReadonlyArray<ValidationError>
-    let resultNumber: UpdateNaclFilesResult
-    beforeAll(async () => {
-      workspace = await createWorkspace(naclFileStore)
-      // Verify that the two errors we are starting with (that should be deleted in the update
-      // since the update resolves them ) are present. This check will help debug situations in
-      // which the entire flow is broken and errors are not created at all...
-      expect((await workspace.errors()).validation).toHaveLength(2)
-      resultNumber = await workspace.updateNaclFiles(changes)
-      validationErrs = (await workspace.errors()).validation
-    })
+      let validationErrs: ReadonlyArray<ValidationError>
+      let resultNumber: UpdateNaclFilesResult
+      beforeAll(async () => {
+        process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION = useOldDependentsCalculation ? '1' : '0'
+        workspace = await createWorkspace(naclFileStore)
+        // Verify that the two errors we are starting with (that should be deleted in the update
+        // since the update resolves them ) are present. This check will help debug situations in
+        // which the entire flow is broken and errors are not created at all...
+        expect((await workspace.errors()).validation).toHaveLength(2)
+        resultNumber = await workspace.updateNaclFiles(changes)
+        validationErrs = (await workspace.errors()).validation
+      })
 
-    it('returns correct number of actual changes', () => {
-      expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
-    })
+      afterAll(() => {
+        delete process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION
+      })
 
-    it('create validation errors in the updated elements', () => {
-      const objInstToUpdateErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
-      )
+      it('returns correct number of actual changes', () => {
+        expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
+      })
 
-      expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
-    })
-    it('create validation errors where the updated elements are used as value type', () => {
-      const usedAsTypeErr = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
-      )
+      it('create validation errors in the updated elements', () => {
+        const objInstToUpdateErr = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.obj.instance.objInstToUpdate.baseField.str',
+        )
 
-      expect(usedAsTypeErr).toBeDefined()
-      expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
-    })
-    it('create validation errors where the updated elements are used as references', () => {
-      const usedAsReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
-      )
+        expect(objInstToUpdateErr).toBeDefined()
+        expect(objInstToUpdateErr?.message).toContain('Invalid value type for string')
+      })
+      it('create validation errors where the updated elements are used as value type', () => {
+        const usedAsTypeErr = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.obj.instance.objInst.baseField.num',
+        )
 
-      expect(usedAsReference).toBeDefined()
-      expect(usedAsReference?.message).toContain('unresolved reference')
-    })
-    it('create validation errors in chained references', () => {
-      const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
-      )
+        expect(usedAsTypeErr).toBeDefined()
+        expect(usedAsTypeErr?.message).toContain('Invalid value type for salto.prim')
+      })
+      it('create validation errors where the updated elements are used as references', () => {
+        const usedAsReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.baseInst.str',
+        )
 
-      expect(usedAsChainedReference).toBeDefined()
-      expect(usedAsChainedReference?.message).toContain('unresolved reference')
-    })
+        expect(usedAsReference).toBeDefined()
+        expect(usedAsReference?.message).toContain('unresolved reference')
+      })
+      it('create validation errors in chained references', () => {
+        const usedAsChainedReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.baseInst2.str',
+        )
 
-    it('should not modify errors which were not effected by this update', () => {
-      const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
-      )
+        expect(usedAsChainedReference).toBeDefined()
+        expect(usedAsChainedReference?.message).toContain('unresolved reference')
+      })
 
-      expect(usedAsChainedReference).toBeDefined()
-    })
+      it('should not modify errors which were not effected by this update', () => {
+        const usedAsChainedReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.willRemain.num',
+        )
 
-    it('should remove errors that were resolved in the update', () => {
-      const usedAsChainedReference = validationErrs.find(
-        err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
-      )
+        expect(usedAsChainedReference).toBeDefined()
+      })
 
-      expect(usedAsChainedReference).not.toBeDefined()
-    })
-  })
+      it('should remove errors that were resolved in the update', () => {
+        const usedAsChainedReference = validationErrs.find(
+          err => err.elemID.getFullName() === 'salto.base.instance.willBeFixed.num',
+        )
+
+        expect(usedAsChainedReference).not.toBeDefined()
+      })
+    },
+  )
 
   describe('element commands', () => {
     const primarySourceName = 'default'

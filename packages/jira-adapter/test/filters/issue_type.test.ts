@@ -7,6 +7,7 @@
  */
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, StaticFile, toChange } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
 import issueTypeFilter from '../../src/filters/issue_type'
@@ -105,8 +106,11 @@ describe('issueTypeFilter', () => {
         mockGet.mockClear()
       })
       it('should set icon content', async () => {
-        const anotherInstance = instance.clone()
-        anotherInstance.value.name = 'anotherInstance'
+        const anotherInstance = new InstanceElement(naclCase('another instance'), issueType, {
+          name: 'anotherInstance',
+          description: 'anotherInstanceDescription',
+          avatarId: 1,
+        })
         mockGet.mockImplementation(params => {
           if (params.url === '/rest/api/3/universal_avatar/view/type/issuetype/avatar/1') {
             return {
@@ -120,7 +124,7 @@ describe('issueTypeFilter', () => {
         expect(instance.value.avatar).toBeDefined()
         expect(instance.value.avatar).toEqual(
           new StaticFile({
-            filepath: 'jira/IssueType/instanceName.png',
+            filepath: 'jira/IssueType/instance.png',
             encoding: 'binary',
             content,
           }),
@@ -128,7 +132,7 @@ describe('issueTypeFilter', () => {
         expect(anotherInstance.value.avatar).toBeDefined()
         expect(anotherInstance.value.avatar).toEqual(
           new StaticFile({
-            filepath: 'jira/IssueType/anotherInstance.png',
+            filepath: 'jira/IssueType/another_instance.s.png',
             encoding: 'binary',
             content,
           }),
@@ -149,7 +153,7 @@ describe('issueTypeFilter', () => {
         expect(instance.value.avatar).toBeDefined()
         expect(instance.value.avatar).toEqual(
           new StaticFile({
-            filepath: 'jira/IssueType/instanceName.png',
+            filepath: 'jira/IssueType/instance.png',
             encoding: 'binary',
             content: Buffer.from('a string, not a buffer.'),
           }),

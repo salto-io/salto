@@ -43,7 +43,6 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: ensureSafeFilterFetch({
       warningMessage:
         'Error occurred when attempting to remodel CustomFields of Task and Event to reference their respective Activity fields.',
-      filterName: 'taskAndEventCustomFields',
       config,
       fetchFilterFunc: async (elements: Element[]) => {
         const elementsSource = buildElementsSourceForFetch(elements, config)
@@ -63,7 +62,7 @@ const filterCreator: FilterCreator = ({ config }) => {
               return []
             }
             const getMatchingField = (objectName: string): Field | undefined =>
-              Object.values(elementsByApiName[objectName]?.fields).find(
+              Object.values(elementsByApiName[objectName]?.fields ?? {}).find(
                 field => apiNameSync(field, true) === activityFieldName,
               )
             return [

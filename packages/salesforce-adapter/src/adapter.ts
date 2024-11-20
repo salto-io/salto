@@ -23,9 +23,13 @@ import {
   PartialFetchData,
   Element,
   isInstanceElement,
+  Field,
+  isField,
+  isObjectType,
+  TypeReference,
 } from '@salto-io/adapter-api'
-import { filter, inspectValue, logDuration, safeJsonStringify } from '@salto-io/adapter-utils'
-import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-components'
+import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -39,6 +43,8 @@ import {
   createInstanceElement,
   isCustom,
   MetadataMetaType,
+  createMetadataTypeElements,
+  StandardSettingsMetaType,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -64,7 +70,8 @@ import flowFilter from './filters/flow'
 import addMissingIdsFilter from './filters/add_missing_ids'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
-import settingsFilter from './filters/settings_type'
+import legacySettingsFilter from './filters/settings_type'
+import settingsFilter from './filters/settings_types'
 import workflowFilter, { WORKFLOW_FIELD_TO_TYPE } from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
@@ -123,6 +130,7 @@ import {
   isCustomObjectSync,
   isCustomType,
   isInstanceOfCustomObjectSync,
+  isInstanceOfTypeSync,
   isMetadataInstanceElementSync,
   listMetadataObjects,
   metadataTypeSync,
@@ -148,7 +156,6 @@ import {
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
-  PROFILE_METADATA_TYPE,
   PROFILE_RELATED_METADATA_TYPES,
   WAVE_DATAFLOW_METADATA_TYPE,
 } from './constants'
@@ -163,7 +170,6 @@ import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './c
 import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
-const { makeArray } = collections.array
 const { partition } = promises.array
 const { concatObjects } = objects
 const { isDefined } = values
@@ -173,6 +179,7 @@ const log = logger(module)
 export const allFilters: Array<FilterCreator> = [
   waveStaticFilesFilter,
   createMissingInstalledPackagesInstancesFilter,
+  legacySettingsFilter,
   settingsFilter,
   // should run before customObjectsFilter
   workflowFilter,
@@ -201,6 +208,7 @@ export const allFilters: Array<FilterCreator> = [
   emailTemplateFilter,
   // standardValueSetFilter should run before convertMapsFilter
   standardValueSetFilter,
+  cpqLookupFieldsFilter,
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
   // picklistReferences should run after convertMapsFilter and before fieldReferencesFilter
@@ -209,7 +217,6 @@ export const allFilters: Array<FilterCreator> = [
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
   cpqCustomScriptFilter,
-  cpqLookupFieldsFilter,
   // cpqRulesAndConditionsFilter depends on cpqReferencableFieldReferencesFilter
   cpqRulesAndConditionsRefsFilter,
   animationRulesFilter,
@@ -341,6 +348,7 @@ const METADATA_TO_RETRIEVE = [
   'ReportFolder',
   'ReportType',
   'Scontrol', // contains encoded zip content
+  'Settings',
   'SharingRules',
   'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
@@ -432,6 +440,40 @@ type CreateFiltersRunnerParams = {
   contextOverrides?: Partial<FilterContext>
 }
 
+const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
+  typeRef.elemID.name.startsWith('OrderedMap<')
+
+const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
+  Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)
+
+const isElementWithOrderedMap = (element: Element): boolean => {
+  if (isField(element)) {
+    return isFieldWithOrderedMapAnnotation(element)
+  }
+  if (isInstanceElement(element)) {
+    return Object.values(element.getTypeSync().fields).some(field => isOrderedMapTypeOrRefType(field.getTypeSync()))
+  }
+  if (isObjectType(element)) {
+    return Object.values(element.fields).some(isFieldWithOrderedMapAnnotation)
+  }
+  return false
+}
+
+export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
+  element,
+  getLookUpNameFunc,
+  elementsSource,
+  allowEmpty = true,
+) => {
+  const resolvedElement = await resolveValues(element, getLookUpNameFunc, elementsSource, allowEmpty)
+  // Since OrderedMaps' order values reference values that may contain references, we should resolve the Element twice
+  // in order to fully resolve it. An example use-case for this is the Field `SBQQ__ProductRule__c.SBQQ__LookupObject__c`
+  // Where the `fullName` of the Picklist values is a Reference to a Custom Object.
+  return isElementWithOrderedMap(resolvedElement)
+    ? resolveValues(resolvedElement, getLookUpNameFunc, elementsSource, allowEmpty)
+    : resolvedElement
+}
+
 type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
   deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
   validate: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
@@ -509,12 +551,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     )
   }
 
-  private initializeCustomListFunctions(fetchProfile: FetchProfile, withChangesDetection: boolean): void {
-    const commonListFunctions: Record<string, CustomListFuncDef> = fetchProfile.isFeatureEnabled('waveMetadataSupport')
-      ? {
-          [WAVE_DATAFLOW_METADATA_TYPE]: createListMissingWaveDataflowsDef(),
-        }
-      : {}
+  private initializeCustomListFunctions(withChangesDetection: boolean): void {
+    const commonListFunctions: Record<string, CustomListFuncDef> = {
+      [WAVE_DATAFLOW_METADATA_TYPE]: createListMissingWaveDataflowsDef(),
+    }
     this.client.setCustomListFuncDefByType(
       withChangesDetection
         ? {
@@ -532,7 +572,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const fetchParams = this.userConfig.fetch ?? {}
-    this.initializeCustomListFunctions(buildFetchProfile({ fetchParams }), withChangesDetection)
+    this.initializeCustomListFunctions(withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,
@@ -552,14 +592,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       metadataQuery,
       maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
     })
-    if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
-      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
-      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
-      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
-    }
-    if (fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
-      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
-    }
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [
@@ -568,32 +600,44 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       ...Types.getAnnotationTypes(),
       ...Object.values(ArtificialTypes),
     ]
+    const hardCodedTypesMap = new Map(
+      hardCodedTypes
+        .map(type => [apiNameSync(type), type] as [string | undefined, TypeElement])
+        .filter((namedType): namedType is [string, TypeElement] => namedType[0] !== undefined),
+    )
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
     const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
-    const metadataTypesPromise = this.fetchTypes({
+
+    progressReporter.reportProgress({ message: 'Fetching types' })
+    const metadataTypes = await this.fetchTypes({
       metadataQuery,
       withChangesDetection,
       metadataTypeInfosPromise,
-      hardCodedTypes,
+      hardCodedTypes: hardCodedTypesMap,
       metadataMetaType,
     })
-    progressReporter.reportProgress({ message: 'Fetching types' })
-    const metadataTypes = await metadataTypesPromise
 
-    const metadataInstancesPromise = this.fetchMetadataInstances(
-      metadataTypeInfosPromise,
-      metadataTypesPromise,
-      fetchProfile,
-    )
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { elements: metadataInstancesElements, configChanges: metadataInstancesConfigInstances } =
-      await metadataInstancesPromise
+      await this.fetchMetadataInstances(metadataTypeInfosPromise, metadataTypes, fetchProfile)
+
+    progressReporter.reportProgress({ message: 'Fetching Metadata Settings types' })
+    const standardSettingsMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? StandardSettingsMetaType : undefined
+    const settingsTypes = fetchProfile.isFeatureEnabled('retrieveSettings')
+      ? await this.fetchMetadataSettingsTypes({
+          instances: metadataInstancesElements,
+          knownTypes: hardCodedTypesMap,
+          standardSettingsMetaType,
+        })
+      : []
+
     const elements = [
-      ...makeArray(metadataMetaType),
+      ...[metadataMetaType, standardSettingsMetaType].filter(isDefined),
       ...fieldTypes,
       ...hardCodedTypes,
       ...metadataTypes,
       ...metadataInstancesElements,
+      ...settingsTypes,
     ]
     progressReporter.reportProgress({
       message: 'Running filters for additional information',
@@ -672,7 +716,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       ? getLookupNameForDataInstances(fetchProfile)
       : getLookUpName(fetchProfile)
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookupNameFunc))
+      .map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues))
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
@@ -764,7 +808,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     metadataQuery: MetadataQuery
     withChangesDetection: boolean
     metadataTypeInfosPromise: Promise<MetadataObject[]>
-    hardCodedTypes: TypeElement[]
+    hardCodedTypes: Map<string, TypeElement>
     metadataMetaType?: ObjectType
   }): Promise<TypeElement[]> {
     if (!withChangesDetection) {
@@ -789,15 +833,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   @logDuration('fetching metadata types')
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
-    knownMetadataTypes: TypeElement[],
+    knownTypes: Map<string, TypeElement>,
     metaType?: ObjectType,
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
-    const knownTypes = new Map<string, TypeElement>(
-      await awu(knownMetadataTypes)
-        .map(async mdType => [await apiName(mdType), mdType] as [string, TypeElement])
-        .toArray(),
-    )
     const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
     const childTypeNames = new Set(typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined))
     return (
@@ -812,7 +851,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   @logDuration('fetching instances')
   private async fetchMetadataInstances(
     typeInfoPromise: Promise<MetadataObject[]>,
-    types: Promise<TypeElement[]>,
+    types: TypeElement[],
     fetchProfile: FetchProfile,
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypes: ObjectType[]): Promise<FetchElements<InstanceElement[]>> => {
@@ -830,7 +869,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
     const typeInfos = await typeInfoPromise
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
-    const topLevelTypes = await awu(await types)
+    const topLevelTypes = await awu(types)
       .filter(isMetadataObjectType)
       .filter(async t => topLevelTypeNames.includes(await apiName(t)) || t.annotations.folderContentType !== undefined)
       .toArray()
@@ -856,6 +895,50 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       elements: _.flatten(allInstances.map(instances => instances.elements)),
       configChanges: _.flatten(allInstances.map(instances => instances.configChanges)),
     }
+  }
+
+  @logDuration('fetching Metadata Settings types')
+  private async fetchMetadataSettingsTypes({
+    instances,
+    knownTypes,
+    standardSettingsMetaType,
+  }: {
+    instances: InstanceElement[]
+    knownTypes: Map<string, TypeElement>
+    standardSettingsMetaType?: ObjectType
+  }): Promise<TypeElement[]> {
+    const fetchSettingsType = async (settingsTypeName: string): Promise<ObjectType[]> => {
+      const typeFields = await this.client.describeMetadataType(settingsTypeName)
+      try {
+        return await createMetadataTypeElements({
+          name: settingsTypeName,
+          fields: typeFields.valueTypeFields,
+          knownTypes,
+          baseTypeNames: new Set([settingsTypeName]),
+          childTypeNames: new Set(),
+          client: this.client,
+          isSettings: true,
+          annotations: {
+            suffix: 'settings',
+            dirName: constants.SETTINGS_DIR_NAME,
+          },
+          metaType: standardSettingsMetaType,
+        })
+      } catch (e) {
+        log.error('Failed to fetch settings type %s reason: %s', settingsTypeName, inspectValue(e))
+        return []
+      }
+    }
+
+    return (
+      await Promise.all(
+        instances
+          .filter(isInstanceOfTypeSync(constants.SETTINGS_METADATA_TYPE))
+          .map(instance => apiNameSync(instance))
+          .filter(isDefined)
+          .map(typeName => fetchSettingsType(`${typeName}${constants.SETTINGS_METADATA_TYPE}`)),
+      )
+    ).flat()
   }
 
   private async createMetadataInstances(

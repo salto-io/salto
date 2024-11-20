@@ -410,7 +410,7 @@ describe('XML Transformer', () => {
         expect(apex.file).toEqual(fileProperties[0])
         const metadataInfo = apex.values
         expect(metadataInfo.fullName).toEqual('MyApexClass')
-        expect(metadataInfo.apiVersion).toEqual(47)
+        expect(metadataInfo.apiVersion).toEqual('47.0')
         expect(metadataInfo.status).toEqual('Active')
         expect(metadataInfo.description).toEqual(
           "An Apex class to read & enjoy.\r\nIt's sure nice to have some special characters <here>.\rVery nice.",
@@ -470,7 +470,7 @@ describe('XML Transformer', () => {
         expect(apex.file).toEqual(fileProperties[0])
         const metadataInfo = apex.values
         expect(metadataInfo.fullName).toEqual('MyApexClass')
-        expect(metadataInfo.apiVersion).toEqual(47)
+        expect(metadataInfo.apiVersion).toEqual('47.0')
         expect(metadataInfo.status).toEqual('Active')
         expect(metadataInfo.content).toEqual('(hidden)')
       })
@@ -608,7 +608,7 @@ describe('XML Transformer', () => {
           expect(lwc.file).toEqual(fileProperties)
           const metadataInfo = lwc.values
           expect(metadataInfo.fullName).toEqual('myLightningComponentBundle')
-          expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
+          expect(_.get(metadataInfo, 'apiVersion')).toEqual('47.0')
           const jsResource = metadataInfo.lwcResources.lwcResource[0]
           expect(jsResource).toBeDefined()
           expect(isStaticFile(jsResource.source)).toBe(true)
@@ -728,7 +728,7 @@ describe('XML Transformer', () => {
           expect(auraInstance.file).toEqual(fileProperties)
           const metadataInfo = auraInstance.values
           expect(metadataInfo.fullName).toEqual('myAuraDefinitionBundle')
-          expect(metadataInfo.apiVersion).toEqual(47)
+          expect(metadataInfo.apiVersion).toEqual('47.0')
           expect(metadataInfo.type).toEqual('Component')
           expect(isStaticFile(metadataInfo.markup)).toBe(true)
           const markupStaticFile = metadataInfo.markup as StaticFile

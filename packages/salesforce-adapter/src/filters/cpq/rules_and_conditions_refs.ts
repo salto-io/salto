@@ -236,10 +236,6 @@ const filterCreator: FilterCreator = ({ config }) => {
   return {
     name: 'cpqRulesAndConditionsFilter',
     onFetch: async elements => {
-      if (!config.fetchProfile.isFeatureEnabled('cpqRulesAndConditionsRefs')) {
-        log.debug('feature is disabled. Skipping filter')
-        return
-      }
       const ruleInstancesByType = _.pick(
         _.groupBy(elements.filter(isInstanceOfCustomObjectSync), instance => apiNameSync(instance.getTypeSync()) ?? ''),
         ruleTypeNames,

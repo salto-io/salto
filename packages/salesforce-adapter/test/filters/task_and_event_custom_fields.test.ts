@@ -11,7 +11,6 @@ import { createCustomObjectType, createField, defaultFilterContext } from '../ut
 import { ACTIVITY_CUSTOM_OBJECT, EVENT_CUSTOM_OBJECT, TASK_CUSTOM_OBJECT } from '../../src/constants'
 import { FilterWith } from './mocks'
 import filterCreator from '../../src/filters/task_and_event_custom_fields'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('taskAndEventCustomFieldsFilter', () => {
   const FIELD_NAME = 'TestField__c'
@@ -48,16 +47,7 @@ describe('taskAndEventCustomFieldsFilter', () => {
     eventField = createField(eventType, BuiltinTypes.STRING, `Event.${FIELD_NAME}`, derivedFieldAnnotations, FIELD_NAME)
 
     filter = filterCreator({
-      config: {
-        ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({
-          fetchParams: {
-            optionalFeatures: {
-              taskAndEventCustomFields: true,
-            },
-          },
-        }),
-      },
+      config: defaultFilterContext,
     }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })
 
@@ -74,7 +64,8 @@ describe('taskAndEventCustomFieldsFilter', () => {
     })
     it('should not mutate custom fields to references if Activity is not found', async () => {
       const elements = [taskType, eventType, taskField, eventField]
-      await filter.onFetch(elements)
+      const res = await filter.onFetch(elements)
+      expect(res).toBeUndefined()
       ;[taskField, eventField].forEach(field => {
         expect(Object.keys(field.annotations).sort()).toEqual(
           [
@@ -89,6 +80,14 @@ describe('taskAndEventCustomFieldsFilter', () => {
           ].sort(),
         )
         expect(field.annotations.activityField).toBeUndefined()
+      })
+    })
+
+    describe('when types are missing', () => {
+      it('should not return errors', async () => {
+        const elements = [activityType, activityField, taskField, eventField]
+        const res = await filter.onFetch(elements)
+        expect(res).toBeUndefined()
       })
     })
   })

@@ -17,15 +17,11 @@ export type Themes = {
   brands?: string[]
   referenceOptions: {
     enableReferenceLookup: boolean
-    javascriptReferenceLookupStrategy?:
-      | {
-          strategy: 'numericValues'
-          minimumDigitAmount: number
-        }
-      | {
-          strategy: 'varNamePrefix'
-          prefix: string
-        }
+    javascriptReferenceLookupStrategy?: {
+      strategy: 'numericValues' | 'varNamePrefix'
+      minimumDigitAmount?: number
+      prefix?: string
+    }
   }
 }
 

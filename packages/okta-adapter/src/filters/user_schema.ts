@@ -15,6 +15,7 @@ import {
   AdditionChange,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, getParents } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { USER_SCHEMA_TYPE_NAME, LINKS_FIELD } from '../constants'
@@ -22,6 +23,7 @@ import { extractIdFromUrl } from '../utils'
 import { isUserType } from '../definitions/fetch/types/user_type'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 /**
  * Update UserSchema with its correct id taken from the parent UserType
@@ -29,7 +31,7 @@ const log = logger(module)
 const filter: FilterCreator = () => ({
   name: 'userSchemaFilter',
   preDeploy: async (changes: Change<InstanceElement>[]) => {
-    changes
+    await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === USER_SCHEMA_TYPE_NAME)
@@ -50,7 +52,7 @@ const filter: FilterCreator = () => ({
       })
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
-    changes
+    await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === USER_SCHEMA_TYPE_NAME)

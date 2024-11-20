@@ -220,7 +220,7 @@ const deployLayoutChange = async (change: Change<InstanceElement>, client: JiraC
     }
     const response = await getLayoutResponse({ variables, client, typeName })
     if (!isIssueLayoutResponse(response.data)) {
-      log.error('received invalid response from jira', response)
+      log.error('received invalid response from jira due to error %s', response.errors)
       throw Error(
         'Failed to deploy issue layout changes due to an unexpected response from Jira. Your target environment might not be synced, please fetch it and try again.',
       )

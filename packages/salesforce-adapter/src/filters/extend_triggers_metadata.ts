@@ -120,7 +120,6 @@ const filterCreator: FilterCreator = ({ client, config }) => {
   const valuesToRestoreByElemId: Record<string, ValuesToRestoreOnDeploy> = {}
   return {
     name: 'extendTriggersMetadata',
-    remote: true,
     onFetch: ensureSafeFilterFetch({
       config,
       filterName: 'extendTriggersMetadata',

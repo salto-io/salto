@@ -197,6 +197,7 @@ const filter: FilterCreator = ({ config, elementsSource }) => {
         .forEach(async instance => {
           getJqls(instance)
             .filter((jql): jql is TemplateJqlDetails => isTemplateExpression(jql.jql))
+            // eslint-disable-next-line @typescript-eslint/no-misused-promises
             .forEach(async jql => {
               const resolvedJql = (
                 await Promise.all(

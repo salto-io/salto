@@ -263,7 +263,7 @@ const getWorkatoErrors = (elemList: ElemID[], error: Error): SaltoError[] => {
   )
 }
 
-const recipeToZipFormat = async (zip: JSZip, recipe: InstanceElement): Promise<void> => {
+const recipeToZipFormat = (zip: JSZip, recipe: InstanceElement): void => {
   const configList = recipe.value.config.map((conf: RecipeConfig) => ({
     keyword: conf.keyword,
     provider: conf.provider,

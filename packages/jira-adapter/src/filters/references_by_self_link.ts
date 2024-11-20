@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { Element, isInstanceElement, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { multiIndex, collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValuesSync } from '@salto-io/adapter-utils'
 import { openapi } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
@@ -81,17 +81,17 @@ const filter: FilterCreator = () => ({
       filter: isInstanceElementWithSelfLink,
       key: inst => [getRelativeSelfLink(inst.value)],
     })
-    await awu(instances).forEach(async inst => {
+    instances.forEach(inst => {
       inst.value =
-        (await transformValues({
+        transformValuesSync({
           values: inst.value,
-          type: await inst.getType(),
+          type: inst.getTypeSync(),
           pathID: inst.elemID,
           transformFunc: transformSelfLinkToReference(elementsBySelfLink),
           strict: false,
           allowEmptyArrays: true,
           allowEmptyObjects: true,
-        })) ?? inst.value
+        }) ?? inst.value
     })
   },
 })

@@ -254,7 +254,7 @@ describe('adapter creator', () => {
           production: false,
         }),
       ),
-    ).rejects.toThrow(new Error('Request failed with status code 500'))
+    ).rejects.toThrow(new Error('Login failed with error: Request failed with status code 500'))
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 

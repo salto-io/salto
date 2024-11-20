@@ -21,5 +21,6 @@
     "useUnknownInCatchVariables": false
   },
   "files": [],
-  "include": []
+  "include": [],
+  "exclude": ["test/**/test_data"]
 }

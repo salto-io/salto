@@ -18,10 +18,8 @@ import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mkdirp, createGZipWriteStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } from '@salto-io/workspace'
+import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig, flags } from '@salto-io/workspace'
 import { hash, collections, promises, serialize, types } from '@salto-io/lowerdash'
-import semver from 'semver'
-
 import {
   ContentAndHash,
   createFileStateContentProvider,
@@ -30,9 +28,8 @@ import {
   NamedStream,
   StateContentProvider,
 } from './content_providers'
-import { version } from '../../generated/version.json'
 import { getLocalStoragePath } from '../../app_config'
-import { CORE_FLAGS, getCoreFlagBool } from '../../core/flags'
+import { CORE_FLAGS } from '../../core/flags'
 
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
@@ -44,15 +41,20 @@ const log = logger(module)
 type PathEntry = [string, string[][]]
 type ParsedState = {
   elements: Element[]
-  updateDates: Record<string, string>[]
+  accounts: string[]
   pathIndices: PathEntry[]
+}
+
+type DeprecatedParsedState = {
+  updateDates: Record<string, string>[]
   versions: string[]
 }
 
-const parsedStateKeys: types.TypeKeysEnum<ParsedState> = {
+const parsedStateKeys: types.TypeKeysEnum<ParsedState & DeprecatedParsedState> = {
   elements: 'elements',
-  updateDates: 'updateDates',
+  accounts: 'accounts',
   pathIndices: 'pathIndices',
+  updateDates: 'updateDates',
   versions: 'versions',
 }
 
@@ -69,23 +71,26 @@ const pathIndicesStreamSerializer = serialize.createStreamSerializer({
 export const parseStateContent = async (contentStreams: AsyncIterable<NamedStream>): Promise<ParsedState> => {
   let elements: unknown[] = []
   const res: Omit<ParsedState, 'elements'> = {
-    updateDates: [],
+    accounts: [],
     pathIndices: [],
-    versions: [],
   }
 
-  const updateWithParsedStateData = (data: Partial<ParsedState>): void => {
-    if (data.versions !== undefined) {
-      res.versions = res.versions.concat(data.versions)
-    }
-    if (data.updateDates !== undefined) {
-      res.updateDates = res.updateDates.concat(data.updateDates)
+  const updateWithParsedStateData = (data: Partial<ParsedState & DeprecatedParsedState>): void => {
+    if (data.accounts !== undefined) {
+      res.accounts = res.accounts.concat(data.accounts)
     }
     if (data.elements !== undefined) {
       elements = elements.concat(data.elements)
     }
     if (data.pathIndices !== undefined) {
       res.pathIndices = res.pathIndices.concat(data.pathIndices)
+    }
+    if (data.updateDates !== undefined) {
+      // use the deprecated update dates to get the accounts
+      res.accounts = res.accounts.concat(data.updateDates.flatMap(Object.keys))
+    }
+    if (data.versions !== undefined) {
+      log.debug('Old format state file contains the Salto version information')
     }
   }
 
@@ -103,7 +108,7 @@ export const parseStateContent = async (contentStreams: AsyncIterable<NamedStrea
               updateWithParsedStateData({ elements: value })
             }
           } else if (key === 1) {
-            // line 2 - update dates, e.g.
+            // line 2 - update dates
             //   {"dummy":"2023-01-09T15:57:59.322Z"}
             if (!_.isEmpty(value)) {
               updateWithParsedStateData({ updateDates: [value] })
@@ -193,22 +198,8 @@ export const localState = (
     await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
     await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
-    const updateDatesByAccount = _.mapValues(
-      res.updateDates
-        .map(entry => entry ?? {})
-        .filter(entry => !_.isEmpty(entry))
-        .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
-      dateStr => new Date(dateStr),
-    )
-    const stateUpdateDate = stateData.accountsUpdateDate
-    if (stateUpdateDate !== undefined) {
-      await stateUpdateDate.clear()
-      await stateUpdateDate.setAll(awu(Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))))
-    }
-    const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
-    if (currentVersion) {
-      await stateData.saltoMetadata.set('version', currentVersion)
-    }
+    await stateData.accounts.clear()
+    await stateData.accounts.set('account_names', res.accounts)
     await stateData.saltoMetadata.set('hash', newHash)
   }
 
@@ -249,15 +240,14 @@ export const localState = (
     const accountToElementStreams = await promises.object.mapValuesAsync(elementsByAccount, accountElements =>
       serializeStream({
         elements: _.sortBy(accountElements, element => element.elemID.getFullName()),
-        streamSerializer: getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+        streamSerializer: flags.getSaltoFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
           ? serialize.getSerializedStream
           : elementsStreamSerializer,
       }),
     )
-    const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray(),
-      getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+      flags.getSaltoFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
         ? serialize.getSerializedStream
         : pathIndicesStreamSerializer,
     )
@@ -269,20 +259,18 @@ export const localState = (
         }
       }
       yield* yieldWithEOL(
-        getCoreFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+        flags.getSaltoFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
           ? [
               accountToElementStreams[account],
-              awu([safeJsonStringify({ [account]: accountToDates[account] })]),
+              awu([safeJsonStringify({ [account]: account })]),
               accountToPathIndex[account] || '[]',
-              awu([safeJsonStringify(version)]),
             ]
           : [
               awu(['[]']), // deprecated: serialized elements
               awu(['{}']), // deprecated: update dates
               awu(['[]']), // deprecated: path indices
               awu(['""']), // deprecated: version
-              awu([safeJsonStringify({ [parsedStateKeys.versions]: [version] })]),
-              awu([safeJsonStringify({ [parsedStateKeys.updateDates]: [{ [account]: accountToDates[account] }] })]),
+              awu([safeJsonStringify({ [parsedStateKeys.accounts]: [account] })]),
               accountToElementStreams[account],
               accountToPathIndex[account] || safeJsonStringify({ [parsedStateKeys.pathIndices]: [] }),
             ],
@@ -361,7 +349,6 @@ export const localState = (
         Object.fromEntries(contents.map(({ account, contentHash }) => [account, contentHash])),
       )
       await currentContentProvider.writeContents(currentFilePrefix, contents)
-      await inMemState.setVersion(version)
       await inMemState.setHash(updatedHash)
       await inMemState.flush()
       dirty = false

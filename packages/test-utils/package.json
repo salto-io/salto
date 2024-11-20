@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/test-utils",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "license": "SEE LICENSE IN LICENSE",
   "description": "Test utilities for jest",
   "repository": {
@@ -26,10 +26,6 @@
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
-  },
-  "dependencies": {
-    "lodash": "^4.17.21",
-    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.0",

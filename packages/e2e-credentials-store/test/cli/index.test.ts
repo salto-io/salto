@@ -68,6 +68,7 @@ describe('argparser', () => {
   let createRepo: jest.Mock<Promise<Repo>, [string]>
 
   const runCli = (commandLine: string): Promise<number> =>
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     new Promise(resolve =>
       cli({
         adapters,

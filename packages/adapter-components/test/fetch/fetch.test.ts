@@ -82,6 +82,15 @@ describe('fetch', () => {
         if (url === '/api/v1/fields/789/default_option') {
           throw new Error('error fetching default option')
         }
+        if (url === '/api/v1/no_entries') {
+          return {
+            data: {
+              entries: [],
+            },
+            status: 200,
+            statusText: 'OK',
+          }
+        }
         throw new Error(`unexpected endpoint called: ${url}`)
       })
     })
@@ -276,6 +285,26 @@ describe('fetch', () => {
                     },
                   },
                 },
+                no_entry: {
+                  requests: [
+                    {
+                      endpoint: {
+                        path: '/api/v1/no_entries',
+                      },
+                      transformation: {
+                        root: 'entries',
+                      },
+                    },
+                  ],
+                  resource: {
+                    directFetch: true,
+                  },
+                  element: {
+                    topLevel: {
+                      isTopLevel: true,
+                    },
+                  },
+                },
               },
             },
             customNameMappingFunctions: {
@@ -302,6 +331,7 @@ describe('fetch', () => {
         'myAdapter.field.instance.field2Custom',
         'myAdapter.group',
         'myAdapter.group.instance.group1Custom',
+        'myAdapter.no_entry',
         'myAdapter.option',
         'myAdapter.option.instance.opt1Custom',
         'myAdapter.option.instance.opt2Custom',

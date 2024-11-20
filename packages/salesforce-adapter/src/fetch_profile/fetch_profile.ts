@@ -11,7 +11,6 @@ import {
   FetchProfile,
   FetchParameters,
   METADATA_CONFIG,
-  OptionalFeatures,
   MetadataQuery,
   CustomReferencesSettings,
 } from '../types'
@@ -20,40 +19,9 @@ import { buildMetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../constants'
 import { mergeWithDefaultImportantValues } from './important_values'
 import { customReferencesConfiguration } from '../custom_references/handlers'
-
-type OptionalFeaturesDefaultValues = {
-  [FeatureName in keyof OptionalFeatures]?: boolean
-}
+import { isFeatureEnabled } from './optional_features'
 
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
-
-const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
-  fetchProfilesUsingReadApi: false,
-  generateRefsInProfiles: false,
-  skipAliases: false,
-  toolingDepsOfCurrentNamespace: false,
-  extraDependenciesV2: true,
-  extendedCustomFieldInformation: false,
-  importantValues: true,
-  hideTypesFolder: true,
-  omitStandardFieldsNonDeployableValues: true,
-  metaTypes: false,
-  cpqRulesAndConditionsRefs: true,
-  flowCoordinates: false,
-  improvedDataBrokenReferences: false,
-  taskAndEventCustomFields: false,
-  sharingRulesMaps: false,
-  excludeNonRetrievedProfilesRelatedInstances: true,
-  waveMetadataSupport: false,
-  indexedEmailTemplateAttachments: false,
-  skipParsingXmlNumbers: false,
-  logDiffsFromParsingXmlNumbers: true,
-  extendTriggersMetadata: false,
-  removeReferenceFromFilterItemToRecordType: false,
-  storeProfilesAndPermissionSetsBrokenPaths: true,
-  picklistsAsMaps: false,
-  lightningPageFieldItemReference: false,
-}
 
 type BuildFetchProfileParams = {
   fetchParams: FetchParameters
@@ -82,7 +50,7 @@ export const buildFetchProfile = ({
   const enabledCustomReferencesHandlers = customReferencesConfiguration(customReferencesSettings)
   return {
     dataManagement: data && buildDataManagement(data),
-    isFeatureEnabled: name => optionalFeatures?.[name] ?? optionalFeaturesDefaultValues[name] ?? true,
+    isFeatureEnabled: name => isFeatureEnabled(name, optionalFeatures),
     isCustomReferencesHandlerEnabled: name => enabledCustomReferencesHandlers[name] ?? false,
     shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
     maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,

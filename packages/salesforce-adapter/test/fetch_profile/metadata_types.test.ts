@@ -15,7 +15,7 @@ import {
   SALESFORCE_METADATA_TYPES,
   MetadataTypeWithoutDependencies,
 } from '../../src/fetch_profile/metadata_types'
-import { PROFILE_RELATED_METADATA_TYPES } from '../../src/constants'
+import { PROFILE_RELATED_METADATA_TYPES, SETTINGS_METADATA_TYPE } from '../../src/constants'
 
 describe('Salesforce MetadataTypes', () => {
   const getDuplicates = (array: ReadonlyArray<string>): ReadonlyArray<string> =>
@@ -69,6 +69,14 @@ describe('Salesforce MetadataTypes', () => {
           'Flow',
           'Profile',
           ...PROFILE_RELATED_METADATA_TYPES,
+        ])
+      })
+    })
+    describe('when fetch targets include a settings type', () => {
+      it('should include the Settings type', () => {
+        expect(getFetchTargetsWithDependencies(['AccountSettings'])).toIncludeSameMembers([
+          'AccountSettings',
+          SETTINGS_METADATA_TYPE,
         ])
       })
     })

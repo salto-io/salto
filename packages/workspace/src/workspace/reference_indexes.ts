@@ -346,20 +346,25 @@ const updateReferenceSourcesIndex = async (
 const getIdToCustomReferences = async (
   getCustomReferences: ReferenceIndexesGetCustomReferencesFunc,
   changes: Change<Element>[],
-): Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> => {
-  const customReferencesAfter = await getCustomReferences(
-    changes.filter(isAdditionOrModificationChange).map(change => change.data.after),
-  )
+): Promise<{ before: Record<string, ReferenceInfo[]>; after: Record<string, ReferenceInfo[]> }> =>
+  log.timeDebug(
+    async () => {
+      const customReferencesAfter = await getCustomReferences(
+        changes.filter(isAdditionOrModificationChange).map(change => change.data.after),
+      )
 
-  const customReferencesBefore = await getCustomReferences(
-    changes.filter(isRemovalOrModificationChange).map(change => change.data.before),
-  )
+      const customReferencesBefore = await getCustomReferences(
+        changes.filter(isRemovalOrModificationChange).map(change => change.data.before),
+      )
 
-  return {
-    before: _.groupBy(customReferencesBefore, ref => ref.source.createTopLevelParentID().parent.getFullName()),
-    after: _.groupBy(customReferencesAfter, ref => ref.source.createTopLevelParentID().parent.getFullName()),
-  }
-}
+      return {
+        before: _.groupBy(customReferencesBefore, ref => ref.source.createTopLevelParentID().parent.getFullName()),
+        after: _.groupBy(customReferencesAfter, ref => ref.source.createTopLevelParentID().parent.getFullName()),
+      }
+    },
+    'getIdToCustomReferences for %d changes',
+    changes.length,
+  )
 
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
@@ -401,6 +406,7 @@ export const updateReferenceIndexes = async (
         ])
         .toArray(),
     )
+    log.debug('calculated references for %d changes, updating indexes', relevantChanges.length)
 
     // Outgoing references
     await updateReferenceTargetsIndex(relevantChanges, referenceTargetsIndex, changeToReferences)

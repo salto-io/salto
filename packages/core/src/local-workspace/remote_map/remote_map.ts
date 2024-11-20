@@ -18,7 +18,6 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { remoteMapLocations } from './location_pool'
 import { LocationCounters } from './counters'
-import { createUnresolvedRefIdFieldConfigChange } from '@salto-io/salesforce-adapter/dist/src/config_change'
 
 const { asynciterable } = collections
 const { awu } = asynciterable

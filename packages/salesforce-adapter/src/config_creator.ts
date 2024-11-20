@@ -234,7 +234,7 @@ export const optionsType = createMatchingObjectType<SalesforceConfigOptionsType>
 export const getConfig = async (options?: InstanceElement): Promise<InstanceElement> => {
   let configInstance = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
   const appendProfilesAndPermissionSetsExclude = (instance: InstanceElement): void => {
-    const excludeSection = instance.value.fetch.metadata.exclude
+    const excludeSection = instance.value?.fetch?.metadata?.exclude
     if (Array.isArray(excludeSection)) {
       instance.value.fetch.metadata.exclude = [...excludeSection, ...excludeProfilesAndPermissionSets]
     } else {

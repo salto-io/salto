@@ -24,8 +24,6 @@ const defaultCustomReferencesConfig: Required<JiraCustomReferencesConfig> = {
   automationProjects: true,
   fieldConfigurationsHandler: true,
   queueFieldsHandler: true,
-  contextProjectsHandler: true,
-  fieldContextsHandler: true,
 }
 
 const getCustomReferencesConfig = (

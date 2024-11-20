@@ -90,8 +90,6 @@ export const customReferencesHandlersNames = [
   'automationProjects',
   'fieldConfigurationsHandler',
   'queueFieldsHandler',
-  'contextProjectsHandler',
-  'fieldContextsHandler',
 ] as const
 
 export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
@@ -374,8 +372,6 @@ const customReferencesConfigType = createMatchingObjectType<Partial<JiraCustomRe
     automationProjects: { refType: BuiltinTypes.BOOLEAN },
     fieldConfigurationsHandler: { refType: BuiltinTypes.BOOLEAN },
     queueFieldsHandler: { refType: BuiltinTypes.BOOLEAN },
-    contextProjectsHandler: { refType: BuiltinTypes.BOOLEAN },
-    fieldContextsHandler: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

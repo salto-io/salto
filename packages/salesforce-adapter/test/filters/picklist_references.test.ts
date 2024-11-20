@@ -149,6 +149,9 @@ describe('picklistReferences filter', () => {
               { fullName: 'High', default: false },
               { fullName: 'Low', default: false },
               { fullName: 'High %26 Low', default: false },
+              // Make sure the filter does not crash violently when trying to decode this URI value.
+              // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent#catching_errors
+              { fullName: 'Non %% Decode-able', default: false },
             ],
           },
           // Field in old format
@@ -241,6 +244,10 @@ describe('picklistReferences filter', () => {
             ),
             'High & Low',
           ),
+          default: false,
+        },
+        {
+          fullName: 'Non %% Decode-able',
           default: false,
         },
       ])

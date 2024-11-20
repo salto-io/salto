@@ -85,6 +85,15 @@ const getValueSetElementFromPicklistField = (field: Field): InstanceElement | Fi
   return field
 }
 
+const safeDecodeURIComponent = (encoded: string): string => {
+  try {
+    return decodeURIComponent(encoded)
+  } catch (e: unknown) {
+    log.warn('Failed to decode URI component: %s', e)
+    return encoded
+  }
+}
+
 const createReferencesForRecordType = (
   recordType: InstanceElement,
   picklistValuesReferenceIndex: PicklistValuesReferenceIndex,
@@ -100,7 +109,7 @@ const createReferencesForRecordType = (
       const ref: ReferenceExpression | undefined =
         // Using URI decode since RecordType Picklist values return as encoded URI string.
         // e.g. 'You %26 Me' instead of 'You & Me'.
-        picklistValuesReferenceIndex[valueSetElement.elemID.getFullName()]?.[decodeURIComponent(value.fullName)]
+        picklistValuesReferenceIndex[valueSetElement.elemID.getFullName()]?.[safeDecodeURIComponent(value.fullName)]
       if (ref) {
         _.set(value, 'fullName', ref)
       } else {

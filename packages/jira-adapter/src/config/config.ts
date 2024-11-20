@@ -84,6 +84,20 @@ export type MaskingConfig = {
   secretRegexps: string[]
 }
 
+export const CUSTOM_REFERENCES_CONFIG = 'customReferences'
+
+export const customReferencesHandlersNames = [
+  'automationProjects',
+  'fieldConfigurationsHandler',
+  'queueFieldsHandler',
+  'contextProjectsHandler',
+  'fieldContextsHandler',
+] as const
+
+export type CustomReferencesHandlers = (typeof customReferencesHandlersNames)[number]
+
+export type JiraCustomReferencesConfig = Record<CustomReferencesHandlers, boolean>
+
 export type JiraConfig = {
   client: JiraClientConfig
   fetch: JiraFetchConfig
@@ -92,6 +106,7 @@ export type JiraConfig = {
   masking: MaskingConfig
   [SCRIPT_RUNNER_API_DEFINITIONS]?: JiraDuckTypeConfig
   [JSM_DUCKTYPE_API_DEFINITIONS]?: JiraDuckTypeConfig
+  [CUSTOM_REFERENCES_CONFIG]?: JiraCustomReferencesConfig
 }
 
 const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
@@ -355,6 +370,20 @@ const maskingConfigType = createMatchingObjectType<Partial<MaskingConfig>>({
   },
 })
 
+const customReferencesConfigType = createMatchingObjectType<Partial<JiraCustomReferencesConfig>>({
+  elemID: new ElemID(JIRA, 'customReferencesConfig'),
+  fields: {
+    automationProjects: { refType: BuiltinTypes.BOOLEAN },
+    fieldConfigurationsHandler: { refType: BuiltinTypes.BOOLEAN },
+    queueFieldsHandler: { refType: BuiltinTypes.BOOLEAN },
+    contextProjectsHandler: { refType: BuiltinTypes.BOOLEAN },
+    fieldContextsHandler: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<JiraConfig>>({
   elemID: new ElemID(JIRA),
   fields: {
@@ -375,6 +404,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
         elemIdPrefix: 'ducktype',
       }),
     },
+    [CUSTOM_REFERENCES_CONFIG]: { refType: customReferencesConfigType },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, [
@@ -397,6 +427,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
       'deploy.ignoreMissingExtensions',
       SCRIPT_RUNNER_API_DEFINITIONS,
       JSM_DUCKTYPE_API_DEFINITIONS,
+      CUSTOM_REFERENCES_CONFIG,
     ]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

@@ -152,6 +152,7 @@ export const telemetrySender = (
     if (stopped) {
       return
     }
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     timer = setTimeout(async () => {
       await flush()
       start()

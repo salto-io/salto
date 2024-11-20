@@ -6,11 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Element, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { transformValuesSync } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 /**
  * Removes 'self' values from types and instances
@@ -18,26 +15,24 @@ const { awu } = collections.asynciterable
 const filter: FilterCreator = () => ({
   name: 'removeSelfFilter',
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
-      .filter(isInstanceElement)
-      .forEach(async instance => {
-        instance.value =
-          (await transformValues({
-            values: instance.value,
-            type: await instance.getType(),
-            pathID: instance.elemID,
-            strict: false,
-            allowEmptyArrays: true,
-            allowEmptyObjects: true,
-            transformFunc: ({ value, path }) => {
-              if (path?.name === 'self') {
-                return undefined
-              }
-              return value
-            },
-          })) ?? {}
-      })
-
+    elements.filter(isInstanceElement).forEach(instance => {
+      instance.value =
+        transformValuesSync({
+          values: instance.value,
+          type: instance.getTypeSync(),
+          pathID: instance.elemID,
+          strict: false,
+          allowEmptyArrays: true,
+          allowEmptyObjects: true,
+          transformFunc: ({ value, path }) => {
+            if (path?.name === 'self') {
+              return undefined
+            }
+            return value
+          },
+        }) ?? {}
+    })
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     elements.filter(isObjectType).forEach(async type => {
       delete type.fields.self
     })

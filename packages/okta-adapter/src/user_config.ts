@@ -6,12 +6,8 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { elements, definitions } from '@salto-io/adapter-components'
-import { BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, createRestriction } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
 import { JWK_TYPE_NAME, OKTA, USER_TYPE_NAME } from './constants'
-
-const log = logger(module)
 
 type GetUsersStrategy = 'searchQuery' | 'allUsers'
 
@@ -128,31 +124,3 @@ export const configType = definitions.createUserConfigType({
   omitElemID: false,
   pathsToOmitFromDefaultConfig: ['fetch.enableMissingReferences', 'fetch.getUsersStrategy'],
 })
-
-/*
- * Temporary config suggestion to migrate existing configs to exclude JWK type
- */
-export const getExcludeJWKConfigSuggestion = (
-  userConfig: Readonly<InstanceElement> | undefined,
-): definitions.ConfigChangeSuggestion | undefined => {
-  const typesToExclude = userConfig?.value?.fetch?.exclude
-  const typesToInclude = userConfig?.value?.fetch?.include
-  if (!Array.isArray(typesToExclude) || !Array.isArray(typesToInclude)) {
-    log.error(
-      'failed creating config suggestion to exclude JsonWebKey type, expected fetch.exclude and fetch.include to be an array, but instead got %s',
-      safeJsonStringify({ exclude: typesToExclude, include: typesToInclude }),
-    )
-    return undefined
-  }
-  const isJWKExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
-  const isJWKIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === JWK_TYPE_NAME)
-  if (!isJWKExcluded && !isJWKIncluded) {
-    return {
-      type: 'typeToExclude',
-      value: JWK_TYPE_NAME,
-      reason:
-        'JsonWebKey type is excluded by default. To include it, explicitly add "JsonWebKey" type into the include list.',
-    }
-  }
-  return undefined
-}

@@ -35,6 +35,7 @@ import {
   INTERNAL_ID_FIELD,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
+  SETTINGS_DIR_NAME,
 } from '../constants'
 import {
   apiName,
@@ -75,7 +76,7 @@ export const getManifestTypeName = (type: MetadataObjectType): string =>
 
   // Salesforce quirk - settings instances should be deployed under Settings type,
   // although their received type is "<name>Settings"
-  type.annotations.dirName === 'settings'
+  type.annotations.dirName === SETTINGS_DIR_NAME
     ? SETTINGS_METADATA_TYPE
     : type.annotations.folderContentType ?? type.annotations.metadataType
 

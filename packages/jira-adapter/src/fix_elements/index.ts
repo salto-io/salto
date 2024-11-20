@@ -9,10 +9,10 @@
 import _ from 'lodash'
 import { FixElementsFunc } from '@salto-io/adapter-api'
 import { FixElementsArgs } from './types'
-import { weakReferenceHandlers } from '../weak_references'
+import { customReferenceHandlers } from '../weak_references'
 import { removeMissingExtensionsTransitionRulesHandler } from './remove_missing_extension_transition_rules'
 
 export const createFixElementFunctions = (args: FixElementsArgs): Record<string, FixElementsFunc> => ({
-  ..._.mapValues(weakReferenceHandlers, handler => handler.removeWeakReferences(args)),
+  ..._.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences(args)),
   removeMissingExtensionsTransitionRules: removeMissingExtensionsTransitionRulesHandler(args),
 })

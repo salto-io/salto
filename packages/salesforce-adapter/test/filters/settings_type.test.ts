@@ -28,6 +28,9 @@ describe('Test Settings Type', () => {
           metadata: {
             exclude: [{ metadataType: 'CaseSettings' }],
           },
+          optionalFeatures: {
+            retrieveSettings: false,
+          },
         },
       }),
     },

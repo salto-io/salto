@@ -202,6 +202,9 @@ export const mockDefaultValues: Record<string, Values> = {
         slo: {
           enabled: false,
         },
+        assertionEncryption: {
+          enabled: false,
+        },
       },
       manualProvisioning: false,
       implicitAssignment: false,

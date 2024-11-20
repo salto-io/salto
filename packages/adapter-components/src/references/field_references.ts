@@ -25,6 +25,7 @@ import {
   transformValues,
   safeJsonStringify,
   resolvePath,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
@@ -40,6 +41,7 @@ import {
   ReferenceSerializationStrategyLookup,
   ReferenceSourceTransformation,
   ReferenceIndexField,
+  AsyncReferenceResolverFinder,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 import { checkMissingRef } from './missing_references'
@@ -67,7 +69,9 @@ export const replaceReferenceValues = async <TContext extends string, CustomInde
   contextStrategyLookup = emptyContextStrategyLookup,
 }: {
   instance: InstanceElement
-  resolverFinder: ReferenceResolverFinder<TContext, CustomIndexField>
+  resolverFinder:
+    | ReferenceResolverFinder<TContext, CustomIndexField>
+    | AsyncReferenceResolverFinder<TContext, CustomIndexField>
   elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>
   fieldsWithResolvedReferences: Set<string>
   elemByElemID: multiIndex.Index<[string], Element>
@@ -274,17 +278,37 @@ export const addReferences = async <
   const { elemByElemID, ...fieldLookups } = await indexer.process(awu(contextElements))
 
   const fieldsWithResolvedReferences = new Set<string>()
-  await awu(instances).forEach(async instance => {
-    instance.value = await replaceReferenceValues({
-      instance,
-      resolverFinder,
-      elemLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
-      fieldsWithResolvedReferences,
-      elemByElemID,
-      contextStrategyLookup,
-    })
-  })
+  // TODO SALTO-6889 - can remove once analysis is done
+  const processTimeByType = new Map<string, { time: number; elements: number }>()
+  await log.timeDebug(
+    async () =>
+      awu(instances).forEach(async instance => {
+        const startTime = Date.now()
+        instance.value = await replaceReferenceValues({
+          instance,
+          resolverFinder,
+          elemLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
+          fieldsWithResolvedReferences,
+          elemByElemID,
+          contextStrategyLookup,
+        })
+
+        const processTime = Date.now() - startTime
+        try {
+          const current = processTimeByType.get(instance.elemID.typeName) ?? { time: 0, elements: 0 }
+          processTimeByType.set(instance.elemID.typeName, {
+            time: current.time + processTime,
+            elements: current.elements + 1,
+          })
+        } catch (e) {
+          log.error('failed to update processing time for %s', instance.elemID.getFullName())
+        }
+      }),
+    'replaceReferenceValues for %d instances',
+    instances.length,
+  )
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
+  log.debug('references processing time by type: %s', inspectValue(processTimeByType, { maxArrayLength: null }))
 }
 
 export const generateLookupFunc = <
@@ -305,15 +329,15 @@ export const generateLookupFunc = <
     GenericFieldReferenceDefinition
   >(defs, fieldReferenceResolverCreator)
 
-  const determineLookupStrategy = async (
+  const determineLookupStrategy = (
     args: GetLookupNameFuncArgs,
-  ): Promise<ReferenceSerializationStrategy<CustomIndexField> | undefined> => {
+  ): ReferenceSerializationStrategy<CustomIndexField> | undefined => {
     if (args.field === undefined) {
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
 
-    const strategies = (await resolverFinder(args.field, args.element))
+    const strategies = resolverFinder(args.field, args.element)
       .filter(def => def.target?.type === undefined || args.ref.elemID.typeName === def.target.type)
       .map(def => def.serializationStrategy)
 
@@ -339,12 +363,12 @@ export const generateLookupFunc = <
     }
 
     const strategy =
-      (await determineLookupStrategy({
+      determineLookupStrategy({
         ref,
         path,
         field,
         element,
-      })) ?? ReferenceSerializationStrategyLookup.fullValue
+      }) ?? ReferenceSerializationStrategyLookup.fullValue
     if (!isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field, element, path })
     }

@@ -40,7 +40,6 @@ import { workflowTransitionDuplicateNameValidator } from './workflows/workflow_t
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
 import { issueLayoutsValidator } from './issue_layouts_validator'
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
-import { fieldContextValidator } from './field_contexts/field_contexts'
 import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
 import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
@@ -73,6 +72,7 @@ import { fieldContextDefaultValueValidator } from './field_contexts/field_contex
 import { fieldContextOrderRemovalValidator } from './field_contexts/order_removal'
 import { optionValueValidator } from './field_contexts/option_value'
 import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_search_deployment'
+import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -124,7 +124,6 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     masking: maskingValidator(client),
     issueTypeDeletion: issueTypeDeletionValidator(client),
     lockedFields: lockedFieldsValidator,
-    fieldContext: fieldContextValidator,
     fieldSecondGlobalContext: fieldSecondGlobalContextValidator,
     systemFields: systemFieldsValidator,
     workflowProperties: workflowPropertiesValidator,
@@ -154,6 +153,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     fieldContextOrderRemoval: fieldContextOrderRemovalValidator(config),
     optionValue: optionValueValidator(config),
     enhancedSearchDeployment: enhancedSearchDeploymentValidator,
+    emptyProjectScopedContext: emptyProjectScopedContextValidator,
   }
 
   return createChangeValidator({

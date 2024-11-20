@@ -95,41 +95,48 @@ export type MetadataParams = {
   objectsToSeperateFieldsToFiles?: string[]
 }
 
+const OPTIONAL_FEATURES = [
+  'skipAliases',
+  'extendedCustomFieldInformation',
+  'importantValues',
+  'hideTypesFolder',
+  'metaTypes',
+  'improvedDataBrokenReferences',
+  'skipParsingXmlNumbers',
+  'logDiffsFromParsingXmlNumbers',
+  'extendTriggersMetadata',
+  'picklistsAsMaps',
+  'retrieveSettings',
+  'genAiReferences',
+] as const
+const DEPRECATED_OPTIONAL_FEATURES = [
+  'addMissingIds',
+  'authorInformation',
+  'cpqRulesAndConditionsRefs',
+  'describeSObjects',
+  'elementsUrls',
+  'excludeNonRetrievedProfilesRelatedInstances',
+  'extraDependencies',
+  'extraDependenciesV2',
+  'fetchCustomObjectUsingRetrieveApi',
+  'fetchProfilesUsingReadApi',
+  'flowCoordinates',
+  'formulaDeps',
+  'generateRefsInProfiles',
+  'indexedEmailTemplateAttachments',
+  'lightningPageFieldItemReference',
+  'omitStandardFieldsNonDeployableValues',
+  'profilePaths',
+  'removeReferenceFromFilterItemToRecordType',
+  'sharingRulesMaps',
+  'storeProfilesAndPermissionSetsBrokenPaths',
+  'taskAndEventCustomFields',
+  'toolingDepsOfCurrentNamespace',
+  'useLabelAsAlias',
+  'waveMetadataSupport',
+] as const
 export type OptionalFeatures = {
-  extraDependencies?: boolean
-  extraDependenciesV2?: boolean
-  elementsUrls?: boolean
-  profilePaths?: boolean
-  addMissingIds?: boolean
-  authorInformation?: boolean
-  describeSObjects?: boolean
-  skipAliases?: boolean
-  formulaDeps?: boolean
-  fetchCustomObjectUsingRetrieveApi?: boolean
-  generateRefsInProfiles?: boolean
-  fetchProfilesUsingReadApi?: boolean
-  toolingDepsOfCurrentNamespace?: boolean
-  useLabelAsAlias?: boolean
-  extendedCustomFieldInformation?: boolean
-  importantValues?: boolean
-  hideTypesFolder?: boolean
-  omitStandardFieldsNonDeployableValues?: boolean
-  metaTypes?: boolean
-  cpqRulesAndConditionsRefs?: boolean
-  flowCoordinates?: boolean
-  improvedDataBrokenReferences?: boolean
-  taskAndEventCustomFields?: boolean
-  sharingRulesMaps?: boolean
-  excludeNonRetrievedProfilesRelatedInstances?: boolean
-  waveMetadataSupport?: boolean
-  indexedEmailTemplateAttachments?: boolean
-  skipParsingXmlNumbers?: boolean
-  logDiffsFromParsingXmlNumbers?: boolean
-  extendTriggersMetadata?: boolean
-  storeProfilesAndPermissionSetsBrokenPaths?: boolean
-  removeReferenceFromFilterItemToRecordType?: boolean
-  picklistsAsMaps?: boolean
-  lightningPageFieldItemReference?: boolean
+  [key in (typeof OPTIONAL_FEATURES)[number]]?: boolean
 }
 
 export type ChangeValidatorName =
@@ -809,44 +816,13 @@ const metadataConfigType = createMatchingObjectType<MetadataParams>({
   },
 })
 
-const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
+const optionalFeaturesType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'optionalFeatures'),
-  fields: {
-    extraDependencies: { refType: BuiltinTypes.BOOLEAN },
-    extraDependenciesV2: { refType: BuiltinTypes.BOOLEAN },
-    elementsUrls: { refType: BuiltinTypes.BOOLEAN },
-    profilePaths: { refType: BuiltinTypes.BOOLEAN },
-    addMissingIds: { refType: BuiltinTypes.BOOLEAN },
-    authorInformation: { refType: BuiltinTypes.BOOLEAN },
-    describeSObjects: { refType: BuiltinTypes.BOOLEAN },
-    skipAliases: { refType: BuiltinTypes.BOOLEAN },
-    formulaDeps: { refType: BuiltinTypes.BOOLEAN },
-    fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
-    generateRefsInProfiles: { refType: BuiltinTypes.BOOLEAN },
-    fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
-    toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
-    useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
-    extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
-    importantValues: { refType: BuiltinTypes.BOOLEAN },
-    hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
-    omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
-    metaTypes: { refType: BuiltinTypes.BOOLEAN },
-    cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
-    flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
-    improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
-    taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
-    sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
-    excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
-    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
-    indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
-    skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
-    logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
-    extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
-    storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
-    removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
-    picklistsAsMaps: { refType: BuiltinTypes.BOOLEAN },
-    lightningPageFieldItemReference: { refType: BuiltinTypes.BOOLEAN },
-  },
+  fields: Object.fromEntries(
+    (OPTIONAL_FEATURES as readonly string[])
+      .concat(DEPRECATED_OPTIONAL_FEATURES)
+      .map(name => [name, { refType: BuiltinTypes.BOOLEAN }]),
+  ),
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -968,10 +944,6 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DashboardFolder' },
               { metadataType: 'Document' },
               { metadataType: 'DocumentFolder' },
-              { metadataType: 'Profile' },
-              { metadataType: 'PermissionSet' },
-              { metadataType: 'MutingPermissionSet' },
-              { metadataType: 'PermissionSetGroup' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',

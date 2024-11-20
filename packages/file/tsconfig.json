@@ -6,5 +6,5 @@
     "declaration": true
   },
   "include": ["src/**/*", "test/**/*", "index.ts"],
-  "references": [{ "path": "../lowerdash" }, { "path": "../logging" }]
+  "references": [{ "path": "../lowerdash" }]
 }

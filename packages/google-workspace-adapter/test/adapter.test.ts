@@ -117,6 +117,7 @@ describe('adapter', () => {
           'google_workspace.feature.instance.macabi',
           'google_workspace.group',
           'google_workspace.group.instance.blabla',
+          'google_workspace.groupMember',
           'google_workspace.group__groupSettings',
           'google_workspace.orgUnit',
           'google_workspace.orgUnit.instance._@d',

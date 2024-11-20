@@ -47,7 +47,6 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: 'Error occurred while attempting to convert Wave Metadata content to static files',
     config,
-    filterName: 'waveMetadataSupport',
     fetchFilterFunc: async elements => {
       elements.filter(isInstanceOfTypeSync(...WAVE_TYPES_WITH_STATIC_FILES)).forEach(convertContentToStaticFile)
     },

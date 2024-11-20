@@ -68,11 +68,7 @@ describe('Profiles and PermissionSets broken paths filter', () => {
                 ...defaultFilterContext,
                 elementsSource,
                 fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    optionalFeatures: {
-                      storeProfilesAndPermissionSetsBrokenPaths: true,
-                    },
-                  },
+                  fetchParams: {},
                 }),
               },
             }) as typeof filter
@@ -96,9 +92,6 @@ describe('Profiles and PermissionSets broken paths filter', () => {
                 fetchProfile: buildFetchProfile({
                   fetchParams: {
                     target: ['ApexClass'],
-                    optionalFeatures: {
-                      storeProfilesAndPermissionSetsBrokenPaths: true,
-                    },
                   },
                 }),
               },

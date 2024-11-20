@@ -6,15 +6,18 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
-import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   AUTOMATION_TYPE,
   DASHBOARD_TYPE,
+  FIELD_CONFIGURATION_SCHEME_TYPE,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
   NOTIFICATION_EVENT_TYPE_NAME,
   NOTIFICATION_SCHEME_TYPE_NAME,
+  PERMISSION_SCHEME_TYPE_NAME,
   PROJECT_ROLE_TYPE,
+  REQUEST_TYPE_NAME,
   WORKFLOW_CONFIGURATION_TYPE,
   WORKFLOW_RULES_TYPE_NAME,
   WORKFLOW_STATUS_TYPE_NAME,
@@ -22,8 +25,6 @@ import {
   WORKFLOW_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const WORKFLOW_CONDITION_SORT_BY = [
   'type',
@@ -135,20 +136,34 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
 }
 
+// Top level element type names of the above VALUES_TO_SORT
+const TYPES_TO_SORT = new Set<string>([
+  PERMISSION_SCHEME_TYPE_NAME,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
+  AUTOMATION_TYPE,
+  FIELD_CONFIGURATION_SCHEME_TYPE,
+  NOTIFICATION_SCHEME_TYPE_NAME,
+  DASHBOARD_TYPE,
+  PROJECT_ROLE_TYPE,
+  REQUEST_TYPE_NAME,
+  WORKFLOW_TYPE_NAME,
+  WORKFLOW_CONFIGURATION_TYPE,
+])
+
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
 
-const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Promise<void> => {
+const sortLists = (instance: InstanceElement, isDataCenter: boolean): void => {
   if (isDataCenter) {
     delete VALUES_TO_SORT[WORKFLOW_RULES_TYPE_NAME].postFunctions
   }
   instance.value =
-    (await transformValues({
+    transformValuesSync({
       values: instance.value,
-      type: await instance.getType(),
+      type: instance.getTypeSync(),
       strict: false,
       allowEmptyArrays: true,
       allowEmptyObjects: true,
-      transformFunc: async ({ value, field }) => {
+      transformFunc: ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
@@ -166,14 +181,15 @@ const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Prom
 
         return value
       },
-    })) ?? {}
+    }) ?? {}
 }
 
 const filter: FilterCreator = ({ client }) => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    await awu(elements)
+    elements
       .filter(isInstanceElement)
+      .filter(instance => TYPES_TO_SORT.has(instance.elemID.typeName))
       .forEach(instance => sortLists(instance, client.isDataCenter))
   },
 })

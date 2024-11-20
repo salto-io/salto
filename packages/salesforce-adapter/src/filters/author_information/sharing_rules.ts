@@ -58,11 +58,9 @@ export const WARNING_MESSAGE =
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'sharingRulesAuthorFilter',
-  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
       if (client === undefined) {
         return

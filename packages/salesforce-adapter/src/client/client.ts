@@ -920,8 +920,11 @@ export default class SalesforceClient implements ISalesforceClient {
         log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
       }
     }
-    const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
-
+    const pollingInterval = setInterval(() => {
+      progressCallbackWrapper().catch(error => {
+        log.error('Error occurred in DeployProgress callback:', error)
+      })
+    }, this.conn.metadata.pollInterval)
     const clearPollingInterval = (result: DeployResult): DeployResult => {
       clearInterval(pollingInterval)
       return result

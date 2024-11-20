@@ -695,7 +695,6 @@ const createInaccessibleFieldsFetchWarning = (objectType: ObjectType, inaccessib
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
-  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (client === undefined) {
       return {}

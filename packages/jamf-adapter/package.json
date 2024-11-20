@@ -38,9 +38,7 @@
     "@salto-io/lowerdash": "0.4.5",
     "@types/xml-js": "^1.0.0",
     "axios": "^1.7.2",
-    "form-data": "^4.0.0",
     "lodash": "^4.17.21",
-    "node-html-parser": "^6.1.5",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {

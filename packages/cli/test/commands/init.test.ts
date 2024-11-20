@@ -68,6 +68,9 @@ describe('init command', () => {
         input: {},
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
+      expect(output.stdout.content).toContain(
+        'Initiated empty workspace\nUse `salto account add <service-name>` to add accounts to the environment',
+      )
       expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.success, 1, expect.objectContaining({}))
@@ -94,6 +97,9 @@ describe('init command', () => {
         },
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
+      expect(output.stdout.content).toContain(
+        'Initiated empty workspace\nUse `salto account add <service-name>` to add accounts to the environment',
+      )
       expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.success, 1, expect.objectContaining({}))
@@ -120,7 +126,7 @@ describe('init command', () => {
       ...cliCommandArgs,
       input: {},
     })
-    expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n\n`)
+    expect(output.stderr.content).toEqual(`Could not initiate workspace: existing salto workspace in ${path}\n`)
     expect(output.stdout.content).toEqual('')
   })
 })

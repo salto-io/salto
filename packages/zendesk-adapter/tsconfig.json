@@ -17,7 +17,6 @@
     { "path": "../test-utils" },
     { "path": "../workspace" },
     { "path": "../dag" },
-    { "path": "../file" },
     { "path": "../parser" }
   ]
 }

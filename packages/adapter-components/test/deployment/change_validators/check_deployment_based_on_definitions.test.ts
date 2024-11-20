@@ -49,27 +49,33 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
     }
   })
 
-  describe.each([[true, 'coveredByDefinitions'], [true, 'coveredByConfig'], [false, 'coveredByDefinitions']])('with type config = %s, type name = %s', (includeTypeConfig, typeName) => {
+  describe.each([
+    [true, 'coveredByDefinitions'],
+    [true, 'coveredByConfig'],
+    [false, 'coveredByDefinitions'],
+  ])('with type config = %s, type name = %s', (includeTypeConfig, typeName) => {
     beforeEach(() => {
-      typesConfig = includeTypeConfig ? {
-        // This type will be ignored because it's covered by the deploy definitions
-        coveredByDefinitions: {
-          deployRequests: {
-            add: {
-              url: '/shouldnthappen',
-                method: 'delete',
+      typesConfig = includeTypeConfig
+        ? {
+            // This type will be ignored because it's covered by the deploy definitions
+            coveredByDefinitions: {
+              deployRequests: {
+                add: {
+                  url: '/shouldnthappen',
+                  method: 'delete',
+                },
+              },
             },
-          },
-        },
-        coveredByConfig: {
-          deployRequests: {
-            add: {
-              url: '/test',
-              method: 'post',
+            coveredByConfig: {
+              deployRequests: {
+                add: {
+                  url: '/test',
+                  method: 'post',
+                },
+              },
             },
-          },
-        }
-      } : undefined
+          }
+        : undefined
       type = new ObjectType({ elemID: new ElemID('dum', typeName) })
     })
     it('should not return an error when the changed element is not an instance', async () => {

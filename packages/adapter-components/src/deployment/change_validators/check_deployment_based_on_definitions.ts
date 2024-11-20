@@ -21,7 +21,11 @@ import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { DeployApiDefinitions, DeployableRequestDefinition } from '../../definitions/system/deploy'
 import { DefaultWithCustomizations, queryWithDefault } from '../../definitions'
-import { ERROR_MESSAGE, detailedErrorMessage, createChangeErrors as createChangeErrorsBasedOnConfig } from './check_deployment_based_on_config'
+import {
+  ERROR_MESSAGE,
+  detailedErrorMessage,
+  createChangeErrors as createChangeErrorsBasedOnConfig,
+} from './check_deployment_based_on_config'
 import {
   APIDefinitionsOptions,
   ResolveAdditionalActionType,
@@ -81,7 +85,11 @@ export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
           const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction
           if (requestsByAction === undefined && typesConfig !== undefined) {
-            return createChangeErrorsBasedOnConfig(typesConfig[typeName]?.deployRequests ?? {}, element.elemID, change.action)
+            return createChangeErrorsBasedOnConfig(
+              typesConfig[typeName]?.deployRequests ?? {},
+              element.elemID,
+              change.action,
+            )
           }
           return createChangeErrors(requestsByAction ?? {}, element.elemID, change.action)
         }

@@ -86,7 +86,7 @@ describe('Global Value Sets filter', () => {
       const globalValueSetInstance = elements[0] as InstanceElement
       const customObjectType = elements[1] as ObjectType
       expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-        new ReferenceExpression(globalValueSetInstance.elemID),
+        new ReferenceExpression(globalValueSetInstance.elemID, globalValueSetInstance),
       )
     })
 

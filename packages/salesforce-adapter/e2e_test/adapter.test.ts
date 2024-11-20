@@ -181,8 +181,10 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(lead.fields.CleanStatus.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
 
         // Test standard picklist values from a standard value set
-        expect(lead.fields.LeadSource.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-          new ReferenceExpression(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadSource')),
+        expect(lead.fields.LeadSource.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toSatisfy(
+          ref =>
+            isReferenceExpression(ref) &&
+            ref.elemID.isEqual(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadSource')),
         )
 
         // Test default value for checkbox
@@ -1346,10 +1348,12 @@ describe('Salesforce adapter E2E with real account', () => {
           it('global picklist', () => {
             const field = fields[CUSTOM_FIELD_NAMES.GLOBAL_PICKLIST]
             verifyFieldFetch(field, testGlobalPicklist, Types.primitiveDataTypes.Picklist)
-            expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-              new ReferenceExpression(
-                new ElemID(constants.SALESFORCE, naclCase(GLOBAL_VALUE_SET), 'instance', naclCase(gvsName)),
-              ),
+            expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toSatisfy(
+              ref =>
+                isReferenceExpression(ref) &&
+                ref.elemID.isEqual(
+                  new ElemID(constants.SALESFORCE, naclCase(GLOBAL_VALUE_SET), 'instance', naclCase(gvsName)),
+                ),
             )
           })
 

@@ -211,8 +211,6 @@ export const allFilters: Array<FilterCreator> = [
   cpqLookupFieldsFilter,
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
-  // picklistReferences should run after convertMapsFilter and before fieldReferencesFilter
-  picklistReferences,
   flowFilter,
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
@@ -257,6 +255,8 @@ export const allFilters: Array<FilterCreator> = [
   extraDependenciesFilter,
   installedPackageGeneratedDependencies,
   omitStandardFieldsNonDeployableValuesFilter,
+  // picklistReferences should run after convertMapsFilter, fieldReferencesFilter and omitStandardFieldsNonDeployableValuesFilter
+  picklistReferences,
   // taskAndEventCustomFields should run before customTypeSplit
   taskAndEventCustomFields,
   mergeProfilesWithSourceValuesFilter,

@@ -7,24 +7,28 @@
  */
 import _ from 'lodash'
 import {
-  CORE_ANNOTATIONS,
-  getChangeData,
+  Element,
+  Field,
   InstanceElement,
+  isField,
+  isInstanceElement,
+  isObjectType,
   isReferenceExpression,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { inspectValue, naclCase } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
+import { apiNameSync, buildElementsSourceForFetch, isInstanceOfTypeSync, metadataTypeSync } from './utils'
+import { FIELD_ANNOTATIONS, RECORD_TYPE_METADATA_TYPE, VALUE_SET_FIELDS } from '../constants'
 import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
-import { isInstanceOfTypeSync } from './utils'
-import { RECORD_TYPE_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
-const { isDefined } = values
+const { toArrayAsync } = collections.asynciterable
+
+type PicklistValuesReferenceIndex = Record<string, Record<string, ReferenceExpression>>
 
 const getValueSetFieldName = (typeName: string): string => {
   switch (typeName) {
@@ -36,124 +40,134 @@ const getValueSetFieldName = (typeName: string): string => {
       return 'valueSet'
   }
 }
-
-export type PicklistValuesItem = {
-  picklist: string
+export type RecordTypePicklistValuesItem = {
+  picklist: ReferenceExpression<Field>
   values: {
-    fullName?: string
-    value?: ReferenceExpression | { fullName: string }
+    fullName: string
   }[]
 }
 
-/**
- * Replace all picklist value full names with a reference to the original value definition.
- * Modifies the picklistValues in place.
- *
- * @param recordType        a RecordType instance to modify
- * @param picklistValues    The picklistValues of a RecordType instance to modify
- */
-const addPicklistValueReferences = (recordType: InstanceElement, picklistValues: PicklistValuesItem): void => {
-  // Get a reference to the underlying picklist that contains the values. We need to handle several cases:
-  // 1. On onFetch, the picklist is a reference expression while on preDeploy and onDeploy it's a string with the parent field name.
-  // 2. There's a possible second level of indirection where the picklist field in the parent doesn't contain the actual values but
-  //    is a reference to the actual picklist.
-  const recordTypeParent =
-    recordType.annotations[CORE_ANNOTATIONS.PARENT][0].value ?? recordType.annotations[CORE_ANNOTATIONS.PARENT][0]
-  const picklistRef: ReferenceExpression = isReferenceExpression(picklistValues.picklist)
-    ? picklistValues.picklist?.value?.annotations?.valueSetName ?? picklistValues.picklist
-    : recordTypeParent.fields[picklistValues.picklist]?.annotations?.valueSetName ??
-      new ReferenceExpression(recordTypeParent.elemID.createNestedID('field', picklistValues.picklist))
+const isRecordTypePicklistValuesItem = (value: unknown): value is RecordTypePicklistValuesItem =>
+  _.isObject(value) &&
+  isReferenceExpression(_.get(value, 'picklist')) &&
+  isField(_.get(value, 'picklist').value) &&
+  _.isArray(_.get(value, 'values')) &&
+  _.every(_.get(value, 'values'), v => _.isObject(v) && _.isString(_.get(v, 'fullName')))
 
-  if (!isReferenceExpression(picklistRef)) {
-    log.warn('Expected RecordType picklist to be a reference expression, got: %s', picklistRef)
-    return
-  }
-  if (picklistValues.values.some(({ fullName }: { fullName?: string }) => fullName === undefined)) {
-    log.warn(
-      'Expected all RecordType picklist values to have a valid fullName, got undefined: %s',
-      inspectValue(picklistValues.values),
-    )
-    return
-  }
-  picklistValues.values = picklistValues.values.map(value => ({
-    ..._.omit(value, 'fullName'),
-    value: new ReferenceExpression(
-      picklistRef.elemID.createNestedID(
-        getValueSetFieldName(picklistRef.elemID.typeName),
-        ORDERED_MAP_VALUES_FIELD,
-        naclCase(decodeURIComponent(value.fullName!)),
-      ),
-    ),
-  }))
+const isRecordTypePicklistValues = (value: unknown): value is RecordTypePicklistValuesItem[] =>
+  _.isArray(value) && value.every(isRecordTypePicklistValuesItem)
+
+type OrderedValueSet = {
+  values: Record<
+    string,
+    {
+      fullName: string | ReferenceExpression
+    }
+  >
 }
 
-/**
- * Resolve all picklist value references with the original full names.
- * This is the reverse operation, to be used before deployment.
- *
- * @param picklistValues    The picklistValues of a RecordType instance to modify
- */
-const resolvePicklistValueReferences = (picklistValues: PicklistValuesItem): void => {
-  picklistValues.values = picklistValues.values.map(({ value, ...rest }) => {
-    if (value === undefined || isReferenceExpression(value)) {
-      log.warn(
-        'Expected all RecordType picklist values to have a valid fullName, got undefined: %s',
-        inspectValue(value),
-      )
-      return { value, ...rest }
-    }
-    return {
-      fullName: value.fullName,
-      ...rest,
-    }
+const isOrderedValueSet = (value: unknown): value is OrderedValueSet => {
+  const picklistValues: unknown = _.get(value, 'values')
+  return (
+    _.isObject(picklistValues) &&
+    Object.values(picklistValues).every(v => {
+      const fullName = _.get(v, 'fullName')
+      return _.isString(fullName) || isReferenceExpression(fullName)
+    })
+  )
+}
+
+const getValueSetElementFromPicklistField = (field: Field): InstanceElement | Field => {
+  const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  if (isReferenceExpression(valueSetName) && isInstanceElement(valueSetName.value)) {
+    return valueSetName.value
+  }
+  return field
+}
+
+const safeDecodeURIComponent = (encoded: string): string => {
+  try {
+    return decodeURIComponent(encoded)
+  } catch (e: unknown) {
+    log.warn('Failed to decode URI component: %s', e)
+    return encoded
+  }
+}
+
+const createReferencesForRecordType = (
+  recordType: InstanceElement,
+  picklistValuesReferenceIndex: PicklistValuesReferenceIndex,
+): void => {
+  const recordTypePicklistValues = recordType.value.picklistValues
+  if (!isRecordTypePicklistValues(recordTypePicklistValues)) {
+    return
+  }
+  recordTypePicklistValues.forEach(({ picklist, values }) => {
+    const field = picklist.value
+    const valueSetElement = getValueSetElementFromPicklistField(field)
+    values.forEach(value => {
+      const ref: ReferenceExpression | undefined =
+        // Using URI decode since RecordType Picklist values return as encoded URI string.
+        // e.g. 'You %26 Me' instead of 'You & Me'.
+        picklistValuesReferenceIndex[valueSetElement.elemID.getFullName()]?.[safeDecodeURIComponent(value.fullName)]
+      if (ref) {
+        _.set(value, 'fullName', ref)
+      } else {
+        log.warn('Failed to resolve picklist value %s in field %s', value.fullName, field.elemID.getFullName())
+      }
+    })
   })
+}
+
+// Create reference index from baseElements full names (either Field, GlobalValueSet or StandardValueSet instances)
+// with references to each of their valueSet values.
+const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValuesReferenceIndex => {
+  const createRefIndexForElement = (
+    element: InstanceElement | Field,
+  ): Record<string, ReferenceExpression> | undefined => {
+    const fieldName = getValueSetFieldName(metadataTypeSync(element))
+    const values = isInstanceElement(element) ? element.value[fieldName] : element.annotations[fieldName]
+    if (!isOrderedValueSet(values)) {
+      return undefined
+    }
+    return Object.entries(values.values).reduce<Record<string, ReferenceExpression>>((acc, [key, value]) => {
+      const fullName = _.isString(value.fullName) ? value.fullName : apiNameSync(value.fullName.value) ?? ''
+      acc[fullName] = new ReferenceExpression(
+        element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, key, 'fullName'),
+        fullName,
+      )
+      return acc
+    }, {})
+  }
+  const instances: (InstanceElement | Field)[] = elements.filter(
+    isInstanceOfTypeSync(STANDARD_VALUE_SET, GLOBAL_VALUE_SET),
+  )
+  const picklistFields = elements
+    .filter(isObjectType)
+    .flatMap(obj => Object.values(obj.fields))
+    .filter(field => field.annotations[FIELD_ANNOTATIONS.VALUE_SET] !== undefined)
+  return instances.concat(picklistFields).reduce<PicklistValuesReferenceIndex>((acc, element) => {
+    const elementRefIndex = createRefIndexForElement(element)
+    if (elementRefIndex) {
+      acc[element.elemID.getFullName()] = elementRefIndex
+    }
+    return acc
+  }, {})
 }
 
 /**
  * This filter modifies picklist values in `RecordType` to be references to the original value definitions.
  */
-const filterCreator: FilterCreator = ({ config }) => {
-  if (!config.fetchProfile.isFeatureEnabled('picklistsAsMaps')) {
-    return {
-      name: 'picklistReferences',
-    }
-  }
-
-  return {
-    name: 'picklistReferences',
-    onFetch: async elements =>
-      elements
-        .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(recordType =>
-          recordType.value.picklistValues?.map((picklistValueItem: PicklistValuesItem) => [
-            recordType,
-            picklistValueItem,
-          ]),
-        )
-        .filter(isDefined)
-        .forEach(([recordType, pvi]) => addPicklistValueReferences(recordType, pvi)),
-
-    preDeploy: async changes =>
-      changes
-        .map(getChangeData)
-        .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(recordType => recordType.value.picklistValues)
-        .filter(isDefined)
-        .forEach(resolvePicklistValueReferences),
-
-    onDeploy: async changes =>
-      changes
-        .map(getChangeData)
-        .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
-        .flatMap(recordType =>
-          recordType.value.picklistValues?.map((picklistValueItem: PicklistValuesItem) => [
-            recordType,
-            picklistValueItem,
-          ]),
-        )
-        .filter(isDefined)
-        .forEach(([recordType, pvi]) => addPicklistValueReferences(recordType, pvi)),
-  }
-}
+const filterCreator: FilterCreator = ({ config }) => ({
+  name: 'picklistReferences',
+  onFetch: async elements => {
+    const picklistValuesReferenceIndex = createPicklistValuesReferenceIndex(
+      await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
+    )
+    elements
+      .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
+      .forEach(instance => createReferencesForRecordType(instance, picklistValuesReferenceIndex))
+  },
+})
 
 export default filterCreator

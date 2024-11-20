@@ -112,7 +112,7 @@ export class UnresolvedReference {
   constructor(public target: ElemID) {}
 }
 
-export class ReferenceExpression {
+export class ReferenceExpression<T = Value> {
   constructor(
     public readonly elemID: ElemID,
     private resValue?: Value,
@@ -136,13 +136,13 @@ export class ReferenceExpression {
     return new ExpressionCtor(this.elemID, this.resValue, this.topLevelParent)
   }
 
-  get value(): Value {
+  get value(): T {
     // Dereference variables and recursive reference expressions
     const innerValue = isVariable(this.resValue) ? this.resValue.value : this.resValue
     return innerValue instanceof ReferenceExpression ? innerValue.value : innerValue
   }
 
-  set value(value: Value) {
+  set value(value: T) {
     this.resValue = value
   }
 

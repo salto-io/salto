@@ -188,7 +188,7 @@ describe('Standard Value Sets filter', () => {
       expect(elements.length).toBe(4)
       const simpsonsSvs = elements[2]
       expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-        new ReferenceExpression(simpsonsSvs.elemID),
+        new ReferenceExpression(simpsonsSvs.elemID, simpsonsSvs),
       )
     })
 
@@ -202,7 +202,7 @@ describe('Standard Value Sets filter', () => {
       expect(elements.length).toBe(4)
       const simpsonsSvs = elements[2]
       expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-        new ReferenceExpression(simpsonsSvs.elemID),
+        new ReferenceExpression(simpsonsSvs.elemID, simpsonsSvs),
       )
     })
 
@@ -247,7 +247,7 @@ describe('Standard Value Sets filter', () => {
         const field = objectType.fields.state as Field
         expect(field).toSatisfy(isField)
         expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-          new ReferenceExpression(svsInstanceFromSource.elemID),
+          new ReferenceExpression(svsInstanceFromSource.elemID, svsInstanceFromSource),
         )
         // No reason to append a non modified SVS instance to the elements
         expect(elements).not.toContain(svsInstanceFromSource)

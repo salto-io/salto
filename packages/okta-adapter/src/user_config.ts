@@ -39,7 +39,6 @@ export type OktaUserDeployConfig = definitions.UserDeployConfig & { omitMissingU
 export type OktaUserConfig = definitions.UserConfig<never, OktaClientConfig, OktaUserFetchConfig, OktaUserDeployConfig>
 
 const changeValidatorNames = [
-  'createCheckDeploymentBasedOnConfig',
   'createCheckDeploymentBasedOnDefinitions',
   'appGroup',
   'groupRuleStatus',

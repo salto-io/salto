@@ -43,7 +43,7 @@ import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { getUserBooleanInput } from '../callbacks'
-import { getParentElemID } from '@salto-io/adapter-utils'
+import { getParentElemID, getParents } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
@@ -538,6 +538,11 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input
     try {
       const parentElemId = getParentElemID(childElement)
       const parentElem = await workspace.getValue(parentElemId)
+      // const parent = getParents(childElement)
+      // const fp = parent[0]
+      // if (isElement(fp)) {
+      //   console.log('')
+      // }
       const parentUrl = parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL]
       return parentUrl
     } catch {

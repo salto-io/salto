@@ -39,6 +39,7 @@ import {
   formatDeployActions,
   formatGroups,
   deployErrorsOutput,
+  formatDeploymentSummary,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
@@ -263,12 +264,16 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   }
 
   const requested = Array.from(actionPlan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
-  const summary = summarizeDeployChanges(requested, result.appliedChanges ?? [])
+  const { elemIdToResult, resultToElemId } = summarizeDeployChanges(requested, result.appliedChanges ?? [])
   const changeErrorsForPostDeployOutput = actionPlan.changeErrors.filter(
     changeError =>
-      summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
+      elemIdToResult[changeError.elemID.getFullName()] !== 'failure' ||
+      changeError.deployActions?.postAction?.showOnFailure,
   )
-
+  const formattedDeploymentSummary = formatDeploymentSummary(resultToElemId)
+  if (formattedDeploymentSummary) {
+    outputLine(formattedDeploymentSummary, output)
+  }
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,
     isPreDeploy: false,

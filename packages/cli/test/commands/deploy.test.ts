@@ -499,11 +499,14 @@ describe('deploy command', () => {
     })
   })
   describe('Post deployment summary', () => {
-    describe('when deployment is successful', () => {
+    describe('when all elements deployed successfully', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          a: 'success',
-          b: 'success',
+          elemIdToResult: {
+            a: 'success',
+            b: 'success',
+          },
+          resultToElemId: { success: ['a', 'b'], failure: [], 'partial-success': [] },
         })
         await action({
           ...cliCommandArgs,
@@ -517,18 +520,25 @@ describe('deploy command', () => {
           workspace,
         })
       })
-      it('should not print anything', async () => {
-        expect(output.stdout.content).not.toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
-        expect(output.stdout.content).not.toContain(chalk.green.bold('S'))
-        expect(output.stdout.content).not.toContain(chalk.yellow.bold('P'))
-        expect(output.stdout.content).not.toContain(chalk.red.bold('F'))
+      it('should not print legend or instances', async () => {
+        expect(output.stdout.content).not.toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+        expect(output.stdout.content).not.toContain(chalk.green('S'))
+        expect(output.stdout.content).not.toContain(chalk.yellow('P'))
+        expect(output.stdout.content).not.toContain(chalk.red('F'))
+      })
+      it('should print headline and success message', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED)
       })
     })
-    describe('when deployment failed', () => {
+    describe('when all elements failed deployment', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          instance_test: 'failure',
-          test_instance: 'failure',
+          elemIdToResult: {
+            instance_test: 'failure',
+            test_instance: 'failure',
+          },
+          resultToElemId: { success: [], failure: ['instance_test', 'test_instance'], 'partial-success': [] },
         })
         await action({
           ...cliCommandArgs,
@@ -544,20 +554,28 @@ describe('deploy command', () => {
       })
       it('should print all failed elements as failed', async () => {
         expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
-        expect(output.stdout.content).toContain(`${chalk.red.bold('F')} instance_test`)
-        expect(output.stdout.content).toContain(`${chalk.red.bold('F')} test_instance`)
+        expect(output.stdout.content).toContain(Prompts.ALL_DEPLOYMENT_ELEMENTS_FAILED)
       })
-      it('should not print succeeded or partially succeeded', async () => {
-        expect(output.stdout.content).not.toContain(chalk.green.bold('S'))
-        expect(output.stdout.content).not.toContain(chalk.yellow.bold('P'))
+      it('should not print elements', async () => {
+        expect(output.stdout.content).not.toContain(chalk.green('S'))
+        expect(output.stdout.content).not.toContain(chalk.yellow('P'))
+        expect(output.stdout.content).not.toContain(`${chalk.red('F')} instance_test`)
+        expect(output.stdout.content).not.toContain(`${chalk.red('F')} test_instance`)
       })
     })
     describe('when deployment is partially successful', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          instance_test: 'failure',
-          test_instance: 'success',
-          tester_instance: 'partial-success',
+          elemIdToResult: {
+            instance_test: 'failure',
+            test_instance: 'success',
+            tester_instance: 'partial-success',
+          },
+          resultToElemId: {
+            success: ['test_instance'],
+            failure: ['instance_test'],
+            'partial-success': ['tester_instance'],
+          },
         })
         await action({
           ...cliCommandArgs,
@@ -572,9 +590,39 @@ describe('deploy command', () => {
         })
       })
       it('should print all the elements and their deployment status', async () => {
-        expect(output.stdout.content).toContain(`${chalk.red.bold('F')} instance_test`)
-        expect(output.stdout.content).toContain(`${chalk.green.bold('S')} test_instance`)
-        expect(output.stdout.content).toContain(`${chalk.yellow.bold('P')} tester_instance`)
+        expect(output.stdout.content).toContain(`${chalk.red('F')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.green('S')} test_instance`)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} tester_instance`)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+      })
+    })
+    describe('when all elements are partially successful', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          elemIdToResult: {
+            instance_test: 'partial-success',
+            test_instance: 'partial-success',
+          },
+          resultToElemId: { success: [], 'partial-success': ['instance_test', 'test_instance'], failure: [] },
+        })
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all elements as partially successful', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} test_instance`)
       })
     })
   })

@@ -21,7 +21,6 @@ import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { mkdirp, writeFile } from '@salto-io/file'
 import path from 'path'
-import { DetailedChangeId, DeploySummaryResult } from '@salto-io/core/src/core/deploy'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -77,24 +76,6 @@ const printStartDeploy = async (output: CliOutput, executingDeploy: boolean, che
     outputLine(deployPhaseHeader(checkOnly), output)
   } else {
     outputLine(cancelDeployOutput(checkOnly), output)
-  }
-}
-
-const printDeploymentSummary = async (
-  summary: Record<DetailedChangeId, DeploySummaryResult>,
-  output: CliOutput,
-): Promise<void> => {
-  const summaryResultToId = Object.entries(summary).reduce(
-    (acc, [key, value]) => {
-      acc[value] = acc[value] || []
-      acc[value].push(key)
-      return acc
-    },
-    {} as Record<DeploySummaryResult, DetailedChangeId[]>,
-  )
-  const formattedDeploymentSummary: string | undefined = formatDeploymentSummary(summaryResultToId)
-  if (formattedDeploymentSummary !== undefined) {
-    outputLine(formattedDeploymentSummary, output)
   }
 }
 
@@ -283,12 +264,17 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   }
 
   const requested = Array.from(actionPlan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
-  const summary = summarizeDeployChanges(requested, result.appliedChanges ?? [])
+  const { elemIdToResult, resultToElemId } = summarizeDeployChanges(requested, result.appliedChanges ?? [])
   const changeErrorsForPostDeployOutput = actionPlan.changeErrors.filter(
     changeError =>
-      summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
+      elemIdToResult[changeError.elemID.getFullName()] !== 'failure' ||
+      changeError.deployActions?.postAction?.showOnFailure,
   )
-  await printDeploymentSummary(summary, output)
+
+  const formattedDeploymentSummary = formatDeploymentSummary(resultToElemId)
+  if (formattedDeploymentSummary !== undefined) {
+    outputLine(formattedDeploymentSummary, output)
+  }
 
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,

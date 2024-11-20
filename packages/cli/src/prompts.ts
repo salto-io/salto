@@ -56,9 +56,9 @@ export default class Prompts {
   }
 
   public static readonly DEPLOYMENT_STATUS = {
-    partialSuccess: chalk.yellow.bold('P'),
-    success: chalk.green.bold('S'),
-    failure: chalk.red.bold('F'),
+    partialSuccess: chalk.yellow('P'),
+    success: chalk.green('S'),
+    failure: chalk.red('F'),
     eq: '|',
   }
 
@@ -98,7 +98,9 @@ export default class Prompts {
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static readonly DEPLOYMENT_SUMMARY_HEADLINE = chalk.bgBlack.bold('Deployment summary:')
-  public static readonly EXPLAIN_DEPLOYMENT_SUMMARY =
+  public static readonly ALL_DEPLOYMENT_ELEMENTS_FAILED = `${chalk.red('X')} All elements failed deployment`
+  public static readonly ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED = `${chalk.green('\u2713')} All elements succeeded deployment`
+  public static readonly DEPLOYMENT_SUMMARY_LEGEND =
     chalk.gray(`Deployment status is indicated with the following symbols:
   ${Prompts.DEPLOYMENT_STATUS.success} success
   ${Prompts.DEPLOYMENT_STATUS.partialSuccess} partial success

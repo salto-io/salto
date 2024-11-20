@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import chalk from 'chalk'
 import wu, { WuIterable } from 'wu'
-import { DetailedChangeId, DeploySummaryResult } from '@salto-io/core/src/core/deploy'
+import { DetailedChangeId, DeploySummaryResult } from '@salto-io/core'
 import {
   Element,
   isInstanceElement,
@@ -328,44 +328,48 @@ export const formatDeployActions = ({
 }
 
 export const formatDeploymentSummaryResult = (ids: DetailedChangeId[], result: DeploySummaryResult): string => {
-  const mapping: Record<DeploySummaryResult, DetailedChangeId | null> = {
+  const mapping = {
     failure: Prompts.DEPLOYMENT_STATUS.failure,
     'partial-success': Prompts.DEPLOYMENT_STATUS.partialSuccess,
     success: Prompts.DEPLOYMENT_STATUS.success,
   }
 
-  const sign: string | null = mapping[result]
-  const lines: string = ids.map(st => ` ${sign} ${st}`).join('\n')
+  const sign = mapping[result]
+  const lines = ids.map(st => ` ${sign} ${st}`).join('\n')
   return lines
 }
 
 export const formatDeploymentSummary = (
   summary: Record<DeploySummaryResult, DetailedChangeId[]>,
 ): string | undefined => {
-  const failureResult: DeploySummaryResult = 'failure'
-  const partialSuccessResult: DeploySummaryResult = 'partial-success'
-  const successResult: DeploySummaryResult = 'success'
-  const headline: string = Prompts.DEPLOYMENT_SUMMARY_HEADLINE
-  const succeeded: string | null = Object.prototype.hasOwnProperty.call(summary, successResult)
-    ? formatDeploymentSummaryResult(summary[successResult], successResult)
-    : null
-  const partiallySucceeded: string | null = Object.prototype.hasOwnProperty.call(summary, partialSuccessResult)
-    ? formatDeploymentSummaryResult(summary[partialSuccessResult], partialSuccessResult)
-    : null
-  const failed: string | null = Object.prototype.hasOwnProperty.call(summary, failureResult)
-    ? formatDeploymentSummaryResult(summary[failureResult], failureResult)
-    : null
-  return !Object.prototype.hasOwnProperty.call(summary, failureResult) &&
-    !Object.prototype.hasOwnProperty.call(summary, partialSuccessResult)
-    ? undefined
-    : [
-        emptyLine(),
-        headline,
-        [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
-        emptyLine(),
-        Prompts.EXPLAIN_DEPLOYMENT_SUMMARY,
-        emptyLine(),
-      ].join('\n')
+  const failureResult = 'failure'
+  const partialSuccessResult = 'partial-success'
+  const successResult = 'success'
+  const headline = Prompts.DEPLOYMENT_SUMMARY_HEADLINE
+  const succeeded =
+    summary[successResult].length > 0 ? formatDeploymentSummaryResult(summary[successResult], successResult) : null
+  const partiallySucceeded =
+    summary[partialSuccessResult].length > 0
+      ? formatDeploymentSummaryResult(summary[partialSuccessResult], partialSuccessResult)
+      : null
+  const failed =
+    summary[failureResult].length > 0 ? formatDeploymentSummaryResult(summary[failureResult], failureResult) : null
+  return !(summary[failureResult].length > 0) && !(summary[partialSuccessResult].length > 0)
+    ? summary[successResult].length > 0
+      ? [emptyLine(), Prompts.DEPLOYMENT_SUMMARY_HEADLINE, Prompts.ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED, emptyLine()].join(
+          '\n',
+        )
+      : undefined
+    : !(summary[successResult].length > 0) && !(summary[partialSuccessResult].length > 0)
+      ? [emptyLine(), headline, Prompts.ALL_DEPLOYMENT_ELEMENTS_FAILED, emptyLine()].join('\n')
+      : [
+          emptyLine(),
+          headline,
+          [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
+          emptyLine(),
+          Prompts.DEPLOYMENT_SUMMARY_LEGEND,
+          emptyLine(),
+        ].join('\n')
 }
 
 export const formatExecutionPlan = async (

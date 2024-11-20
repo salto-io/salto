@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange, Value } from '@salto-io/adapter-api'
 import {
   Workspace,
   ElementSelector,
@@ -533,20 +533,27 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     return CliExitCode.AppError
   }
-  const parentElemId = getParentElemID(element)
-  const parentElem = await workspace.getValue(parentElemId)
-  const parentUrl = parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL]
 
+  const getParentUrl = async (childElement: Value) => {
+    try {
+      const parentElemId = getParentElemID(childElement)
+      const parentElem = await workspace.getValue(parentElemId)
+      const parentUrl = parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+      return parentUrl
+    } catch {
+      return undefined
+    }
+  }
   const serviceUrl =
     element.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
       ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
-      : parentUrl
+      : await getParentUrl(element)
   if (serviceUrl === undefined) {
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     return CliExitCode.AppError
   }
 
-  await open(parentUrl)
+  await open(serviceUrl)
   return CliExitCode.Success
 }
 

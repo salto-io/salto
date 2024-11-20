@@ -8,12 +8,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values } from '@salto-io/adapter-api'
-import {
-  client as clientUtils,
-  combineCustomReferenceGetters,
-  config as configUtils,
-  definitions,
-} from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, definitions } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
@@ -22,7 +17,7 @@ import { createConnection, validateCredentials } from './client/connection'
 import { SCRIPT_RUNNER_API_DEFINITIONS } from './constants'
 import { configCreator } from './config_creator'
 import ScriptRunnerClient from './client/script_runner_client'
-import { weakReferenceHandlers } from './weak_references'
+import { getCustomReferences } from './weak_references'
 
 const log = logger(module)
 const { createRetryOptions, DEFAULT_RETRY_OPTS, DEFAULT_TIMEOUT_OPTS } = clientUtils
@@ -77,6 +72,7 @@ const adapterConfigFromConfig = (
     masking: null,
     scriptRunnerApiDefinitions: null,
     jsmApiDefinitions: null,
+    customReferences: null,
   }
   Object.keys(fullConfig)
     .filter(k => !Object.keys(adapterConfig).includes(k))
@@ -134,7 +130,5 @@ export const adapter: Adapter = {
   },
   configType,
   configCreator,
-  getCustomReferences: combineCustomReferenceGetters(
-    _.mapValues(weakReferenceHandlers, handler => handler.findWeakReferences),
-  ),
+  getCustomReferences,
 }

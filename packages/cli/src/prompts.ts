@@ -98,8 +98,8 @@ export default class Prompts {
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
   public static readonly DEPLOYMENT_SUMMARY_HEADLINE = chalk.bgBlack.bold('Deployment summary:')
-  public static readonly ALL_DEPLOYMENT_ELEMENTS_FAILED = `${chalk.red('X')} All elements failed deployment`
-  public static readonly ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED = `${chalk.green('\u2713')} All elements succeeded deployment`
+  public static readonly ALL_DEPLOYMENT_ELEMENTS_FAILED = `${chalk.red('X')} All elements failed to deploy`
+  public static readonly ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED = `${chalk.green('\u2713')} All elements were successfully deployed`
   public static readonly DEPLOYMENT_SUMMARY_LEGEND =
     chalk.gray(`Deployment status is indicated with the following symbols:
   ${Prompts.DEPLOYMENT_STATUS.success} success

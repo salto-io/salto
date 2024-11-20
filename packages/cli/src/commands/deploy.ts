@@ -270,17 +270,14 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       elemIdToResult[changeError.elemID.getFullName()] !== 'failure' ||
       changeError.deployActions?.postAction?.showOnFailure,
   )
-
   const formattedDeploymentSummary = formatDeploymentSummary(resultToElemId)
-  if (formattedDeploymentSummary !== undefined) {
+  if (formattedDeploymentSummary) {
     outputLine(formattedDeploymentSummary, output)
   }
-
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,
     isPreDeploy: false,
   })
-
   outputLine(postDeployActionsOutput.join('\n'), output)
   if (result.extraProperties?.groups !== undefined) {
     outputLine(formatGroups(result.extraProperties?.groups, checkOnly), output)

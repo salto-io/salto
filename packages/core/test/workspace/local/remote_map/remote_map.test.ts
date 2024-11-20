@@ -326,6 +326,17 @@ describe('test operations on remote db', () => {
     it('should return false if the remote map is not empty', async () => {
       expect(await remoteMap.isEmpty()).toEqual(false)
     })
+    it('should return true after finding a value in the cache', async () => {
+      // This test reproduces a bug where we would mark the cache as not empty after finding a value in the cache,
+      // even if that value is a Promise that will eventually resolve to undefined.
+      await remoteMap.clear()
+      const key = elements[1].elemID.getFullName()
+      // This `get` adds a Promise to the cache, but the remote map is still empty.
+      await(remoteMap.get(key))
+      // This `get` would find the Promise in the cache, and wrongly mark the cache as not empty.
+      await(remoteMap.get(key))
+      expect(await remoteMap.isEmpty()).toEqual(true)
+    })
     describe('read only', () => {
       it('should return true if the remote map is empty', async () => {
         expect(await (await createReadOnlyMap('test')).isEmpty()).toEqual(true)

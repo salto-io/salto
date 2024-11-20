@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { remoteMapLocations } from './location_pool'
 import { LocationCounters } from './counters'
+import { createUnresolvedRefIdFieldConfigChange } from '@salto-io/salesforce-adapter/dist/src/config_change'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -617,11 +618,16 @@ export const createRemoteMapCreator = (
           return
         }
         if (locationCache.has(keyToTempDBKey(key))) {
-          const value = locationCache.get(keyToTempDBKey(key)) as Promise<T | undefined>
-          if (value !== undefined) {
+          const cached = locationCache.get(keyToTempDBKey(key)) as Promise<T | undefined>
+          if (cached !== undefined) {
             statCounters.LocationCacheHit.inc()
             statCounters.RemoteMapHit.inc()
-            resolve(value)
+            resolve(cached.then(value => {
+              if (value !== undefined) {
+                isNamespaceEmpty = false
+              }
+              return value
+            }))
             return
           }
         }

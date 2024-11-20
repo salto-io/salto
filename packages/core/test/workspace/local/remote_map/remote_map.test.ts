@@ -332,9 +332,9 @@ describe('test operations on remote db', () => {
       await remoteMap.clear()
       const key = elements[1].elemID.getFullName()
       // This `get` adds a Promise to the cache, but the remote map is still empty.
-      await(remoteMap.get(key))
+      await remoteMap.get(key)
       // This `get` would find the Promise in the cache, and wrongly mark the cache as not empty.
-      await(remoteMap.get(key))
+      await remoteMap.get(key)
       expect(await remoteMap.isEmpty()).toEqual(true)
     })
     describe('read only', () => {

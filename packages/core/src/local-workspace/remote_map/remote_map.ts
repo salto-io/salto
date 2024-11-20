@@ -611,7 +611,8 @@ export const createRemoteMapCreator = (
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       return awu(getDataIterableWithPages(opts)).map(entries => entries.map(entry => entry.key as K))
     }
-    const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
+    const getImpl = (key: string): Promise<T | undefined> =>
+      new Promise(resolve => {
         if (delKeys.has(key)) {
           resolve(undefined)
           return
@@ -621,12 +622,14 @@ export const createRemoteMapCreator = (
           if (cached !== undefined) {
             statCounters.LocationCacheHit.inc()
             statCounters.RemoteMapHit.inc()
-            resolve(cached.then(value => {
-              if (value !== undefined) {
-                isNamespaceEmpty = false
-              }
-              return value
-            }))
+            resolve(
+              cached.then(value => {
+                if (value !== undefined) {
+                  isNamespaceEmpty = false
+                }
+                return value
+              }),
+            )
             return
           }
         }
@@ -637,7 +640,7 @@ export const createRemoteMapCreator = (
             isNamespaceEmpty = false
             resolveInner(ret)
           }
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+          // eslint-disable-next-line @typescript-eslint/no-misused-promises
           tmpDB.get(keyToTempDBKey(key), async (error, value) => {
             if (error) {
               if (wasClearCalled) {
@@ -646,7 +649,7 @@ export const createRemoteMapCreator = (
                 resolveInner(undefined)
                 return
               }
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises
+              // eslint-disable-next-line @typescript-eslint/no-misused-promises
               persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
                 if (innerError) {
                   statCounters.RemoteMapMiss.inc()

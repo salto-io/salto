@@ -960,9 +960,6 @@ const createFetchChanges = async ({
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
-  const stateElementsContent = await awu(await stateElements.list()).toArray()
-  const stateElementsIsEmpty = await stateElements.isEmpty()
-  log.debug(`state elements content: ${stateElementsContent}, is empty: ${stateElementsIsEmpty}`)
   const isFirstFetch = await awu(await workspaceElements.list())
     .concat(await stateElements.list())
     .filter(e => !e.isConfigType())

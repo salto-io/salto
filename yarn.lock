@@ -4157,7 +4157,6 @@ __metadata:
     eslint-plugin-react: ^7.14.3
     eslint-plugin-react-hooks: ^1.7.0
     express: ^4.17.1
-    figlet: ^1.2.4
     glob: ^7.1.6
     globals: ^15.8.0
     inquirer: ^7.3.1
@@ -4172,11 +4171,9 @@ __metadata:
     null-loader: ^4.0.1
     open: ^7.2.0
     ora: ^4.0.3
-    package: ^1.0.1
     pietile-eventemitter: ^1.0.0
     prettier: 3.2.5
     raw-loader: ^4.0.2
-    semver: ^7.3.2
     sinon: ^9.0.3
     source-map-loader: ^4.0.1
     source-map-support: ^0.5.13
@@ -11163,13 +11160,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"figlet@npm:^1.2.4":
-  version: 1.4.0
-  resolution: "figlet@npm:1.4.0"
-  checksum: 4af2910109a33fe046228e0e1f2c6200ad8eba1b0629e4a2c303abd6cf4b47bb3cf0fceff98095df2aed4bf97161079f2ff2b768acc4fd303c551028aef7e28d
-  languageName: node
-  linkType: hard
-
 "figures@npm:3.2.0, figures@npm:^3.0.0":
   version: 3.2.0
   resolution: "figures@npm:3.2.0"
@@ -16783,13 +16773,6 @@ __metadata:
   version: 1.0.0
   resolution: "package-json-from-dist@npm:1.0.0"
   checksum: ac706ec856a5a03f5261e4e48fa974f24feb044d51f84f8332e2af0af04fbdbdd5bbbfb9cbbe354190409bc8307c83a9e38c6672c3c8855f709afb0006a009ea
-  languageName: node
-  linkType: hard
-
-"package@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "package@npm:1.0.1"
-  checksum: 2b0ae083c1940969e0dd59f8e96ce4728f063dd7068c1c30df889a74158a9e443bb48ab99124174ba8ca684cdc68be83f75b0a58b7438da723d960bc8749989f
   languageName: node
   linkType: hard
 

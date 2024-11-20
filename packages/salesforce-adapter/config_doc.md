@@ -181,16 +181,9 @@ salesforce {
 
 ### Optional Features
 
-| Name                              | Default when undefined | Description                                                                                                                                                           |
-| --------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| addMissingIds                     | true                   | Populate Salesforce internal ids for a few types that require special handling                                                                                        |
-| profilePaths                      | true                   | Update file names for profiles whose API name is different from their display name                                                                                    |
-| authorInformation                 | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                                                             |
-| describeSObjects                  | true                   | Fetch additional information about CustomObjects from the soap API                                                                                                    |
-| formulaDeps                       | true                   | Parse formula fields in custom objects for additional dependencies beyond those provided by the tooling API                                                           |
-| fetchCustomObjectUsingRetrieveApi | true                   | Use the Salesforce Metadata Retrieve API to fetch CustomObjects. This should improve reliability and data accuracy, but may have a small performance impact           |
-| fetchProfilesUsingReadApi         | false                  | Use the Salesforce Metadata Read API to fetch Profile instances. This will reduce the accuracy of the data and may result in crashes, but may be needed for debugging |
-| skipAliases                       | false                  | Do not create aliases for Metadata Elements                                                                                                                           |
+| Name        | Default when undefined | Description                                 |
+| ----------- | ---------------------- | ------------------------------------------- |
+| skipAliases | false                  | Do not create aliases for Metadata Elements |
 
 ### Limits
 

@@ -75,28 +75,5 @@ describe('metadataInstancesAliases filter', () => {
       expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label')
       expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label (SBQQ)')
     })
-    describe('when useLabelAsAlias is disabled', () => {
-      beforeEach(() => {
-        filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                optionalFeatures: {
-                  skipAliases: false,
-                  useLabelAsAlias: false,
-                },
-              },
-            }),
-          },
-        }) as typeof filter
-      })
-      it('should add correct aliases', async () => {
-        await filter.onFetch(fetchElements)
-        expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-        expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-        expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('SBQQ__TestInstance')
-      })
-    })
   })
 })

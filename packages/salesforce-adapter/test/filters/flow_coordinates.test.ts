@@ -15,7 +15,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/flow_coordinates'
-import { buildFilterContext } from '../utils'
+import { defaultFilterContext } from '../utils'
 import { createMetadataObjectType } from '../../src/transformers/transformer'
 import { FLOW_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { FilterWith } from './mocks'
@@ -79,7 +79,7 @@ const flowType = createMetadataObjectType({
 
 describe('flow coordinates filter', () => {
   const filter = filterCreator({
-    config: buildFilterContext({ optionalFeatures: { flowCoordinates: true } }),
+    config: defaultFilterContext,
   }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   describe('onFetch', () => {

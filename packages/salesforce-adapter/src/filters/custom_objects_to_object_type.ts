@@ -523,10 +523,7 @@ export const createCustomTypeFromCustomObjectInstance = async ({
     }
   })
   if (!config.fetchProfile.isFeatureEnabled('skipAliases')) {
-    object.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(
-      instance as MetadataInstanceElement,
-      config.fetchProfile.isFeatureEnabled('useLabelAsAlias'),
-    )
+    object.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(instance as MetadataInstanceElement)
   }
   return object
 }

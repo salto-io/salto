@@ -53,7 +53,6 @@ import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_objec
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 
@@ -794,12 +793,7 @@ describe('Serialization Strategies', () => {
         },
       )
       filter = filterCreator({
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { lightningPageFieldItemReference: true } },
-          }),
-        },
+        config: defaultFilterContext,
       }) as FilterWith<'onFetch'>
     })
     it('should create reference to the CustomField and deserialize it to the original value', async () => {

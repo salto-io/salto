@@ -19,12 +19,11 @@ import { FilterResult } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
 import { defaultFilterContext } from '../utils'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
 
 describe('profile paths filter', () => {
   const { connection, client } = mockClient()
-  let filter = filterCreator({
+  const filter = filterCreator({
     client,
     config: defaultFilterContext,
   }) as FilterWith<'onFetch'>
@@ -103,25 +102,6 @@ describe('profile paths filter', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-    })
-  })
-  describe('when feature is disabled', () => {
-    it('should not run any query when feature is disabled', async () => {
-      ;(await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
-      instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
-      instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
-      filter = filterCreator({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { profilePaths: false } },
-          }),
-        },
-      }) as FilterWith<'onFetch'>
-      await filter.onFetch([instance])
-      expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
-      expect(connection.query).not.toHaveBeenCalled()
     })
   })
 })

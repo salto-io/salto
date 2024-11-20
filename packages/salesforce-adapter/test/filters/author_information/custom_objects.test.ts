@@ -25,7 +25,6 @@ import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
 import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
 import { defaultFilterContext } from '../../utils'
-import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_OBJECT, INTERNAL_ID_ANNOTATION } from '../../../src/constants'
 import { mockTypes } from '../../mock_elements'
 
@@ -161,24 +160,6 @@ describe('custom objects author information test', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-    })
-  })
-  describe('when feature is disabled', () => {
-    it('should not add any annotations', async () => {
-      filter = customObjects({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { authorInformation: false } },
-          }),
-        },
-      })
-      await filter.onFetch?.([customObject])
-      expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
-      expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
-      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
     })
   })
 })

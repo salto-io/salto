@@ -91,7 +91,6 @@ const filter: FilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'addMissingIds',
     fetchFilterFunc: async (elements: Element[]) => {
       if (client === undefined) {
         return

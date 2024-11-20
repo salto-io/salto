@@ -156,7 +156,6 @@ import {
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
   OWNER_ID,
-  PROFILE_METADATA_TYPE,
   PROFILE_RELATED_METADATA_TYPES,
   WAVE_DATAFLOW_METADATA_TYPE,
 } from './constants'
@@ -552,12 +551,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     )
   }
 
-  private initializeCustomListFunctions(fetchProfile: FetchProfile, withChangesDetection: boolean): void {
-    const commonListFunctions: Record<string, CustomListFuncDef> = fetchProfile.isFeatureEnabled('waveMetadataSupport')
-      ? {
-          [WAVE_DATAFLOW_METADATA_TYPE]: createListMissingWaveDataflowsDef(),
-        }
-      : {}
+  private initializeCustomListFunctions(withChangesDetection: boolean): void {
+    const commonListFunctions: Record<string, CustomListFuncDef> = {
+      [WAVE_DATAFLOW_METADATA_TYPE]: createListMissingWaveDataflowsDef(),
+    }
     this.client.setCustomListFuncDefByType(
       withChangesDetection
         ? {
@@ -575,7 +572,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const fetchParams = this.userConfig.fetch ?? {}
-    this.initializeCustomListFunctions(buildFetchProfile({ fetchParams }), withChangesDetection)
+    this.initializeCustomListFunctions(withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,
@@ -595,14 +592,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       metadataQuery,
       maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
     })
-    if (!fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
-      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
-      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
-      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
-    }
-    if (fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
-      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
-    }
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const hardCodedTypes = [

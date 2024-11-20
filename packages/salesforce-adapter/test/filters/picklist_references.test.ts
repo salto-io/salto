@@ -75,18 +75,18 @@ describe('picklistReferences filter', () => {
       Old_Format_Picklist__c: {
         refType: Types.primitiveDataTypes.Picklist,
         annotations: {
-          valueSet:
-              [{
-                fullName: 'val1',
-                default: false,
-                label: 'High',
-              },
-              {
-                fullName: 'val2',
-                default: false,
-                label: 'Low',
-              },
-            ],
+          valueSet: [
+            {
+              fullName: 'val1',
+              default: false,
+              label: 'High',
+            },
+            {
+              fullName: 'val2',
+              default: false,
+              label: 'Low',
+            },
+          ],
         },
       },
     },

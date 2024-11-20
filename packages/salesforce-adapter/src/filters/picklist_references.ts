@@ -108,7 +108,6 @@ const createReferencesForRecordType = (
   })
 }
 
-
 // Create reference index from baseElements full names (either Field, GlobalValueSet or StandardValueSet instances)
 // with references to each of their valueSet values.
 const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValuesReferenceIndex => {

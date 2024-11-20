@@ -299,13 +299,13 @@ describe('summarizeDeployChanges', () => {
         [anotherSaltoEmployeeInstance.elemID.getFullName()]: 'failure',
         [saltoEmployeeInstanceInstanceID.createNestedID('hobby').getFullName()]: 'failure',
       })
-      expect(deploymentSummary.resultToElemId['failure']).toIncludeSameMembers([
+      expect(deploymentSummary.resultToElemId.failure).toIncludeSameMembers([
         saltoOffice.elemID.getFullName(),
         anotherSaltoEmployeeInstance.elemID.getFullName(),
         saltoEmployeeInstanceInstanceID.createNestedID('hobby').getFullName(),
       ])
 
-      expect(deploymentSummary.resultToElemId['success']).toEqual([])
+      expect(deploymentSummary.resultToElemId.success).toEqual([])
       expect(deploymentSummary.resultToElemId['partial-success']).toEqual([])
     })
     it('should return requested change ids as failure when none were applied', () => {

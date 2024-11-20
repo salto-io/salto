@@ -9,7 +9,6 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import chalk from 'chalk'
 import wu, { WuIterable } from 'wu'
-import { DetailedChangeId, DeploySummaryResult } from '@salto-io/core'
 import {
   Element,
   isInstanceElement,
@@ -44,6 +43,8 @@ import {
   getSupportedServiceAdapterNames,
   DeployError,
   GroupProperties,
+  DetailedChangeId,
+  DeploySummaryResult,
 } from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -354,13 +355,14 @@ export const formatDeploymentSummary = (
       : null
   const failed =
     summary[failureResult].length > 0 ? formatDeploymentSummaryResult(summary[failureResult], failureResult) : null
-  return !(summary[failureResult].length > 0) && !(summary[partialSuccessResult].length > 0)
-    ? summary[successResult].length > 0
+  const noFailedElements =
+    succeeded !== null
       ? [emptyLine(), Prompts.DEPLOYMENT_SUMMARY_HEADLINE, Prompts.ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED, emptyLine()].join(
           '\n',
         )
       : undefined
-    : !(summary[successResult].length > 0) && !(summary[partialSuccessResult].length > 0)
+  const foundFailedElements =
+    succeeded === null && partiallySucceeded === null
       ? [emptyLine(), headline, Prompts.ALL_DEPLOYMENT_ELEMENTS_FAILED, emptyLine()].join('\n')
       : [
           emptyLine(),
@@ -370,6 +372,7 @@ export const formatDeploymentSummary = (
           Prompts.DEPLOYMENT_SUMMARY_LEGEND,
           emptyLine(),
         ].join('\n')
+  return failed === null && partiallySucceeded === null ? noFailedElements : foundFailedElements
 }
 
 export const formatExecutionPlan = async (

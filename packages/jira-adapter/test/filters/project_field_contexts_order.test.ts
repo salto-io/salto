@@ -5,25 +5,31 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
-import { createEmptyType, getFilterParams } from '../utils'
-import { PROJECT_IDS, PROJECT_TYPE } from '../../src/constants'
+import { getFilterParams } from '../utils'
+import { JIRA, PROJECT_TYPE } from '../../src/constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../src/filters/fields/constants'
 import projectFieldContextsFilter from '../../src/filters/project_field_contexts_order'
+import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 describe('projectFieldContext', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'onDeploy'>
   let contextType: ObjectType
   let projectType: ObjectType
-  let projectInstances: InstanceElement[]
+  let projectInstance: InstanceElement
+  let beforeProjectInstance: InstanceElement
   let firstContextInstance: InstanceElement
   let secondContextInstance: InstanceElement
 
   beforeEach(() => {
-    contextType = createEmptyType(FIELD_CONTEXT_TYPE_NAME)
-    projectType = createEmptyType(PROJECT_TYPE)
+    contextType = new ObjectType({
+      elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),
+    })
+
+    projectType = new ObjectType({
+      elemID: new ElemID(JIRA, PROJECT_TYPE),
+    })
 
     firstContextInstance = new InstanceElement('first', contextType, {
       id: 1,
@@ -33,39 +39,70 @@ describe('projectFieldContext', () => {
       id: 2,
     })
 
-    projectInstances = _.range(0, 3).map(i => new InstanceElement(`project${String(i)}`, projectType, {}))
-    firstContextInstance.value[PROJECT_IDS] = [
-      new ReferenceExpression(projectInstances[2].elemID, projectInstances[2]),
-      new ReferenceExpression(projectInstances[0].elemID, projectInstances[0]),
-      new ReferenceExpression(projectInstances[1].elemID, projectInstances[1]),
-    ]
-    secondContextInstance.value[PROJECT_IDS] = [
-      new ReferenceExpression(projectInstances[1].elemID, projectInstances[1]),
-      new ReferenceExpression(projectInstances[0].elemID, projectInstances[0]),
-      new ReferenceExpression(projectInstances[2].elemID, projectInstances[2]),
-    ]
+    projectInstance = new InstanceElement('instance', projectType, {
+      [PROJECT_CONTEXTS_FIELD]: [
+        new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
+        new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
+      ],
+    })
+
     filter = projectFieldContextsFilter(getFilterParams()) as typeof filter
   })
 
   describe('onFetch', () => {
+    it('should not change the contexts order', async () => {
+      await filter.onFetch([projectInstance, firstContextInstance, secondContextInstance])
+
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD]).toHaveLength(2)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0].resValue.value.id).toEqual(1)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1].resValue.value.id).toEqual(2)
+    })
     it('should change the contexts order', async () => {
-      await filter.onFetch([...projectInstances, firstContextInstance, secondContextInstance])
+      projectInstance.value[PROJECT_CONTEXTS_FIELD] = [
+        new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
+        new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
+      ]
+      await filter.onFetch([projectInstance, firstContextInstance, secondContextInstance])
 
-      expect(firstContextInstance.value[PROJECT_IDS]).toHaveLength(3)
-      expect(firstContextInstance.value[PROJECT_IDS][0]).toBeInstanceOf(ReferenceExpression)
-      expect(firstContextInstance.value[PROJECT_IDS][0].resValue.elemID).toEqual(projectInstances[0].elemID)
-      expect(firstContextInstance.value[PROJECT_IDS][1]).toBeInstanceOf(ReferenceExpression)
-      expect(firstContextInstance.value[PROJECT_IDS][1].resValue.elemID).toEqual(projectInstances[1].elemID)
-      expect(firstContextInstance.value[PROJECT_IDS][2]).toBeInstanceOf(ReferenceExpression)
-      expect(firstContextInstance.value[PROJECT_IDS][2].resValue.elemID).toEqual(projectInstances[2].elemID)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD]).toHaveLength(2)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0].resValue.value.id).toEqual(1)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1].resValue.value.id).toEqual(2)
+    })
+  })
+  describe('onDeploy', () => {
+    beforeEach(() => {
+      beforeProjectInstance = new InstanceElement('first', projectType, {
+        [PROJECT_CONTEXTS_FIELD]: [new ReferenceExpression(firstContextInstance.elemID, firstContextInstance)],
+      })
+    })
+    it('should append the new context to the end of the list', async () => {
+      await filter.onDeploy([toChange({ before: beforeProjectInstance, after: projectInstance })])
 
-      expect(secondContextInstance.value[PROJECT_IDS]).toHaveLength(3)
-      expect(secondContextInstance.value[PROJECT_IDS][0]).toBeInstanceOf(ReferenceExpression)
-      expect(secondContextInstance.value[PROJECT_IDS][0].resValue.elemID).toEqual(projectInstances[0].elemID)
-      expect(secondContextInstance.value[PROJECT_IDS][1]).toBeInstanceOf(ReferenceExpression)
-      expect(secondContextInstance.value[PROJECT_IDS][1].resValue.elemID).toEqual(projectInstances[1].elemID)
-      expect(secondContextInstance.value[PROJECT_IDS][2]).toBeInstanceOf(ReferenceExpression)
-      expect(secondContextInstance.value[PROJECT_IDS][2].resValue.elemID).toEqual(projectInstances[2].elemID)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD]).toHaveLength(2)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0].resValue.value.id).toEqual(1)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1].resValue.value.id).toEqual(2)
+    })
+    it('should insert the new context to the begin of the list', async () => {
+      beforeProjectInstance.value[PROJECT_CONTEXTS_FIELD] = [
+        new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
+      ]
+      projectInstance.value[PROJECT_CONTEXTS_FIELD] = [
+        new ReferenceExpression(secondContextInstance.elemID, secondContextInstance),
+        new ReferenceExpression(firstContextInstance.elemID, firstContextInstance),
+      ]
+      await filter.onDeploy([toChange({ before: beforeProjectInstance, after: projectInstance })])
+
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD]).toHaveLength(2)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][0].resValue.value.id).toEqual(1)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1]).toBeInstanceOf(ReferenceExpression)
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD][1].resValue.value.id).toEqual(2)
     })
   })
 })

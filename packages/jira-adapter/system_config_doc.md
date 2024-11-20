@@ -1222,6 +1222,10 @@ jira {
               fieldName = "issueTypeScheme"
               fieldType = "IssueTypeScheme"
             },
+            {
+              fieldName = "fieldContexts"
+              fieldType = "list<CustomFieldContext>"
+            },
           ]
           fieldsToHide = [
             {

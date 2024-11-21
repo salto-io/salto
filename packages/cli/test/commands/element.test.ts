@@ -14,6 +14,7 @@ import {
   isInstanceElement,
   InstanceElement,
   isObjectType,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -1159,11 +1160,12 @@ Moving the specified elements to common.
       workspace = mocks.mockWorkspace({})
     })
 
-    const getMockElement = (url?: string): ObjectType =>
+    const getMockElement = (url?: string, parentElemID?: ElemID): ObjectType =>
       new ObjectType({
         elemID: new ElemID('salesforce', 'Lead'),
         annotations: {
           ...(url === undefined ? {} : { [CORE_ANNOTATIONS.SERVICE_URL]: url }),
+          ...(parentElemID === undefined ? {} : { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentElemID)] }),
         },
       })
 
@@ -1194,23 +1196,79 @@ Moving the specified elements to common.
     describe('with valid ID that does not have a URL', () => {
       let output: mocks.MockCliOutput
       let result: CliExitCode
-      beforeEach(async () => {
-        const cliArgs = mocks.mockCliArgs()
-        output = cliArgs.output
-        workspace.getValue.mockResolvedValue(getMockElement(undefined))
-        result = await openAction({
-          ...mocks.mockCliCommandArgs(commandName, cliArgs),
-          input: {
-            elementId: 'salesforce.Date',
-          },
-          workspace,
+      // const mockResolvedValue=jest.spyOn(workspace,'getValue')
+      const parentUrl = 'https://www.acne.com/'
+      beforeEach(async () => {})
+      describe('when has parent that has URL', () => {
+        beforeEach(async () => {
+          workspace.getValue.mockImplementation(async elemID =>
+            elemID.getFullName() === 'salesforce.Date'
+              ? getMockElement(undefined, new ElemID('salesforce', 'NoLead'))
+              : getMockElement(parentUrl),
+          )
+          // mockGetParents.mockReturnValue([getMockElement(parentUrl)])
+          const cliArgs = mocks.mockCliArgs()
+          output = cliArgs.output
+          // workspace.getValue.mockResolvedValueOnce(getMockElement(undefined))
+          result = await openAction({
+            ...mocks.mockCliCommandArgs(commandName, cliArgs),
+            input: {
+              elementId: 'salesforce.Date',
+            },
+            workspace,
+          })
+        })
+        it('should call open with parent url', () => {
+          expect(open).toHaveBeenCalledWith(parentUrl)
+        })
+        it('should return success exit code', () => {
+          expect(result).toEqual(CliExitCode.Success)
         })
       })
-      it('should print element does not have a url', () => {
-        expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Date\n')
+      describe('when has parent that does not have URL', () => {
+        beforeEach(async () => {
+          workspace.getValue.mockImplementation(async elemID =>
+            elemID.getFullName() === 'salesforce.Date'
+              ? getMockElement(undefined, new ElemID('salesforce', 'NoLead'))
+              : getMockElement(undefined),
+          )
+          const cliArgs = mocks.mockCliArgs()
+          output = cliArgs.output
+          result = await openAction({
+            ...mocks.mockCliCommandArgs(commandName, cliArgs),
+            input: {
+              elementId: 'salesforce.Date',
+            },
+            workspace,
+          })
+        })
+        it('should print element does not have a url', () => {
+          expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Date\n')
+        })
+        it('should return error exit code', () => {
+          expect(result).toEqual(CliExitCode.AppError)
+        })
       })
-      it('should return error exit code', () => {
-        expect(result).toEqual(CliExitCode.AppError)
+      describe('when has no parent', () => {
+        beforeEach(async () => {
+          workspace.getValue.mockResolvedValue(getMockElement(undefined))
+          const cliArgs = mocks.mockCliArgs()
+          output = cliArgs.output
+          result = await openAction({
+            ...mocks.mockCliCommandArgs(commandName, cliArgs),
+            input: {
+              elementId: 'salesforce.Date',
+            },
+            workspace,
+          })
+        })
+        it('should print element does not have a url', () => {
+          expect(output.stderr.content).toEqual('Go to service is not supported for element salesforce.Date\n')
+          expect(workspace.getValue).toHaveBeenCalledTimes(1)
+        })
+        it('should return error exit code', () => {
+          expect(result).toEqual(CliExitCode.AppError)
+        })
       })
     })
 

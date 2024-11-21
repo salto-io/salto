@@ -13,20 +13,23 @@ import {
   ObjectType,
   ElemID,
   AdditionChange,
-  DetailedChange,
   BuiltinTypes,
-  getChangeData,
   TypeReference,
+  toChange,
+  getChangeData,
+  isEqualElements,
 } from '@salto-io/adapter-api'
-import { parser } from '@salto-io/parser'
+import { setupEnvVar } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
+import { detailedCompare, getDetailedChanges } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
+import { NaclFile, naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
+import { WORKSPACE_FLAGS } from '../../../src/flags'
 
 const { awu } = collections.asynciterable
 
@@ -35,36 +38,16 @@ describe.each([false, true])(
   shouldCreateFilenamesToElementIDsMapping => {
     let mockDirStore: DirectoryStore<string>
     let mockedStaticFilesSource: StaticFilesSource
-    const mockDirStoreGet = jest.fn()
+
+    setupEnvVar(
+      `SALTO_${WORKSPACE_FLAGS.createFilenamesToElementIdsMapping}`,
+      String(shouldCreateFilenamesToElementIDsMapping),
+      'all',
+    )
 
     beforeEach(async () => {
-      mockDirStore = {
-        list: () => Promise.resolve([]),
-        isEmpty: () => Promise.resolve(false),
-        get: mockDirStoreGet.mockResolvedValue(undefined),
-        getFiles: jest.fn().mockResolvedValue([undefined]),
-        set: () => Promise.resolve(),
-        delete: () => Promise.resolve(),
-        clear: () => Promise.resolve(),
-        rename: () => Promise.resolve(),
-        renameFile: () => Promise.resolve(),
-        flush: () => Promise.resolve(),
-        mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
-        getTotalSize: () => Promise.resolve(0),
-        clone: () => mockDirStore,
-        getFullPath: filename => filename,
-        isPathIncluded: jest.fn().mockResolvedValue(true),
-        exists: jest.fn().mockResolvedValue(false),
-      }
+      mockDirStore = createMockDirStore([], true)
       mockedStaticFilesSource = mockStaticFilesSource()
-    })
-
-    beforeAll(() => {
-      process.env.SALTO_CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING = shouldCreateFilenamesToElementIDsMapping ? '1' : '0'
-    })
-
-    afterAll(() => {
-      delete process.env.SALTO_CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING
     })
 
     describe('change inner state', () => {
@@ -110,20 +93,16 @@ describe.each([false, true])(
       `,
       }
       beforeEach(async () => {
-        const naclFiles = [file1, file2]
-        const parsedNaclFiles = await Promise.all(
-          naclFiles.map(async naclFile =>
-            toParsedNaclFile(naclFile, await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})),
-          ),
-        )
+        await mockDirStore.set(file1)
+        await mockDirStore.set(file2)
         naclFileSourceTest = await naclFilesSource(
           '',
           mockDirStore,
           mockedStaticFilesSource,
           persistentMockCreateRemoteMap(),
           true,
-          parsedNaclFiles,
         )
+        await naclFileSourceTest.load({})
         await naclFileSourceTest.getAll()
       })
       it('should includes expected elements', async () => {
@@ -319,7 +298,7 @@ describe.each([false, true])(
         describe('splitted elements', () => {
           describe('fragmented in all files', () => {
             let naclFileSourceWithFragments: NaclFilesSource
-            const splittedFile1 = {
+            const splitFile1 = {
               filename: 'file1.nacl',
               buffer: `
               type dummy.test2 {
@@ -330,7 +309,7 @@ describe.each([false, true])(
               }
             `,
             }
-            const splittedFile2 = {
+            const splitFile2 = {
               filename: 'file2.nacl',
               buffer: `
               type dummy.test1 {
@@ -342,20 +321,16 @@ describe.each([false, true])(
             `,
             }
             beforeEach(async () => {
-              const naclFiles = [splittedFile1, splittedFile2]
-              const parsedNaclFiles = await Promise.all(
-                naclFiles.map(async naclFile =>
-                  toParsedNaclFile(naclFile, await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {})),
-                ),
-              )
+              await mockDirStore.set(splitFile1)
+              await mockDirStore.set(splitFile2)
               naclFileSourceWithFragments = await naclFilesSource(
                 '',
                 mockDirStore,
                 mockedStaticFilesSource,
                 persistentMockCreateRemoteMap(),
                 true,
-                parsedNaclFiles,
               )
+              await naclFileSourceWithFragments.load({})
             })
             it('should change splitted element correctly', async () => {
               const newFile = {
@@ -475,7 +450,8 @@ describe.each([false, true])(
           expect(await awu(await naclFileSourceTest.getAll()).toArray()).toEqual([])
         })
       })
-      describe('updateNaclFiles', () => {
+      describe.each([false, true])('updateNaclFiles (useSplitSourceMaps %s)', useSplitSourceMaps => {
+        setupEnvVar(`SALTO_${WORKSPACE_FLAGS.useSplitSourceMapInUpdate}`, String(useSplitSourceMaps), 'each')
         it('should not change anything if there are no changes', async () => {
           expect((await naclFileSourceTest.updateNaclFiles([])).changes).toHaveLength(0)
           expect(await awu(await naclFileSourceTest.getAll()).toArray()).toMatchObject([
@@ -484,28 +460,23 @@ describe.each([false, true])(
           ])
         })
         it('should update one element correctly', async () => {
-          const currentObjectType = await naclFileSourceTest.get(objectTypeElemID)
-          const newObjectType = new ObjectType({ elemID: objectTypeElemID, fields: {} })
-          const detailedChange = {
-            action: 'modify',
-            id: objectTypeElemID,
-            data: { before: currentObjectType, after: newObjectType },
-            path: ['file1'],
-          } as DetailedChange
-          mockDirStoreGet.mockResolvedValue(file1)
-          const { changes } = await naclFileSourceTest.updateNaclFiles([detailedChange])
+          const before = (await naclFileSourceTest.get(instanceElementElemID)) as InstanceElement
+          const after = before.clone()
+          after.value = newInstanceElementValue
+          const changesToApply = getDetailedChanges(toChange({ before, after }))
+          const { changes } = await naclFileSourceTest.updateNaclFiles(changesToApply)
           expect(changes).toHaveLength(1)
-          expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path']))
+          expect(changes[0]).toMatchObject(changesToApply[0].baseChange)
           expect(
             _.sortBy(await awu(await naclFileSourceTest.getAll()).toArray(), e => e.elemID.getFullName()),
           ).toMatchObject(
             _.sortBy(
               [
-                instanceElementObjectMatcher,
                 {
-                  elemID: objectTypeElemID,
-                  fields: { b: { refType: { elemID: BuiltinTypes.NUMBER.elemID } } },
+                  elemID: instanceElementElemID,
+                  value: newInstanceElementValue,
                 },
+                objectTypeObjectMatcher,
               ],
               e => e.elemID.getFullName(),
             ),
@@ -513,18 +484,14 @@ describe.each([false, true])(
         })
         it('should add an element correctly', async () => {
           const currentObjectType = await naclFileSourceTest.get(objectTypeElemID)
-          const newInstanceElement = new InstanceElement('inst2', currentObjectType, newInstanceElementValue)
-          const detailedChange = {
-            action: 'add',
-            id: newInstanceElementElemID,
-            data: { after: newInstanceElement },
-            path: ['file1'],
-          } as DetailedChange
-          mockDirStoreGet.mockResolvedValue(file1)
-          const { changes } = await naclFileSourceTest.updateNaclFiles([detailedChange])
+          const newInstanceElement = new InstanceElement('inst2', currentObjectType, newInstanceElementValue, ['file1'])
+          const changesToApply = getDetailedChanges(toChange({ after: newInstanceElement }))
+          const { changes } = await naclFileSourceTest.updateNaclFiles(changesToApply)
           expect(changes).toHaveLength(1)
-          expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path', 'data']))
-          expect(getChangeData(changes[0]).isEqual(getChangeData(detailedChange))).toBeTruthy()
+          expect(changes[0]).toHaveProperty('action', 'add')
+          const additionChange = changes[0] as AdditionChange<InstanceElement>
+          expect(isEqualElements(additionChange.data.after, newInstanceElement)).toBeTrue()
+          expect(getChangeData(changes[0]).isEqual(getChangeData(changesToApply[0]))).toBeTruthy()
 
           const sortedAll = _.sortBy(await awu(await naclFileSourceTest.getAll()).toArray(), e =>
             e.elemID.getFullName(),
@@ -537,17 +504,121 @@ describe.each([false, true])(
         })
         it('should remove an element correctly', async () => {
           const currentInstanceElement = await naclFileSourceTest.get(instanceElementElemID)
-          const detailedChange = {
-            action: 'remove',
-            id: instanceElementElemID,
-            data: { before: currentInstanceElement },
-            path: ['file2'],
-          } as DetailedChange
-          mockDirStoreGet.mockResolvedValue(file2)
-          const { changes } = await naclFileSourceTest.updateNaclFiles([detailedChange])
+          const changesToApply = getDetailedChanges(toChange({ before: currentInstanceElement }))
+          const { changes } = await naclFileSourceTest.updateNaclFiles(changesToApply)
           expect(changes).toHaveLength(1)
-          expect(changes[0]).toMatchObject(_.omit(detailedChange, ['id', 'path']))
+          expect(changes[0]).toMatchObject(changesToApply[0].baseChange)
           expect(await awu(await naclFileSourceTest.getAll()).toArray()).toMatchObject([objectTypeObjectMatcher])
+        })
+        describe('when adding a nested value to an element which exists in multiple files', () => {
+          beforeEach(async () => {
+            const before = (await naclFileSourceTest.get(objectTypeElemID)) as ObjectType
+            const after = before.clone()
+            after.fields.b.annotations.new_annotation = 'value'
+            const changesToApply = detailedCompare(before, after, { createFieldChanges: true })
+            await naclFileSourceTest.updateNaclFiles(changesToApply)
+          })
+          it('should add the value to the file where the parent is defined', async () => {
+            const nacl = await naclFileSourceTest.getParsedNaclFile('file2.nacl')
+            const naclElements = await nacl?.elements()
+            const object = naclElements?.find(elem => elem.elemID.isEqual(objectTypeElemID)) as ObjectType
+            expect(object).toBeInstanceOf(ObjectType)
+            expect(object.fields.b).toBeDefined()
+            expect(object.fields.b.annotations).toHaveProperty('new_annotation', 'value')
+          })
+        })
+        describe('when updating multiple files at the same time', () => {
+          // Intentionally mixing multiple scenarios into one test to test the grouping logic in the update process
+          let source: NaclFilesSource
+          let deletedElementIDs: ElemID[]
+          let newInstanceInNewFileID: ElemID
+          let newInstanceInExistingFileID: ElemID
+          let modifiedInstanceID: ElemID
+          beforeEach(async () => {
+            const fileA: NaclFile = {
+              filename: 'file_a.nacl',
+              buffer: `type dummy.SplitObjToDelete {
+                val = 1
+              }
+              dummy.test Inst1 {
+              }`,
+            }
+            const fileB: NaclFile = {
+              filename: 'file_b.nacl',
+              buffer: `type dummy.SplitObjToDelete {
+                other = 1
+              }
+              dummy.test Inst2 {
+              }
+              dummy.test Inst3 {
+                a = "asd"
+              }`,
+            }
+
+            await mockDirStore.set(file1)
+            await mockDirStore.set(file2)
+            await mockDirStore.set(fileA)
+            await mockDirStore.set(fileB)
+
+            source = await naclFilesSource(
+              '',
+              mockDirStore,
+              mockedStaticFilesSource,
+              persistentMockCreateRemoteMap(),
+              true,
+            )
+            await source.load({})
+
+            // Prepare and apply changes
+            const objToDeleteID = new ElemID('dummy', 'SplitObjToDelete')
+            const objToDelete = (await source.get(objToDeleteID)) as ObjectType
+
+            const instToDelete = (await source.get(new ElemID('dummy', 'test', 'instance', 'Inst1'))) as InstanceElement
+            deletedElementIDs = [objToDeleteID, instToDelete.elemID]
+
+            const objType = (await source.get(objectTypeElemID)) as ObjectType
+            const newInstInNewFile = new InstanceElement('new_1', objType, { a: 'c' }, ['file_c'])
+            newInstanceInNewFileID = newInstInNewFile.elemID
+            const newInstInExistingFile = new InstanceElement('new_2', objType, { a: 'b' }, ['file_b'])
+            newInstanceInExistingFileID = newInstInExistingFile.elemID
+
+            const existingInstance = (await source.get(
+              new ElemID('dummy', 'test', 'instance', 'Inst3'),
+            )) as InstanceElement
+            const updatedInstance = existingInstance.clone()
+            updatedInstance.value.a = 'bla'
+            modifiedInstanceID = updatedInstance.elemID
+
+            const changesToApply = [
+              ...getDetailedChanges(toChange({ before: objToDelete })),
+              ...getDetailedChanges(toChange({ before: instToDelete })),
+              ...getDetailedChanges(toChange({ after: newInstInExistingFile })),
+              ...getDetailedChanges(toChange({ after: newInstInNewFile })),
+              ...getDetailedChanges(toChange({ before: existingInstance, after: updatedInstance })),
+            ]
+            await source.updateNaclFiles(changesToApply)
+          })
+          it('should remove all deleted elements from the source', async () => {
+            const deletedElements = await Promise.all(deletedElementIDs.map(id => source.get(id)))
+            expect(deletedElements).toEqual(deletedElementIDs.map(() => undefined))
+          })
+          it('should remove files that no longer contain elements', () => {
+            expect(mockDirStore.delete).toHaveBeenCalledWith('file_a.nacl')
+          })
+          it('should add new instance to existing file', async () => {
+            await expect(source.getElementNaclFiles(newInstanceInExistingFileID)).resolves.toEqual(['file_b.nacl'])
+          })
+          it('should add new instance to new file', async () => {
+            await expect(source.getElementNaclFiles(newInstanceInNewFileID)).resolves.toEqual(['file_c.nacl'])
+          })
+          it('should apply nested changes', async () => {
+            const updatedElement = (await source.get(modifiedInstanceID)) as InstanceElement
+            expect(updatedElement).toBeDefined()
+            expect(updatedElement.value).toHaveProperty('a', 'bla')
+          })
+          it('should keep modified instance in the same file', async () => {
+            await expect(source.getElementNaclFiles(modifiedInstanceID)).resolves.toEqual(['file_b.nacl'])
+          })
         })
       })
     })

@@ -9,15 +9,13 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReadOnlyElementsSource, isElement } from '@salto-io/adapter-api'
-import { getSaltoFlagBool } from '../flags'
+import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../flags'
 import { ReferenceIndexEntry } from './reference_indexes'
 import { ReadOnlyRemoteMap } from './remote_map'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-
-const USE_OLD_DEPENDENTS_CALCULATION_FLAG = 'USE_OLD_DEPENDENTS_CALCULATION'
 
 const getDependentIDsFromReferenceSourceIndex = async (
   elemIDs: ElemID[],
@@ -130,7 +128,7 @@ export const getDependents = async (
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>,
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>,
 ): Promise<Element[]> => {
-  const dependentIDs = getSaltoFlagBool(USE_OLD_DEPENDENTS_CALCULATION_FLAG)
+  const dependentIDs = getSaltoFlagBool(WORKSPACE_FLAGS.useOldDependentsCalculation)
     ? await getDependentIDsFromReferencedFiles(elemIDs, getElementReferencedFiles, getParsedNaclFile)
     : await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
 

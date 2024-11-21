@@ -137,7 +137,7 @@ const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, str
       properties: ['key'],
     },
     // TODO: add also WorkflowCondition
-  }
+  },
 }
 
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
@@ -154,7 +154,8 @@ const sortLists = (instance: InstanceElement): void => {
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
-        const sortFields = TYPES_AND_VALUES_TO_SORT[instance.elemID.typeName][field.parent.elemID.typeName]?.[field.name]
+        const sortFields =
+          TYPES_AND_VALUES_TO_SORT[instance.elemID.typeName][field.parent.elemID.typeName]?.[field.name]
 
         if (sortFields !== undefined) {
           _.assign(

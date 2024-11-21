@@ -1,4 +1,3 @@
-
 version: 2.1
 
 orbs:
@@ -12,7 +11,6 @@ environment:
   TURBO_CACHE_DIR: /mnt/ramdisk/project/.turbo
 
 commands:
-  
   restore_intermediate:
     description: Restore intermediate artifacts between steps
     steps:
@@ -46,7 +44,7 @@ commands:
             - &node-modules-cache node-modules-v2-{{ .Branch }}-{{ checksum "yarn.lock" }}
             - node-modules-v2-{{ .Branch }}
             - node-modules-v2-main
-  
+
   store_node_modules:
     description: Cache store node_modules
     steps:
@@ -199,12 +197,12 @@ commands:
 
   test_cli:
     parameters:
-        arch:
-            description: Linux, mac, win
-            type: string
-        exe_name:
-            description: Name of executable (e.g. salto, salto.exe)
-            type: string
+      arch:
+        description: Linux, mac, win
+        type: string
+      exe_name:
+        description: Name of executable (e.g. salto, salto.exe)
+        type: string
     steps:
       - aws-cli/install
       - aws-cli/setup
@@ -215,8 +213,8 @@ commands:
       - run: echo << parameters.arch >>
       - when:
           condition:
-            not: 
-              equal: [ win, << parameters.arch >> ]
+            not:
+              equal: [win, << parameters.arch >>]
           steps:
             - run: chmod +x ./<< parameters.exe_name >>
       - run:
@@ -264,9 +262,24 @@ jobs:
           cache_name: build
       - store_intermediate
 
+  knip:
+    docker:
+      - image: cimg/node:18.9
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - checkout
+      - restore_node_modules
+      - setup_yarn
+      - run:
+          name: Knip
+          command: yarn knip
+
   unit_test:
     parameters:
-      package_name: 
+      package_name:
         type: string
       parallelism:
         type: integer
@@ -287,7 +300,7 @@ jobs:
       - restore_turbo_cache:
           cache_name: jest_ut-<< parameters.package_name >>
       - restore_turbo_cache:
-          cache_name: build      
+          cache_name: build
       - run:
           name: Extract package name
           command: |
@@ -311,7 +324,7 @@ jobs:
 
       - coveralls/upload:
           parallel: true
-          flag_name: << parameters.package_name >>  
+          flag_name: << parameters.package_name >>
 
   finish_coveralls:
     docker:
@@ -367,7 +380,7 @@ jobs:
       - step_setup
       - run_e2e_tests:
           package_name: <<parameters.package_name>>
-          should_install_java: <<parameters.should_install_java>>     
+          should_install_java: <<parameters.should_install_java>>
 
   package_cli:
     working_directory: /mnt/ramdisk/project
@@ -487,6 +500,10 @@ workflows:
       - build:
           requires:
             - install
+      - knip:
+          requires:
+            - install
+
       # <TEST_MATRIX_UT>
       # <TEST_MATRIX_E2E>
       # <TEST_MATRIX_E2E_JAVA>

@@ -183,7 +183,7 @@ export const adapter: Adapter = {
     validateCredentials(credentialsFromConfig(config), {
       createConnection,
     }),
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: basicCredentialsType,
     },
@@ -201,7 +201,7 @@ export const adapter: Adapter = {
         }
       },
     },
-  },
+  }),
   configType,
   configCreator,
   getCustomReferences: combineCustomReferenceGetters(

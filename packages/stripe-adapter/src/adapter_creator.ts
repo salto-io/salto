@@ -17,11 +17,11 @@ const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = cli
 
 export const adapter = createAdapter<Credentials, Options, UserConfig>({
   adapterName: ADAPTER_NAME,
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType,
     },
-  },
+  }),
   defaultConfig: DEFAULT_CONFIG,
   definitionsCreator: ({ clients }) => ({
     clients: createClientDefinitions(clients),

@@ -261,8 +261,8 @@ export type AdapterFormat = {
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
-  authenticationMethods: AdapterAuthentication
+  validateCredentials: (config: Readonly<InstanceElement>, accountName?: string) => Promise<AccountInfo>
+  authenticationMethods: (accountName?: string) => AdapterAuthentication
   configType?: ObjectType
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>

@@ -48,11 +48,11 @@ export const adapter: Adapter = {
     validateCredentials(credentialsFromConfig(config), {
       createConnection,
     }),
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: usernameTokenCredentialsType,
     },
-  },
+  }),
   configType,
   configCreator,
 }

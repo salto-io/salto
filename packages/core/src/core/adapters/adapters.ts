@@ -12,7 +12,6 @@ import {
   AdapterOperationsContext,
   ElemID,
   InstanceElement,
-  Adapter,
   AdapterAuthentication,
   Element,
   ReadOnlyElementsSource,
@@ -39,18 +38,18 @@ const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
-export const getAdaptersCredentialsTypes = (names?: ReadonlyArray<string>): Record<string, AdapterAuthentication> => {
-  let relevantAdapterCreators: Record<string, Adapter>
-  if (names === undefined) {
-    relevantAdapterCreators = adapterCreators
-  } else {
-    const nonExistingAdapters = names.filter(name => !Object.keys(adapterCreators).includes(name))
-    if (!_.isEmpty(nonExistingAdapters)) {
-      throw new Error(`No adapter available for ${nonExistingAdapters}`)
-    }
-    relevantAdapterCreators = _.pick(adapterCreators, names)
+export const getAdaptersCredentialsTypes = (
+  accountToServiceMap: Record<string, string>,
+): Record<string, AdapterAuthentication> => {
+  const nonExistingAdapters = _.uniq(Object.values(accountToServiceMap)).filter(
+    name => !Object.keys(adapterCreators).includes(name),
+  )
+  if (!_.isEmpty(nonExistingAdapters)) {
+    throw new Error(`No adapter available for ${nonExistingAdapters}`)
   }
-  return _.mapValues(relevantAdapterCreators, creator => creator.authenticationMethods)
+  return _.mapValues(accountToServiceMap, (adapterName, accountName) =>
+    adapterCreators[adapterName].authenticationMethods(accountName),
+  )
 }
 
 export const initAdapters = (

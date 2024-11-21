@@ -30,14 +30,14 @@ describe('adapter creator', () => {
     expect(Object.keys(config?.fields)).toEqual(Object.keys(configType.fields))
   })
   it('should use username+token as the basic auth method', () => {
-    expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toEqual(
+    expect(Object.keys(adapter.authenticationMethods().basic.credentialsType.fields)).toEqual(
       Object.keys(usernameTokenCredentialsType.fields),
     )
   })
   it('should return the workato adapter', () => {
     expect(
       adapter.operations({
-        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(WORKATO, adapter.configType as ObjectType, {
           fetch: {
             include: [],
@@ -55,7 +55,7 @@ describe('adapter creator', () => {
   it('should ignore unexpected configuration values', () => {
     expect(
       adapter.operations({
-        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(WORKATO, adapter.configType as ObjectType, {
           fetch: {
             include: [],
@@ -77,7 +77,7 @@ describe('adapter creator', () => {
   it.skip('should throw error on invalid serviceConnectionNames configuration', () => {
     expect(() =>
       adapter.operations({
-        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods.basic.credentialsType),
+        credentials: new InstanceElement(WORKATO, adapter.authenticationMethods().basic.credentialsType),
         config: new InstanceElement(WORKATO, adapter.configType as ObjectType, {
           fetch: {
             include: [],

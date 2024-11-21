@@ -38,7 +38,7 @@ describe('NetsuiteAdapter creator', () => {
     jest.clearAllMocks()
   })
 
-  const credentials = new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, {
+  const credentials = new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods().basic.credentialsType, {
     accountId: 'foo-a',
     tokenId: 'bar',
     tokenSecret: 'secret',

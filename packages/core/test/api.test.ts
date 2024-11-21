@@ -135,7 +135,7 @@ describe('api.ts', () => {
       ...mockAdapterOps,
       deployModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
     }),
-    authenticationMethods: { basic: { credentialsType: mockConfigType } },
+    authenticationMethods: () => ({ basic: { credentialsType: mockConfigType } }),
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
       accountId: '',
       accountType: 'Sandbox',
@@ -149,7 +149,7 @@ describe('api.ts', () => {
       ...mockAdapterOps,
       validationModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
     }),
-    authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
+    authenticationMethods: () => ({ basic: { credentialsType: mockEmptyConfigType } }),
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
       accountId: '',
       accountType: 'Sandbox',
@@ -157,11 +157,11 @@ describe('api.ts', () => {
     }),
   }
   const mockAdapterWithInstall = {
-    authenticationMethods: {
+    authenticationMethods: () => ({
       basic: {
         credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
       },
-    },
+    }),
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
       accountId: '',
@@ -643,7 +643,9 @@ describe('api.ts', () => {
         }
         adapter = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(adapterOps as AdapterOperations),
-          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          authenticationMethods: mockFunction<Adapter['authenticationMethods']>().mockReturnValue({
+            basic: { credentialsType: mockConfigType },
+          }),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
             accountId: '',
             accountType: 'Sandbox',
@@ -746,9 +748,9 @@ describe('api.ts', () => {
       const serviceName = 'test'
       beforeAll(() => {
         adapterCreators[serviceName] = {
-          authenticationMethods: {
+          authenticationMethods: () => ({
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
-          },
+          }),
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
             accountId: '',
@@ -1320,7 +1322,7 @@ describe('api.ts', () => {
 
       const mockTestAdapter = {
         operations: mockFunction<Adapter['operations']>().mockReturnValue(mockTestAdapterOps),
-        authenticationMethods: { basic: { credentialsType: mockConfigType } },
+        authenticationMethods: () => ({ basic: { credentialsType: mockConfigType } }),
         validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
           accountId: '',
           accountType: 'Sandbox',

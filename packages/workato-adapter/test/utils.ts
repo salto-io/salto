@@ -25,7 +25,7 @@ import { createFetchDefinitions } from '../src/definitions/fetch/fetch'
 import fetchCriteria from '../src/fetch_criteria'
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement =>
-  new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, credentials)
+  new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods().basic.credentialsType, credentials)
 
 export const createConfigInstance = (config: WorkatoUserConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, adapter.configType as ObjectType, config)

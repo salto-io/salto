@@ -43,9 +43,9 @@ export const createMockAdapter = (
       deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
     }),
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: 'accountID' }),
-    authenticationMethods: {
+    authenticationMethods: mockFunction<Adapter['authenticationMethods']>().mockReturnValue({
       basic: { credentialsType },
-    },
+    }),
     configType,
     configCreator: {
       getConfig: mockFunction<Required<Adapter>['configCreator']['getConfig']>().mockResolvedValue(

@@ -110,12 +110,12 @@ describe('SalesforceAdapter creator', () => {
       port: 8080,
     })
     it('creates oauth request with url using parameters', () => {
-      const request = (adapter.authenticationMethods.oauth as OAuthMethod).createOAuthRequest(oauthLoginInput)
+      const request = (adapter.authenticationMethods().oauth as OAuthMethod).createOAuthRequest(oauthLoginInput)
       expect(request.url.includes(oauthLoginInput.value.consumerKey)).toBeTruthy()
       expect(request.url.includes(oauthLoginInput.value.port)).toBeTruthy()
     })
     it('creates the right object from the response', async () => {
-      const responseCredentials = await (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+      const responseCredentials = await (adapter.authenticationMethods().oauth as OAuthMethod).createFromOauthResponse(
         {
           sandbox: false,
           consumerKey: oauthConfigObj.clientId,

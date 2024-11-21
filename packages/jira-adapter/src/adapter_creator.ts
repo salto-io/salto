@@ -123,11 +123,11 @@ export const adapter: Adapter = {
       credentials: creds,
     })
   },
-  authenticationMethods: {
+  authenticationMethods: () => ({
     basic: {
       credentialsType: basicAuthCredentialsType,
     },
-  },
+  }),
   configType,
   configCreator,
   getCustomReferences,

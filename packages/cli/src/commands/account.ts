@@ -174,7 +174,7 @@ const getLoginInputFlow = async (
     : // In this login option we ask the user to enter his credentials
       (credentialsType: ObjectType): Promise<InstanceElement> => getConfigWithHeader(credentialsType, output)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
-  const result = await verifyCredentials(newConfig)
+  const result = await verifyCredentials(newConfig, account)
   if (!result.success) {
     throw result.error
   }
@@ -236,7 +236,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 
   await installAdapter(serviceType)
   if (login) {
-    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType])[serviceType]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes({ [theAccountName]: serviceType })[theAccountName]
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, theAccountName, loginParameters)
     } catch (e) {

@@ -136,7 +136,7 @@ const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, str
     WorkflowTransitions: {
       properties: ['key'],
     },
-    //TODO: add also WorkflowCondition
+    // TODO: add also WorkflowCondition
   }
 }
 

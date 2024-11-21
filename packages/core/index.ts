@@ -13,7 +13,6 @@ export {
   summarizeDeployChanges,
   DeploySummaryResult,
   DetailedChangeDeploySummaryResult,
-  DetailedChangeId,
 } from './src/core/deploy'
 export {
   getAdaptersCredentialsTypes,

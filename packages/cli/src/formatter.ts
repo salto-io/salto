@@ -43,8 +43,6 @@ import {
   getSupportedServiceAdapterNames,
   DeployError,
   GroupProperties,
-  DetailedChangeId,
-  DeploySummaryResult,
 } from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -326,53 +324,6 @@ export const formatDeployActions = ({
       deployAction.documentationURL ?? '',
     ]),
   ]
-}
-
-export const formatDeploymentSummaryResult = (ids: DetailedChangeId[], result: DeploySummaryResult): string => {
-  const mapping = {
-    failure: Prompts.DEPLOYMENT_STATUS.failure,
-    'partial-success': Prompts.DEPLOYMENT_STATUS.partialSuccess,
-    success: Prompts.DEPLOYMENT_STATUS.success,
-  }
-
-  const sign = mapping[result]
-  const lines = ids.map(st => ` ${sign} ${st}`).join('\n')
-  return lines
-}
-
-export const formatDeploymentSummary = (
-  summary: Record<DeploySummaryResult, DetailedChangeId[]>,
-): string | undefined => {
-  const failureResult = 'failure'
-  const partialSuccessResult = 'partial-success'
-  const successResult = 'success'
-  const headline = Prompts.DEPLOYMENT_SUMMARY_HEADLINE
-  const succeeded =
-    summary[successResult].length > 0 ? formatDeploymentSummaryResult(summary[successResult], successResult) : null
-  const partiallySucceeded =
-    summary[partialSuccessResult].length > 0
-      ? formatDeploymentSummaryResult(summary[partialSuccessResult], partialSuccessResult)
-      : null
-  const failed =
-    summary[failureResult].length > 0 ? formatDeploymentSummaryResult(summary[failureResult], failureResult) : null
-  const noFailedElements =
-    succeeded !== null
-      ? [emptyLine(), Prompts.DEPLOYMENT_SUMMARY_HEADLINE, Prompts.ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED, emptyLine()].join(
-          '\n',
-        )
-      : undefined
-  const foundFailedElements =
-    succeeded === null && partiallySucceeded === null
-      ? [emptyLine(), headline, Prompts.ALL_DEPLOYMENT_ELEMENTS_FAILED, emptyLine()].join('\n')
-      : [
-          emptyLine(),
-          headline,
-          [succeeded, partiallySucceeded, failed].filter(item => item != null).join('\n'),
-          emptyLine(),
-          Prompts.DEPLOYMENT_SUMMARY_LEGEND,
-          emptyLine(),
-        ].join('\n')
-  return failed === null && partiallySucceeded === null ? noFailedElements : foundFailedElements
 }
 
 export const formatExecutionPlan = async (

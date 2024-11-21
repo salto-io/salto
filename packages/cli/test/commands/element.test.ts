@@ -1196,9 +1196,7 @@ Moving the specified elements to common.
     describe('with valid ID that does not have a URL', () => {
       let output: mocks.MockCliOutput
       let result: CliExitCode
-      // const mockResolvedValue=jest.spyOn(workspace,'getValue')
       const parentUrl = 'https://www.acne.com/'
-      beforeEach(async () => {})
       describe('when has parent that has URL', () => {
         beforeEach(async () => {
           workspace.getValue.mockImplementation(async elemID =>
@@ -1206,10 +1204,8 @@ Moving the specified elements to common.
               ? getMockElement(undefined, new ElemID('salesforce', 'NoLead'))
               : getMockElement(parentUrl),
           )
-          // mockGetParents.mockReturnValue([getMockElement(parentUrl)])
           const cliArgs = mocks.mockCliArgs()
           output = cliArgs.output
-          // workspace.getValue.mockResolvedValueOnce(getMockElement(undefined))
           result = await openAction({
             ...mocks.mockCliCommandArgs(commandName, cliArgs),
             input: {

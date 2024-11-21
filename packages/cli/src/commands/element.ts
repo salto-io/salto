@@ -21,6 +21,7 @@ import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
+import { getParents } from '@salto-io/adapter-utils'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -43,7 +44,6 @@ import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { getUserBooleanInput } from '../callbacks'
-import { getParents } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
@@ -534,7 +534,7 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input
     return CliExitCode.AppError
   }
 
-  const getParentUrl = async (childElement: Value) => {
+  const getParentUrl = async (childElement: Value): Promise<string | undefined> => {
     const parentsArray = getParents(childElement)
     if (parentsArray.length === 0) {
       return undefined

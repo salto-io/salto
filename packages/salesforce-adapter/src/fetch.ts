@@ -639,6 +639,12 @@ export const retrieveMetadataInstances = async ({
   }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
+  const filesNames = filesToRetrieve.map(file => file.fileName)
+  if (filesNames.length <= 1000) {
+    filesNames.forEach(name => log.debug(name))
+  } else {
+    filesNames.forEach(name => log.trace(name))
+  }
 
   const instances = await retrieveProfilesWithContextTypes(
     profileFiles,

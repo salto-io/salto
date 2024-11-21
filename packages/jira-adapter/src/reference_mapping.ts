@@ -113,6 +113,13 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
+const factorKeyTypeMapper: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'status-sla-condition-factory') {
+    return STATUS_TYPE_NAME
+  }
+  return undefined
+}
+
 export type ReferenceContextStrategyName =
   | 'parentSelectedFieldType'
   | 'parentFieldType'
@@ -120,6 +127,7 @@ export type ReferenceContextStrategyName =
   | 'parentFieldId'
   | 'parentField'
   | 'gadgetPropertyValue'
+  | 'statusByNeighborFactorKey'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   parentSelectedFieldType: neighborContextFunc({
@@ -138,6 +146,10 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     contextValueMapper: resolutionAndPriorityToTypeName,
   }),
   gadgetPropertyValue: gadgetValuesContextFunc,
+  statusByNeighborFactorKey: neighborContextFunc({
+    contextFieldName: 'factoryKey',
+    contextValueMapper: factorKeyTypeMapper,
+  }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -1407,8 +1419,8 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
       parentTypes: [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE],
     },
     serializationStrategy: 'id',
-    // no missing references strategy - field can have string values as well
-    target: { type: STATUS_TYPE_NAME },
+    missingRefStrategy: 'typeAndValue',
+    target: { typeContext: 'statusByNeighborFactorKey' },
   },
   // Hack to handle missing references when the type is unknown
   {

@@ -49,6 +49,7 @@ describe('jsmTypesFetchFilter', () => {
   let projectInstance: InstanceElement
   const customerPermissionsType = createEmptyType(CUSTOMER_PERMISSIONS_TYPE)
   let customerPermissionsInstance: InstanceElement
+  const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE]
 
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -94,7 +95,7 @@ describe('jsmTypesFetchFilter', () => {
         new ReferenceExpression(projectInstance.elemID, projectInstance),
       )
     })
-    it('should disable deployment of icon field in object type icon', async () => {
+    it('should change the deployment annotations of icon field in object type icon', async () => {
       const objectTypeIconType = new ObjectType({
         elemID: new ElemID(JIRA, 'ObjectTypeIcon'),
         fields: {
@@ -109,7 +110,6 @@ describe('jsmTypesFetchFilter', () => {
       expect(objectTypeIconType.fields.icon.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBe(false)
     })
     it('should change conditionId refType to unknown in SLA types', async () => {
-      const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE]
       const slaTypes = slaTypeNames.map(
         typeName =>
           new ObjectType({
@@ -132,8 +132,8 @@ describe('jsmTypesFetchFilter', () => {
       expect(slaTypes[2].fields.conditionId.refType.elemID.name).toEqual('unknown')
     })
     it('should not change field type if not all sla types are present', async () => {
-      const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE]
-      const slaTypes = slaTypeNames.map(
+      const partialSlaTypes = slaTypeNames.slice(0, 2)
+      const slaTypes = partialSlaTypes.map(
         typeName =>
           new ObjectType({
             elemID: new ElemID(JIRA, typeName),
@@ -153,8 +153,7 @@ describe('jsmTypesFetchFilter', () => {
       expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
       expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
     })
-    it('should disable deployment of name field in SLA types', async () => {
-      const slaTypeNames = [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE]
+    it('should change the deployment annotations of name field in SLA types', async () => {
       const slaTypes = slaTypeNames.map(
         typeName =>
           new ObjectType({

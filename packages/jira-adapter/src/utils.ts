@@ -63,7 +63,8 @@ export const findObjects = (elements: Element[], names: string[]): ObjectType[] 
   const types = elements.filter(isObjectType).filter(element => names.includes(element.elemID.name))
 
   if (types.length !== names.length) {
-    log.warn(`some of ${names.join(',')} types not found`)
+    const missingTypes = names.filter(name => !types.map(t => t.elemID.name).includes(name)).join(', ')
+    log.warn(`could not find the following objects: ${missingTypes}`)
     return undefined
   }
   return types

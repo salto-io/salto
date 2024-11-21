@@ -2784,6 +2784,7 @@ describe('Test utils.ts', () => {
         new ReferenceExpression(parent.elemID, parent),
       ]
       expect(() => getParent(child)).toThrow()
+      expect(() => getParentElemID(child)).toThrow()
     })
 
     it('should throw when having a non instance parent', () => {
@@ -2802,11 +2803,9 @@ describe('Test utils.ts', () => {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)],
       })
     })
-
     it('should return the parent elemID when there is a single reference parent', () => {
       expect(getParentElemID(child)).toEqual(parent.elemID)
     })
-
     it('should throw when having more than one parent', () => {
       child.annotations[CORE_ANNOTATIONS.PARENT] = [
         new ReferenceExpression(parent.elemID, parent),
@@ -2816,9 +2815,14 @@ describe('Test utils.ts', () => {
         'Expected test.test.instance.child to have exactly one parent, found 2',
       )
     })
-
-    it('should throw when having a non reference parent', () => {
-      child.annotations[CORE_ANNOTATIONS.PARENT] = ['some string']
+    it('should throw when parent does not have an elemID', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = 'a'
+      expect(() => getParentElemID(child)).toThrow(
+        'Expected test.test.instance.child parent to be a reference expression',
+      )
+    })
+    it('should throw when the parent elemID object is not an ElemID', () => {
+      child.annotations[CORE_ANNOTATIONS.PARENT] = { elemID: 'a' }
       expect(() => getParentElemID(child)).toThrow(
         'Expected test.test.instance.child parent to be a reference expression',
       )

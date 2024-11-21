@@ -252,7 +252,7 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
   })
 
   conn.on('refresh', accessToken => {
-    if (typeof accessToken !== 'string') {
+    if (!_.isString(accessToken)) {
       log.warn('Got a non string access token: %s', inspectValue(accessToken))
       return
     }

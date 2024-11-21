@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { isObjectType, CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { isObjectType, CORE_ANNOTATIONS, isInstanceElement, TypeReference, BuiltinTypes } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
@@ -25,8 +25,11 @@ import {
   OBJECT_SCHMEA_DEFAULT_REFERENCE_TYPE_TYPE,
   OBJECT_TYPE_ICON_TYPE,
   OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
+  SLA_CONDITIONS_STOP_TYPE,
+  SLA_CONDITIONS_START_TYPE,
+  SLA_CONDITIONS_PAUSE_TYPE,
 } from '../constants'
-import { setTypeDeploymentAnnotations, addAnnotationRecursively, findObject } from '../utils'
+import { setTypeDeploymentAnnotations, addAnnotationRecursively, findObject, findObjects } from '../utils'
 
 const { awu } = collections.asynciterable
 const jsmSupportedTypes = [
@@ -76,6 +79,24 @@ const filterCreator: FilterCreator = ({ config }) => ({
     if (objectTypeIconType !== undefined) {
       objectTypeIconType.fields.icon.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
     }
+
+    // SLA
+    const slaConditionTypes = findObjects(elements, [
+      SLA_CONDITIONS_STOP_TYPE,
+      SLA_CONDITIONS_START_TYPE,
+      SLA_CONDITIONS_PAUSE_TYPE,
+    ])
+    if (slaConditionTypes === undefined) {
+      return
+    }
+    slaConditionTypes.forEach(slaType => {
+      slaType.fields.conditionId.refType = new TypeReference(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN)
+      // prevent deployment of name as it does nothing
+      if (slaType.fields.name !== undefined) {
+        slaType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+        slaType.fields.name.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+      }
+    })
   },
 })
 export default filterCreator

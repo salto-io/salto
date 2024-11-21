@@ -868,7 +868,6 @@ const buildNaclFilesSource = (
     naclFiles: string[],
   ): Promise<DetailedChangeWithSource[]> => {
     const { parsedNaclFiles } = await getState()
-    log.debug('Nacl source %s getting source maps for %d nacl files', sourceName, naclFiles.length)
     const changedFileSourceMaps = (
       await withLimitedConcurrency(
         naclFiles.map(naclFile => async () => {
@@ -922,6 +921,11 @@ const buildNaclFilesSource = (
       })),
       ({ potentialFiles }) => potentialFiles?.join(','),
     )
+    log.debug(
+      'Nacl source %s getting source maps for %d nacl file groups',
+      sourceName,
+      Object.keys(changesByFiles).length,
+    )
     const changesWithLocationsByFiles = await withLimitedConcurrency(
       Object.values(changesByFiles).map(
         changeGroups => () =>
@@ -946,22 +950,26 @@ const buildNaclFilesSource = (
         .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
         .toArray(),
     )
+    log.debug('Nacl source %s getting source maps for %d nacl files', sourceName, naclFiles.length)
     return getChangeLocationsForFiles(changes, naclFiles)
   }
 
-  const groupChangesByFilename = async (
-    changes: DetailedChange[],
-  ): Promise<Record<string, DetailedChangeWithSource[]>> => {
-    const changesWithLocation = getSaltoFlagBool(WORKSPACE_FLAGS.useSplitSourceMapInUpdate)
-      ? await getChangesWithLocationsSplitSourceMap(changes)
-      : await getChangesWithLocationsUnifiedSourceMap(changes)
+  const groupChangesByFilename = (changes: DetailedChange[]): Promise<Record<string, DetailedChangeWithSource[]>> =>
+    log.timeDebug(
+      async () => {
+        const changesWithLocation = getSaltoFlagBool(WORKSPACE_FLAGS.useSplitSourceMapInUpdate)
+          ? await getChangesWithLocationsSplitSourceMap(changes)
+          : await getChangesWithLocationsUnifiedSourceMap(changes)
 
-    return _.groupBy(
-      changesWithLocation,
-      // Group changes file, we use lower case in order to support case insensitive file systems
-      change => change.location.filename.toLowerCase(),
+        return _.groupBy(
+          changesWithLocation,
+          // Group changes file, we use lower case in order to support case insensitive file systems
+          change => change.location.filename.toLowerCase(),
+        )
+      },
+      'groupChangesByFilename for %d changes',
+      changes.length,
     )
-  }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()

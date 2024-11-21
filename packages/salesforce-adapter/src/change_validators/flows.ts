@@ -24,7 +24,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
+import { ACTIVE, FLOW_METADATA_TYPE, INVALID_DRAFT, SALESFORCE, STATUS } from '../constants'
 import { apiNameSync, isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
 import { FetchProfile } from '../types'
 import SalesforceClient from '../client/client'
@@ -209,6 +209,13 @@ const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeE
   detailedMessage: `The Flow ${apiNameSync(flowInstance)} will be deactivated.`,
 })
 
+const activateInvalidFlowError = (flowInstance: InstanceElement): ChangeError => ({
+  elemID: flowInstance.elemID,
+  severity: 'Error',
+  message: 'Cannot activate an Invalid Flow',
+  detailedMessage: `The Flow ${apiNameSync(flowInstance)} is invalid. Please review the errors at ${'https://help.salesforce.com/s/articleView?id=platform.flow.htm&type=5'} `,
+})
+
 /**
  * Handling all changes regarding active flows
  */
@@ -263,6 +270,9 @@ const activeFlowValidator =
       .filter(isActivatingChange)
       .map(change => {
         if (isActivatingChangeOnly(change)) {
+          if (getFlowStatus(change.data.before) === INVALID_DRAFT) {
+            return activateInvalidFlowError(getChangeData(change))
+          }
           return activatingFlowError(getChangeData(change), isEnableFlowDeployAsActiveEnabled)
         }
         return activeFlowModificationError(getChangeData(change), isEnableFlowDeployAsActiveEnabled, baseUrl)

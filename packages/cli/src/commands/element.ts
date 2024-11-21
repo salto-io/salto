@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange, Value } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import {
   Workspace,
   ElementSelector,
@@ -21,7 +21,7 @@ import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParentUrl } from '@salto-io/adapter-utils'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -534,21 +534,7 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input
     return CliExitCode.AppError
   }
 
-  const getParentUrl = async (childElement: Value): Promise<string | undefined> => {
-    const parentsArray = getParents(childElement)
-    if (parentsArray.length === 0) {
-      return undefined
-    }
-    const parent = parentsArray[0]
-    const parentElemId = parent.elemID
-    const parentElem = await workspace.getValue(parentElemId)
-    const parentUrl = parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL]
-    return parentUrl
-  }
-  const serviceUrl =
-    element.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
-      ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
-      : await getParentUrl(element)
+  const serviceUrl = element.annotations[CORE_ANNOTATIONS.SERVICE_URL] ?? (await getParentUrl(workspace, element))
   if (serviceUrl === undefined) {
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     return CliExitCode.AppError

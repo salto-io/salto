@@ -27,7 +27,7 @@ const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => config.value as Credentials
 
 function validateConfig(config: Values): asserts config is JiraConfig {
-  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions, jsmApiDefinitions } = config
+  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions, jsmApiDefinitions, isDataCenter } = config
 
   validateClientConfig('client', client)
   if (!_.isPlainObject(apiDefinitions)) {
@@ -39,6 +39,11 @@ function validateConfig(config: Values): asserts config is JiraConfig {
   Object.values(getApiDefinitions(apiDefinitions)).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })
+  if(isDataCenter) {
+    if(fetch.enableJSM || fetch.enableJSMPremium || fetch.enableJsmExperimental) {
+      throw new Error('JSM is not supported for Jira DC')
+    }
+  }
   validateJiraFetchConfig({
     fetchConfig: fetch,
     apiDefinitions,
@@ -53,13 +58,14 @@ function validateConfig(config: Values): asserts config is JiraConfig {
 const adapterConfigFromConfig = (
   config: Readonly<InstanceElement> | undefined,
   defaultConfig: JiraConfig,
+  isDataCenter: boolean,
 ): JiraConfig => {
   const configWithoutFetch = mergeWithDefaultConfig(
     _.omit(defaultConfig, 'fetch'),
     _.omit(config?.value ?? {}, 'fetch'),
   )
   const fetch = _.defaults({}, config?.value.fetch, defaultConfig.fetch)
-  const fullConfig = { ...configWithoutFetch, fetch }
+  const fullConfig = { ...configWithoutFetch, fetch, isDataCenter }
 
   validateConfig(fullConfig)
 
@@ -85,7 +91,7 @@ export const adapter: Adapter = {
   operations: context => {
     const isDataCenter = Boolean(context.credentials.value.isDataCenter)
     const defaultConfig = getDefaultConfig({ isDataCenter })
-    const config = adapterConfigFromConfig(context.config, defaultConfig)
+    const config = adapterConfigFromConfig(context.config, defaultConfig, isDataCenter)
     const credentials = credentialsFromConfig(context.credentials)
     const client = new JiraClient({
       credentials,

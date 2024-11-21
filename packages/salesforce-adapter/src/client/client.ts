@@ -252,6 +252,10 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
   })
 
   conn.on('refresh', accessToken => {
+    if (!_.isString(accessToken)) {
+      log.warn('Got a non string access token: %s', inspectValue(accessToken))
+      return
+    }
     log.debug('accessToken has been refreshed', {
       accessToken: toMD5(accessToken),
     })

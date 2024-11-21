@@ -41,6 +41,20 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
+const createSlaType = (typeName: string): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID(JIRA, typeName),
+    fields: {
+      conditionId: {
+        refType: BuiltinTypes.STRING,
+      },
+      name: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
+      },
+    },
+  })
+
 describe('jsmTypesFetchFilter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
@@ -110,21 +124,7 @@ describe('jsmTypesFetchFilter', () => {
       expect(objectTypeIconType.fields.icon.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBe(false)
     })
     it('should change conditionId refType to unknown in SLA types', async () => {
-      const slaTypes = slaTypeNames.map(
-        typeName =>
-          new ObjectType({
-            elemID: new ElemID(JIRA, typeName),
-            fields: {
-              conditionId: {
-                refType: BuiltinTypes.STRING,
-              },
-              name: {
-                refType: BuiltinTypes.STRING,
-                annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
-              },
-            },
-          }),
-      )
+      const slaTypes = slaTypeNames.map(createSlaType)
       elements.push(...slaTypes)
       await filter.onFetch(elements)
       expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual('unknown')
@@ -133,42 +133,14 @@ describe('jsmTypesFetchFilter', () => {
     })
     it('should not change field type if not all sla types are present', async () => {
       const partialSlaTypes = slaTypeNames.slice(0, 2)
-      const slaTypes = partialSlaTypes.map(
-        typeName =>
-          new ObjectType({
-            elemID: new ElemID(JIRA, typeName),
-            fields: {
-              conditionId: {
-                refType: BuiltinTypes.STRING,
-              },
-              name: {
-                refType: BuiltinTypes.STRING,
-                annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
-              },
-            },
-          }),
-      )
+      const slaTypes = partialSlaTypes.map(createSlaType)
       elements.push(...slaTypes)
       await filter.onFetch(elements)
       expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
       expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
     })
     it('should change the deployment annotations of name field in SLA types', async () => {
-      const slaTypes = slaTypeNames.map(
-        typeName =>
-          new ObjectType({
-            elemID: new ElemID(JIRA, typeName),
-            fields: {
-              conditionId: {
-                refType: BuiltinTypes.STRING,
-              },
-              name: {
-                refType: BuiltinTypes.STRING,
-                annotations: { [CORE_ANNOTATIONS.CREATABLE]: true, [CORE_ANNOTATIONS.UPDATABLE]: true },
-              },
-            },
-          }),
-      )
+      const slaTypes = slaTypeNames.map(createSlaType)
       elements.push(...slaTypes)
       await filter.onFetch(elements)
       slaTypes.forEach(slaType => {

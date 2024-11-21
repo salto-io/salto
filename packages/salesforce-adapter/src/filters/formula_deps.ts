@@ -38,12 +38,8 @@ const addDependenciesAnnotation = async (
       `Parse formula '${formula.slice(0, 15)}'`,
     )
 
-    const identifiersInfo = await log.timeDebug(
-      () =>
-        Promise.all(
-          formulaIdentifiers.map(async identifier => parseFormulaIdentifier(identifier, field.parent.elemID.typeName)),
-        ),
-      'Convert formula identifiers to references',
+    const identifiersInfo = await Promise.all(
+      formulaIdentifiers.map(async identifier => parseFormulaIdentifier(identifier, field.parent.elemID.typeName)),
     )
 
     // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the

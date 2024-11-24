@@ -6,22 +6,16 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import * as adapterUtils from '@salto-io/adapter-utils'
-import { configType, MetadataInstance } from '../src/types'
-import { optionsType, getConfig, SalesforceConfigOptionsType } from '../src/config_creator'
-import {
-  MUTING_PERMISSION_SET_METADATA_TYPE,
-  PERMISSION_SET_GROUP_METADATA_TYPE,
-  PERMISSION_SET_METADATA_TYPE,
-  PROFILE_METADATA_TYPE,
-} from '../src/constants'
+import { configType } from '../src/types'
+import { optionsType, configWithCPQ, getConfig, SalesforceConfigOptionsType } from '../src/config_creator'
+
+const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
+const mockCreateDefaultInstanceFromType = jest.fn().mockResolvedValue(mockDefaultInstanceFromTypeResult)
 
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  createDefaultInstanceFromType: jest.fn(),
+  createDefaultInstanceFromType: jest.fn().mockImplementation((...args) => mockCreateDefaultInstanceFromType(...args)),
 }))
-
-const mockCreateDefaultInstanceFromType = jest.mocked(adapterUtils).createDefaultInstanceFromType
 
 const mockLogError = jest.fn()
 jest.mock('@salto-io/logging', () => ({
@@ -36,21 +30,12 @@ jest.mock('@salto-io/logging', () => ({
 describe('config_creator', () => {
   let options: InstanceElement | undefined
   let resultConfig: InstanceElement
-  let mockDefaultInstanceFromTypeResult: InstanceElement
 
   const createMockOptionsInstance = (value: SalesforceConfigOptionsType): InstanceElement =>
     new InstanceElement('options', optionsType, value)
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType, {
-      fetch: {
-        metadata: {
-          exclude: [],
-        },
-      },
-    })
-    mockCreateDefaultInstanceFromType.mockResolvedValue(mockDefaultInstanceFromTypeResult)
   })
 
   describe('when input contains cpq equal true', () => {
@@ -59,7 +44,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should return adapter config with cpq', async () => {
-      expect(resultConfig.value.fetch.data).toBeDefined()
+      expect(resultConfig).toEqual(configWithCPQ)
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -70,57 +55,8 @@ describe('config_creator', () => {
         options = createMockOptionsInstance({
           managedPackages: ['sbaa, SBQQ (CPQ)'],
         })
-        expect((await getConfig(options)).value.fetch.data).toBeDefined()
+        expect(await getConfig(options)).toEqual(configWithCPQ)
         expect(mockLogError).not.toHaveBeenCalled()
-      })
-    })
-  })
-
-  describe('when input has manageProfilesAndPermissionSets', () => {
-    const getExcludedTypesFromConfig = (instance: InstanceElement): string[] =>
-      instance.value.fetch.metadata.exclude.map((entry: MetadataInstance) => entry.metadataType)
-    describe('without CPQ', () => {
-      it('should exclude Profiles and PermissionSets when value is false', async () => {
-        const configInstance = await getConfig(createMockOptionsInstance({ manageProfilesAndPermissionSets: false }))
-        expect(getExcludedTypesFromConfig(configInstance)).toIncludeMultiple([
-          PROFILE_METADATA_TYPE,
-          PERMISSION_SET_METADATA_TYPE,
-          MUTING_PERMISSION_SET_METADATA_TYPE,
-          PERMISSION_SET_GROUP_METADATA_TYPE,
-        ])
-      })
-      it('should include Profiles and PermissionSets when value is true', async () => {
-        const configInstance = await getConfig(createMockOptionsInstance({ manageProfilesAndPermissionSets: true }))
-        expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
-          PROFILE_METADATA_TYPE,
-          PERMISSION_SET_METADATA_TYPE,
-          MUTING_PERMISSION_SET_METADATA_TYPE,
-          PERMISSION_SET_GROUP_METADATA_TYPE,
-        ])
-      })
-    })
-    describe('with CPQ', () => {
-      it('should exclude Profiles and PermissionSets when value is false', async () => {
-        const configInstance = await getConfig(
-          createMockOptionsInstance({ manageProfilesAndPermissionSets: false, managedPackages: ['sbaa, SBQQ (CPQ)'] }),
-        )
-        expect(getExcludedTypesFromConfig(configInstance)).toIncludeMultiple([
-          PROFILE_METADATA_TYPE,
-          PERMISSION_SET_METADATA_TYPE,
-          MUTING_PERMISSION_SET_METADATA_TYPE,
-          PERMISSION_SET_GROUP_METADATA_TYPE,
-        ])
-      })
-      it('should include Profiles and PermissionSets when value is true', async () => {
-        const configInstance = await getConfig(
-          createMockOptionsInstance({ manageProfilesAndPermissionSets: true, managedPackages: ['sbaa, SBQQ (CPQ)'] }),
-        )
-        expect(getExcludedTypesFromConfig(configInstance)).not.toIncludeAnyMembers([
-          PROFILE_METADATA_TYPE,
-          PERMISSION_SET_METADATA_TYPE,
-          MUTING_PERMISSION_SET_METADATA_TYPE,
-          PERMISSION_SET_GROUP_METADATA_TYPE,
-        ])
       })
     })
   })

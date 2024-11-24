@@ -39,10 +39,12 @@ function validateConfig(config: Values, isDataCenter: boolean): asserts config i
   Object.values(getApiDefinitions(apiDefinitions)).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })
-  if(isDataCenter) {
-    if(fetch.enableJSM || fetch.enableJSMPremium || fetch.enableJsmExperimental) {
+  if (isDataCenter) {
+    if (fetch.enableJSM || fetch.enableJSMPremium || fetch.enableJsmExperimental) {
       log.error('JSM is not supported in Jira DC config')
-      throw new Error('Failed to load Jira config. JSM is not supported for Jira DC, please remove enableJSM flag from the config file and try again')
+      throw new Error(
+        'Failed to load Jira config. JSM is not supported for Jira DC, please remove enableJSM flag from the config file and try again',
+      )
     }
   }
   validateJiraFetchConfig({

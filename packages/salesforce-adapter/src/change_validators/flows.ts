@@ -269,10 +269,10 @@ const activeFlowValidator =
       .filter(isModificationChange)
       .filter(isActivatingChange)
       .map(change => {
+        if (getFlowStatus(change.data.before) === INVALID_DRAFT) {
+          return activateInvalidFlowError(getChangeData(change))
+        }
         if (isActivatingChangeOnly(change)) {
-          if (getFlowStatus(change.data.before) === INVALID_DRAFT) {
-            return activateInvalidFlowError(getChangeData(change))
-          }
           return activatingFlowError(getChangeData(change), isEnableFlowDeployAsActiveEnabled)
         }
         return activeFlowModificationError(getChangeData(change), isEnableFlowDeployAsActiveEnabled, baseUrl)

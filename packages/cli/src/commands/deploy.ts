@@ -81,7 +81,7 @@ const printStartDeploy = async (output: CliOutput, executingDeploy: boolean, che
   }
 }
 
-export const getReversedSummarizeDeployChanges = (
+const getReversedSummarizeDeployChanges = (
   summary: Record<DetailedChangeId, DeploySummaryResult>,
 ): Record<DeploySummaryResult, DetailedChangeId[]> => {
   const resultToElemId: Record<DeploySummaryResult, DetailedChangeId[]> = {

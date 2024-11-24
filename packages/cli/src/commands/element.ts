@@ -520,13 +520,16 @@ export const getParentUrl = async (workspace: Workspace, childElement: Element):
   if (parentsArray.length === 0) {
     return undefined
   }
-  const parentElements = await Promise.all(parentsArray.map(parent => workspace.getValue(parent.elemID)))
-  const parentElementWithUrl = parentElements.find(
-    parentElement => parentElement.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined,
-  )
-  const url =
-    parentElementWithUrl !== undefined ? parentElementWithUrl.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
-  return url
+  const parentRef = await awu(parentsArray).find(async parent => {
+    const parentElement = await workspace.getValue(parent.elemID)
+    if (!isElement(parentElement)) {
+      return false
+    }
+    return parentElement.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
+  })
+
+  const parentElem = parentRef !== undefined ? await workspace.getValue(parentRef.elemID) : undefined
+  return isElement(parentElem) ? parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
 }
 
 export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input, output, workspace }) => {

@@ -7,22 +7,28 @@
  */
 import _ from 'lodash'
 import {
-  Element,
+  Element, ElemID,
   Field,
   InstanceElement,
   isField,
   isInstanceElement,
   isObjectType,
-  isReferenceExpression,
+  isReferenceExpression, ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { getParents, inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { apiNameSync, buildElementsSourceForFetch, isInstanceOfTypeSync, metadataTypeSync } from './utils'
-import { FIELD_ANNOTATIONS, RECORD_TYPE_METADATA_TYPE, VALUE_SET_FIELDS } from '../constants'
+import {
+  BUSINESS_PROCESS_METADATA_TYPE,
+  FIELD_ANNOTATIONS,
+  RECORD_TYPE_METADATA_TYPE, SALESFORCE,
+  VALUE_SET_FIELDS,
+} from '../constants'
 import { ORDERED_MAP_VALUES_FIELD } from './convert_maps'
 
 const log = logger(module)
@@ -155,6 +161,48 @@ const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValues
   }, {})
 }
 
+const businessProcessParentToValueSetElemID: Record<string, string> = {
+  Lead: new ElemID(SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadStatus').getFullName(),
+  Opportunity: new ElemID(SALESFORCE, STANDARD_VALUE_SET, 'instance', 'OpportunityStage').getFullName(),
+  Case: new ElemID(SALESFORCE, STANDARD_VALUE_SET, 'instance', 'CaseStatus').getFullName(),
+}
+
+type BusinessProcessPicklistValues = {
+  fullName: string
+}[]
+
+const isBusinessProcessPicklistValues = (value: unknown): value is BusinessProcessPicklistValues =>
+  _.isArray(value) && value.every(v => _.isObject(v) && _.isString(_.get(v, 'fullName')))
+
+
+const isObjectTypeRef = (ref: ReferenceExpression): ref is ReferenceExpression<ObjectType> => (
+  isReferenceExpression(ref) && isObjectType(ref.value)
+)
+
+const createReferencesForBusinessProcess = ({instance, picklistValuesReferenceIndex, nonHandledParents}:{instance: InstanceElement; picklistValuesReferenceIndex: PicklistValuesReferenceIndex; nonHandledParents: Set<string>}): void => {
+  const [parentRef] = getParents(instance)
+  if (!isObjectTypeRef(parentRef)) {
+    return
+  }
+  const parentName = apiNameSync(parentRef.value) ?? ''
+  const valueSetElemID: string | undefined = businessProcessParentToValueSetElemID[parentName]
+  if (valueSetElemID === undefined) {
+    nonHandledParents.add(parentName)
+    return
+  }
+  const { values } = instance.value
+  if (!isBusinessProcessPicklistValues(values)) {
+    return
+  }
+  values.forEach(value => {
+    const ref: ReferenceExpression | undefined =
+      picklistValuesReferenceIndex[valueSetElemID]?.[safeDecodeURIComponent(value.fullName)]
+    if (ref) {
+      _.set(value, 'fullName', ref)
+    }
+  })
+}
+
 /**
  * This filter modifies picklist values in `RecordType` to be references to the original value definitions.
  */
@@ -167,6 +215,14 @@ const filterCreator: FilterCreator = ({ config }) => ({
     elements
       .filter(isInstanceOfTypeSync(RECORD_TYPE_METADATA_TYPE))
       .forEach(instance => createReferencesForRecordType(instance, picklistValuesReferenceIndex))
+    const nonHandledParents = new Set<string>()
+    elements
+      .filter(isInstanceOfTypeSync(BUSINESS_PROCESS_METADATA_TYPE))
+      .forEach(instance =>
+        createReferencesForBusinessProcess({ instance, picklistValuesReferenceIndex, nonHandledParents }))
+    if (nonHandledParents.size > 0) {
+      log.warn('Failed to resolve picklist values for the following business process parents: %s', inspectValue(nonHandledParents))
+    }
   },
 })
 

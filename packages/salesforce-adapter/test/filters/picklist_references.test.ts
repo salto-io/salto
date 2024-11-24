@@ -7,34 +7,45 @@
  */
 import { ReferenceExpression, InstanceElement, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
-import filterCreator from '../../src/filters/picklist_references'
+import filterCreator, { BUSINESS_PROCESS_PARENTS, BusinessProcessParent } from '../../src/filters/picklist_references'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 import { mockTypes } from '../mock_elements'
 import { Types } from '../../src/transformers/transformer'
-import { VALUE_SET_FIELDS } from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../../src/constants'
 
 describe('picklistReferences filter', () => {
+  const gvs = new InstanceElement('MyGVS', mockTypes.GlobalValueSet, {
+    customValue: {
+      values: {
+        val1: { fullName: 'val1', default: true, label: 'val1' },
+        val2: { fullName: 'val2', default: false, label: 'val2' },
+      },
+    },
+  })
+
+  const svs = new InstanceElement('MySVS', mockTypes.StandardValueSet, {
+    standardValue: {
+      values: {
+        val1: { fullName: 'val1', default: true, label: 'val1' },
+        val2: { fullName: 'val2', default: false, label: 'val2' },
+      },
+    },
+  })
+
+  let filter: FilterWith<'onFetch'>
+
+  beforeEach(() => {
+    filter = filterCreator({
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({ fetchParams: { target: [] } }),
+        elementsSource: buildElementsSourceFromElements([gvs, svs]),
+      },
+    }) as typeof filter
+  })
   describe('RecordType instances', () => {
-    const gvs = new InstanceElement('MyGVS', mockTypes.GlobalValueSet, {
-      customValue: {
-        values: {
-          val1: { fullName: 'val1', default: true, label: 'val1' },
-          val2: { fullName: 'val2', default: false, label: 'val2' },
-        },
-      },
-    })
-
-    const svs = new InstanceElement('MySVS', mockTypes.StandardValueSet, {
-      standardValue: {
-        values: {
-          val1: { fullName: 'val1', default: true, label: 'val1' },
-          val2: { fullName: 'val2', default: false, label: 'val2' },
-        },
-      },
-    })
-
     const highCustomObject = createCustomObjectType('High', {})
 
     const accountObjectType = new ObjectType({
@@ -98,21 +109,10 @@ describe('picklistReferences filter', () => {
         },
       },
     })
-
-    type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    let filter: FilterType
     let recordType: InstanceElement
     let recordTypeWithoutPicklistValues: InstanceElement
 
     beforeEach(async () => {
-      filter = filterCreator({
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ fetchParams: { target: [] } }),
-          elementsSource: buildElementsSourceFromElements([gvs, svs]),
-        },
-      }) as FilterType
-
       recordType = new InstanceElement(
         'RecordType',
         mockTypes.RecordType,
@@ -262,22 +262,53 @@ describe('picklistReferences filter', () => {
     })
   })
   describe('BusinessProcess instances', () => {
-    let businessProcessInstance: InstanceElement
-
-    beforeEach(() => {
-      businessProcessInstance = new InstanceElement(
-        'BusinessProcess',
-        mockTypes.BusinessProcess,
-        {
-          values: [
-            { fullName: 'val1', default: true },
-            { fullName: 'val2', default: false },
-          ],
-        },
-      )
-    })
-    it('should create references', () => {
-      expect(businessProcessInstance.value.values).toBeDefined()
+    const businessProcessParentToValueSetName: Record<BusinessProcessParent, string> = {
+      Lead: 'LeadStatus',
+      Opportunity: 'OpportunityStage',
+      Case: 'CaseStatus',
+    }
+    describe.each(BUSINESS_PROCESS_PARENTS)('%s BusinessProcess', parent => {
+      let businessProcess: InstanceElement
+      let valueSet: InstanceElement
+      beforeEach(() => {
+        const parentObjectType = createCustomObjectType(parent, {})
+        businessProcess = new InstanceElement(
+          `${parent}_BusinessProcess`,
+          mockTypes.BusinessProcess,
+          {
+            [INSTANCE_FULL_NAME_FIELD]: `${parent}.BusinessProcess`,
+            values: [
+              { fullName: 'val1' },
+              { fullName: 'val2' },
+            ],
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentObjectType.elemID, parentObjectType)],
+          },
+        )
+      })
+      describe('when the StandardValueSet is in the old format (not OrderedMap)', () => {
+        valueSet = new InstanceElement(
+          businessProcessParentToValueSetName[parent],
+          mockTypes.StandardValueSet,
+          {
+            standardValue: {
+              values: [
+                { fullName: 'val1' },
+                { fullName: 'val2' },
+              ],
+            },
+          },
+        )
+        it('should not create references', async () => {
+          await filter.onFetch([businessProcess, valueSet])
+          expect(businessProcess.value.values).toEqual([
+            { fullName: 'val1' },
+            { fullName: 'val2' },
+          ])
+        })
+      })
     })
   })
 })

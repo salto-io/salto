@@ -21,12 +21,17 @@ import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { DeployApiDefinitions, DeployableRequestDefinition } from '../../definitions/system/deploy'
 import { DefaultWithCustomizations, queryWithDefault } from '../../definitions'
-import { ERROR_MESSAGE, detailedErrorMessage } from './check_deployment_based_on_config'
+import {
+  ERROR_MESSAGE,
+  detailedErrorMessage,
+  createChangeErrors as createChangeErrorsBasedOnConfig,
+} from './check_deployment_based_on_config'
 import {
   APIDefinitionsOptions,
   ResolveAdditionalActionType,
   ResolveClientOptionsType,
 } from '../../definitions/system/api'
+import { TypeConfig } from '../../config_deprecated'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -59,10 +64,13 @@ const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
 // This is the new version of the createCheckDeploymentBasedOnConfigValidator CV that support definitions
 export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends APIDefinitionsOptions = {}>({
   deployDefinitions,
+  typesConfig,
   typesDeployedViaParent = [],
   typesWithNoDeploy = [],
 }: {
   deployDefinitions: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
+  // While migrating to definitions, it's useful to validate against old definitions for types that weren't migrated yet.
+  typesConfig?: Record<string, TypeConfig>
   typesDeployedViaParent?: string[]
   typesWithNoDeploy?: string[]
 }): ChangeValidator => {
@@ -75,8 +83,15 @@ export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends
           return []
         }
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
-          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction ?? {}
-          return createChangeErrors(requestsByAction, element.elemID, change.action)
+          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction
+          if (requestsByAction === undefined && typesConfig !== undefined) {
+            return createChangeErrorsBasedOnConfig(
+              typesConfig[typeName]?.deployRequests ?? {},
+              element.elemID,
+              change.action,
+            )
+          }
+          return createChangeErrors(requestsByAction ?? {}, element.elemID, change.action)
         }
         if (typesWithNoDeploy.includes(element.elemID.typeName)) {
           return []

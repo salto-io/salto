@@ -21,7 +21,7 @@ export type CredsNodeEnvironmentOpts = {
 
 export type JestEnvironmentConstructorArgs = ConstructorParameters<typeof NodeEnvironment>
 
-export class SaltoE2EJestEnvironment extends NodeEnvironment {
+class SaltoE2EJestEnvironment extends NodeEnvironment {
   protected readonly log: Logger
 
   protected readonly runningTasksPrinter: IntervalScheduler

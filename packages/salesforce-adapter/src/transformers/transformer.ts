@@ -548,7 +548,7 @@ export class Types {
 
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<ALL_FIELD_TYPE_NAMES, PrimitiveType> = {
-    serviceid: BuiltinTypes.SERVICE_ID,
+    [INTERNAL_FIELD_TYPE_NAMES.SERVICE_ID]: BuiltinTypes.SERVICE_ID,
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,

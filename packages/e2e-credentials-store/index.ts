@@ -10,7 +10,7 @@ import cliMain from './src/cli'
 export { default as creds, CredsSpec, CredsLease } from './src/jest-environment/creds'
 
 export { default as createEnvUtils } from './src/process_env'
-export { SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from './src/jest-environment/index'
+export { default as SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from './src/jest-environment/index'
 export { default as IntervalScheduler } from './src/jest-environment/interval_scheduler'
 export * from './src/types'
 export const cli = { main: cliMain }

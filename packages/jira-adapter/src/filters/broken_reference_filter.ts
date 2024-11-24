@@ -116,7 +116,7 @@ export const BROKEN_REFERENCE_TYPE_MAP: Record<string, BrokenReferenceInfo[]> = 
 
 // we allow broken references in some cases, for instance between Automation to Project,
 // so in this filter we remove those broken references in preDeploy and add them back in onDeploy
-export const filter: FilterCreator = () => {
+const filter: FilterCreator = () => {
   const preDeployReferences: Record<string, Value> = {}
   return {
     name: 'BrokenReferenceFilter',

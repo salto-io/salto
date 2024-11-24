@@ -107,7 +107,6 @@ import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
-import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
 import serviceUrlJsmFilter from './filters/service_url/service_url_jsm'
@@ -345,9 +344,6 @@ export const DEFAULT_FILTERS = [
   createReferencesIssueLayoutFilter,
   // Must run after createReferencesIssueLayoutFilter
   requestTypelayoutsToValuesFilter,
-  // Must run after fieldReferencesFilter
-  contextsProjectsFilter,
-  // must run after contextsProjectsFilter
   projectFieldContextOrder,
   fieldContextOptionsSplitFilter,
   fieldConfigurationIrrelevantFields,

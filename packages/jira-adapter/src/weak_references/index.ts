@@ -13,17 +13,23 @@ import { automationProjectsHandler } from './automation_projects'
 import { WeakReferencesHandler } from './weak_references_handler'
 import { fieldConfigurationsHandler } from './field_configuration_items'
 import { queueFieldsHandler } from './queue_columns'
+import { contextProjectsHandler } from './context_projects'
+import { fieldContextsHandler } from './field_contexts'
 
 export const customReferenceHandlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   automationProjects: automationProjectsHandler,
   fieldConfigurationsHandler,
   queueFieldsHandler,
+  contextProjectsHandler,
+  fieldContextsHandler,
 }
 
 const defaultCustomReferencesConfig: Required<JiraCustomReferencesConfig> = {
   automationProjects: true,
   fieldConfigurationsHandler: true,
   queueFieldsHandler: true,
+  contextProjectsHandler: true,
+  fieldContextsHandler: true,
 }
 
 const getCustomReferencesConfig = (

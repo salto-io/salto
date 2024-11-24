@@ -552,38 +552,6 @@ describe.each([false, true])(
       })
     })
 
-    describe('init with parsed files', () => {
-      it('should return elements from given parsed files', async () => {
-        const filename = 'mytest.nacl'
-        const elemID = new ElemID('dummy', 'elem')
-        const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-        const elements = [elem]
-        const parsedFiles: ParsedNaclFile[] = [
-          {
-            filename,
-            elements: () => Promise.resolve(elements),
-            buffer: '',
-            data: {
-              errors: () => Promise.resolve([]),
-              referenced: () => Promise.resolve([]),
-              staticFiles: () => Promise.resolve([]),
-            },
-          },
-        ]
-        const naclSource = naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-          parsedFiles,
-        )
-        const parsed = await (await naclSource).getParsedNaclFile(filename)
-        expect(parsed).toBeDefined()
-        expect(await (parsed as ParsedNaclFile).elements()).toEqual([elem])
-      })
-    })
-
     describe('getParsedNaclFile', () => {
       let naclSource: NaclFilesSource
       const mockFileData = { buffer: 'someData {}', filename: 'somefile.nacl' }

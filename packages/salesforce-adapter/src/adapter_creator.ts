@@ -35,7 +35,7 @@ import {
   OauthAccessTokenCredentials,
   CLIENT_CONFIG,
   SalesforceClientConfig,
-  RetryStrategyName,
+  RETRY_STRATEGY_NAMES,
   FETCH_CONFIG,
   MAX_ITEMS_IN_RETRIEVE_REQUEST,
   ENUM_FIELD_PERMISSIONS,
@@ -96,7 +96,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
     if (
       clientConfig?.retry?.retryStrategy !== undefined &&
-      RetryStrategyName[clientConfig.retry.retryStrategy] === undefined
+      !RETRY_STRATEGY_NAMES.includes(clientConfig.retry.retryStrategy)
     ) {
       throw new ConfigValidationError(
         [CLIENT_CONFIG, 'clientConfig', 'retry', 'retryStrategy'],

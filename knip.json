@@ -10,15 +10,6 @@
       "project": ["*.{js,mjs}", ".circleci/**/*.js", "build_utils/**/*.js"],
       "ignoreDependencies": ["jest-junit", "turbo"]
     },
-    ".circleci": {
-      "entry": "scripts/*.js"
-    },
-    "build_utils": {
-      "entry": "*.js"
-    },
-    "docs": {
-      "entry": "showdown_wrapper.js"
-    },
     "packages/*": {
       "entry": ["index.ts", "e2e_test/**/*.test.ts"],
       "ignore": ["jest-dynalite-config.js", "e2e_test/credentials_store/adapter.ts", "test/**/test_data/**/*"]

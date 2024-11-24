@@ -44,7 +44,7 @@ function validateConfig(config: Values, isDataCenter: boolean): asserts config i
       log.error('JSM is not supported in Jira DC config')
       throw new Error(
         'Failed to load Jira config. JSM is not supported for Jira DC, please remove enableJSM flag from the config file and try again\n' +
-        'More information about Jira configuration options in Salto can be found here: https://github.com/salto-io/salto/blob/main/packages/jira-adapter/config_doc.md'
+          'More information about Jira configuration options in Salto can be found here: https://github.com/salto-io/salto/blob/main/packages/jira-adapter/config_doc.md',
       )
     }
   }

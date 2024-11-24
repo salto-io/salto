@@ -123,7 +123,7 @@ describe('adapter creator', () => {
                 enableJSM: true,
               },
             } as unknown as JiraConfig),
-          })
+          }),
         ).toThrow()
       })
     })

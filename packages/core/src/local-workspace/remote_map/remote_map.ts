@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { remoteMapLocations } from './location_pool'
 import { LocationCounters } from './counters'
+import { LocationCache } from './location_cache'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -443,7 +444,7 @@ export const createRemoteMapCreator = (
 ): remoteMap.RemoteMapCreator => {
   // This is a problem - we can create more than one remote map creator for a location
   // if we do that, we don't know how many times we need to return the location cache :(
-  const { counters: statCounters, cache: locationCache } = remoteMapLocations.get(location)
+  const { counters: statCounters, cache: locationCacheUntyped } = remoteMapLocations.get(location)
 
   let persistentDB: rocksdb
   let tmpDB: rocksdb
@@ -454,6 +455,7 @@ export const createRemoteMapCreator = (
     serialize,
     deserialize,
   }: remoteMap.CreateRemoteMapParams<T>): Promise<remoteMap.RemoteMap<T, K>> => {
+    const locationCache = locationCacheUntyped as LocationCache<Promise<T | undefined>>
     let wasClearCalled = false
     let isNamespaceEmpty: boolean | undefined
     const delKeys = new Set<string>()
@@ -566,7 +568,7 @@ export const createRemoteMapCreator = (
       value,
     }: remoteMap.RemoteMapEntry<string>): Promise<remoteMap.RemoteMapEntry<T, K>> => {
       const cacheKey = keyToTempDBKey(key)
-      const cacheValue = await (locationCache.get(cacheKey) as Promise<T | undefined>)
+      const cacheValue: T | undefined = await locationCache.get(cacheKey)
       if (cacheValue !== undefined) {
         statCounters.LocationCacheHit.inc()
         return { key: key as K, value: cacheValue }
@@ -611,64 +613,59 @@ export const createRemoteMapCreator = (
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       return awu(getDataIterableWithPages(opts)).map(entries => entries.map(entry => entry.key as K))
     }
-    const getImpl = (key: string): Promise<T | undefined> =>
-      new Promise(resolve => {
-        if (delKeys.has(key)) {
-          resolve(undefined)
-          return
-        }
-        if (locationCache.has(keyToTempDBKey(key))) {
-          const cached = locationCache.get(keyToTempDBKey(key)) as Promise<T | undefined>
-          if (cached !== undefined) {
-            statCounters.LocationCacheHit.inc()
-            statCounters.RemoteMapHit.inc()
-            resolve(
-              cached.then(value => {
-                if (value !== undefined) {
-                  isNamespaceEmpty = false
-                }
-                return value
-              }),
-            )
+    // Wrapper for the db.get function that is awaitable.
+    const getAwaitable = async (db: rocksdb, key: string): Promise<T | undefined> =>
+      new Promise<T | undefined>(resolve => {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        db.get(key, async (error, value) => {
+          if (error) {
+            resolve(undefined)
             return
           }
-        }
-        statCounters.LocationCacheMiss.inc()
-        const cachePromise = new Promise<T | undefined>(resolveInner => {
-          const resolveRet = async (value: Buffer | string): Promise<void> => {
-            const ret = await deserialize(value.toString())
-            isNamespaceEmpty = false
-            resolveInner(ret)
-          }
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
-          tmpDB.get(keyToTempDBKey(key), async (error, value) => {
-            if (error) {
-              if (wasClearCalled) {
-                statCounters.RemoteMapMiss.inc()
-                locationCache.del(keyToTempDBKey(key))
-                resolveInner(undefined)
-                return
-              }
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
-                if (innerError) {
-                  statCounters.RemoteMapMiss.inc()
-                  locationCache.del(keyToTempDBKey(key))
-                  resolveInner(undefined)
-                  return
-                }
-                await resolveRet(innerValue)
-                statCounters.RemoteMapHit.inc()
-              })
-            } else {
-              await resolveRet(value)
-              statCounters.RemoteMapHit.inc()
-            }
-          })
+          resolve(await deserialize(value.toString()))
         })
-        locationCache.set(keyToTempDBKey(key), cachePromise)
-        resolve(cachePromise)
       })
+    // Retrieve a value from the DBs directly, ignoring the cache.
+    // If the value is not found in the temporary db, it will be retrieved from the persistent db.
+    const getFromDb = async (key: string): Promise<T | undefined> => {
+      let valueFromDb: T | undefined
+      valueFromDb = await getAwaitable(tmpDB, keyToTempDBKey(key))
+      if (valueFromDb === undefined) {
+        if (wasClearCalled) {
+          statCounters.RemoteMapMiss.inc()
+          locationCache.del(keyToTempDBKey(key))
+          return undefined
+        }
+        valueFromDb = await getAwaitable(persistentDB, keyToDBKey(key))
+      }
+      if (valueFromDb !== undefined) {
+        statCounters.RemoteMapHit.inc()
+        isNamespaceEmpty = false
+      }
+      return valueFromDb
+    }
+    const getImpl = async (key: string): Promise<T | undefined> => {
+      if (delKeys.has(key)) {
+        return undefined
+      }
+      const cached = locationCache.get(keyToTempDBKey(key))
+      if (cached !== undefined) {
+        const postCacheOperation = async (): Promise<T | undefined> => {
+          const value = await cached
+          if (value !== undefined) {
+            isNamespaceEmpty = false
+            statCounters.LocationCacheHit.inc()
+            statCounters.RemoteMapHit.inc()
+          }
+          return value
+        }
+        return postCacheOperation()
+      }
+      statCounters.LocationCacheMiss.inc()
+      const cachePromise = getFromDb(key)
+      locationCache.set(keyToTempDBKey(key), cachePromise)
+      return cachePromise
+    }
     const deleteImpl = async (key: string): Promise<void> => {
       delKeys.add(key)
       locationCache.del(key)
@@ -800,16 +797,18 @@ export const createRemoteMapCreator = (
       },
       delete: deleteImpl,
       has: async (key: string): Promise<boolean> => {
-        if ((await getImpl(key)) !== undefined) {
-          isNamespaceEmpty = false
-          return true
+        if (locationCache.has(keyToTempDBKey(key))) {
+          // If the key is already in the cache, then we won't incur additional cost by calling getImpl here.
+          if ((await getImpl(key)) !== undefined) {
+            isNamespaceEmpty = false
+            return true
+          }
         }
-        const hasKeyImpl = async (k: string, db: rocksdb): Promise<boolean> =>
+        const hasKeyImpl = (k: string, db: rocksdb): Promise<boolean> =>
           new Promise(resolve => {
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             db.get(k, async (error, value) => {
-              const ret = !error && value !== undefined
-              resolve(ret)
+              resolve(!error && value !== undefined)
             })
           })
         const found =

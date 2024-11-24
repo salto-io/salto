@@ -26,8 +26,8 @@ const { validateSwaggerApiDefinitionConfig, validateDuckTypeApiDefinitionConfig 
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => config.value as Credentials
 
-function validateConfig(config: Values): asserts config is JiraConfig {
-  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions, jsmApiDefinitions, isDataCenter } = config
+function validateConfig(config: Values, isDataCenter: boolean): asserts config is JiraConfig {
+  const { client, apiDefinitions, fetch, scriptRunnerApiDefinitions, jsmApiDefinitions } = config
 
   validateClientConfig('client', client)
   if (!_.isPlainObject(apiDefinitions)) {
@@ -41,7 +41,8 @@ function validateConfig(config: Values): asserts config is JiraConfig {
   })
   if(isDataCenter) {
     if(fetch.enableJSM || fetch.enableJSMPremium || fetch.enableJsmExperimental) {
-      throw new Error('JSM is not supported for Jira DC')
+      log.error("JSM is not supported in Jira DC config")
+      throw new Error('Failed to load Jira config. JSM is not supported for Jira DC, please remove enableJSM flag from the config file and try again')
     }
   }
   validateJiraFetchConfig({
@@ -65,9 +66,9 @@ const adapterConfigFromConfig = (
     _.omit(config?.value ?? {}, 'fetch'),
   )
   const fetch = _.defaults({}, config?.value.fetch, defaultConfig.fetch)
-  const fullConfig = { ...configWithoutFetch, fetch, isDataCenter }
+  const fullConfig = { ...configWithoutFetch, fetch }
 
-  validateConfig(fullConfig)
+  validateConfig(fullConfig, isDataCenter)
 
   // Hack to make sure this is coupled with the type definition of JiraConfig
   const adapterConfig: Record<keyof Required<JiraConfig>, null> = {

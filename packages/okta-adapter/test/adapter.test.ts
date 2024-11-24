@@ -309,7 +309,7 @@ describe('adapter', () => {
           'okta.BehaviorRule.instance.Velocity',
           'okta.Brand.instance.Default_Brand@s',
           'okta.Brand.instance.Shir_Brand_Test@b',
-          'okta.BrandTheme.instance.Default_Brand@s',
+          'okta.BrandTheme.instance.Default_Brand_s@um',
           'okta.BrandTheme.instance.Shir_Brand_Test_b@uum',
           'okta.BrowserPlugin.instance',
           'okta.DeviceAssurance.instance.IOS_policy@s',

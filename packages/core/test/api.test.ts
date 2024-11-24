@@ -31,7 +31,7 @@ import {
   isObjectType,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes,
+  PrimitiveTypes, ProgressReporter,
   ReferenceExpression,
   SeverityLevel,
   toChange,
@@ -1518,5 +1518,79 @@ describe('api.ts', () => {
       expect(res).toEqual({ changes: [], errors: [] })
       expect(mockFixElements).toHaveBeenCalledTimes(0)
     })
+  })
+
+  describe('cancelValidate', () => {
+    const SERVICE_VALIDATION_ID = 'service-validation-id'
+    const ACCOUNT_NAME = 'test1'
+    const ADAPTER_NAME = 'test'
+
+    let ws: workspace.Workspace
+    let mockCancelValidate: jest.MockedFunction<Required<AdapterOperations>['cancelValidate']>
+
+    beforeEach(() => {
+      ws = mockWorkspace({
+        accounts: [ACCOUNT_NAME],
+        accountToServiceName: {
+          [ACCOUNT_NAME]: ADAPTER_NAME,
+        },
+      })
+      ;(ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
+        [ACCOUNT_NAME]: mockConfigInstance,
+      })
+    })
+    describe('when the adapter supports cancelValidate', () => {
+      beforeEach(() => {
+        mockCancelValidate = mockFunction<Required<AdapterOperations>['cancelValidate']>()
+        adapterCreators[ADAPTER_NAME] = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+            deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+            cancelValidate: mockCancelValidate,
+          }),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
+        }
+      })
+
+      it('should call cancelValidate', async () => {
+        const progressReporter: ProgressReporter = {reportProgress: () => {}}
+        await api.cancelValidate({ workspace: ws, serviceValidationId: SERVICE_VALIDATION_ID, account: ACCOUNT_NAME, progressReporter })
+        expect(mockCancelValidate).toHaveBeenCalledTimes(1)
+        expect(mockCancelValidate).toHaveBeenCalledWith({ serviceValidationId: SERVICE_VALIDATION_ID, progressReporter })
+      })
+    })
+    describe('when the adapter does not support cancelValidate', () => {
+      beforeEach(() => {
+        adapterCreators[ADAPTER_NAME] = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+            deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+          }),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
+        }
+      })
+
+      it('should throw Error', async () => {
+        const progressReporter: ProgressReporter = {reportProgress: () => {}}
+        await expect(api.cancelValidate({ workspace: ws, serviceValidationId: SERVICE_VALIDATION_ID, account: ACCOUNT_NAME, progressReporter })).rejects.toThrow()
+      })
+    })
+    describe('when invoked with non existing account', () => {
+      it('should throw an error', async () => {
+        const progressReporter: ProgressReporter = {reportProgress: () => {}}
+        await expect(api.cancelValidate({ workspace: ws, serviceValidationId: SERVICE_VALIDATION_ID, account: 'non-existing-account', progressReporter })).rejects.toThrow()
+      })
+    })
+
   })
 })

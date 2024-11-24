@@ -42,6 +42,7 @@ import {
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
 } from '../src/client/user_facing_errors'
+import { nullProgressReporter } from './utils'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -1513,6 +1514,34 @@ describe('salesforce client', () => {
         expect(await client.listMetadataObjects({ type: APEX_CLASS_METADATA_TYPE })).toEqual(listResult)
         expect(dodoScope.isDone()).toBeTrue()
       })
+    })
+  })
+  describe('cancelValidate', () => {
+    it('should cancel the validation and poll until the operation is done', async () => {
+      const dodoScope = nock('http://dodo22')
+        .patch(/.*/, /.*/)
+        .reply(200, {
+          deployResult: {
+            status: 'Canceling',
+          },
+        })
+        .patch(/.*/, /.*/)
+        .reply(200, {
+          deployResult: {
+            status: 'Canceled',
+          },
+        })
+      await expect(
+        client.cancelValidate({ progressReporter: nullProgressReporter, serviceValidationId: '123' }),
+      ).resolves.not.toThrow()
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should not throw when canceling the deployment fails', async () => {
+      const dodoScope = nock('http://dodo22').patch(/.*/, /.*/).reply(500)
+      await expect(
+        client.cancelValidate({ progressReporter: nullProgressReporter, serviceValidationId: '123' }),
+      ).resolves.not.toThrow()
+      expect(dodoScope.isDone()).toBeTrue()
     })
   })
 })

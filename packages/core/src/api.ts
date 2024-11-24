@@ -26,7 +26,7 @@ import {
   isField,
   isFieldChange,
   isRemovalChange,
-  ObjectType,
+  ObjectType, ProgressReporter,
   ReferenceMapping,
   TopLevelElement,
 } from '@salto-io/adapter-api'
@@ -723,4 +723,33 @@ export const fixElements = async (
     .flatMap(async fixedElement => detailedCompare(await workspaceElements.get(fixedElement.elemID), fixedElement))
     .toArray()
   return { errors: fixes.errors, changes }
+}
+
+export const cancelValidate = async ({
+  workspace,
+  account,
+  serviceValidationId,
+  progressReporter,
+}: {
+  workspace: Workspace
+  account: string
+  serviceValidationId: string
+  progressReporter: ProgressReporter,
+}): Promise<void> => {
+  const accounts = [account]
+  const adaptersMap = await getAdapters(
+    accounts,
+    await workspace.accountCredentials(accounts),
+    workspace.accountConfig.bind(workspace),
+    await workspace.elements(),
+    getAccountToServiceNameMap(workspace, accounts),
+  )
+  const adapter = adaptersMap[account]
+  if (adapter === undefined) {
+    throw new Error(`No adapter found for account ${account}`)
+  }
+  if (adapter.cancelValidate === undefined) {
+    throw new Error(`cancelValidate is not supported for account ${account}`)
+  }
+  await adapter.cancelValidate({ serviceValidationId, progressReporter })
 }

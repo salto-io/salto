@@ -95,7 +95,16 @@ export default interface Connection {
   limits(): Promise<Limits>
   identity(): Promise<IdentityInfo>
   instanceUrl: string
-  request(request: string): Promise<unknown>
+  request(
+    request:
+      | string
+      | {
+          method: string
+          url: string
+          headers?: Record<string, string>
+          body: string
+        },
+  ): Promise<unknown>
 }
 
 type ArrayOrSingle<T> = T | T[]

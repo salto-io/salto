@@ -57,6 +57,7 @@ import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
 import { getFullName } from '../filters/utils'
+import { SalesforceAdapterCancelValidationOptions } from '../adapter_creator'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -572,6 +573,7 @@ interface ISalesforceClient {
   queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
   bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
+  cancelValidate(opts: SalesforceAdapterCancelValidationOptions): Promise<void>
 }
 
 type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
@@ -998,6 +1000,38 @@ export default class SalesforceClient implements ISalesforceClient {
       }),
       progressCallback,
     )
+  }
+
+  @mapToUserFriendlyErrorMessages
+  @logDecorator()
+  @requiresLogin()
+  public async cancelValidate({
+    serviceValidationId,
+    progressReporter,
+  }: SalesforceAdapterCancelValidationOptions): Promise<void> {
+    log.debug('Attempting to cancel deployment with id %s', serviceValidationId)
+    progressReporter.reportCancelValidation(serviceValidationId)
+
+    const checkStatus = async (): Promise<void> => {
+      try {
+        const cancelDeployResult = await this.conn.request({
+          method: 'PATCH',
+          url: `/services/data/v${API_VERSION}/metadata/deployRequest/${serviceValidationId}`,
+          body: inspectValue({
+            deployResult: {
+              status: 'Canceling',
+            },
+          }),
+        })
+        if (_.get(cancelDeployResult, ['deployResult', 'status']) === 'Canceling') {
+          await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
+          await checkStatus()
+        }
+      } catch (e) {
+        log.warn('Failed to cancel validation with id %s: %s', serviceValidationId, inspectValue(e))
+      }
+    }
+    await checkStatus()
   }
 
   @mapToUserFriendlyErrorMessages

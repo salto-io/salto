@@ -34,7 +34,7 @@ import {
 } from '../src/transformers/transformer'
 import { fetchMetadataType } from '../src/fetch'
 import { defaultFilterContext } from '../test/utils'
-import { DeployProgressReporter } from '../src/adapter_creator'
+import { SalesforceProgressReporter } from '../src/adapter_creator'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -183,10 +183,11 @@ export const removeElementIfAlreadyExists = async (
   }
 }
 
-export const nullProgressReporter: DeployProgressReporter = {
+export const nullProgressReporter: SalesforceProgressReporter = {
   reportProgress: () => {},
   reportMetadataProgress: () => {},
   reportDataProgress: () => {},
+  reportCancelValidation: () => {},
 }
 
 export const createElement = async <T extends InstanceElement | ObjectType>(

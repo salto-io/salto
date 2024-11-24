@@ -15,6 +15,7 @@ import {
   Values,
   ProgressReporter,
   DeployOptions,
+  CancelValidateOptions,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -223,25 +224,30 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-export type DeployProgressReporter = ProgressReporter & {
+export type SalesforceProgressReporter = ProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
+  reportCancelValidation: (validationId: string) => void
 }
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
-  progressReporter: DeployProgressReporter
+  progressReporter: SalesforceProgressReporter
+}
+
+export type SalesforceAdapterCancelValidationOptions = CancelValidateOptions & {
+  progressReporter: SalesforceProgressReporter
 }
 
 export const createDeployProgressReporter = async (
   progressReporter: ProgressReporter,
   client: SalesforceClient,
-): Promise<DeployProgressReporter> => {
+): Promise<SalesforceProgressReporter> => {
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
   const baseUrl = await client.getUrl()
 
-  const linkToSalesforceDeployment = ({ id, checkOnly }: DeployResult): string => {
+  const linkToSalesforceDeployment = ({ id, checkOnly }: Pick<DeployResult, 'id' | 'checkOnly'>): string => {
     if (!baseUrl) {
       return ''
     }
@@ -283,6 +289,13 @@ export const createDeployProgressReporter = async (
       deployedDataInstances += successInstances
       reportProgress()
     },
+    reportCancelValidation: validationId => {
+      const cancelValidationMessage = `Canceling validation with id ${validationId}.${linkToSalesforceDeployment({ id: validationId, checkOnly: true })}`
+      progressReporter.reportProgress({
+        message: cancelValidationMessage,
+      })
+      log.debug(cancelValidationMessage)
+    },
   }
 }
 
@@ -295,7 +308,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
-    let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
+    let salesforceProgressReporterPromise: Promise<SalesforceProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -323,24 +336,32 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporterPromise =
-          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceProgressReporterPromise =
+          salesforceProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.deploy({
           ...opts,
-          progressReporter: await deployProgressReporterPromise,
+          progressReporter: await salesforceProgressReporterPromise,
         })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporterPromise =
-          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceProgressReporterPromise =
+          salesforceProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.validate({
           ...opts,
-          progressReporter: await deployProgressReporterPromise,
+          progressReporter: await salesforceProgressReporterPromise,
         })
       },
-
+      cancelValidate: async opts => {
+        const salesforceAdapter = createSalesforceAdapter()
+        salesforceProgressReporterPromise =
+          salesforceProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        return salesforceAdapter.cancelValidate({
+          ...opts,
+          progressReporter: await salesforceProgressReporterPromise,
+        })
+      },
       deployModifiers: {
         changeValidator: createChangeValidator({
           config,

@@ -167,7 +167,7 @@ import {
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
-import { SalesforceAdapterDeployOptions } from './adapter_creator'
+import { SalesforceAdapterCancelValidationOptions, SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -474,9 +474,10 @@ export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
     : resolvedElement
 }
 
-type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
+type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate' | 'cancelValidate'> & {
   deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
   validate: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
+  cancelValidate: (deployOptions: SalesforceAdapterCancelValidationOptions) => Promise<void>
 }
 
 export default class SalesforceAdapter implements SalesforceAdapterOperations {
@@ -792,6 +793,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
+  }
+
+  async cancelValidate(cancelValidateOptions: SalesforceAdapterCancelValidationOptions): Promise<void> {
+    await this.client.cancelValidate(cancelValidateOptions)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

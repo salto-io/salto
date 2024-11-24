@@ -202,31 +202,4 @@ export const summarizeDeployChanges = (
       return summarizeDeployChange(requestedChange, appliedById?.[requestedChangeId])
     }),
   )
-
-export const getSummarizeDeployChanges = (
-  requested: Change[],
-  applied: Change[],
-): {
-  elemIdToResult: Record<DetailedChangeId, DeploySummaryResult>
-  resultToElemId: Record<DeploySummaryResult, DetailedChangeId[]>
-} => {
-  const appliedById = _.keyBy(applied, c => getChangeData(c).elemID.getFullName())
-  const elemIdToResult = Object.fromEntries(
-    requested.flatMap(requestedChange => {
-      const requestedChangeId = getChangeData(requestedChange).elemID.getFullName()
-      return summarizeDeployChange(requestedChange, appliedById?.[requestedChangeId])
-    }),
-  )
-  const resultToElemId: Record<DeploySummaryResult, DetailedChangeId[]> = {
-    success: [],
-    failure: [],
-    'partial-success': [],
-  }
-
-  Object.entries(elemIdToResult).forEach(([changeId, resultValue]) => {
-    if (resultToElemId[resultValue]) {
-      resultToElemId[resultValue].push(changeId)
-    }
-  })
-  return { elemIdToResult, resultToElemId }
 }

@@ -131,13 +131,13 @@ const brandCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'
 const domainCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {
   custom:
     args =>
-      ({ entry, defaultName }) => {
-        if (entry?.id === 'default') {
-          return naclCase('Default Domain')
-        }
-        const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)
-        return elemIDFunc({ entry, defaultName })
-      },
+    ({ entry, defaultName }) => {
+      if (entry?.id === 'default') {
+        return naclCase('Default Domain')
+      }
+      const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)
+      return elemIDFunc({ entry, defaultName })
+    },
 }
 
 const accessPolicyCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {

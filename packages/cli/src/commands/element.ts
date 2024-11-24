@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
+import { Element, ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import {
   Workspace,
   ElementSelector,
@@ -19,9 +19,9 @@ import {
 } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
+import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
-import { getParentUrl } from '@salto-io/adapter-utils'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -513,6 +513,20 @@ const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID
     errorOutputLine(e.message, output)
     return undefined
   }
+}
+
+export const getParentUrl = async (workspace: Workspace, childElement: Element): Promise<string | undefined> => {
+  const parentsArray = getParents(childElement)
+  if (parentsArray.length === 0) {
+    return undefined
+  }
+  const parentElements = await Promise.all(parentsArray.map(parent => workspace.getValue(parent.elemID)))
+  const parentElementWithUrl = parentElements.find(
+    parentElement => parentElement.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined,
+  )
+  const url =
+    parentElementWithUrl !== undefined ? parentElementWithUrl.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
+  return url
 }
 
 export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input, output, workspace }) => {

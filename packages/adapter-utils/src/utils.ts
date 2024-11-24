@@ -12,7 +12,6 @@ import { inspect, InspectOptions } from 'util'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import { types as lowerDashTypes, collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
-import { Workspace } from '@salto-io/workspace'
 import {
   ObjectType,
   isStaticFile,
@@ -960,17 +959,6 @@ export const getParentElemID = (instance: Element): ElemID => {
     throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
   }
   return parent.elemID
-}
-
-export const getParentUrl = async (workspace: Workspace, childElement: Element): Promise<string | undefined> => {
-  const parentsArray = getParents(childElement)
-  if (parentsArray.length === 0) {
-    return undefined
-  }
-  // const parent = parentsArray[0]
-  // const parentElemId = parent.elemID
-  const parentElem = await workspace.getValue(getParentElemID(childElement))
-  return parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL]
 }
 
 export const hasValidParent = (element: Element): boolean => {

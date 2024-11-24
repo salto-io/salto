@@ -121,6 +121,9 @@ export const getStaticFileCacheName = (name: string): string => (name === COMMON
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
+export const isValidAccountName = (accountName: string): boolean =>
+  !_.isUndefined(accountName) && naclCase(accountName) === accountName && /^\D.*$/i.test(accountName)
+
 export type DateRange = {
   start: Date
   end?: Date
@@ -1120,7 +1123,7 @@ export const loadWorkspace = async (
   const addAccount = async (service: string, account?: string): Promise<void> => {
     const accountName = account ?? service
 
-    if (accountName && naclCase(accountName) !== accountName) {
+    if (!isValidAccountName(accountName)) {
       throw new InvalidAccountNameError(accountName)
     }
     const currentAccounts = accounts() || []

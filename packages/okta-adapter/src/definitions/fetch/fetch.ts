@@ -120,7 +120,7 @@ const brandCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'
   custom:
     args =>
     ({ entry, defaultName }) => {
-      if (entry?.isDefault) {
+      if (entry?.isDefault === true) {
         return naclCase('Default Brand')
       }
       const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)

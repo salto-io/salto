@@ -431,8 +431,8 @@ export type ClientDeployConfig = Partial<{
   flsProfiles: string[]
 }>
 
-export const RetryStrategyNames = ['HttpError', 'HTTPOrNetworkError', 'NetworkError'] as const
-type RetryStrategy = (typeof RetryStrategyNames)[number]
+export const RETRY_STRATEGY_NAMES = ['HttpError', 'HTTPOrNetworkError', 'NetworkError'] as const
+type RetryStrategy = (typeof RETRY_STRATEGY_NAMES)[number]
 export type ClientRetryConfig = Partial<{
   maxAttempts: number
   retryDelay: number
@@ -737,7 +737,7 @@ const clientRetryConfigType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: RetryStrategyNames,
+          values: RETRY_STRATEGY_NAMES,
         }),
       },
     },

@@ -262,14 +262,45 @@ describe('picklistReferences filter', () => {
     })
   })
   describe('BusinessProcess instances', () => {
+    let businessProcess: InstanceElement
+    let valueSet: InstanceElement
+
+    describe('when BusinessProcess parent is ont supported', () => {
+      beforeEach(() => {
+        const parentObjectType = createCustomObjectType('NotSupported', {})
+        businessProcess = new InstanceElement(
+          'NotSupported_BusinessProcess',
+          mockTypes.BusinessProcess,
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'NotSupported.BusinessProcess',
+            values: [{ fullName: 'val1' }, { fullName: 'val2' }],
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentObjectType.elemID, parentObjectType)],
+          },
+        )
+        valueSet = new InstanceElement('NotSupportedValueSet', mockTypes.StandardValueSet, {
+          standardValue: {
+            values: {
+              val1: { fullName: 'val1' },
+              val2: { fullName: 'val2' },
+            },
+          },
+        })
+      })
+      it('should not create references', async () => {
+        await filter.onFetch([businessProcess, valueSet])
+        expect(businessProcess.value.values).toEqual([{ fullName: 'val1' }, { fullName: 'val2' }])
+      })
+    })
+
     const businessProcessParentToValueSetName: Record<BusinessProcessParent, string> = {
       Lead: 'LeadStatus',
       Opportunity: 'OpportunityStage',
       Case: 'CaseStatus',
     }
     describe.each(BUSINESS_PROCESS_PARENTS)('%s BusinessProcess', parent => {
-      let businessProcess: InstanceElement
-      let valueSet: InstanceElement
       beforeEach(() => {
         const parentObjectType = createCustomObjectType(parent, {})
         businessProcess = new InstanceElement(
@@ -280,6 +311,11 @@ describe('picklistReferences filter', () => {
             values: [
               { fullName: 'val1' },
               { fullName: 'val2' },
+              // Make sure we make the references by encoding the RecordType Picklist values
+              { fullName: 'High %26 Low' },
+              // Make sure the filter does not crash violently when trying to decode this URI value.
+              // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURIComponent#catching_errors
+              { fullName: 'Non %% Decode-able' },
             ],
           },
           undefined,
@@ -289,23 +325,53 @@ describe('picklistReferences filter', () => {
         )
       })
       describe('when the StandardValueSet is in the old format (not OrderedMap)', () => {
-        valueSet = new InstanceElement(
-          businessProcessParentToValueSetName[parent],
-          mockTypes.StandardValueSet,
-          {
-            standardValue: {
-              values: [
-                { fullName: 'val1' },
-                { fullName: 'val2' },
-              ],
-            },
-          },
-        )
+        valueSet = new InstanceElement(businessProcessParentToValueSetName[parent], mockTypes.StandardValueSet, {
+          standardValue: [{ fullName: 'val1' }, { fullName: 'val2' }, { fullName: 'High & Low' }],
+        })
         it('should not create references', async () => {
           await filter.onFetch([businessProcess, valueSet])
           expect(businessProcess.value.values).toEqual([
             { fullName: 'val1' },
             { fullName: 'val2' },
+            { fullName: 'High %26 Low' },
+            { fullName: 'Non %% Decode-able' },
+          ])
+        })
+      })
+      describe('when the StandardValueSet is in the new format (OrderedMap)', () => {
+        beforeEach(() => {
+          valueSet = new InstanceElement(businessProcessParentToValueSetName[parent], mockTypes.StandardValueSet, {
+            standardValue: {
+              values: {
+                val1: { fullName: 'val1' },
+                val2: { fullName: 'val2' },
+                [naclCase('High & Low')]: { fullName: 'High & Low' },
+              },
+            },
+          })
+        })
+        it('should create references', async () => {
+          await filter.onFetch([businessProcess, valueSet])
+          expect(businessProcess.value.values).toEqual([
+            {
+              fullName: new ReferenceExpression(
+                valueSet.elemID.createNestedID('standardValue', 'values', 'val1', 'fullName'),
+                'val1',
+              ),
+            },
+            {
+              fullName: new ReferenceExpression(
+                valueSet.elemID.createNestedID('standardValue', 'values', 'val2', 'fullName'),
+                'val2',
+              ),
+            },
+            {
+              fullName: new ReferenceExpression(
+                valueSet.elemID.createNestedID('standardValue', 'values', naclCase('High & Low'), 'fullName'),
+                'High & Low',
+              ),
+            },
+            { fullName: 'Non %% Decode-able' },
           ])
         })
       })

@@ -164,14 +164,11 @@ const createPicklistValuesReferenceIndex = (elements: Element[]): PicklistValues
   }, {})
 }
 
-
-
 export const BUSINESS_PROCESS_PARENTS = ['Lead', 'Opportunity', 'Case'] as const
-export type BusinessProcessParent = typeof BUSINESS_PROCESS_PARENTS[number]
+export type BusinessProcessParent = (typeof BUSINESS_PROCESS_PARENTS)[number]
 
-const isBusinessProcessParent = (parentName: string): parentName is BusinessProcessParent => (
+const isBusinessProcessParent = (parentName: string): parentName is BusinessProcessParent =>
   BUSINESS_PROCESS_PARENTS.includes(parentName as BusinessProcessParent)
-)
 
 const businessProcessParentToValueSetElemID: Record<BusinessProcessParent, string> = {
   Lead: new ElemID(SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadStatus').getFullName(),

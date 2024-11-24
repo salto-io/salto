@@ -111,7 +111,7 @@ describe('adapter creator', () => {
         ).toThrow()
       })
 
-      it('should fail to create operations', () => {
+      it('should fail on validating Jira DC config with JSM enabled', () => {
         credentialsInstance.value = { ...credentialsInstance.value, isDataCenter: true }
         expect(() =>
           adapter.operations({

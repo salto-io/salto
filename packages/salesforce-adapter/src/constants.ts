@@ -357,6 +357,7 @@ export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'
 export const STATUS = 'status'
 export const ACTIVE = 'Active'
+export const INVALID_DRAFT = 'InvalidDraft'
 
 // Metadata types
 export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'

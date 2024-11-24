@@ -49,12 +49,12 @@ const WORKFLOW_CONDITION_SORT_BY = [
 
 const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, string[]>>> = {
   [PERMISSION_SCHEME_TYPE_NAME]: {
-    PermissionScheme: {
+    [PERMISSION_SCHEME_TYPE_NAME]: {
       permissions: ['permission', 'holder.type', 'holder.parameter'],
     },
   },
   [ISSUE_TYPE_SCREEN_SCHEME_TYPE]: {
-    IssueTypeScreenScheme: {
+    [ISSUE_TYPE_SCREEN_SCHEME_TYPE]: {
       issueTypeMappings: ['issueTypeId.elemID.name'],
     },
   },
@@ -65,7 +65,7 @@ const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, str
     },
   },
   [FIELD_CONFIGURATION_SCHEME_TYPE]: {
-    FieldConfigurationScheme: {
+    [FIELD_CONFIGURATION_SCHEME_TYPE]: {
       items: ['issueTypeId', 'fieldConfigurationId'],
     },
   },

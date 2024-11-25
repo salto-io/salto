@@ -93,14 +93,14 @@ export const logInvalidReferences = (
   refOrigin: ElemID,
   invalidReferences: ElemID[],
   formula: string,
-  identifiersInfo: FormulaIdentifierInfo[][],
+  identifiersInfo: FormulaIdentifierInfo[],
 ): void => {
   if (invalidReferences.length > 0) {
     log.debug(
       'When parsing the formula %o in %o, one or more of the identifiers %o was parsed to an invalid reference: ',
       formula,
       refOrigin.getFullName(),
-      identifiersInfo.flat().map(info => info.instance),
+      identifiersInfo.map(info => info.instance),
     )
   }
   invalidReferences.forEach(refElemId => {

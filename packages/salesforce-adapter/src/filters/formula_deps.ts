@@ -5,12 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { Element, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
-import { parseFormulaIdentifier, extractFormulaIdentifiers } from '@salto-io/salesforce-formula-parser'
+import { extendGeneratedDependencies, inspectValue } from '@salto-io/adapter-utils'
+import {
+  parseFormulaIdentifier,
+  extractFormulaIdentifiers,
+  FormulaIdentifierInfo,
+} from '@salto-io/salesforce-formula-parser'
 import { FilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { FORMULA } from '../constants'
@@ -18,59 +22,53 @@ import { buildElementsSourceForFetch, ensureSafeFilterFetch, extractFlatCustomOb
 import { logInvalidReferences, referencesFromIdentifiers, referenceValidity } from './formula_utils'
 
 const log = logger(module)
-const { awu, groupByAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 
-const addDependenciesAnnotation = async (
-  field: Field,
-  potentialReferenceTargets: Map<string, Element>,
-): Promise<void> => {
+const addDependenciesAnnotation = (field: Field, potentialReferenceTargets: Map<string, Element>): void => {
   const formula = field.annotations[FORMULA]
-  if (formula === undefined) {
-    log.error(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
+  if (!_.isString(formula)) {
+    log.error(`The value of the formula field ${field.elemID.getFullName()} is not a string: ${inspectValue(formula)}`)
     return
   }
 
-  log.debug(`Extracting formula refs from ${field.elemID.getFullName()}`)
+  log.debug(`Extracting formula refs from ${field.elemID.getFullName()}: ${formula}`)
 
+  let identifiersInfo: FormulaIdentifierInfo[] = []
+  let identifiersCount: number = 0
   try {
-    const formulaIdentifiers: string[] = log.timeDebug(
-      () => extractFormulaIdentifiers(formula),
-      `Parse formula '${formula.slice(0, 15)}'`,
+    const formulaInfo = extractFormulaIdentifiers(formula).map(identifier =>
+      parseFormulaIdentifier(identifier, field.parent.elemID.typeName),
     )
-
-    const identifiersInfo = await Promise.all(
-      formulaIdentifiers.map(async identifier => parseFormulaIdentifier(identifier, field.parent.elemID.typeName)),
-    )
-
-    // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
-    // filtering.
-    const references = referencesFromIdentifiers(identifiersInfo.flat())
-
-    if (references.length < identifiersInfo.length) {
-      log.warn(`Some formula identifiers were not converted to references.
-      Field: ${field.elemID.getFullName()}
-      Formula: ${formula}
-      Identifiers: ${identifiersInfo
-        .flat()
-        .map(info => info.instance)
-        .join(', ')}
-      References: ${references.map(ref => ref.getFullName()).join(', ')}`)
-    }
-
-    const referencesWithValidity = await groupByAsync(references, refElemId =>
-      referenceValidity(refElemId, field.parent.elemID, potentialReferenceTargets),
-    )
-
-    logInvalidReferences(field.elemID, referencesWithValidity.invalid ?? [], formula, identifiersInfo)
-
-    const depsAsRefExpr = (referencesWithValidity.valid ?? []).map(elemId => ({
-      reference: new ReferenceExpression(elemId),
-    }))
-
-    extendGeneratedDependencies(field, depsAsRefExpr)
+    identifiersInfo = formulaInfo.flat()
+    identifiersCount = identifiersInfo.length
   } catch (e) {
     log.warn(`Failed to extract references from formula ${formula}: ${e}`)
+    return
   }
+
+  // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
+  // filtering.
+  const references = referencesFromIdentifiers(identifiersInfo)
+
+  if (references.length < identifiersCount) {
+    log.warn(`Some formula identifiers were not converted to references.
+      Field: ${field.elemID.getFullName()}
+      Formula: ${formula}
+      Identifiers: ${identifiersInfo.map(info => info.instance).join(', ')}
+      References: ${references.map(ref => ref.getFullName()).join(', ')}`)
+  }
+
+  const referencesWithValidity = _.groupBy(references, refElemId =>
+    referenceValidity(refElemId, field.parent.elemID, potentialReferenceTargets),
+  )
+
+  logInvalidReferences(field.elemID, referencesWithValidity.invalid ?? [], formula, identifiersInfo)
+
+  const depsAsRefExpr = (referencesWithValidity.valid ?? []).map(elemId => ({
+    reference: new ReferenceExpression(elemId),
+  }))
+
+  extendGeneratedDependencies(field, depsAsRefExpr)
 }
 
 /**
@@ -87,16 +85,15 @@ const filter: FilterCreator = ({ config }) => ({
     config,
     fetchFilterFunc: async fetchedElements => {
       const fetchedObjectTypes = fetchedElements.filter(isObjectType)
-      const fetchedFormulaFields = await awu(fetchedObjectTypes)
+      const fetchedFormulaFields = fetchedObjectTypes
         .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
         .filter(isFormulaField)
-        .toArray()
       const allElements = await buildElementsSourceForFetch(fetchedElements, config).getAll()
       const elemIdToElement = await awu(allElements)
         .map(e => [e.elemID.getFullName(), e] as [string, Element])
         .toArray()
       const potentialReferenceTargets = new Map<string, Element>(elemIdToElement)
-      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, potentialReferenceTargets)))
+      fetchedFormulaFields.forEach(field => addDependenciesAnnotation(field, potentialReferenceTargets))
     },
   }),
 })

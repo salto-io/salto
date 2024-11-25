@@ -271,7 +271,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       changeError.deployActions?.postAction?.showOnFailure,
   )
   const formattedDeploymentSummary = formatDeploymentSummary(resultToElemId)
-  if (formattedDeploymentSummary) {
+  if (!dryRun && formattedDeploymentSummary) {
     outputLine(formattedDeploymentSummary, output)
   }
   const postDeployActionsOutput = formatDeployActions({

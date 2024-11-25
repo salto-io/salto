@@ -1200,7 +1200,7 @@ Moving the specified elements to common.
     describe('with valid ID that does not have a URL', () => {
       let output: mocks.MockCliOutput
       let result: CliExitCode
-      const parentUrl = 'https://www.acne.com/'
+      const parentUrl = 'https://www.google.com/'
       describe('when has parent that has URL', () => {
         beforeEach(async () => {
           workspace.getValue.mockImplementation(async elemID =>
@@ -1262,8 +1262,6 @@ Moving the specified elements to common.
           )
           workspace.getValue.mockImplementationOnce(async () => getMockElement(undefined))
           workspace.getValue.mockImplementationOnce(async () => getMockElement(parentUrl))
-          workspace.getValue.mockImplementationOnce(async () => getMockElement(undefined))
-          workspace.getValue.mockImplementationOnce(async () => getMockElement(fakeUrl))
           const cliArgs = mocks.mockCliArgs()
           output = cliArgs.output
           result = await openAction({
@@ -1277,6 +1275,7 @@ Moving the specified elements to common.
         it('should call open with parent url', () => {
           expect(open).toHaveBeenCalledWith(parentUrl)
           expect(open).not.toHaveBeenCalledWith(fakeUrl)
+          expect(workspace.getValue).toHaveBeenCalledTimes(3)
         })
         it('should return success exit code', () => {
           expect(result).toEqual(CliExitCode.Success)

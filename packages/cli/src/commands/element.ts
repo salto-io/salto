@@ -522,8 +522,8 @@ const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID
   }
 }
 
-const getUrlFromRef = async (workspace: Workspace, refParent: ReferenceExpression): Promise<string | undefined> => {
-  const element = await workspace.getValue(refParent.elemID)
+const getUrlFromRef = async (workspace: Workspace, ref: ReferenceExpression): Promise<string | undefined> => {
+  const element = await workspace.getValue(ref.elemID)
   return element?.annotations[CORE_ANNOTATIONS.SERVICE_URL]
 }
 
@@ -532,10 +532,6 @@ const getParentUrl = async (workspace: Workspace, childElement: Element): Promis
   if (parentsArray.length === 0) {
     return undefined
   }
-  /*
-    reduce is used in order to not call the function workspace.getValue more than the necessary minimum.
-    acc will not be changed after it is no longer undefined
-  */
   return awu(parentsArray).reduce(async (acc: string | undefined, element: ReferenceExpression) => {
     if (acc) {
       return acc

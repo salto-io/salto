@@ -15,7 +15,6 @@ import {
   MapType,
   isObjectType,
   isAdditionOrModificationChange,
-  isInstanceChange,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { resolveValues } from '@salto-io/adapter-components'
@@ -28,8 +27,7 @@ import {
   PERMISSION_SET_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
 } from '../constants'
-import { isInstanceOfTypeChange } from '../filters/utils'
-import { apiName } from '../transformers/transformer'
+import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
 import { FetchProfile } from '../types'
 
 const { awu } = collections.asynciterable
@@ -44,72 +42,72 @@ const isNum = (str: string | undefined): boolean => !_.isEmpty(str) && !Number.i
 
 const getMapKeyErrors = async (after: InstanceElement, fetchProfile: FetchProfile): Promise<ChangeError[]> => {
   const errors: ChangeError[] = []
-  const type = await after.getType()
-  const typeName = await apiName(type)
+  const type = after.getTypeSync()
+  const typeName = apiNameSync(type) ?? ''
   const mapper = getMetadataTypeToFieldToMapDef(fetchProfile)[typeName]
-  await awu(Object.entries(after.value))
-    .filter(
-      async ([fieldName]) => isMapType(await type.fields[fieldName]?.getType()) && mapper[fieldName] !== undefined,
-    )
-    .forEach(async ([fieldName, fieldValues]) => {
-      const fieldType = (await type.fields[fieldName].getType()) as MapType
-      const mapDef = mapper[fieldName]
-      const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
-        if (isObjectType(await field?.getType()) && path !== undefined) {
-          if (value[mapDef.key] === undefined) {
-            errors.push({
-              elemID: path,
-              severity: 'Error',
-              message: 'Nested value not found in field',
-              detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
-            })
-            return undefined
-          }
-          // this validation intend to catch unresolved reference, and should be removed after the general fix
-          if (typeof value[mapDef.key] !== 'string') {
-            return undefined
-          }
-          // we reached the map's inner value
-          const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)
-          const pathParts = path.getFullNameParts().filter(part => !isNum(part))
-          const actualPath = pathParts.slice(-expectedPath.length)
-          const previewPrefix = actualPath.slice(0, actualPath.findIndex((val, idx) => val !== expectedPath[idx]) + 1)
-          if (!_.isEqual(actualPath, expectedPath)) {
-            errors.push({
-              elemID: after.elemID.createNestedID(fieldName, ...previewPrefix),
-              severity: 'Error',
-              message: 'Incorrect map key in field',
-              detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}`,
-            })
-          }
+  await awu(
+    Object.entries(after.value).filter(
+      ([fieldName]) => isMapType(type.fields[fieldName]?.getTypeSync()) && mapper[fieldName] !== undefined,
+    ),
+  ).forEach(async ([fieldName, fieldValues]) => {
+    const fieldType = type.fields[fieldName].getTypeSync() as MapType
+    const mapDef = mapper[fieldName]
+    const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
+      if (isObjectType(field?.getTypeSync()) && path !== undefined) {
+        if (value[mapDef.key] === undefined) {
+          errors.push({
+            elemID: path,
+            severity: 'Error',
+            message: 'Nested value not found in field',
+            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
+          })
           return undefined
         }
-        return value
+        // this validation intend to catch unresolved reference, and should be removed after the general fix
+        if (typeof value[mapDef.key] !== 'string') {
+          return undefined
+        }
+        // we reached the map's inner value
+        const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)
+        const pathParts = path.getFullNameParts().filter(part => !isNum(part))
+        const actualPath = pathParts.slice(-expectedPath.length)
+        const previewPrefix = actualPath.slice(0, actualPath.findIndex((val, idx) => val !== expectedPath[idx]) + 1)
+        if (!_.isEqual(actualPath, expectedPath)) {
+          errors.push({
+            elemID: after.elemID.createNestedID(fieldName, ...previewPrefix),
+            severity: 'Error',
+            message: 'Incorrect map key in field',
+            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}`,
+          })
+        }
+        return undefined
       }
+      return value
+    }
 
-      await transformValues({
-        values: fieldValues,
-        type: fieldType,
-        transformFunc: findInvalidPaths,
-        strict: false,
-        allowEmptyArrays: true,
-        allowEmptyObjects: true,
-        pathID: after.elemID.createNestedID(fieldName),
-      })
+    await transformValues({
+      values: fieldValues,
+      type: fieldType,
+      transformFunc: findInvalidPaths,
+      strict: false,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
+      pathID: after.elemID.createNestedID(fieldName),
     })
+  })
   return errors
 }
 
 const changeValidator =
   (getLookupNameFunc: GetLookupNameFunc, fetchProfile: FetchProfile): ChangeValidator =>
   async changes =>
-    awu(changes)
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
-      .flatMap(async change =>
-        getMapKeyErrors(await resolveValues(getChangeData(change), getLookupNameFunc), fetchProfile),
-      )
+    awu(
+      changes
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isInstanceOfTypeSync(...metadataTypesToValidate)),
+    )
+      .flatMap(async instance => getMapKeyErrors(await resolveValues(instance, getLookupNameFunc), fetchProfile))
       .toArray()
 
 export default changeValidator

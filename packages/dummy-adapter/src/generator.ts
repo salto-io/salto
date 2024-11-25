@@ -71,6 +71,12 @@ export type ChangeErrorFromConfigFile = {
 
 type FetchErrorFromConfigFile = SaltoError & { elemID: string }
 
+type UsersGenerationParams = {
+  numOfUsers: number
+  numOfGroups: number
+  distributionFactor?: number
+}
+
 const deployActionType = createMatchingObjectType<DeployAction>({
   elemID: new ElemID(DUMMY_ADAPTER, 'deployAction'),
   fields: {
@@ -226,6 +232,7 @@ export type GeneratorParams = {
   fieldsToOmitOnDeploy?: string[]
   elementsToExclude?: string[]
   importantValuesFreq?: number
+  usersGenerationParams?: UsersGenerationParams
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPaths'> = {
@@ -833,6 +840,95 @@ export const generateElements = async (
     }).flat()
   }
 
+  const generateUsersLike = ({ numOfUsers, numOfGroups, distributionFactor }: UsersGenerationParams): Element[] => {
+    if (distributionFactor && (distributionFactor > 1 || distributionFactor < 0)) {
+      throw new Error('distributionFactor must be between 0 and 1')
+    }
+    const factor = distributionFactor ?? 1
+
+    const getUsersInGroupMapping = (): number[] => {
+      const usersToDivide = Math.floor(numOfUsers / numOfGroups) * numOfGroups
+      const weights = arrayOf(numOfGroups, idx => (idx + 1) ** (1 - factor))
+      const normalized = weights.map(w => Math.floor((w / _.sum(weights)) * usersToDivide))
+      return normalized
+    }
+
+    const userProfile = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'UserProfile'),
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+        email: { refType: BuiltinTypes.STRING },
+        age: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const userType = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'User'),
+      fields: {
+        status: { refType: BuiltinTypes.STRING },
+        profile: { refType: userProfile },
+      },
+    })
+    const groupType = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'Group'),
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+        description: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const groupMembersType = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'GroupMembers'),
+      fields: {
+        members: { refType: new ListType(BuiltinTypes.STRING) },
+      },
+    })
+    const users = arrayOf(numOfUsers, () => {
+      const userName = getName()
+      return new InstanceElement(
+        userName,
+        userType,
+        {
+          status: 'active',
+          profile: {
+            name: userName,
+            email: `${userName}@salto.io`,
+            age: generateNumber(),
+          },
+        },
+        [DUMMY_ADAPTER, 'Records', userType.elemID.name, userName],
+      )
+    })
+    const groups = arrayOf(numOfGroups, () => {
+      const groupName = getName()
+      return new InstanceElement(
+        groupName,
+        groupType,
+        {
+          name: groupName,
+          description: getSingleLine(),
+        },
+        [DUMMY_ADAPTER, 'Records', groupType.elemID.name, groupName],
+      )
+    })
+    const usersClone = users.map(u => u.clone())
+    const usersPerGroup = getUsersInGroupMapping()
+    const groupMembers = groups.map((group, i) => {
+      const groupName = group.elemID.name
+      const members = usersClone.splice(0, usersPerGroup[i])
+      return new InstanceElement(
+        groupName,
+        groupMembersType,
+        {
+          members: members.map(m => new ReferenceExpression(m.elemID, m)),
+        },
+        [DUMMY_ADAPTER, 'Records', groupMembersType.elemID.name, groupName],
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(group.elemID, group),
+        },
+      )
+    })
+    return [userType, groupType, groupMembersType, ...users, ...groups, ...groupMembers]
+  }
+
   const generateEnvElements = (): Element[] => {
     const envID = params.generateEnvName ?? process.env.SALTO_ENV
     if (envID === undefined) return []
@@ -1008,6 +1104,7 @@ export const generateElements = async (
   const profiles = generateProfileLike()
   progressReporter.reportProgress({ message: 'Generating extra elements' })
   const extraElements = params.extraNaclPaths ? await generateExtraElementsFromPaths(params.extraNaclPaths) : []
+  const users = params.usersGenerationParams ? generateUsersLike(params.usersGenerationParams) : []
   const defaultExtraElements = await generateExtraElementsFromPaths([path.join(dataPath, 'fixtures')])
   log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
   progressReporter.reportProgress({ message: 'Generating conflicted elements' })
@@ -1021,6 +1118,7 @@ export const generateElements = async (
     ...records,
     ...objects,
     ...profiles,
+    ...users,
     new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} }),
     ...extraElements,
     ...defaultExtraElements,

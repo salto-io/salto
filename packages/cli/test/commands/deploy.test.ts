@@ -502,11 +502,8 @@ describe('deploy command', () => {
     describe('when all elements deployed successfully', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          elemIdToResult: {
-            a: 'success',
-            b: 'success',
-          },
-          resultToElemId: { success: ['a', 'b'], failure: [], 'partial-success': [] },
+          a: 'success',
+          b: 'success',
         })
         await action({
           ...cliCommandArgs,
@@ -534,11 +531,8 @@ describe('deploy command', () => {
     describe('when all elements failed deployment', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          elemIdToResult: {
-            instance_test: 'failure',
-            test_instance: 'failure',
-          },
-          resultToElemId: { success: [], failure: ['instance_test', 'test_instance'], 'partial-success': [] },
+          instance_test: 'failure',
+          test_instance: 'failure',
         })
         await action({
           ...cliCommandArgs,
@@ -566,16 +560,9 @@ describe('deploy command', () => {
     describe('when deployment is partially successful', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          elemIdToResult: {
-            instance_test: 'failure',
-            test_instance: 'success',
-            tester_instance: 'partial-success',
-          },
-          resultToElemId: {
-            success: ['test_instance'],
-            failure: ['instance_test'],
-            'partial-success': ['tester_instance'],
-          },
+          instance_test: 'failure',
+          test_instance: 'success',
+          tester_instance: 'partial-success',
         })
         await action({
           ...cliCommandArgs,
@@ -600,11 +587,8 @@ describe('deploy command', () => {
     describe('when all elements are partially successful', () => {
       beforeEach(async () => {
         mockedCore.summarizeDeployChanges.mockReturnValue({
-          elemIdToResult: {
-            instance_test: 'partial-success',
-            test_instance: 'partial-success',
-          },
-          resultToElemId: { success: [], 'partial-success': ['instance_test', 'test_instance'], failure: [] },
+          instance_test: 'partial-success',
+          test_instance: 'partial-success',
         })
         await action({
           ...cliCommandArgs,

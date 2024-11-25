@@ -940,7 +940,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
       },
       fieldCustomizations: {
-        id: { hide: true, fieldType: 'number' },
+        id: { fieldType: 'string' },
       },
     },
   },

@@ -93,7 +93,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
   const instanceName = instance.elemID.name
   return {
     elemID: instance.elemID,
-    severity: 'Warning',
+    severity: 'Error',
     message: 'Instances cannot have more than one default',
     detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
   }
@@ -101,7 +101,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
 
 const createFieldChangeError = (field: Field, contexts: string[]): ChangeError => ({
   elemID: field.elemID,
-  severity: 'Warning',
+  severity: 'Error',
   message: 'Types cannot have more than one default',
   detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
 })

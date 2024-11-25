@@ -840,11 +840,7 @@ export const generateElements = async (
     }).flat()
   }
 
-  const generateUsersLike = ({
-    numOfUsers,
-    numOfGroups,
-    distributionFactor,
-  }: UsersGenerationParams): Element[] => {
+  const generateUsersLike = ({ numOfUsers, numOfGroups, distributionFactor }: UsersGenerationParams): Element[] => {
     if (distributionFactor && (distributionFactor > 1 || distributionFactor < 0)) {
       throw new Error('distributionFactor must be between 0 and 1')
     }
@@ -869,7 +865,7 @@ export const generateElements = async (
       elemID: new ElemID(DUMMY_ADAPTER, 'User'),
       fields: {
         status: { refType: BuiltinTypes.STRING },
-        profile: { refType: userProfile},
+        profile: { refType: userProfile },
       },
     })
     const groupType = new ObjectType({
@@ -877,29 +873,30 @@ export const generateElements = async (
       fields: {
         name: { refType: BuiltinTypes.STRING },
         description: { refType: BuiltinTypes.STRING },
-      }
+      },
     })
     const groupMembersType = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'GroupMembers'),
-      fields: { 
+      fields: {
         members: { refType: new ListType(BuiltinTypes.STRING) },
-      }
+      },
     })
     const users = arrayOf(numOfUsers, () => {
-    const userName = getName()
-    return new InstanceElement(
-      userName,
-      userType,
-      {
-        status: 'active',
-        profile: {
-          name: userName,
-          email: `${userName}@salto.io`,
-          age: generateNumber(),
-        }
-      },
-      [DUMMY_ADAPTER, 'Records', userType.elemID.name, userName],
-    )})
+      const userName = getName()
+      return new InstanceElement(
+        userName,
+        userType,
+        {
+          status: 'active',
+          profile: {
+            name: userName,
+            email: `${userName}@salto.io`,
+            age: generateNumber(),
+          },
+        },
+        [DUMMY_ADAPTER, 'Records', userType.elemID.name, userName],
+      )
+    })
     const groups = arrayOf(numOfGroups, () => {
       const groupName = getName()
       return new InstanceElement(
@@ -926,7 +923,7 @@ export const generateElements = async (
         [DUMMY_ADAPTER, 'Records', groupMembersType.elemID.name, groupName],
         {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(group.elemID, group),
-        }
+        },
       )
     })
     return [userType, groupType, groupMembersType, ...users, ...groups, ...groupMembers]

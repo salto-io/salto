@@ -153,6 +153,19 @@ describe('generator', () => {
           expect(fragments).toHaveLength(fixture.numOfFragments)
         })
       })
+      it('should create user elements', async () => {
+        const elements = await generateElements(
+          { ...testParams, usersGenerationParams: { numOfUsers: 2, numOfGroups: 1 } },
+          mockProgressReporter,
+        )
+        const users = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'User')
+        expect(users).toHaveLength(2)
+        const groups = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'Group')
+        expect(groups).toHaveLength(1)
+        const groupMembers = elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'GroupMembers')
+        expect(groupMembers).toHaveLength(1)
+        expect(groupMembers[0].value.members).toHaveLength(2)
+      })
     })
     describe('important values', () => {
       const isValidImportantValue = (importantValue: ImportantValue): boolean => {

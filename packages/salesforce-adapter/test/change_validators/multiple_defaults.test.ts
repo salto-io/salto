@@ -46,7 +46,7 @@ describe('multiple defaults change validator', () => {
     }
 
     describe('picklist', () => {
-      it('should have warning for a picklist field', async () => {
+      it('should have Error for a picklist field', async () => {
         const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'PicklistField', {
           valueSet: [
             {
@@ -66,7 +66,7 @@ describe('multiple defaults change validator', () => {
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(beforeField.elemID)
-        expect(changeError.severity).toEqual('Warning')
+        expect(changeError.severity).toEqual('Error')
       })
       it('should not have error for <= 1 default values in picklist', async () => {
         const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'PicklistField', {
@@ -90,7 +90,7 @@ describe('multiple defaults change validator', () => {
     })
 
     describe('multi-select picklist', () => {
-      it('should have warning for a MultiselectPicklist field', async () => {
+      it('should have Error for a MultiselectPicklist field', async () => {
         const beforeField = createField(obj, Types.primitiveDataTypes.MultiselectPicklist, 'PicklistField', {
           valueSet: [
             {
@@ -110,7 +110,7 @@ describe('multiple defaults change validator', () => {
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(beforeField.elemID)
-        expect(changeError.severity).toEqual('Warning')
+        expect(changeError.severity).toEqual('Error')
       })
       it('should not have error for <= 1 default values in picklist', async () => {
         const beforeField = createField(obj, Types.primitiveDataTypes.MultiselectPicklist, 'PicklistField', {
@@ -165,7 +165,7 @@ describe('multiple defaults change validator', () => {
         return afterInstance
       }
 
-      it('should have warning for a GlobalValueSet instance', async () => {
+      it('should have Error for a GlobalValueSet instance', async () => {
         const beforeInstance = createInstanceElement(
           {
             fullName: 'globalValueSetInstance',
@@ -189,7 +189,7 @@ describe('multiple defaults change validator', () => {
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(afterInstance.elemID)
-        expect(changeError.severity).toEqual('Warning')
+        expect(changeError.severity).toEqual('Error')
       })
       it('should not have error for <= 1 default values GlobalValueSet', async () => {
         const beforeInstance = createInstanceElement(
@@ -250,7 +250,7 @@ describe('multiple defaults change validator', () => {
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.elemID).toEqual(afterInstance.elemID)
-        expect(changeError.severity).toEqual('Warning')
+        expect(changeError.severity).toEqual('Error')
       })
     })
 
@@ -298,7 +298,7 @@ describe('multiple defaults change validator', () => {
           return afterInstance
         }
 
-        it('should have warning for ProfileApplicationVisibility', async () => {
+        it('should have Error for ProfileApplicationVisibility', async () => {
           const beforeInstance = createInstanceElement(
             {
               fullName: 'ProfileInstance',
@@ -319,7 +319,7 @@ describe('multiple defaults change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.elemID).toEqual(afterInstance.elemID)
-          expect(changeError.severity).toEqual('Warning')
+          expect(changeError.severity).toEqual('Error')
         })
 
         it('should not have error for <= 1 default values in ProfileApplicationVisibility', async () => {
@@ -378,7 +378,7 @@ describe('multiple defaults change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.elemID).toEqual(afterInstance.elemID)
-          expect(changeError.severity).toEqual('Warning')
+          expect(changeError.severity).toEqual('Error')
         })
 
         it('should not have error for <= 1 default values in ProfileRecordTypeVisibility', async () => {
@@ -407,7 +407,7 @@ describe('multiple defaults change validator', () => {
         })
       })
 
-      describe('several warnings in one instance', () => {
+      describe('several errors in one instance', () => {
         const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
           const afterInstance = beforeInstance.clone()
           afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default = true
@@ -449,7 +449,7 @@ describe('multiple defaults change validator', () => {
           expect(changeErrorsIds).toContain(safeJsonStringify(afterInstance.elemID))
           expect(changeErrorsIds).toContain(safeJsonStringify(afterInstance.elemID))
           changeErrors.forEach(error => {
-            expect(error.severity).toEqual('Warning')
+            expect(error.severity).toEqual('Error')
           })
         })
       })

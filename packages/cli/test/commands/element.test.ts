@@ -1264,14 +1264,6 @@ Moving the specified elements to common.
           workspace.getValue.mockImplementationOnce(async () => getMockElement(parentUrl))
           workspace.getValue.mockImplementationOnce(async () => getMockElement(undefined))
           workspace.getValue.mockImplementationOnce(async () => getMockElement(fakeUrl))
-          //   elemID.getFullName() === 'salesforce.Date'
-          //     ?
-          //     : elemID.getFullName() === 'salesforce.customer'
-          //       ? getMockElement(parentUrl)
-          //       : elemID.getFullName() === 'salesforce.letter'
-          //         ? getMockElement(fakeUrl)
-          //         : getMockElement(undefined),
-          // )
           const cliArgs = mocks.mockCliArgs()
           output = cliArgs.output
           result = await openAction({

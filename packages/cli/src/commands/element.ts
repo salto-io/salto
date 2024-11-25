@@ -536,11 +536,11 @@ const getParentUrl = async (workspace: Workspace, childElement: Element): Promis
     reduce is used in order to not call the function workspace.getValue more than the necessary minimum.
     acc will not be changed after it is no longer undefined
   */
-  return await awu(parentsArray).reduce(async (acc: string | undefined, element: ReferenceExpression) => {
+  return awu(parentsArray).reduce(async (acc: string | undefined, element: ReferenceExpression) => {
     if (acc) {
       return acc
     }
-    return await getUrlFromRef(workspace, element)
+    return getUrlFromRef(workspace, element)
   }, undefined)
 }
 

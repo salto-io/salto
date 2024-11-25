@@ -455,7 +455,7 @@ export const createRemoteMapCreator = (
     serialize,
     deserialize,
   }: remoteMap.CreateRemoteMapParams<T>): Promise<remoteMap.RemoteMap<T, K>> => {
-    const locationCache = locationCacheUntyped as LocationCache<Promise<T | undefined>>
+    const locationCache = locationCacheUntyped as LocationCache<T>
     let wasClearCalled = false
     let isNamespaceEmpty: boolean | undefined
     const delKeys = new Set<string>()
@@ -568,7 +568,7 @@ export const createRemoteMapCreator = (
       value,
     }: remoteMap.RemoteMapEntry<string>): Promise<remoteMap.RemoteMapEntry<T, K>> => {
       const cacheKey = keyToTempDBKey(key)
-      const cacheValue: T | undefined = await locationCache.get(cacheKey)
+      const cacheValue = await locationCache.get(cacheKey)
       if (cacheValue !== undefined) {
         statCounters.LocationCacheHit.inc()
         return { key: key as K, value: cacheValue }
@@ -614,26 +614,25 @@ export const createRemoteMapCreator = (
       return awu(getDataIterableWithPages(opts)).map(entries => entries.map(entry => entry.key as K))
     }
     // Wrapper for the db.get function that is awaitable.
-    const getAwaitable = async (db: rocksdb, key: string): Promise<T | undefined> =>
-      new Promise<T | undefined>(resolve => {
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        db.get(key, async (error, value) => {
-          if (error) {
-            resolve(undefined)
-            return
-          }
-          resolve(await deserialize(value.toString()))
-        })
-      })
+    const getAwaitable = async (db: rocksdb, key: string): Promise<rocksdb.Bytes | undefined> => {
+      try {
+        return await promisify(db.get.bind(db))(key) as rocksdb.Bytes
+      } catch (error) {
+        if (error.notFound === true) {
+          return undefined
+        }
+        throw error
+      }
+    }
+
     // Retrieve a value from the DBs directly, ignoring the cache.
     // If the value is not found in the temporary db, it will be retrieved from the persistent db.
     const getFromDb = async (key: string): Promise<T | undefined> => {
-      let valueFromDb: T | undefined
+      let valueFromDb: rocksdb.Bytes | undefined
       valueFromDb = await getAwaitable(tmpDB, keyToTempDBKey(key))
       if (valueFromDb === undefined) {
         if (wasClearCalled) {
           statCounters.RemoteMapMiss.inc()
-          locationCache.del(keyToTempDBKey(key))
           return undefined
         }
         valueFromDb = await getAwaitable(persistentDB, keyToDBKey(key))
@@ -641,8 +640,10 @@ export const createRemoteMapCreator = (
       if (valueFromDb !== undefined) {
         statCounters.RemoteMapHit.inc()
         isNamespaceEmpty = false
+        return deserialize(valueFromDb.toString())
       }
-      return valueFromDb
+      statCounters.RemoteMapMiss.inc()
+      return undefined
     }
     const getImpl = async (key: string): Promise<T | undefined> => {
       if (delKeys.has(key)) {

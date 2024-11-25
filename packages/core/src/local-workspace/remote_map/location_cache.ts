@@ -11,7 +11,7 @@ import { counters } from './counters'
 
 const log = logger(module)
 
-export class LocationCache<T = unknown> extends LRU<string, T> {
+export class LocationCache<T = unknown> extends LRU<string, Promise<T | undefined>> {
   readonly location: string
 
   constructor(location: string, cacheSize: number) {

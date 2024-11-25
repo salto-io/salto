@@ -198,6 +198,10 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 }): Promise<CliExitCode> => {
   const { login, serviceType, authType, accountName, loginParameters } = input
   if (accountName !== undefined) {
+    if (accountName === '') {
+      errorOutputLine('Account name may not be an empty string.', output)
+      return CliExitCode.UserInputError
+    }
     if (!isValidAccountName(accountName)) {
       errorOutputLine(
         `The account name: "${accountName}" is invalid. Make sure your name meets the following rules:
@@ -206,10 +210,6 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
           - Cannot exceed ${errors.MAX_ACCOUNT_NAME_LENGTH} chars`,
         output,
       )
-      return CliExitCode.UserInputError
-    }
-    if (accountName === '') {
-      errorOutputLine('Account name may not be an empty string.', output)
       return CliExitCode.UserInputError
     }
     if (accountName === 'var') {

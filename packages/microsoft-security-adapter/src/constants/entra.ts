@@ -24,6 +24,7 @@ export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicy'
 export const IDENTIFIER_URIS_FIELD_NAME = 'identifierUris'
 export const MEMBERS_FIELD_NAME = 'members'
 export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications'
+export const REQUIRED_RESOURCE_ACCESS_FIELD_NAME = 'requiredResourceAccess'
 
 /* Type names */
 // Top level

@@ -19,7 +19,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, getParent } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
@@ -118,6 +118,74 @@ describe('Microsoft Security adapter', () => {
       })
 
       describe('specific instances', () => {
+        describe('Entra', () => {
+          describe('applications', () => {
+            let entraApplications: InstanceElement[]
+            beforeEach(async () => {
+              entraApplications = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraApplication')
+            })
+
+            it('should create the correct instances for Entra applications', async () => {
+              expect(entraApplications).toHaveLength(2)
+
+              const entraApplicationNames = entraApplications.map(e => e.elemID.name)
+              expect(entraApplicationNames).toEqual(
+                expect.arrayContaining(['test_application@s', 'test_application_with_resource_ref@s']),
+              )
+            })
+
+            it('should reference the correct required resource access', async () => {
+              const applicationWithAppRoles = entraApplications.find(
+                e => e.elemID.name === 'test_application_with_resource_ref@s',
+              )
+              expect(applicationWithAppRoles).toBeDefined()
+              const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                .requiredResourceAccess
+              expect(requiredResourceAccessArr).toHaveLength(1)
+              const requiredResourceAccess = requiredResourceAccessArr[0]
+              expect(requiredResourceAccess.resourceAppId).toBeInstanceOf(ReferenceExpression)
+              expect(requiredResourceAccess.resourceAppId.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraApplication.instance.test_application@s',
+              )
+              expect(requiredResourceAccess.resourceAccess).toHaveLength(1)
+              expect(requiredResourceAccess.resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+              expect(requiredResourceAccess.resourceAccess[0].id.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
+              )
+            })
+          })
+
+          describe('app roles', () => {
+            let appRoleInstances: InstanceElement[]
+            beforeEach(async () => {
+              appRoleInstances = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'EntraAppRole')
+            })
+
+            it('should create the correct instances for Entra app roles', async () => {
+              expect(appRoleInstances).toHaveLength(2)
+
+              const appRoleNames = appRoleInstances.map(e => e.elemID.name)
+              expect(appRoleNames).toEqual(
+                expect.arrayContaining([
+                  'test_application__testAppRole_variation2@suuu',
+                  'test_application__testAppRole_variation1@suuu',
+                ]),
+              )
+            })
+
+            it('should include parent reference to the application', async () => {
+              const parentRefs = appRoleInstances.map(ar => getParent(ar))
+              expect(
+                parentRefs.every(
+                  p => p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s',
+                ),
+              ).toBeTruthy()
+            })
+          })
+        })
+
         describe('Intune', () => {
           describe('applications', () => {
             let intuneApplications: InstanceElement[]

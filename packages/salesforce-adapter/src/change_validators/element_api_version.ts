@@ -8,13 +8,13 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { ChangeValidator, ElemID, getChangeData, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { FLOW_METADATA_TYPE, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
+import { FLOW_METADATA_TYPE, APEX_CLASS_METADATA_TYPE, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
 import { LATEST_SUPPORTED_API_VERSION_FIELD } from '../filters/organization_settings'
 import { isInstanceOfTypeSync } from '../filters/utils'
 
 const log = logger(module)
 
-const VERSIONED_TYPES = [FLOW_METADATA_TYPE]
+const VERSIONED_TYPES = [FLOW_METADATA_TYPE, APEX_CLASS_METADATA_TYPE]
 
 const getLatestSupportedApiVersion = async (elementsSource?: ReadOnlyElementsSource): Promise<number | undefined> => {
   if (elementsSource === undefined) {

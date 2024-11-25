@@ -116,6 +116,30 @@ const getPrivateAPISettingsDefinitions = ({
   }
 }
 
+const brandCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {
+  custom:
+    args =>
+    ({ entry, defaultName }) => {
+      if (entry?.isDefault === true) {
+        return naclCase('Default Brand')
+      }
+      const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)
+      return elemIDFunc({ entry, defaultName })
+    },
+}
+
+const domainCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {
+  custom:
+    args =>
+    ({ entry, defaultName }) => {
+      if (entry?.id === 'default') {
+        return naclCase('Default Domain')
+      }
+      const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)
+      return elemIDFunc({ entry, defaultName })
+    },
+}
+
 const accessPolicyCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {
   custom:
     args =>
@@ -696,6 +720,7 @@ const createCustomizations = ({
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/customizations/footer' },
+        elemID: brandCustomizer,
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -1077,7 +1102,11 @@ const createCustomizations = ({
     requests: [{ endpoint: { path: '/api/v1/domains' }, transformation: { root: 'domains' } }],
     resource: { directFetch: true },
     element: {
-      topLevel: { isTopLevel: true, elemID: { parts: [{ fieldName: 'domain' }], extendsParent: true } },
+      topLevel: {
+        isTopLevel: true,
+        elemID: { ...domainCustomizer, parts: [{ fieldName: 'domain' }], extendsParent: true },
+        alias: { aliasComponents: [{ fieldName: 'domain' }] },
+      },
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },

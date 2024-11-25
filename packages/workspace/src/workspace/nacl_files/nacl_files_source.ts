@@ -278,15 +278,9 @@ type ParseNaclFilesArgs = {
   createSourceMap?: boolean
 }
 
-const parseNaclFiles = async ({
-  naclFiles,
-  functions,
-  createSourceMap = false,
-}: ParseNaclFilesArgs): Promise<ParsedNaclFile[]> =>
+const parseNaclFiles = async ({ naclFiles, functions }: ParseNaclFilesArgs): Promise<ParsedNaclFile[]> =>
   withLimitedConcurrency(
-    naclFiles.map(
-      naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions, createSourceMap })),
-    ),
+    naclFiles.map(naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions }))),
     PARSE_CONCURRENCY,
   )
 

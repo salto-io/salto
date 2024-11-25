@@ -40,7 +40,7 @@ export const configSource = (dirStore: DirectoryStore<string>): ConfigSource => 
         log.warn('Could not find file %s for configuration %s', filename(name), name)
         return defaultValue
       }
-      const parseResult = await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      const parseResult = await parser.parse(Buffer.from(naclFile.buffer), naclFile.filename, {}, false)
       if (!_.isEmpty(parseResult.errors)) {
         log.error('failed to parse %s due to %o', name, parseResult.errors)
         throw new ConfigParseError(name)

@@ -40,6 +40,7 @@ import {
   isReferenceExpression,
   SaltoError,
   SaltoElementError,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -49,7 +50,7 @@ import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
-import { merger, expressions, elementSource } from '@salto-io/workspace'
+import { expressions, elementSource } from '@salto-io/workspace'
 import { parser, parserUtils } from '@salto-io/parser'
 import { createMatchingObjectType, createTemplateExpression, ImportantValues } from '@salto-io/adapter-utils'
 
@@ -286,7 +287,10 @@ const defaultObj = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Default'],
 })
 
-export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promise<Element[]> => {
+export const generateExtraElementsFromPaths = async (
+  naclDirs: string[],
+  refElementSource: ReadOnlyElementsSource,
+): Promise<Element[]> => {
   const allNaclMocks = (
     await Promise.all(
       naclDirs.map(naclDir =>
@@ -303,25 +307,30 @@ export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promis
   const elements = await awu(
     allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
-      const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
-        file: {
-          parse: async funcParams => {
-            const [filepath] = funcParams
-            let fileContent: Buffer
-            try {
-              fileContent = fs.readFileSync(`${file.fullPath.replace(file.basename, '')}${filepath}`)
-            } catch {
-              fileContent = Buffer.from('THIS IS STATIC FILE')
-            }
-            return new StaticFile({
-              content: fileContent,
-              filepath,
-            })
+      const parsedNaclFile = await parser.parse(
+        Buffer.from(content),
+        file.basename,
+        {
+          file: {
+            parse: async funcParams => {
+              const [filepath] = funcParams
+              let fileContent: Buffer
+              try {
+                fileContent = fs.readFileSync(`${file.fullPath.replace(file.basename, '')}${filepath}`)
+              } catch {
+                fileContent = Buffer.from('THIS IS STATIC FILE')
+              }
+              return new StaticFile({
+                content: fileContent,
+                filepath,
+              })
+            },
+            dump: async () => ({ funcName: 'file', parameters: [] }),
+            isSerializedAsFunction: () => true,
           },
-          dump: async () => ({ funcName: 'file', parameters: [] }),
-          isSerializedAsFunction: () => true,
         },
-      })
+        false, // calcSourceMap
+      )
       await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
@@ -330,9 +339,7 @@ export const generateExtraElementsFromPaths = async (naclDirs: string[]): Promis
   )
     .flat()
     .toArray()
-  const mergedElements = await merger.mergeElements(awu(elements))
-  const inMemElemSource = elementSource.createInMemoryElementSource(await awu(mergedElements.merged.values()).toArray())
-  return (await Promise.all(elements.map(async elem => expressions.resolve([elem], inMemElemSource)))).flat()
+  return expressions.resolve(elements, refElementSource)
 }
 
 const permissionsType = new ObjectType({
@@ -840,7 +847,11 @@ export const generateElements = async (
     }).flat()
   }
 
-  const generateUsersLike = ({ numOfUsers, numOfGroups, distributionFactor }: UsersGenerationParams): Element[] => {
+  const generateUsersLike = (): Element[] => {
+    if (params.usersGenerationParams === undefined) {
+      return []
+    }
+    const { numOfUsers, numOfGroups, distributionFactor } = params.usersGenerationParams
     if (distributionFactor && (distributionFactor > 1 || distributionFactor < 0)) {
       throw new Error('distributionFactor must be between 0 and 1')
     }
@@ -926,7 +937,8 @@ export const generateElements = async (
         },
       )
     })
-    return [userType, groupType, groupMembersType, ...users, ...groups, ...groupMembers]
+    const types: Element[] = [userType, groupType, groupMembersType]
+    return types.concat(users).concat(groups).concat(groupMembers)
   }
 
   const generateEnvElements = (): Element[] => {
@@ -1091,7 +1103,7 @@ export const generateElements = async (
     return res
   }
 
-  const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
+  const defaultTypes: Element[] = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primitiveTypes = await generatePrimitiveTypes()
   progressReporter.reportProgress({ message: 'Generating types' })
@@ -1102,28 +1114,30 @@ export const generateElements = async (
   const records = await generateRecords()
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike()
-  progressReporter.reportProgress({ message: 'Generating extra elements' })
-  const extraElements = params.extraNaclPaths ? await generateExtraElementsFromPaths(params.extraNaclPaths) : []
-  const users = params.usersGenerationParams ? generateUsersLike(params.usersGenerationParams) : []
-  const defaultExtraElements = await generateExtraElementsFromPaths([path.join(dataPath, 'fixtures')])
-  log.debug('default fixture element are: %s', defaultExtraElements.map(elem => elem.elemID.getFullName()).join(' , '))
+  progressReporter.reportProgress({ message: 'Generating users like instances' })
+  const users = generateUsersLike()
   progressReporter.reportProgress({ message: 'Generating conflicted elements' })
   const envObjects = generateEnvElements()
-  progressReporter.reportProgress({ message: 'Generation done' })
   const elementsToExclude = new Set(params.elementsToExclude ?? [])
-  return [
-    ...defaultTypes,
-    ...primitiveTypes,
-    ...types,
-    ...records,
-    ...objects,
-    ...profiles,
-    ...users,
-    new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} }),
-    ...extraElements,
-    ...defaultExtraElements,
-    ...envObjects,
-  ].filter(e => !elementsToExclude.has(e.elemID.getFullName()))
+  const allElements = defaultTypes
+    .concat(primitiveTypes)
+    .concat(types)
+    .concat(records)
+    .concat(objects)
+    .concat(profiles)
+    .concat(users)
+    .concat([new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} })])
+    .concat(envObjects)
+    .filter(e => !elementsToExclude.has(e.elemID.getFullName()))
+
+  progressReporter.reportProgress({ message: 'Generating extra elements' })
+  const elementSourceForExtraElements = elementSource.createInMemoryElementSource(allElements)
+  const extraElements = await generateExtraElementsFromPaths(
+    [path.join(dataPath, 'fixtures')].concat(params.extraNaclPaths ?? []),
+    elementSourceForExtraElements,
+  )
+  progressReporter.reportProgress({ message: 'Generation done' })
+  return allElements.concat(extraElements)
 }
 
 export const generateFetchErrorsFromConfig = (

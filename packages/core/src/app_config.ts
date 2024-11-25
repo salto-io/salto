@@ -125,7 +125,7 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
-  const configInstance = (await awu((await parse(buf, filepath)).elements).peek()) as InstanceElement
+  const configInstance = (await awu((await parse(buf, filepath, {}, false)).elements).peek()) as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
   configInstance.refType = createRefToElmWithValue(saltoAppConfigType)

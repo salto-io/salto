@@ -13,6 +13,7 @@
     { "path": "../workspace" },
     { "path": "../adapter-components" },
     { "path": "../logging" },
-    { "path": "../parser" }
+    { "path": "../parser" },
+    { "path": "../core" }
   ]
 }

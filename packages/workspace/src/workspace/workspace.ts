@@ -67,6 +67,7 @@ import {
   MAX_ENV_NAME_LEN,
   UnknownAccountError,
   InvalidAccountNameError,
+  MAX_ACCOUNT_NAME_LENGTH,
 } from './errors'
 import { EnvConfig, StateConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
@@ -120,6 +121,9 @@ export const getStaticFileCacheName = (name: string): string => (name === COMMON
 
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
+
+export const isValidAccountName = (accountName: string): boolean =>
+  accountName.length <= MAX_ACCOUNT_NAME_LENGTH && naclCase(accountName) === accountName && /^\D.*$/i.test(accountName)
 
 export type DateRange = {
   start: Date
@@ -1120,7 +1124,7 @@ export const loadWorkspace = async (
   const addAccount = async (service: string, account?: string): Promise<void> => {
     const accountName = account ?? service
 
-    if (accountName && naclCase(accountName) !== accountName) {
+    if (!isValidAccountName(accountName)) {
       throw new InvalidAccountNameError(accountName)
     }
     const currentAccounts = accounts() || []

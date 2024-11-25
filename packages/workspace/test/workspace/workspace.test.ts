@@ -3149,6 +3149,7 @@ salesforce.staticFile staticFileInstance {
         await expect(workspace.addAccount('salto', 'new;;')).rejects.toThrow(InvalidAccountNameError)
         await expect(workspace.addAccount('salto', 'new account')).rejects.toThrow(InvalidAccountNameError)
         await expect(workspace.addAccount('salto', 'new.')).rejects.toThrow(InvalidAccountNameError)
+        await expect(workspace.addAccount('salto', '1new')).rejects.toThrow(InvalidAccountNameError)
       })
 
       it('should persist', () => {

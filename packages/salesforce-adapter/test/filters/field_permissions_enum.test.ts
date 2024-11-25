@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { collections } from '@salto-io/lowerdash'
 import {
   InstanceElement,
   isMapType,
@@ -25,6 +26,8 @@ import fieldPermissionsEnumFilter, {
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
 import { FilterWith } from './mocks'
+
+const { awu } = collections.asynciterable
 
 describe('FieldPermissionsEnum filter', () => {
   let filter: FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
@@ -304,8 +307,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
-          changes.forEach(async change => {
+          await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
             ).fields.fieldPermissions.getType()
@@ -329,8 +331,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as enumFieldPermissions map type", async () => {
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
-          changes.forEach(async change => {
+          await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
             ).fields.fieldPermissions.getType()
@@ -363,8 +364,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
-          changes.forEach(async change => {
+          await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
             ).fields.fieldPermissions.getType()
@@ -388,8 +388,7 @@ describe('FieldPermissionsEnum filter', () => {
         })
 
         it("Should have instances' type fieldPermission field type as profileFieldLevelSecurity map type", async () => {
-          // eslint-disable-next-line @typescript-eslint/no-misused-promises
-          changes.forEach(async change => {
+          await awu(changes).forEach(async change => {
             const fieldPermissionsFieldType = await (
               await getChangeData(change).getType()
             ).fields.fieldPermissions.getType()

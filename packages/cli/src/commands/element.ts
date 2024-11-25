@@ -7,7 +7,14 @@
  */
 import _ from 'lodash'
 import open from 'open'
-import { Element, ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  isElement,
+  CORE_ANNOTATIONS,
+  isModificationChange,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import {
   Workspace,
   ElementSelector,
@@ -515,21 +522,26 @@ const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID
   }
 }
 
-export const getParentUrl = async (workspace: Workspace, childElement: Element): Promise<string | undefined> => {
+const getUrlFromRef = async (workspace: Workspace, refParent: ReferenceExpression): Promise<string | undefined> => {
+  const element = await workspace.getValue(refParent.elemID)
+  return element?.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+}
+
+const getParentUrl = async (workspace: Workspace, childElement: Element): Promise<string | undefined> => {
   const parentsArray = getParents(childElement)
   if (parentsArray.length === 0) {
     return undefined
   }
-  const parentRef = await awu(parentsArray).find(async parent => {
-    const parentElement = await workspace.getValue(parent.elemID)
-    if (!isElement(parentElement)) {
-      return false
+  /*
+    reduce is used in order to not call the function workspace.getValue more than the necessary minimum.
+    acc will not be changed after it is no longer undefined
+  */
+  return await awu(parentsArray).reduce(async (acc: string | undefined, element: ReferenceExpression) => {
+    if (acc) {
+      return acc
     }
-    return parentElement.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
-  })
-
-  const parentElem = parentRef !== undefined ? await workspace.getValue(parentRef.elemID) : undefined
-  return isElement(parentElem) ? parentElem.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
+    return await getUrlFromRef(workspace, element)
+  }, undefined)
 }
 
 export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input, output, workspace }) => {

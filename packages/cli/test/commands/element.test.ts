@@ -1160,12 +1160,16 @@ Moving the specified elements to common.
       workspace = mocks.mockWorkspace({})
     })
 
-    const getMockElement = (url?: string, parentElemID?: ElemID): ObjectType =>
+    const getMockElement = (url?: string, parentElemIDs?: ElemID[]): ObjectType =>
       new ObjectType({
         elemID: new ElemID('salesforce', 'Lead'),
         annotations: {
           ...(url === undefined ? {} : { [CORE_ANNOTATIONS.SERVICE_URL]: url }),
-          ...(parentElemID === undefined ? {} : { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentElemID)] }),
+          ...(parentElemIDs === undefined
+            ? {}
+            : {
+                [CORE_ANNOTATIONS.PARENT]: parentElemIDs?.map(elemID => new ReferenceExpression(elemID)),
+              }),
         },
       })
 
@@ -1201,7 +1205,7 @@ Moving the specified elements to common.
         beforeEach(async () => {
           workspace.getValue.mockImplementation(async elemID =>
             elemID.getFullName() === 'salesforce.Date'
-              ? getMockElement(undefined, new ElemID('salesforce', 'NoLead'))
+              ? getMockElement(undefined, [new ElemID('salesforce', 'NoLead')])
               : getMockElement(parentUrl),
           )
           const cliArgs = mocks.mockCliArgs()
@@ -1225,7 +1229,7 @@ Moving the specified elements to common.
         beforeEach(async () => {
           workspace.getValue.mockImplementation(async elemID =>
             elemID.getFullName() === 'salesforce.Date'
-              ? getMockElement(undefined, new ElemID('salesforce', 'NoLead'))
+              ? getMockElement(undefined, [new ElemID('salesforce', 'NoLead')])
               : getMockElement(undefined),
           )
           const cliArgs = mocks.mockCliArgs()
@@ -1243,6 +1247,47 @@ Moving the specified elements to common.
         })
         it('should return error exit code', () => {
           expect(result).toEqual(CliExitCode.AppError)
+        })
+      })
+      describe('when has multiple parents that one of them has url', () => {
+        const fakeUrl = 'www.fakeUrl.com'
+        beforeEach(async () => {
+          workspace.getValue.mockImplementationOnce(async () =>
+            getMockElement(undefined, [
+              new ElemID('salesforce', 'NoLead'),
+              new ElemID('salesforce', 'customer'),
+              new ElemID('salesforce', 'delivery'),
+              new ElemID('salesforce', 'letter'),
+            ]),
+          )
+          workspace.getValue.mockImplementationOnce(async () => getMockElement(undefined))
+          workspace.getValue.mockImplementationOnce(async () => getMockElement(parentUrl))
+          workspace.getValue.mockImplementationOnce(async () => getMockElement(undefined))
+          workspace.getValue.mockImplementationOnce(async () => getMockElement(fakeUrl))
+          //   elemID.getFullName() === 'salesforce.Date'
+          //     ?
+          //     : elemID.getFullName() === 'salesforce.customer'
+          //       ? getMockElement(parentUrl)
+          //       : elemID.getFullName() === 'salesforce.letter'
+          //         ? getMockElement(fakeUrl)
+          //         : getMockElement(undefined),
+          // )
+          const cliArgs = mocks.mockCliArgs()
+          output = cliArgs.output
+          result = await openAction({
+            ...mocks.mockCliCommandArgs(commandName, cliArgs),
+            input: {
+              elementId: 'salesforce.Date',
+            },
+            workspace,
+          })
+        })
+        it('should call open with parent url', () => {
+          expect(open).toHaveBeenCalledWith(parentUrl)
+          expect(open).not.toHaveBeenCalledWith(fakeUrl)
+        })
+        it('should return success exit code', () => {
+          expect(result).toEqual(CliExitCode.Success)
         })
       })
       describe('when has no parent', () => {

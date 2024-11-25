@@ -17,18 +17,15 @@ import {
   createRestriction,
   AdapterFormat,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, inspectValue, getDetailedChanges } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+import { initLocalWorkspace, loadLocalWorkspace } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
-import {
-  GeneratorParams,
-  DUMMY_ADAPTER,
-  defaultParams,
-  changeErrorType,
-  fetchErrorType,
-  generateExtraElementsFromPaths,
-} from './generator'
+import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, fetchErrorType } from './generator'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -65,9 +62,52 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => ({
-  elements: await generateExtraElementsFromPaths([baseDir]),
-})
+const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => {
+  const workspace = await loadLocalWorkspace({
+    path: baseDir,
+    persistent: false,
+  })
+  const elements = await workspace.elements()
+  return { elements: await awu(await elements.getAll()).toArray() }
+}
+
+const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ baseDir, changes }) => {
+  const workspace = await loadLocalWorkspace({
+    path: baseDir,
+  })
+  await workspace.updateNaclFiles(
+    changes.flatMap(c => getDetailedChanges(c)),
+    'isolated',
+    false,
+  )
+  await workspace.flush()
+  return {
+    unappliedChanges: [],
+    errors: [],
+  }
+}
+
+const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
+  await initLocalWorkspace(baseDir)
+  return {
+    errors: [],
+  }
+}
+
+const isInitializedFolder: AdapterFormat['isInitializedFolder'] = async ({ baseDir }) => {
+  try {
+    await loadLocalWorkspace({
+      path: baseDir,
+      persistent: false,
+    })
+    return { result: true, errors: [] }
+  } catch (err) {
+    return {
+      result: false,
+      errors: [],
+    }
+  }
+}
 
 const objectFieldType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'objectFieldType'),
@@ -212,5 +252,8 @@ export const adapter: Adapter = {
   configCreator,
   adapterFormat: {
     loadElementsFromFolder,
+    dumpElementsToFolder,
+    initFolder,
+    isInitializedFolder,
   },
 }

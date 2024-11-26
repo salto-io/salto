@@ -51,6 +51,12 @@ const getDependentIDsFromReferenceSourceIndex = async (
 
       const dependentIDs = await getDependentIDs(elemIDs)
 
+      // if there are no dependent types we can return `dependentIDs` and avoid
+      // iterating `elementsSource.list()` to get the additional dependent instances.
+      if (!dependentIDs.some(id => id.idType === 'type')) {
+        return dependentIDs
+      }
+
       // in `referenceSourcesIndex` there are no references between types and their instances
       // so we should add the instances of the types that are in `addedIDs` as well.
       const additionalDependentInstanceIDs = await awu(await elementsSource.list())

@@ -281,13 +281,7 @@ describe('suiteapp_file_cabinet', () => {
     const maxFileCabinetSizeInGB = 1
     const extensionsToExclude = ['.*\\.csv']
     it('should return all the files', async () => {
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual(expectedResults)
     })
 
@@ -299,13 +293,7 @@ describe('suiteapp_file_cabinet', () => {
       mockSuiteAppClient.readFiles.mockImplementation(async (ids: string[]) => ids.map(id => filesContentWithError[id]))
       mockSuiteAppClient.readLargeFile.mockResolvedValue(filesContent[2])
 
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual(expectedResults)
       expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(2)
       expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
@@ -340,13 +328,7 @@ describe('suiteapp_file_cabinet', () => {
 
       mockSuiteAppClient.readLargeFile.mockResolvedValue(Buffer.from('someContent'))
 
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual([
         ...expectedResults.filter(res => !('link' in res.values)),
         {
@@ -382,7 +364,6 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
-        false,
       )
       expect(failedPaths).toEqual({
         lockedError: ['/folder5/folder4/file2'],
@@ -393,13 +374,7 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should filter files with query', async () => {
       query.isFileMatch.mockImplementation(path => path !== '/folder5/folder3/file1')
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual([
         expectedResults[0],
         expectedResults[1],
@@ -410,7 +385,7 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     it('should call suiteql with missing feature error param', async () => {
-      await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false)
+      await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(mockSuiteAppClient.runSuiteQL).toHaveBeenCalledWith(
         expect.objectContaining({ select: expect.stringContaining('id, name, bundleable') }),
         THROW_ON_MISSING_FEATURE_ERROR,
@@ -430,9 +405,7 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      expect(
-        await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false),
-      ).toEqual({
+      expect(await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)).toEqual({
         elements: [],
         failedPaths: { lockedError: [], largeFolderError: [], otherError: [] },
       })
@@ -441,13 +414,7 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should not run queries of no files are matched', async () => {
       query.areSomeFilesMatch.mockReturnValue(false)
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual([])
       expect(suiteAppClient.runSuiteQL).not.toHaveBeenCalled()
     })
@@ -465,7 +432,7 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       await expect(
-        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false),
+        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude),
       ).rejects.toThrow()
     })
 
@@ -482,14 +449,14 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       await expect(
-        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false),
+        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude),
       ).rejects.toThrow()
     })
 
     it('throw an error when readFiles failed', async () => {
       mockSuiteAppClient.readFiles.mockResolvedValue(undefined)
       await expect(
-        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false),
+        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude),
       ).rejects.toThrow()
     })
 
@@ -506,7 +473,7 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       await expect(
-        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false),
+        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude),
       ).rejects.toThrow()
     })
 
@@ -523,20 +490,14 @@ describe('suiteapp_file_cabinet', () => {
       })
 
       await expect(
-        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false),
+        importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude),
       ).rejects.toThrow()
     })
 
     it('should remove excluded folder before creating the file cabinet query', async () => {
       query.isFileMatch.mockImplementation(path => !path.includes('folder4'))
       query.isParentFolderMatch.mockImplementation(path => !path.includes('folder4'))
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       const suiteQlQuery = {
         select:
           'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
@@ -556,7 +517,6 @@ describe('suiteapp_file_cabinet', () => {
         query,
         maxFileCabinetSizeInGB,
         extensionsToExclude,
-        false,
       )
       expect(mockLargeFoldersToExclude).toHaveBeenCalledWith(
         [
@@ -578,26 +538,14 @@ describe('suiteapp_file_cabinet', () => {
     it('should return file that was matched by query (works only if query matches also direct parent folder of the file)', async () => {
       query.isFileMatch.mockImplementation(path => path === '/folder5/folder3/file1' || path === '/folder5/folder3/')
       query.isParentFolderMatch.mockImplementation(path => path === '/folder3' || path === '/folder5')
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual([expectedResults[1], expectedResults[3]])
     })
 
     it('should only query folder if a file in that folder is matched by the query', async () => {
-      query.isFileMatch.mockImplementation(path => path === '/folder5/folder3/file1')
-      query.isParentFolderMatch.mockImplementationOnce(() => true).mockImplementation(path => !path.includes('folder4'))
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      query.isFileMatch.mockImplementation(path => !path.includes('folder4'))
+      query.isParentFolderMatch.mockImplementationOnce(() => true)
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       const suiteQlQuery = {
         select:
           'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
@@ -614,13 +562,7 @@ describe('suiteapp_file_cabinet', () => {
       query.isParentFolderMatch
         .mockImplementationOnce(() => true)
         .mockImplementation(path => allTSFilesRegex.some(fileMatcher => fileMatcher.test(path)))
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       const suiteQlQuery = {
         select:
           'id, name, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle',
@@ -635,7 +577,7 @@ describe('suiteapp_file_cabinet', () => {
     it('should not query folder if no file in that folder is matched by the query', async () => {
       query.isParentFolderMatch.mockImplementationOnce(() => true).mockImplementation(() => false)
       query.isFileMatch.mockImplementation(path => path === '/folder6/file21')
-      await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude, false)
+      await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       // no folder should match, queryFiles shouldn't be called
       expect(suiteAppClient.runSuiteQL).toHaveBeenCalledTimes(2)
     })
@@ -650,13 +592,7 @@ describe('suiteapp_file_cabinet', () => {
         }
         return getFoldersResponse(suiteQlQuery)
       })
-      const { elements } = await importFileCabinet(
-        suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        false,
-      )
+      const { elements } = await importFileCabinet(suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
       expect(elements).toEqual(expectedResults)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(
         1,

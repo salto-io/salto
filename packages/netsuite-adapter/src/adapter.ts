@@ -45,7 +45,6 @@ import redundantFields from './filters/remove_redundant_fields'
 import hiddenFields from './filters/hidden_fields'
 import replaceRecordRef from './filters/replace_record_ref'
 import removeUnsupportedTypes from './filters/remove_unsupported_types'
-import dataInstancesInternalId from './filters/data_instances_internal_id'
 import dataAccountSpecificValues from './filters/data_account_specific_values'
 import dataInstancesReferences from './filters/data_instances_references'
 import dataInstancesReferenceNames from './filters/data_instances_reference_names'
@@ -108,15 +107,8 @@ import { getDataElements } from './data_elements/data_elements'
 import { getSuiteQLTableElements } from './data_elements/suiteql_table_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { FailedTypes, ImportFileCabinetResult } from './client/types'
-import {
-  DEFAULT_VALIDATE,
-  DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
-  ALL_TYPES_REGEX,
-  DEFAULT_WARN_STALE_DATA,
-  DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-  EXTENSION_REGEX,
-} from './config/constants'
+import { CustomizationInfo, FailedTypes, ImportFileCabinetResult } from './client/types'
+import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB, ALL_TYPES_REGEX, EXTENSION_REGEX } from './config/constants'
 import {
   FetchByQueryFunc,
   NetsuiteQuery,
@@ -181,7 +173,6 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: dataInstancesReferences },
   // dataInstancesReferenceNames must run after dataInstancesReferences and before dataAccountSpecificValues
   { creator: dataInstancesReferenceNames, addsNewInformation: true },
-  { creator: dataInstancesInternalId },
   { creator: accountSpecificValues },
   // the onFetch of workflowAccountSpecificValues should run before dataAccountSpecificValues
   // the preDeploy of workflowAccountSpecificValues should run before accountSpecificValues
@@ -226,9 +217,6 @@ export interface NetsuiteAdapterParams {
   typesToSkip?: string[]
   // File paths regular expression that we skip their fetch
   filePathRegexSkipList?: string[]
-  // Determines whether to attempt deploying all the elements that are referenced by the changed
-  // elements. It's needed as a workaround in cases deploy fails due to SDF inconsistent behavior
-  deployReferencedElements?: boolean
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   // config that is determined by the user
@@ -240,9 +228,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly elementsSource: ReadOnlyElementsSource
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: string[]
-  private readonly deployReferencedElements?: boolean
-  private readonly warnStaleData?: boolean
-  private readonly validateBeforeDeploy: boolean
   private readonly additionalDependencies: AdditionalDependencies
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
@@ -251,7 +236,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchExclude: QueryParams
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
-  private readonly withPartialDeletion?: boolean
   private readonly skipList?: NetsuiteQueryParameters // old version
   private createFiltersRunner: (
     params:
@@ -288,11 +272,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.fetchExclude = config.fetch.exclude
     this.lockedElements = config.fetch.lockedElementsToExclude
     this.fetchTarget = config.fetchTarget
-    this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
-    this.deployReferencedElements = config.deploy?.deployReferencedElements ?? config.deployReferencedElements
-    this.warnStaleData = config.deploy?.warnOnStaleWorkspaceData
-    this.validateBeforeDeploy = config.deploy?.validate ?? DEFAULT_VALIDATE
     this.additionalDependencies = {
       include: {
         features: config.deploy?.additionalDependencies?.include?.features ?? [],
@@ -390,7 +370,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
         updatedFetchQuery,
         this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
         this.userConfig.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
-        this.userConfig.fetch.forceFileCabinetExclude ?? true,
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result
@@ -407,10 +386,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
             .filter(scriptId => scriptIdsSet.has(scriptId)) ?? [],
         ),
       )
-      if (this.userConfig.fetch.addLockedCustomRecordTypes === false) {
-        log.debug('skip adding the following locked custom record types: %o', lockedCustomRecordTypesScriptIds)
-        return []
-      }
       return createLockedCustomRecordTypes(lockedCustomRecordTypesScriptIds)
     }
 
@@ -437,11 +412,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
         typeName: BUNDLE,
         values: { ...bundle, id: bundle.id.toString() },
       }))
-      const elementsToCreate = [
-        ...customObjects,
-        ...fileCabinetContent,
-        ...(this.userConfig.fetch.addBundles !== false ? bundlesCustomInfo : []),
-      ]
+      const elementsToCreate = ([] as CustomizationInfo[])
+        .concat(customObjects)
+        .concat(fileCabinetContent)
+        .concat(bundlesCustomInfo)
+
       const elements = await createElements(elementsToCreate, this.getElemIdFunc)
       const [standardInstances, types] = _.partition(elements, isInstanceElement)
       const [objectTypes, otherTypes] = _.partition(types, isObjectType)
@@ -490,19 +465,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult =
-      isPartial && this.withPartialDeletion !== false
-        ? await getDeletedElements({
-            client: this.client,
-            elementsSource: this.elementsSource,
-            fetchQuery: fetchQueryWithBundles,
-            serviceInstanceIds: instancesIds,
-            requestedCustomRecordTypes: customRecordTypes,
-            serviceCustomRecords: customRecords,
-            requestedDataTypes,
-            serviceDataElements: dataElements.filter(isInstanceElement),
-          })
-        : {}
+    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = isPartial
+      ? await getDeletedElements({
+          client: this.client,
+          elementsSource: this.elementsSource,
+          fetchQuery: fetchQueryWithBundles,
+          serviceInstanceIds: instancesIds,
+          requestedCustomRecordTypes: customRecordTypes,
+          serviceCustomRecords: customRecords,
+          requestedDataTypes,
+          serviceDataElements: dataElements.filter(isInstanceElement),
+        })
+      : {}
 
     const serverTimeElements =
       sysInfo !== undefined ? await getOrCreateServerTimeElements(sysInfo.time, this.elementsSource, isPartial) : []
@@ -690,10 +664,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changeValidator: getChangeValidator({
         client: this.client,
         withSuiteApp: this.client.isSuiteAppConfigured(),
-        warnStaleData: this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
         fetchByQuery: this.fetchByQuery,
-        deployReferencedElements: this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-        validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
         filtersRunner: (changesGroupId, suiteQLNameToInternalIdsMap) =>
           this.createFiltersRunner({ operation: 'deploy', changesGroupId, suiteQLNameToInternalIdsMap }),

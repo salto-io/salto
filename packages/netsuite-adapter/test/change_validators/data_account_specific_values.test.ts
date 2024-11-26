@@ -18,238 +18,141 @@ import mockSdfClient from '../client/sdf_client'
 import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('data account specific values validator', () => {
+  let params: Parameters<NetsuiteChangeValidator>[1]
   let dataType: ObjectType
-  const baseParams = {
-    deployReferencedElements: false,
-    elementsSource: buildElementsSourceFromElements([]),
-    config: {
-      fetch: fullFetchConfig(),
-    },
-    client: new NetsuiteClient(mockSdfClient()),
-    suiteQLNameToInternalIdsMap: {},
-    ...getTypesToInternalId([]),
-  }
 
   beforeEach(() => {
     dataType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'someType'),
       annotations: { source: 'soap' },
     })
-  })
-
-  describe('when fetch.resolveAccountSpecificValues is false', () => {
-    const params = {
-      ...baseParams,
-      config: { fetch: { ...baseParams.config.fetch, resolveAccountSpecificValues: false } },
+    const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
+    const unknownTypeReferencesType = new ObjectType({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
+    const unknownTypeReferencesInstance = new InstanceElement(ElemID.CONFIG_NAME, unknownTypeReferencesType, {
+      [naclCase('someType.someField.inner')]: {
+        1: 'Value 123',
+      },
+    })
+    params = {
+      client: new NetsuiteClient(mockSdfClient()),
+      elementsSource: buildElementsSourceFromElements([
+        suiteQLTableType,
+        unknownTypeReferencesType,
+        unknownTypeReferencesInstance,
+      ]),
+      config: {
+        fetch: fullFetchConfig(),
+      },
+      suiteQLNameToInternalIdsMap: {
+        account: {
+          'Account 1': ['1'],
+          'Some Account': ['2', '3'],
+        },
+      },
+      ...getTypesToInternalId([]),
     }
-    it('should not have ChangeError when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
-      const instance = new InstanceElement('instance', dataType)
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(0)
-    })
-    it('should not have ChangeError when deploying an instance with ACCOUNT_SPECIFIC_VALUE and internalId', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        field: {
-          id: '[ACCOUNT_SPECIFIC_VALUE]',
-          internalId: '2',
-        },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(0)
-    })
+  })
 
-    it('should have ChangeError when deploying an instance with ACCOUNT_SPECIFIC_VALUE and without internalId', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        field: {
-          id: '[ACCOUNT_SPECIFIC_VALUE]',
+  it('should not have errors when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
+    const instance = new InstanceElement('instance', dataType)
+    const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
+    expect(changeErrors).toHaveLength(0)
+  })
+
+  it('should not have errors when the ACCOUNT_SPECIFIC_VALUE are resolved', async () => {
+    const instance = new InstanceElement('instance', dataType, {
+      accountField: {
+        id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
+      },
+      someField: {
+        inner: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
         },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
-      expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].message).toEqual("Can't deploy field with missing ID")
-      expect(changeErrors[0].detailedMessage).toContain('In order to deploy field,')
+      },
     })
+    const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
+    expect(changeErrors).toHaveLength(0)
+  })
 
-    it('should have ChangeError when deploying an instance with internalId that is ACCOUNT_SPECIFIC_VALUE', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        field: {
-          internalId: '[ACCOUNT_SPECIFIC_VALUE]',
+  it('should have error when an ACCOUNT_SPECIFIC_VALUE is not resolved', async () => {
+    const instance = new InstanceElement('instance', dataType, {
+      accountField: {
+        id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
+      },
+      someField: {
+        inner: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
         },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
-      expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].message).toEqual("Can't deploy field with missing ID")
-      expect(changeErrors[0].detailedMessage).toContain('In order to deploy field,')
+      },
     })
-
-    it('should have ChangeError on nested field with internalId that is ACCOUNT_SPECIFIC_VALUE', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        field: {
-          nested: {
-            internalId: '[ACCOUNT_SPECIFIC_VALUE]',
-          },
-        },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
-      expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].message).toEqual("Can't deploy field with missing ID")
-      expect(changeErrors[0].detailedMessage).toContain('In order to deploy field.nested,')
-    })
-
-    it('should not have ChangeError if a field with ACCOUNT_SPECIFIC_VALUE was not changed', async () => {
-      const before = new InstanceElement('instance', dataType, {
-        field: {
-          internalId: '[ACCOUNT_SPECIFIC_VALUE]',
-        },
-      })
-
-      const after = before.clone()
-      after.value.field2 = 2
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], params)
-      expect(changeErrors).toHaveLength(0)
+    const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      severity: 'Error',
+      elemID: instance.elemID,
+      message: 'Could not identify value in data object',
+      detailedMessage: expect.stringContaining('Could not find object "Account 2" for field "accountField"'),
     })
   })
 
-  describe('when fetch.resolveAccountSpecificValues is true', () => {
-    let params: Parameters<NetsuiteChangeValidator>[1]
+  it('should have error on nested field with unresolved ACCOUNT_SPECIFIC_VALUE', async () => {
+    const instance = new InstanceElement('instance', dataType, {
+      accountField: {
+        id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
+      },
+      someField: {
+        inner: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
+        },
+      },
+    })
+    const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      severity: 'Error',
+      elemID: instance.elemID,
+      message: 'Could not identify value in data object',
+      detailedMessage: expect.stringContaining('Could not find object "Value 456" for field "someField.inner"'),
+    })
+  })
 
-    beforeEach(() => {
-      const suiteQLTableType = new ObjectType({ elemID: new ElemID(NETSUITE, SUITEQL_TABLE) })
-      const unknownTypeReferencesType = new ObjectType({ elemID: UNKNOWN_TYPE_REFERENCES_ELEM_ID })
-      const unknownTypeReferencesInstance = new InstanceElement(ElemID.CONFIG_NAME, unknownTypeReferencesType, {
-        [naclCase('someType.someField.inner')]: {
-          1: 'Value 123',
+  it('should have warning ACCOUNT_SPECIFIC_VALUE with non unique name', async () => {
+    const instance = new InstanceElement('instance', dataType, {
+      accountField: {
+        id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Some Account)',
+      },
+      someField: {
+        inner: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
         },
-      })
-      params = {
-        ...baseParams,
-        elementsSource: buildElementsSourceFromElements([
-          suiteQLTableType,
-          unknownTypeReferencesType,
-          unknownTypeReferencesInstance,
-        ]),
-        config: {
-          fetch: {
-            ...fullFetchConfig(),
-            resolveAccountSpecificValues: true,
-          },
+      },
+    })
+    const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      severity: 'Warning',
+      elemID: instance.elemID.createNestedID('accountField'),
+      message: 'Multiple objects with the same name',
+      detailedMessage: expect.stringContaining('There are multiple objects with the name "Some Account"'),
+    })
+  })
+
+  it('should not have error if a field with unresolved ACCOUNT_SPECIFIC_VALUE was not changed', async () => {
+    const before = new InstanceElement('instance', dataType, {
+      strField: 1,
+      accountField: {
+        id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
+      },
+      someField: {
+        inner: {
+          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
         },
-        suiteQLNameToInternalIdsMap: {
-          account: {
-            'Account 1': ['1'],
-            'Some Account': ['2', '3'],
-          },
-        },
-      }
+      },
     })
 
-    it('should not have errors when deploying an instance without ACCOUNT_SPECIFIC_VALUE', async () => {
-      const instance = new InstanceElement('instance', dataType)
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(0)
-    })
-
-    it('should not have errors when the ACCOUNT_SPECIFIC_VALUE are resolved', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        accountField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
-        },
-        someField: {
-          inner: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
-          },
-        },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(0)
-    })
-
-    it('should have error when an ACCOUNT_SPECIFIC_VALUE is not resolved', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        accountField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
-        },
-        someField: {
-          inner: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
-          },
-        },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual({
-        severity: 'Error',
-        elemID: instance.elemID,
-        message: 'Could not identify value in data object',
-        detailedMessage: expect.stringContaining('Could not find object "Account 2" for field "accountField"'),
-      })
-    })
-
-    it('should have error on nested field with unresolved ACCOUNT_SPECIFIC_VALUE', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        accountField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
-        },
-        someField: {
-          inner: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
-          },
-        },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual({
-        severity: 'Error',
-        elemID: instance.elemID,
-        message: 'Could not identify value in data object',
-        detailedMessage: expect.stringContaining('Could not find object "Value 456" for field "someField.inner"'),
-      })
-    })
-
-    it('should have warning ACCOUNT_SPECIFIC_VALUE with non unique name', async () => {
-      const instance = new InstanceElement('instance', dataType, {
-        accountField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Some Account)',
-        },
-        someField: {
-          inner: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
-          },
-        },
-      })
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ after: instance })], params)
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0]).toEqual({
-        severity: 'Warning',
-        elemID: instance.elemID.createNestedID('accountField'),
-        message: 'Multiple objects with the same name',
-        detailedMessage: expect.stringContaining('There are multiple objects with the name "Some Account"'),
-      })
-    })
-
-    it('should not have error if a field with unresolved ACCOUNT_SPECIFIC_VALUE was not changed', async () => {
-      const before = new InstanceElement('instance', dataType, {
-        strField: 1,
-        accountField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
-        },
-        someField: {
-          inner: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
-          },
-        },
-      })
-
-      const after = before.clone()
-      after.value.strField = 2
-      const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], params)
-      expect(changeErrors).toHaveLength(0)
-    })
+    const after = before.clone()
+    after.value.strField = 2
+    const changeErrors = await dataAccountSpecificValueValidator([toChange({ before, after })], params)
+    expect(changeErrors).toHaveLength(0)
   })
 })

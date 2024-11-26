@@ -6,14 +6,11 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { CORE_ANNOTATIONS, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { ImportantValues, toImportantValues } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, netsuiteSupportedTypes } from '../types'
 import { BUNDLE, CUSTOM_RECORD_TYPE, INACTIVE_FIELDS, NAME_FIELD, SCRIPT_ID } from '../constants'
-
-const log = logger(module)
 
 const { IMPORTANT_VALUES, SELF_IMPORTANT_VALUES } = CORE_ANNOTATIONS
 
@@ -48,14 +45,9 @@ const getImportantValues = (type: ObjectType): ImportantValues => [
   ...toImportantValues(type, HIGHLIGHTED_AND_INDEXED_FIELD_NAMES, { indexed: true, highlighted: true }),
 ]
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'addImportantValues',
   onFetch: async elements => {
-    if (config.fetch.addImportantValues === false) {
-      log.info('addImportantValues is disabled')
-      return
-    }
-
     const [customRecordTypes, types] = _.partition(elements.filter(isObjectType), isCustomRecordType)
 
     const netsuiteSupportedTypesSet = new Set(netsuiteSupportedTypes)

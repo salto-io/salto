@@ -47,7 +47,7 @@ const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
   const actionRequests = makeArray(queryWithDefault(typeRequestDefinition).query(action))
   if (
     actionRequests.length === 0 ||
-    actionRequests.every(req => req.request.endpoint === undefined && req.request.earlySuccess !== true)
+    actionRequests.every(req => req.request?.endpoint === undefined && req.request?.earlySuccess !== true)
   ) {
     return [
       {
@@ -75,6 +75,7 @@ export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends
   typesWithNoDeploy?: string[]
 }): ChangeValidator => {
   const typeConfigQuery = queryWithDefault(deployDefinitions.instances)
+  const definitionKeys =  typeConfigQuery.allKeys()
   return async changes =>
     awu(changes)
       .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
@@ -83,14 +84,14 @@ export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends
           return []
         }
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
-          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction
-          if (requestsByAction === undefined && typesConfig !== undefined) {
+          if (!definitionKeys.includes(typeName) && typesConfig !== undefined) {
             return createChangeErrorsBasedOnConfig(
               typesConfig[typeName]?.deployRequests ?? {},
               element.elemID,
               change.action,
             )
           }
+          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction
           return createChangeErrors(requestsByAction ?? {}, element.elemID, change.action)
         }
         if (typesWithNoDeploy.includes(element.elemID.typeName)) {

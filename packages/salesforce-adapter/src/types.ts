@@ -96,7 +96,6 @@ export type MetadataParams = {
 }
 
 const OPTIONAL_FEATURES = [
-  'skipAliases',
   'extendedCustomFieldInformation',
   'importantValues',
   'hideTypesFolder',
@@ -129,6 +128,7 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'profilePaths',
   'removeReferenceFromFilterItemToRecordType',
   'sharingRulesMaps',
+  'skipAliases',
   'storeProfilesAndPermissionSetsBrokenPaths',
   'taskAndEventCustomFields',
   'toolingDepsOfCurrentNamespace',

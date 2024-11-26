@@ -288,8 +288,9 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     changeError =>
       summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
   )
+
   const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(summary))
-  if (formattedDeploymentSummary) {
+  if (!dryRun && formattedDeploymentSummary) {
     outputLine(formattedDeploymentSummary, output)
   }
   const postDeployActionsOutput = formatDeployActions({

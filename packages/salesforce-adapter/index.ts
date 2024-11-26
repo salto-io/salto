@@ -7,7 +7,7 @@
  */
 
 export { default } from './src/adapter'
-export { adapter, SalesforceProgressReporter } from './src/adapter_creator'
+export { adapter, SalesforceDeployProgressReporter } from './src/adapter_creator'
 export { default as SalesforceClient } from './src/client/client'
 export { UsernamePasswordCredentials, OauthAccessTokenCredentials } from './src/types'
 export { getAllInstances } from './src/filters/custom_objects_instances'

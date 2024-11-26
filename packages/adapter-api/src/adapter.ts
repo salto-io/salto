@@ -63,13 +63,18 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
+
+export type DeployProgressReporter = ProgressReporter & {
+  reportOperationId: (id: string) => void
+}
+
 export type FetchOptions = {
   progressReporter: ProgressReporter
   withChangesDetection?: boolean
 }
 
 export type DeployOptions = {
-  progressReporter: ProgressReporter
+  progressReporter: DeployProgressReporter
   changeGroup: ChangeGroup
 }
 

@@ -10,7 +10,7 @@ import SalesforceAdapter, {
   adapter as salesforceAdapter,
   UsernamePasswordCredentials,
   OauthAccessTokenCredentials,
-  SalesforceProgressReporter,
+  SalesforceDeployProgressReporter,
 } from '@salto-io/salesforce-adapter'
 // eslint-disable-next-line no-restricted-imports
 import {
@@ -107,7 +107,7 @@ export const getSalesforceClient = (credentials: UsernamePasswordCredentials): S
     config: { deploy: { purgeOnDelete: true } },
   })
 
-export const nullProgressReporter: SalesforceProgressReporter = {
+export const nullProgressReporter: SalesforceDeployProgressReporter = {
   reportProgress: () => {},
   reportMetadataProgress: () => {},
   reportDataProgress: () => {},

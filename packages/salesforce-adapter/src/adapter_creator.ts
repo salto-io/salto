@@ -13,9 +13,8 @@ import {
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
-  ProgressReporter,
   DeployOptions,
-  CancelValidateOptions,
+  CancelValidateOptions, DeployProgressReporter,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -224,24 +223,24 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-export type SalesforceProgressReporter = ProgressReporter & {
+export type SalesforceDeployProgressReporter = DeployProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
   reportCancelValidation: (validationId: string) => void
 }
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
-  progressReporter: SalesforceProgressReporter
+  progressReporter: SalesforceDeployProgressReporter
 }
 
 export type SalesforceAdapterCancelValidationOptions = CancelValidateOptions & {
-  progressReporter: SalesforceProgressReporter
+  progressReporter: SalesforceDeployProgressReporter
 }
 
 export const createDeployProgressReporter = async (
-  progressReporter: ProgressReporter,
+  progressReporter: DeployProgressReporter,
   client: SalesforceClient,
-): Promise<SalesforceProgressReporter> => {
+): Promise<SalesforceDeployProgressReporter> => {
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
@@ -308,7 +307,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
-    let salesforceProgressReporterPromise: Promise<SalesforceProgressReporter> | undefined
+    let salesforceDeployProgressReporterPromise: Promise<SalesforceDeployProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -336,30 +335,30 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        salesforceProgressReporterPromise =
-          salesforceProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceDeployProgressReporterPromise =
+          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.deploy({
           ...opts,
-          progressReporter: await salesforceProgressReporterPromise,
+          progressReporter: await salesforceDeployProgressReporterPromise,
         })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        salesforceProgressReporterPromise =
-          salesforceProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceDeployProgressReporterPromise =
+          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.validate({
           ...opts,
-          progressReporter: await salesforceProgressReporterPromise,
+          progressReporter: await salesforceDeployProgressReporterPromise,
         })
       },
       cancelValidate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        salesforceProgressReporterPromise =
-          salesforceProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceDeployProgressReporterPromise =
+          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.cancelValidate({
           ...opts,
-          progressReporter: await salesforceProgressReporterPromise,
+          progressReporter: await salesforceDeployProgressReporterPromise,
         })
       },
       deployModifiers: {

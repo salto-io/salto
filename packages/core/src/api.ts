@@ -14,7 +14,7 @@ import {
   AdapterSuccessInstallResult,
   Change,
   ChangeDataType,
-  ChangeError,
+  ChangeError, DeployProgressReporter,
   DetailedChange,
   Element,
   ElemID,
@@ -162,6 +162,7 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
+  reportOperationId: DeployProgressReporter['reportOperationId'] = () => undefined,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
@@ -198,6 +199,7 @@ export const deploy = async (
     reportProgress,
     postDeployAction,
     checkOnly,
+    reportOperationId,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve

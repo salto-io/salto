@@ -89,14 +89,16 @@ const filterCreator: FilterCreator = ({ config }) => ({
     if (slaConditionTypes === undefined) {
       return
     }
-    slaConditionTypes.forEach(slaType => {
-      slaType.fields.conditionId.refType = new TypeReference(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN)
-      // prevent deployment of name as it does nothing
-      if (slaType.fields.name !== undefined) {
-        slaType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = false
-        slaType.fields.name.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
-      }
-    })
+    slaConditionTypes
+      .filter(slaType => slaType.fields.conditionId !== undefined)
+      .forEach(slaType => {
+        slaType.fields.conditionId.refType = new TypeReference(BuiltinTypes.UNKNOWN.elemID, BuiltinTypes.UNKNOWN)
+        // prevent deployment of name as it does nothing
+        if (slaType.fields.name !== undefined) {
+          slaType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+          slaType.fields.name.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+        }
+      })
   },
 })
 export default filterCreator

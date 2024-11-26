@@ -97,10 +97,10 @@ export const logInvalidReferences = (
 ): void => {
   if (invalidReferences.length > 0) {
     log.debug(
-      'When parsing the formula %o in %o, one or more of the identifiers %o was parsed to an invalid reference: ',
+      'When parsing the formula %s in %s, one or more of the identifiers [%s] was parsed to an invalid reference: ',
       formula,
       refOrigin.getFullName(),
-      identifiersInfo.map(info => info.instance),
+      identifiersInfo.map(info => info.instance).join(', '),
     )
   }
   invalidReferences.forEach(refElemId => {

@@ -75,7 +75,7 @@ export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends
   typesWithNoDeploy?: string[]
 }): ChangeValidator => {
   const typeConfigQuery = queryWithDefault(deployDefinitions.instances)
-  const definitionKeys =  typeConfigQuery.allKeys()
+  const definitionKeys = typeConfigQuery.allKeys()
   return async changes =>
     awu(changes)
       .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {

@@ -32,9 +32,9 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
             default: {
               copyFromResponse: {
                 updateServiceIDs: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         customizations: {
           coveredByDefinitions: {

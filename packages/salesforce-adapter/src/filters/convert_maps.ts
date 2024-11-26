@@ -57,7 +57,7 @@ import { metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { FetchProfile } from '../types'
-import { apiNameSync } from './utils'
+import { apiNameSync, metadataTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -605,23 +605,14 @@ export const getChangesWithFieldType = (changes: ReadonlyArray<Change>, fieldTyp
   return fieldChanges.concat(objectTypeChanges)
 }
 
-export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
+export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): InstanceElement[] => {
   const instances = elements.filter(isInstanceElement)
-  return awu(instances)
-    .filter(async e => (await metadataType(e)) === targetMetadataType)
-    .toArray()
+  return instances.filter(async e => metadataTypeSync(e) === targetMetadataType)
 }
 
-export const findTypeToConvert = async (
-  elements: Element[],
-  targetMetadataType: string,
-): Promise<ObjectType | undefined> => {
+export const findTypeToConvert = (elements: Element[], targetMetadataType: string): ObjectType | undefined => {
   const types = elements.filter(isObjectType)
-  return (
-    await awu(types)
-      .filter(async e => (await metadataType(e)) === targetMetadataType)
-      .toArray()
-  )[0]
+  return types.filter(e => metadataTypeSync(e) === targetMetadataType)[0]
 }
 
 /**
@@ -635,8 +626,8 @@ const filter: FilterCreator = ({ config }) => ({
     const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
 
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
-      const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
+      const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
+      const typeToConvert = findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       if (isDefined(typeToConvert)) {
         if (instancesToConvert.length === 0) {

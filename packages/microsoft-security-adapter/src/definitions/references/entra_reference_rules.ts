@@ -210,6 +210,8 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
     target: { type: GROUP_TYPE_NAME },
     serializationStrategy: 'id',
   },
+  // Please note that the order of the following two resourceAppId rules is important.
+  // We prioritize referencing the Application over the ServicePrincipal.
   {
     src: {
       field: 'resourceAppId',

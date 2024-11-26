@@ -136,24 +136,56 @@ describe('Microsoft Security adapter', () => {
               )
             })
 
-            it('should reference the correct required resource access', async () => {
-              const applicationWithAppRoles = entraApplications.find(
-                e => e.elemID.name === 'test_application_with_resource_ref@s',
-              )
-              expect(applicationWithAppRoles).toBeDefined()
-              const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
-                .requiredResourceAccess
-              expect(requiredResourceAccessArr).toHaveLength(1)
-              const requiredResourceAccess = requiredResourceAccessArr[0]
-              expect(requiredResourceAccess.resourceAppId).toBeInstanceOf(ReferenceExpression)
-              expect(requiredResourceAccess.resourceAppId.elemID.getFullName()).toEqual(
-                'microsoft_security.EntraApplication.instance.test_application@s',
-              )
-              expect(requiredResourceAccess.resourceAccess).toHaveLength(1)
-              expect(requiredResourceAccess.resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
-              expect(requiredResourceAccess.resourceAccess[0].id.elemID.getFullName()).toEqual(
-                'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
-              )
+            describe('required resource access', () => {
+              it('should prioritize referencing an app when it exists', async () => {
+                const applicationWithAppRoles = entraApplications.find(
+                  e => e.elemID.name === 'test_application_with_resource_ref@s',
+                )
+                expect(applicationWithAppRoles).toBeDefined()
+                const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                  .requiredResourceAccess
+                expect(requiredResourceAccessArr).toHaveLength(2)
+
+                const appResourceRef = requiredResourceAccessArr[0]
+
+                const resourceApp = appResourceRef.resourceAppId
+                expect(resourceApp).toBeInstanceOf(ReferenceExpression)
+                expect(resourceApp.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraApplication.instance.test_application@s',
+                )
+
+                const { resourceAccess } = appResourceRef
+                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
+                )
+              })
+
+              it('should reference a service principal when the app does not exist', async () => {
+                const applicationWithAppRoles = entraApplications.find(
+                  e => e.elemID.name === 'test_application_with_resource_ref@s',
+                )
+                expect(applicationWithAppRoles).toBeDefined()
+                const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                  .requiredResourceAccess
+                expect(requiredResourceAccessArr).toHaveLength(2)
+
+                const servicePrincipalResourceRef = requiredResourceAccessArr[1]
+
+                const resourceApp = servicePrincipalResourceRef.resourceAppId
+                expect(resourceApp).toBeInstanceOf(ReferenceExpression)
+                expect(resourceApp.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
+                )
+
+                const { resourceAccess } = servicePrincipalResourceRef
+                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraAppRole.instance.test_service_principal_2__testAppRole_test@sssuuu',
+                )
+              })
             })
           })
 
@@ -164,13 +196,14 @@ describe('Microsoft Security adapter', () => {
             })
 
             it('should create the correct instances for Entra app roles', async () => {
-              expect(appRoleInstances).toHaveLength(2)
+              expect(appRoleInstances).toHaveLength(3)
 
               const appRoleNames = appRoleInstances.map(e => e.elemID.name)
               expect(appRoleNames).toEqual(
                 expect.arrayContaining([
                   'test_application__testAppRole_variation2@suuu',
                   'test_application__testAppRole_variation1@suuu',
+                  'test_service_principal_2__testAppRole_test@sssuuu',
                 ]),
               )
             })
@@ -179,9 +212,50 @@ describe('Microsoft Security adapter', () => {
               const parentRefs = appRoleInstances.map(ar => getParent(ar))
               expect(
                 parentRefs.every(
-                  p => p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s',
+                  p =>
+                    p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s' ||
+                    p?.elemID.getFullName() ===
+                      'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
                 ),
               ).toBeTruthy()
+            })
+          })
+
+          describe('service principals', () => {
+            let servicePrincipalInstances: InstanceElement[]
+            beforeEach(async () => {
+              servicePrincipalInstances = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraServicePrincipal')
+            })
+
+            it('should create the correct instances for Entra service principals', async () => {
+              expect(servicePrincipalInstances).toHaveLength(2)
+
+              const servicePrincipalNames = servicePrincipalInstances.map(e => e.elemID.name)
+              expect(servicePrincipalNames).toEqual(
+                expect.arrayContaining(['test_service_principal@s', 'test_service_principal_2@s']),
+              )
+            })
+
+            it('should reference the correct app when it exists', async () => {
+              const servicePrincipalWithAppRef = servicePrincipalInstances.find(
+                e => e.elemID.name === 'test_service_principal@s',
+              )
+              expect(servicePrincipalWithAppRef).toBeDefined()
+              const { appId: appIdRef } = (servicePrincipalWithAppRef as InstanceElement).value
+              expect(appIdRef).toBeInstanceOf(ReferenceExpression)
+              expect(appIdRef.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraApplication.instance.test_application@s',
+              )
+
+              const servicePrincipalWithoutAppRef = servicePrincipalInstances.find(
+                e => e.elemID.name === 'test_service_principal_2@s',
+              )
+              expect(servicePrincipalWithoutAppRef).toBeDefined()
+              const { appId: appIdString } = (servicePrincipalWithoutAppRef as InstanceElement).value
+              expect(appIdString).not.toBeInstanceOf(ReferenceExpression)
+              expect(appIdString).toEqual('b0d12345-ef57-41d3-a7f7-cb2dcd0ef7c8')
             })
           })
         })

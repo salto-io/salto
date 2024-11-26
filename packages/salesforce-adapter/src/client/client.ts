@@ -148,8 +148,8 @@ const errorMessagesToRetry = [
   'down for maintenance',
   'REQUEST_RUNNING_TOO_LONG',
   'request exceeded the time limit for processing',
-  'INVALID_LOCATOR: Retrieve result has been deleted',
-  'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE: Unable to complete the creation of the query cursor at this time, please retry your query later',
+  'INVALID_LOCATOR',
+  'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

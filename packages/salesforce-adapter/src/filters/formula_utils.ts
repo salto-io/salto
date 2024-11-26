@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Element, ElemID, ElemIDType, isObjectType } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { inspectValue, naclCase } from '@salto-io/adapter-utils'
 import { FormulaIdentifierInfo, IdentifierType } from '@salto-io/salesforce-formula-parser'
 import { logger } from '@salto-io/logging'
 import { CUSTOM_METADATA_SUFFIX, SALESFORCE } from '../constants'
@@ -97,10 +97,10 @@ export const logInvalidReferences = (
 ): void => {
   if (invalidReferences.length > 0) {
     log.debug(
-      'When parsing the formula %s in %s, one or more of the identifiers [%s] was parsed to an invalid reference: ',
+      'When parsing the formula %s in %s, one or more of the identifiers %s was parsed to an invalid reference: ',
       formula,
       refOrigin.getFullName(),
-      identifiersInfo.map(info => info.instance).join(', '),
+      inspectValue(identifiersInfo.map(info => info.instance)),
     )
   }
   invalidReferences.forEach(refElemId => {

@@ -54,8 +54,8 @@ const addDependenciesAnnotation = (field: Field, potentialReferenceTargets: Map<
     log.warn(`Some formula identifiers were not converted to references.
       Field: ${field.elemID.getFullName()}
       Formula: ${formula}
-      Identifiers: ${identifiersInfo.map(info => info.instance).join(', ')}
-      References: ${references.map(ref => ref.getFullName()).join(', ')}`)
+      Identifiers: ${inspectValue(identifiersInfo.map(info => info.instance))}
+      References: ${inspectValue(references.map(ref => ref.getFullName()))}`)
   }
 
   const referencesWithValidity = _.groupBy(references, refElemId =>

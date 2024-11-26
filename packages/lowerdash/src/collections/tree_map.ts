@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import wu, { WuIterable } from 'wu'
 
-export interface TreeMapEntry<T> {
+interface TreeMapEntry<T> {
   children: Record<string, TreeMapEntry<T>>
   value: T[]
 }

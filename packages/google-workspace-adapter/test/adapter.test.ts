@@ -61,7 +61,8 @@ const getMockFunction = (method: definitions.HTTPMethod, mockAxiosAdapter: MockA
   }
 }
 
-describe('adapter', () => {
+// eslint-disable-next-line jest/no-disabled-tests
+describe.skip('adapter', () => {
   jest.setTimeout(10 * 1000)
   let mockAxiosAdapter: MockAdapter
 

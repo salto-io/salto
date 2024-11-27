@@ -651,16 +651,13 @@ export const createRemoteMapCreator = (
       }
       const cached = locationCache.get(keyToTempDBKey(key))
       if (cached !== undefined) {
-        const postCacheOperation = async (): Promise<T | undefined> => {
-          const value = await cached
-          if (value !== undefined) {
-            isNamespaceEmpty = false
-            statCounters.LocationCacheHit.inc()
-            statCounters.RemoteMapHit.inc()
-          }
-          return value
+        const value = await cached
+        if (value !== undefined) {
+          isNamespaceEmpty = false
+          statCounters.LocationCacheHit.inc()
+          statCounters.RemoteMapHit.inc()
         }
-        return postCacheOperation()
+        return value
       }
       statCounters.LocationCacheMiss.inc()
       const cachePromise = getFromDb(key)
@@ -804,6 +801,7 @@ export const createRemoteMapCreator = (
             isNamespaceEmpty = false
             return true
           }
+          return false
         }
         const hasKeyImpl = (k: string, db: rocksdb): Promise<boolean> =>
           new Promise(resolve => {

@@ -63,7 +63,6 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
-
 export type DeployProgressReporter = ProgressReporter & {
   reportServiceAsyncTaskId?: (id: string) => void
 }

@@ -11,7 +11,8 @@ import MockAdapter from 'axios-mock-adapter'
 import {
   Adapter,
   AdapterOperations,
-  Change, DeployProgressReporter,
+  Change,
+  DeployProgressReporter,
   DeployResult,
   ElemID,
   getChangeData,

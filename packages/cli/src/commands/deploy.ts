@@ -187,7 +187,9 @@ const deployPlan = async (
         (item: PlanItem, step: ItemStatus, details?: string) => updateAction(item, step, details),
         accounts,
         checkOnly,
-      asyncTaskId => {outputLine(`Reported async task id: ${asyncTaskId}`, output)}
+        asyncTaskId => {
+          outputLine(`Reported async task id: ${asyncTaskId}`, output)
+        },
       )
     : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions).filter(

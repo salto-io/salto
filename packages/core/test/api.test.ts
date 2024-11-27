@@ -10,7 +10,8 @@ import {
   Adapter,
   AdapterOperations,
   AdditionChange,
-  BuiltinTypes, CancelServiceAsyncTaskInput,
+  BuiltinTypes,
+  CancelServiceAsyncTaskInput,
   Change,
   ChangeDataType,
   ChangeValidator,
@@ -1588,9 +1589,10 @@ describe('api.ts', () => {
     })
     describe('when invoked with non existing account', () => {
       it('should throw an error', async () => {
-        await expect(api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' })).rejects.toThrow()
+        await expect(
+          api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' }),
+        ).rejects.toThrow()
       })
     })
-
   })
 })

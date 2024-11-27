@@ -127,7 +127,7 @@ export const deployActions = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
   checkOnly: boolean,
-  reportServiceAsyncTaskId: DeployProgressReporter['reportServiceAsyncTaskId']
+  reportServiceAsyncTaskId: DeployProgressReporter['reportServiceAsyncTaskId'],
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: GroupProperties[] = []
@@ -143,7 +143,7 @@ export const deployActions = async (
       try {
         const progressReporter: DeployProgressReporter = {
           reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
-          reportServiceAsyncTaskId
+          reportServiceAsyncTaskId,
         }
         const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))

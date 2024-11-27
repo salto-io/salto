@@ -175,7 +175,6 @@ export const loadLocalElementsSources = async ({
   persistent = true,
 }: {
   baseDir: string
-  localStorage?: string // TODO: remove unused argument (kept backwards compatibility)
   envs: ReadonlyArray<string>
   remoteMapCreator: remoteMap.RemoteMapCreator
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource

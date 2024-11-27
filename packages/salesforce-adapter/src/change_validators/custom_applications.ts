@@ -7,7 +7,9 @@
  */
 
 import { Change, ChangeValidator, getChangeData, ChangeError } from '@salto-io/adapter-api'
-import { awu } from '@salto-io/lowerdash/src/collections/asynciterable'
+import { collections } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
 
 const createChangeError = (change: Change): ChangeError => ({
   elemID: getChangeData(change).elemID,

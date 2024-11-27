@@ -20,37 +20,37 @@ describe('forbidden permission scheme', () => {
     permissions: [
       {
         holder: {
-          type: 'applicationRole'
+          type: 'applicationRole',
         },
         permission: 'ADMINISTER_PROJECTS',
       },
       {
         holder: {
-          type: 'applicationRole'
+          type: 'applicationRole',
         },
         permission: 'VIEW_PROJECTS',
       },
       {
         holder: {
-          type: 'applicationRole'
+          type: 'applicationRole',
         },
         permission: 'VIEW_ISSUES',
       },
       {
         holder: {
-          type: 'sd.customer.portal.onl'
+          type: 'sd.customer.portal.onl',
         },
         permission: 'ARCHIVE_ISSUES',
       },
       {
         holder: {
-          type: 'applicationRole'
+          type: 'applicationRole',
         },
         permission: 'ARCHIVE_ISSUES',
       },
       {
         holder: {
-          type: 'sd.customer.portal.only'
+          type: 'sd.customer.portal.only',
         },
         permission: 'UNARCHIVE_ISSUES',
       },
@@ -65,13 +65,13 @@ describe('forbidden permission scheme', () => {
       permissions: [
         {
           holder: {
-            type: 'applicationRole'
+            type: 'applicationRole',
           },
           permission: 'ADMINISTER_PROJECTS',
         },
         {
           holder: {
-            type: 'applicationRole'
+            type: 'applicationRole',
           },
           permission: 'ARCHIVE_ISSUES',
         },

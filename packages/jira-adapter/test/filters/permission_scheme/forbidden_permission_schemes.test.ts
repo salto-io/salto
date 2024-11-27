@@ -38,7 +38,7 @@ describe('forbidden permission scheme', () => {
       },
       {
         holder: {
-          type: 'sd.customer.portal.onl',
+          type: 'sd.customer.portal.only',
         },
         permission: 'ARCHIVE_ISSUES',
       },

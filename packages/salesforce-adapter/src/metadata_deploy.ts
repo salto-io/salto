@@ -444,6 +444,7 @@ const quickDeployOrDeploy = async (
   quickDeployParams?: QuickDeployParams,
   progressReporter?: SalesforceDeployProgressReporter,
 ): Promise<SFDeployResult> => {
+  let wasTaskIdReported = false
   const createProgressReporterCallback =
     (suffix?: string) =>
     (deployResult: SFDeployResult): void => {
@@ -451,6 +452,10 @@ const quickDeployOrDeploy = async (
         return
       }
       progressReporter.reportMetadataProgress({ result: deployResult, suffix })
+      if (!wasTaskIdReported && progressReporter.reportServiceAsyncTaskId) {
+        progressReporter.reportServiceAsyncTaskId(deployResult.id)
+        wasTaskIdReported = true
+      }
     }
 
   if (quickDeployParams !== undefined) {

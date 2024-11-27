@@ -13,7 +13,7 @@ const { awu } = collections.asynciterable
 
 const createChangeError = (change: Change): ChangeError => ({
   elemID: getChangeData(change).elemID,
-  severity: 'Error',
+  severity: 'Warning',
   message: 'Custom application CV',
   detailedMessage: 'Testing pipe',
 })

@@ -175,7 +175,6 @@ export const loadLocalElementsSources = async ({
   persistent = true,
 }: {
   baseDir: string
-  localStorage?: string // TODO: remove unused argument (kept backwards compatibility)
   envs: ReadonlyArray<string>
   remoteMapCreator: remoteMap.RemoteMapCreator
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
@@ -284,14 +283,14 @@ type LoadLocalWorkspaceArgs = {
   ignoreFileChanges?: boolean
 }
 
-const loadLocalWorkspaceImpl = async ({
+export async function loadLocalWorkspace({
   path: lookupDir,
   configOverrides,
   persistent = true,
   credentialSource,
   stateStaticFilesSource,
   ignoreFileChanges = false,
-}: LoadLocalWorkspaceArgs): Promise<Workspace> => {
+}: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
@@ -355,29 +354,6 @@ const loadLocalWorkspaceImpl = async ({
       }
     },
   }
-}
-
-// As a transitionary step, we support both a string input and an argument object
-export function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<Workspace>
-// @deprecated
-export function loadLocalWorkspace(
-  lookupDir: string,
-  configOverrides?: DetailedChange[],
-  persistent?: boolean,
-): Promise<Workspace>
-
-export async function loadLocalWorkspace(
-  args: string | LoadLocalWorkspaceArgs,
-  configOverrides?: DetailedChange[],
-  persistent = true,
-): Promise<Workspace> {
-  if (_.isString(args)) {
-    log.warn(
-      'Using deprecated argument format for loadLocalWorkspace, this type of call will be deprecated soon. please pass an arguments object instead',
-    )
-    return loadLocalWorkspaceImpl({ path: args, configOverrides, persistent })
-  }
-  return loadLocalWorkspaceImpl(args)
 }
 
 export const initLocalWorkspace = async (

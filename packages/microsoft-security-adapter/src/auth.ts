@@ -36,7 +36,6 @@ export const SCOPE_MAPPING: Record<AvailableMicrosoftSecurityServices, string[]>
     'Policy.Read.All',
     'Policy.ReadWrite.AuthenticationMethod',
     'Policy.ReadWrite.ConditionalAccess',
-    'Policy.ReadWrite.CrossTenantAccess',
     'Policy.ReadWrite.PermissionGrant',
     'RoleManagement.ReadWrite.Directory',
     'UserAuthenticationMethod.ReadWrite.All',

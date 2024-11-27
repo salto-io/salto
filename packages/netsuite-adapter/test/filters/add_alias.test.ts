@@ -25,7 +25,6 @@ import { translationcollectionType } from '../../src/autogen/types/standard_type
 import { fileType } from '../../src/types/file_cabinet_types'
 import { getConfigurationTypes } from '../../src/types/configuration_types'
 import { bundleType } from '../../src/types/bundle_type'
-import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 import { getTypesToInternalId } from '../../src/data_elements/types'
 
 describe('add alias filter', () => {
@@ -66,9 +65,7 @@ describe('add alias filter', () => {
   let elements: Element[]
 
   let defaultOpts: LocalFilterOpts
-  let optsWithoutAlias: LocalFilterOpts
-  let optsWithAlias: LocalFilterOpts
-  let optsWithAliasAndIsPartial: LocalFilterOpts
+  let optsWithIsPartial: LocalFilterOpts
   beforeEach(async () => {
     standardInstance = new InstanceElement('customworkflow1', workflow, {
       name: 'Custom Workflow 1',
@@ -215,43 +212,16 @@ describe('add alias filter', () => {
       internalIdToTypes,
       typeToInternalId,
     }
-    optsWithoutAlias = {
+    optsWithIsPartial = {
       ...defaultOpts,
-      config: {
-        fetch: {
-          include: fullQueryParams(),
-          exclude: emptyQueryParams(),
-          addAlias: false,
-        },
-      },
-    }
-    optsWithAlias = {
-      ...defaultOpts,
-      config: {
-        fetch: {
-          include: fullQueryParams(),
-          exclude: emptyQueryParams(),
-          addAlias: true,
-        },
-      },
-    }
-    optsWithAliasAndIsPartial = {
-      ...optsWithAlias,
       isPartial: true,
       elementsSource: buildElementsSourceFromElements([translationCollectionInstance]),
     }
   })
-  it('should not add aliases when addAlias=false', async () => {
-    await filterCreator(optsWithoutAlias).onFetch?.(elements)
-    expect(elements.some(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeFalsy()
-  })
-  it('should add aliases by default', async () => {
-    await filterCreator(defaultOpts).onFetch?.(elements)
-    expect(elements.every(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeTruthy()
-  })
   it('should add aliases', async () => {
-    await filterCreator(optsWithAlias).onFetch?.(elements)
+    await filterCreator(defaultOpts).onFetch?.(elements)
 
+    expect(elements.every(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeTruthy()
     expect(standardInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Custom Workflow 1')
     expect(fileCabinetInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('someFile.txt')
     expect(dataInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Salto User A01')
@@ -275,7 +245,7 @@ describe('add alias filter', () => {
     )
   })
   it('should take translated names from element source on partial fetch', async () => {
-    await filterCreator(optsWithAliasAndIsPartial).onFetch?.([
+    await filterCreator(optsWithIsPartial).onFetch?.([
       standardInstanceWithTranslation,
       customRecordTypeWithTranslation,
       segmentInstanceWithTranslation,

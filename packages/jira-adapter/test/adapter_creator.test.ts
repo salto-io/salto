@@ -110,6 +110,22 @@ describe('adapter creator', () => {
           }),
         ).toThrow()
       })
+
+      it('should fail on validating Jira DC config with JSM enabled', () => {
+        credentialsInstance.value = { ...credentialsInstance.value, isDataCenter: true }
+        expect(() =>
+          adapter.operations({
+            elementsSource,
+            credentials: credentialsInstance,
+            config: createConfigInstance({
+              ...getDefaultConfig({ isDataCenter: true }),
+              fetch: {
+                enableJSM: true,
+              },
+            } as unknown as JiraConfig),
+          }),
+        ).toThrow()
+      })
     })
   })
 })

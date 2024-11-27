@@ -65,8 +65,8 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => ({
-  elements: await generateExtraElementsFromPaths([baseDir]),
+const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir, elementsSource }) => ({
+  elements: await generateExtraElementsFromPaths([baseDir], elementsSource),
 })
 
 const objectFieldType = new ObjectType({

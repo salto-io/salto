@@ -26,6 +26,16 @@ describe('checkDeploymentBasedOnDefinitionsValidator', () => {
   beforeEach(() => {
     deployDefinitions = {
       instances: {
+        // Set up some defaults to make sure they don't cause types to be considered as deployable.
+        default: {
+          requestsByAction: {
+            default: {
+              copyFromResponse: {
+                updateServiceIDs: true,
+              },
+            },
+          },
+        },
         customizations: {
           coveredByDefinitions: {
             requestsByAction: {

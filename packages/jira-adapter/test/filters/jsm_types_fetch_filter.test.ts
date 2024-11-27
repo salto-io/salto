@@ -127,17 +127,26 @@ describe('jsmTypesFetchFilter', () => {
       const slaTypes = slaTypeNames.map(createSlaType)
       elements.push(...slaTypes)
       await filter.onFetch(elements)
-      expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual('unknown')
-      expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual('unknown')
-      expect(slaTypes[2].fields.conditionId.refType.elemID.name).toEqual('unknown')
+      expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.UNKNOWN.elemID.name)
+      expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.UNKNOWN.elemID.name)
+      expect(slaTypes[2].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.UNKNOWN.elemID.name)
     })
-    it('should not change field type if not all sla types are present', async () => {
+    it('should change field type also when not all sla types are present', async () => {
       const partialSlaTypes = slaTypeNames.slice(0, 2)
       const slaTypes = partialSlaTypes.map(createSlaType)
       elements.push(...slaTypes)
       await filter.onFetch(elements)
-      expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
-      expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.STRING.elemID.name)
+      expect(slaTypes[0].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.UNKNOWN.elemID.name)
+      expect(slaTypes[1].fields.conditionId.refType.elemID.name).toEqual(BuiltinTypes.UNKNOWN.elemID.name)
+    })
+    it('should not change the conditionId refType in SLA types if conditionId field does not exist', async () => {
+      const slaTypes = slaTypeNames.map(createSlaType)
+      slaTypes.forEach(slaType => delete slaType.fields.conditionId)
+      elements.push(...slaTypes)
+      await filter.onFetch(elements)
+      slaTypes.forEach(slaType => {
+        expect(slaType.fields.conditionId).toBeUndefined()
+      })
     })
     it('should change the deployment annotations of name field in SLA types', async () => {
       const slaTypes = slaTypeNames.map(createSlaType)
@@ -146,6 +155,15 @@ describe('jsmTypesFetchFilter', () => {
       slaTypes.forEach(slaType => {
         expect(slaType.fields.name.annotations[CORE_ANNOTATIONS.CREATABLE]).toBe(false)
         expect(slaType.fields.name.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBe(false)
+      })
+    })
+    it('should not change the deployment annotations of name field in SLA types if name field does not exist', async () => {
+      const slaTypes = slaTypeNames.map(createSlaType)
+      slaTypes.forEach(slaType => delete slaType.fields.name)
+      elements.push(...slaTypes)
+      await filter.onFetch(elements)
+      slaTypes.forEach(slaType => {
+        expect(slaType.fields.name).toBeUndefined()
       })
     })
   })

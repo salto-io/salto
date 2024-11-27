@@ -19,7 +19,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, getParent } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
@@ -86,7 +86,6 @@ describe('Microsoft Security adapter', () => {
           'EntraAuthenticationStrengthPolicy',
           'EntraConditionalAccessPolicy',
           'EntraConditionalAccessPolicyNamedLocation',
-          'EntraCrossTenantAccessPolicy',
           'EntraCustomSecurityAttributeDefinition',
           'EntraCustomSecurityAttributeDefinition__allowedValues',
           'EntraCustomSecurityAttributeSet',
@@ -119,6 +118,148 @@ describe('Microsoft Security adapter', () => {
       })
 
       describe('specific instances', () => {
+        describe('Entra', () => {
+          describe('applications', () => {
+            let entraApplications: InstanceElement[]
+            beforeEach(async () => {
+              entraApplications = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraApplication')
+            })
+
+            it('should create the correct instances for Entra applications', async () => {
+              expect(entraApplications).toHaveLength(2)
+
+              const entraApplicationNames = entraApplications.map(e => e.elemID.name)
+              expect(entraApplicationNames).toEqual(
+                expect.arrayContaining(['test_application@s', 'test_application_with_resource_ref@s']),
+              )
+            })
+
+            describe('required resource access', () => {
+              it('should prioritize referencing an app when it exists', async () => {
+                const applicationWithAppRoles = entraApplications.find(
+                  e => e.elemID.name === 'test_application_with_resource_ref@s',
+                )
+                expect(applicationWithAppRoles).toBeDefined()
+                const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                  .requiredResourceAccess
+                expect(requiredResourceAccessArr).toHaveLength(2)
+
+                const appResourceRef = requiredResourceAccessArr[0]
+
+                const resourceApp = appResourceRef.resourceAppId
+                expect(resourceApp).toBeInstanceOf(ReferenceExpression)
+                expect(resourceApp.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraApplication.instance.test_application@s',
+                )
+
+                const { resourceAccess } = appResourceRef
+                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
+                )
+              })
+
+              it('should reference a service principal when the app does not exist', async () => {
+                const applicationWithAppRoles = entraApplications.find(
+                  e => e.elemID.name === 'test_application_with_resource_ref@s',
+                )
+                expect(applicationWithAppRoles).toBeDefined()
+                const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                  .requiredResourceAccess
+                expect(requiredResourceAccessArr).toHaveLength(2)
+
+                const servicePrincipalResourceRef = requiredResourceAccessArr[1]
+
+                const resourceApp = servicePrincipalResourceRef.resourceAppId
+                expect(resourceApp).toBeInstanceOf(ReferenceExpression)
+                expect(resourceApp.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
+                )
+
+                const { resourceAccess } = servicePrincipalResourceRef
+                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraAppRole.instance.test_service_principal_2__testAppRole_test@sssuuu',
+                )
+              })
+            })
+          })
+
+          describe('app roles', () => {
+            let appRoleInstances: InstanceElement[]
+            beforeEach(async () => {
+              appRoleInstances = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'EntraAppRole')
+            })
+
+            it('should create the correct instances for Entra app roles', async () => {
+              expect(appRoleInstances).toHaveLength(3)
+
+              const appRoleNames = appRoleInstances.map(e => e.elemID.name)
+              expect(appRoleNames).toEqual(
+                expect.arrayContaining([
+                  'test_application__testAppRole_variation2@suuu',
+                  'test_application__testAppRole_variation1@suuu',
+                  'test_service_principal_2__testAppRole_test@sssuuu',
+                ]),
+              )
+            })
+
+            it('should include parent reference to the application', async () => {
+              const parentRefs = appRoleInstances.map(ar => getParent(ar))
+              expect(
+                parentRefs.every(
+                  p =>
+                    p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s' ||
+                    p?.elemID.getFullName() ===
+                      'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
+                ),
+              ).toBeTruthy()
+            })
+          })
+
+          describe('service principals', () => {
+            let servicePrincipalInstances: InstanceElement[]
+            beforeEach(async () => {
+              servicePrincipalInstances = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraServicePrincipal')
+            })
+
+            it('should create the correct instances for Entra service principals', async () => {
+              expect(servicePrincipalInstances).toHaveLength(2)
+
+              const servicePrincipalNames = servicePrincipalInstances.map(e => e.elemID.name)
+              expect(servicePrincipalNames).toEqual(
+                expect.arrayContaining(['test_service_principal@s', 'test_service_principal_2@s']),
+              )
+            })
+
+            it('should reference the correct app when it exists', async () => {
+              const servicePrincipalWithAppRef = servicePrincipalInstances.find(
+                e => e.elemID.name === 'test_service_principal@s',
+              )
+              expect(servicePrincipalWithAppRef).toBeDefined()
+              const { appId: appIdRef } = (servicePrincipalWithAppRef as InstanceElement).value
+              expect(appIdRef).toBeInstanceOf(ReferenceExpression)
+              expect(appIdRef.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraApplication.instance.test_application@s',
+              )
+
+              const servicePrincipalWithoutAppRef = servicePrincipalInstances.find(
+                e => e.elemID.name === 'test_service_principal_2@s',
+              )
+              expect(servicePrincipalWithoutAppRef).toBeDefined()
+              const { appId: appIdString } = (servicePrincipalWithoutAppRef as InstanceElement).value
+              expect(appIdString).not.toBeInstanceOf(ReferenceExpression)
+              expect(appIdString).toEqual('b0d12345-ef57-41d3-a7f7-cb2dcd0ef7c8')
+            })
+          })
+        })
+
         describe('Intune', () => {
           describe('applications', () => {
             let intuneApplications: InstanceElement[]
@@ -1019,7 +1160,6 @@ describe('Microsoft Security adapter', () => {
           'EntraAuthenticationStrengthPolicy',
           'EntraConditionalAccessPolicy',
           'EntraConditionalAccessPolicyNamedLocation',
-          'EntraCrossTenantAccessPolicy',
           'EntraCustomSecurityAttributeDefinition',
           'EntraCustomSecurityAttributeDefinition__allowedValues',
           'EntraCustomSecurityAttributeSet',

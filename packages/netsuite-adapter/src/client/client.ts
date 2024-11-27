@@ -228,16 +228,9 @@ export default class NetsuiteClient {
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
     extensionsToExclude: string[],
-    forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> {
     if (this.suiteAppClient !== undefined) {
-      return importFileCabinet(
-        this.suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        forceFileCabinetExclude,
-      )
+      return importFileCabinet(this.suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
     }
 
     return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)

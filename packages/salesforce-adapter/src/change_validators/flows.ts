@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
-  Change,
   ChangeError,
   ChangeValidator,
   CORE_ANNOTATIONS,
@@ -15,26 +14,25 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  isInstanceChange,
   isModificationChange,
   isRemovalChange,
   ModificationChange,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ACTIVE, FLOW_METADATA_TYPE, SALESFORCE, STATUS } from '../constants'
-import { apiNameSync, isDeactivatedFlowChange, isDeactivatedFlowChangeOnly, isInstanceOfType } from '../filters/utils'
+import { ACTIVE, FLOW_METADATA_TYPE, INVALID_DRAFT, SALESFORCE, STATUS } from '../constants'
+import {
+  apiNameSync,
+  isDeactivatedFlowChange,
+  isDeactivatedFlowChangeOnly,
+  isInstanceOfTypeChangeSync,
+} from '../filters/utils'
 import { FetchProfile } from '../types'
 import SalesforceClient from '../client/client'
 import { FLOW_URL_SUFFIX } from '../elements_url_retriever/lightning_url_resolvers'
 
-const { awu } = collections.asynciterable
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
-
-const isFlowChange = (change: Change<InstanceElement>): Promise<boolean> =>
-  isInstanceOfType(FLOW_METADATA_TYPE)(getChangeData(change))
 
 export const getDeployAsActiveFlag = async (
   elementsSource: ReadOnlyElementsSource | undefined,
@@ -209,6 +207,13 @@ const createDeactivatedFlowChangeInfo = (flowInstance: InstanceElement): ChangeE
   detailedMessage: `The Flow ${apiNameSync(flowInstance)} will be deactivated.`,
 })
 
+const activateInvalidFlowError = (flowInstance: InstanceElement): ChangeError => ({
+  elemID: flowInstance.elemID,
+  severity: 'Error',
+  message: 'Cannot activate an Invalid Flow',
+  detailedMessage: `The Flow ${apiNameSync(flowInstance)} is invalid. Please review the errors at ${'https://help.salesforce.com/s/articleView?id=platform.flow.htm&type=5'} `,
+})
+
 /**
  * Handling all changes regarding active flows
  */
@@ -221,7 +226,7 @@ const activeFlowValidator =
       ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT,
     )
     const baseUrl = await client.getUrl()
-    const flowChanges = await awu(changes).filter(isInstanceChange).filter(isFlowChange).toArray()
+    const flowChanges = changes.filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
 
     const removingFlowChangeErrors = flowChanges
       .filter(isRemovalChange)
@@ -262,6 +267,9 @@ const activeFlowValidator =
       .filter(isModificationChange)
       .filter(isActivatingChange)
       .map(change => {
+        if (getFlowStatus(change.data.before) === INVALID_DRAFT) {
+          return activateInvalidFlowError(getChangeData(change))
+        }
         if (isActivatingChangeOnly(change)) {
           return activatingFlowError(getChangeData(change), isEnableFlowDeployAsActiveEnabled)
         }

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "rules": {
+    "exports": "off",
+    "types": "off"
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["*.{js,mjs}", ".circleci/scripts/*.js", "build_utils/*.js"],
+      "project": ["*.{js,mjs}", ".circleci/**/*.js", "build_utils/**/*.js"],
+      "ignoreDependencies": ["jest-junit", "turbo"]
+    },
+    "packages/*": {
+      "entry": ["index.ts", "e2e_test/**/*.test.ts"],
+      "ignore": ["jest-dynalite-config.js", "e2e_test/credentials_store/adapter.ts", "test/**/test_data/**/*"]
+    },
+    "packages/cli": {
+      "entry": [
+        "index.ts",
+        "package_native.js",
+        "src/main.ts",
+        "e2e_test/**/*.test.ts",
+        "e2e_test/jest_environment.ts"
+      ],
+      "ignoreDependencies": ["webpack-cli"]
+    },
+    "packages/core": {
+      "entry": "index.ts",
+      "ignoreDependencies": ["@types/leveldown", "@types/webpack-env"]
+    },
+    "packages/persistent-pool": {
+      "entry": ["src/index.ts", "test/lib/dynamodb/environment/index.ts"],
+      "ignore": ["jest-dynalite-config.js"]
+    },
+    "packages/vscode": {
+      "entry": ["src/extension.ts", "e2e_test/**/*.test.ts"],
+      "ignoreDependencies": ["vsce", "vscode-test"]
+    }
+  }
+}

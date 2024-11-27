@@ -8,7 +8,6 @@
 import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/metadata_instances_aliases'
 import { defaultFilterContext } from '../utils'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
 import { LABEL } from '../../src/constants'
@@ -41,39 +40,17 @@ describe('metadataInstancesAliases filter', () => {
     instances = [basicInstance, instanceWithLabel, instanceWithNamespaceAndLabel]
     fetchElements = [...instances]
   })
-  describe('when skipAliases is enabled', () => {
-    beforeEach(() => {
-      filter = filterCreator({
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { skipAliases: true } },
-          }),
-        },
-      }) as typeof filter
-    })
-    it('should not add aliases', async () => {
-      await filter.onFetch(fetchElements)
-      expect(instances).toSatisfyAll(instance => instance.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
-    })
+
+  beforeEach(() => {
+    filter = filterCreator({
+      config: defaultFilterContext,
+    }) as typeof filter
   })
 
-  describe('when skipAliases is disabled', () => {
-    beforeEach(() => {
-      filter = filterCreator({
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { skipAliases: false } },
-          }),
-        },
-      }) as typeof filter
-    })
-    it('should add correct aliases', async () => {
-      await filter.onFetch(fetchElements)
-      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
-      expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label')
-      expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label (SBQQ)')
-    })
+  it('should add correct aliases', async () => {
+    await filter.onFetch(fetchElements)
+    expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
+    expect(instanceWithLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label')
+    expect(instanceWithNamespaceAndLabel.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Label (SBQQ)')
   })
 })

@@ -25,8 +25,7 @@ import {
   verifyCredentials,
   updateCredentials,
 } from '@salto-io/core'
-import { Workspace } from '@salto-io/workspace'
-import { naclCase } from '@salto-io/adapter-utils'
+import { Workspace, errors, isValidAccountName } from '@salto-io/workspace'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
@@ -192,7 +191,6 @@ type AccountAddArgs = {
   EnvArg &
   LoginParametersArg
 
-const MAX_ACCOUNT_NAME_LENGTH = 100
 export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   input,
   output,
@@ -200,23 +198,22 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 }): Promise<CliExitCode> => {
   const { login, serviceType, authType, accountName, loginParameters } = input
   if (accountName !== undefined) {
-    if (naclCase(accountName) !== accountName) {
-      errorOutputLine(
-        `Invalid account name: ${accountName}, account name may only include letters, digits or underscores`,
-        output,
-      )
-      return CliExitCode.UserInputError
-    }
     if (accountName === '') {
       errorOutputLine('Account name may not be an empty string.', output)
       return CliExitCode.UserInputError
     }
-    if (accountName === 'var') {
-      errorOutputLine('Account name may not be "var"', output)
+    if (!isValidAccountName(accountName)) {
+      errorOutputLine(
+        `The account name: "${accountName}" is invalid. Make sure your name meets the following rules:
+          - Contains only alphanumeric characters or '_'
+          - Cannot start with a digit
+          - Cannot exceed ${errors.MAX_ACCOUNT_NAME_LENGTH} chars`,
+        output,
+      )
       return CliExitCode.UserInputError
     }
-    if (accountName.length > MAX_ACCOUNT_NAME_LENGTH) {
-      errorOutputLine(`Account name too long (maximum ${MAX_ACCOUNT_NAME_LENGTH})`, output)
+    if (accountName === 'var') {
+      errorOutputLine('Account name may not be "var"', output)
       return CliExitCode.UserInputError
     }
   }

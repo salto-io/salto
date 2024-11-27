@@ -148,6 +148,8 @@ const errorMessagesToRetry = [
   'down for maintenance',
   'REQUEST_RUNNING_TOO_LONG',
   'request exceeded the time limit for processing',
+  'INVALID_LOCATOR',
+  'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

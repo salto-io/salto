@@ -156,7 +156,6 @@ salesforce {
 | [metadata](#metadata-configuration-options)    | Fetch all metadata      | Specified the metadata fetch                                                                                                                                                                                                                   |
 | [data](#data-management-configuration-options) | {} (do not manage data) | Data management configuration object names will not be fetched in case they are matched in includeObjects                                                                                                                                      |
 | fetchAllCustomSettings                         | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                                                        |
-| [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved                          |
 | [limits](#limits)                              | {} (no overrides)       | Granular control over which limits are used by the adapter in some filters, by default all options are optimized to get the most information for the general case. Can be used to configure features that cause problems until they are solved |
 | maxInstancesPerType                            | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                                          |
 | preferActiveFlowVersions                       | false                   | When set to false, flows' latest version will be fetched. Otherwise, flows' active version will be fetched if exists                                                                                                                           |
@@ -178,12 +177,6 @@ salesforce {
 | namespace    | ".\*" (All namespaces) | A regular expression of a namespace to query with              |
 | metadataType | ".\*" (All types)      | A regular expression of a metadata type to query with          |
 | name         | ".\*" (All names)      | A regular expression of a metadata instance name to query with |
-
-### Optional Features
-
-| Name        | Default when undefined | Description                                 |
-| ----------- | ---------------------- | ------------------------------------------- |
-| skipAliases | false                  | Do not create aliases for Metadata Elements |
 
 ### Limits
 

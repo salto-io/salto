@@ -7,7 +7,14 @@
  */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  isElement,
+  CORE_ANNOTATIONS,
+  isModificationChange,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import {
   Workspace,
   ElementSelector,
@@ -19,6 +26,7 @@ import {
 } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename, fixElements, SelectorsError } from '@salto-io/core'
+import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -514,6 +522,24 @@ const safeGetElementId = (maybeElementIdPath: string, output: CliOutput): ElemID
   }
 }
 
+const getUrlFromRef = async (workspace: Workspace, ref: ReferenceExpression): Promise<string | undefined> => {
+  const element = await workspace.getValue(ref.elemID)
+  return element?.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+}
+
+const getParentUrl = async (workspace: Workspace, childElement: Element): Promise<string | undefined> => {
+  const parentsArray = getParents(childElement)
+  if (parentsArray.length === 0) {
+    return undefined
+  }
+  return awu(parentsArray).reduce(async (acc: string | undefined, element: ReferenceExpression) => {
+    if (acc) {
+      return acc
+    }
+    return getUrlFromRef(workspace, element)
+  }, undefined)
+}
+
 export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input, output, workspace }) => {
   const { elementId } = input
   await validateAndSetEnv(workspace, input, output)
@@ -528,8 +554,12 @@ export const openAction: WorkspaceCommandAction<OpenActionArgs> = async ({ input
     errorOutputLine(Prompts.NO_MATCHES_FOUND_FOR_ELEMENT(elementId), output)
     return CliExitCode.UserInputError
   }
+  if (!isElement(element)) {
+    errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
+    return CliExitCode.AppError
+  }
 
-  const serviceUrl = isElement(element) ? element.annotations[CORE_ANNOTATIONS.SERVICE_URL] : undefined
+  const serviceUrl = element.annotations[CORE_ANNOTATIONS.SERVICE_URL] ?? (await getParentUrl(workspace, element))
   if (serviceUrl === undefined) {
     errorOutputLine(Prompts.GO_TO_SERVICE_NOT_SUPPORTED_FOR_ELEMENT(elementId), output)
     return CliExitCode.AppError

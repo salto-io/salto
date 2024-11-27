@@ -274,75 +274,97 @@ describe('account command group', () => {
       })
 
       describe('When called with invalid accountName', () => {
-        beforeEach(async () => {
-          await addAction({
-            ...cliCommandArgs,
-            input: {
-              serviceType: 'salesforce',
-              accountName: 'falsd;l;l;l',
-              authType: 'basic',
-              login: true,
-            },
-            workspace,
+        let theAccountName: string
+        describe('When account name contains special characters', () => {
+          beforeEach(async () => {
+            theAccountName = 'falsd;l;l;l'
+            await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceType: 'salesforce',
+                accountName: theAccountName,
+                authType: 'basic',
+                login: true,
+              },
+              workspace,
+            })
+          })
+          it('should throw error', async () => {
+            expect(output.stderr.content).toContain(`The account name: "${theAccountName}" is invalid.`)
           })
         })
-        it('should throw error', () => {
-          expect(output.stderr.content).toContain('Invalid account name')
-        })
-      })
-
-      describe('When called with empty accountName', () => {
-        beforeEach(async () => {
-          await addAction({
-            ...cliCommandArgs,
-            input: {
-              serviceType: 'salesforce',
-              accountName: '',
-              authType: 'basic',
-              login: true,
-            },
-            workspace,
+        describe('When account name starts with a digit', () => {
+          beforeEach(async () => {
+            theAccountName = '1new'
+            await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceType: 'salesforce',
+                accountName: theAccountName,
+                authType: 'basic',
+                login: true,
+              },
+              workspace,
+            })
+          })
+          it('should throw error', async () => {
+            expect(output.stderr.content).toMatch(`The account name: "${theAccountName}" is invalid.`)
           })
         })
-        it('should throw error', () => {
-          expect(output.stderr.content).toContain('empty string')
-        })
-      })
-
-      describe('When called with var as accountName', () => {
-        beforeEach(async () => {
-          await addAction({
-            ...cliCommandArgs,
-            input: {
-              serviceType: 'salesforce',
-              accountName: 'var',
-              authType: 'basic',
-              login: true,
-            },
-            workspace,
+        describe('When called with empty accountName', () => {
+          beforeEach(async () => {
+            theAccountName = ''
+            await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceType: 'salesforce',
+                accountName: theAccountName,
+                authType: 'basic',
+                login: true,
+              },
+              workspace,
+            })
+          })
+          it('should throw error', () => {
+            expect(output.stderr.content).toContain('empty string')
           })
         })
-        it('should throw error', () => {
-          expect(output.stderr.content).toContain('may not be "var"')
-        })
-      })
-
-      describe('When called with accountName too long', () => {
-        beforeEach(async () => {
-          await addAction({
-            ...cliCommandArgs,
-            input: {
-              serviceType: 'salesforce',
-              accountName:
-                'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz',
-              authType: 'basic',
-              login: true,
-            },
-            workspace,
+        describe('When called with var as accountName', () => {
+          beforeEach(async () => {
+            theAccountName = 'var'
+            await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceType: 'salesforce',
+                accountName: theAccountName,
+                authType: 'basic',
+                login: true,
+              },
+              workspace,
+            })
+          })
+          it('should throw error', () => {
+            expect(output.stderr.content).toContain('may not be "var"')
           })
         })
-        it('should throw error', () => {
-          expect(output.stderr.content).toContain('Account name too long (maximum')
+        describe('When called with accountName too long', () => {
+          beforeEach(async () => {
+            theAccountName =
+              'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz'
+            await addAction({
+              ...cliCommandArgs,
+              input: {
+                serviceType: 'salesforce',
+                accountName: theAccountName,
+                authType: 'basic',
+                login: true,
+              },
+              workspace,
+            })
+          })
+          it('should throw error', () => {
+            expect(output.stderr.content).toContain(`The account name: "${theAccountName}" is invalid.`)
+          })
         })
       })
 

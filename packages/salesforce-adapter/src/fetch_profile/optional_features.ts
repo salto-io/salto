@@ -12,7 +12,6 @@ type OptionalFeaturesDefaultValues = {
 }
 
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
-  skipAliases: false,
   extendedCustomFieldInformation: false,
   importantValues: true,
   hideTypesFolder: true,

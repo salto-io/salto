@@ -74,9 +74,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const requiredElements = (
       await getReferencedElements(
         typesAndInstancesChanges.concat(fieldParentChanges).map(change => change.data.after),
-        config.deploy?.deployReferencedElements ??
-          config.deployReferencedElements ??
-          DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+        config.deploy?.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       )
     ).map(elem => elem.clone())
 

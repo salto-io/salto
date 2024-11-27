@@ -53,12 +53,7 @@ describe('customMetadataToObjectTypeFilter', () => {
 
   beforeEach(() => {
     filter = filterCreator({
-      config: {
-        ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({
-          fetchParams: { optionalFeatures: { skipAliases: false } },
-        }),
-      },
+      config: defaultFilterContext,
     }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })
 
@@ -152,7 +147,6 @@ describe('customMetadataToObjectTypeFilter', () => {
             elementsSource: buildElementsSourceFromElements([mockTypes.CustomMetadata]),
             fetchProfile: buildFetchProfile({
               fetchParams: {
-                optionalFeatures: { skipAliases: false },
                 target: ['CustomObject'],
               },
             }),

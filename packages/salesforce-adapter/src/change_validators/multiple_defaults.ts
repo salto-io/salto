@@ -93,7 +93,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
   const instanceName = instance.elemID.name
   return {
     elemID: instance.elemID,
-    severity: 'Warning',
+    severity: 'Error',
     message: 'Instances cannot have more than one default',
     detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
   }
@@ -101,7 +101,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
 
 const createFieldChangeError = (field: Field, contexts: string[]): ChangeError => ({
   elemID: field.elemID,
-  severity: 'Warning',
+  severity: 'Error',
   message: 'Types cannot have more than one default',
   detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
 })
@@ -117,16 +117,12 @@ const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeErro
 }
 
 const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promise<ChangeError[]> => {
-  const getDefaultObjectsList = async (val: Value, type: TypeElement): Promise<Value[]> => {
+  const getDefaultObjectsList = (val: Value, type: TypeElement): Value[] => {
     if (isMapType(type)) {
-      return awu(Object.values(val))
-        .flatMap(async inner => getDefaultObjectsList(inner, await type.getInnerType()))
-        .toArray()
+      return Object.values(val).flatMap(inner => getDefaultObjectsList(inner, type.getInnerTypeSync()))
     }
     if (isListType(type) && _.isArray(val)) {
-      return awu(val)
-        .flatMap(async inner => getDefaultObjectsList(inner, await type.getInnerType()))
-        .toArray()
+      return val.flatMap(inner => getDefaultObjectsList(inner, type.getInnerTypeSync()))
     }
     return val
   }
@@ -136,7 +132,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     fieldType: TypeElement,
     valueName: string,
   ): Promise<string[] | undefined> => {
-    const defaultObjects = await getDefaultObjectsList(value, fieldType)
+    const defaultObjects = getDefaultObjectsList(value, fieldType)
     if (!_.isArray(defaultObjects)) {
       return undefined
     }
@@ -162,16 +158,16 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     .filter(fieldPath => _.has(after.value, fieldPath))
     .flatMap(async fieldPath => {
       const value = _.get(after.value, fieldPath)
-      const field = await getField(await after.getType(), fieldPath.split('.'))
+      const field = await getField(after.getTypeSync(), fieldPath.split('.'))
       if (field === undefined) {
         // Can happen if the field exists in the instance but not in the type.
         return []
       }
-      const fieldType = await field.getType()
+      const fieldType = field.getTypeSync()
       const valueName = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].name
       if (_.isPlainObject(value) && FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].nested) {
         return awu(Object.entries(value)).flatMap(async ([_key, innerValue]) => {
-          const startLevelType = isMapType(fieldType) ? await fieldType.getInnerType() : fieldType
+          const startLevelType = isMapType(fieldType) ? fieldType.getInnerTypeSync() : fieldType
           const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
           return createChangeErrorFromContext(field, defaultsContexts, after)
         })

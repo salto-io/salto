@@ -18,6 +18,7 @@ import {
   isReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import {
   getMetadataTypeToFieldToMapDef,
   getAnnotationDefsByType,
@@ -26,6 +27,8 @@ import {
   getChangesWithFieldType,
 } from '../filters/convert_maps'
 import { FetchProfile } from '../types'
+
+const { awu } = collections.asynciterable
 
 export const getOrderedMapErrors = (element: Element, fieldName: string): ChangeError[] => {
   const elementValues = getElementValueOrAnnotations(element)
@@ -89,37 +92,44 @@ const changeValidator: (fetchProfile: FetchProfile) => ChangeValidator = fetchPr
   const annotationDefsByType = getAnnotationDefsByType(fetchProfile)
 
   return async changes => {
-    const instanceErrors: ChangeError[] = Object.keys(metadataTypeToFieldToMapDef).flatMap(targetMetadataType => {
-      const instances = findInstancesToConvert(changes.filter(isInstanceChange).map(getChangeData), targetMetadataType)
-      if (_.isEmpty(instances)) {
-        return []
-      }
-      const fieldNames = Object.entries(metadataTypeToFieldToMapDef[targetMetadataType])
-        .filter(([_fieldName, mapDef]) => mapDef.maintainOrder)
-        .map(([fieldName, _mapDef]) => fieldName)
-
-      return fieldNames.flatMap(fieldName => instances.flatMap(instance => getOrderedMapErrors(instance, fieldName)))
-    })
-
-    const objectTypeErrors: ChangeError[] = Object.keys(annotationDefsByType).flatMap(fieldType => {
-      const fieldNames = Object.entries(annotationDefsByType[fieldType])
-        .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
-        .map(([fieldName, _mapDef]) => fieldName)
-
-      const fieldChanges = getChangesWithFieldType(changes, fieldType)
-      return fieldChanges
-        .flatMap(change => {
-          if (isFieldChange(change)) {
-            return [getChangeData(change)]
-          }
-          if (isObjectTypeChange(change)) {
-            const objectType = getChangeData(change)
-            return Object.values(objectType.fields).filter(field => field.refType.elemID.typeName === fieldType)
-          }
+    const instanceErrors: ChangeError[] = await awu(Object.keys(metadataTypeToFieldToMapDef))
+      .flatMap(async targetMetadataType => {
+        const instances = await findInstancesToConvert(
+          changes.filter(isInstanceChange).map(getChangeData),
+          targetMetadataType,
+        )
+        if (_.isEmpty(instances)) {
           return []
-        })
-        .flatMap(field => fieldNames.flatMap(fieldName => getOrderedMapErrors(field, fieldName)))
-    })
+        }
+        const fieldNames = Object.entries(metadataTypeToFieldToMapDef[targetMetadataType])
+          .filter(([_fieldName, mapDef]) => mapDef.maintainOrder)
+          .map(([fieldName, _mapDef]) => fieldName)
+
+        return fieldNames.flatMap(fieldName => instances.flatMap(instance => getOrderedMapErrors(instance, fieldName)))
+      })
+      .toArray()
+
+    const objectTypeErrors: ChangeError[] = await awu(Object.keys(annotationDefsByType))
+      .flatMap(async fieldType => {
+        const fieldNames = Object.entries(annotationDefsByType[fieldType])
+          .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
+          .map(([fieldName, _mapDef]) => fieldName)
+
+        const fieldChanges = getChangesWithFieldType(changes, fieldType)
+        return fieldChanges
+          .flatMap(change => {
+            if (isFieldChange(change)) {
+              return [getChangeData(change)]
+            }
+            if (isObjectTypeChange(change)) {
+              const objectType = getChangeData(change)
+              return Object.values(objectType.fields).filter(field => field.refType.elemID.typeName === fieldType)
+            }
+            return []
+          })
+          .flatMap(field => fieldNames.flatMap(fieldName => getOrderedMapErrors(field, fieldName)))
+      })
+      .toArray()
     return instanceErrors.concat(objectTypeErrors)
   }
 }

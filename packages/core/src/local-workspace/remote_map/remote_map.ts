@@ -616,7 +616,7 @@ export const createRemoteMapCreator = (
     // Wrapper for the db.get function that is awaitable.
     const getAwaitable = async (db: rocksdb, key: string): Promise<rocksdb.Bytes | undefined> => {
       try {
-        return await promisify(db.get.bind(db))(key) as rocksdb.Bytes
+        return (await promisify(db.get.bind(db))(key)) as rocksdb.Bytes
       } catch (error) {
         if (error.message.includes('NotFound') === true) {
           return undefined

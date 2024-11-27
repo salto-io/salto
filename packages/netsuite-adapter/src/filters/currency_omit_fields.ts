@@ -5,10 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-
-import { Change, isInstanceChange, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { CURRENCY } from '../constants'
 import { LocalFilterCreator } from '../filter'
 
@@ -20,13 +18,11 @@ const filterCreator: LocalFilterCreator = () => ({
     changes
       .filter(isInstanceChange)
       .filter(isAdditionChange)
-      .filter(async change => getChangeData<InstanceElement>(change).elemID.typeName === CURRENCY)
-      .forEach(change =>
-        applyFunctionToChangeData<Change<InstanceElement>>(change, element => {
-          element.value = _.omit(element.value, FIELDS_TO_OMIT)
-          return element
-        }),
-      )
+      .map(change => change.data.after)
+      .filter(element => element.elemID.typeName === CURRENCY)
+      .forEach(element => {
+        element.value = _.omit(element.value, FIELDS_TO_OMIT)
+      })
   },
 })
 

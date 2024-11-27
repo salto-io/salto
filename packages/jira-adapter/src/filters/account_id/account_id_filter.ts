@@ -269,7 +269,7 @@ const cacheAndSimplifyAccountId =
   }
 
 const convertType = async (objectType: ObjectType): Promise<void> => {
-  ACCOUNT_ID_FIELDS_NAMES.forEach(async fieldName => {
+  await awu(ACCOUNT_ID_FIELDS_NAMES).forEach(async fieldName => {
     if (
       Object.prototype.hasOwnProperty.call(objectType.fields, fieldName) &&
       (await objectType.fields[fieldName].getType()).elemID.isEqual(BuiltinTypes.STRING.elemID)

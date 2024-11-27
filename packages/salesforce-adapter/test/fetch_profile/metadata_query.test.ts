@@ -15,7 +15,14 @@ import {
   buildMetadataQueryForFetchWithChangesDetection,
   validateMetadataParams,
 } from '../../src/fetch_profile/metadata_query'
-import { CUSTOM_METADATA, CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
+import {
+  CUSTOM_METADATA,
+  CUSTOM_OBJECT,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  SETTINGS_METADATA_TYPE,
+  TOPICS_FOR_OBJECTS_METADATA_TYPE,
+} from '../../src/constants'
 import { MetadataInstance, MetadataQuery } from '../../src/types'
 import { mockInstances } from '../mock_elements'
 import { mockFileProperties } from '../connection'
@@ -119,6 +126,49 @@ describe('validateMetadataParams', () => {
 
 describe('buildMetadataQuery', () => {
   describe('isInstanceMatch', () => {
+    describe('when instance is of nested type', () => {
+      describe('when Instance is included by its parent type', () => {
+        it('should return true', () => {
+          const query = buildMetadataQuery({
+            fetchParams: {
+              metadata: {
+                include: [{ metadataType: FLOW_METADATA_TYPE, name: 'TestFlow' }],
+              },
+            },
+          })
+          expect(
+            query.isInstanceMatch({
+              metadataType: FLOW_DEFINITION_METADATA_TYPE,
+              namespace: '',
+              name: 'TestFlow',
+              isFolderType: false,
+              changedAt: undefined,
+            }),
+          ).toBeTrue()
+        })
+      })
+      describe('when instance is excluded by its parent type', () => {
+        it('should return false', () => {
+          const query = buildMetadataQuery({
+            fetchParams: {
+              metadata: {
+                exclude: [{ metadataType: FLOW_METADATA_TYPE, name: 'TestFlow' }],
+              },
+            },
+          })
+          expect(
+            query.isInstanceMatch({
+              metadataType: FLOW_DEFINITION_METADATA_TYPE,
+              namespace: '',
+              name: 'TestFlow',
+              isFolderType: false,
+              changedAt: undefined,
+            }),
+          ).toBeFalse()
+        })
+      })
+    })
+
     it('filter with namespace', () => {
       const query = buildMetadataQuery({
         fetchParams: {
@@ -525,6 +575,7 @@ describe('buildMetadataQuery', () => {
       })
     })
   })
+
   describe('with InFolderMetadataType', () => {
     const inFolderType = 'Report'
     const folderType = `${inFolderType}Folder`
@@ -568,6 +619,7 @@ describe('buildMetadataQuery', () => {
       })
     })
   })
+
   describe('with FolderMetadataType', () => {
     const folderType = 'ReportFolder'
     let query: MetadataQuery
@@ -688,6 +740,7 @@ describe('buildMetadataQuery', () => {
       })
     })
   })
+
   describe('buildMetadataQueryForFetchWithChangesDetection', () => {
     const INCLUDED_TYPE = 'Role'
     const EXCLUDED_TYPE = 'CustomLabels'
@@ -829,6 +882,7 @@ describe('buildMetadataQuery', () => {
       })
     })
   })
+
   describe('buildFilePropsMetadataQuery', () => {
     const CHANGED_AT = '2023-11-07T00:00:00.000Z'
 
@@ -906,6 +960,51 @@ describe('buildMetadataQuery', () => {
           })
         })
       })
+    })
+  })
+
+  describe('with settings types', () => {
+    let query: MetadataQuery
+
+    beforeEach(() => {
+      query = buildMetadataQuery({
+        fetchParams: {
+          metadata: {
+            include: [{ metadataType: 'AccountSettings' }],
+          },
+          optionalFeatures: {
+            retrieveSettings: true,
+          },
+        },
+      })
+    })
+
+    it('should include the Settings type', () => {
+      expect(query.isTypeMatch(SETTINGS_METADATA_TYPE)).toBeTrue()
+    })
+
+    it('should match the included settings instance', () => {
+      expect(
+        query.isInstanceMatch({
+          name: 'Account',
+          namespace: '',
+          metadataType: 'Settings',
+          isFolderType: false,
+          changedAt: undefined,
+        }),
+      ).toBeTrue()
+    })
+
+    it('should not match a different settings instance', () => {
+      expect(
+        query.isInstanceMatch({
+          name: 'Company',
+          namespace: '',
+          metadataType: 'Settings',
+          isFolderType: false,
+          changedAt: undefined,
+        }),
+      ).toBeFalse()
     })
   })
 })

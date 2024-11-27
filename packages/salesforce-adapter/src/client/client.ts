@@ -148,6 +148,8 @@ const errorMessagesToRetry = [
   'down for maintenance',
   'REQUEST_RUNNING_TOO_LONG',
   'request exceeded the time limit for processing',
+  'INVALID_LOCATOR',
+  'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -252,6 +254,10 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
   })
 
   conn.on('refresh', accessToken => {
+    if (!_.isString(accessToken)) {
+      log.warn('Got a non string access token: %s', inspectValue(accessToken))
+      return
+    }
     log.debug('accessToken has been refreshed', {
       accessToken: toMD5(accessToken),
     })
@@ -920,8 +926,11 @@ export default class SalesforceClient implements ISalesforceClient {
         log.warn('checkDeployStatus API call failed. Progress update will not take place. Error: %s', e.message)
       }
     }
-    const pollingInterval = setInterval(progressCallbackWrapper, this.conn.metadata.pollInterval)
-
+    const pollingInterval = setInterval(() => {
+      progressCallbackWrapper().catch(error => {
+        log.error('Error occurred in DeployProgress callback:', error)
+      })
+    }, this.conn.metadata.pollInterval)
     const clearPollingInterval = (result: DeployResult): DeployResult => {
       clearInterval(pollingInterval)
       return result

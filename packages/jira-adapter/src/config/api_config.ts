@@ -17,7 +17,7 @@ import {
   RESOLUTION_TYPE_NAME,
   STATUS_TYPE_NAME,
 } from '../constants'
-import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
+import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 const DEFAULT_MAX_RESULTS = '1000'
 
@@ -343,7 +343,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'id',
         },
       ],
-      fieldsToOmit: [{ fieldName: 'isAnyIssueType' }],
+      fieldsToOmit: [{ fieldName: 'isAnyIssueType' }, { fieldName: 'isGlobalContext' }],
     },
     deployRequests: {
       add: {
@@ -836,7 +836,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
         { fieldName: 'priorityScheme', fieldType: 'number' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
-        { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'style' }],
       fieldsToOmit: [{ fieldName: 'isPrivate' }, { fieldName: 'expand' }, { fieldName: 'archived' }],
@@ -1625,7 +1624,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Automation: {
     transformation: {
-      fieldsToOmit: [{ fieldName: 'ruleHome' }, { fieldName: 'schemaVersion' }, { fieldName: 'idUuid' }],
+      fieldsToOmit: [
+        { fieldName: 'ruleHome' },
+        { fieldName: 'schemaVersion' },
+        { fieldName: 'idUuid' },
+        // serviceDesk is referenced from the associated request type, so we don't need to keep it in the automation component
+        { fieldName: 'serviceDesk' },
+      ],
       serviceUrl: '/jira/settings/automation#/rule/{id}',
       idFields: ['name', PROJECTS_FIELD], // idFields is handled separately in automation filter.
     },

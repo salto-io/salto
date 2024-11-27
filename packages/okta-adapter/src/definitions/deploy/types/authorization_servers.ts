@@ -5,12 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeGroup, getChangeData, toChange, ChangeParams, ChangeDataType } from '@salto-io/adapter-api'
 
-export const toChangeGroup = (...params: ChangeParams<ChangeDataType>[]): ChangeGroup => {
-  const changes = params.map(toChange)
-  return {
-    groupID: getChangeData(changes[0]).elemID.getFullName(),
-    changes,
-  }
-}
+import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+
+// System scopes are built-in default scopes that can't be added or removed.
+export const isSystemScope = (change: Change<InstanceElement>): boolean => getChangeData(change).value.system === true

@@ -16,7 +16,6 @@ import { Filter, FilterResult } from '../../../src/filter'
 import dataInstances, { WARNING_MESSAGE } from '../../../src/filters/author_information/data_instances'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../../../src/constants'
-import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 
 describe('data instances author information test', () => {
   let filter: Filter
@@ -86,24 +85,6 @@ describe('data instances author information test', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-    })
-  })
-  describe('when feature is disabled', () => {
-    it('should not add any annotations', async () => {
-      filter = dataInstances({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { authorInformation: false } },
-          }),
-        },
-      })
-      await filter.onFetch?.([testInst])
-      expect(testInst.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
-      expect(testInst.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
-      expect(testInst.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-      expect(testInst.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
     })
   })
 })

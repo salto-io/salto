@@ -43,7 +43,7 @@ export type ClientOpts<TCredentials, TRateLimitConfig extends ClientRateLimitCon
 
 export type ClientBaseParams = {
   url: string
-  queryParams?: Record<string, string | string[] | boolean>
+  queryParams?: Record<string, string | string[]>
   headers?: Record<string, string>
   responseType?: ResponseType
   params?: Record<string, Values>

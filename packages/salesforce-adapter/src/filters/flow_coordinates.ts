@@ -78,14 +78,11 @@ const addZeroCoordinatesToAllSections: TransformFuncSync = ({ value, field }) =>
   return value
 }
 
-const FILTER_NAME = 'flowCoordinates'
-
 const filter: FilterCreator = ({ config }) => ({
-  name: FILTER_NAME,
+  name: 'flowCoordinates',
   onFetch: ensureSafeFilterFetch({
     warningMessage: '',
     config,
-    filterName: FILTER_NAME,
     fetchFilterFunc: async elements => {
       elements
         .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
@@ -100,9 +97,6 @@ const filter: FilterCreator = ({ config }) => ({
     },
   }),
   preDeploy: async changes => {
-    if (!config.fetchProfile.isFeatureEnabled(FILTER_NAME)) {
-      return
-    }
     changes
       .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
       .filter(isAdditionOrModificationChange)
@@ -116,9 +110,6 @@ const filter: FilterCreator = ({ config }) => ({
       })
   },
   onDeploy: async changes => {
-    if (!config.fetchProfile.isFeatureEnabled(FILTER_NAME)) {
-      return
-    }
     changes
       .filter(isInstanceOfTypeChangeSync(FLOW_METADATA_TYPE))
       .filter(isAdditionOrModificationChange)

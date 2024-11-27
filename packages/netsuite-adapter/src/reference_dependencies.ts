@@ -25,6 +25,7 @@ import wu from 'wu'
 import os from 'os'
 import { CUSTOM_SEGMENT, NETSUITE, SCRIPT_ID, TRANSLATION_COLLECTION } from './constants'
 import { isCustomRecordType } from './types'
+import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from './config/constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
@@ -154,6 +155,6 @@ export const getRequiredReferencedElements = async (
 
 export const getReferencedElements = async (
   elements: ReadonlyArray<ChangeDataType>,
-  deployAllReferencedElements: boolean,
+  deployAllReferencedElements = DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 ): Promise<ReadonlyArray<TopLevelElement>> =>
   deployAllReferencedElements ? getAllReferencedElements(elements) : getRequiredReferencedElements(elements)

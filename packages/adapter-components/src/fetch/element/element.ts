@@ -12,12 +12,19 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FetchElements } from '../types'
 import { generateInstancesWithInitialTypes } from './instance_element'
-import { InvalidSingletonType, getReachableTypes, hideAndOmitFields, overrideFieldTypes } from './type_utils'
+import {
+  InvalidSingletonType,
+  getReachableTypes,
+  hideAndOmitFields,
+  overrideFieldTypes,
+  createRemainingTypes,
+} from './type_utils'
 import { ElementAndResourceDefFinder } from '../../definitions/system/fetch/types'
 import { FetchApiDefinitionsOptions } from '../../definitions/system/fetch'
 import { ConfigChangeSuggestion, NameMappingFunctionMap, ResolveCustomNameMappingOptionsType } from '../../definitions'
 import { omitAllInstancesValues } from './instance_utils'
 import { AbortFetchOnFailure } from '../errors'
+import { UnauthorizedError } from '../../client'
 
 const log = logger(module)
 
@@ -75,9 +82,9 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
   }
 
   const handleError: ElementGenerator['handleError'] = ({ typeName, error }) => {
-    // This can happen if the error was thrown inside a sub-type that has failEntireFetch set to true.
+    // AbortFetchOnFailure can happen if the error was thrown inside a sub-type that has failEntireFetch set to true.
     // In this case we should not call the parent's onError function.
-    if (error instanceof AbortFetchOnFailure) {
+    if (error instanceof AbortFetchOnFailure || error instanceof UnauthorizedError) {
       throw error
     }
 
@@ -147,15 +154,13 @@ export const getElementGenerator = <Options extends FetchApiDefinitionsOptions>(
     const instances = allResults.flatMap(e => e.instances)
     const [finalTypeLists, typeListsToAdjust] = _.partition(allResults, t => t.typesAreFinal)
     const finalTypeNames = new Set(finalTypeLists.flatMap(t => t.types).map(t => t.elemID.name))
-    const definedTypes = _.defaults(
-      {},
-      _.keyBy(
-        // concatenating in this order so that the final types will take precedence
-        typeListsToAdjust.concat(finalTypeLists).flatMap(t => t.types),
-        t => t.elemID.name,
-      ),
-      predefinedTypes,
+    const typesByTypeName = _.keyBy(
+      // concatenating in this order so that the final types will take precedence
+      typeListsToAdjust.concat(finalTypeLists).flatMap(t => t.types),
+      t => t.elemID.name,
     )
+    const remainingTypes = createRemainingTypes({ adapterName, definedTypes: typesByTypeName, defQuery })
+    const definedTypes = _.defaults({}, typesByTypeName, predefinedTypes, remainingTypes)
 
     overrideFieldTypes({ definedTypes, defQuery, finalTypeNames })
     // omit fields based on the adjusted types

@@ -195,7 +195,7 @@ const filter: FilterCreator = ({ config, elementsSource }) => {
         .filter(isInstanceChange)
         .map(getChangeData)
         .forEach(async instance => {
-          getJqls(instance)
+          await awu(getJqls(instance))
             .filter((jql): jql is TemplateJqlDetails => isTemplateExpression(jql.jql))
             .forEach(async jql => {
               const resolvedJql = (

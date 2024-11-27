@@ -153,10 +153,9 @@ salesforce {
 
 | Name                                           | Default when undefined  | Description                                                                                                                                                                                                                                    |
 | ---------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [metadata](#metadata-configuration-options)    | Fetch all metdata       | Specified the metadata fetch                                                                                                                                                                                                                   |
+| [metadata](#metadata-configuration-options)    | Fetch all metadata      | Specified the metadata fetch                                                                                                                                                                                                                   |
 | [data](#data-management-configuration-options) | {} (do not manage data) | Data management configuration object names will not be fetched in case they are matched in includeObjects                                                                                                                                      |
 | fetchAllCustomSettings                         | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                                                        |
-| [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved                          |
 | [limits](#limits)                              | {} (no overrides)       | Granular control over which limits are used by the adapter in some filters, by default all options are optimized to get the most information for the general case. Can be used to configure features that cause problems until they are solved |
 | maxInstancesPerType                            | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                                          |
 | preferActiveFlowVersions                       | false                   | When set to false, flows' latest version will be fetched. Otherwise, flows' active version will be fetched if exists                                                                                                                           |
@@ -179,28 +178,12 @@ salesforce {
 | metadataType | ".\*" (All types)      | A regular expression of a metadata type to query with          |
 | name         | ".\*" (All names)      | A regular expression of a metadata instance name to query with |
 
-### Optional Features
-
-| Name                              | Default when undefined | Description                                                                                                                                                           |
-| --------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| extraDependencies                 | true                   | Find additional dependencies between configuration elements by using the salesforce tooling API                                                                       |
-| elementsUrls                      | true                   | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen                                |
-| addMissingIds                     | true                   | Populate Salesforce internal ids for a few types that require special handling                                                                                        |
-| profilePaths                      | true                   | Update file names for profiles whose API name is different from their display name                                                                                    |
-| authorInformation                 | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                                                             |
-| describeSObjects                  | true                   | Fetch additional information about CustomObjects from the soap API                                                                                                    |
-| formulaDeps                       | true                   | Parse formula fields in custom objects for additional dependencies beyond those provided by the tooling API                                                           |
-| fetchCustomObjectUsingRetrieveApi | true                   | Use the Salesforce Metadata Retrieve API to fetch CustomObjects. This should improve reliability and data accuracy, but may have a small performance impact           |
-| fetchProfilesUsingReadApi         | false                  | Use the Salesforce Metadata Read API to fetch Profile instances. This will reduce the accuracy of the data and may result in crashes, but may be needed for debugging |
-| generateRefsInProfiles            | false                  | Generate references from profiles. This will have a significant performance impact, but will provide references from profiles to fields and elements.                 |
-| skipAliases                       | false                  | Do not create aliases for Metadata Elements                                                                                                                           |
-
 ### Limits
 
-| Name                             | Default when undefined | Description                                                        |
-| -------------------------------- | ---------------------- | ------------------------------------------------------------------ |
-| maxExtraDependenciesQuerySize    | 500                    | Max size of each individual request in the extra depencies filter  |
-| maxExtraDependenciesResponseSize | 1950                   | Max size of each individual response in the extra depencies filter |
+| Name                             | Default when undefined | Description                                                           |
+| -------------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| maxExtraDependenciesQuerySize    | 500                    | Max size of each individual request in the extra dependencies filter  |
+| maxExtraDependenciesResponseSize | 1950                   | Max size of each individual response in the extra dependencies filter |
 
 ### Warning settings
 
@@ -254,7 +237,7 @@ salesforce {
 | Name              | Behavior                                                                                          |
 | ----------------- | ------------------------------------------------------------------------------------------------- |
 | "ExcludeInstance" | Do not fetch instances that contain a reference whose target was not fetched                      |
-| "BrokenReference" | Fetch the instance and create Salto references to non-existant targets.                           |
+| "BrokenReference" | Fetch the instance and create Salto references to non-existent targets.                           |
 | "InternalId"      | Fetch the instance and keep the existing field value (the internal ID of the referenced instance) |
 
 #### Object ID settings configuration options
@@ -280,7 +263,7 @@ salesforce {
 | [retry](#client-retry-options)                                | `{}` (no overrides)                                   | Configuration for retrying on errors                                                               |
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)                                   | Limits on the number of concurrent requests of different types                                     |
 | [dataRetry](#client-data-retry-options)                       | `{}` (no overrides)                                   | Configuration for retrying on specific errors regarding data objects (for custom object instances) |
-| [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifing the size of the chunk in readMetadata                                  |
+| [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifying the size of the chunk in readMetadata                                 |
 
 #### Client polling options
 
@@ -301,7 +284,7 @@ salesforce {
 | testLevel          | `NoTestRun` (development) `RunLocalTests` (production) | Specifies which tests are run as part of a deployment. possible values are: `NoTestRun`, `RunSpecifiedTests`, `RunLocalTests` and `RunAllTestsInOrg`                                                                     |
 | runTests           | `[]` (no tests)                                        | A list of Apex tests to run during deployment, must configure `RunSpecifiedTests` in `testLevel` for this option to work                                                                                                 |
 | deleteBeforeUpdate | `false`                                                | If `true`, deploy will make deletions before any other deployed change                                                                                                                                                   |
-| flsProfiles        | `["System Administraor"]`                              | When deploying new CustomFields and CustomObjects, Salto will make them visible to the specified Profiles                                                                                                                |
+| flsProfiles        | `["System Administrator"]`                             | When deploying new CustomFields and CustomObjects, Salto will make them visible to the specified Profiles                                                                                                                |
 
 For more details see the DeployOptions section in the [salesforce documentation of the deploy API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_deploy.htm)
 

@@ -7,14 +7,27 @@
  */
 import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { OktaOptions } from '../types'
+import { OktaUserConfig } from '../../user_config'
 
-const { cursorPagination, defaultPathChecker, cursorHeaderPagination } = fetchUtils.request.pagination
+const { cursorPagination, defaultPathChecker, cursorHeaderPagination, getPaginationWithLimitedResults } =
+  fetchUtils.request.pagination
 
-export const PAGINATION: definitions.ApiDefinitions<OktaOptions>['pagination'] = {
+const DEFAULT_MAX_ALLOWED_RESULTS = 200000
+
+export const createPaginationDefinitions = (
+  config: OktaUserConfig,
+): definitions.ApiDefinitions<OktaOptions>['pagination'] => ({
   cursorHeader: {
     funcCreator: () => cursorHeaderPagination({ pathChecker: defaultPathChecker }),
   },
   cursor: {
     funcCreator: () => cursorPagination({ paginationField: 'nextMappingsPageUrl', pathChecker: defaultPathChecker }),
   },
-}
+  usersCursorHeader: {
+    funcCreator: () =>
+      getPaginationWithLimitedResults({
+        maxResultsNumber: config.fetch.maxUsersResults ?? DEFAULT_MAX_ALLOWED_RESULTS,
+        paginationFunc: cursorHeaderPagination({ pathChecker: defaultPathChecker }),
+      }),
+  },
+})

@@ -67,6 +67,7 @@ import { NetsuiteChangeValidator } from './change_validators/types'
 import { FetchByQueryFunc } from './config/query'
 import { getUpdatedSuiteQLNameToInternalIdsMap } from './account_specific_values_resolver'
 import { getTypesToInternalId } from './data_elements/types'
+import { DEFAULT_VALIDATE, DEFAULT_WARN_STALE_DATA } from './config/constants'
 
 const { createChangeValidator } = deployment.changeValidators
 
@@ -148,19 +149,13 @@ const getInvalidFieldChangeIds = (
 const getChangeValidator: ({
   client,
   withSuiteApp,
-  warnStaleData,
-  validate,
   fetchByQuery,
-  deployReferencedElements,
   additionalDependencies,
   filtersRunner,
 }: {
   client: NetsuiteClient
   withSuiteApp: boolean
-  warnStaleData: boolean
-  validate: boolean
   fetchByQuery: FetchByQueryFunc
-  deployReferencedElements: boolean
   additionalDependencies: AdditionalDependencies
   filtersRunner: (
     groupID: string,
@@ -169,18 +164,7 @@ const getChangeValidator: ({
   elementsSource: ReadOnlyElementsSource
   config: NetsuiteConfig
 }) => ChangeValidator =
-  ({
-    client,
-    withSuiteApp,
-    warnStaleData,
-    validate,
-    fetchByQuery,
-    deployReferencedElements,
-    additionalDependencies,
-    filtersRunner,
-    elementsSource,
-    config,
-  }) =>
+  ({ client, withSuiteApp, fetchByQuery, additionalDependencies, filtersRunner, elementsSource, config }) =>
   async (changes, elementSource) => {
     const netsuiteValidators = withSuiteApp
       ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
@@ -203,7 +187,6 @@ const getChangeValidator: ({
       netsuiteValidators,
       validator => (innerChanges: ReadonlyArray<Change>) =>
         validator(innerChanges, {
-          deployReferencedElements,
           elementsSource,
           config,
           client,
@@ -212,10 +195,10 @@ const getChangeValidator: ({
           typeToInternalId,
         }),
     )
+    const warnStaleData = config.deploy?.warnOnStaleWorkspaceData ?? DEFAULT_WARN_STALE_DATA
     const safeDeploy = warnStaleData
       ? {
-          safeDeploy: (innerChanges: ReadonlyArray<Change>) =>
-            safeDeployValidator(innerChanges, fetchByQuery, deployReferencedElements),
+          safeDeploy: (innerChanges: ReadonlyArray<Change>) => safeDeployValidator(innerChanges, fetchByQuery, config),
         }
       : undefined
 
@@ -237,6 +220,7 @@ const getChangeValidator: ({
     const invalidElementIds = new Set([...invalidChangeErrorIds, ...invalidFieldChangeIds])
     const validChanges = changes.filter(change => !invalidElementIds.has(getChangeData(change).elemID.getFullName()))
 
+    const validate = config.deploy?.validate ?? DEFAULT_VALIDATE
     const netsuiteValidatorErrors = validate
       ? await netsuiteClientValidation(validChanges, client, additionalDependencies, groupID =>
           filtersRunner(groupID, suiteQLNameToInternalIdsMap),

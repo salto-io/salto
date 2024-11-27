@@ -6,14 +6,16 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
-import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   AUTOMATION_TYPE,
   DASHBOARD_TYPE,
+  FIELD_CONFIGURATION_SCHEME_TYPE,
+  ISSUE_TYPE_SCREEN_SCHEME_TYPE,
   NOTIFICATION_EVENT_TYPE_NAME,
   NOTIFICATION_SCHEME_TYPE_NAME,
+  PERMISSION_SCHEME_TYPE_NAME,
   PROJECT_ROLE_TYPE,
   WORKFLOW_CONFIGURATION_TYPE,
   WORKFLOW_RULES_TYPE_NAME,
@@ -22,8 +24,6 @@ import {
   WORKFLOW_TYPE_NAME,
 } from '../constants'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const WORKFLOW_CONDITION_SORT_BY = [
   'type',
@@ -47,112 +47,115 @@ const WORKFLOW_CONDITION_SORT_BY = [
   'configuration.comparisonType',
 ]
 
-const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
-  PermissionScheme: {
-    permissions: ['permission', 'holder.type', 'holder.parameter'],
+const TYPES_AND_VALUES_TO_SORT: Record<string, Record<string, Record<string, string[]>>> = {
+  [PERMISSION_SCHEME_TYPE_NAME]: {
+    [PERMISSION_SCHEME_TYPE_NAME]: {
+      permissions: ['permission', 'holder.type', 'holder.parameter'],
+    },
   },
-  IssueTypeScreenScheme: {
-    issueTypeMappings: ['issueTypeId.elemID.name'],
+  [ISSUE_TYPE_SCREEN_SCHEME_TYPE]: {
+    [ISSUE_TYPE_SCREEN_SCHEME_TYPE]: {
+      issueTypeMappings: ['issueTypeId.elemID.name'],
+    },
   },
   [AUTOMATION_TYPE]: {
-    tags: ['tagType', 'tagValue'],
-    projects: ['projectId.elemID.name', 'projectTypeKey'],
+    [AUTOMATION_TYPE]: {
+      tags: ['tagType', 'tagValue'],
+      projects: ['projectId.elemID.name', 'projectTypeKey'],
+    },
   },
-  [WORKFLOW_TYPE_NAME]: {
-    statuses: ['id.elemID.name'],
-  },
-  [WORKFLOW_CONFIGURATION_TYPE]: {
-    statuses: ['statusReference.elemID.name'],
-  },
-  [NOTIFICATION_EVENT_TYPE_NAME]: {
-    notifications: ['type', 'parameter.elemID.name', 'parameter'],
-  },
-  FieldConfigurationScheme: {
-    items: ['issueTypeId', 'fieldConfigurationId'],
+  [FIELD_CONFIGURATION_SCHEME_TYPE]: {
+    [FIELD_CONFIGURATION_SCHEME_TYPE]: {
+      items: ['issueTypeId', 'fieldConfigurationId'],
+    },
   },
   [NOTIFICATION_SCHEME_TYPE_NAME]: {
-    notificationSchemeEvents: ['eventType'],
-  },
-  [WORKFLOW_RULES_TYPE_NAME]: {
-    postFunctions: [
-      'type',
-      'configuration.event.id',
-      'configuration.fieldId',
-      'configuration.sourceFieldId',
-      'configuration.destinationFieldId',
-      'configuration.copyType',
-      'configuration.projectRole.id',
-      'configuration.issueSecurityLevel.id',
-      'configuration.webhook.id',
-      'configuration.mode',
-      'configuration.fieldValue',
-      'configuration.value',
-    ],
-
-    validators: [
-      'type',
-      'configuration.comparator',
-      'configuration.date1',
-      'configuration.date2',
-      'configuration.expression',
-      'configuration.includeTime',
-      'configuration.windowsDays',
-      'configuration.ignoreContext',
-      'configuration.errorMessage',
-      'configuration.fieldId',
-      'configuration.excludeSubtasks',
-      'configuration.permissionKey',
-      'configuration.mostRecentStatusOnly',
-      'configuration.previousStatus.id',
-      'configuration.nullAllowed',
-      'configuration.username',
-    ],
-
-    conditions: WORKFLOW_CONDITION_SORT_BY,
-    triggers: ['key'],
-  },
-  WorkflowCondition: {
-    conditions: WORKFLOW_CONDITION_SORT_BY,
-  },
-  [WORKFLOW_TRANSITION_TYPE_NAME]: {
-    from: ['elemID.name'],
-    properties: ['key'],
+    [NOTIFICATION_EVENT_TYPE_NAME]: {
+      notifications: ['type', 'parameter.elemID.name', 'parameter'],
+    },
+    [NOTIFICATION_SCHEME_TYPE_NAME]: {
+      notificationSchemeEvents: ['eventType'],
+    },
   },
   [DASHBOARD_TYPE]: {
-    gadgets: ['value.value.position.column', 'value.value.position.row'],
+    [DASHBOARD_TYPE]: {
+      gadgets: ['value.value.position.column', 'value.value.position.row'],
+    },
   },
   [PROJECT_ROLE_TYPE]: {
-    actors: ['displayName'],
+    [PROJECT_ROLE_TYPE]: {
+      actors: ['displayName'],
+    },
   },
-  [WORKFLOW_STATUS_TYPE_NAME]: {
-    properties: ['key'],
+  // Jira DC Workflow
+  [WORKFLOW_TYPE_NAME]: {
+    [WORKFLOW_TYPE_NAME]: {
+      statuses: ['id.elemID.name'],
+    },
+    [WORKFLOW_STATUS_TYPE_NAME]: {
+      properties: ['key'],
+    },
+    WorkflowCondition: {
+      conditions: WORKFLOW_CONDITION_SORT_BY,
+    },
+    [WORKFLOW_TRANSITION_TYPE_NAME]: {
+      from: ['elemID.name'],
+      properties: ['key'],
+    },
+    [WORKFLOW_RULES_TYPE_NAME]: {
+      validators: [
+        'type',
+        'configuration.comparator',
+        'configuration.date1',
+        'configuration.date2',
+        'configuration.expression',
+        'configuration.includeTime',
+        'configuration.windowsDays',
+        'configuration.ignoreContext',
+        'configuration.errorMessage',
+        'configuration.fieldId',
+        'configuration.excludeSubtasks',
+        'configuration.permissionKey',
+        'configuration.mostRecentStatusOnly',
+        'configuration.previousStatus.id',
+        'configuration.nullAllowed',
+        'configuration.username',
+      ],
+      conditions: WORKFLOW_CONDITION_SORT_BY,
+      triggers: ['key'],
+    },
   },
-  WorkflowReferenceStatus: {
-    properties: ['key'],
-  },
-  WorkflowTransitions: {
-    properties: ['key'],
+  // Jira Cloud Workflow
+  [WORKFLOW_CONFIGURATION_TYPE]: {
+    [WORKFLOW_CONFIGURATION_TYPE]: {
+      statuses: ['statusReference.elemID.name'],
+    },
+    WorkflowReferenceStatus: {
+      properties: ['key'],
+    },
+    WorkflowTransitions: {
+      properties: ['key'],
+    },
+    // TODO: add also WorkflowCondition
   },
 }
 
 const getValue = (value: Value): Value => (isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value)
 
-const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Promise<void> => {
-  if (isDataCenter) {
-    delete VALUES_TO_SORT[WORKFLOW_RULES_TYPE_NAME].postFunctions
-  }
+const sortLists = (instance: InstanceElement): void => {
   instance.value =
-    (await transformValues({
+    transformValuesSync({
       values: instance.value,
-      type: await instance.getType(),
+      type: instance.getTypeSync(),
       strict: false,
       allowEmptyArrays: true,
       allowEmptyObjects: true,
-      transformFunc: async ({ value, field }) => {
+      transformFunc: ({ value, field }) => {
         if (field === undefined || !Array.isArray(value)) {
           return value
         }
-        const sortFields = VALUES_TO_SORT[field.parent.elemID.typeName]?.[field.name]
+        const sortFields =
+          TYPES_AND_VALUES_TO_SORT[instance.elemID.typeName][field.parent.elemID.typeName]?.[field.name]
 
         if (sortFields !== undefined) {
           _.assign(
@@ -166,15 +169,16 @@ const sortLists = async (instance: InstanceElement, isDataCenter: boolean): Prom
 
         return value
       },
-    })) ?? {}
+    }) ?? {}
 }
 
-const filter: FilterCreator = ({ client }) => ({
+const filter: FilterCreator = () => ({
   name: 'sortListsFilter',
   onFetch: async elements => {
-    await awu(elements)
+    elements
       .filter(isInstanceElement)
-      .forEach(instance => sortLists(instance, client.isDataCenter))
+      .filter(instance => instance.elemID.typeName in TYPES_AND_VALUES_TO_SORT)
+      .forEach(instance => sortLists(instance))
   },
 })
 

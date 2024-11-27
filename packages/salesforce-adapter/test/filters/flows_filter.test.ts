@@ -51,6 +51,7 @@ describe('flows filter', () => {
   let fetchMetadataInstancesSpy: jest.SpyInstance
   let flowType: ObjectType
   let flowDefinitionType: ObjectType
+  let flowDefinitionInstance: InstanceElement
 
   beforeEach(() => {
     ;({ client, connection } = mockClient())
@@ -68,6 +69,13 @@ describe('flows filter', () => {
       elemID: new ElemID(SALESFORCE, FLOW_DEFINITION_METADATA_TYPE),
       annotations: { [METADATA_TYPE]: FLOW_DEFINITION_METADATA_TYPE },
     })
+    flowDefinitionInstance = createInstanceElement(
+      {
+        [INSTANCE_FULL_NAME_FIELD]: 'flow1',
+        [ACTIVE_VERSION_NUMBER]: 0,
+      },
+      flowDefinitionType,
+    )
     fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
@@ -77,7 +85,6 @@ describe('flows filter', () => {
 
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
-    let flowDefinitionInstance: InstanceElement
 
     describe('when Flow MetadataType is not in the fetch targets', () => {
       beforeEach(async () => {
@@ -131,13 +138,6 @@ describe('flows filter', () => {
     })
     describe('with preferActiveFlowVersions true', () => {
       beforeEach(async () => {
-        flowDefinitionInstance = createInstanceElement(
-          {
-            [INSTANCE_FULL_NAME_FIELD]: 'flow1',
-            [ACTIVE_VERSION_NUMBER]: 0,
-          },
-          flowDefinitionType,
-        )
         elements = [flowType, flowDefinitionType, flowDefinitionInstance]
         filter = filterCreator({
           config: {
@@ -277,6 +277,28 @@ describe('flows filter', () => {
         expect(result[0].id).toEqual(FLOW1_INTERNAL_ID)
         expect(result[1].fullName).toEqual('flow2-2')
         expect(result[1].id).toEqual(FLOW2_ACTIVE_VERSION_INTERANL_ID)
+      })
+    })
+    describe('when Flows are excluded', () => {
+      beforeEach(async () => {
+        elements = [flowDefinitionType, flowDefinitionInstance]
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: {
+                metadata: { exclude: [{ metadataType: FLOW_METADATA_TYPE }] },
+              },
+            }),
+            elementsSource: buildElementsSourceFromElements([flowDefinitionType]),
+          },
+          client,
+        }) as typeof filter
+        await filter.onFetch(elements)
+      })
+      it('should hide the FlowDefinition type and its instances', () => {
+        expect(flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
+        expect(flowDefinitionInstance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTrue()
       })
     })
   })

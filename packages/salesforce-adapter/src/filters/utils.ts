@@ -462,8 +462,8 @@ export const instanceInternalId = (instance: InstanceElement): string =>
 
 export const hasApiName = (elem: Element): boolean => apiName(elem) !== undefined
 
-export const extractFlatCustomObjectFields = async (elem: Element): Promise<Element[]> =>
-  (await isCustomObject(elem)) && isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]
+export const extractFlatCustomObjectFields = (elem: Element): Element[] =>
+  [elem].concat(isCustomObjectSync(elem) ? Object.values(elem.fields) : [])
 
 export type QueryOperator = '>' | '<' | '=' | 'IN' // 'IN' is for values that can be split across multiple queries
 export type SoqlQuery = {
@@ -689,12 +689,9 @@ export const isStandardField = (field: Field): boolean => {
   return fieldApiName !== undefined && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(fieldApiName)
 }
 
-export const getInstanceAlias = async (
-  instance: MetadataInstanceElement,
-  useLabelAsAlias: boolean,
-): Promise<string> => {
+export const getInstanceAlias = async (instance: MetadataInstanceElement): Promise<string> => {
   const label = instance.value[LABEL]
-  if (!useLabelAsAlias || label === undefined) {
+  if (label === undefined) {
     return instance.value[INSTANCE_FULL_NAME_FIELD]
   }
   const namespace = await getNamespace(instance)

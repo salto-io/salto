@@ -532,10 +532,7 @@ export const retrieveMetadataInstances = async ({
     })
     // Exclude Profile related instances we fail to retrieve for envs that manage Profiles to improve performance
     // in subsequent fetches and avoid broken references in Profiles.
-    if (
-      metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE) &&
-      fetchProfile.isFeatureEnabled('excludeNonRetrievedProfilesRelatedInstances')
-    ) {
+    if (metadataQuery.isTypeMatch(PROFILE_METADATA_TYPE)) {
       const retrievedFileNames = new Set(allValues.map(({ file }) => file.fileName))
       allFileProps
         .filter(fileProp => isProfileRelatedMetadataType(fileProp.type))
@@ -642,6 +639,12 @@ export const retrieveMetadataInstances = async ({
   }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
+  const names = filesToRetrieve.map(file => file.fileName)
+  if (names.length <= 1000) {
+    log.debug('Retrieved files: %s', names)
+  } else {
+    log.trace('Retrieved files: %s', names)
+  }
 
   const instances = await retrieveProfilesWithContextTypes(
     profileFiles,

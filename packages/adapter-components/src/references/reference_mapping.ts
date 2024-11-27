@@ -15,11 +15,9 @@ import {
   InstanceElement,
   cloneDeepWithoutRefs,
 } from '@salto-io/adapter-api'
-import { collections, types } from '@salto-io/lowerdash'
+import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { createMissingInstance } from './missing_references'
-
-const { awu } = collections.asynciterable
 
 export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
@@ -163,14 +161,12 @@ export type FieldReferenceDefinition<
   missingRefStrategy?: MissingReferenceStrategyName
 }
 
-// We can extract the api name from the elem id as long as we don't support renaming
-const elemLookupName: ApiNameFunc = elem => elem.elemID.name
-
 const matchName = (name: string, matcher: string | RegExp): boolean =>
   _.isString(matcher) ? matcher === name : matcher.test(name)
 
-const matchInstanceType = async (inst: InstanceElement, matchers: (string | RegExp)[]): Promise<boolean> => {
-  const typeName = elemLookupName(await inst.getType())
+const matchInstanceType = (inst: InstanceElement, matchers: (string | RegExp)[]): boolean => {
+  // We can extract the api name from the elem id as long as we don't support type renaming
+  const { typeName } = inst.elemID
   return matchers.some(matcher => matchName(typeName, matcher))
 }
 
@@ -224,10 +220,11 @@ export class FieldReferenceResolver<
     return new FieldReferenceResolver<S, C, I>(def, serializationStrategyLookup)
   }
 
-  async match(field: Field, element: Element): Promise<boolean> {
+  match(field: Field, element: Element): boolean {
     return (
       matchName(field.name, this.src.field) &&
-      (this.src.parentTypes === undefined || this.src.parentTypes.includes(elemLookupName(field.parent))) &&
+      // We can extract the api name from field.parent.elemID.name as long as we don't support type renaming
+      (this.src.parentTypes === undefined || this.src.parentTypes.includes(field.parent.elemID.name)) &&
       (this.src.instanceTypes === undefined ||
         (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
     )
@@ -235,6 +232,11 @@ export class FieldReferenceResolver<
 }
 
 export type ReferenceResolverFinder<TContext extends string, CustomIndexField extends string> = (
+  field: Field,
+  element: Element,
+) => FieldReferenceResolverDetails<TContext, CustomIndexField>[]
+
+export type AsyncReferenceResolverFinder<TContext extends string, CustomIndexField extends string> = (
   field: Field,
   element: Element,
 ) => Promise<FieldReferenceResolverDetails<TContext, CustomIndexField>[]>
@@ -264,8 +266,5 @@ export const generateReferenceResolverFinder = <
     .groupBy(def => def.src.field)
     .value()
 
-  return async (field, element) =>
-    awu(matchersByFieldName[field.name] ?? [])
-      .filter(resolver => resolver.match(field, element))
-      .toArray()
+  return (field, element) => (matchersByFieldName[field.name] ?? []).filter(resolver => resolver.match(field, element))
 }

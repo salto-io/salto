@@ -295,6 +295,10 @@ describe('adapter', () => {
           })
           .fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'workato.api_access_profile',
+          'workato.api_client',
+          'workato.api_collection',
+          'workato.api_endpoint',
           'workato.connection',
           'workato.connection.instance.HTTP_connection_1@s',
           'workato.connection.instance.My_Gmail_connection@s',
@@ -302,6 +306,11 @@ describe('adapter', () => {
           'workato.connection.instance.Test_NetSuite_account@s',
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
+          'workato.folder',
+          'workato.property',
+          'workato.recipe',
+          'workato.recipe__code',
+          'workato.role',
         ])
       })
       it('should use elemIdGetter', async () => {

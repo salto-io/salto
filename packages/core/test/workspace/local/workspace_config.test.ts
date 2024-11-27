@@ -128,7 +128,6 @@ describe('workspace local config', () => {
     it('set in repo dir store', async () => {
       await configSource.setWorkspaceConfig({
         uid: '1',
-        name: 'foo',
         currentEnv: 'bar',
         envs: [],
         staleStateThresholdMinutes: 60,

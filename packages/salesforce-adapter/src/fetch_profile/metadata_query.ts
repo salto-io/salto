@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { regex, values } from '@salto-io/lowerdash'
+import { collections, regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
@@ -35,9 +35,12 @@ import { getChangedAtSingletonInstance } from '../filters/utils'
 import {
   isTypeWithNestedInstances,
   isTypeWithNestedInstancesPerParent,
-  TYPE_TO_NESTED_TYPES,
+  NESTED_TYPE_TO_PARENT_TYPE,
 } from '../last_change_date_of_types_with_nested_instances'
+import { includesSettingsTypes } from './metadata_types'
+import { isFeatureEnabled } from './optional_features'
 
+const { makeArray } = collections.array
 const { isDefined } = values
 const log = logger(module)
 
@@ -47,7 +50,6 @@ const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // We have special treatment for this type
   { metadataType: 'CustomField' },
-  { metadataType: SETTINGS_METADATA_TYPE },
   // readMetadata and retrieve fail on this type when fetching by name
   { metadataType: 'CustomIndex' },
   // readMetadata fails on those and pass on the parents
@@ -91,19 +93,15 @@ export const buildMetadataQuery = ({ fetchParams, targetedFetchInclude }: BuildM
   if (targetedFetchInclude !== undefined) {
     log.debug('targeted fetch include is: %s', inspectValue(targetedFetchInclude))
   }
-  const { include = [{}], exclude = [] } = metadata
-  const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
-  const nestedTypeToParentType = Object.entries(TYPE_TO_NESTED_TYPES).reduce<Record<string, string>>(
-    (acc, [parentType, nestedTypes]) => {
-      nestedTypes
-        .filter(nestedType => nestedType !== parentType)
-        .forEach(nestedType => {
-          acc[nestedType] = parentType
-        })
-      return acc
-    },
-    {},
-  )
+  const fullExcludeList: MetadataQueryParams[] = [
+    ...(metadata.exclude ?? []),
+    ...PERMANENT_SKIP_LIST,
+    ...makeArray(
+      isFeatureEnabled('retrieveSettings', fetchParams.optionalFeatures)
+        ? undefined
+        : { metadataType: SETTINGS_METADATA_TYPE },
+    ),
+  ]
 
   const isTypeIncludedInTargetedFetch = (type: string): boolean => {
     if (targetedFetchInclude === undefined) {
@@ -111,24 +109,44 @@ export const buildMetadataQuery = ({ fetchParams, targetedFetchInclude }: BuildM
     }
     return targetedFetchInclude.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
   }
+
+  const include = metadata.include
+    ? metadata.include.concat(
+        isFeatureEnabled('retrieveSettings', fetchParams.optionalFeatures) &&
+          includesSettingsTypes(metadata.include.map(({ metadataType }) => metadataType).filter(isDefined) ?? [])
+          ? [{ metadataType: SETTINGS_METADATA_TYPE }]
+          : [],
+      )
+    : [{}]
   const isTypeIncluded = (type: string): boolean =>
     include.some(({ metadataType = '.*' }) =>
-      new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+      new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
     ) && isTypeIncludedInTargetedFetch(type)
+
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
       ({ metadataType = '.*', namespace = '.*', name = '.*' }) =>
         namespace === '.*' &&
         name === '.*' &&
-        new RegExp(`^${metadataType}$`).test(nestedTypeToParentType[type] ?? type),
+        new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
     )
+
+  const fixSettingsType = (metadataType: string, name: string): string =>
+    isFeatureEnabled('retrieveSettings', fetchParams.optionalFeatures) && metadataType === SETTINGS_METADATA_TYPE
+      ? name.concat(SETTINGS_METADATA_TYPE)
+      : metadataType
+
   const isInstanceMatchQueryParams = (
     instance: MetadataInstance,
     { metadataType = '.*', namespace = '.*', name = '.*' }: MetadataQueryParams,
   ): boolean => {
-    const realNamespace = namespace === '' ? getDefaultNamespace(instance.metadataType) : namespace
+    const instanceMetadataType = fixSettingsType(
+      NESTED_TYPE_TO_PARENT_TYPE[instance.metadataType] ?? instance.metadataType,
+      instance.name,
+    )
+    const realNamespace = namespace === '' ? getDefaultNamespace(instanceMetadataType) : namespace
     if (
-      !regex.isFullRegexMatch(instance.metadataType, metadataType) ||
+      !regex.isFullRegexMatch(instanceMetadataType, metadataType) ||
       !regex.isFullRegexMatch(instance.namespace, realNamespace)
     ) {
       return false

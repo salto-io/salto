@@ -7,7 +7,6 @@
  */
 import {
   BuiltinTypes,
-  ChangeDataType,
   CORE_ANNOTATIONS,
   ElemID,
   Field,
@@ -252,10 +251,15 @@ describe('customization type change validator', () => {
         { [SCRIPT_ID]: 'custom_field' },
       )
 
-      new Array<ChangeDataType>(entityCustomFieldInstance, type, field).forEach(async element => {
-        const change = await immutableChangesValidator([toChange({ after: element })], mockChangeValidatorParams())
-        expect(change).toEqual([])
-      })
+      const changes = [
+        toChange({ after: entityCustomFieldInstance }),
+        toChange({ after: type }),
+        toChange({ after: field }),
+      ]
+
+      const changeErrors = await immutableChangesValidator(changes, mockChangeValidatorParams())
+
+      expect(changeErrors).toEqual([])
     })
   })
 

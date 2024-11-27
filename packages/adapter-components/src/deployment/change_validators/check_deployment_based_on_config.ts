@@ -31,7 +31,7 @@ export const detailedErrorMessage = (action: Change['action'], path: ElemID): st
 const isDeploymentSupported = (action: Change['action'], config: DeploymentRequestsByAction): boolean =>
   config[action] !== undefined
 
-const createChangeErrors = (
+export const createChangeErrors = (
   typeConfig: Partial<Record<ActionName, DeployRequestConfig>>,
   instanceElemID: ElemID,
   action: ActionName,

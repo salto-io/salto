@@ -55,6 +55,13 @@ export default class Prompts {
     eq: '|',
   }
 
+  public static readonly DEPLOYMENT_STATUS = {
+    partialSuccess: chalk.yellow('P'),
+    success: chalk.green('S'),
+    failure: chalk.red('F'),
+    eq: '|',
+  }
+
   public static readonly START_ACTION = {
     modify: 'Changing',
     add: 'Creating',
@@ -90,16 +97,24 @@ export default class Prompts {
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
+  public static readonly DEPLOYMENT_SUMMARY_HEADLINE = chalk.bgBlack.bold('Deployment summary:')
+  public static readonly ALL_DEPLOYMENT_ELEMENTS_FAILED = `${chalk.red('X')} All elements failed to deploy`
+  public static readonly ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED = `${chalk.green('\u2713')} All elements were successfully deployed`
+  public static readonly DEPLOYMENT_SUMMARY_LEGEND =
+    chalk.gray(`Deployment status is indicated with the following symbols:
+  ${Prompts.DEPLOYMENT_STATUS.success} success
+  ${Prompts.DEPLOYMENT_STATUS.partialSuccess} partial success
+  ${Prompts.DEPLOYMENT_STATUS.failure} failure`)
+
   public static initFailed(msg: string): string {
-    return `Could not initiate workspace: ${msg}\n`
+    return `Could not initiate workspace: ${msg}`
   }
 
   private static readonly ACCOUNT_ADD_HELP = 'Use `salto account add <service-name>` to add accounts to the environment'
 
   public static initCompleted(): string {
     return `Initiated empty workspace
-${Prompts.ACCOUNT_ADD_HELP}
-`
+${Prompts.ACCOUNT_ADD_HELP}`
   }
 
   public static readonly FETCH_HEADER = 'Fetching and applying changes from the account(s)'
@@ -397,14 +412,8 @@ ${Prompts.LIST_IDS(ids)}
   public static readonly CLONE_TARGET_ENV_ERROR =
     "Please specify the target environment(s) by passing exactly one of '--to-envs' and '--to-all-envs' parameters"
 
-  public static readonly UNKNOWN_STATE_SALTO_VERSION =
-    'Can not determine the Salto version that was when the state of the accounts was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
-
   public static readonly OLD_STATE_SALTO_VERSION = (stateSaltoVersion: string): string =>
     `The state of the accounts was last fetched using Salto's version ${stateSaltoVersion}. It is highly recommended to run the fetch command again before proceeding - do you want to cancel?`
-
-  public static readonly NEW_STATE_SALTO_VERSION = (stateSaltoVersion: string): string =>
-    `The state of the accounts was last fetched using Salto's version ${stateSaltoVersion} which is newer than the current installed Salto version. It is highly recommended to upgrade the current Salto version - do you want to cancel?`
 
   public static readonly CLEAN_WORKSPACE_SUMMARY = (parts: string[]): string =>
     `Going to clean the following workspace components and restore them to their initial state: ${parts.join(

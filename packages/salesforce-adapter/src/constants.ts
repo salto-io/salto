@@ -162,8 +162,8 @@ export const CUSTOM_SETTINGS_TYPE = 'customSettingsType'
 export const LIST_CUSTOM_SETTINGS_TYPE = 'List'
 export const IS_ATTRIBUTE = 'isAttribute'
 export const FOLDER_CONTENT_TYPE = 'folderContentType'
-// must have the same name as INTERNAL_ID_FIELD
-export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
+// Must have the same name as INTERNAL_ID_FIELD
+export const INTERNAL_ID_ANNOTATION = `${INTERNAL_ID_FIELD}`
 export const HISTORY_TRACKED_FIELDS = 'historyTrackedFields'
 export const FEED_HISTORY_TRACKED_FIELDS = 'feedHistoryTrackedFields'
 
@@ -313,6 +313,8 @@ export const SUBTYPES_PATH = 'Subtypes'
 export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
 export const OBJECT_FIELDS_PATH = 'Fields'
 
+export const SETTINGS_DIR_NAME = 'settings'
+
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
 export const MAX_TOTAL_CONCURRENT_API_REQUEST = 100
@@ -363,6 +365,7 @@ export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'
 export const STATUS = 'status'
 export const ACTIVE = 'Active'
+export const INVALID_DRAFT = 'InvalidDraft'
 
 // Metadata types
 export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'
@@ -370,6 +373,7 @@ export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'
 export const MUTING_PERMISSION_SET_METADATA_TYPE = 'MutingPermissionSet'
+export const PERMISSION_SET_GROUP_METADATA_TYPE = 'PermissionSetGroup'
 export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const WORKFLOW_METADATA_TYPE = 'Workflow'
 export const ASSIGNMENT_RULES_METADATA_TYPE = 'AssignmentRules'
@@ -412,7 +416,6 @@ export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
-export const PERMISSION_SET_TYPE_ID_METADATA_TYPE = 'PermissionSet'
 export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
 export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
 export const APEX_CLASS_METADATA_TYPE = 'ApexClass'

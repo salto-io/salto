@@ -12,6 +12,7 @@ import { logger } from '@salto-io/logging'
 import { AdapterFormat } from '@salto-io/adapter-api'
 import { API_VERSION } from '../client/client'
 import { SfProject, SfError, TemplateService, TemplateType, ProjectOptions } from './salesforce_imports'
+import { detailedMessageFromSfError } from './errors'
 
 const log = logger(module)
 
@@ -38,7 +39,7 @@ export const isProjectFolder: IsInitializedFolderFunc = async ({ baseDir }) => {
         {
           severity: 'Error',
           message: 'Failed checking if folder contains an SFDX project',
-          detailedMessage: error.message,
+          detailedMessage: detailedMessageFromSfError(error),
         },
       ],
     }
@@ -53,7 +54,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
     outputdir: path.dirname(baseDir),
     manifest: false,
     loginurl: 'https://login.salesforce.com',
-    template: 'standard',
+    template: 'empty',
     ns: '',
     defaultpackagedir: 'force-app',
     apiversion: API_VERSION,
@@ -69,7 +70,7 @@ export const createProject: InitFolderFunc = async ({ baseDir }) => {
         {
           severity: 'Error',
           message: 'Failed initializing SFDX project',
-          detailedMessage: error.message,
+          detailedMessage: detailedMessageFromSfError(error),
         },
       ],
     }

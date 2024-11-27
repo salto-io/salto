@@ -56,7 +56,6 @@ const {
   DOMAIN_NAME_REFERENCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   PERMISSION_GRANT_POLICY_TYPE_NAME,
-  CROSS_TENANT_ACCESS_POLICY_TYPE_NAME,
   APP_ROLE_TYPE_NAME,
 } = entraConstants
 
@@ -699,28 +698,6 @@ const graphV1Customizations: FetchCustomizations = {
       topLevel: {
         isTopLevel: true,
       },
-    },
-  },
-  [CROSS_TENANT_ACCESS_POLICY_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/policies/crossTenantAccessPolicy',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        singleton: true,
-        elemID: {
-          parts: [{ fieldName: 'id' }],
-        },
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
     },
   },
 }

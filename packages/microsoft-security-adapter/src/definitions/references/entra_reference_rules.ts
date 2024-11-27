@@ -37,6 +37,7 @@ const {
   PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME,
   ROLE_DEFINITION_TYPE_NAME,
   SERVICE_PRINCIPAL_TYPE_NAME,
+  REQUIRED_RESOURCE_ACCESS_FIELD_NAME,
 } = entraConstants
 
 const createMicrosoftAuthenticatorReferences = (): referenceUtils.FieldReferenceDefinition<
@@ -207,6 +208,34 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
   {
     src: { field: 'excludeGroups', parentTypes: [CONDITIONAL_ACCESS_POLICY_CONDITION_USERS_TYPE_NAME] },
     target: { type: GROUP_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  // Please note that the order of the following two resourceAppId rules is important.
+  // We prioritize referencing the Application over the ServicePrincipal.
+  {
+    src: {
+      field: 'resourceAppId',
+      parentTypes: [recursiveNestedTypeName(APPLICATION_TYPE_NAME, REQUIRED_RESOURCE_ACCESS_FIELD_NAME)],
+    },
+    target: { type: APPLICATION_TYPE_NAME },
+    serializationStrategy: 'appId',
+  },
+  {
+    src: {
+      field: 'resourceAppId',
+      parentTypes: [recursiveNestedTypeName(APPLICATION_TYPE_NAME, REQUIRED_RESOURCE_ACCESS_FIELD_NAME)],
+    },
+    target: { type: SERVICE_PRINCIPAL_TYPE_NAME },
+    serializationStrategy: 'servicePrincipalAppId',
+  },
+  {
+    src: {
+      field: 'id',
+      parentTypes: [
+        recursiveNestedTypeName(APPLICATION_TYPE_NAME, REQUIRED_RESOURCE_ACCESS_FIELD_NAME, 'resourceAccess'),
+      ],
+    },
+    target: { typeContext: 'resourceAccessType' },
     serializationStrategy: 'id',
   },
 ]

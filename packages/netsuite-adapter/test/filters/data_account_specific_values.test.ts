@@ -96,10 +96,7 @@ describe('data account specific values filter', () => {
       ]),
       isPartial: false,
       config: {
-        fetch: {
-          ...fullFetchConfig(),
-          resolveAccountSpecificValues: true,
-        },
+        fetch: fullFetchConfig(),
       },
       typeToInternalId,
       internalIdToTypes,
@@ -278,46 +275,6 @@ describe('data account specific values filter', () => {
         },
       })
     })
-
-    it('should do nothing if fetch.resolveAccountSpecificValues is false', async () => {
-      filterOpts.config.fetch.resolveAccountSpecificValues = false
-      await filterCreator(filterOpts).onFetch?.(elements)
-      expect(dataInstance.value).toEqual({
-        mainAddress: {
-          country: '_unitedStates',
-          state: 'CA',
-          internalId: '1',
-        },
-        accountField: {
-          internalId: '1',
-        },
-        customField: {
-          name: 'Account 2',
-          internalId: '2',
-          typeId: '-112',
-        },
-        anotherCustomField: {
-          name: 'Some Name',
-          internalId: '2',
-          typeId: '1234',
-        },
-        someField: {
-          inner: {
-            name: 'Value 123',
-            internalId: '123',
-          },
-        },
-        listField: [
-          {
-            name: 'Value 456',
-            internalId: '456',
-          },
-        ],
-        taxSchedule: {
-          internalId: '1',
-        },
-      })
-    })
   })
 
   describe('pre deploy', () => {
@@ -442,36 +399,6 @@ describe('data account specific values filter', () => {
         ],
         fileField: {
           internalId: '1010',
-        },
-      })
-    })
-
-    it('should do nothing if fetch.resolveAccountSpecificValues is false', async () => {
-      filterOpts.config.fetch.resolveAccountSpecificValues = false
-      await filterCreator(filterOpts).preDeploy?.([toChange({ after: dataInstance })])
-      expect(dataInstance.value).toEqual({
-        mainAddress: {
-          country: '_unitedStates',
-          state: 'CA',
-        },
-        accountField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 1)',
-        },
-        customField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (account) (Account 2)',
-        },
-        someField: {
-          inner: {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 123)',
-          },
-        },
-        listField: [
-          {
-            id: '[ACCOUNT_SPECIFIC_VALUE] (object) (Value 456)',
-          },
-        ],
-        fileField: {
-          id: '[ACCOUNT_SPECIFIC_VALUE] (object) (File Reference)',
         },
       })
     })

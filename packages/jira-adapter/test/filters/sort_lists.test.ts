@@ -17,7 +17,13 @@ import {
 import { getFilterParams } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
-import { AUTOMATION_PROJECT_TYPE, DASHBOARD_TYPE, JIRA, PROJECT_ROLE_TYPE } from '../../src/constants'
+import {
+  AUTOMATION_PROJECT_TYPE,
+  DASHBOARD_TYPE,
+  JIRA,
+  PERMISSION_SCHEME_TYPE_NAME,
+  PROJECT_ROLE_TYPE,
+} from '../../src/constants'
 
 describe('sortListsFilter', () => {
   let filter: Filter
@@ -228,7 +234,7 @@ describe('sortListsFilter', () => {
 
     it('should sort inner lists', async () => {
       const type = new ObjectType({
-        elemID: new ElemID(JIRA, 'someType'),
+        elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
         fields: {
           schemes: {
             refType: new ListType(permissionSchemeType),
@@ -261,6 +267,47 @@ describe('sortListsFilter', () => {
               },
               {
                 permission: 'B',
+              },
+            ],
+          },
+        ],
+      })
+    })
+
+    it('should not sort inner lists if type not in supported-type list', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID(JIRA, 'some_type'),
+        fields: {
+          schemes: {
+            refType: new ListType(permissionSchemeType),
+          },
+        },
+      })
+      const inst = new InstanceElement('instance', type, {
+        schemes: [
+          {
+            permissions: [
+              {
+                permission: 'B',
+              },
+              {
+                permission: 'A',
+              },
+            ],
+          },
+        ],
+      })
+
+      await filter.onFetch?.([inst])
+      expect(inst.value).toEqual({
+        schemes: [
+          {
+            permissions: [
+              {
+                permission: 'B',
+              },
+              {
+                permission: 'A',
               },
             ],
           },

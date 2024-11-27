@@ -12,6 +12,7 @@ import './salesforce_imports_fix'
 export { SfProject, SfError } from '@salesforce/core'
 export {
   ComponentSet,
+  ConvertResult,
   ZipTreeContainer,
   MetadataConverter,
   TreeContainer,

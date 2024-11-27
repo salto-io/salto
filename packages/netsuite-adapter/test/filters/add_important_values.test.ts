@@ -17,7 +17,6 @@ import { customrecordtypeType } from '../../src/autogen/types/standard_types/cus
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
-import { emptyQueryParams, fullQueryParams } from '../../src/config/config_creator'
 import { bundleType } from '../../src/types/bundle_type'
 import { getTypesToInternalId } from '../../src/data_elements/types'
 
@@ -30,8 +29,6 @@ describe('add important values filter', () => {
   let types: ObjectType[]
 
   let defaultOpts: LocalFilterOpts
-  let optsWithoutImportantValues: LocalFilterOpts
-  let optsWithImportantValues: LocalFilterOpts
 
   beforeEach(async () => {
     workflow = workflowType().type
@@ -59,39 +56,11 @@ describe('add important values filter', () => {
       config: await getDefaultAdapterConfig(),
       ...getTypesToInternalId([]),
     }
-    optsWithoutImportantValues = {
-      ...defaultOpts,
-      config: {
-        fetch: {
-          include: fullQueryParams(),
-          exclude: emptyQueryParams(),
-          addImportantValues: false,
-        },
-      },
-    }
-    optsWithImportantValues = {
-      ...defaultOpts,
-      config: {
-        fetch: {
-          include: fullQueryParams(),
-          exclude: emptyQueryParams(),
-          addImportantValues: true,
-        },
-      },
-    }
   })
-  it('should not add important values when addImportantValues=false', async () => {
-    await filterCreator(optsWithoutImportantValues).onFetch?.(types)
-    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeFalsy()
-    expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeFalsy()
-  })
-  it('should add important values by default', async () => {
+  it('should add important values', async () => {
     await filterCreator(defaultOpts).onFetch?.(types)
     expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.IMPORTANT_VALUES] !== undefined)).toBeTruthy()
     expect(types.some(elem => elem.annotations[CORE_ANNOTATIONS.SELF_IMPORTANT_VALUES] !== undefined)).toBeTruthy()
-  })
-  it('should add important values', async () => {
-    await filterCreator(optsWithImportantValues).onFetch?.(types)
     expect(workflow.annotations).toEqual({
       _important_values: [
         {

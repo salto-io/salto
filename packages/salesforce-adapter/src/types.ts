@@ -95,40 +95,49 @@ export type MetadataParams = {
   objectsToSeperateFieldsToFiles?: string[]
 }
 
+const OPTIONAL_FEATURES = [
+  'extendedCustomFieldInformation',
+  'importantValues',
+  'hideTypesFolder',
+  'metaTypes',
+  'improvedDataBrokenReferences',
+  'skipParsingXmlNumbers',
+  'logDiffsFromParsingXmlNumbers',
+  'extendTriggersMetadata',
+  'picklistsAsMaps',
+  'retrieveSettings',
+  'genAiReferences',
+  'extendFetchTargets',
+] as const
+const DEPRECATED_OPTIONAL_FEATURES = [
+  'addMissingIds',
+  'authorInformation',
+  'cpqRulesAndConditionsRefs',
+  'describeSObjects',
+  'elementsUrls',
+  'excludeNonRetrievedProfilesRelatedInstances',
+  'extraDependencies',
+  'extraDependenciesV2',
+  'fetchCustomObjectUsingRetrieveApi',
+  'fetchProfilesUsingReadApi',
+  'flowCoordinates',
+  'formulaDeps',
+  'generateRefsInProfiles',
+  'indexedEmailTemplateAttachments',
+  'lightningPageFieldItemReference',
+  'omitStandardFieldsNonDeployableValues',
+  'profilePaths',
+  'removeReferenceFromFilterItemToRecordType',
+  'sharingRulesMaps',
+  'skipAliases',
+  'storeProfilesAndPermissionSetsBrokenPaths',
+  'taskAndEventCustomFields',
+  'toolingDepsOfCurrentNamespace',
+  'useLabelAsAlias',
+  'waveMetadataSupport',
+] as const
 export type OptionalFeatures = {
-  extraDependencies?: boolean
-  extraDependenciesV2?: boolean
-  elementsUrls?: boolean
-  profilePaths?: boolean
-  addMissingIds?: boolean
-  authorInformation?: boolean
-  describeSObjects?: boolean
-  skipAliases?: boolean
-  formulaDeps?: boolean
-  fetchCustomObjectUsingRetrieveApi?: boolean
-  generateRefsInProfiles?: boolean
-  fetchProfilesUsingReadApi?: boolean
-  toolingDepsOfCurrentNamespace?: boolean
-  useLabelAsAlias?: boolean
-  extendedCustomFieldInformation?: boolean
-  importantValues?: boolean
-  hideTypesFolder?: boolean
-  omitStandardFieldsNonDeployableValues?: boolean
-  metaTypes?: boolean
-  cpqRulesAndConditionsRefs?: boolean
-  flowCoordinates?: boolean
-  improvedDataBrokenReferences?: boolean
-  taskAndEventCustomFields?: boolean
-  sharingRulesMaps?: boolean
-  excludeNonRetrievedProfilesRelatedInstances?: boolean
-  waveMetadataSupport?: boolean
-  indexedEmailTemplateAttachments?: boolean
-  skipParsingXmlNumbers?: boolean
-  logDiffsFromParsingXmlNumbers?: boolean
-  extendTriggersMetadata?: boolean
-  storeProfilesAndPermissionSetsBrokenPaths?: boolean
-  removeReferenceFromFilterItemToRecordType?: boolean
-  extendFetchTargets?: boolean
+  [key in (typeof OPTIONAL_FEATURES)[number]]?: boolean
 }
 
 export type ChangeValidatorName =
@@ -168,6 +177,8 @@ export type ChangeValidatorName =
   | 'cpqBillingStartDate'
   | 'cpqBillingTriggers'
   | 'managedApexComponent'
+  | 'orderedMaps'
+  | 'layoutDuplicateFields'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -421,12 +432,8 @@ export type ClientDeployConfig = Partial<{
   flsProfiles: string[]
 }>
 
-export enum RetryStrategyName {
-  'HttpError',
-  'HTTPOrNetworkError',
-  'NetworkError',
-}
-type RetryStrategy = keyof typeof RetryStrategyName
+export const RETRY_STRATEGY_NAMES = ['HttpError', 'HTTPOrNetworkError', 'NetworkError'] as const
+type RetryStrategy = (typeof RETRY_STRATEGY_NAMES)[number]
 export type ClientRetryConfig = Partial<{
   maxAttempts: number
   retryDelay: number
@@ -731,7 +738,7 @@ const clientRetryConfigType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: Object.keys(RetryStrategyName),
+          values: RETRY_STRATEGY_NAMES,
         }),
       },
     },
@@ -806,43 +813,13 @@ const metadataConfigType = createMatchingObjectType<MetadataParams>({
   },
 })
 
-const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
+const optionalFeaturesType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'optionalFeatures'),
-  fields: {
-    extraDependencies: { refType: BuiltinTypes.BOOLEAN },
-    extraDependenciesV2: { refType: BuiltinTypes.BOOLEAN },
-    elementsUrls: { refType: BuiltinTypes.BOOLEAN },
-    profilePaths: { refType: BuiltinTypes.BOOLEAN },
-    addMissingIds: { refType: BuiltinTypes.BOOLEAN },
-    authorInformation: { refType: BuiltinTypes.BOOLEAN },
-    describeSObjects: { refType: BuiltinTypes.BOOLEAN },
-    skipAliases: { refType: BuiltinTypes.BOOLEAN },
-    formulaDeps: { refType: BuiltinTypes.BOOLEAN },
-    fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
-    generateRefsInProfiles: { refType: BuiltinTypes.BOOLEAN },
-    fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
-    toolingDepsOfCurrentNamespace: { refType: BuiltinTypes.BOOLEAN },
-    useLabelAsAlias: { refType: BuiltinTypes.BOOLEAN },
-    extendedCustomFieldInformation: { refType: BuiltinTypes.BOOLEAN },
-    importantValues: { refType: BuiltinTypes.BOOLEAN },
-    hideTypesFolder: { refType: BuiltinTypes.BOOLEAN },
-    omitStandardFieldsNonDeployableValues: { refType: BuiltinTypes.BOOLEAN },
-    metaTypes: { refType: BuiltinTypes.BOOLEAN },
-    cpqRulesAndConditionsRefs: { refType: BuiltinTypes.BOOLEAN },
-    flowCoordinates: { refType: BuiltinTypes.BOOLEAN },
-    improvedDataBrokenReferences: { refType: BuiltinTypes.BOOLEAN },
-    taskAndEventCustomFields: { refType: BuiltinTypes.BOOLEAN },
-    sharingRulesMaps: { refType: BuiltinTypes.BOOLEAN },
-    excludeNonRetrievedProfilesRelatedInstances: { refType: BuiltinTypes.BOOLEAN },
-    waveMetadataSupport: { refType: BuiltinTypes.BOOLEAN },
-    indexedEmailTemplateAttachments: { refType: BuiltinTypes.BOOLEAN },
-    skipParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
-    logDiffsFromParsingXmlNumbers: { refType: BuiltinTypes.BOOLEAN },
-    extendTriggersMetadata: { refType: BuiltinTypes.BOOLEAN },
-    storeProfilesAndPermissionSetsBrokenPaths: { refType: BuiltinTypes.BOOLEAN },
-    removeReferenceFromFilterItemToRecordType: { refType: BuiltinTypes.BOOLEAN },
-    extendFetchTargets: { refType: BuiltinTypes.BOOLEAN },
-  },
+  fields: Object.fromEntries(
+    (OPTIONAL_FEATURES as readonly string[])
+      .concat(DEPRECATED_OPTIONAL_FEATURES)
+      .map(name => [name, { refType: BuiltinTypes.BOOLEAN }]),
+  ),
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -889,6 +866,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
     cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
     managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
+    orderedMaps: { refType: BuiltinTypes.BOOLEAN },
+    layoutDuplicateFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

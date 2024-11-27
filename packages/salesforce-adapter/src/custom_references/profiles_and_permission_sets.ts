@@ -244,14 +244,14 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   return refs
 }
 
-const instanceEntriesTargets = (instance: InstanceElement, metadataQuery?: MetadataQuery<ElemID>): Dictionary<ElemID> =>
+const instanceEntriesTargets = (instance: InstanceElement, metadataQuery: MetadataQuery<ElemID>): Dictionary<ElemID> =>
   _(
     mapInstanceSections(instance, (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
       [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
       target,
     ]),
   )
-    .filter(([, target]) => metadataQuery?.isInstanceIncluded(target) ?? true)
+    .filter(([, target]) => metadataQuery.isInstanceIncluded(target))
     .fromPairs()
     .value()
 

@@ -20,7 +20,7 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterContext, FilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import { CUSTOM_METADATA, CUSTOM_METADATA_META_TYPE, CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT } from '../constants'
 import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
 import { apiName, createMetaType, isMetadataObjectType } from '../transformers/transformer'
@@ -40,14 +40,12 @@ const { awu, groupByAsync } = collections.asynciterable
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
   customMetadataType: ObjectType,
-  config: FilterContext,
   metaType?: ObjectType,
 ): Promise<ObjectType> => {
   const objectType = await createCustomTypeFromCustomObjectInstance({
     instance,
     metadataType: CUSTOM_METADATA,
     metaType,
-    config,
   })
   objectType.fields = {
     ...objectType.fields,
@@ -91,7 +89,7 @@ const filterCreator: FilterCreator = ({ config }) => {
         ? createMetaType(CUSTOM_METADATA_META_TYPE, undefined, 'Custom Metadata')
         : undefined
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config, customMetadataMetaType))
+        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, customMetadataMetaType))
         .toArray()
       _.pullAll(elements, customMetadataInstances)
       customMetadataRecordTypes.forEach(e => elements.push(e))

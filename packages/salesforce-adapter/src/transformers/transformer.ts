@@ -102,6 +102,7 @@ import {
   SALESFORCE_DATE_PLACEHOLDER,
   SECURITY_CLASSIFICATION,
   SETTINGS_PATH,
+  STANDARD_SETTINGS_META_TYPE,
   TYPES_PATH,
   VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS,
@@ -547,7 +548,7 @@ export class Types {
 
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<ALL_FIELD_TYPE_NAMES, PrimitiveType> = {
-    serviceid: BuiltinTypes.SERVICE_ID,
+    [INTERNAL_FIELD_TYPE_NAMES.SERVICE_ID]: BuiltinTypes.SERVICE_ID,
     Text: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.TEXT),
       primitive: PrimitiveTypes.STRING,
@@ -1492,6 +1493,11 @@ export const createMetaType = (
   })
 
 export const MetadataMetaType = createMetaType(METADATA_META_TYPE, metadataAnnotationTypes, 'Metadata type')
+export const StandardSettingsMetaType = createMetaType(
+  STANDARD_SETTINGS_META_TYPE,
+  metadataAnnotationTypes,
+  'Standard Settings',
+)
 
 export type MetadataObjectType = ObjectType & {
   annotations: ObjectType['annotations'] & MetadataTypeAnnotations

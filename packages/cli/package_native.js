@@ -13,7 +13,6 @@ const path = require('path')
 const webpack = require('webpack')
 const nexe = require('nexe')
 const webpackConfig = require('./webpack.config')
-const fontFiles = require('./dist/src/fonts').fontFiles
 
 /** To upgrade the Node.js version:
  *
@@ -51,7 +50,6 @@ const PREBUILT_REMOTE_URL = 'https://salto-cli-releases.s3.eu-central-1.amazonaw
 const PYTHON3_PATH = process.env.PYTHON3_PATH
 
 const resources = [
-  ...fontFiles.values(),
   '../../node_modules/@salto-io/suitecloud-cli/src/metadata/*.json',
   '../../node_modules/@salto-io/suitecloud-cli/src/templates/**',
   '../../node_modules/@salto-io/rocksdb/**',

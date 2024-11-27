@@ -525,7 +525,7 @@ describe('SalesforceAdapter fetch', () => {
           expect(profileInstances.length).toEqual(1)
           expect(profileInstances[0].value).toMatchObject({
             fullName: UPDATED_PROFILE_FULL_NAME,
-            apiVersion: 58,
+            apiVersion: '58.0',
           })
           // Make sure we fetch the CustomMetadata instance
           expect(fetchedInstances).toSatisfyAny(instance => apiNameSync(instance) === CUSTOM_METADATA_FULL_NAME)
@@ -554,11 +554,11 @@ describe('SalesforceAdapter fetch', () => {
           expect(nonUpdatedProfileInstance).toBeDefined()
           expect(updatedProfileInstance.value).toMatchObject({
             fullName: UPDATED_PROFILE_FULL_NAME,
-            apiVersion: 58,
+            apiVersion: '58.0',
           })
           expect(nonUpdatedProfileInstance.value).toMatchObject({
             fullName: NON_UPDATED_PROFILE_FULL_NAME,
-            apiVersion: 58,
+            apiVersion: '58.0',
           })
           const fetchedApexClasses = fetchedInstances.filter(isInstanceOfTypeSync(APEX_CLASS_METADATA_TYPE))
           expect(fetchedApexClasses).toHaveLength(1)
@@ -2855,101 +2855,47 @@ describe('Fetch via retrieve API', () => {
           { type: mockTypes.BusinessProcess, instanceName: 'NonRelatedProfileInstance', excludeFromResult: true },
         ])
       })
-      describe('When feature is enabled', () => {
-        describe('When Profiles are included', () => {
-          beforeEach(async () => {
-            configChanges = (
-              await retrieveMetadataInstances({
-                client,
-                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
-                fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    optionalFeatures: {
-                      excludeNonRetrievedProfilesRelatedInstances: true,
-                    },
-                  },
-                }),
-              })
-            ).configChanges
-          })
-          it('Should create a metadataExclude config change', () => {
-            expect(configChanges).toEqual([
-              {
-                type: 'metadataExclude',
-                value: { metadataType: CUSTOM_OBJECT, name: NON_RETRIEVABLE_OBJECT_NAME },
-                reason:
-                  'Excluding non retrievable Profile related instance of type CustomObject and fullName NonRetrievableObject',
-              },
-            ])
-          })
+      describe('When Profiles are included', () => {
+        beforeEach(async () => {
+          configChanges = (
+            await retrieveMetadataInstances({
+              client,
+              types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
+              fetchProfile: buildFetchProfile({
+                fetchParams: {},
+              }),
+            })
+          ).configChanges
         })
-        describe('When Profiles are excluded', () => {
-          beforeEach(async () => {
-            configChanges = (
-              await retrieveMetadataInstances({
-                client,
-                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
-                fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    metadata: {
-                      exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
-                    },
-                    optionalFeatures: {
-                      excludeNonRetrievedProfilesRelatedInstances: true,
-                    },
-                  },
-                }),
-              })
-            ).configChanges
-          })
-          it('Should not create config change', () => {
-            expect(configChanges).toBeEmpty()
-          })
+        it('Should create a metadataExclude config change', () => {
+          expect(configChanges).toEqual([
+            {
+              type: 'metadataExclude',
+              value: { metadataType: CUSTOM_OBJECT, name: NON_RETRIEVABLE_OBJECT_NAME },
+              reason:
+                'Excluding non retrievable Profile related instance of type CustomObject and fullName NonRetrievableObject',
+            },
+          ])
         })
       })
-      describe('When feature is disabled', () => {
-        describe('When Profiles are included', () => {
-          beforeEach(async () => {
-            configChanges = (
-              await retrieveMetadataInstances({
-                client,
-                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
-                fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    optionalFeatures: {
-                      excludeNonRetrievedProfilesRelatedInstances: false,
-                    },
+      describe('When Profiles are excluded', () => {
+        beforeEach(async () => {
+          configChanges = (
+            await retrieveMetadataInstances({
+              client,
+              types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  metadata: {
+                    exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
                   },
-                }),
-              })
-            ).configChanges
-          })
-          it('Should not create a config change', () => {
-            expect(configChanges).toBeEmpty()
-          })
+                },
+              }),
+            })
+          ).configChanges
         })
-        describe('When Profiles are excluded', () => {
-          beforeEach(async () => {
-            configChanges = (
-              await retrieveMetadataInstances({
-                client,
-                types: [mockTypes.Profile, mockTypes.CustomObject, mockTypes.BusinessProcess],
-                fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    metadata: {
-                      exclude: [{ metadataType: PROFILE_METADATA_TYPE }],
-                    },
-                    optionalFeatures: {
-                      excludeNonRetrievedProfilesRelatedInstances: false,
-                    },
-                  },
-                }),
-              })
-            ).configChanges
-          })
-          it('Should not create config change', () => {
-            expect(configChanges).toBeEmpty()
-          })
+        it('Should not create config change', () => {
+          expect(configChanges).toBeEmpty()
         })
       })
     })

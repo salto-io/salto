@@ -21,12 +21,17 @@ import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { DeployApiDefinitions, DeployableRequestDefinition } from '../../definitions/system/deploy'
 import { DefaultWithCustomizations, queryWithDefault } from '../../definitions'
-import { ERROR_MESSAGE, detailedErrorMessage } from './check_deployment_based_on_config'
+import {
+  ERROR_MESSAGE,
+  detailedErrorMessage,
+  createChangeErrors as createChangeErrorsBasedOnConfig,
+} from './check_deployment_based_on_config'
 import {
   APIDefinitionsOptions,
   ResolveAdditionalActionType,
   ResolveClientOptionsType,
 } from '../../definitions/system/api'
+import { TypeConfig } from '../../config_deprecated'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -42,7 +47,7 @@ const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
   const actionRequests = makeArray(queryWithDefault(typeRequestDefinition).query(action))
   if (
     actionRequests.length === 0 ||
-    actionRequests.every(req => req.request.endpoint === undefined && req.request.earlySuccess !== true)
+    actionRequests.every(req => req.request?.endpoint === undefined && req.request?.earlySuccess !== true)
   ) {
     return [
       {
@@ -59,14 +64,18 @@ const createChangeErrors = <Options extends APIDefinitionsOptions = {}>(
 // This is the new version of the createCheckDeploymentBasedOnConfigValidator CV that support definitions
 export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends APIDefinitionsOptions = {}>({
   deployDefinitions,
+  typesConfig,
   typesDeployedViaParent = [],
   typesWithNoDeploy = [],
 }: {
   deployDefinitions: DeployApiDefinitions<ResolveAdditionalActionType<Options>, ResolveClientOptionsType<Options>>
+  // While migrating to definitions, it's useful to validate against old definitions for types that weren't migrated yet.
+  typesConfig?: Record<string, TypeConfig>
   typesDeployedViaParent?: string[]
   typesWithNoDeploy?: string[]
 }): ChangeValidator => {
   const typeConfigQuery = queryWithDefault(deployDefinitions.instances)
+  const definitionKeys = typeConfigQuery.allKeys()
   return async changes =>
     awu(changes)
       .map(async (change: Change<Element>): Promise<(ChangeError | undefined)[]> => {
@@ -75,8 +84,15 @@ export const createCheckDeploymentBasedOnDefinitionsValidator = <Options extends
           return []
         }
         const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
-          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction ?? {}
-          return createChangeErrors(requestsByAction, element.elemID, change.action)
+          if (!definitionKeys.includes(typeName) && typesConfig !== undefined) {
+            return createChangeErrorsBasedOnConfig(
+              typesConfig[typeName]?.deployRequests ?? {},
+              element.elemID,
+              change.action,
+            )
+          }
+          const requestsByAction = typeConfigQuery.query(typeName)?.requestsByAction
+          return createChangeErrors(requestsByAction ?? {}, element.elemID, change.action)
         }
         if (typesWithNoDeploy.includes(element.elemID.typeName)) {
           return []

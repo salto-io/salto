@@ -23,29 +23,16 @@ import {
   MetadataInstanceElement,
 } from '../transformers/transformer'
 import { API_NAME, METADATA_CONTENT_FIELD, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS } from '../constants'
-import { ComponentSet, MetadataConverter, SourceComponent } from './salesforce_imports'
+import { ComponentSet, ConvertResult, MetadataConverter, SourceComponent } from './salesforce_imports'
+import { UNSUPPORTED_TYPES } from './sfdx_dump'
 import { allFilters } from '../adapter'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
 import { metadataTypeSync } from '../filters/utils'
 import { getTypesWithContent, getTypesWithMetaFile } from '../fetch'
+import { detailedMessageFromSfError } from './errors'
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
-
-export const UNSUPPORTED_TYPES = new Set([
-  // Salto uses non-standard type names here (SFDX names them all "Settings", we have a separate type for each one)
-  // This causes us to always think the settings in the project need to be deleted
-  'Settings',
-  // For documents with a file extension (e.g. bla.txt) the SF API returns their fullName with the extension (so "bla.txt")
-  // but the SFDX convert code loads them as a component with a fullName without the extension (so "bla").
-  // This causes us to always think documents with an extension in the project need to be deleted
-  'Document',
-  'DocumentFolder',
-  // Custom labels are separate instances (CustomLabel) that are all in the same xml file
-  // Unfortunately, unlike other types like this (e.g - workflow, sharing rules), the SFDX code does not handle deleting
-  // instances of labels from the "merged" XML, so until we implement proper deletion support, we exclude this type
-  'CustomLabels',
-])
 
 const getXmlDestination = (component: SourceComponent): string | undefined => {
   const { folderContentType, suffix } = component.type
@@ -97,11 +84,25 @@ export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseD
     const absBaseDir = path.resolve(baseDir)
     const currentComponents = ComponentSet.fromSource(absBaseDir)
     const converter = new MetadataConverter()
-    const convertResult = await converter.convert(
-      currentComponents.filter(component => !UNSUPPORTED_TYPES.has(component.type.name)),
-      'metadata',
-      { type: 'zip' },
-    )
+    let convertResult: ConvertResult
+    try {
+      convertResult = await converter.convert(
+        currentComponents.filter(component => !UNSUPPORTED_TYPES.has(component.type.name)),
+        'metadata',
+        { type: 'zip' },
+      )
+    } catch (error) {
+      return {
+        elements: [],
+        errors: [
+          {
+            severity: 'Error',
+            message: 'Failed to load project',
+            detailedMessage: detailedMessageFromSfError(error),
+          },
+        ],
+      }
+    }
     if (convertResult.zipBuffer === undefined) {
       return {
         elements: [],

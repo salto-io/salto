@@ -6,15 +6,13 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { createSchemeGuard, transformValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, transformValuesSync } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, regex as lowerdashRegex } from '@salto-io/lowerdash'
+import { regex as lowerdashRegex } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import { MaskingConfig } from '../config/config'
 import { FilterCreator } from '../filter'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -44,11 +42,11 @@ const maskHeaders = (headers: Header[], headersToMask: string[], id: ElemID): vo
     })
 }
 
-const maskValues = async (instance: InstanceElement, masking: MaskingConfig): Promise<void> => {
+const maskValues = (instance: InstanceElement, masking: MaskingConfig): void => {
   instance.value =
-    (await transformValues({
+    transformValuesSync({
       values: instance.value,
-      type: await instance.getType(),
+      type: instance.getTypeSync(),
       pathID: instance.elemID,
       strict: false,
       allowEmptyArrays: true,
@@ -67,7 +65,7 @@ const maskValues = async (instance: InstanceElement, masking: MaskingConfig): Pr
         }
         return value
       },
-    })) ?? {}
+    }) ?? {}
 }
 
 /**
@@ -80,11 +78,9 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
 
-    await awu(elements)
-      .filter(isInstanceElement)
-      .forEach(async instance => {
-        await maskValues(instance, config.masking)
-      })
+    elements.filter(isInstanceElement).forEach(instance => {
+      maskValues(instance, config.masking)
+    })
   },
 })
 

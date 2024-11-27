@@ -397,7 +397,6 @@ const queryFileCabinet = async (
   suiteAppClient: SuiteAppClient,
   query: NetsuiteQuery,
   extensionsToExclude: string[],
-  forceFileCabinetExclude: boolean,
 ): Promise<FileCabinetResults> => {
   const { folderResults, isSuiteBundlesEnabled } = await queryTopLevelFolders(suiteAppClient)
   const topLevelFoldersResults = folderResults.filter(folder => query.isParentFolderMatch(`/${folder.name}`))
@@ -424,19 +423,6 @@ const queryFileCabinet = async (
   )
   log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
 
-  // SALTO-6145: remove this to exclude relevant folders
-  const foldersThatShouldBeRemoved = removedFolders.filter(folder =>
-    query.isParentFolderMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`),
-  )
-  if (!forceFileCabinetExclude && foldersThatShouldBeRemoved.length > 0) {
-    log.warn(
-      'the following %d folders should be removed too: %o',
-      foldersThatShouldBeRemoved.length,
-      foldersThatShouldBeRemoved,
-    )
-    foldersThatShouldBeRemoved.forEach(folder => filteredFolderResults.push(folder))
-  }
-
   const filesResults =
     filteredFolderResults.length > 0
       ? await queryFiles(
@@ -457,18 +443,12 @@ export const importFileCabinet = async (
   query: NetsuiteQuery,
   maxFileCabinetSizeInGB: number,
   extensionsToExclude: string[],
-  forceFileCabinetExclude: boolean,
 ): Promise<ImportFileCabinetResult> => {
   if (!query.areSomeFilesMatch()) {
     return { elements: [], failedPaths: { lockedError: [], otherError: [], largeFolderError: [] } }
   }
 
-  const { foldersResults, filesResults } = await queryFileCabinet(
-    suiteAppClient,
-    query,
-    extensionsToExclude,
-    forceFileCabinetExclude,
-  )
+  const { foldersResults, filesResults } = await queryFileCabinet(suiteAppClient, query, extensionsToExclude)
 
   logLargeFolders(filesResults)
 

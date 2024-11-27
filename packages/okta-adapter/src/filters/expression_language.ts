@@ -222,7 +222,7 @@ const filter: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
-        .forEach(async instance => {
+        .forEach(instance => {
           const { pathToContainer, fieldName, isIdentityEngine } = TYPE_TO_DEF[instance.elemID.typeName]
           const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
           const expressionValue = container?.[fieldName]
@@ -266,7 +266,7 @@ const filter: FilterCreator = ({ config }) => {
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
-        .forEach(async instance => {
+        .forEach(instance => {
           const { pathToContainer, fieldName } = TYPE_TO_DEF[instance.elemID.typeName]
           const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
           const expressionValue = container?.[fieldName]

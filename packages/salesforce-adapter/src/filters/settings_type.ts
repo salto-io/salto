@@ -9,14 +9,9 @@ import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapte
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterResult, FilterCreator } from '../filter'
-import {
-  createMetadataTypeElements,
-  apiName,
-  createMetaType,
-  metadataAnnotationTypes,
-} from '../transformers/transformer'
+import { createMetadataTypeElements, apiName, StandardSettingsMetaType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { SETTINGS_METADATA_TYPE, STANDARD_SETTINGS_META_TYPE } from '../constants'
+import { SETTINGS_DIR_NAME, SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances } from '../fetch'
 import { listMetadataObjects } from './utils'
 
@@ -44,7 +39,7 @@ const createSettingsType = async (
       isSettings: true,
       annotations: {
         suffix: 'settings',
-        dirName: 'settings',
+        dirName: SETTINGS_DIR_NAME,
       },
       metaType,
     })
@@ -61,14 +56,13 @@ const getSettingsTypeName = (typeName: string): string => typeName.concat(SETTIN
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'settingsFilter',
-  remote: true,
   /**
    * Add all settings types and instances as filter.
    *
    * @param elements
    */
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    if (client === undefined) {
+    if (config.fetchProfile.isFeatureEnabled('retrieveSettings') || client === undefined) {
       return {}
     }
 
@@ -88,9 +82,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const objectTypes = elements.filter(isObjectType)
     await awu(objectTypes).forEach(async e => knownTypes.set(await apiName(e), e))
 
-    const metaType = config.fetchProfile.isFeatureEnabled('metaTypes')
-      ? createMetaType(STANDARD_SETTINGS_META_TYPE, metadataAnnotationTypes, 'Standard Settings')
-      : undefined
+    const metaType = config.fetchProfile.isFeatureEnabled('metaTypes') ? StandardSettingsMetaType : undefined
     const settingsTypes = (
       await Promise.all(
         settingsTypeInfos

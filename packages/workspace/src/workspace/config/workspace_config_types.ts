@@ -43,7 +43,6 @@ export type StateConfig = {
 
 export type WorkspaceConfig = {
   uid: string
-  name: string
   staleStateThresholdMinutes?: number
   envs: EnvConfig[]
   currentEnv: string

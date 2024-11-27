@@ -80,9 +80,10 @@ import {
   isElementIdMatchSelectors,
   updateElementsWithAlternativeAccount,
   Workspace,
+  flags,
 } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
-import { CORE_FLAGS, getCoreFlagBool } from './flags'
+import { CORE_FLAGS } from './flags'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
@@ -182,25 +183,26 @@ const findNestedElementPath = (
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange[]>
 const toChangesWithPath =
-  (accountElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]): ChangeTransformFunction =>
+  (accountElementByFullName: (id: ElemID) => Element[]): ChangeTransformFunction =>
   async change => {
     const changeID: ElemID = change.change.id
     if (isRemovalChange(change.change)) {
       return [change]
     }
 
-    if (!changeID.isTopLevel() && change.change.action === 'add') {
-      const path = findNestedElementPath(
-        changeID,
-        await accountElementByFullName(changeID.createTopLevelParentID().parent),
-      )
-      log.trace(
-        `addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`,
-      )
-      return path ? [_.merge({}, change, { change: { path } })] : [change]
+    if (!changeID.isTopLevel()) {
+      if (change.change.action === 'add') {
+        const path = findNestedElementPath(changeID, accountElementByFullName(changeID.createTopLevelParentID().parent))
+        log.trace(
+          `addition change for nested ${changeID.idType} with id ${changeID.getFullName()}, path found ${path?.join('/')}`,
+        )
+        return path ? [_.merge({}, change, { change: { path } })] : [change]
+      }
+      // This is a modification change on a nested ID, path is not needed
+      return [change]
     }
 
-    const originalElements = await accountElementByFullName(changeID)
+    const originalElements = accountElementByFullName(changeID)
     if (originalElements.length === 0) {
       log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
       return [change]
@@ -262,7 +264,7 @@ const autoMergeChange: ChangeTransformFunction = async change => {
     return [merged !== undefined ? toMergedChange(change, merged) : change]
   }
   if (_.isArray(current) && _.isArray(incoming) && isTypeOfOrUndefined(base, _.isArray)) {
-    if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+    if (flags.getSaltoFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
       log.debug('skipping list auto merge since the autoMergeListsDisabled core flag is true')
       return [change]
     }
@@ -305,7 +307,7 @@ const toListModificationChange = ({
   serviceChanges: types.NonEmptyArray<DetailedChangeWithBaseChange>
   pendingChanges: DetailedChangeWithBaseChange[]
 }): FetchChange | undefined => {
-  if (getCoreFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
+  if (flags.getSaltoFlagBool(CORE_FLAGS.autoMergeListsDisabled)) {
     log.debug('skip creating list modification change since the autoMergeListsDisabled core flag is true')
     return undefined
   }
@@ -913,7 +915,7 @@ export const calcFetchChanges = async ({
   const changes = await awu(fetchChanges)
     .flatMap(omitNoConflictCoreAnnotationsPendingChanges)
     .flatMap(autoMergeChange)
-    .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
+    .flatMap(toChangesWithPath(name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
   return { changes, serviceToStateChanges }
@@ -1477,7 +1479,7 @@ export const getFetchAdapterAndServicesSetup = async ({
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  const resolveTypes = !getCoreFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)
+  const resolveTypes = !flags.getSaltoFlagBool(CORE_FLAGS.skipResolveTypesInElementSource)
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchAccounts,
     await workspace.accountCredentials(fetchAccounts),

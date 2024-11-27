@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
-export type WorkspaceMetadataConfig = Pick<WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes' | 'state'>
+export type WorkspaceMetadataConfig = Pick<WorkspaceConfig, 'uid' | 'staleStateThresholdMinutes' | 'state'>
 export type EnvsConfig = Pick<WorkspaceConfig, 'envs'>
 export type UserDataConfig = Pick<WorkspaceConfig, 'currentEnv'>
 

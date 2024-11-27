@@ -8,6 +8,7 @@
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { InstanceElement, Element, StaticFile, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { naclCase } from '@salto-io/adapter-utils'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import JiraClient from '../../../src/client/client'
 import objectTypeIconFilter from '../../../src/filters/assets/object_type_icon'
@@ -43,7 +44,7 @@ describe('object type icon filter', () => {
   })
   describe('on fetch', () => {
     beforeEach(async () => {
-      objectTypeIconInstance = new InstanceElement('objectType1', objectTypeIconType, {
+      objectTypeIconInstance = new InstanceElement(naclCase('object_type:1'), objectTypeIconType, {
         name: 'objectTypeIconName',
         id: 12,
       })
@@ -78,7 +79,7 @@ describe('object type icon filter', () => {
         name: 'objectTypeIconName',
         id: 12,
         icon: new StaticFile({
-          filepath: 'jira/ObjectTypeIcon/objectTypeIconName.png',
+          filepath: 'jira/ObjectTypeIcon/object_type_1.uf.png',
           encoding: 'binary',
           content,
         }),

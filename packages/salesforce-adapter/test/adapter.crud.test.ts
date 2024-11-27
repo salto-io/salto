@@ -516,8 +516,12 @@ describe('SalesforceAdapter CRUD', () => {
           it('should deploy', () => {
             expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
-            expect(progressReporter.getReportedMessages()).toSatisfyAny(message =>
-              message.endsWith(ProgressReporterSuffix.QuickDeploy),
+            expect(progressReporter.getReportedMessages()).toSatisfyAny(
+              message =>
+                message.endsWith(ProgressReporterSuffix.QuickDeploy) &&
+                message.includes('Waiting on another deploy') &&
+                message.includes('Elapsed Time:') &&
+                message.includes('View deployments [in Salesforce](https://url.com/lightning/setup/DeployStatus/home)'),
             )
           })
         })

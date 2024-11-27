@@ -74,6 +74,11 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         },
       ],
     },
+    [naclCase('looped transition::From: any status::Circular')]: {
+      name: 'looped transition',
+      description: '',
+      type: 'GLOBAL',
+    },
     [naclCase('Create::From: none::Initial')]: {
       name: 'Create',
       description: '',

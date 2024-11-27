@@ -23,7 +23,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { createSchemeGuard, getParents, naclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -325,7 +325,7 @@ export const setContextOptions = async (
     option => option.optionId === undefined && option.parentValue === undefined,
   )
 
-  const fieldId = (await getParents(getChangeData(contextChange))[0].value).value.id
+  const fieldId = getParent(getChangeData(contextChange)).value.id
 
   const url = `/rest/api/3/field/${fieldId}/context/${getChangeData(contextChange).value.id}/option`
   await updateContextOptions({

@@ -16,6 +16,8 @@ import {
   deploy,
   summarizeDeployChanges,
   GroupProperties,
+  DeploySummaryResult,
+  DetailedChangeId,
 } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
@@ -36,14 +38,14 @@ import {
   formatActionInProgress,
   formatActionStart,
   deployPhaseEpilogue,
-  formatStateRecencies,
   formatDeployActions,
   formatGroups,
   deployErrorsOutput,
+  formatDeploymentSummary,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
-import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
+import { updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
@@ -77,6 +79,23 @@ const printStartDeploy = async (output: CliOutput, executingDeploy: boolean, che
   } else {
     outputLine(cancelDeployOutput(checkOnly), output)
   }
+}
+
+const getReversedSummarizeDeployChanges = (
+  summary: Record<DetailedChangeId, DeploySummaryResult>,
+): Record<DeploySummaryResult, DetailedChangeId[]> => {
+  const resultToElemId: Record<DeploySummaryResult, DetailedChangeId[]> = {
+    success: [],
+    failure: [],
+    'partial-success': [],
+  }
+
+  Object.entries(summary).forEach(([changeId, resultValue]) => {
+    if (resultToElemId[resultValue]) {
+      resultToElemId[resultValue].push(changeId)
+    }
+  })
+  return resultToElemId
 }
 
 export const shouldDeploy = async (actions: Plan, checkOnly: boolean): Promise<boolean> => {
@@ -232,19 +251,9 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const { force, dryRun, detailedPlan, accounts, checkOnly } = input
   await validateAndSetEnv(workspace, input, output)
   const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
-  const stateRecencies = await Promise.all(actualAccounts.map(account => workspace.getStateRecency(account)))
-  // Print state recencies
-  outputLine(formatStateRecencies(stateRecencies), output)
 
   const validWorkspace = await isValidWorkspaceForCommand({ workspace, cliOutput: output, spinnerCreator, force })
   if (!validWorkspace) {
-    return CliExitCode.AppError
-  }
-
-  // Validate state recencies
-  const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
-  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
-  if (!force && (await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output))) {
     return CliExitCode.AppError
   }
 
@@ -280,6 +289,10 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
   )
 
+  const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(summary))
+  if (!dryRun && formattedDeploymentSummary) {
+    outputLine(formattedDeploymentSummary, output)
+  }
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,
     isPreDeploy: false,

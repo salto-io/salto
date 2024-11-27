@@ -66,3 +66,16 @@ export const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
     delete selfService.self_service_icon
   }
 }
+
+/*
+ * Remove security.password from self_service object as its a secret
+ */
+export const removeSelfServiceSecurityPassword = (value: Record<string, unknown>): void => {
+  const { self_service: selfService } = value
+  if (values.isPlainRecord(selfService)) {
+    const { security } = selfService
+    if (values.isPlainRecord(security)) {
+      delete security.password
+    }
+  }
+}

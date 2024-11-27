@@ -18,6 +18,7 @@ import { getChangeGroupIds } from '../src/group_change'
 import {
   FIELD_CONFIGURATION_ITEM_TYPE_NAME,
   FIELD_CONFIGURATION_TYPE_NAME,
+  ISSUE_LINK_TYPE_NAME,
   JIRA,
   OBJECT_TYPE_ATTRIBUTE_TYPE,
   QUEUE_TYPE,
@@ -57,6 +58,12 @@ describe('group change', () => {
   let fieldContextOptionInstance3: InstanceElement
   let fieldContextInstance1: InstanceElement
   let fieldContextInstance2: InstanceElement
+
+  let issueLinkTypeObjectType: ObjectType
+  let issueLinkTypeInstance1: InstanceElement
+  let issueLinkTypeInstance2: InstanceElement
+  let issueLinkTypeInstance3: InstanceElement
+  let issueLinkTypeInstance4: InstanceElement
 
   beforeEach(() => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
@@ -149,6 +156,14 @@ describe('group change', () => {
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(fieldContextInstance2.elemID, fieldContextInstance2)],
       },
     )
+
+    issueLinkTypeObjectType = new ObjectType({
+      elemID: new ElemID(JIRA, ISSUE_LINK_TYPE_NAME),
+    })
+    issueLinkTypeInstance1 = new InstanceElement('issueLinkType1', issueLinkTypeObjectType)
+    issueLinkTypeInstance2 = new InstanceElement('issueLinkType2', issueLinkTypeObjectType)
+    issueLinkTypeInstance3 = new InstanceElement('issueLinkType3', issueLinkTypeObjectType)
+    issueLinkTypeInstance4 = new InstanceElement('issueLinkType4', issueLinkTypeObjectType)
   })
 
   it('should group workflow modifications', async () => {
@@ -177,6 +192,49 @@ describe('group change', () => {
     expect(changeGroupIds.get(workflowInstance1.elemID.getFullName())).toBe('Workflow Modifications')
     expect(changeGroupIds.get(workflowInstance2.elemID.getFullName())).toBe('Workflow Modifications')
     expect(changeGroupIds.get(workflowInstance3.elemID.getFullName())).toBe(workflowInstance3.elemID.getFullName())
+  })
+
+  it('should group issue link type removals', async () => {
+    const changeGroupIds = (
+      await getChangeGroupIds(
+        new Map<string, Change>([
+          [
+            issueLinkTypeInstance1.elemID.getFullName(),
+            toChange({
+              before: issueLinkTypeInstance1,
+            }),
+          ],
+          [
+            issueLinkTypeInstance2.elemID.getFullName(),
+            toChange({
+              before: issueLinkTypeInstance2,
+            }),
+          ],
+          [
+            issueLinkTypeInstance3.elemID.getFullName(),
+            toChange({
+              before: issueLinkTypeInstance3,
+              after: issueLinkTypeInstance3,
+            }),
+          ],
+          [
+            issueLinkTypeInstance4.elemID.getFullName(),
+            toChange({
+              after: issueLinkTypeInstance4,
+            }),
+          ],
+        ]),
+      )
+    ).changeGroupIdMap
+
+    expect(changeGroupIds.get(issueLinkTypeInstance1.elemID.getFullName())).toBe('IssueLinkType Removals')
+    expect(changeGroupIds.get(issueLinkTypeInstance2.elemID.getFullName())).toBe('IssueLinkType Removals')
+    expect(changeGroupIds.get(issueLinkTypeInstance3.elemID.getFullName())).toBe(
+      issueLinkTypeInstance3.elemID.getFullName(),
+    )
+    expect(changeGroupIds.get(issueLinkTypeInstance4.elemID.getFullName())).toBe(
+      issueLinkTypeInstance4.elemID.getFullName(),
+    )
   })
 
   it('should group security scheme levels', async () => {

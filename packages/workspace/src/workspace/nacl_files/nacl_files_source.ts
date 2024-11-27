@@ -61,6 +61,7 @@ import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 import { createParseResultCache, ParsedNaclFileCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
+import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../../flags'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -76,6 +77,7 @@ export const HASH_KEY = 'hash'
 
 const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
+const SOURCE_MAP_READ_CONCURRENCY = 10
 // TODO: this should moved into cache implementation
 const CACHE_READ_CONCURRENCY = 100
 const UPDATE_INDEX_CONCURRENCY = 100
@@ -136,6 +138,21 @@ export const toPathHint = (filename: string): string[] => {
   const dirPathSplitted = dirName === '.' ? [] : dirName.split(osPath.sep)
   return [...dirPathSplitted, osPath.basename(filename, osPath.extname(filename))]
 }
+
+// not returning `Record<string, ElemID[]>` on purpose, so we'll run `ElemID.fromFullName(..)`
+// only when the element ids of a specific filename are requested
+const createFilenameToElementIDFullNamesMapping = (
+  currentState: NaclFilesState,
+  naclFilesByName: Record<string, ParsedNaclFile>,
+): Promise<Record<string, { path: string }[]>> =>
+  log.timeDebug(
+    () =>
+      awu(currentState.elementsIndex.entries())
+        .flatMap(({ key, value }) => value.map(filename => ({ path: key, filename })))
+        .filter(({ filename }) => naclFilesByName[filename] !== undefined)
+        .groupBy(({ filename }) => filename),
+    'create filename to element id full names mapping from elements index',
+  )
 
 export const getElementReferenced = async (
   element: Element,
@@ -261,15 +278,9 @@ type ParseNaclFilesArgs = {
   createSourceMap?: boolean
 }
 
-const parseNaclFiles = async ({
-  naclFiles,
-  functions,
-  createSourceMap = false,
-}: ParseNaclFilesArgs): Promise<ParsedNaclFile[]> =>
+const parseNaclFiles = async ({ naclFiles, functions }: ParseNaclFilesArgs): Promise<ParsedNaclFile[]> =>
   withLimitedConcurrency(
-    naclFiles.map(
-      naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions, createSourceMap })),
-    ),
+    naclFiles.map(naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions }))),
     PARSE_CONCURRENCY,
   )
 
@@ -362,7 +373,24 @@ const buildNaclFilesState = async ({
   const staticFilesIndexDeletions: Record<string, Set<string>> = {}
   // We need to iterate over this twice - so no point in making this iterable :/
   const relevantElementIDs: ElemID[] = []
-  const newElementsToMerge: AsyncIterable<Element>[] = []
+  const newElementsToMerge: Element[] = []
+
+  const shouldCreateFilenameToElementIDsMapping = getSaltoFlagBool(WORKSPACE_FLAGS.createFilenamesToElementIdsMapping)
+  log.debug('shouldCreateFilenameToElementIDsMapping is %s', shouldCreateFilenameToElementIDsMapping)
+
+  const filenameToElementIDFullNames =
+    !_.isEmpty(newParsed) && shouldCreateFilenameToElementIDsMapping
+      ? await createFilenameToElementIDFullNamesMapping(currentState, newParsed)
+      : {}
+
+  const getElementIDsFromNaclFile = async (naclFile: ParsedNaclFile): Promise<ElemID[]> => {
+    if (shouldCreateFilenameToElementIDsMapping) {
+      const elementIDFullnamesInNaclFile = filenameToElementIDFullNames[naclFile.filename] ?? []
+      return elementIDFullnamesInNaclFile.map(({ path }) => ElemID.fromFullName(path))
+    }
+    const elementsInNaclFile = (await naclFile.elements()) ?? []
+    return elementsInNaclFile.map(element => element.elemID)
+  }
 
   const updateIndex = async <T>(
     index: RemoteMap<T[]>,
@@ -457,21 +485,16 @@ const buildNaclFilesState = async ({
         )
 
         const currentNaclFileElements = (await naclFile.elements()) ?? []
-        const oldNaclFileElements = (await parsedFile?.elements()) ?? []
+        const oldNaclFileElementIDs = parsedFile !== undefined ? await getElementIDsFromNaclFile(parsedFile) : []
         updateIndexOfFile(
           elementsIndexAdditions,
           elementsIndexDeletions,
           naclFile.filename,
-          oldNaclFileElements.map(e => e.elemID.getFullName()),
+          oldNaclFileElementIDs.map(elemID => elemID.getFullName()),
           currentNaclFileElements.map(e => e.elemID.getFullName()),
         )
-        relevantElementIDs.push(
-          ...currentNaclFileElements.map(e => e.elemID),
-          ...oldNaclFileElements.map(e => e.elemID),
-        )
-        if (!_.isEmpty(currentNaclFileElements)) {
-          newElementsToMerge.push(awu(currentNaclFileElements as Element[]))
-        }
+        relevantElementIDs.push(...currentNaclFileElements.map(e => e.elemID), ...oldNaclFileElementIDs)
+        currentNaclFileElements.forEach(element => newElementsToMerge.push(element))
         // This is temp and should be removed when we change the init flow
         // This happens now cause we get here with ParsedNaclFiles that originate from the cache
         if (values.isDefined(naclFile.buffer)) {
@@ -495,13 +518,13 @@ const buildNaclFilesState = async ({
           referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName] ?? new Set<string>()
           referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        const oldNaclFileElements = (await oldNaclFile.elements()) ?? []
-        oldNaclFileElements.forEach(element => {
-          const elementFullName = element.elemID.getFullName()
+        const oldNaclFileElementIDs = await getElementIDsFromNaclFile(oldNaclFile)
+        oldNaclFileElementIDs.forEach(elemID => {
+          const elementFullName = elemID.getFullName()
           elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName] ?? new Set<string>()
           elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
         })
-        relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
+        relevantElementIDs.push(...oldNaclFileElementIDs)
         toDelete.push(naclFile.filename)
         log.trace('Finished updating indexes of %s', naclFile.filename)
       })
@@ -525,9 +548,9 @@ const buildNaclFilesState = async ({
         ),
       )
     })
-    .filter(values.isDefined) as AsyncIterable<Element>
+    .filter(values.isDefined)
   const changes = (await buildNewMergedElementsAndErrors({
-    afterElements: awu(newElementsToMerge).flat().concat(unmodifiedFragments),
+    afterElements: awu(newElementsToMerge).concat(unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
@@ -834,25 +857,18 @@ const buildNaclFilesSource = (
     await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
   }
 
-  const groupChangesByFilename = async (
+  const getChangeLocationsForFiles = async (
     changes: DetailedChange[],
-  ): Promise<Record<string, DetailedChangeWithSource[]>> => {
-    const naclFiles = _.uniq(
-      await awu(changes)
-        .map(change => change.id)
-        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
-        .toArray(),
-    )
-
+    naclFiles: string[],
+  ): Promise<DetailedChangeWithSource[]> => {
     const { parsedNaclFiles } = await getState()
-    log.debug('Nacl source %s getting source maps for %d nacl files', sourceName, naclFiles.length)
     const changedFileSourceMaps = (
       await withLimitedConcurrency(
         naclFiles.map(naclFile => async () => {
           const parsedNaclFile = await parsedNaclFiles.get(naclFile)
           return values.isDefined(parsedNaclFile) ? getSourceMap(parsedNaclFile.filename, false) : undefined
         }),
-        CACHE_READ_CONCURRENCY,
+        SOURCE_MAP_READ_CONCURRENCY,
       )
     ).filter(values.isDefined)
 
@@ -860,16 +876,94 @@ const buildNaclFilesSource = (
       acc.merge(sourceMap)
       return acc
     }, new parser.SourceMap())
+
     const changesWithLocation = getChangesToUpdate(changes, mergedSourceMap).flatMap(change =>
       getChangeLocations(change, mergedSourceMap),
     )
 
-    return _.groupBy(
-      changesWithLocation,
-      // Group changes file, we use lower case in order to support case insensitive file systems
-      change => change.location.filename.toLowerCase(),
-    )
+    return changesWithLocation
   }
+
+  const getChangesWithLocationsSplitSourceMap = async (
+    changes: DetailedChange[],
+  ): Promise<DetailedChangeWithSource[]> => {
+    // Create separate source maps for groups of files and then find the location for each group of files separately
+    const currentState = await getState()
+
+    const changesByTopLevel = _.groupBy(changes, change => change.id.createTopLevelParentID().parent.getFullName())
+    // Note - by using the top level ID, we might read files that are not strictly needed
+    // e.g - if the element is split between two files, but our change is in one of them, we will parse the other file as well.
+    const potentialFilesByElementID = _.zipObject(
+      Object.keys(changesByTopLevel),
+      await currentState.elementsIndex.getMany(Object.keys(changesByTopLevel)),
+    )
+    // Note - this is not ideal grouping, in theory this grouping could cause us to read the same file(s) multiple times.
+    // This grouping should be good enough under the assumption that in most cases elements are either:
+    // 1. in a single file that contains only one element (most elements)
+    // 2. split to multiple files that all contain only one element (less common, mostly used for very large elements)
+    // 3. in a single file that contains other elements as well (less common, mostly used for large numbers of very small elements)
+
+    // Examples of a case where we would read the same file twice:
+    // - Element A exists in files 1,2,3
+    // - Element B exists in file 1
+    // With the current logic, this will cause us to read file 1 twice, but this should not affect the correctness of the result.
+    // Note that we do not cache the source maps on purpose - they consume too much memory.
+    const changesByFiles = _.groupBy(
+      Object.entries(changesByTopLevel).map(([id, elementChanges]) => ({
+        elementChanges,
+        potentialFiles: potentialFilesByElementID[id],
+      })),
+      ({ potentialFiles }) => potentialFiles?.join(','),
+    )
+    log.debug(
+      'Nacl source %s getting source maps for %d nacl file groups',
+      sourceName,
+      Object.keys(changesByFiles).length,
+    )
+    const changesWithLocationsByFiles = await withLimitedConcurrency(
+      Object.values(changesByFiles).map(
+        changeGroups => () =>
+          getChangeLocationsForFiles(
+            changeGroups.flatMap(group => group.elementChanges),
+            // this is grouped by potential files, so all groups have the same list here
+            changeGroups[0].potentialFiles ?? [],
+          ),
+      ),
+      SOURCE_MAP_READ_CONCURRENCY,
+    )
+    return changesWithLocationsByFiles.flat()
+  }
+
+  const getChangesWithLocationsUnifiedSourceMap = async (
+    changes: DetailedChange[],
+  ): Promise<DetailedChangeWithSource[]> => {
+    // Create a unified source map for all files and find the locations for all changes together
+    const naclFiles = _.uniq(
+      await awu(changes)
+        .map(change => change.id)
+        .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
+        .toArray(),
+    )
+    log.debug('Nacl source %s getting source maps for %d nacl files', sourceName, naclFiles.length)
+    return getChangeLocationsForFiles(changes, naclFiles)
+  }
+
+  const groupChangesByFilename = (changes: DetailedChange[]): Promise<Record<string, DetailedChangeWithSource[]>> =>
+    log.timeDebug(
+      async () => {
+        const changesWithLocation = getSaltoFlagBool(WORKSPACE_FLAGS.useSplitSourceMapInUpdate)
+          ? await getChangesWithLocationsSplitSourceMap(changes)
+          : await getChangesWithLocationsUnifiedSourceMap(changes)
+
+        return _.groupBy(
+          changesWithLocation,
+          // Group changes file, we use lower case in order to support case insensitive file systems
+          change => change.location.filename.toLowerCase(),
+        )
+      },
+      'groupChangesByFilename for %d changes',
+      changes.length,
+    )
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
@@ -1159,23 +1253,5 @@ export const naclFilesSource = async (
   staticFilesSource: StaticFilesSource,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
-  parsedFiles?: ParsedNaclFile[],
-): Promise<NaclFilesSource> => {
-  const state =
-    parsedFiles !== undefined
-      ? (
-          await buildNaclFilesState({
-            newNaclFiles: parsedFiles,
-            currentState: await createNaclFilesState(remoteMapCreator, staticFilesSource, sourceName, persistent),
-          })
-        ).state
-      : undefined
-  return buildNaclFilesSource(
-    sourceName,
-    naclFilesStore,
-    staticFilesSource,
-    remoteMapCreator,
-    persistent,
-    state !== undefined ? Promise.resolve(state) : undefined,
-  )
-}
+): Promise<NaclFilesSource> =>
+  buildNaclFilesSource(sourceName, naclFilesStore, staticFilesSource, remoteMapCreator, persistent)

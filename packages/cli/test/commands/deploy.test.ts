@@ -5,23 +5,17 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import semver from 'semver'
-import moment from 'moment'
 import { DeployResult, GroupProperties } from '@salto-io/core'
 import * as saltoCoreModule from '@salto-io/core'
-import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
-import { Artifact } from '@salto-io/adapter-api'
+import { Artifact, Change } from '@salto-io/adapter-api'
+import chalk from 'chalk'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
-import { version as currentVersion } from '../../src/generated/version.json'
-import * as workspaceModule from '../../src/workspace/workspace'
-
-const { InMemoryRemoteMap } = remoteMap
-const { createInMemoryElementSource } = elementSource
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -43,6 +37,11 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
   deploy: jest.fn(),
   preview: jest.fn().mockImplementation((_workspace: Workspace, _accounts: string[]) => mockPreview()),
+  summarizeDeployChanges: jest
+    .fn()
+    .mockImplementation((requested: Change[], applied: Change[]) =>
+      jest.requireActual<typeof saltoCoreModule>('@salto-io/core').summarizeDeployChanges(requested, applied),
+    ),
 }))
 const mockedCore = jest.mocked(saltoCoreModule)
 
@@ -70,12 +69,6 @@ describe('deploy command', () => {
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
     workspace = mocks.mockWorkspace({})
-    workspace.getStateRecency.mockImplementation(async accountName => ({
-      serviceName: accountName,
-      accountName,
-      status: 'Valid',
-      date: new Date(),
-    }))
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
   })
@@ -505,161 +498,115 @@ describe('deploy command', () => {
       expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
     })
   })
-  describe('recommend fetch flow', () => {
-    const mockState = (data: Partial<state.StateData>, saltoVersion?: string): state.State => {
-      const metaData = saltoVersion
-        ? ([{ key: 'version', value: saltoVersion }] as { key: state.StateMetadataKey; value: string }[])
-        : []
-      const saltoMetadata = new InMemoryRemoteMap<string, state.StateMetadataKey>(metaData)
-      return state.buildInMemState(async () => ({
-        elements: createInMemoryElementSource(),
-        pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-        topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-        accountsUpdateDate: data.accountsUpdateDate ?? new InMemoryRemoteMap(),
-        saltoMetadata,
-        staticFilesSource: mocks.mockStateStaticFilesSource(),
-      }))
-    }
-    const inputOptions = {
-      force: false,
-      dryRun: false,
-      detailedPlan: false,
-      checkOnly: false,
-    }
-    describe('when state salto version does not exist', () => {
+  describe('Post deployment summary', () => {
+    describe('when all elements deployed successfully', () => {
       beforeEach(async () => {
-        mockShouldCancel.mockResolvedValue(true)
-        workspace.state.mockReturnValue(mockState({}))
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          a: 'success',
+          b: 'success',
+        })
         await action({
-          ...cliCommandArgs,
-          input: inputOptions,
-          workspace,
-        })
-      })
-      it('should recommend cancel', () => {
-        expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
-      })
-    })
-    describe('when state version is newer than the current version', () => {
-      beforeEach(async () => {
-        mockShouldCancel.mockResolvedValue(true)
-        workspace.state.mockReturnValue(mockState({}, semver.inc(currentVersion, 'patch') as string))
-        await action({
-          ...cliCommandArgs,
-          input: inputOptions,
-          workspace,
-        })
-      })
-      it('should recommend cancel', () => {
-        expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
-      })
-    })
-    describe('when state version is the current version', () => {
-      beforeEach(async () => {
-        // answer false so we do not continue with deploy
-        mockGetUserBooleanInput.mockResolvedValue(false)
-
-        workspace.state.mockReturnValue(mockState({}, currentVersion))
-      })
-      describe('when all accounts are valid', () => {
-        beforeEach(async () => {
-          await action({
-            ...cliCommandArgs,
-            input: inputOptions,
-            workspace,
-          })
-        })
-        it('should not recommend cancel', () => {
-          expect(callbacks.shouldCancelCommand).not.toHaveBeenCalled()
-        })
-      })
-      describe('when some accounts were never fetched', () => {
-        beforeEach(async () => {
-          workspace.getStateRecency.mockImplementationOnce(async accountName => ({
-            serviceName: accountName,
-            accountName,
-            status: 'Nonexistent',
-            date: undefined,
-          }))
-          await action({
-            ...cliCommandArgs,
-            input: inputOptions,
-            workspace,
-          })
-        })
-        it('should recommend cancel', () => {
-          expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
-        })
-      })
-      describe('when some services are old', () => {
-        beforeEach(async () => {
-          workspace.getStateRecency.mockImplementationOnce(async accountName => ({
-            serviceName: accountName,
-            accountName,
-            status: 'Old',
-            date: moment(new Date()).subtract(1, 'month').toDate(),
-          }))
-          await action({
-            ...cliCommandArgs,
-            input: inputOptions,
-            workspace,
-          })
-        })
-        it('should recommend cancel', () => {
-          expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
-        })
-      })
-    })
-    describe('when state version is older than the current version by more than one patch', () => {
-      const decreaseVersion = (version: semver.SemVer): semver.SemVer => {
-        const prev = new semver.SemVer(version)
-        if (prev.patch > 1) {
-          prev.patch -= 2
-        } else if (prev.minor > 0) {
-          prev.minor -= 1
-        } else if (prev.major > 0) {
-          prev.major -= 1
-        } else {
-          throw new Error(`Cannot decrease version ${version.format()}`)
-        }
-        return prev
-      }
-      beforeEach(async () => {
-        mockShouldCancel.mockResolvedValue(true)
-        const prevVersion = decreaseVersion(semver.parse(currentVersion) as semver.SemVer)
-
-        workspace.state.mockReturnValue(mockState({}, prevVersion.format()))
-        await action({
-          ...cliCommandArgs,
-          input: inputOptions,
-          workspace,
-        })
-      })
-      it('should recommend cancel', () => {
-        expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
-      })
-    })
-    describe('when the user provides the checkOnly option', () => {
-      let result: number
-      let updateWorkspaceSpy: jest.SpyInstance
-      beforeEach(async () => {
-        updateWorkspaceSpy = jest.spyOn(workspaceModule, 'updateWorkspace')
-        mockGetUserBooleanInput.mockResolvedValueOnce(true)
-        result = await action({
           ...cliCommandArgs,
           input: {
             force: false,
             dryRun: false,
-            detailedPlan: false,
-            checkOnly: true,
+            detailedPlan: true,
+            checkOnly: false,
             accounts,
           },
           workspace,
         })
       })
-      it('should not flush workspace', () => {
-        expect(result).toBe(0)
-        expect(updateWorkspaceSpy).not.toHaveBeenCalled()
+      it('should not print legend or instances', async () => {
+        expect(output.stdout.content).not.toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+        expect(output.stdout.content).not.toContain(chalk.green('S'))
+        expect(output.stdout.content).not.toContain(chalk.yellow('P'))
+        expect(output.stdout.content).not.toContain(chalk.red('F'))
+      })
+      it('should print headline and success message', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED)
+      })
+    })
+    describe('when all elements failed deployment', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          instance_test: 'failure',
+          test_instance: 'failure',
+        })
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all failed elements as failed', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.ALL_DEPLOYMENT_ELEMENTS_FAILED)
+      })
+      it('should not print elements', async () => {
+        expect(output.stdout.content).not.toContain(chalk.green('S'))
+        expect(output.stdout.content).not.toContain(chalk.yellow('P'))
+        expect(output.stdout.content).not.toContain(`${chalk.red('F')} instance_test`)
+        expect(output.stdout.content).not.toContain(`${chalk.red('F')} test_instance`)
+      })
+    })
+    describe('when deployment is partially successful', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          instance_test: 'failure',
+          test_instance: 'success',
+          tester_instance: 'partial-success',
+        })
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all the elements and their deployment status', async () => {
+        expect(output.stdout.content).toContain(`${chalk.red('F')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.green('S')} test_instance`)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} tester_instance`)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+      })
+    })
+    describe('when all elements are partially successful', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          instance_test: 'partial-success',
+          test_instance: 'partial-success',
+        })
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all elements as partially successful', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} test_instance`)
       })
     })
   })

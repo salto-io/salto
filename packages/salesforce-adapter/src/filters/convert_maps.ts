@@ -27,9 +27,18 @@ import {
   getDeepInnerType,
   isObjectType,
   getField,
+  isFieldChange,
+  ReferenceExpression,
+  TypeElement,
+  ElemID,
+  isObjectTypeChange,
+  BuiltinTypes,
+  isPrimitiveType,
+  isReferenceExpression,
+  isElement,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { FilterCreator } from '../filter'
@@ -45,6 +54,10 @@ import {
   INSTANCE_FULL_NAME_FIELD,
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
+import { GLOBAL_VALUE_SET } from './global_value_sets'
+import { STANDARD_VALUE_SET } from './standard_value_sets'
+import { FetchProfile } from '../types'
+import { apiNameSync, metadataTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -52,7 +65,16 @@ const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
 const log = logger(module)
 
+type ReferenceExpressionToElement = ReferenceExpression & {
+  value: Element
+}
+
+const isResolvedReferenceExpressionToElement = (val: unknown): val is ReferenceExpressionToElement =>
+  isReferenceExpression(val) && isElement(val.value)
+
 type MapKeyFunc = (value: Values) => string
+type MapperInput = string | ReferenceExpressionToElement
+type MapperFunc = (val: MapperInput) => string[]
 type MapDef = {
   // the name of the field whose value should be used to generate the map key
   key: string
@@ -61,24 +83,52 @@ type MapDef = {
   // use lists as map values, in order to allow multiple values under the same map key
   mapToList?: boolean
   // with which mapper should we parse the key
-  mapper?: (string: string) => string[]
+  mapper?: MapperFunc
+  // keep a separate list of references for each value to preserve the order
+  // Note: this is only supported for one-level maps (nested maps are not supported)
+  maintainOrder?: boolean
 }
 
-/**
- * Convert a string value into the map index keys.
- * Note: Reference expressions are not supported yet (the resolved value is not populated in fetch)
- * so this filter has to run before any filter adding references on the objects with the specified
- * metadata types (e.g Profile).
- */
-export const defaultMapper = (val: string): string[] => val.split(API_NAME_SEPARATOR).map(v => naclCase(v))
+export const ORDERED_MAP_VALUES_FIELD = 'values'
+export const ORDERED_MAP_ORDER_FIELD = 'order'
+
+export const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
+  new ObjectType({
+    elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
+    fields: {
+      [ORDERED_MAP_VALUES_FIELD]: {
+        refType: new MapType(innerType),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+      [ORDERED_MAP_ORDER_FIELD]: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      },
+    },
+  })
+
+const stringifyMapperInput = (mapperInput: MapperInput): string =>
+  _.isString(mapperInput) ? mapperInput : apiNameSync(mapperInput.value) ?? ''
+
+const isMapperInput = (val: unknown): val is MapperInput =>
+  _.isString(val) || isResolvedReferenceExpressionToElement(val)
+
+export const defaultMapper: MapperFunc = val =>
+  stringifyMapperInput(val)
+    .split(API_NAME_SEPARATOR)
+    .map(v => naclCase(v))
 
 /**
  * Convert a string value of a file path to the map index key.
  * In this case, we want to use the last part of the path as the key, and it's
  * unknown how many levels the path has. If there are less than two levels, take only the last.
  */
-const filePathMapper = (val: string): string[] => {
-  const splitPath = val.split('/')
+const filePathMapper = (val: MapperInput): string[] => {
+  const splitPath = stringifyMapperInput(val).split('/')
   if (splitPath.length >= 3) {
     return [naclCase(splitPath.slice(2).join('/'))]
   }
@@ -136,7 +186,23 @@ const SHARING_RULES_MAP_FIELD_DEF: Record<string, MapDef> = {
   sharingOwnerRules: { key: INSTANCE_FULL_NAME_FIELD },
 }
 
-export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
+const PICKLIST_MAP_FIELD_DEF: MapDef = {
+  key: 'fullName',
+  maintainOrder: true,
+  mapper: val => [naclCase(stringifyMapperInput(val))],
+}
+
+const GLOBAL_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
+  customValue: PICKLIST_MAP_FIELD_DEF,
+}
+
+const STANDARD_VALUE_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
+  standardValue: PICKLIST_MAP_FIELD_DEF,
+}
+
+export const getMetadataTypeToFieldToMapDef: (
+  fetchProfile: FetchProfile,
+) => Record<string, Record<string, MapDef>> = fetchProfile => ({
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
   [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
@@ -144,86 +210,168 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [MUTING_PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
   [SHARING_RULES_TYPE]: SHARING_RULES_MAP_FIELD_DEF,
-}
+  ...(fetchProfile.isFeatureEnabled('picklistsAsMaps')
+    ? {
+        [GLOBAL_VALUE_SET]: GLOBAL_VALUE_SET_MAP_FIELD_DEF,
+        [STANDARD_VALUE_SET]: STANDARD_VALUE_SET_MAP_FIELD_DEF,
+      }
+    : {}),
+})
+
+export const getAnnotationDefsByType: (
+  fetchProfile: FetchProfile,
+) => Record<string, Record<string, MapDef>> = fetchProfile => ({
+  ...(fetchProfile.isFeatureEnabled('picklistsAsMaps')
+    ? {
+        Picklist: {
+          valueSet: PICKLIST_MAP_FIELD_DEF,
+        },
+        MultiselectPicklist: {
+          valueSet: PICKLIST_MAP_FIELD_DEF,
+        },
+      }
+    : {}),
+})
+
+export const getElementValueOrAnnotations = (element: Element): Values =>
+  isInstanceElement(element) ? element.value : element.annotations
 
 /**
- * Convert the specified instance fields into maps.
+ * Convert the specified element fields into maps.
  * Choose between unique maps and lists based on each field's conversion definition. If a field
  * should use a unique map but fails due to conflicts, convert it to a list map, and include it
  * in the returned list so that it can be converted across the board.
  *
- * @param instance             The instance to modify
- * @param instanceMapFieldDef  The definitions of the fields to covert
+ * @param baseElement         The instance to modify
+ * @param mapFieldDef         The definitions of the fields to covert
+ * @param elementType         The type of the elements to convert
  * @returns                   The list of fields that were converted to non-unique due to duplicates
  */
-const convertArraysToMaps = (instance: InstanceElement, instanceMapFieldDef: Record<string, MapDef>): string[] => {
+const convertArraysToMaps = (
+  baseElement: Element,
+  mapFieldDef: Record<string, MapDef>,
+  elementType: string,
+): string[] => {
   // fields that were intended to be unique, but have multiple values under to the same map key
   const nonUniqueMapFields: string[] = []
 
   const convertField = (values: Values[], keyFunc: MapKeyFunc, useList: boolean, fieldName: string): Values => {
     if (!useList) {
-      const res = _.keyBy(values, item => keyFunc(item))
+      const res = _.keyBy(values, keyFunc)
       if (Object.keys(res).length === values.length) {
         return res
       }
       nonUniqueMapFields.push(fieldName)
     }
-    return _.groupBy(values, item => keyFunc(item))
+    return _.groupBy(values, keyFunc)
   }
 
-  Object.entries(instanceMapFieldDef)
-    .filter(([fieldName]) => _.get(instance.value, fieldName) !== undefined)
-    .forEach(([fieldName, mapDef]) => {
-      const mapper = mapDef.mapper ?? defaultMapper
-      if (mapDef.nested) {
-        const firstLevelGroups = _.groupBy(
-          makeArray(_.get(instance.value, fieldName)),
-          item => mapper(item[mapDef.key])[0],
-        )
-        _.set(
-          instance.value,
-          fieldName,
-          _.mapValues(firstLevelGroups, firstLevelValues =>
-            convertField(firstLevelValues, item => mapper(item[mapDef.key])[1], !!mapDef.mapToList, fieldName),
-          ),
-        )
-      } else {
-        _.set(
-          instance.value,
-          fieldName,
-          convertField(
-            makeArray(_.get(instance.value, fieldName)),
+  const elementsToConvert = []
+  if (isObjectType(baseElement)) {
+    Object.values(baseElement.fields)
+      .filter(field => field.refType.elemID.typeName === elementType)
+      .forEach(field => elementsToConvert.push(field))
+  } else {
+    elementsToConvert.push(baseElement)
+  }
+
+  elementsToConvert.forEach(element => {
+    Object.entries(mapFieldDef)
+      .filter(([fieldName]) => _.get(getElementValueOrAnnotations(element), fieldName) !== undefined)
+      .forEach(([fieldName, mapDef]) => {
+        const mapper = mapDef.mapper ?? defaultMapper
+        const isConvertibleValue = (item: Values): boolean => {
+          const result = _.isPlainObject(item) && isMapperInput(item[mapDef.key])
+          if (!result) {
+            log.error(
+              'Received non convertible value %s for Element %s',
+              inspectValue(item[mapDef.key]),
+              element.elemID.getFullName(),
+            )
+          }
+          return result
+        }
+        const elementValues = getElementValueOrAnnotations(element)
+        if (mapDef.nested) {
+          const firstLevelGroups = _.groupBy(
+            makeArray(_.get(elementValues, fieldName)).filter(isConvertibleValue),
+            item => mapper(item[mapDef.key])[0],
+          )
+          _.set(
+            elementValues,
+            fieldName,
+            _.mapValues(firstLevelGroups, firstLevelValues =>
+              convertField(
+                firstLevelValues.filter(isConvertibleValue),
+                item => mapper(item[mapDef.key])[1],
+                !!mapDef.mapToList,
+                fieldName,
+              ),
+            ),
+          )
+        } else if (mapDef.maintainOrder) {
+          const originalFieldValue = makeArray(_.get(elementValues, fieldName))
+          const convertedValues = convertField(
+            originalFieldValue.filter(isConvertibleValue),
             item => mapper(item[mapDef.key])[0],
             !!mapDef.mapToList,
             fieldName,
-          ),
-        )
-      }
-    })
+          )
+          _.set(elementValues, fieldName, {
+            [ORDERED_MAP_VALUES_FIELD]: convertedValues,
+            [ORDERED_MAP_ORDER_FIELD]: originalFieldValue
+              .filter(isConvertibleValue)
+              .map(item => mapper(item[mapDef.key])[0])
+              .map(
+                name =>
+                  new ReferenceExpression(
+                    element.elemID.createNestedID(fieldName, ORDERED_MAP_VALUES_FIELD, name),
+                    convertedValues[name],
+                  ),
+              ),
+          })
+        } else {
+          _.set(
+            elementValues,
+            fieldName,
+            convertField(
+              makeArray(_.get(elementValues, fieldName)).filter(isConvertibleValue),
+              item => mapper(item[mapDef.key])[0],
+              !!mapDef.mapToList,
+              fieldName,
+            ),
+          )
+        }
+      })
+  })
   return nonUniqueMapFields
 }
 
 /**
  * Make sure all values in the specified non-unique fields are arrays.
  *
- * @param instance             The instance instance to update
+ * @param element             The element to update
  * @param nonUniqueMapFields  The list of fields to convert to arrays
- * @param instanceMapFieldDef  The original field mapping definition
+ * @param mapFieldDef         The original field mapping definition
  */
 const convertValuesToMapArrays = (
-  instance: InstanceElement,
+  element: Element,
   nonUniqueMapFields: string[],
-  instanceMapFieldDef: Record<string, MapDef>,
+  mapFieldDef: Record<string, MapDef>,
 ): void => {
   nonUniqueMapFields.forEach(fieldName => {
-    if (instanceMapFieldDef[fieldName]?.nested) {
+    if (mapFieldDef[fieldName]?.nested) {
       _.set(
-        instance.value,
+        getElementValueOrAnnotations(element),
         fieldName,
-        _.mapValues(_.get(instance.value, fieldName), val => _.mapValues(val, makeArray)),
+        _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), val => _.mapValues(val, makeArray)),
       )
     } else {
-      _.set(instance.value, fieldName, _.mapValues(_.get(instance.value, fieldName), makeArray))
+      _.set(
+        getElementValueOrAnnotations(element),
+        fieldName,
+        _.mapValues(_.get(getElementValueOrAnnotations(element), fieldName), makeArray),
+      )
     }
   })
 }
@@ -236,11 +384,11 @@ const convertValuesToMapArrays = (
  * @param instanceMapFieldDef  The original field mapping definition
  */
 const updateFieldTypes = async (
-  instanceType: ObjectType,
+  instanceType: ObjectType | TypeElement,
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  Object.entries(instanceMapFieldDef).forEach(async ([fieldName, mapDef]) => {
+  await awu(Object.entries(instanceMapFieldDef)).forEach(async ([fieldName, mapDef]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {
       const fieldType = await field.getType()
@@ -252,6 +400,8 @@ const updateFieldTypes = async (
         }
         if (mapDef.nested) {
           field.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
+        } else if (mapDef.maintainOrder) {
+          field.refType = createRefToElmWithValue(createOrderedMapType(innerType))
         } else {
           field.refType = createRefToElmWithValue(new MapType(innerType))
         }
@@ -271,74 +421,131 @@ const updateFieldTypes = async (
   })
 }
 
-const convertInstanceFieldsToMaps = async (
-  instancesToConvert: InstanceElement[],
-  instanceMapFieldDef: Record<string, MapDef>,
+const updateAnnotationRefTypes = async (
+  typeElement: TypeElement,
+  nonUniqueMapFields: string[],
+  mapFieldDef: Record<string, MapDef>,
+): Promise<void> => {
+  await awu(Object.entries(mapFieldDef)).forEach(async ([fieldName, mapDef]) => {
+    const fieldType = _.get(typeElement.annotationRefTypes, fieldName).type
+    // navigate to the right field type
+    if (isDefined(fieldType) && !isMapType(fieldType)) {
+      let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
+      if (mapDef.mapToList || nonUniqueMapFields.includes(fieldName)) {
+        innerType = new ListType(innerType)
+      }
+      if (mapDef.nested) {
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(new MapType(new MapType(innerType)))
+      } else if (mapDef.maintainOrder) {
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(createOrderedMapType(innerType))
+      } else {
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(new MapType(innerType))
+      }
+
+      // make the key field required
+      const deepInnerType = await getDeepInnerType(innerType)
+      if (isObjectType(deepInnerType)) {
+        const keyFieldType = deepInnerType.fields[mapDef.key]
+        if (!keyFieldType) {
+          log.error('could not find key field %s for type %s', mapDef.key, fieldType.elemID.getFullName())
+          return
+        }
+        keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+      }
+    }
+  })
+}
+
+const convertElementFieldsToMaps = async (
+  elementsToConvert: Element[],
+  mapFieldDef: Record<string, MapDef>,
+  elementType: string,
 ): Promise<string[]> => {
   const nonUniqueMapFields = _.uniq(
-    instancesToConvert.flatMap(instance => {
-      const nonUniqueFields = convertArraysToMaps(instance, instanceMapFieldDef)
+    elementsToConvert.flatMap(element => {
+      const nonUniqueFields = convertArraysToMaps(element, mapFieldDef, elementType)
       if (nonUniqueFields.length > 0) {
-        log.info(`Instance ${instance.elemID.getFullName()} has non-unique map fields: ${nonUniqueFields}`)
+        log.info(`Instance ${element.elemID.getFullName()} has non-unique map fields: ${nonUniqueFields}`)
       }
       return nonUniqueFields
     }),
   )
   if (nonUniqueMapFields.length > 0) {
-    instancesToConvert.forEach(instance => {
-      convertValuesToMapArrays(instance, nonUniqueMapFields, instanceMapFieldDef)
+    elementsToConvert.forEach(element => {
+      convertValuesToMapArrays(element, nonUniqueMapFields, mapFieldDef)
     })
   }
   return nonUniqueMapFields
 }
 
 /**
- * Convert instance field values from maps back to arrays before deploy.
+ * Convert element field values from maps back to arrays before deploy.
  *
- * @param instanceChanges          The instance changes to deploy
- * @param instanceMapFieldDef      The definitions of the fields to covert
+ * @param changes          The changes to deploy
+ * @param mapFieldDef      The definitions of the fields to convert
+ * @param elementType      The type of the elements to convert
  */
 const convertFieldsBackToLists = async (
-  instanceChanges: ReadonlyArray<Change<InstanceElement>>,
-  instanceMapFieldDef: Record<string, MapDef>,
+  changes: ReadonlyArray<Change<Element>>,
+  mapFieldDef: Record<string, MapDef>,
+  elementType: string,
 ): Promise<void> => {
   const toVals = (values: Values): Values[] => Object.values(values).flat()
 
-  const backToArrays = (instance: InstanceElement): InstanceElement => {
-    Object.keys(instanceMapFieldDef)
-      .filter(fieldName => _.get(instance.value, fieldName) !== undefined)
-      .forEach(fieldName => {
-        if (Array.isArray(_.get(instance.value, fieldName))) {
-          // should not happen
-          return
-        }
+  const backToArrays = (baseElement: Element): Element => {
+    const elementsToConvert = []
+    if (isObjectType(baseElement)) {
+      Object.values(baseElement.fields)
+        .filter(field => field.refType.elemID.typeName === elementType)
+        .forEach(field => elementsToConvert.push(field))
+    } else {
+      elementsToConvert.push(baseElement)
+    }
+    elementsToConvert.forEach(element => {
+      Object.keys(mapFieldDef)
+        .filter(fieldPath => _.get(getElementValueOrAnnotations(element), fieldPath) !== undefined)
+        .forEach(fieldPath => {
+          const elementValues = getElementValueOrAnnotations(element)
+          if (Array.isArray(_.get(elementValues, fieldPath))) {
+            // should not happen
+            return
+          }
 
-        if (instanceMapFieldDef[fieldName].nested) {
-          // first convert the inner levels to arrays, then merge into one array
-          _.set(instance.value, fieldName, _.mapValues(_.get(instance.value, fieldName), toVals))
-        }
-        _.set(instance.value, fieldName, toVals(_.get(instance.value, fieldName)))
-      })
-    return instance
+          if (mapFieldDef[fieldPath].nested) {
+            // first convert the inner levels to arrays, then merge into one array
+            _.set(elementValues, fieldPath, _.mapValues(elementValues[fieldPath], toVals))
+          }
+          if (mapFieldDef[fieldPath].maintainOrder) {
+            // OrderedMap keeps the order in a list of references, so we just need to override the top-level OrderedMap
+            // with this list.
+            _.set(elementValues, fieldPath, elementValues[fieldPath][ORDERED_MAP_ORDER_FIELD])
+          } else {
+            _.set(elementValues, fieldPath, toVals(_.get(elementValues, fieldPath)))
+          }
+        })
+    })
+    return baseElement
   }
 
-  await awu(instanceChanges).forEach(instanceChange => applyFunctionToChangeData(instanceChange, backToArrays))
+  await awu(changes).forEach(change => applyFunctionToChangeData(change, backToArrays))
 }
 
 /**
- * Convert instance's field values from arrays back to maps after deploy.
+ * Convert an element's field values from arrays back to maps after deploy.
  *
- * @param instanceChanges  The instance changes to deploy
- * @param instanceMapFieldDef      The definitions of the fields to covert
+ * @param changes          The changes to deploy
+ * @param mapFieldDef      The definitions of the fields to covert
+ * @param elementType      The type of the elements to convert
  */
-const convertFieldsBackToMaps = (
-  instanceChanges: ReadonlyArray<Change<InstanceElement>>,
-  instanceMapFieldDef: Record<string, MapDef>,
-): void => {
-  instanceChanges.forEach(instanceChange =>
-    applyFunctionToChangeData(instanceChange, instance => {
-      convertArraysToMaps(instance, instanceMapFieldDef)
-      return instance
+const convertFieldsBackToMaps = async (
+  changes: ReadonlyArray<Change<Element>>,
+  mapFieldDef: Record<string, MapDef>,
+  elementType: string,
+): Promise<void> => {
+  await awu(changes).forEach(change =>
+    applyFunctionToChangeData(change, element => {
+      convertArraysToMaps(element, mapFieldDef, elementType)
+      return element
     }),
   )
 }
@@ -353,7 +560,7 @@ const convertFieldTypesBackToLists = async (
   instanceType: ObjectType,
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  Object.entries(instanceMapFieldDef).forEach(async ([fieldName]) => {
+  await awu(Object.entries(instanceMapFieldDef)).forEach(async ([fieldName]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {
       const fieldType = await field.getType()
@@ -379,51 +586,84 @@ export const getInstanceChanges = (
     .filter(async change => (await metadataType(getChangeData(change))) === targetMetadataType)
     .toArray()
 
-export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
-  const instances = elements.filter(isInstanceElement)
-  return awu(instances)
-    .filter(async e => (await metadataType(e)) === targetMetadataType)
-    .toArray()
+/** Get all changes that contain a specific field type.
+ *
+ * @return All changes that are either field changes of the specified type or object changes that contain fields of the
+ * specified type
+ */
+export const getChangesWithFieldType = (changes: ReadonlyArray<Change>, fieldType: string): Change[] => {
+  const fieldChanges: Change[] = changes
+    .filter(isFieldChange)
+    .filter(change => getChangeData(change).getTypeSync().elemID.typeName === fieldType)
+
+  const objectTypeChanges = changes
+    .filter(isObjectTypeChange)
+    .filter(change =>
+      Object.values(getChangeData(change).fields).some(field => field.refType.elemID.typeName === fieldType),
+    )
+
+  return fieldChanges.concat(objectTypeChanges)
 }
 
-export const findTypeToConvert = async (
-  elements: Element[],
-  targetMetadataType: string,
-): Promise<ObjectType | undefined> => {
+export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): InstanceElement[] => {
+  const instances = elements.filter(isInstanceElement)
+  return instances.filter(async e => metadataTypeSync(e) === targetMetadataType)
+}
+
+export const findTypeToConvert = (elements: Element[], targetMetadataType: string): ObjectType | undefined => {
   const types = elements.filter(isObjectType)
-  return (
-    await awu(types)
-      .filter(async e => (await metadataType(e)) === targetMetadataType)
-      .toArray()
-  )[0]
+  return types.filter(e => metadataTypeSync(e) === targetMetadataType)[0]
 }
 
 /**
- * Convert certain instances' fields into maps, so that they are easier to view,
+ * Convert certain elements' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
  */
 const filter: FilterCreator = ({ config }) => ({
   name: 'convertMapsFilter',
   onFetch: async (elements: Element[]) => {
+    const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
+    const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
+
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      if (targetMetadataType === SHARING_RULES_TYPE && !config.fetchProfile.isFeatureEnabled('sharingRulesMaps')) {
-        return
-      }
-      const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
-      const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
+      const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
+      const typeToConvert = findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       if (isDefined(typeToConvert)) {
         if (instancesToConvert.length === 0) {
           await updateFieldTypes(typeToConvert, [], mapFieldDef)
         } else {
-          const nonUniqueMapFields = await convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
+          const nonUniqueMapFields = await convertElementFieldsToMaps(
+            instancesToConvert,
+            mapFieldDef,
+            targetMetadataType,
+          )
           await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
         }
       }
     })
+
+    const fields = elements.filter(isObjectType).flatMap(obj => Object.values(obj.fields))
+    const primitiveTypesByName = _.keyBy(elements.filter(isPrimitiveType), e => e.elemID.name)
+    await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldTypeName, annotationToMapDef]) => {
+      const fieldType = primitiveTypesByName[fieldTypeName]
+      if (fieldType === undefined) {
+        log.warn('Cannot find PrimitiveType %s. Skipping converting Fields of this type to maps', fieldTypeName)
+        return
+      }
+      const fieldsToConvert = fields.filter(field => fieldType.elemID.isEqual(field.getTypeSync().elemID))
+      if (fieldsToConvert.length === 0) {
+        return
+      }
+      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef, fieldTypeName)
+      await updateAnnotationRefTypes(fieldType, nonUniqueMapFields, annotationToMapDef)
+    })
   },
 
   preDeploy: async changes => {
+    const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
+    const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
+
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
@@ -433,14 +673,26 @@ const filter: FilterCreator = ({ config }) => ({
       // since transformElement and salesforce do not require list fields to be defined as lists,
       // we only mark fields as lists of their map inner value is a list,
       // so that we can convert the object back correctly in onDeploy
-      await convertFieldsBackToLists(instanceChanges, mapFieldDef)
+      await convertFieldsBackToLists(instanceChanges, mapFieldDef, targetMetadataType)
 
       const instanceType = await getChangeData(instanceChanges[0]).getType()
       await convertFieldTypesBackToLists(instanceType, mapFieldDef)
     })
+
+    await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
+      const elementsWithFieldType = getChangesWithFieldType(changes, fieldType)
+      if (elementsWithFieldType.length === 0) {
+        return
+      }
+      const mapFieldDef = annotationDefsByType[fieldType]
+      await convertFieldsBackToLists(elementsWithFieldType, mapFieldDef, fieldType)
+    })
   },
 
   onDeploy: async changes => {
+    const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
+    const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
+
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
@@ -448,7 +700,7 @@ const filter: FilterCreator = ({ config }) => ({
       }
 
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      convertFieldsBackToMaps(instanceChanges, mapFieldDef)
+      await convertFieldsBackToMaps(instanceChanges, mapFieldDef, targetMetadataType)
 
       const instanceType = await getChangeData(instanceChanges[0]).getType()
       // after preDeploy, the fields with lists are exactly the ones that should be converted
@@ -457,6 +709,15 @@ const filter: FilterCreator = ({ config }) => ({
         .filter(async fieldName => isListType(await instanceType.fields[fieldName].getType()))
         .toArray()
       await updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
+    })
+
+    await awu(Object.keys(annotationDefsByType)).forEach(async fieldType => {
+      const fieldsChanges = getChangesWithFieldType(changes, fieldType)
+      if (fieldsChanges.length === 0) {
+        return
+      }
+      const mapFieldDef = annotationDefsByType[fieldType]
+      await convertFieldsBackToMaps(fieldsChanges, mapFieldDef, fieldType)
     })
   },
 })

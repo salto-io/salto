@@ -190,7 +190,7 @@ const unknownUserInInstanceError = ({ elemID, field, user }: UserRef): ChangeErr
   elemID,
   severity: 'Error',
   message: 'User does not exist',
-  detailedMessage: `The field ${field} in '${elemID.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment`,
+  detailedMessage: `The field ${field} in '${elemID.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment. For more information, see: https://help.salto.io/en/articles/9759691-how-to-deploy-workflow-outbound-messages`,
 })
 
 const unknownUserInCustomFieldAnnotationError = ({ elemID, user }: UserRef): ChangeError => ({

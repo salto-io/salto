@@ -31,7 +31,6 @@ import { INTERNAL_ID } from '../src/constants'
 const DEFAULT_OPTIONS = {
   withSuiteApp: false,
   warnStaleData: false,
-  validate: false,
   additionalDependencies: {
     include: { features: [], objects: [], files: [] },
     exclude: { features: [], objects: [], files: [] },
@@ -45,6 +44,7 @@ const DEFAULT_OPTIONS = {
   fetchByQuery: jest.fn(),
   config: {
     fetch: fullFetchConfig(),
+    deploy: { validate: false },
   },
 }
 
@@ -54,6 +54,11 @@ const netsuiteClientValidationMock = netsuiteClientValidation as jest.Mock
 describe('change validator', () => {
   const file = fileType()
   const client = {} as unknown as NetsuiteClient
+
+  beforeEach(() => {
+    netsuiteClientValidationMock.mockClear()
+    netsuiteClientValidationMock.mockResolvedValue([])
+  })
 
   describe('SuiteApp', () => {
     let fetchByQuery: FetchByQueryFunc
@@ -166,7 +171,7 @@ describe('change validator', () => {
     it('should have change error when warnOnStaleWorkspaceData is true', async () => {
       const changeErrors = await getChangeValidator({
         ...DEFAULT_OPTIONS,
-        warnStaleData: true,
+        config: { ...DEFAULT_OPTIONS.config, deploy: { warnOnStaleWorkspaceData: true } },
         client,
         fetchByQuery,
         elementsSource: buildElementsSourceFromElements([]),
@@ -176,7 +181,6 @@ describe('change validator', () => {
   })
 
   describe('netsuite client validation', () => {
-    netsuiteClientValidationMock.mockResolvedValue([])
     it('should not call netsuiteClientValidation when validate=false', async () => {
       await getChangeValidator({
         ...DEFAULT_OPTIONS,
@@ -190,7 +194,7 @@ describe('change validator', () => {
       await getChangeValidator({
         ...DEFAULT_OPTIONS,
         client,
-        validate: true,
+        config: { ...DEFAULT_OPTIONS.config, deploy: { validate: true } },
         elementsSource: buildElementsSourceFromElements([]),
       })(changes)
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(
@@ -217,7 +221,7 @@ describe('change validator', () => {
       await getChangeValidator({
         ...DEFAULT_OPTIONS,
         client,
-        validate: true,
+        config: { ...DEFAULT_OPTIONS.config, deploy: { validate: true } },
         elementsSource: buildElementsSourceFromElements([]),
       })([validChange, invalidChange])
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(

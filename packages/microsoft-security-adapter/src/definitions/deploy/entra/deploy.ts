@@ -107,53 +107,6 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
     parentResourceName: 'servicePrincipals',
     typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   }),
-  [ADMINISTRATIVE_UNIT_TYPE_NAME]: {
-    requestsByAction: {
-      customizations: {
-        add: [
-          {
-            request: {
-              endpoint: {
-                path: '/directory/administrativeUnits',
-                method: 'post',
-              },
-              transformation: {
-                omit: [MEMBERS_FIELD_NAME],
-              },
-            },
-          },
-        ],
-        modify: [
-          {
-            request: {
-              endpoint: {
-                path: '/directory/administrativeUnits/{id}',
-                method: 'patch',
-              },
-              transformation: {
-                omit: [MEMBERS_FIELD_NAME],
-              },
-            },
-            condition: {
-              transformForCheck: {
-                omit: [MEMBERS_FIELD_NAME],
-              },
-            },
-          },
-        ],
-        remove: [
-          {
-            request: {
-              endpoint: {
-                path: '/directory/administrativeUnits/{id}',
-                method: 'delete',
-              },
-            },
-          },
-        ],
-      },
-    },
-  },
   [ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME]: {
     requestsByAction: {
       customizations: {
@@ -741,6 +694,53 @@ const graphV1CustomDefinitions: DeployCustomDefinitions = {
 }
 
 const graphBetaCustomDefinitions: DeployCustomDefinitions = {
+  [ADMINISTRATIVE_UNIT_TYPE_NAME]: {
+    requestsByAction: {
+      customizations: {
+        add: [
+          {
+            request: {
+              endpoint: {
+                path: '/administrativeUnits',
+                method: 'post',
+              },
+              transformation: {
+                omit: [MEMBERS_FIELD_NAME],
+              },
+            },
+          },
+        ],
+        modify: [
+          {
+            request: {
+              endpoint: {
+                path: '/administrativeUnits/{id}',
+                method: 'patch',
+              },
+              transformation: {
+                omit: [MEMBERS_FIELD_NAME],
+              },
+            },
+            condition: {
+              transformForCheck: {
+                omit: [MEMBERS_FIELD_NAME],
+              },
+            },
+          },
+        ],
+        remove: [
+          {
+            request: {
+              endpoint: {
+                path: '/administrativeUnits/{id}',
+                method: 'delete',
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
   [AUTHENTICATION_METHOD_POLICY_TYPE_NAME]: {
     requestsByAction: {
       customizations: {

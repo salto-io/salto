@@ -7,28 +7,19 @@
  */
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { getInstanceAlias } from './utils'
 import { isMetadataInstanceElement, MetadataInstanceElement } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = () => ({
   name: 'metadataInstancesAliases',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config.fetchProfile.isFeatureEnabled('skipAliases')) {
-      log.debug('not adding aliases to metadata instances.')
-      return
-    }
     await awu(elements)
       .filter(isMetadataInstanceElement)
       .forEach(async instance => {
-        instance.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(
-          instance as MetadataInstanceElement,
-          config.fetchProfile.isFeatureEnabled('useLabelAsAlias'),
-        )
+        instance.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(instance as MetadataInstanceElement)
       })
   },
 })

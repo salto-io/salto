@@ -15,6 +15,7 @@ import {
   toChange,
   SaltoError,
   Change,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -380,6 +381,7 @@ describe('syncWorkspaceToFolder', () => {
     let separateInstanceInWorkspace: InstanceElement
     let sameInstanceInFolder: InstanceElement
     let sameInstanceInWorkspace: InstanceElement
+    let hiddenElementInWorkspace: InstanceElement
 
     let workspace: Workspace
     beforeEach(() => {
@@ -388,8 +390,11 @@ describe('syncWorkspaceToFolder', () => {
       separateInstanceInWorkspace = new InstanceElement('workspaceInst', type, { value: 'ws' })
       sameInstanceInFolder = new InstanceElement('sameInst', type, { value: 'folder' })
       sameInstanceInWorkspace = new InstanceElement('sameInst', type, { value: 'ws' })
+      hiddenElementInWorkspace = new InstanceElement('hiddenInst', type, { value: 'test' }, undefined, {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      })
 
-      const workspaceElements = [type, separateInstanceInWorkspace, sameInstanceInWorkspace]
+      const workspaceElements = [type, separateInstanceInWorkspace, sameInstanceInWorkspace, hiddenElementInWorkspace]
       const folderElements = [type, separateInstanceInFolder, sameInstanceInFolder]
 
       workspace = mockWorkspace({
@@ -429,6 +434,13 @@ describe('syncWorkspaceToFolder', () => {
         expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
           baseDir: 'dir',
           changes: expect.arrayContaining([expect.objectContaining(toChange({ after: separateInstanceInWorkspace }))]),
+          elementsSource: expect.anything(),
+        })
+      })
+      it('should not apply addition changes for hidden elements that exist in the workspace', () => {
+        expect(mockAdapter.adapterFormat.dumpElementsToFolder).not.toHaveBeenCalledWith({
+          baseDir: 'dir',
+          changes: expect.arrayContaining([expect.objectContaining(toChange({ after: hiddenElementInWorkspace }))]),
           elementsSource: expect.anything(),
         })
       })
@@ -529,6 +541,7 @@ describe('updateElementFolder', () => {
   let mockAdapter: ReturnType<typeof createMockAdapter>
   let workspace: Workspace
   let changes: ReadonlyArray<Change>
+  let visibleChanges: ReadonlyArray<Change>
 
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
@@ -542,24 +555,31 @@ describe('updateElementFolder', () => {
     })
 
     const instance = new InstanceElement('instance', type, { f: 'v' })
-    changes = [toChange({ after: instance }), toChange({ after: type })]
+    const hiddenInstance = new InstanceElement('hiddenInst', type, { f: 'v2' }, undefined, {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+    })
+    visibleChanges = [toChange({ after: instance }), toChange({ after: type })]
+    changes = visibleChanges.concat([toChange({ after: hiddenInstance })])
     workspace = mockWorkspace({
       name: 'workspace',
       elements: [instance, type],
       accountToServiceName: { [mockAdapterName]: mockAdapterName },
     })
   })
+
   afterEach(() => {
     delete adapterCreators[mockAdapterName]
   })
+
   describe('when called with valid parameters', () => {
     beforeEach(async () => {
       await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
     })
+
     it('should call dumpElementsToFolder with the correct parameters', async () => {
       expect(mockAdapter.adapterFormat.dumpElementsToFolder).toHaveBeenCalledWith({
         baseDir: 'dir',
-        changes,
+        changes: visibleChanges,
         elementsSource: expect.anything(),
       })
     })
@@ -579,10 +599,12 @@ describe('updateElementFolder', () => {
       mockAdapter.adapterFormat.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
       result = await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
     })
+
     it('should return the error in the result', () => {
       expect(result.errors).toEqual(errors)
     })
   })
+
   describe('when used with an account that does not support dumpElementsToFolder', () => {
     let result: UpdateElementFolderResult
     it('should return an error', async () => {
@@ -599,6 +621,7 @@ describe('updateElementFolder', () => {
       })
     })
   })
+
   describe('when the account name is not the same as the adapter name', () => {
     let result: Promise<UpdateElementFolderResult>
     beforeEach(() => {

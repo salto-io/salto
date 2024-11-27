@@ -192,7 +192,7 @@ describe('lookup_object filter', () => {
         const lookupObjetField = (mockProductElm as ObjectType).fields[CPQ_LOOKUP_OBJECT_NAME]
         expect(lookupObjetField).toBeDefined()
         expect(lookupObjetField.annotations[FIELD_ANNOTATIONS.VALUE_SET][0].fullName).toEqual(
-          new ReferenceExpression(mockObjectElemID),
+          new ReferenceExpression(mockObjectElemID, mockObject),
         )
         expect(lookupObjetField.annotations[FIELD_ANNOTATIONS.VALUE_SET][1].fullName).toEqual('nonExistingObject')
       })
@@ -206,10 +206,10 @@ describe('lookup_object filter', () => {
         const defaultObjectField = (mockConfigurationAttr as ObjectType).fields[CPQ_DEFAULT_OBJECT_FIELD]
         expect(defaultObjectField).toBeDefined()
         expect(defaultObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET][0].fullName).toEqual(
-          new ReferenceExpression(mockQuoteElemID),
+          new ReferenceExpression(mockQuoteElemID, mockQuote),
         )
         expect(defaultObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET][1].fullName).toEqual(
-          new ReferenceExpression(mockObjectElemID),
+          new ReferenceExpression(mockObjectElemID, mockObject),
         )
         expect(defaultObjectField.annotations[FIELD_ANNOTATIONS.VALUE_SET][2].fullName).toEqual('nonExistingObject')
       })
@@ -223,10 +223,10 @@ describe('lookup_object filter', () => {
         const constraintFieldField = (priceScheduling as ObjectType).fields[CPQ_CONSTRAINT_FIELD]
         expect(constraintFieldField).toBeDefined()
         expect(constraintFieldField.annotations[FIELD_ANNOTATIONS.VALUE_SET][0].fullName).toEqual(
-          new ReferenceExpression(mockQuote.fields[CPQ_ACCOUNT].elemID),
+          new ReferenceExpression(mockQuote.fields[CPQ_ACCOUNT].elemID, mockQuote.fields[CPQ_ACCOUNT]),
         )
         expect(constraintFieldField.annotations[FIELD_ANNOTATIONS.VALUE_SET][1].fullName).toEqual(
-          new ReferenceExpression(mockQuote.fields[existingFieldName].elemID),
+          new ReferenceExpression(mockQuote.fields[existingFieldName].elemID, mockQuote.fields[existingFieldName]),
         )
         expect(constraintFieldField.annotations[FIELD_ANNOTATIONS.VALUE_SET][2].fullName).toEqual('nonExistingField')
       })

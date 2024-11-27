@@ -22,8 +22,8 @@ import {
   generateReferenceResolverFinder,
   ReferenceContextStrategyName,
   FieldReferenceDefinition,
-  fieldNameToTypeMappingDefs,
   getLookUpName,
+  getDefsFromFetchProfile,
 } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -211,7 +211,7 @@ const filter: FilterCreator = ({ config }) => ({
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),
-      fieldNameToTypeMappingDefs,
+      getDefsFromFetchProfile(config.fetchProfile),
       typesToIgnore,
       createContextStrategyLookups(config.fetchProfile),
     )

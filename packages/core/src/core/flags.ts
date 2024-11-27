@@ -5,9 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { types } from '@salto-io/lowerdash'
-
-export const CORE_FLAG_PREFIX = 'SALTO_'
 
 export const CORE_FLAGS = {
   skipResolveTypesInElementSource: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
@@ -15,18 +12,3 @@ export const CORE_FLAGS = {
   dumpStateWithLegacyFormat: 'DUMP_STATE_WITH_LEGACY_FORMAT',
   failPlanOnCircularDependencies: 'FAIL_PLAN_ON_CIRCULAR_DEPENDENCY',
 } as const
-
-type CoreFlagName = types.ValueOf<typeof CORE_FLAGS>
-
-export const getCoreFlag = (flagName: CoreFlagName): string | undefined => process.env[CORE_FLAG_PREFIX + flagName]
-
-export const getCoreFlagBool = (flagName: CoreFlagName): boolean => {
-  const flagValue = getCoreFlag(flagName)
-  let parsedFlagValue: unknown
-  try {
-    parsedFlagValue = flagValue === undefined ? undefined : JSON.parse(flagValue)
-  } catch (e) {
-    parsedFlagValue = flagValue
-  }
-  return Boolean(parsedFlagValue)
-}

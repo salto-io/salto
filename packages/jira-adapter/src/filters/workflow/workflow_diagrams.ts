@@ -18,6 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { elements as adapterComponentsElements } from '@salto-io/adapter-components'
 import Joi from 'joi'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
@@ -27,6 +28,7 @@ import { isWorkflowV1Instance, StatusLocation, TransitionFrom, WorkflowV1Instanc
 import JiraClient from '../../client/client'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 type StatusDiagramFields = {
   id: string
@@ -80,7 +82,7 @@ export type WorkflowDiagramMaps = {
 const INITIAL_TRANSITION_TYPE = 'initial'
 
 const addObjectTypesAnnotation = async (objectTypes: ObjectType[]): Promise<void> => {
-  objectTypes.forEach(async objectType => {
+  await awu(objectTypes).forEach(async objectType => {
     await addAnnotationRecursively(objectType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(objectType, CORE_ANNOTATIONS.UPDATABLE)
   })

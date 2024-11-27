@@ -19,7 +19,6 @@ import {
   INTERNAL_ID_FIELD,
 } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from './mocks'
 
 describe('Internal IDs filter', () => {
@@ -200,30 +199,6 @@ describe('Internal IDs filter', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-    })
-  })
-
-  describe('when feature is disabled', () => {
-    const mockListMetadataObjects: jest.Mock = jest.fn()
-    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
-    elements = generateElements()
-
-    it('should not run any query', async () => {
-      const { connection } = mockClient()
-      expect(elements[4]).toBeInstanceOf(InstanceElement)
-      const inst = elements[4] as InstanceElement
-      filter = filterCreator({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { optionalFeatures: { addMissingIds: false } },
-          }),
-        },
-      }) as FilterType
-      await filter.onFetch([inst])
-      expect(inst.value[INTERNAL_ID_FIELD]).toBeUndefined()
-      expect(connection.query).not.toHaveBeenCalled()
     })
   })
 })

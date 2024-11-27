@@ -87,7 +87,7 @@ describe('extra reference changes', () => {
         toChange({ after: customSegmentInstance }),
         toChange({ before: entityFieldInstance, after: entityFieldInstance }),
       ],
-      { ...baseParams, deployReferencedElements: true },
+      { ...baseParams, config: { ...baseParams.config, deploy: { deployReferencedElements: true } } },
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -118,7 +118,7 @@ describe('extra reference changes', () => {
   it('should have Warning ChangeErrors when deploying a instances without their dependencies, each instance with its relevant references', async () => {
     const changeErrors = await extraReferenceDependenciesValidator(
       [toChange({ after: customRecordType }), toChange({ before: dependsOn2Instances, after: dependsOn2Instances })],
-      { ...baseParams, deployReferencedElements: true },
+      { ...baseParams, config: { ...baseParams.config, deploy: { deployReferencedElements: true } } },
     )
     expect(changeErrors).toHaveLength(2)
     const customSegmentInstanceElemId = customSegmentInstance.elemID.getFullName()

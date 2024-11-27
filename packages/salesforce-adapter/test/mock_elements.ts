@@ -51,6 +51,12 @@ import {
   WORKFLOW_METADATA_TYPE,
   WORKFLOW_TASK_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE,
+  CPQ_QUOTE_TERM,
+  CPQ_ADVANCED_CONDITION_FIELD,
+  SETTINGS_DIR_NAME,
+  CUSTOM_METADATA_TYPE_NAME,
+  CPQ_TERM_CONDITION,
+  CPQ_INDEX_FIELD,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -58,7 +64,6 @@ import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 import { createCustomObjectType } from './utils'
 import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
-import * as constants from '../src/constants'
 
 const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
   fields: {
@@ -86,10 +91,10 @@ const CPQ_PRICE_RULE_TYPE = createCustomObjectType(CPQ_PRICE_RULE, {
     [OWNER_ID]: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
-        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
-        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-        [constants.API_NAME]: OWNER_ID,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [API_NAME]: OWNER_ID,
       },
     },
   },
@@ -108,18 +113,18 @@ const CPQ_PRODUCT_RULE_TYPE = createCustomObjectType(CPQ_PRODUCT_RULE, {
     [OWNER_ID]: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
-        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
-        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-        [constants.API_NAME]: OWNER_ID,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [API_NAME]: OWNER_ID,
       },
     },
   },
 })
 
-const CPQ_QUOTE_TERM_TYPE = createCustomObjectType(constants.CPQ_QUOTE_TERM, {
+const CPQ_QUOTE_TERM_TYPE = createCustomObjectType(CPQ_QUOTE_TERM, {
   fields: {
-    [constants.CPQ_ADVANCED_CONDITION_FIELD]: {
+    [CPQ_ADVANCED_CONDITION_FIELD]: {
       refType: BuiltinTypes.STRING,
       annotations: {
         [FIELD_ANNOTATIONS.QUERYABLE]: true,
@@ -130,10 +135,10 @@ const CPQ_QUOTE_TERM_TYPE = createCustomObjectType(constants.CPQ_QUOTE_TERM, {
     [OWNER_ID]: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
-        [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
-        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
-        [constants.API_NAME]: OWNER_ID,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [API_NAME]: OWNER_ID,
       },
     },
   },
@@ -349,7 +354,13 @@ export const mockTypes = {
       },
     },
   }),
-
+  Settings: createMetadataObjectType({
+    annotations: {
+      metadataType: SETTINGS_METADATA_TYPE,
+      dirName: SETTINGS_DIR_NAME,
+      suffix: 'settings',
+    },
+  }),
   TestSettings: createMetadataObjectType({
     annotations: {
       metadataType: 'TestSettings',
@@ -373,7 +384,7 @@ export const mockTypes = {
     },
   }),
   CustomMetadata: new ObjectType({
-    elemID: new ElemID(SALESFORCE, constants.CUSTOM_METADATA_TYPE_NAME),
+    elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
     annotations: {
       metadataType: 'CustomMetadata',
       dirName: 'customMetadata',
@@ -692,6 +703,7 @@ export const mockTypes = {
       SBQQ__Template__c: {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
+          [API_NAME]: 'SBQQ__LineColumn__c.SBQQ__Template__c',
           [FIELD_ANNOTATIONS.REFERENCE_TO]: ['SBQQ__Template__c'],
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
@@ -754,10 +766,10 @@ export const mockTypes = {
       },
     },
   }),
-  [constants.CPQ_QUOTE_TERM]: CPQ_QUOTE_TERM_TYPE,
-  [constants.CPQ_TERM_CONDITION]: createCustomObjectType(constants.CPQ_TERM_CONDITION, {
+  [CPQ_QUOTE_TERM]: CPQ_QUOTE_TERM_TYPE,
+  [CPQ_TERM_CONDITION]: createCustomObjectType(CPQ_TERM_CONDITION, {
     fields: {
-      [constants.CPQ_QUOTE_TERM]: {
+      [CPQ_QUOTE_TERM]: {
         refType: Types.primitiveDataTypes.Lookup,
         annotations: {
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
@@ -765,7 +777,7 @@ export const mockTypes = {
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
-      [constants.CPQ_INDEX_FIELD]: {
+      [CPQ_INDEX_FIELD]: {
         refType: BuiltinTypes.NUMBER,
         annotations: {
           [FIELD_ANNOTATIONS.QUERYABLE]: true,
@@ -773,6 +785,14 @@ export const mockTypes = {
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
+    },
+  }),
+  FieldInstance: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FieldInstance',
+    },
+    fields: {
+      fieldItem: { refType: BuiltinTypes.STRING },
     },
   }),
 }

@@ -72,6 +72,9 @@ import {
   OBJECT_TYPE_ICON_TYPE,
   OBJECT_SCHEMA_STATUS_TYPE,
   OBJECT_SCHEMA_GLOBAL_STATUS_TYPE,
+  SLA_CONDITIONS_STOP_TYPE,
+  SLA_CONDITIONS_START_TYPE,
+  SLA_CONDITIONS_PAUSE_TYPE,
 } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
@@ -110,6 +113,13 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
+const factorKeyTypeMapper: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'status-sla-condition-factory') {
+    return STATUS_TYPE_NAME
+  }
+  return undefined
+}
+
 export type ReferenceContextStrategyName =
   | 'parentSelectedFieldType'
   | 'parentFieldType'
@@ -117,6 +127,7 @@ export type ReferenceContextStrategyName =
   | 'parentFieldId'
   | 'parentField'
   | 'gadgetPropertyValue'
+  | 'statusByNeighborFactorKey'
 
 export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
   parentSelectedFieldType: neighborContextFunc({
@@ -135,6 +146,10 @@ export const contextStrategyLookup: Record<ReferenceContextStrategyName, referen
     contextValueMapper: resolutionAndPriorityToTypeName,
   }),
   gadgetPropertyValue: gadgetValuesContextFunc,
+  statusByNeighborFactorKey: neighborContextFunc({
+    contextFieldName: 'factoryKey',
+    contextValueMapper: factorKeyTypeMapper,
+  }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -1070,7 +1085,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'FIELD_SELECTED_FIELDS', parentTypes: [POST_FUNCTION_CONFIGURATION] },
     serializationStrategy: 'id',
-    missingRefStrategy: 'typeAndValue',
     target: { type: FIELD_TYPE_NAME },
   },
   {
@@ -1398,6 +1412,15 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'typeValueMulti', parentTypes: [OBJECT_TYPE_ATTRIBUTE_TYPE] },
     serializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: {
+      field: 'conditionId',
+      parentTypes: [SLA_CONDITIONS_STOP_TYPE, SLA_CONDITIONS_START_TYPE, SLA_CONDITIONS_PAUSE_TYPE],
+    },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { typeContext: 'statusByNeighborFactorKey' },
   },
   // Hack to handle missing references when the type is unknown
   {

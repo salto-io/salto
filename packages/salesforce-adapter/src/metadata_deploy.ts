@@ -446,7 +446,7 @@ const quickDeployOrDeploy = async (
 ): Promise<SFDeployResult> => {
   const createProgressReporterCallback =
     (suffix?: string) =>
-    async (deployResult: SFDeployResult): Promise<void> => {
+    (deployResult: SFDeployResult): void => {
       if (!progressReporter) {
         return
       }

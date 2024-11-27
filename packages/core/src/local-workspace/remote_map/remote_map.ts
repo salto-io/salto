@@ -618,7 +618,7 @@ export const createRemoteMapCreator = (
       try {
         return await promisify(db.get.bind(db))(key) as rocksdb.Bytes
       } catch (error) {
-        if (error.notFound === true) {
+        if (error.message.includes('NotFound') === true) {
           return undefined
         }
         throw error

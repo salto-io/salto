@@ -27,6 +27,7 @@ import {
   isField,
   isObjectType,
   TypeReference,
+  CancelServiceAsyncTaskInput,
 } from '@salto-io/adapter-api'
 import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
@@ -167,7 +168,7 @@ import {
 import { getLastChangeDateOfTypesWithNestedInstances } from './last_change_date_of_types_with_nested_instances'
 import { fixElementsFunc } from './custom_references/handlers'
 import { createListApexClassesDef, createListMissingWaveDataflowsDef } from './client/custom_list_funcs'
-import { SalesforceAdapterCancelValidationOptions, SalesforceAdapterDeployOptions } from './adapter_creator'
+import { SalesforceAdapterDeployOptions } from './adapter_creator'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -474,10 +475,9 @@ export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
     : resolvedElement
 }
 
-type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate' | 'cancelValidate'> & {
+type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
   deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
   validate: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
-  cancelValidate: (deployOptions: SalesforceAdapterCancelValidationOptions) => Promise<void>
 }
 
 export default class SalesforceAdapter implements SalesforceAdapterOperations {
@@ -795,8 +795,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     return this.deployOrValidate(deployOptions, true)
   }
 
-  async cancelValidate(cancelValidateOptions: SalesforceAdapterCancelValidationOptions): Promise<void> {
-    await this.client.cancelValidate(cancelValidateOptions)
+  async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<void> {
+    if (input.taskType === 'deployment' || input.taskType === 'validation') {
+      await this.client.cancelMetadataValidateOrDeployTask(input)
+    } else throw new Error(`Salesforce cancelServiceAsyncTask is not supported for task type: ${input.taskType}`)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

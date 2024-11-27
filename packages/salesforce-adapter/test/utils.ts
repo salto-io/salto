@@ -403,7 +403,6 @@ export const nullProgressReporter: SalesforceDeployProgressReporter = {
   reportProgress: () => {},
   reportDataProgress: () => {},
   reportMetadataProgress: () => {},
-  reportCancelValidation: () => {},
 }
 
 export type MockDeployProgressReporter = SalesforceDeployProgressReporter & { getReportedMessages: () => string[] }

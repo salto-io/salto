@@ -10,7 +10,7 @@ import {
   Adapter,
   AdapterOperations,
   AdditionChange,
-  BuiltinTypes,
+  BuiltinTypes, CancelServiceAsyncTaskInput,
   Change,
   ChangeDataType,
   ChangeValidator,
@@ -31,7 +31,7 @@ import {
   isObjectType,
   ObjectType,
   PrimitiveType,
-  PrimitiveTypes, ProgressReporter,
+  PrimitiveTypes,
   ReferenceExpression,
   SeverityLevel,
   toChange,
@@ -1520,13 +1520,16 @@ describe('api.ts', () => {
     })
   })
 
-  describe('cancelValidate', () => {
-    const SERVICE_VALIDATION_ID = 'service-validation-id'
+  describe('cancelServiceAsyncTask', () => {
+    const input: CancelServiceAsyncTaskInput = {
+      taskType: 'validation',
+      taskId: '123',
+    }
     const ACCOUNT_NAME = 'test1'
     const ADAPTER_NAME = 'test'
 
     let ws: workspace.Workspace
-    let mockCancelValidate: jest.MockedFunction<Required<AdapterOperations>['cancelValidate']>
+    let mockCancelValidate: jest.MockedFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>
 
     beforeEach(() => {
       ws = mockWorkspace({
@@ -1539,14 +1542,14 @@ describe('api.ts', () => {
         [ACCOUNT_NAME]: mockConfigInstance,
       })
     })
-    describe('when the adapter supports cancelValidate', () => {
+    describe('when the adapter supports cancelServiceAsyncTask', () => {
       beforeEach(() => {
-        mockCancelValidate = mockFunction<Required<AdapterOperations>['cancelValidate']>()
+        mockCancelValidate = mockFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>()
         adapterCreators[ADAPTER_NAME] = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue({
             fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
             deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
-            cancelValidate: mockCancelValidate,
+            cancelServiceAsyncTask: mockCancelValidate,
           }),
           authenticationMethods: { basic: { credentialsType: mockConfigType } },
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
@@ -1557,14 +1560,13 @@ describe('api.ts', () => {
         }
       })
 
-      it('should call cancelValidate', async () => {
-        const progressReporter: ProgressReporter = {reportProgress: () => {}}
-        await api.cancelValidate({ workspace: ws, serviceValidationId: SERVICE_VALIDATION_ID, account: ACCOUNT_NAME, progressReporter })
+      it('should invoke cancelServiceAsyncTask on the adapter', async () => {
+        await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
         expect(mockCancelValidate).toHaveBeenCalledTimes(1)
-        expect(mockCancelValidate).toHaveBeenCalledWith({ serviceValidationId: SERVICE_VALIDATION_ID, progressReporter })
+        expect(mockCancelValidate).toHaveBeenCalledWith(input)
       })
     })
-    describe('when the adapter does not support cancelValidate', () => {
+    describe('when the adapter does not support cancelServiceAsyncTask', () => {
       beforeEach(() => {
         adapterCreators[ADAPTER_NAME] = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue({
@@ -1581,14 +1583,12 @@ describe('api.ts', () => {
       })
 
       it('should throw Error', async () => {
-        const progressReporter: ProgressReporter = {reportProgress: () => {}}
-        await expect(api.cancelValidate({ workspace: ws, serviceValidationId: SERVICE_VALIDATION_ID, account: ACCOUNT_NAME, progressReporter })).rejects.toThrow()
+        await expect(api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })).rejects.toThrow()
       })
     })
     describe('when invoked with non existing account', () => {
       it('should throw an error', async () => {
-        const progressReporter: ProgressReporter = {reportProgress: () => {}}
-        await expect(api.cancelValidate({ workspace: ws, serviceValidationId: SERVICE_VALIDATION_ID, account: 'non-existing-account', progressReporter })).rejects.toThrow()
+        await expect(api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' })).rejects.toThrow()
       })
     })
 

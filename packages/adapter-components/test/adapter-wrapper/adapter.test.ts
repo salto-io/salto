@@ -11,14 +11,13 @@ import MockAdapter from 'axios-mock-adapter'
 import {
   Adapter,
   AdapterOperations,
-  Change,
+  Change, DeployProgressReporter,
   DeployResult,
   ElemID,
   getChangeData,
   InstanceElement,
   isInstanceElement,
   ObjectType,
-  ProgressReporter,
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -40,8 +39,9 @@ import { INCLUDE_ALL_CONFIG } from '../../src/fetch/query'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
-const nullProgressReporter: ProgressReporter = {
+const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => '',
+  reportServiceAsyncTaskId: () => {},
 }
 
 type MockReply = {

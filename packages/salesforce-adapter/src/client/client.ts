@@ -33,7 +33,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
+import { AccountInfo, CancelServiceAsyncTaskInput, CredentialError, Value } from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
@@ -57,7 +57,6 @@ import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
 import { getFullName } from '../filters/utils'
-import { SalesforceAdapterCancelValidationOptions } from '../adapter_creator'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -573,7 +572,7 @@ interface ISalesforceClient {
   queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
   bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
-  cancelValidate(opts: SalesforceAdapterCancelValidationOptions): Promise<void>
+  cancelMetadataValidateOrDeployTask(input: CancelServiceAsyncTaskInput): Promise<void>
 }
 
 type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
@@ -1005,18 +1004,14 @@ export default class SalesforceClient implements ISalesforceClient {
   @mapToUserFriendlyErrorMessages
   @logDecorator()
   @requiresLogin()
-  public async cancelValidate({
-    serviceValidationId,
-    progressReporter,
-  }: SalesforceAdapterCancelValidationOptions): Promise<void> {
-    log.debug('Attempting to cancel deployment with id %s', serviceValidationId)
-    progressReporter.reportCancelValidation(serviceValidationId)
+  public async cancelMetadataValidateOrDeployTask({ taskId, taskType }: CancelServiceAsyncTaskInput): Promise<void> {
+    log.debug('Attempting to cancel %s with id %s', taskType, taskId)
 
     const checkStatus = async (): Promise<void> => {
       try {
         const cancelDeployResult = await this.conn.request({
           method: 'PATCH',
-          url: `/services/data/v${API_VERSION}/metadata/deployRequest/${serviceValidationId}`,
+          url: `/services/data/v${API_VERSION}/metadata/deployRequest/${taskId}`,
           body: inspectValue({
             deployResult: {
               status: 'Canceling',
@@ -1028,7 +1023,7 @@ export default class SalesforceClient implements ISalesforceClient {
           await checkStatus()
         }
       } catch (e) {
-        log.warn('Failed to cancel validation with id %s: %s', serviceValidationId, inspectValue(e))
+        log.warn('Failed to cancel %s with id %s: %s', taskType, taskId, inspectValue(e))
       }
     }
     await checkStatus()

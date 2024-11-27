@@ -14,7 +14,8 @@ import {
   OauthAccessTokenResponse,
   Values,
   DeployOptions,
-  CancelValidateOptions, DeployProgressReporter,
+  CancelServiceAsyncTaskInput,
+  DeployProgressReporter,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -226,14 +227,13 @@ In Addition, ${configFromFetch.message}`,
 export type SalesforceDeployProgressReporter = DeployProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
-  reportCancelValidation: (validationId: string) => void
 }
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
   progressReporter: SalesforceDeployProgressReporter
 }
 
-export type SalesforceAdapterCancelValidationOptions = CancelValidateOptions & {
+export type SalesforceAdapterCancelValidationOptions = CancelServiceAsyncTaskInput & {
   progressReporter: SalesforceDeployProgressReporter
 }
 
@@ -287,13 +287,6 @@ export const createDeployProgressReporter = async (
     reportDataProgress: successInstances => {
       deployedDataInstances += successInstances
       reportProgress()
-    },
-    reportCancelValidation: validationId => {
-      const cancelValidationMessage = `Canceling validation with id ${validationId}.${linkToSalesforceDeployment({ id: validationId, checkOnly: true })}`
-      progressReporter.reportProgress({
-        message: cancelValidationMessage,
-      })
-      log.debug(cancelValidationMessage)
     },
   }
 }
@@ -352,15 +345,7 @@ export const adapter: Adapter = {
           progressReporter: await salesforceDeployProgressReporterPromise,
         })
       },
-      cancelValidate: async opts => {
-        const salesforceAdapter = createSalesforceAdapter()
-        salesforceDeployProgressReporterPromise =
-          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
-        return salesforceAdapter.cancelValidate({
-          ...opts,
-          progressReporter: await salesforceDeployProgressReporterPromise,
-        })
-      },
+      cancelServiceAsyncTask: async opts => createSalesforceAdapter().cancelServiceAsyncTask(opts),
       deployModifiers: {
         changeValidator: createChangeValidator({
           config,

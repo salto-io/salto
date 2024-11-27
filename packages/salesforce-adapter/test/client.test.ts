@@ -42,7 +42,6 @@ import {
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
 } from '../src/client/user_facing_errors'
-import { nullProgressReporter } from './utils'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -1516,8 +1515,8 @@ describe('salesforce client', () => {
       })
     })
   })
-  describe('cancelValidate', () => {
-    it('should cancel the validation and poll until the operation is done', async () => {
+  describe('cancelMetadataValidateOrDeployTask', () => {
+    it('should cancel the validation/deployment and poll until the operation is done', async () => {
       const dodoScope = nock('http://dodo22')
         .patch(/.*/, /.*/)
         .reply(200, {
@@ -1532,14 +1531,14 @@ describe('salesforce client', () => {
           },
         })
       await expect(
-        client.cancelValidate({ progressReporter: nullProgressReporter, serviceValidationId: '123' }),
+        client.cancelMetadataValidateOrDeployTask({ taskType: 'validation', taskId: '123' }),
       ).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTrue()
     })
-    it('should not throw when canceling the deployment fails', async () => {
+    it('should not throw when canceling the validation/deployment fails', async () => {
       const dodoScope = nock('http://dodo22').patch(/.*/, /.*/).reply(500)
       await expect(
-        client.cancelValidate({ progressReporter: nullProgressReporter, serviceValidationId: '123' }),
+        client.cancelMetadataValidateOrDeployTask({ taskType: 'validation', taskId: '123' }),
       ).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTrue()
     })

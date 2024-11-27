@@ -187,7 +187,6 @@ export const nullProgressReporter: SalesforceDeployProgressReporter = {
   reportProgress: () => {},
   reportMetadataProgress: () => {},
   reportDataProgress: () => {},
-  reportCancelValidation: () => {},
 }
 
 export const createElement = async <T extends InstanceElement | ObjectType>(

@@ -11,7 +11,7 @@ import {
   AdapterAuthentication,
   AdapterFailureInstallResult,
   AdapterOperations,
-  AdapterSuccessInstallResult,
+  AdapterSuccessInstallResult, CancelServiceAsyncTaskInput,
   Change,
   ChangeDataType,
   ChangeError, DeployProgressReporter,
@@ -26,7 +26,7 @@ import {
   isField,
   isFieldChange,
   isRemovalChange,
-  ObjectType, ProgressReporter,
+  ObjectType,
   ReferenceMapping,
   TopLevelElement,
 } from '@salto-io/adapter-api'
@@ -162,7 +162,7 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
-  reportOperationId: DeployProgressReporter['reportOperationId'] = () => undefined,
+  reportServiceAsyncTaskId: DeployProgressReporter['reportServiceAsyncTaskId'] = () => undefined,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
@@ -199,7 +199,7 @@ export const deploy = async (
     reportProgress,
     postDeployAction,
     checkOnly,
-    reportOperationId,
+    reportServiceAsyncTaskId,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve
@@ -727,16 +727,14 @@ export const fixElements = async (
   return { errors: fixes.errors, changes }
 }
 
-export const cancelValidate = async ({
+export const cancelServiceAsyncTask = async ({
   workspace,
   account,
-  serviceValidationId,
-  progressReporter,
+  input,
 }: {
   workspace: Workspace
   account: string
-  serviceValidationId: string
-  progressReporter: ProgressReporter,
+  input: CancelServiceAsyncTaskInput
 }): Promise<void> => {
   const accounts = [account]
   const adaptersMap = await getAdapters(
@@ -750,8 +748,8 @@ export const cancelValidate = async ({
   if (adapter === undefined) {
     throw new Error(`No adapter found for account ${account}`)
   }
-  if (adapter.cancelValidate === undefined) {
-    throw new Error(`cancelValidate is not supported for account ${account}`)
+  if (adapter.cancelServiceAsyncTask === undefined) {
+    throw new Error(`cancelServiceAsyncTask is not supported for account ${account}`)
   }
-  await adapter.cancelValidate({ serviceValidationId, progressReporter })
+  await adapter.cancelServiceAsyncTask(input)
 }

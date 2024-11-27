@@ -14,7 +14,7 @@ import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
 import { StaticFilesSource } from '../static_files'
 import { RemoteMapCreator, RemoteMap } from '../remote_map'
-import { ParsedNaclFile } from './parsed_nacl_file'
+import { ParsedNaclFile, SyncParsedNaclFile } from './parsed_nacl_file'
 
 const { toMD5 } = hash
 const { awu } = collections.asynciterable
@@ -47,8 +47,8 @@ export type ParsedNaclFileCache = {
   delete: (filename: string) => Promise<void>
   deleteAll: (filenames: string[]) => Promise<void>
   get(filename: string): Promise<ParsedNaclFile>
-  put(filename: string, value: ParsedNaclFile): Promise<void>
-  putAll(files: Record<string, ParsedNaclFile>): Promise<void>
+  put(filename: string, value: SyncParsedNaclFile): Promise<void>
+  putAll(files: Record<string, SyncParsedNaclFile>): Promise<void>
   hasValid(key: ParseResultKey): Promise<boolean>
   getAllErrors(): Promise<parser.ParseError[]> // TEMP
 }
@@ -56,16 +56,13 @@ export type ParsedNaclFileCache = {
 const isMD5Equal = (cacheMD5: string, buffer?: ContentType): boolean =>
   buffer === undefined || buffer === '' ? false : hash.toMD5(buffer) === cacheMD5
 
-const parseNaclFileFromCacheSources = async (
-  cacheSources: CacheSources,
-  filename: string,
-): Promise<ParsedNaclFile> => ({
+const parseNaclFileFromCacheSources = (cacheSources: CacheSources, filename: string): ParsedNaclFile => ({
   filename,
   elements: () => cacheSources.elements.get(filename),
   data: {
-    errors: async () => (await cacheSources.errors.get(filename)) ?? [],
-    referenced: async () => (await cacheSources.referenced.get(filename)) ?? [],
-    staticFiles: async () => (await cacheSources.staticFiles.get(filename)) ?? [],
+    errors: () => cacheSources.errors.get(filename),
+    referenced: () => cacheSources.referenced.get(filename),
+    staticFiles: () => cacheSources.staticFiles.get(filename),
   },
   sourceMap: () => cacheSources.sourceMap.get(filename),
 })
@@ -155,10 +152,10 @@ export const createParseResultCache = (
   let cacheSources = getCacheSources(actualCacheName, remoteMapCreator, staticFilesSource, persistent)
   let cachedHash: string | undefined
   return {
-    put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
+    put: async (filename: string, value: SyncParsedNaclFile): Promise<void> => {
       cachedHash = undefined
       const { metadata, errors, referenced, sourceMap, elements, staticFiles } = await cacheSources
-      const fileErrors = await value.data.errors()
+      const fileErrors = value.data.errors()
       const currentError = await errors.get(filename)
       if (!_.isEqual(currentError ?? [], fileErrors ?? [])) {
         if (fileErrors && fileErrors.length > 0) {
@@ -169,27 +166,27 @@ export const createParseResultCache = (
       }
       await referenced.set(value.filename, await value.data.referenced())
       await staticFiles.set(value.filename, await value.data.staticFiles())
-      const sourceMapValue = await value.sourceMap?.()
+      const sourceMapValue = value.sourceMap?.()
       if (sourceMapValue !== undefined) {
         await sourceMap.set(value.filename, sourceMapValue)
       } else {
         await sourceMap.delete(value.filename)
       }
-      await elements.set(value.filename, (await value.elements()) ?? [])
+      await elements.set(value.filename, value.elements() ?? [])
       await metadata.set(filename, { hash: hash.toMD5(value.buffer ?? '') })
     },
-    putAll: async (files: Record<string, ParsedNaclFile>): Promise<void> => {
+    putAll: async (files: Record<string, SyncParsedNaclFile>): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements, staticFiles } = await cacheSources
       cachedHash = undefined
       const errorEntriesToAdd = awu(Object.keys(files))
         .map(async file => {
-          const value = (await files[file].data.errors()) ?? []
+          const value = files[file].data.errors() ?? []
           return { key: file, value: _.isEqual(await errors.get(file), value) ? [] : value }
         })
         .filter(entry => entry.value.length > 0)
       const errorEntriesToDelete = awu(Object.keys(files))
         .map(async file => {
-          const value = await files[file].data.errors()
+          const value = files[file].data.errors()
           if (value === undefined || value.length > 0) {
             return undefined
           }
@@ -207,7 +204,7 @@ export const createParseResultCache = (
       await sourceMap.setAll(
         awu(Object.keys(files))
           .map(async file => {
-            const fileSourceMap = await files[file].sourceMap?.()
+            const fileSourceMap = files[file].sourceMap?.()
             if (fileSourceMap === undefined) {
               return undefined
             }
@@ -215,14 +212,10 @@ export const createParseResultCache = (
           })
           .filter(values.isDefined),
       )
-      await sourceMap.deleteAll(
-        awu(Object.keys(files)).filter(async file => (await files[file].sourceMap?.()) === undefined),
-      )
-      await elements.setAll(
-        awu(Object.keys(files)).map(async file => ({ key: file, value: (await files[file].elements()) ?? [] })),
-      )
+      await sourceMap.deleteAll(Object.keys(files).filter(file => files[file].sourceMap?.() === undefined))
+      await elements.setAll(Object.keys(files).map(file => ({ key: file, value: files[file].elements() ?? [] })))
       await metadata.setAll(
-        awu(Object.keys(files)).map(async file => {
+        Object.keys(files).map(file => {
           const value = files[file]
           return {
             key: file,

@@ -25,7 +25,7 @@ import { parser } from '@salto-io/parser'
 import { detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource, ParsedNaclFile } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/static_files'
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
@@ -36,7 +36,6 @@ import {
   RemoteMap,
   CreateRemoteMapParams,
 } from '../../../src/workspace/remote_map'
-import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 import { getDanglingStaticFiles } from '../../../src/workspace/nacl_files/nacl_files_source'

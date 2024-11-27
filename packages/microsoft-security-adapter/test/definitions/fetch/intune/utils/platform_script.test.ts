@@ -16,7 +16,7 @@ import { ASSIGNMENT_FIELD_CUSTOMIZATION } from '../../../../../src/definitions/f
 const { SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME } = intuneConstants
 
 describe('Intune platform script fetch utils', () => {
-  describe(`${platformScript.setLinuxScriptValueAsStaticFile.name}`, () => {
+  describe(platformScript.setLinuxScriptValueAsStaticFile.name, () => {
     const SETTING_WITHOUT_A_SCRIPT_0 = {
       settingInstance: {
         '_odata_type@mv': '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance',
@@ -142,7 +142,7 @@ describe('Intune platform script fetch utils', () => {
     })
   })
 
-  describe(`${platformScript.setScriptValueAsStaticFile.name}`, () => {
+  describe(platformScript.setScriptValueAsStaticFile.name, () => {
     const WINDOWS_PLATFORM_SCRIPT_VALUE = {
       displayName: 'test windows platform script',
       platforms: 'windows',
@@ -165,7 +165,7 @@ describe('Intune platform script fetch utils', () => {
             typeName: 'testPlatformScript',
             context: { ...contextMock, fragments: [] },
           }),
-        ).rejects.toThrow('Expected testPlatformScript.scriptContent to be an array, but got undefined')
+        ).rejects.toThrow('Expected to find testPlatformScript.scriptContentRecurseInto but got undefined')
       })
     })
 
@@ -209,7 +209,7 @@ describe('Intune platform script fetch utils', () => {
     })
   })
 
-  describe(`${platformScript.createPlatformScriptFetchDefinition.name}`, () => {
+  describe(platformScript.createPlatformScriptFetchDefinition.name, () => {
     it('should return the correct fetch definition for Windows Script', () => {
       const fetchDefinition = platformScript.createPlatformScriptFetchDefinition({
         typeName: 'testPlatformScript',

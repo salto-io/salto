@@ -346,4 +346,14 @@ describe('generator', () => {
       expect(fetchErrors).toBeUndefined()
     })
   })
+  describe('elementsToExclude', () => {
+    const elemToExclude = 'dummy.Full.instance.FullInst1'
+    let elements: Element[]
+    beforeEach(async () => {
+      elements = await generateElements({ ...testParams, elementsToExclude: [elemToExclude] }, mockProgressReporter)
+    })
+    it('should not include elements that are explicitly excluded', () => {
+      expect(elements.map(elem => elem.elemID.getFullName())).not.toContainEqual(elemToExclude)
+    })
+  })
 })

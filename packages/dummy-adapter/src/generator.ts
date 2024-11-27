@@ -1128,7 +1128,6 @@ export const generateElements = async (
     .concat(users)
     .concat([new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} })])
     .concat(envObjects)
-    .filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 
   progressReporter.reportProgress({ message: 'Generating extra elements' })
   const elementSourceForExtraElements = elementSource.createInMemoryElementSource(allElements)
@@ -1137,7 +1136,7 @@ export const generateElements = async (
     elementSourceForExtraElements,
   )
   progressReporter.reportProgress({ message: 'Generation done' })
-  return allElements.concat(extraElements)
+  return allElements.concat(extraElements).filter(e => !elementsToExclude.has(e.elemID.getFullName()))
 }
 
 export const generateFetchErrorsFromConfig = (

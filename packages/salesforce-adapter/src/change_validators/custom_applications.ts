@@ -6,59 +6,97 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { Change, ChangeValidator, getChangeData, ChangeError, InstanceElement, isInstanceChange, isAdditionOrModificationChange, isObjectType, Field, Element } from '@salto-io/adapter-api'
+import _, { isUndefined } from 'lodash'
+import {
+  ChangeValidator,
+  getChangeData,
+  ChangeError,
+  isInstanceChange,
+  isAdditionOrModificationChange,
+  ElemID,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { API_NAME, CUSTOM_APPLICATION_METADATA_TYPE } from '../constants'
-import { metadataType } from '../transformers/transformer'
+import { CUSTOM_APPLICATION_METADATA_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
-const defaultMap = collections.map.DefaultMap
 
-const getDuplicateActionOverrides = 
-
-const getDuplicateProfileActionOverrides = 
-
-const isInvalidChange = async (change: Change<InstanceElement>): Promise<Boolean> => {
-  const app = getChangeData(change).value.
-  app.
-  return true
+type ActionOverride = {
+  formFactor: string
+  pageOrSobjectType: string
 }
 
-const createChangeError = (change: Change): ChangeError => ({
-  elemID: getChangeData(change).elemID.
-  severity: 'Warning',
-  message: 'Custom application CV',
-  detailedMessage: 'Testing pipe',
-})
-
-const isCustomApplication = (element: Element): boolean => {
-  const res =
-    isObjectType(element) &&
-    (metadataTypeSync(element)) === CUSTOM_APPLICATION_METADATA_TYPE &&
-    element.annotations[API_NAME] !== undefined
-  return res
+type ProfileActionOverride = {
+  formFactor: string
+  pageOrSobjectType: string
+  profile: string
 }
 
-const isFieldOfCustomApplication = async (field: Field): Promise<boolean> => isCustomApplication(field.parent)
+type CustomApplicationValue = {
+  actionOverrides: ActionOverride[]
+  profileActionsOverrides: ProfileActionOverride[]
+}
 
-const changeValidator: ChangeValidator = async changes => {
-  const apps = changes
+const isCustomApplicationValues = (value: unknown): value is CustomApplicationValue =>
+  _.isObject(value) &&
+  _.isArray(_.get(value, 'actionOverrides')) &&
+  _.every(
+    _.get(value, 'actionOverrides'),
+    action =>
+      _.isObject(action) && _.isString(_.get(action, 'formFactor')) && _.isString(_.get(action, 'pageOrSobject')),
+  ) &&
+  _.isArray(_.get(value, 'profileActionOverrides')) &&
+  _.every(
+    _.get(value, 'profileActionOverrides'),
+    action =>
+      _.isObject(action) &&
+      _.isString(_.get(action, 'formFactor')) &&
+      _.isString(_.get(action, 'pageOrSobject')) &&
+      _.isString(_.get(action, 'profile')),
+  )
+
+const createChangeError = (duplicates: string[], elemId: ElemID): ChangeError => {
+  const duplicateList = duplicates.map(dup => `- ${dup}`).join('\n')
+  return {
+    elemID: elemId,
+    severity: 'Error',
+    message: 'Duplicate Overrides Detected',
+    detailedMessage: `The following overrides are duplicated:\n${duplicateList}`,
+  }
+}
+
+const instanceValidator = (instance: InstanceElement): ChangeError | undefined => {
+  const values: unknown = instance.value
+  if (!isCustomApplicationValues(values)) {
+    return undefined // Add error incase of wrong instance
+  }
+  const duplicates: string[] = []
+  const seen = new Set<string>()
+
+  values.actionOverrides.forEach(action => {
+    const key = action.formFactor.concat(action.pageOrSobjectType)
+    seen.has(key) ? duplicates.push(key) : seen.add(key)
+  })
+
+  values.profileActionsOverrides.forEach(action => {
+    const key = action.formFactor.concat(action.pageOrSobjectType).concat(action.profile)
+    seen.has(key) ? duplicates.push(key) : seen.add(key)
+  })
+
+  return _.isEmpty(duplicates) ? undefined : createChangeError(duplicates, instance.elemID)
+}
+
+const isDefined = (instance: ChangeError | undefined): instance is ChangeError => !isUndefined(instance)
+
+const changeValidator: ChangeValidator = async changes =>
+  awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .filter(change => )
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(CUSTOM_APPLICATION_METADATA_TYPE))
-    .forEach(instance => {
-      const customApplicationValues: unknown = instance.value
-      if (!isCustomApplicationValues(customApplicationValues)) {
-        return 
-      }
-
-    })
-
-
-  return awu(changes).map(createChangeError).toArray()
-}
+    .map(instanceValidator)
+    .filter(isDefined)
+    .toArray()
 
 export default changeValidator

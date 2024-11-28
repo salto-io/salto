@@ -15,8 +15,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendedCustomFieldInformation: false,
   hideTypesFolder: true,
   metaTypes: false,
-  skipParsingXmlNumbers: true,
-  logDiffsFromParsingXmlNumbers: true,
   extendTriggersMetadata: true,
   picklistsAsMaps: false,
   retrieveSettings: false,

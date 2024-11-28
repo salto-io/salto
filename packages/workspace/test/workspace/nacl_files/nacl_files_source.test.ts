@@ -829,5 +829,111 @@ describe.each([false, true])(
         })
       })
     })
+    describe('getElementReferencedFiles', () => {
+      let source: NaclFilesSource
+      let referencedFiles: string[]
+
+      const defFile = `
+      type salesforce.lead {
+      }
+    `
+
+      const usedAsInstType = `
+      salesforce.lead inst {
+        key = "value"
+      }
+    `
+
+      const usedAsField = `
+      type salesforce.leader {
+        salesforce.lead lead {
+          
+        }
+      }
+    `
+
+      const usedAsInnerFieldType = `
+    type salesforce.leaders {
+      "List<salesforce.lead>" lead {
+      }
+    }
+  `
+
+      const usedAsReference = `
+      type salesforce.stam {
+        annotations {
+          string key {
+          }
+        }
+        key = salesforce.lead
+      }
+    `
+
+      const usedAsNestedReference = `
+      type salesforce.stam2 {
+        annotations {
+          string key {
+          }
+        }
+        key = salesforce.lead.attr.key
+      }
+    `
+
+      const usedInUnmerged = `
+      type salesforce.unmerged {
+        annotations {
+          string key {
+          }
+        }
+        whatami = salesforce.lead.attr.key
+      }
+    `
+      const files = {
+        'defFile.nacl': defFile,
+        'usedAsInstType.nacl': usedAsInstType,
+        'usedAsField.nacl': usedAsField,
+        'usedAsInnerFieldType.nacl': usedAsInnerFieldType,
+        'usedAsReference.nacl': usedAsReference,
+        'usedAsNestedReference.nacl': usedAsNestedReference,
+        'unmerged.nacl': usedInUnmerged,
+      }
+
+      beforeAll(async () => {
+        const naclFileStore = createMockDirStore(undefined, undefined, files)
+        source = await naclFilesSource('env1', naclFileStore, mockedStaticFilesSource, mockRemoteMapCreator, true)
+        await source.load({})
+        referencedFiles = await source.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
+      })
+
+      it('should find files in which the id is used as an instance type', () => {
+        expect(referencedFiles).toContain('usedAsInstType.nacl')
+      })
+
+      it('should find files in which the id is used as an field type', () => {
+        expect(referencedFiles).toContain('usedAsField.nacl')
+      })
+
+      it('should find files in which the id is used as an inner field type', () => {
+        expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
+      })
+
+      it('should find files in which the id is used as reference', () => {
+        expect(referencedFiles).toContain('usedAsReference.nacl')
+      })
+
+      it('should find files in which the id is used as nested reference', () => {
+        expect(referencedFiles).toContain('usedAsNestedReference.nacl')
+      })
+
+      it('should find nested attr referenced', async () => {
+        const attrRefFiles = await source.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
+      })
+
+      it('should find referenced in values of with no matching field in the type', async () => {
+        const attrRefFiles = await source.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
+        expect(attrRefFiles).toContain('unmerged.nacl')
+      })
+    })
   },
 )

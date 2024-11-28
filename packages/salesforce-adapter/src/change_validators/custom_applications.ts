@@ -86,7 +86,7 @@ const createChangeError = (duplicates: Set<string>, elemId: ElemID): ChangeError
   return {
     elemID: elemId,
     severity: 'Error',
-    message: 'Duplicate Overrides Detected',
+    message: 'Custom Application Duplicate Overrides Detected',
     detailedMessage: `The following overrides are duplicated:\n${duplicateList}`,
   }
 }

@@ -94,7 +94,7 @@ const getReferencingFiles = async (workspace: EditorWorkspace, id: ElemID): Prom
     .uniquify(filename => filename)
     .toArray()
 
-export const getUsageInFile = async (
+const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
   id: ElemID,

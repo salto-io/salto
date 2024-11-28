@@ -204,7 +204,7 @@ const toChangesWithPath =
 
     const originalElements = accountElementByFullName(changeID)
     if (originalElements.length === 0) {
-      log.trace(`no original elements found for change element id ${changeID.getFullName()}`)
+      log.debug('no original elements found for change element id %s', changeID.getFullName())
       return [change]
     }
 

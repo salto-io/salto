@@ -20,4 +20,5 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
       statements: 71.92,
     },
   },
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
 })

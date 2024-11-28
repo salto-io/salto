@@ -17,12 +17,13 @@
     { "path": "../core" },
     { "path": "../dag" },
     { "path": "../e2e-credentials-store" },
+    { "path": "../element-test-utils" },
     { "path": "../file" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
+    { "path": "../parser" },
     { "path": "../salesforce-adapter" },
     { "path": "../test-utils" },
-    { "path": "../workspace" },
-    { "path": "../parser" }
+    { "path": "../workspace" }
   ]
 }

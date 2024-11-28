@@ -12,9 +12,10 @@
     { "path": "../adapter-api" },
     { "path": "../adapter-utils" },
     { "path": "../dag" },
+    { "path": "../element-test-utils" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
-    { "path": "../test-utils" },
-    { "path": "../parser" }
+    { "path": "../parser" },
+    { "path": "../test-utils" }
   ]
 }

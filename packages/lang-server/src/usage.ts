@@ -80,19 +80,28 @@ export const getSearchElementFullName = (context: PositionContext, token: string
   return undefined
 }
 
-export const getReferencingFiles = async (workspace: EditorWorkspace, fullName: string): Promise<string[]> => {
-  try {
-    const id = ElemID.fromFullName(fullName)
-    return await workspace.getElementReferencedFiles(id)
-  } catch (e) {
-    return []
-  }
-}
+const getReferencingFiles = async (workspace: EditorWorkspace, id: ElemID): Promise<string[]> =>
+  awu(await workspace.getElementIncomingReferences(id.createBaseID().parent))
+    .concat(
+      id.idType === 'type'
+        ? awu(await (await workspace.elements).list()).filter(
+            elemId => elemId.adapter === id.adapter && elemId.typeName === id.typeName && elemId.idType === 'instance',
+          )
+        : [],
+    )
+    .uniquify(referencingId => referencingId.getFullName())
+    .flatMap(referencingId => workspace.getElementNaclFiles(referencingId))
+    .uniquify(filename => filename)
+    .toArray()
 
-export const getUsageInFile = async (workspace: EditorWorkspace, filename: string, id: ElemID): Promise<ElemID[]> =>
+const getUsageInFile = async (
+  workspace: EditorWorkspace,
+  filename: string,
+  id: ElemID,
+): Promise<{ filename: string; fullname: string }[]> =>
   awu(await workspace.getElements(filename))
     .flatMap(async e => getElemIDUsages(e, id))
-    .map(fullname => ElemID.fromFullName(fullname))
+    .map(fullname => ({ filename, fullname }))
     .toArray()
 
 export const getWorkspaceReferences = async (
@@ -104,22 +113,15 @@ export const getWorkspaceReferences = async (
   if (id === undefined) {
     return []
   }
-  const referencedByFiles = await getReferencingFiles(workspace, id.getFullName())
-  const usages = _.flatten(
-    await Promise.all(
-      referencedByFiles.map(async filename =>
-        (await getUsageInFile(workspace, filename, id)).flatMap(elemID => ({
-          filename,
-          fullname: elemID.getFullName(),
-        })),
-      ),
-    ),
-  )
-  const selfReferences = (await workspace.getElementNaclFiles(id)).map(filename => ({
+  const referencedByFiles = await getReferencingFiles(workspace, id)
+  const usages = await Promise.all(referencedByFiles.map(filename => getUsageInFile(workspace, filename, id)))
+  const elementNaclFiles = await workspace.getElementNaclFiles(id)
+  const selfReferences = elementNaclFiles.map(filename => ({
     filename,
     fullname: id.getFullName(),
   }))
-  return [...usages, ...selfReferences]
+
+  return usages.flat().concat(selfReferences)
 }
 
 export const provideWorkspaceReferences = async (

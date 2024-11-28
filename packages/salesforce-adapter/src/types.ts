@@ -97,10 +97,8 @@ export type MetadataParams = {
 
 const OPTIONAL_FEATURES = [
   'extendedCustomFieldInformation',
-  'importantValues',
   'hideTypesFolder',
   'metaTypes',
-  'improvedDataBrokenReferences',
   'skipParsingXmlNumbers',
   'logDiffsFromParsingXmlNumbers',
   'extendTriggersMetadata',
@@ -122,6 +120,8 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'flowCoordinates',
   'formulaDeps',
   'generateRefsInProfiles',
+  'importantValues',
+  'improvedDataBrokenReferences',
   'indexedEmailTemplateAttachments',
   'lightningPageFieldItemReference',
   'omitStandardFieldsNonDeployableValues',

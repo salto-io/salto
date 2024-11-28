@@ -57,7 +57,7 @@ import { metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { FetchProfile } from '../types'
-import { apiNameSync, metadataTypeSync } from './utils'
+import { apiNameSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -94,7 +94,7 @@ export const ORDERED_MAP_ORDER_FIELD = 'order'
 
 export const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
   new ObjectType({
-    elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
+    elemID: new ElemID('salesforce', `OrderedMapOf${innerType.elemID.name}`),
     fields: {
       [ORDERED_MAP_VALUES_FIELD]: {
         refType: new MapType(innerType),
@@ -605,14 +605,23 @@ export const getChangesWithFieldType = (changes: ReadonlyArray<Change>, fieldTyp
   return fieldChanges.concat(objectTypeChanges)
 }
 
-export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): InstanceElement[] => {
+export const findInstancesToConvert = (elements: Element[], targetMetadataType: string): Promise<InstanceElement[]> => {
   const instances = elements.filter(isInstanceElement)
-  return instances.filter(async e => metadataTypeSync(e) === targetMetadataType)
+  return awu(instances)
+    .filter(async e => (await metadataType(e)) === targetMetadataType)
+    .toArray()
 }
 
-export const findTypeToConvert = (elements: Element[], targetMetadataType: string): ObjectType | undefined => {
+export const findTypeToConvert = async (
+  elements: Element[],
+  targetMetadataType: string,
+): Promise<ObjectType | undefined> => {
   const types = elements.filter(isObjectType)
-  return types.filter(e => metadataTypeSync(e) === targetMetadataType)[0]
+  return (
+    await awu(types)
+      .filter(async e => (await metadataType(e)) === targetMetadataType)
+      .toArray()
+  )[0]
 }
 
 /**
@@ -626,8 +635,8 @@ const filter: FilterCreator = ({ config }) => ({
     const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
 
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
-      const typeToConvert = findTypeToConvert(elements, targetMetadataType)
+      const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
+      const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       if (isDefined(typeToConvert)) {
         if (instancesToConvert.length === 0) {

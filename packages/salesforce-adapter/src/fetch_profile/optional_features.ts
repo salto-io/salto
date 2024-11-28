@@ -13,10 +13,8 @@ type OptionalFeaturesDefaultValues = {
 
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendedCustomFieldInformation: false,
-  importantValues: true,
   hideTypesFolder: true,
   metaTypes: false,
-  improvedDataBrokenReferences: true,
   skipParsingXmlNumbers: true,
   logDiffsFromParsingXmlNumbers: true,
   extendTriggersMetadata: true,

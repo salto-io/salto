@@ -105,8 +105,6 @@ export type FetchParams = {
   }
   strictInstanceStructure?: boolean
   fieldsToOmit?: FieldToOmitParams[]
-  // should be removed next
-  resolveAccountSpecificValues?: boolean
   findReferencesInFilesWithExtension?: string[]
 } & LockedElementsConfig['fetch']
 
@@ -117,7 +115,6 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   authorInformation: 'authorInformation',
   strictInstanceStructure: 'strictInstanceStructure',
   fieldsToOmit: 'fieldsToOmit',
-  resolveAccountSpecificValues: 'resolveAccountSpecificValues',
   findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
 }
 
@@ -614,7 +611,6 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     authorInformation: { refType: authorInfoConfig },
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
-    resolveAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
     findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {

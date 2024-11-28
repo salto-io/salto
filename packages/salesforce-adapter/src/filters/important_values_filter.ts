@@ -12,9 +12,6 @@ import { FilterCreator } from '../filter'
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'salesforceImportantValuesFilter',
   onFetch: async elements => {
-    if (!config.fetchProfile.isFeatureEnabled('importantValues')) {
-      return
-    }
     const { importantValues } = config.fetchProfile
     const addImportantValues = (type: MetadataObjectType): void => {
       const typeFields = new Set(Object.keys(type.fields))

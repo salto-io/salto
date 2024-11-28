@@ -6,11 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
-import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
+import { Element, ObjectType, isObjectType, BuiltinTypes, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { promisify } from 'util'
-import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
+import { serialization, remoteMap as rm } from '@salto-io/workspace'
 import rocksdb from '@salto-io/rocksdb'
 import path from 'path'
 import { readdirSync, mkdirpSync } from 'fs-extra'
@@ -30,19 +29,87 @@ const rocksdbImpl = require('../../../../src/local-workspace/remote_map/rocksdb'
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
-
-const createElements = async (): Promise<Element[]> => {
-  const params = Object.assign(defaultParams)
-  params.numOfRecords = 1
-  params.numOfObjs = 1
-  params.numOfPrimitiveTypes = 1
-  params.numOfTypes = 1
-  const generatedElements = await generateElements(params, {
-    reportProgress: jest.fn(),
+const ADAPTER_NAME = 'dummy'
+const createElements = (): Element[] => {
+  const HelloType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'Hello'),
+    fields: {
+      name: { refType: BuiltinTypes.STRING },
+      code: { refType: BuiltinTypes.STRING },
+    },
   })
-  const merged = await merger.mergeElements(awu(generatedElements))
-  const elements = await awu(merged.merged.values()).toArray()
-  return elements
+  const ZooBambooType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'ZooBambooType'),
+    fields: {
+      country: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const increasedCrimsonEsterType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'IncreasedCrimsonEster'),
+    fields: {
+      name: { refType: BuiltinTypes.STRING },
+      application: { refType: BuiltinTypes.STRING },
+      code: { refType: BuiltinTypes.STRING },
+    },
+  })
+
+  const instances = [
+    new InstanceElement(
+      'InstWithStatic',
+      HelloType,
+      {
+        name: 'InstWithStatic',
+        code: { flat: 'a', nested: { inner: 'abc' } },
+      },
+      [ADAPTER_NAME, 'Hello', 'instance', 'InstWithStatic'],
+    ),
+    new InstanceElement(
+      'PartialInst',
+      HelloType,
+      {
+        name: 'PartialInst',
+        code: { nested: { inner: 'def', other: 'ghi' } },
+      },
+      [ADAPTER_NAME, 'Hull', 'instance', 'InstWithStatic'],
+    ),
+    new InstanceElement('ZooBambooTypeInstYemen', ZooBambooType, {
+      country: 'yemen',
+    }),
+    new InstanceElement('ZooBambooTypeInstIsrael', ZooBambooType, {
+      country: 'israel',
+    }),
+    new InstanceElement('ZooBambooTypeInstRussia', ZooBambooType, {
+      country: 'russia',
+    }),
+    new InstanceElement('ZooBambooTypeInstUkraine', ZooBambooType, {
+      country: 'ukraine',
+    }),
+    new InstanceElement('ZooBambooTypeInstItaly', ZooBambooType, {
+      country: 'italy',
+    }),
+    new InstanceElement('ZooBambooTypeInstFrench', ZooBambooType, {
+      country: 'french',
+    }),
+    new InstanceElement('ColdChocolateDebbi', increasedCrimsonEsterType, {
+      name: 'ColdChocolateDebbi',
+      code: 'ignore',
+    }),
+    new InstanceElement('ColdChocolateDeborah', increasedCrimsonEsterType, {
+      name: 'ColdChocolateDeborah',
+      code: 'ignore',
+    }),
+    new InstanceElement('ColdChocolateAndTasty', increasedCrimsonEsterType, {
+      name: 'ColdChocolateAndTasty',
+      code: 'ignore',
+    }),
+  ]
+  const typeWithNoInstances = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'typeWithNoInstances'),
+  })
+  const typeWithNoInstances2 = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'typeWithNoInstances2'),
+  })
+  return [HelloType, increasedCrimsonEsterType, ...instances, typeWithNoInstances, typeWithNoInstances2]
 }
 
 const DB_LOCATION = '/tmp/test_db'
@@ -83,7 +150,7 @@ describe('test operations on remote db', () => {
   const filterFn = (key: string): boolean => key.includes('a')
 
   beforeEach(async () => {
-    elements = await createElements()
+    elements = createElements()
     sortedElements = _.sortBy(elements, e => e.elemID.getFullName()).map(e => e.elemID.getFullName())
     filteredSortedElements = sortedElements.filter(filterFn)
     const namespace = 'namespace'
@@ -837,7 +904,7 @@ describe('full integration', () => {
   let remoteMap: rm.RemoteMap<Element>
   it('creates keys and values, flushes', async () => {
     remoteMap = await createMap('integration')
-    const elements = await createElements()
+    const elements = createElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     await remoteMap.setAll(createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()

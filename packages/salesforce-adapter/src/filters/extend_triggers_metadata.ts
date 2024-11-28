@@ -122,7 +122,6 @@ const filterCreator: FilterCreator = ({ client, config }) => {
     name: 'extendTriggersMetadata',
     onFetch: ensureSafeFilterFetch({
       config,
-      filterName: 'extendTriggersMetadata',
       warningMessage: 'Failed to extend the Metadata on Apex Triggers',
       fetchFilterFunc: async elements => {
         if (client === undefined) {

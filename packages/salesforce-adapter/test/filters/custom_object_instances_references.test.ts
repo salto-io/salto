@@ -464,13 +464,9 @@ describe('Custom Object Instances References filter', () => {
     const buildTestFetchProfile = (
       defaultBehavior: OutgoingReferenceBehavior,
       overrides: Record<string, OutgoingReferenceBehavior>,
-      improvedDataBrokenReferences = false,
     ): FetchProfile =>
       buildFetchProfile({
         fetchParams: {
-          optionalFeatures: {
-            improvedDataBrokenReferences,
-          },
           data: {
             includeObjects: ['*'],
             saltoIDSettings: {
@@ -497,58 +493,32 @@ describe('Custom Object Instances References filter', () => {
     describe('ref lookups to illegal instances', () => {
       beforeEach(() => {
         elements = [...objects, firstDupInst, secondDupInst, refFromToDupInst].map(e => e.clone())
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildTestFetchProfile('BrokenReference', {
+              User: 'InternalId',
+            }),
+          },
+        }) as FilterType
       })
-      describe('when improvedDataBrokenReferences feature is disabled', () => {
-        beforeEach(() => {
-          filter = filterCreator({
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile('BrokenReference', {
-                User: 'InternalId',
-              }),
-            },
-          }) as FilterType
-        })
-        it('should drop the illegal instances and instances that reference them', async () => {
-          await filter.onFetch(elements)
-          const remainingCustomObjectInstances = elements.filter(isInstanceOfCustomObjectSync)
-          expect(remainingCustomObjectInstances).toBeEmpty()
-        })
-      })
-      describe('when improvedDataBrokenReferences feature is enabled', () => {
-        beforeEach(() => {
-          filter = filterCreator({
-            client,
-            config: {
-              ...defaultFilterContext,
-              fetchProfile: buildTestFetchProfile(
-                'BrokenReference',
-                {
-                  User: 'InternalId',
-                },
-                true,
-              ),
-            },
-          }) as FilterType
-        })
-        it('should drop the illegal instances and keep the instance that reference them with broken reference', async () => {
-          await filter.onFetch(elements)
-          const remainingCustomObjectInstances = elements.filter(isInstanceOfCustomObjectSync)
-          expect(remainingCustomObjectInstances).toHaveLength(1)
-          const [instanceWithBrokenRef] = remainingCustomObjectInstances
-          expect(apiNameSync(instanceWithBrokenRef)).toEqual(refFromToDupInst.value.Id)
-          expect(instanceWithBrokenRef.value.LookupExample).toSatisfy(
-            ref =>
-              isReferenceExpression(ref) &&
-              ref.elemID.getFullName() === 'salesforce.refToName.instance.missing_duplicateId_1@ub',
-          )
-          expect(instanceWithBrokenRef.value.MasterDetailExample).toSatisfy(
-            ref =>
-              isReferenceExpression(ref) &&
-              ref.elemID.getFullName() === 'salesforce.masterName.instance.missing_duplicateId_2@ub',
-          )
-        })
+      it('should drop the illegal instances and keep the instance that reference them with broken reference', async () => {
+        await filter.onFetch(elements)
+        const remainingCustomObjectInstances = elements.filter(isInstanceOfCustomObjectSync)
+        expect(remainingCustomObjectInstances).toHaveLength(1)
+        const [instanceWithBrokenRef] = remainingCustomObjectInstances
+        expect(apiNameSync(instanceWithBrokenRef)).toEqual(refFromToDupInst.value.Id)
+        expect(instanceWithBrokenRef.value.LookupExample).toSatisfy(
+          ref =>
+            isReferenceExpression(ref) &&
+            ref.elemID.getFullName() === 'salesforce.refToName.instance.missing_duplicateId_1@ub',
+        )
+        expect(instanceWithBrokenRef.value.MasterDetailExample).toSatisfy(
+          ref =>
+            isReferenceExpression(ref) &&
+            ref.elemID.getFullName() === 'salesforce.masterName.instance.missing_duplicateId_2@ub',
+        )
       })
     })
     describe('When default is BrokenReference and override is InternalId', () => {

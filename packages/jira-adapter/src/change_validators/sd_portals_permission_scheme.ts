@@ -19,15 +19,29 @@ import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
-export const UNSUPPORTED_PERMISSION_SCHEME: PermissionHolder = {
-  holder: {
-    type: 'sd.customer.portal.only',
+export const UNSUPPORTED_PERMISSION_SCHEMES: PermissionHolder[] = [
+  {
+    holder: {
+      type: 'sd.customer.portal.only',
+    },
+    permission: 'VIEW_AGGREGATED_DATA',
   },
-  permission: 'VIEW_AGGREGATED_DATA',
-}
+  {
+    holder: {
+      type: 'sd.customer.portal.only',
+    },
+    permission: 'ARCHIVE_ISSUES',
+  },
+  {
+    holder: {
+      type: 'sd.customer.portal.only',
+    },
+    permission: 'UNARCHIVE_ISSUES',
+  },
+]
 
 /**
- * Removes invalid permissions of type UNSUPPORTED_PERMISSION_SCHEME (see above) that fails deploy
+ * Removes invalid permissions of type UNSUPPORTED_PERMISSION_SCHEMES (see above) that fails deploy
  */
 export const permissionSchemeValidator: ChangeValidator = async changes =>
   awu(changes)
@@ -41,7 +55,8 @@ export const permissionSchemeValidator: ChangeValidator = async changes =>
       element =>
         element.value.permissions.filter(
           (permission: PermissionHolder) =>
-            isPermissionSchemeStructure(permission) && isEqualValues(permission, UNSUPPORTED_PERMISSION_SCHEME),
+            isPermissionSchemeStructure(permission) &&
+            UNSUPPORTED_PERMISSION_SCHEMES.some(permissionHolder => isEqualValues(permission, permissionHolder)),
         ).length !== 0,
     )
     .map(async instance => ({

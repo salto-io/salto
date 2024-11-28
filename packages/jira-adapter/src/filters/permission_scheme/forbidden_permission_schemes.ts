@@ -17,8 +17,6 @@ export const isPermissionScheme = (element: Element): boolean => element.elemID.
 const TYPES_AND_VALUES_TO_SORT: Record<string, string[]> = {
   VIEW_PROJECTS: ['.*'],
   VIEW_ISSUES: ['.*'],
-  ARCHIVE_ISSUES: ['sd.customer.portal.only'],
-  UNARCHIVE_ISSUES: ['sd.customer.portal.only'],
 }
 
 const unsupportedPermissionSchemes = (permissionHolder: PermissionHolder): boolean =>

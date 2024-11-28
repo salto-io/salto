@@ -36,24 +36,6 @@ describe('forbidden permission scheme', () => {
         },
         permission: 'VIEW_ISSUES',
       },
-      {
-        holder: {
-          type: 'sd.customer.portal.only',
-        },
-        permission: 'ARCHIVE_ISSUES',
-      },
-      {
-        holder: {
-          type: 'applicationRole',
-        },
-        permission: 'ARCHIVE_ISSUES',
-      },
-      {
-        holder: {
-          type: 'sd.customer.portal.only',
-        },
-        permission: 'UNARCHIVE_ISSUES',
-      },
     ],
   })
   beforeEach(async () => {
@@ -68,12 +50,6 @@ describe('forbidden permission scheme', () => {
             type: 'applicationRole',
           },
           permission: 'ADMINISTER_PROJECTS',
-        },
-        {
-          holder: {
-            type: 'applicationRole',
-          },
-          permission: 'ARCHIVE_ISSUES',
         },
       ],
     })

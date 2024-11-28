@@ -85,7 +85,7 @@ const getReferencingFiles = async (workspace: EditorWorkspace, id: ElemID): Prom
     .concat(
       id.idType === 'type'
         ? awu(await (await workspace.elements).list()).filter(
-            elemId => elemId.idType === 'instance' && id.isEqual(new ElemID(elemId.adapter, elemId.typeName)),
+            elemId => elemId.adapter == id.adapter && elemId.typeName == id.typeName && elemId.idType === 'instance',
           )
         : [],
     )

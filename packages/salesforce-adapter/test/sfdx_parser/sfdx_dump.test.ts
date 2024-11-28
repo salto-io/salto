@@ -167,7 +167,7 @@ describe('dumpElementsToFolder', () => {
             )
             await expect(exists(parentXmlPath)).resolves.toBeTrue()
             const xmlContent = await readTextFile(parentXmlPath)
-            const values = xmlToValues(xmlContent, true)
+            const values = xmlToValues(xmlContent)
             rules = collections.array.makeArray(values.values.rules)
           })
           it('should add the instance to the parent XML', () => {
@@ -209,7 +209,7 @@ describe('dumpElementsToFolder', () => {
             )
             await expect(exists(parentXmlPath)).resolves.toBeTrue()
             const xmlContent = await readTextFile(parentXmlPath)
-            const values = xmlToValues(xmlContent, true)
+            const values = xmlToValues(xmlContent)
             rules = collections.array.makeArray(values.values.rules)
           })
           it('should remove the nested instance from the parent XML', () => {

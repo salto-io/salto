@@ -849,21 +849,11 @@ describe('XML Transformer', () => {
         '    <version>47.0</version>\n' +
         '    <fullName>SBQQ</fullName>\n' +
         '</AuraDefinitionBundle>\n'
-      // This is actually a bug and the current behavior in the adapter.
-      describe('when skipParsingXmlNumbers is false', () => {
-        it('should attempt to convert the string to number', () => {
-          expect(xmlToValues(XML_STRING, false).values).toEqual({
-            version: 47,
-            fullName: 'SBQQ',
-          })
-        })
-      })
-      describe('when skipParsingXmlNumbers is true', () => {
-        it('should not attempt to convert the string to number', () => {
-          expect(xmlToValues(XML_STRING, true).values).toEqual({
-            version: '47.0',
-            fullName: 'SBQQ',
-          })
+
+      it('should not attempt to convert the string to number', () => {
+        expect(xmlToValues(XML_STRING).values).toEqual({
+          version: '47.0',
+          fullName: 'SBQQ',
         })
       })
     })

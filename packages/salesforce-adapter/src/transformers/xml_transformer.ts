@@ -7,15 +7,13 @@
  */
 import wu from 'wu'
 import _ from 'lodash'
-import { XMLBuilder, XMLParser, X2jOptions } from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Values, StaticFile, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
-  getValuesChanges,
-  inspectValue,
   MapKeyFunc,
   mapKeysRecursive,
   safeJsonStringify,
@@ -302,24 +300,15 @@ export const complexTypesMap: ComplexTypesMap = {
 export const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
-const parserOptions: X2jOptions = {
+const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreDeclaration: true,
-  tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
-}
-
-const parserV1 = new XMLParser(parserOptions)
-const parserV2 = new XMLParser({
-  ...parserOptions,
   numberParseOptions: { hex: false, leadingZeros: false, eNotation: false, skipLike: /.*/ },
+  tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
 })
 
-export const xmlToValues = (
-  xmlAsString: string,
-  skipParsingXmlNumbers: boolean,
-): { values: Values; typeName: string } => {
-  const parser = skipParsingXmlNumbers ? parserV2 : parserV1
+export const xmlToValues = (xmlAsString: string): { values: Values; typeName: string } => {
   // SF do not encode their CRs and the XML parser converts them to LFs, so we preserve them.
   const parsedXml = parser.parse(xmlAsString.replace(/\r/g, '&#xD;'))
 
@@ -401,7 +390,6 @@ export const fromRetrieveResult = async ({
   fileProps,
   typesWithMetaFile,
   typesWithContent,
-  fetchProfile,
   packagePath = `${PACKAGE}/`,
 }: FromRetrieveResultArgs): Promise<{ file: FileProperties; values: MetadataValues }[]> => {
   const typesWithDiff = new Set<string>()
@@ -425,29 +413,7 @@ export const fromRetrieveResult = async ({
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
     const xmlString = instanceValuesBuffer.toString()
-    const valuesFromXml = xmlToValues(xmlString, fetchProfile.isFeatureEnabled('skipParsingXmlNumbers')).values
-    if (
-      fetchProfile.isFeatureEnabled('logDiffsFromParsingXmlNumbers') &&
-      !fetchProfile.isFeatureEnabled('skipParsingXmlNumbers') &&
-      !typesWithDiff.has(file.type)
-    ) {
-      const resultWithNonParsedXmlNumbers = xmlToValues(xmlString, true)
-      const detailedChanges = getValuesChanges({
-        id: new ElemID(SALESFORCE, file.type, 'instance', file.fullName),
-        before: resultWithNonParsedXmlNumbers.values,
-        after: valuesFromXml,
-        beforeId: undefined,
-        afterId: undefined,
-      })
-      if (detailedChanges.length > 0) {
-        typesWithDiff.add(file.type)
-        log.trace(
-          'Found differences in the xml parsing of instance of type %s: %s',
-          file.type,
-          inspectValue(detailedChanges),
-        )
-      }
-    }
+    const valuesFromXml = xmlToValues(xmlString).values
     const metadataValues = Object.assign(valuesFromXml, {
       [INSTANCE_FULL_NAME_FIELD]: file.fullName,
     })

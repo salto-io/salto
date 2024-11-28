@@ -118,5 +118,82 @@ describe('custom applications change validator', () => {
       expect(error.detailedMessage).toContain('Form Factor: Large, Page/SObject: Account')
       expect(error.detailedMessage).toContain('Form Factor: Small, Page/SObject: Contact, Profile: Admin')
     })
+    describe('when there are multiple duplicates of the same override', () => {
+      beforeEach(() => {
+        const customApp = createInstanceElement(
+          {
+            fullName: 'TestApp',
+            actionOverrides: [
+              { formFactor: 'Large', pageOrSobjectType: 'Account' },
+              { formFactor: 'Large', pageOrSobjectType: 'Account' },
+              { formFactor: 'Large', pageOrSobjectType: 'Account' },
+            ],
+            profileActionOverrides: [],
+          },
+          mockTypes.CustomApplication,
+        )
+        customAppChange = toChange({ after: customApp })
+      })
+
+      it('should return one error line for multiple duplicates of the same override', async () => {
+        const errors = await customApplicationsValidator([customAppChange])
+        expect(errors).toHaveLength(1)
+        const [error] = errors
+        expect(error.severity).toEqual('Error')
+        expect(error.message).toEqual('Custom Application Duplicate Overrides Detected')
+        const duplicateLines = error.detailedMessage.split('\n').filter(line => line.startsWith('-'))
+        expect(duplicateLines).toHaveLength(1)
+        expect(duplicateLines[0]).toContain('Form Factor: Large, Page/SObject: Account')
+      })
+    })
+
+    describe('when there are duplicates across multiple custom applications', () => {
+      let changes: Change[]
+
+      beforeEach(() => {
+        const customApp1 = createInstanceElement(
+          {
+            fullName: 'TestApp1',
+            actionOverrides: [
+              { formFactor: 'Large', pageOrSobjectType: 'Account' },
+              { formFactor: 'Large', pageOrSobjectType: 'Account' },
+            ],
+            profileActionOverrides: [],
+          },
+          mockTypes.CustomApplication,
+        )
+
+        const customApp2 = createInstanceElement(
+          {
+            fullName: 'TestApp2',
+            actionOverrides: [],
+            profileActionOverrides: [
+              { formFactor: 'Small', pageOrSobjectType: 'Contact', profile: 'Admin' },
+              { formFactor: 'Small', pageOrSobjectType: 'Contact', profile: 'Admin' },
+            ],
+          },
+          mockTypes.CustomApplication,
+        )
+
+        changes = [toChange({ after: customApp1 }), toChange({ after: customApp2 })]
+      })
+
+      it('should return separate errors for each application', async () => {
+        const errors = await customApplicationsValidator(changes)
+        expect(errors).toHaveLength(2)
+
+        // Verify first app error
+        expect(errors[0].severity).toEqual('Error')
+        expect(errors[0].message).toEqual('Custom Application Duplicate Overrides Detected')
+        expect(errors[0].detailedMessage).toContain('Form Factor: Large, Page/SObject: Account')
+        expect(errors[0].detailedMessage.split('\n').filter(line => line.startsWith('-'))).toHaveLength(1)
+
+        // Verify second app error
+        expect(errors[1].severity).toEqual('Error')
+        expect(errors[1].message).toEqual('Custom Application Duplicate Overrides Detected')
+        expect(errors[1].detailedMessage).toContain('Form Factor: Small, Page/SObject: Contact, Profile: Admin')
+        expect(errors[1].detailedMessage.split('\n').filter(line => line.startsWith('-'))).toHaveLength(1)
+      })
+    })
   })
 })

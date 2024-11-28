@@ -186,108 +186,7 @@ const createWarnings = async (
   return [...collisionWarnings, ...instanceWithEmptyIdWarnings, ...missingRefsWarnings, ...illegalOriginsWarnings]
 }
 
-const replaceLookupsWithRefsAndCreateRefMap = async (
-  referenceSources: InstanceElement[],
-  internalIdToReferenceTarget: Record<string, InstanceElement>,
-  internalToTypeName: (internalId: string) => string,
-  dataManagement: DataManagement,
-): Promise<{
-  reverseReferencesMap: collections.map.DefaultMap<string, Set<string>>
-  missingRefs: MissingRef[]
-}> => {
-  const reverseReferencesMap = new DefaultMap<string, Set<string>>(() => new Set())
-  const missingRefs: MissingRef[] = []
-  const fieldsWithUnknownTargetType = new DefaultMap<string, Set<string>>(() => new Set())
-  const replaceLookups = async (instance: InstanceElement): Promise<Values> => {
-    const transformFunc: TransformFunc = async ({ value, field }) => {
-      if (!isReferenceField(field) || !_.isString(value)) {
-        return value
-      }
-      const refTo = referenceFieldTargetTypes(field)
-
-      const refTarget = refTo
-        .map(targetTypeName => internalIdToReferenceTarget[serializeInternalID(targetTypeName, value)])
-        .filter(isDefined)
-        .pop()
-
-      if (refTarget === undefined) {
-        if (_.isEmpty(value)) {
-          return value
-        }
-        if (isReadOnlyField(field) || field?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true) {
-          return value
-        }
-
-        const targetTypeName = refTo.length === 1 ? refTo[0] : internalToTypeName(value)
-
-        if (targetTypeName === undefined) {
-          fieldsWithUnknownTargetType.get(field.elemID.getFullName()).add(value)
-        }
-
-        const brokenRefBehavior = dataManagement.brokenReferenceBehaviorForTargetType(targetTypeName)
-        switch (brokenRefBehavior) {
-          case 'InternalId': {
-            return value
-          }
-          case 'BrokenReference': {
-            return createMissingValueReference(new ElemID(SALESFORCE, targetTypeName, 'instance'), value)
-          }
-          case 'ExcludeInstance': {
-            missingRefs.push({
-              origin: {
-                type: await apiName(await instance.getType(), true),
-                id: await apiName(instance),
-                field,
-              },
-              targetId: instance.value[field.name],
-            })
-            return value
-          }
-          default: {
-            throw new Error('Unrecognized broken refs behavior. Is the configuration valid?')
-          }
-        }
-      }
-
-      reverseReferencesMap
-        .get(await serializeInstanceInternalID(refTarget))
-        .add(await serializeInstanceInternalID(instance))
-      return new ReferenceExpression(refTarget.elemID)
-    }
-
-    return (
-      (await transformValues({
-        values: instance.value,
-        type: await instance.getType(),
-        transformFunc,
-        strict: false,
-        allowEmptyArrays: true,
-        allowEmptyObjects: true,
-      })) ?? instance.value
-    )
-  }
-
-  if (fieldsWithUnknownTargetType.size > 0) {
-    log.warn(
-      'The following fields have multiple %s annotations and contained internal IDs with an unknown key prefix. The default broken references behavior was used for them.',
-      FIELD_ANNOTATIONS.REFERENCE_TO,
-    )
-    fieldsWithUnknownTargetType.forEach((internalIds, fieldElemId) => {
-      log.warn('Field %s: %o', fieldElemId, internalIds)
-    })
-  }
-
-  await awu(referenceSources).forEach(async (instance, index) => {
-    instance.value = await replaceLookups(instance)
-    if (index > 0 && index % 500 === 0) {
-      log.debug(`Replaced lookup with references for ${index} instances`)
-    }
-  })
-
-  return { reverseReferencesMap, missingRefs }
-}
-
-const replaceLookupsWithRefsAndCreateRefMapV2 = async ({
+const replaceLookupsWithRefsAndCreateRefMap = async ({
   referenceSources,
   internalIdToReferenceTarget,
   internalToTypeName,
@@ -454,22 +353,15 @@ const filter: FilterCreator = ({ client, config }) => ({
     const allInstances = allElements.filter(isInstanceElement)
     const internalToInstance = await keyByAsync(allInstances, serializeInstanceInternalID)
     const internalIdPrefixToType = await buildCustomObjectPrefixKeyMap(allElements)
-    const { reverseReferencesMap, missingRefs } = config.fetchProfile.isFeatureEnabled('improvedDataBrokenReferences')
-      ? await replaceLookupsWithRefsAndCreateRefMapV2({
-          referenceSources: fetchedCustomObjectInstances,
-          internalIdToReferenceTarget: internalToInstance,
-          internalToTypeName: (internalId: string): string =>
-            internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
-          dataManagement,
-          instancesWithCollidingElemID,
-          instancesWithEmptyId,
-        })
-      : await replaceLookupsWithRefsAndCreateRefMap(
-          fetchedCustomObjectInstances,
-          internalToInstance,
-          internalId => internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
-          dataManagement,
-        )
+    const { reverseReferencesMap, missingRefs } = await replaceLookupsWithRefsAndCreateRefMap({
+      referenceSources: fetchedCustomObjectInstances,
+      internalIdToReferenceTarget: internalToInstance,
+      internalToTypeName: (internalId: string): string =>
+        internalIdPrefixToType[internalId.slice(0, KEY_PREFIX_LENGTH)],
+      dataManagement,
+      instancesWithCollidingElemID,
+      instancesWithEmptyId,
+    })
     const missingRefOriginInternalIDs = new Set(
       missingRefs.map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id)),
     )

@@ -138,11 +138,11 @@ export class EditorWorkspace {
       .toArray()
   }
 
-  private static async getUnresolvedReferencesOfElement(
-    elementsSource: elementSource.ElementsSource,
+  private async getUnresolvedReferencesOfElement(
     elemId: ElemID,
     referenced: ElemID[],
   ): Promise<errors.UnresolvedReferenceValidationError[]> {
+    const elementsSource = await this.workspace.elements()
     const element = await elementsSource.get(elemId)
     if (!isElement(element) || isContainerType(element)) {
       return []
@@ -200,10 +200,9 @@ export class EditorWorkspace {
       .mapValues(ids => _.uniqBy(ids, id => id.getFullName()))
       .value()
 
-    const elementsSource = await this.workspace.elements()
     const validationErrors = await Promise.all(
       Object.entries(elemIdToReferencedIDs).map(([elemId, referenced]) =>
-        EditorWorkspace.getUnresolvedReferencesOfElement(elementsSource, ElemID.fromFullName(elemId), referenced),
+        this.getUnresolvedReferencesOfElement(ElemID.fromFullName(elemId), referenced),
       ),
     )
 

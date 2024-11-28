@@ -155,6 +155,7 @@ import {
   CUSTOM_OBJECT_ID_FIELD,
   FLOW_METADATA_TYPE,
   LAST_MODIFIED_DATE,
+  ORDERED_MAP_PREFIX,
   OWNER_ID,
   PROFILE_RELATED_METADATA_TYPES,
   WAVE_DATAFLOW_METADATA_TYPE,
@@ -441,7 +442,7 @@ type CreateFiltersRunnerParams = {
 }
 
 const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
-  typeRef.elemID.name.startsWith('OrderedMap<')
+  typeRef.elemID.name.startsWith(ORDERED_MAP_PREFIX)
 
 const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
   Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)

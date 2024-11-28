@@ -446,6 +446,8 @@ export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 export const PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS = 'ProfilesAndPermissionSetsBrokenPaths'
 export const PATHS_FIELD = 'paths'
 
+export const ORDERED_MAP_PREFIX = 'OrderedMapOf'
+
 export const getTypePath = (name: string, isTopLevelType = true): string[] => [
   SALESFORCE,
   TYPES_PATH,

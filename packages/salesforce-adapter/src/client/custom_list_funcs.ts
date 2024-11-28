@@ -63,8 +63,8 @@ export const createListApexClassesDef = (elementsSource: ReadOnlyElementsSource)
         namespacePrefix,
         lastModifiedDate: record.LastModifiedDate,
         createdDate: record.CreatedDate,
-        createdByName: record.CreatedBy.Name,
-        lastModifiedByName: record.LastModifiedBy.Name,
+        createdByName: record.CreatedBy?.Name ?? '',
+        lastModifiedByName: record.LastModifiedBy?.Name ?? '',
         lastModifiedById: '',
         createdById: '',
       }

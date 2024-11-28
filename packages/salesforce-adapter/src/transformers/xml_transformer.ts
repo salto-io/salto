@@ -7,7 +7,7 @@
  */
 import wu from 'wu'
 import _ from 'lodash'
-import { XMLBuilder, XMLParser, X2jOptions } from 'fast-xml-parser'
+import { XMLBuilder, XMLParser } from 'fast-xml-parser'
 import { FileProperties, RetrieveRequest } from '@salto-io/jsforce'
 import JSZip from 'jszip'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -300,16 +300,12 @@ export const complexTypesMap: ComplexTypesMap = {
 export const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
-const parserOptions: X2jOptions = {
+const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
   ignoreDeclaration: true,
-  tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
-}
-
-const parser = new XMLParser({
-  ...parserOptions,
   numberParseOptions: { hex: false, leadingZeros: false, eNotation: false, skipLike: /.*/ },
+  tagValueProcessor: (_name, val) => val.replace(/&#xD;/g, '\r'),
 })
 
 export const xmlToValues = (xmlAsString: string): { values: Values; typeName: string } => {

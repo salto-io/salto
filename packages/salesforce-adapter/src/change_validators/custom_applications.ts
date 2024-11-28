@@ -35,7 +35,7 @@ type ProfileActionOverride = {
 
 type CustomApplicationValue = {
   actionOverrides: ActionOverride[]
-  profileActionsOverrides: ProfileActionOverride[]
+  profileActionOverrides: ProfileActionOverride[]
 }
 
 const isCustomApplicationValues = (value: unknown): value is CustomApplicationValue =>
@@ -44,7 +44,7 @@ const isCustomApplicationValues = (value: unknown): value is CustomApplicationVa
   _.every(
     _.get(value, 'actionOverrides'),
     action =>
-      _.isObject(action) && _.isString(_.get(action, 'formFactor')) && _.isString(_.get(action, 'pageOrSobject')),
+      _.isObject(action) && _.isString(_.get(action, 'formFactor')) && _.isString(_.get(action, 'pageOrSobjectType')),
   ) &&
   _.isArray(_.get(value, 'profileActionOverrides')) &&
   _.every(
@@ -52,12 +52,37 @@ const isCustomApplicationValues = (value: unknown): value is CustomApplicationVa
     action =>
       _.isObject(action) &&
       _.isString(_.get(action, 'formFactor')) &&
-      _.isString(_.get(action, 'pageOrSobject')) &&
+      _.isString(_.get(action, 'pageOrSobjectType')) &&
       _.isString(_.get(action, 'profile')),
   )
 
-const createChangeError = (duplicates: string[], elemId: ElemID): ChangeError => {
-  const duplicateList = duplicates.map(dup => `- ${dup}`).join('\n')
+const generateKey = (action: { formFactor: string; pageOrSobjectType: string; profile?: string }): string => {
+  const profilePart = action.profile ? `, Profile: ${action.profile}` : ''
+  return `Form Factor: ${action.formFactor}, Page/SObject: ${action.pageOrSobjectType}${profilePart}`
+}
+
+const collectDuplicates = (
+  actions: Array<{ formFactor: string; pageOrSobjectType: string; profile?: string }>,
+): Set<string> => {
+  const seen = new Set<string>()
+  const duplicates = new Set<string>()
+
+  actions.forEach(action => {
+    const key = generateKey(action)
+    if (seen.has(key)) {
+      duplicates.add(key)
+    } else {
+      seen.add(key)
+    }
+  })
+
+  return duplicates
+}
+
+const createChangeError = (duplicates: Set<string>, elemId: ElemID): ChangeError => {
+  const duplicateList = Array.from(duplicates)
+    .map(dup => `- ${dup}`)
+    .join('\n')
   return {
     elemID: elemId,
     severity: 'Error',
@@ -68,23 +93,13 @@ const createChangeError = (duplicates: string[], elemId: ElemID): ChangeError =>
 
 const instanceValidator = (instance: InstanceElement): ChangeError | undefined => {
   const values: unknown = instance.value
+
   if (!isCustomApplicationValues(values)) {
-    return undefined // Add error incase of wrong instance
+    return undefined // Add error in case of an invalid instance
   }
-  const duplicates: string[] = []
-  const seen = new Set<string>()
-
-  values.actionOverrides.forEach(action => {
-    const key = action.formFactor.concat(action.pageOrSobjectType)
-    seen.has(key) ? duplicates.push(key) : seen.add(key)
-  })
-
-  values.profileActionsOverrides.forEach(action => {
-    const key = action.formFactor.concat(action.pageOrSobjectType).concat(action.profile)
-    seen.has(key) ? duplicates.push(key) : seen.add(key)
-  })
-
-  return _.isEmpty(duplicates) ? undefined : createChangeError(duplicates, instance.elemID)
+  const allActions = [...values.actionOverrides, ...values.profileActionOverrides]
+  const duplicates = collectDuplicates(allActions)
+  return duplicates.size > 0 ? createChangeError(duplicates, instance.elemID) : undefined
 }
 
 const isDefined = (instance: ChangeError | undefined): instance is ChangeError => !isUndefined(instance)

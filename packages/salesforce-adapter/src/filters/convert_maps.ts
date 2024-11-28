@@ -94,7 +94,7 @@ export const ORDERED_MAP_ORDER_FIELD = 'order'
 
 export const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
   new ObjectType({
-    elemID: new ElemID('salesforce', `OrderedMap<${innerType.elemID.name}>`),
+    elemID: new ElemID('salesforce', `OrderedMapOf${innerType.elemID.name}`),
     fields: {
       [ORDERED_MAP_VALUES_FIELD]: {
         refType: new MapType(innerType),

@@ -11,7 +11,6 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   displayName: 'salto',
   rootDir: `${__dirname}`,
   collectCoverageFrom: [
-    '!**/hcl.ts', // Generated parser file
     '!<rootDir>/index.ts',
   ],
   coverageThreshold: {

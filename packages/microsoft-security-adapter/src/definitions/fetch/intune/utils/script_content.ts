@@ -43,7 +43,7 @@ export const extractStaticFileFromBinaryScript = ({
 }: ExtractScriptParams): { value: Values } => {
   const scriptsField = _.get(value, scriptsRootFieldName)
   if (_.isEmpty(scriptsField)) {
-    log.debug(`No scripts found in ${typeName}.${scriptsRootFieldName}. Skipping`)
+    log.trace(`No scripts found in ${typeName}.${scriptsRootFieldName}. Skipping`)
     return { value }
   }
 

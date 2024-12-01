@@ -940,6 +940,18 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'recordField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'changePasswordTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'forgotPasswordTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'welcomeTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

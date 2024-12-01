@@ -1038,7 +1038,7 @@ export default class SalesforceClient implements ISalesforceClient {
           await checkStatus()
         }
       } catch (e) {
-        log.warn('Failed to cancel %s with id %s: %s', taskType, taskId, inspectValue(e))
+        throw new Error(`Failed to cancel ${taskType} with id ${taskId}: ${inspectValue(e)}`)
       }
     }
     await checkStatus()

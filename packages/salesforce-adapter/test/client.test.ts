@@ -1535,11 +1535,11 @@ describe('salesforce client', () => {
       ).resolves.not.toThrow()
       expect(dodoScope.isDone()).toBeTrue()
     })
-    it('should not throw when canceling the validation/deployment fails', async () => {
+    it('should throw when canceling the validation/deployment fails', async () => {
       const dodoScope = nock('http://dodo22').patch(/.*/, /.*/).reply(500)
       await expect(
         client.cancelMetadataValidateOrDeployTask({ taskType: 'validation', taskId: '123' }),
-      ).resolves.not.toThrow()
+      ).rejects.toThrow()
       expect(dodoScope.isDone()).toBeTrue()
     })
   })

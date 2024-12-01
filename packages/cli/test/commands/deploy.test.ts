@@ -505,6 +505,7 @@ describe('deploy command', () => {
           a: 'success',
           b: 'success',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {
@@ -534,6 +535,7 @@ describe('deploy command', () => {
           instance_test: 'failure',
           test_instance: 'failure',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {
@@ -564,6 +566,7 @@ describe('deploy command', () => {
           test_instance: 'success',
           tester_instance: 'partial-success',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {
@@ -590,6 +593,7 @@ describe('deploy command', () => {
           instance_test: 'partial-success',
           test_instance: 'partial-success',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {

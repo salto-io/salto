@@ -119,7 +119,7 @@ const deployPlan = async (
   workspace: Workspace,
   cliTelemetry: CliTelemetry,
   output: CliOutput,
-  force: boolean,
+  executingDeploy: boolean,
   checkOnly: boolean,
   accounts?: string[],
 ): Promise<DeployResult> => {
@@ -178,7 +178,7 @@ const deployPlan = async (
       }
     }
   }
-  const executingDeploy = force || (await shouldDeploy(actionPlan, checkOnly))
+
   await printStartDeploy(output, executingDeploy, checkOnly)
   const result = executingDeploy
     ? await deploy(
@@ -259,10 +259,10 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
-
+  const executingDeploy = force || (await shouldDeploy(actionPlan, checkOnly))
   const result = dryRun
     ? { success: true, errors: [] }
-    : await deployPlan(actionPlan, workspace, cliTelemetry, output, force, checkOnly, actualAccounts)
+    : await deployPlan(actionPlan, workspace, cliTelemetry, output, executingDeploy, checkOnly, actualAccounts)
   await writeArtifacts(result, input.artifactsDir)
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   // We don't flush the workspace for check-only deployments
@@ -289,9 +289,11 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
   )
 
-  const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(summary))
-  if (!dryRun && formattedDeploymentSummary) {
-    outputLine(formattedDeploymentSummary, output)
+  if (executingDeploy && !dryRun) {
+    const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(summary))
+    if (formattedDeploymentSummary) {
+      outputLine(formattedDeploymentSummary, output)
+    }
   }
   const postDeployActionsOutput = formatDeployActions({
     wsChangeErrors: changeErrorsForPostDeployOutput,

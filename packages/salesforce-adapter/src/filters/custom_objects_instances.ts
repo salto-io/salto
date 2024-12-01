@@ -667,7 +667,7 @@ const createInvalidManagedBySaltoFieldFetchWarning = (
   const fieldName = apiNameSync(invalidManagedBySaltoField) as string
   const typeName = apiNameSync(objectType) as string
   const errorPreamble = `The field ${typeName}${API_NAME_SEPARATOR}${fieldName} is configured as the filter field in the saltoManagementFieldSettings.defaultFieldName section of the Salto environment configuration.`
-  if ((objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
+  if ((objectType.fields[fieldName]?.annotations[FIELD_ANNOTATIONS.QUERYABLE] ?? true) === false) {
     const message = `${errorPreamble} However, the user configured for fetch does not have read access to this field. Records of type ${typeName} will not be fetched.`
     return {
       message,

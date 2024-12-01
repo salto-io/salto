@@ -68,9 +68,26 @@ const isDBLockErr = (error: Error): boolean =>
 
 const isDBNotExistErr = (error: Error): boolean => error.message.includes('LOCK: No such file or directory')
 
+const isDBNotFoundErr = (error: Error): boolean => error.message.includes('NotFound')
+
 class DBLockError extends Error {
   constructor() {
     super('Salto local database locked. Could another Salto process or a process using Salto be open?')
+  }
+}
+
+// Wrapper for the db.get function that is awaitable.
+const getAwaitable = async (db: rocksdb, key: string): Promise<rocksdb.Bytes | undefined> => {
+  try {
+    return (await promisify(db.get.bind(db))(key)) as rocksdb.Bytes
+  } catch (error) {
+    if (isDBNotFoundErr(error)) {
+      return undefined
+    }
+    // We'd like to throw an error here instead of returning undefined, but this is a behavior change that should be
+    // carefully rolled out. This log line will help us understand how often this error is thrown in the wild.
+    log.debug('Unexpected RocksDB error while getting key %s: %s', key, error)
+    return undefined
   }
 }
 
@@ -613,18 +630,6 @@ export const createRemoteMapCreator = (
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       return awu(getDataIterableWithPages(opts)).map(entries => entries.map(entry => entry.key as K))
     }
-    // Wrapper for the db.get function that is awaitable.
-    const getAwaitable = async (db: rocksdb, key: string): Promise<rocksdb.Bytes | undefined> => {
-      try {
-        return (await promisify(db.get.bind(db))(key)) as rocksdb.Bytes
-      } catch (error) {
-        if (error.message.includes('NotFound') === true) {
-          return undefined
-        }
-        throw error
-      }
-    }
-
     // Retrieve a value from the DBs directly, ignoring the cache.
     // If the value is not found in the temporary db, it will be retrieved from the persistent db.
     const getFromDb = async (key: string): Promise<T | undefined> => {
@@ -637,13 +642,13 @@ export const createRemoteMapCreator = (
         }
         valueFromDb = await getAwaitable(persistentDB, keyToDBKey(key))
       }
-      if (valueFromDb !== undefined) {
-        statCounters.RemoteMapHit.inc()
-        isNamespaceEmpty = false
-        return deserialize(valueFromDb.toString())
+      if (valueFromDb === undefined) {
+        statCounters.RemoteMapMiss.inc()
+        return undefined
       }
-      statCounters.RemoteMapMiss.inc()
-      return undefined
+      statCounters.RemoteMapHit.inc()
+      isNamespaceEmpty = false
+      return deserialize(valueFromDb.toString())
     }
     const getImpl = async (key: string): Promise<T | undefined> => {
       if (delKeys.has(key)) {
@@ -795,21 +800,15 @@ export const createRemoteMapCreator = (
       },
       delete: deleteImpl,
       has: async (key: string): Promise<boolean> => {
-        if (locationCache.has(keyToTempDBKey(key))) {
-          // If the key is already in the cache, then we won't incur additional cost by calling getImpl here.
-          if ((await getImpl(key)) !== undefined) {
-            isNamespaceEmpty = false
-            return true
+        const cachedPromise = locationCache.get(keyToTempDBKey(key))
+        if (cachedPromise !== undefined) {
+          if ((await cachedPromise) === undefined) {
+            return false
           }
-          return false
+          isNamespaceEmpty = false
+          return true
         }
-        const hasKeyImpl = (k: string, db: rocksdb): Promise<boolean> =>
-          new Promise(resolve => {
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises
-            db.get(k, async (error, value) => {
-              resolve(!error && value !== undefined)
-            })
-          })
+        const hasKeyImpl = async (k: string, db: rocksdb): Promise<boolean> => (await getAwaitable(db, k)) !== undefined
         const found =
           (await hasKeyImpl(keyToTempDBKey(key), tmpDB)) ||
           (!wasClearCalled && (await hasKeyImpl(keyToDBKey(key), persistentDB)))

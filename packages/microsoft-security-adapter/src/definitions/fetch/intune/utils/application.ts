@@ -78,9 +78,8 @@ export const setApplicationScriptValueAsStaticFile: AdjustFunctionSingle = async
 
   const appOdataType = value[odataType.getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]
   if (!_.isString(appOdataType)) {
-    const message = `Missing odataType for ${APPLICATION_TYPE_NAME} (ID: ${value.id}).`
-    log.error(message)
-    throw new Error(message)
+    log.warn(`Failed to adjust script values for ${APPLICATION_TYPE_NAME} - odataType is not a string`)
+    return { value }
   }
 
   const scriptsExtractionParams = odataTypeToScriptsExtractionParams[appOdataType]

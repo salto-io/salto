@@ -19,15 +19,14 @@
   "scripts": {
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",
-    "clean": "rm -rf ./dist .eslintcache  ./src/generated",
+    "clean": "rm -rf ./dist .eslintcache",
     "watch-test": "yarn tsc-watch",
     "build-ts": "tsc -b",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --max-warnings 0 ./",
     "lint-fix": "yarn lint --fix",
     "format": "prettier --write . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
-    "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore",
-    "generate": "./generate.sh"
+    "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.4.6",

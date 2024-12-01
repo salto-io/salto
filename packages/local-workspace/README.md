@@ -1,6 +1,6 @@
 # Salto: Local Workspace
 
-This project is the Salto Local workspace, responsible for managing local workspace operations including state management, file storage, configuration handling, and telemetry collection
+This project is the Salto Local workspace, responsible for the implementation of a Salto workspace over a local file system
 
 ### Build instructions
 

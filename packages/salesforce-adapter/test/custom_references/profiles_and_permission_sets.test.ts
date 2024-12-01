@@ -767,6 +767,11 @@ describe('Profiles And Permission Sets Custom References', () => {
           apexClass: 'sbaa__ApexClass',
           enabled: true,
         },
+        // Make sure we omit values even though we don't create custom references for them.
+        DefaultAccessNonExisting: {
+          apexClass: 'DefaultAccessNonExisting',
+          enabled: 'true',
+        },
       },
       flowAccesses: {
         SomeFlow: {
@@ -907,6 +912,7 @@ describe('Profiles And Permission Sets Custom References', () => {
           createCustomObjectType('TestObj__c', {}),
           new InstanceElement('SomeApplication', mockTypes.CustomApplication, {}),
           new InstanceElement('SomeApexClass', mockTypes.ApexClass, {}),
+          new InstanceElement('DefaultAccessNonExisting', mockTypes.ApexClass, {}),
           new InstanceElement('SomeFlow', mockTypes.Flow, {}),
           new InstanceElement('Account_Account_Layout@bs', mockTypes.Layout, {}),
           new InstanceElement('SomeApexPage', mockTypes.ApexPage, {}),

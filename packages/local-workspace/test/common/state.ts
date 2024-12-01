@@ -5,8 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, StaticFile } from '@salto-io/adapter-api'
-import { pathIndex, state, elementSource, remoteMap, staticFiles } from '@salto-io/workspace'
+import { StaticFile } from '@salto-io/adapter-api'
+import { staticFiles } from '@salto-io/workspace'
 
 export const mockStaticFilesSource = (files: StaticFile[] = []): staticFiles.StaticFilesSource => ({
   getStaticFile: jest
@@ -29,20 +29,3 @@ export const mockStaticFilesSource = (files: StaticFile[] = []): staticFiles.Sta
   delete: jest.fn(),
   isPathIncluded: jest.fn().mockImplementation(filePath => files.find(f => f.filepath === filePath) !== undefined),
 })
-
-export const mockState = (
-  accounts: string[] = [],
-  elements: Element[] = [],
-  index: remoteMap.RemoteMapEntry<pathIndex.Path[]>[] = [],
-): state.State =>
-  state.buildInMemState(async () => ({
-    elements: elementSource.createInMemoryElementSource(elements),
-    pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
-    accounts: new remoteMap.InMemoryRemoteMap([{ key: 'account_names', value: accounts }]),
-    saltoMetadata: new remoteMap.InMemoryRemoteMap(),
-    staticFilesSource: mockStaticFilesSource(),
-    topLevelPathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
-    deprecated: {
-      accountsUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(),
-    },
-  }))

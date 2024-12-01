@@ -5,11 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element } from '@salto-io/adapter-api'
-import { elementSource, remoteMap } from '@salto-io/workspace'
-
-export const createElementSource = (elements: readonly Element[]): elementSource.RemoteElementSource =>
-  elementSource.createInMemoryElementSource(elements as Element[])
+import { remoteMap } from '@salto-io/workspace'
 
 export const inMemRemoteMapCreator = (): remoteMap.RemoteMapCreator => {
   const maps = new Map<string, remoteMap.RemoteMap<unknown>>()

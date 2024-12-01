@@ -14,7 +14,7 @@ import { APP_IDENTIFIER_FIELD_NAME, APPLICATION_TYPE_NAME, PACKAGE_ID_FIELD_NAME
 import { NAME_ID_FIELD } from '../../shared/defaults'
 import { odataType } from '../../../../utils/shared'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { extractStaticFileFromBinaryScript, ToFileNameFunc, ValidateScriptsRootFieldFunc } from './script_content'
+import { ExtractScriptParams, extractStaticFileFromBinaryScript } from './script_content'
 
 const log = logger(module)
 
@@ -52,15 +52,14 @@ export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
 
 type ScriptsExtractionParams = {
   scriptsRootFieldNames: string[]
-  validateFunc: ValidateScriptsRootFieldFunc
-  toFileName: ToFileNameFunc
-}
+} & Pick<ExtractScriptParams, 'validateFunc' | 'toFileName' | 'throwOnEmptyField'>
 
 const odataTypeToScriptsExtractionParams: Record<string, ScriptsExtractionParams> = {
   macOSPkgApp: {
     scriptsRootFieldNames: ['preInstallScript', 'postInstallScript'],
     validateFunc: validatePlainObject,
     toFileName: ({ scriptsRootFieldName }) => `${scriptsRootFieldName}.sh`,
+    throwOnEmptyField: true,
   },
   win32LobApp: {
     scriptsRootFieldNames: ['detectionRules', 'requirementRules', 'rules'],

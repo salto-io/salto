@@ -195,36 +195,36 @@ describe('Intune application fetch utils', () => {
       const POST_INSTALL_SCRIPT_FIELD_NAME = 'postInstallScript'
 
       describe('when no script field is present', () => {
-        it('should return the value as is', async () => {
+        it('should throw an error', async () => {
           const value = {
             [getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]: 'macOSPkgApp',
             displayName: 'test mac os pkg app',
           }
-          expect(
-            await application.setApplicationScriptValueAsStaticFile({
+          await expect(
+            application.setApplicationScriptValueAsStaticFile({
               value,
               typeName: 'testApplication',
               context: { ...contextMock, fragments: [] },
             }),
-          ).toEqual({ value })
+          ).rejects.toThrow(new Error('Expected to find IntuneApplication.preInstallScript but got undefined'))
         })
       })
 
       describe('when all the script fields are empty', () => {
-        it('should return the value as is', async () => {
+        it('should throw an error', async () => {
           const value = {
             [getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]: 'macOSPkgApp',
             displayName: 'test mac os pkg app',
             [PRE_INSTALL_SCRIPT_FIELD_NAME]: {},
-            [POST_INSTALL_SCRIPT_FIELD_NAME]: undefined,
+            [POST_INSTALL_SCRIPT_FIELD_NAME]: {},
           }
-          expect(
-            await application.setApplicationScriptValueAsStaticFile({
+          await expect(
+            application.setApplicationScriptValueAsStaticFile({
               value,
               typeName: 'testApplication',
               context: { ...contextMock, fragments: [] },
             }),
-          ).toEqual({ value })
+          ).rejects.toThrow(new Error('Expected to find IntuneApplication.preInstallScript but got {}'))
         })
       })
 

@@ -17,8 +17,8 @@ import { NAME_ID_FIELD } from '../../shared/defaults'
 const { array } = collections
 const log = logger(module)
 
-export type ValidateScriptsRootFieldFunc = (scriptRootFieldValue: unknown, path: string) => void
-export type ToFileNameFunc = (metadata: { scriptsRootFieldName: string; scriptField: Values; index: number }) => string
+type ValidateScriptsRootFieldFunc = (scriptRootFieldValue: unknown, path: string) => void
+type ToFileNameFunc = (metadata: { scriptsRootFieldName: string; scriptField: Values; index: number }) => string
 
 export type ExtractScriptParams = {
   value: Values

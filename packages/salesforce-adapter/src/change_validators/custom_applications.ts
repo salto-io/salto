@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import _ from 'lodash'
 import {
   ChangeValidator,
   getChangeData,
@@ -15,8 +16,6 @@ import {
   ElemID,
   InstanceElement,
 } from '@salto-io/adapter-api'
-import wu from 'wu'
-import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { CUSTOM_APPLICATION_METADATA_TYPE } from '../constants'
@@ -55,12 +54,8 @@ const hasProfileActionOverrides = (value: unknown): boolean =>
 const isCustomApplication = (value: unknown): value is CustomApplicationValue =>
   _.isObject(value) && (hasActionOverrides(value) || hasProfileActionOverrides(value))
 
-const generateActionOverrideKey = (action: {
-  formFactor: string
-  pageOrSobjectType: string
-  profile?: string
-}): string => {
-  const profilePart = action.profile ? `, Profile: ${action.profile}` : ''
+const generateActionOverrideKey = (action: ProfileActionOverride | ActionOverride): string => {
+  const profilePart = 'profile' in action ? `, Profile: ${action.profile}` : ''
   return `Form Factor: ${action.formFactor}, Page/SObject: ${action.pageOrSobjectType}${profilePart}`
 }
 
@@ -103,13 +98,12 @@ const findActionOverridesDuplications = (instance: InstanceElement): ChangeError
 }
 
 const changeValidator: ChangeValidator = async changes =>
-  wu(changes)
+  changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(CUSTOM_APPLICATION_METADATA_TYPE))
     .map(findActionOverridesDuplications)
     .filter(isDefined)
-    .toArray()
 
 export default changeValidator

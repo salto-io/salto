@@ -259,7 +259,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
-  const executingDeploy = force || (await shouldDeploy(actionPlan, checkOnly))
+  const executingDeploy = !dryRun ? force || (await shouldDeploy(actionPlan, checkOnly)) : false
   const result = dryRun
     ? { success: true, errors: [] }
     : await deployPlan(actionPlan, workspace, cliTelemetry, output, executingDeploy, checkOnly, actualAccounts)
@@ -289,7 +289,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
   )
 
-  if (executingDeploy && !dryRun) {
+  if (executingDeploy) {
     const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(summary))
     if (formattedDeploymentSummary) {
       outputLine(formattedDeploymentSummary, output)

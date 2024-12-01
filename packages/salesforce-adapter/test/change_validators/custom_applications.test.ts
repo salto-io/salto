@@ -59,7 +59,7 @@ describe('custom applications change validator', () => {
       expect(errors).toHaveLength(1)
       const [error] = errors
       expect(error.severity).toEqual('Error')
-      expect(error.message).toEqual('Custom Application Duplicate Overrides Detected')
+      expect(error.message).toEqual('Custom Application has conflicting action overrides')
       expect(error.detailedMessage).toContain('Form Factor: Large, Page/SObject: Account')
     })
   })
@@ -84,7 +84,7 @@ describe('custom applications change validator', () => {
       expect(errors).toHaveLength(1)
       const [error] = errors
       expect(error.severity).toEqual('Error')
-      expect(error.message).toEqual('Custom Application Duplicate Overrides Detected')
+      expect(error.message).toEqual('Custom Application has conflicting action overrides')
       expect(error.detailedMessage).toContain('Form Factor: Large, Page/SObject: Account, Profile: Admin')
     })
   })
@@ -138,7 +138,7 @@ describe('custom applications change validator', () => {
         expect(errors).toHaveLength(1)
         const [error] = errors
         expect(error.severity).toEqual('Error')
-        expect(error.message).toEqual('Custom Application Duplicate Overrides Detected')
+        expect(error.message).toEqual('Custom Application has conflicting action overrides')
         const duplicateLines = error.detailedMessage.split('\n').filter(line => line.startsWith('-'))
         expect(duplicateLines).toHaveLength(1)
         expect(duplicateLines[0]).toContain('Form Factor: Large, Page/SObject: Account')
@@ -182,13 +182,13 @@ describe('custom applications change validator', () => {
 
         // Verify first app error
         expect(errors[0].severity).toEqual('Error')
-        expect(errors[0].message).toEqual('Custom Application Duplicate Overrides Detected')
+        expect(errors[0].message).toEqual('Custom Application has conflicting action overrides')
         expect(errors[0].detailedMessage).toContain('Form Factor: Large, Page/SObject: Account')
         expect(errors[0].detailedMessage.split('\n').filter(line => line.startsWith('-'))).toHaveLength(1)
 
         // Verify second app error
         expect(errors[1].severity).toEqual('Error')
-        expect(errors[1].message).toEqual('Custom Application Duplicate Overrides Detected')
+        expect(errors[1].message).toEqual('Custom Application has conflicting action overrides')
         expect(errors[1].detailedMessage).toContain('Form Factor: Small, Page/SObject: Contact, Profile: Admin')
         expect(errors[1].detailedMessage.split('\n').filter(line => line.startsWith('-'))).toHaveLength(1)
       })

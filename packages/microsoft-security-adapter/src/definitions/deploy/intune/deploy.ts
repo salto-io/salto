@@ -72,7 +72,7 @@ const graphBetaCustomDefinitions: DeployCustomDefinitions = {
                 method: 'post',
               },
               transformation: {
-                omit: [ASSIGNMENTS_FIELD_NAME],
+                omit: [ASSIGNMENTS_FIELD_NAME, 'size'],
               },
             },
             condition: {

@@ -10,6 +10,16 @@ import { StaticFile } from '@salto-io/adapter-api'
 import { fileNameFromUniqueName } from '@salto-io/adapter-utils'
 import { ADAPTER_NAME } from '../../../../constants'
 
+const toSafeFileName = (fileName: string): string => {
+  const fileNameParts = fileName.split('.')
+  if (fileNameParts.length === 1) {
+    return fileNameFromUniqueName(fileName)
+  }
+  const fileNameExtension = fileNameParts.pop()
+  const safeFileName = fileNameFromUniqueName(fileNameParts.join('.'))
+  return `${safeFileName}.${fileNameExtension}`
+}
+
 /**
  * Creates a static file from a base64 blob, using the element's full name as the folder name for uniqueness
  */
@@ -18,16 +28,19 @@ export const createStaticFileFromBase64Blob = ({
   fullName,
   fileName,
   content,
+  subDirectory = '',
 }: {
   typeName: string
   fullName: string
   fileName: string
   content: string
+  subDirectory?: string
 }): StaticFile => {
-  const formattedFullName = fileNameFromUniqueName(fullName)
+  const formattedParentDir = fileNameFromUniqueName(fullName)
+  const safeFileName = toSafeFileName(fileName)
 
   return new StaticFile({
-    filepath: `${ADAPTER_NAME}/${typeName}/${formattedFullName}/${fileName}`,
+    filepath: `${ADAPTER_NAME}/${typeName}/${subDirectory}/${formattedParentDir}/${safeFileName}`,
     content: Buffer.from(content, 'base64'),
     encoding: 'base64',
   })

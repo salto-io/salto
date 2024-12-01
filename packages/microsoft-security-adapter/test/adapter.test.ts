@@ -15,7 +15,6 @@ import {
   isInstanceElement,
   ObjectType,
   ReferenceExpression,
-  StaticFile,
   Values,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
@@ -24,6 +23,7 @@ import { adapter } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
 import { credentialsType, MicrosoftServicesToManage } from '../src/auth'
+import { validateStaticFile } from './utils'
 
 type MockReply = {
   url: string
@@ -270,7 +270,7 @@ describe('Microsoft Security adapter', () => {
             })
 
             it('should create the correct instances for Intune applications', async () => {
-              expect(intuneApplications).toHaveLength(6)
+              expect(intuneApplications).toHaveLength(10)
 
               const intuneApplicationNames = intuneApplications.map(e => e.elemID.name)
               expect(intuneApplicationNames).toEqual(
@@ -281,6 +281,10 @@ describe('Microsoft Security adapter', () => {
                   'managedIOSStoreApp_test',
                   'managedAndroidStoreApp_com_test2@uv',
                   'managedAndroidStoreApp_com_test@uv',
+                  'win32LobApp_test',
+                  'win32LobApp_test2',
+                  'win32LobApp_test3',
+                  'macOSPkgApp_test',
                 ]),
               )
             })
@@ -295,6 +299,9 @@ describe('Microsoft Security adapter', () => {
                   ['microsoft_security', 'Records', 'IntuneApplication', 'managedIOSStoreApp', 'test'],
                   ['microsoft_security', 'Records', 'IntuneApplication', 'managedAndroidStoreApp', 'com_test2'],
                   ['microsoft_security', 'Records', 'IntuneApplication', 'managedAndroidStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'win32LobApp', 'test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'win32LobApp', 'test2'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'win32LobApp', 'test3'],
                 ]),
               )
             })
@@ -333,7 +340,7 @@ describe('Microsoft Security adapter', () => {
               const applicationsWithoutAssignments = intuneApplications.filter(
                 e => e.elemID.name !== 'managedAndroidStoreApp_com_test@uv',
               )
-              expect(applicationsWithoutAssignments).toHaveLength(5)
+              expect(applicationsWithoutAssignments).toHaveLength(9)
               expect(applicationsWithoutAssignments.every(e => e.value.assignments?.length === 0)).toBeTruthy()
             })
 
@@ -351,6 +358,67 @@ describe('Microsoft Security adapter', () => {
                   'microsoft_security.IntuneScopeTag.instance.test_scope_tag@s',
                 ]),
               )
+            })
+
+            describe('win32LobApp', () => {
+              let win32LobAppWithScripts: InstanceElement
+              beforeEach(async () => {
+                const testApp = intuneApplications.find(e => e.elemID.name === 'win32LobApp_test')
+                expect(testApp).toBeDefined()
+                win32LobAppWithScripts = testApp as InstanceElement
+              })
+
+              it('should parse script content correctly for detectionRules field', async () => {
+                const { detectionRules } = win32LobAppWithScripts.value
+                expect(detectionRules).toHaveLength(1)
+                await validateStaticFile({
+                  value: detectionRules[0].scriptContent,
+                  expectedPath: 'microsoft_security/IntuneApplication/win32LobApp/test/detectionRules.ps1',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
+
+              it('should parse script content correctly for requirementRules field', async () => {
+                const { requirementRules } = win32LobAppWithScripts.value
+                expect(requirementRules).toHaveLength(1)
+                await validateStaticFile({
+                  value: requirementRules[0].scriptContent,
+                  expectedPath:
+                    'microsoft_security/IntuneApplication/win32LobApp/test/requirementRules_sample_requirement_script.uss.ps1',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
+
+              it('should omit the rules field', async () => {
+                expect(win32LobAppWithScripts.value.rules).toBeUndefined()
+              })
+            })
+
+            describe('macOSPkgApp', () => {
+              let macOSPkgAppWithScripts: InstanceElement
+              beforeEach(async () => {
+                const testApp = intuneApplications.find(e => e.elemID.name === 'macOSPkgApp_test')
+                expect(testApp).toBeDefined()
+                macOSPkgAppWithScripts = testApp as InstanceElement
+              })
+
+              it('should parse script content correctly for preInstallScript field', async () => {
+                const { preInstallScript } = macOSPkgAppWithScripts.value
+                await validateStaticFile({
+                  value: preInstallScript.scriptContent,
+                  expectedPath: 'microsoft_security/IntuneApplication/macOSPkgApp/test/preInstallScript.sh',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
+
+              it('should parse script content correctly for postInstallScript field', async () => {
+                const { postInstallScript } = macOSPkgAppWithScripts.value
+                await validateStaticFile({
+                  value: postInstallScript.scriptContent,
+                  expectedPath: 'microsoft_security/IntuneApplication/macOSPkgApp/test/postInstallScript.sh',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
             })
           })
 
@@ -597,15 +665,11 @@ describe('Microsoft Security adapter', () => {
                 e => e.elemID.name === 'test_custom_template@s',
               )
               expect(intuneDeviceConfiguration).toBeDefined()
-              const { payload } = (intuneDeviceConfiguration as InstanceElement).value
-              expect(payload).toBeInstanceOf(StaticFile)
-              expect(payload.filepath).toEqual(
-                'microsoft_security/IntuneDeviceConfiguration/test_custom_template.s/example.xml',
-              )
-              expect(payload.encoding).toEqual('base64')
-              const payloadContent = await payload.getContent()
-              expect(payloadContent).toBeInstanceOf(Buffer)
-              expect(payloadContent.toString()).toEqual('<note>This is a test</note>')
+              await validateStaticFile({
+                value: intuneDeviceConfiguration?.value.payload,
+                expectedPath: 'microsoft_security/IntuneDeviceConfiguration/test_custom_template.s/example.xml',
+                expectedContent: '<note>This is a test</note>',
+              })
             })
           })
 
@@ -778,16 +842,13 @@ describe('Microsoft Security adapter', () => {
                 'simpleSettingValue',
                 'value',
               ])
-              expect(linuxScript).toBeInstanceOf(StaticFile)
-              const scriptContent = await linuxScript.getContent()
-              expect(scriptContent).toBeInstanceOf(Buffer)
-              expect(scriptContent.toString()).toEqual(
-                '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
-              )
-              expect(linuxScript.encoding).toEqual('base64')
-              expect(linuxScript.filepath).toEqual(
-                'microsoft_security/IntunePlatformScriptLinux/test_linux_script.s/linux_customconfig_script.sh',
-              )
+              await validateStaticFile({
+                value: linuxScript,
+                expectedPath:
+                  'microsoft_security/IntunePlatformScriptLinux/test_linux_script.s/linux_customconfig_script.sh',
+                expectedContent:
+                  '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
+              })
             })
 
             it('should include assignments field with references to the matching groups', async () => {
@@ -829,15 +890,12 @@ describe('Microsoft Security adapter', () => {
 
             it('should include scriptContent field as a static file', async () => {
               const platformScriptWindows = platformScriptsWindows[0]
-              const { scriptContent } = platformScriptWindows.value
-              expect(scriptContent).toBeInstanceOf(StaticFile)
-              const content = await scriptContent.getContent()
-              expect(content).toBeInstanceOf(Buffer)
-              expect(content.toString()).toEqual('echo "Hello, World!"')
-              expect(scriptContent.encoding).toEqual('base64')
-              expect(scriptContent.filepath).toEqual(
-                'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s/simple_powershell_script.ps1',
-              )
+              await validateStaticFile({
+                value: platformScriptWindows.value.scriptContent,
+                expectedPath:
+                  'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s/simple_powershell_script.ps1',
+                expectedContent: 'echo "Hello, World!"',
+              })
             })
 
             it('should include assignments field with references to the matching groups', async () => {
@@ -879,15 +937,12 @@ describe('Microsoft Security adapter', () => {
 
             it('should include scriptContent field as a static file', async () => {
               const platformScriptMacOS = platformScriptsMacOS[0]
-              const { scriptContent } = platformScriptMacOS.value
-              expect(scriptContent).toBeInstanceOf(StaticFile)
-              const content = await scriptContent.getContent()
-              expect(content).toBeInstanceOf(Buffer)
-              expect(content.toString()).toEqual('echo "Hello, World! This is macOS test"')
-              expect(scriptContent.encoding).toEqual('base64')
-              expect(scriptContent.filepath).toEqual(
-                'microsoft_security/IntunePlatformScriptMacOS/test_script_macOS.s/intune-macOS-script-example.sh',
-              )
+              await validateStaticFile({
+                value: platformScriptMacOS.value.scriptContent,
+                expectedPath:
+                  'microsoft_security/IntunePlatformScriptMacOS/test_script_macOS.s/intune_macOS_script_example.b.sh',
+                expectedContent: 'echo "Hello, World! This is macOS test"',
+              })
             })
 
             it('should include assignments field with references to the matching groups', async () => {

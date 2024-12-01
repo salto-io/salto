@@ -458,6 +458,8 @@ export const TARGETS_FIELD = 'targets'
 export const CUSTOM_OBJECTS_FIELD = 'customObjects'
 export const CUSTOM_OBJECTS_LOOKUPS_FIELD = 'customObjectsLookups'
 
+export const ORDERED_MAP_PREFIX = 'OrderedMapOf'
+
 export const getTypePath = (name: string, isTopLevelType = true): string[] => [
   SALESFORCE,
   TYPES_PATH,

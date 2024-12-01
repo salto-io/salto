@@ -230,25 +230,6 @@ describe('local workspace', () => {
           )
         })
       })
-      describe('when called with deprecated arguments format', () => {
-        beforeEach(async () => {
-          await loadLocalWorkspace('my_path', [], false)
-        })
-        it('should pass the arguments correctly', () => {
-          expect(mockExists).toHaveBeenCalledWith(expect.stringMatching(/.*\/my_path\/salto\.config/))
-          expect(mockLoad).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            false,
-            undefined,
-            expect.anything(),
-          )
-        })
-      })
     })
   })
 

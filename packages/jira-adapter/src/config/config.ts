@@ -186,7 +186,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     enableIssueLayouts: true,
     enableNewWorkflowAPI: true,
     allowUserCallFailure: false,
-    enableAssetsObjectFieldConfiguration: false,
+    enableAssetsObjectFieldConfiguration: true,
     removeFieldConfigurationDefaultValues: false,
   },
   deploy: {

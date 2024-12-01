@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export { ParsedNaclFile, ParsedNaclFileData } from './parsed_nacl_file'
+export { ParsedNaclFile } from './parsed_nacl_file'
 export { ChangeSet } from './elements_cache'
 export {
   NaclFile,

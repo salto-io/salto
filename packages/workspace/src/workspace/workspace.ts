@@ -235,7 +235,6 @@ export type Workspace = {
   removeNaclFiles: (names: string[], validate?: boolean) => Promise<EnvsChanges>
   getSourceMap: (filename: string) => Promise<parser.SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<parser.SourceRange[]>
-  getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ReferenceIndexEntry[]>>
   getElementOutgoingReferences: (
     id: ElemID,
@@ -1296,8 +1295,6 @@ export const loadWorkspace = async (
         compacted,
       )
     },
-    getElementReferencedFiles: async id =>
-      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id),
     getReferenceSourcesIndex: async (envName = currentEnv()) =>
       (await getWorkspaceState()).states[envName].referenceSources,
     getElementOutgoingReferences: async (id, envName = currentEnv(), includeWeakReferences = true) => {

@@ -7,6 +7,7 @@
  */
 
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
   ChangeValidator,
@@ -16,9 +17,10 @@ import {
   isAdditionOrModificationChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { isInstanceOfTypeSync } from '../filters/utils'
+import { isInstanceOfType } from '../filters/utils'
 import { ACCOUNT_SETTINGS_METADATA_TYPE, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const isRecordTypeInvalid = (globalSharingSettings: InstanceElement, instance: InstanceElement): boolean =>
@@ -47,12 +49,14 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     return []
   }
 
-  return changes
+  return awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isInstanceOfTypeSync(ACCOUNT_SETTINGS_METADATA_TYPE))
+    .filter(isInstanceElement)
+    .filter(isInstanceOfType(ACCOUNT_SETTINGS_METADATA_TYPE))
     .filter(accountSettingsInstance => isRecordTypeInvalid(orgWideSettings, accountSettingsInstance))
     .map(invalidRecordTypeError)
+    .toArray()
 }
 
 export default changeValidator

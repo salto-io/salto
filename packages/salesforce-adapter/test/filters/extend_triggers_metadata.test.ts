@@ -77,141 +77,29 @@ describe('extendTriggersMetadata filter', () => {
     beforeEach(() => {
       elements = [triggerMetadataType, triggerInstance, parentObject]
       triggerTypes = new Set([TriggerType.UsageBeforeInsert, TriggerType.UsageAfterDelete])
+      filter = filterCreator({
+        client,
+        config: defaultFilterContext,
+      }) as typeof filter
     })
-    describe('when feature is enabled', () => {
-      beforeEach(() => {
-        filter = filterCreator({
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { extendTriggersMetadata: true } },
-            }),
-          },
-        }) as typeof filter
-      })
-      describe('when parent object is referenced by its API name', () => {
-        beforeEach(async () => {
-          connection.query.mockResolvedValue({
-            records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
-            done: true,
-            totalSize: 1,
-          })
-          await filter.onFetch(elements)
-        })
-        it('should extend the trigger instance metadata', () => {
-          expect(triggerInstance.value[TRIGGER_TYPES_FIELD_NAME]).toIncludeSameMembers(Array.from(triggerTypes))
-          expect(triggerInstance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
-            new ReferenceExpression(parentObject.elemID, parentObject),
-          ])
-        })
-      })
-      describe('when parent object is referenced by its Id', () => {
-        beforeEach(async () => {
-          connection.query.mockResolvedValue({
-            records: [createTriggerRecord(PARENT_OBJECT_ID, triggerTypes)],
-            done: true,
-            totalSize: 1,
-          })
-          await filter.onFetch(elements)
-        })
-        it('should extend the trigger instance metadata', () => {
-          expect(triggerInstance.value[TRIGGER_TYPES_FIELD_NAME]).toIncludeSameMembers(Array.from(triggerTypes))
-          expect(triggerInstance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
-            new ReferenceExpression(parentObject.elemID, parentObject),
-          ])
-        })
-      })
-      it('should add the triggerTypes field on the metadata type', async () => {
-        await filter.onFetch(elements)
-        expect(triggerMetadataType.fields[TRIGGER_TYPES_FIELD_NAME]).toBeDefined()
-      })
-      describe('when ApexTrigger metadata type not found', () => {
-        beforeEach(async () => {
-          connection.query.mockResolvedValue({
-            records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
-            done: true,
-            totalSize: 1,
-          })
-          await filter.onFetch(
-            elements.filter(e => e.elemID.getFullName() !== triggerMetadataType.elemID.getFullName()),
-          )
-        })
-        it('should not extend the trigger instance metadata', () => {
-          expect(triggerInstance.value[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
-          expect(triggerInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
-        })
-        it('should not add the triggerTypes field on the metadata type', () => {
-          expect(triggerMetadataType.fields[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
-        })
-      })
-      describe('when chunk size is configured in the limits config', () => {
-        const ANOTHER_TRIGGER_ID = '01BAc000000EmuPBDC'
-        let anotherTriggerInstance: InstanceElement
-        beforeEach(() => {
-          anotherTriggerInstance = new InstanceElement('test2', triggerMetadataType, {
-            fullName: 'AnotherTriggerInstance',
-            [INTERNAL_ID_FIELD]: ANOTHER_TRIGGER_ID,
-          })
-          connection.query.mockResolvedValue({
-            records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
-            done: false,
-            totalSize: 1,
-          })
-        })
-        describe('when ApexTrigger instances count exceeds the chunk size', () => {
-          beforeEach(async () => {
-            filter = filterCreator({
-              client,
-              config: {
-                ...defaultFilterContext,
-                fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    optionalFeatures: { extendTriggersMetadata: true },
-                    limits: { extendTriggersMetadataChunkSize: 1 },
-                  },
-                }),
-              },
-            }) as typeof filter
-            await filter.onFetch(elements.concat(anotherTriggerInstance))
-          })
-          it('should send multiple queries', () => {
-            expect(connection.query).toHaveBeenCalledTimes(2)
-          })
-        })
-        describe('when ApexTrigger instances count does not exceed the chunk size', () => {
-          beforeEach(async () => {
-            filter = filterCreator({
-              client,
-              config: {
-                ...defaultFilterContext,
-                fetchProfile: buildFetchProfile({
-                  fetchParams: {
-                    optionalFeatures: { extendTriggersMetadata: true },
-                    limits: { extendTriggersMetadataChunkSize: 2 },
-                  },
-                }),
-              },
-            }) as typeof filter
-            await filter.onFetch(elements.concat(anotherTriggerInstance))
-          })
-          it('should send a single query', () => {
-            expect(connection.query).toHaveBeenCalledTimes(1)
-          })
-        })
-      })
-    })
-    describe('when feature is disabled', () => {
+    describe('when parent object is referenced by its API name', () => {
       beforeEach(async () => {
-        filter = filterCreator({
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { extendTriggersMetadata: false } },
-            }),
-          },
-        }) as typeof filter
+        connection.query.mockResolvedValue({
+          records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
+          done: true,
+          totalSize: 1,
+        })
+        await filter.onFetch(elements)
+      })
+      it('should extend the trigger instance metadata', () => {
+        expect(triggerInstance.value[TRIGGER_TYPES_FIELD_NAME]).toIncludeSameMembers(Array.from(triggerTypes))
+        expect(triggerInstance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
+          new ReferenceExpression(parentObject.elemID, parentObject),
+        ])
+      })
+    })
+    describe('when parent object is referenced by its Id', () => {
+      beforeEach(async () => {
         connection.query.mockResolvedValue({
           records: [createTriggerRecord(PARENT_OBJECT_ID, triggerTypes)],
           done: true,
@@ -219,12 +107,85 @@ describe('extendTriggersMetadata filter', () => {
         })
         await filter.onFetch(elements)
       })
+      it('should extend the trigger instance metadata', () => {
+        expect(triggerInstance.value[TRIGGER_TYPES_FIELD_NAME]).toIncludeSameMembers(Array.from(triggerTypes))
+        expect(triggerInstance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual([
+          new ReferenceExpression(parentObject.elemID, parentObject),
+        ])
+      })
+    })
+    it('should add the triggerTypes field on the metadata type', async () => {
+      await filter.onFetch(elements)
+      expect(triggerMetadataType.fields[TRIGGER_TYPES_FIELD_NAME]).toBeDefined()
+    })
+    describe('when ApexTrigger metadata type not found', () => {
+      beforeEach(async () => {
+        connection.query.mockResolvedValue({
+          records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
+          done: true,
+          totalSize: 1,
+        })
+        await filter.onFetch(elements.filter(e => e.elemID.getFullName() !== triggerMetadataType.elemID.getFullName()))
+      })
       it('should not extend the trigger instance metadata', () => {
         expect(triggerInstance.value[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
         expect(triggerInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
       })
       it('should not add the triggerTypes field on the metadata type', () => {
         expect(triggerMetadataType.fields[TRIGGER_TYPES_FIELD_NAME]).toBeUndefined()
+      })
+    })
+    describe('when chunk size is configured in the limits config', () => {
+      const ANOTHER_TRIGGER_ID = '01BAc000000EmuPBDC'
+      let anotherTriggerInstance: InstanceElement
+      beforeEach(() => {
+        anotherTriggerInstance = new InstanceElement('test2', triggerMetadataType, {
+          fullName: 'AnotherTriggerInstance',
+          [INTERNAL_ID_FIELD]: ANOTHER_TRIGGER_ID,
+        })
+        connection.query.mockResolvedValue({
+          records: [createTriggerRecord(PARENT_OBJECT_API_NAME, triggerTypes)],
+          done: false,
+          totalSize: 1,
+        })
+      })
+      describe('when ApexTrigger instances count exceeds the chunk size', () => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  limits: { extendTriggersMetadataChunkSize: 1 },
+                },
+              }),
+            },
+          }) as typeof filter
+          await filter.onFetch(elements.concat(anotherTriggerInstance))
+        })
+        it('should send multiple queries', () => {
+          expect(connection.query).toHaveBeenCalledTimes(2)
+        })
+      })
+      describe('when ApexTrigger instances count does not exceed the chunk size', () => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: {
+                  limits: { extendTriggersMetadataChunkSize: 2 },
+                },
+              }),
+            },
+          }) as typeof filter
+          await filter.onFetch(elements.concat(anotherTriggerInstance))
+        })
+        it('should send a single query', () => {
+          expect(connection.query).toHaveBeenCalledTimes(1)
+        })
       })
     })
   })

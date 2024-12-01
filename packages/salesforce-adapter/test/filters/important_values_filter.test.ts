@@ -52,37 +52,10 @@ describe('important values filter', () => {
         },
       })
     })
-    describe('when feature is disabled', () => {
+    describe('when there are no additional important values', () => {
       beforeEach(() => {
         filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: { optionalFeatures: { importantValues: false } },
-            }),
-          },
-        }) as typeof filter
-      })
-      it('should not add important values', async () => {
-        await filter.onFetch([nonMetadataType, metadataType, metadataTypeWithNoImportantValues])
-        expect(nonMetadataType).not.toSatisfy(hasImportantValues())
-        expect(metadataType).not.toSatisfy(hasImportantValues())
-        expect(metadataTypeWithNoImportantValues).not.toSatisfy(hasImportantValues())
-      })
-    })
-    describe('when feature is enabled', () => {
-      beforeEach(() => {
-        filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              fetchParams: {
-                optionalFeatures: {
-                  importantValues: true,
-                },
-              },
-            }),
-          },
+          config: defaultFilterContext,
         }) as typeof filter
       })
       it('should add important values', async () => {
@@ -103,9 +76,6 @@ describe('important values filter', () => {
                   { value: 'fullName', indexed: false, highlighted: false },
                   { value: 'apiVersion', indexed: true, highlighted: false },
                 ],
-                optionalFeatures: {
-                  importantValues: true,
-                },
               },
             }),
           },
@@ -136,9 +106,6 @@ describe('important values filter', () => {
                     highlighted: false,
                   },
                 ],
-                optionalFeatures: {
-                  importantValues: true,
-                },
               },
             }),
           },

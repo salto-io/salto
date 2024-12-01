@@ -32,6 +32,7 @@ const DEPRECATED_CONFIGS_TO_REMOVE = [
   'fetch.forceFileCabinetExclude',
   'fetch.calculateNewReferencesInSuiteScripts',
   'fetch.useNewReferencesInSuiteScripts',
+  'fetch.resolveAccountSpecificValues',
   'suiteAppClient.maxRecordsPerSuiteQLTable',
   'useChangesDetection',
   'withPartialDeletion',

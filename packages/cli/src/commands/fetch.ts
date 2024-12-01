@@ -222,19 +222,17 @@ export const fetchCommand = async ({
     }
   }
 
-  // Unpack changes to array so we can iterate on them more than once
-  const changes = [...fetchResult.changes]
-  cliTelemetry.changes(changes.length)
+  cliTelemetry.changes(fetchResult.changes.length)
 
   const updatingWsSucceeded = stateOnly
-    ? await applyChangesToState(changes)
+    ? await applyChangesToState(fetchResult.changes)
     : await applyChangesToWorkspace({
         workspace,
         cliTelemetry,
         force,
         shouldCalcTotalSize,
         output,
-        changes,
+        changes: fetchResult.changes,
         mode,
         approveChangesCallback: getApprovedChanges,
         applyProgress: fetchProgress,

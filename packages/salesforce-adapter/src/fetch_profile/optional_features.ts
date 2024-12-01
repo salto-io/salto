@@ -15,7 +15,6 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendedCustomFieldInformation: false,
   hideTypesFolder: true,
   metaTypes: false,
-  extendTriggersMetadata: true,
   picklistsAsMaps: false,
   retrieveSettings: false,
   genAiReferences: false,

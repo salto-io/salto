@@ -109,27 +109,25 @@ const changeValidator: (fetchProfile: FetchProfile) => ChangeValidator = fetchPr
       })
       .toArray()
 
-    const objectTypeErrors: ChangeError[] = await awu(Object.keys(annotationDefsByType))
-      .flatMap(async fieldType => {
-        const fieldNames = Object.entries(annotationDefsByType[fieldType])
-          .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
-          .map(([fieldName, _mapDef]) => fieldName)
+    const objectTypeErrors: ChangeError[] = Object.keys(annotationDefsByType).flatMap(fieldType => {
+      const fieldNames = Object.entries(annotationDefsByType[fieldType])
+        .filter(([_fieldName, annotationDef]) => annotationDef.maintainOrder)
+        .map(([fieldName, _mapDef]) => fieldName)
 
-        const fieldChanges = getChangesWithFieldType(changes, fieldType)
-        return fieldChanges
-          .flatMap(change => {
-            if (isFieldChange(change)) {
-              return [getChangeData(change)]
-            }
-            if (isObjectTypeChange(change)) {
-              const objectType = getChangeData(change)
-              return Object.values(objectType.fields).filter(field => field.refType.elemID.typeName === fieldType)
-            }
-            return []
-          })
-          .flatMap(field => fieldNames.flatMap(fieldName => getOrderedMapErrors(field, fieldName)))
-      })
-      .toArray()
+      const fieldChanges = getChangesWithFieldType(changes, fieldType)
+      return fieldChanges
+        .flatMap(change => {
+          if (isFieldChange(change)) {
+            return [getChangeData(change)]
+          }
+          if (isObjectTypeChange(change)) {
+            const objectType = getChangeData(change)
+            return Object.values(objectType.fields).filter(field => field.refType.elemID.typeName === fieldType)
+          }
+          return []
+        })
+        .flatMap(field => fieldNames.flatMap(fieldName => getOrderedMapErrors(field, fieldName)))
+    })
     return instanceErrors.concat(objectTypeErrors)
   }
 }

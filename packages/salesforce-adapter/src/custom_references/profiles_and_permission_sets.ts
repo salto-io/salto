@@ -310,10 +310,10 @@ export const getProfilesAndPsBrokenReferenceFields = async ({
           [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
           target,
         ],
-        // Unlike in the findWeakReferences, we don't want to filter out the entries that don't have a target
+        // Unlike in findWeakReferences, we don't want to filter out the entries that don't have a target
         // here, and we should handle all of them. The filters are implemented in order to reduce the amount
         // of total references we create, and we create references only when we need to
-        // (When the value of the entry is not the default value from Salesforce).
+        // (When the value of the entry is not the default value from Salesforce). This optimization is not required here.
         applyFilter: false,
       }),
     )

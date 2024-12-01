@@ -216,31 +216,35 @@ const sectionsReferenceParams: Record<ProfileSection, ReferenceFromSectionParams
   },
 }
 
-export const mapInstanceSections = <T>(
-  instance: InstanceElement,
-  f: (sectionName: string, sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
-  applyFilter: boolean,
-): T[] =>
+export const mapInstanceSections = <T>({
+  instance,
+  func,
+  applyFilter,
+}: {
+  instance: InstanceElement
+  func: (sectionName: string, sectionEntryKey: string, target: ElemID, sourceField?: string) => T
+  applyFilter: boolean
+}): T[] =>
   Object.entries(sectionsReferenceParams).flatMap(([sectionName, params]) =>
     mapSectionEntries(
       instance,
       sectionName as ProfileSection,
       applyFilter ? params : { ...params, filter: () => true },
-      _.curry(f)(sectionName),
+      _.curry(func)(sectionName),
     ),
   )
 
 const referencesFromInstance = (instance: InstanceElement): ReferenceInfo[] =>
-  mapInstanceSections(
+  mapInstanceSections({
     instance,
-    (sectionName, sectionEntryKey, target, sourceField) => ({
+    func: (sectionName, sectionEntryKey, target, sourceField) => ({
       source: instance.elemID.createNestedID(sectionName, sectionEntryKey, ...makeArray(sourceField)),
       target,
       type: 'weak',
       sourceScope: 'value',
     }),
-    true,
-  )
+    applyFilter: true,
+  })
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
@@ -256,14 +260,14 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
 
 const instanceEntriesTargets = (instance: InstanceElement, metadataQuery: MetadataQuery<ElemID>): Dictionary<ElemID> =>
   _(
-    mapInstanceSections(
+    mapInstanceSections({
       instance,
-      (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
+      func: (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
         [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
         target,
       ],
-      false,
-    ),
+      applyFilter: false,
+    }),
   )
     .filter(([, target]) => metadataQuery.isInstanceIncluded(target))
     .fromPairs()

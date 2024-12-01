@@ -38,23 +38,24 @@ type CustomApplicationValue = {
   profileActionOverrides: ProfileActionOverride[]
 }
 
+// Returns true if instance contains one of the fields actionOverrides / profileActionOverrides
 const isCustomApplicationValues = (value: unknown): value is CustomApplicationValue =>
   _.isObject(value) &&
-  _.isArray(_.get(value, 'actionOverrides')) &&
-  _.every(
-    _.get(value, 'actionOverrides'),
-    action =>
-      _.isObject(action) && _.isString(_.get(action, 'formFactor')) && _.isString(_.get(action, 'pageOrSobjectType')),
-  ) &&
-  _.isArray(_.get(value, 'profileActionOverrides')) &&
-  _.every(
-    _.get(value, 'profileActionOverrides'),
-    action =>
-      _.isObject(action) &&
-      _.isString(_.get(action, 'formFactor')) &&
-      _.isString(_.get(action, 'pageOrSobjectType')) &&
-      _.isString(_.get(action, 'profile')),
-  )
+  ((_.isArray(_.get(value, 'actionOverrides')) &&
+    _.every(
+      _.get(value, 'actionOverrides'),
+      action =>
+        _.isObject(action) && _.isString(_.get(action, 'formFactor')) && _.isString(_.get(action, 'pageOrSobjectType')),
+    )) ||
+    (_.isArray(_.get(value, 'profileActionOverrides')) &&
+      _.every(
+        _.get(value, 'profileActionOverrides'),
+        action =>
+          _.isObject(action) &&
+          _.isString(_.get(action, 'formFactor')) &&
+          _.isString(_.get(action, 'pageOrSobjectType')) &&
+          _.isString(_.get(action, 'profile')),
+      )))
 
 const generateKey = (action: { formFactor: string; pageOrSobjectType: string; profile?: string }): string => {
   const profilePart = action.profile ? `, Profile: ${action.profile}` : ''
@@ -93,11 +94,12 @@ const createChangeError = (duplicates: Set<string>, elemId: ElemID): ChangeError
 
 const instanceValidator = (instance: InstanceElement): ChangeError | undefined => {
   const values: unknown = instance.value
-
   if (!isCustomApplicationValues(values)) {
-    return undefined // Add error in case of an invalid instance
+    return undefined
   }
-  const allActions = [...values.actionOverrides, ...values.profileActionOverrides]
+  const actionOverridesArray = isUndefined(values.actionOverrides) ? [] : values.actionOverrides
+  const profileActionOverridesArray = isUndefined(values.profileActionOverrides) ? [] : values.profileActionOverrides
+  const allActions = [...actionOverridesArray, ...profileActionOverridesArray]
   const duplicates = collectDuplicates(allActions)
   return duplicates.size > 0 ? createChangeError(duplicates, instance.elemID) : undefined
 }

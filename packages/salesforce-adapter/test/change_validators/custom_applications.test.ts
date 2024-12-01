@@ -48,7 +48,6 @@ describe('custom applications change validator', () => {
             { formFactor: 'Large', pageOrSobjectType: 'Account' },
             { formFactor: 'Large', pageOrSobjectType: 'Account' },
           ],
-          profileActionOverrides: [],
         },
         mockTypes.CustomApplication,
       )
@@ -70,7 +69,6 @@ describe('custom applications change validator', () => {
       const customApp = createInstanceElement(
         {
           fullName: 'TestApp',
-          actionOverrides: [],
           profileActionOverrides: [
             { formFactor: 'Large', pageOrSobjectType: 'Account', profile: 'Admin' },
             { formFactor: 'Large', pageOrSobjectType: 'Account', profile: 'Admin' },

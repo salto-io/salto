@@ -19,7 +19,7 @@ import {
   ChangeDataType,
   SaltoErrorType,
   Progress,
-  DeployProgressReporter,
+  AsyncTaskProgressReporter,
 } from '@salto-io/adapter-api'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { NodeSkippedError, WalkError } from '@salto-io/dag'
@@ -75,7 +75,7 @@ const deployAction = async (
   planItem: PlanItem,
   adapterByAccountName: Record<string, AdapterOperations>,
   checkOnly: boolean,
-  progressReporter: DeployProgressReporter,
+  progressReporter: AsyncTaskProgressReporter,
 ): Promise<AdapterDeployResult> => {
   const changes = [...planItem.changes()]
   const accountName = planItem.account
@@ -127,7 +127,7 @@ export const deployActions = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
   checkOnly: boolean,
-  reportServiceAsyncTaskId: DeployProgressReporter['reportServiceAsyncTaskId'],
+  reportServiceAsyncTaskId: AsyncTaskProgressReporter['reportServiceAsyncTaskId'],
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: GroupProperties[] = []
@@ -141,7 +141,7 @@ export const deployActions = async (
       })
       reportProgress(item, 'started')
       try {
-        const progressReporter: DeployProgressReporter = {
+        const progressReporter: AsyncTaskProgressReporter = {
           reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
           reportServiceAsyncTaskId,
         }

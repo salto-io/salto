@@ -63,7 +63,7 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
-export type DeployProgressReporter = ProgressReporter & {
+export type AsyncTaskProgressReporter = ProgressReporter & {
   reportServiceAsyncTaskId?: (id: string) => void
 }
 
@@ -73,7 +73,7 @@ export type FetchOptions = {
 }
 
 export type DeployOptions = {
-  progressReporter: DeployProgressReporter
+  progressReporter: AsyncTaskProgressReporter
   changeGroup: ChangeGroup
 }
 

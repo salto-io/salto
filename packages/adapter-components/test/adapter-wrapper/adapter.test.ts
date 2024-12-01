@@ -12,7 +12,7 @@ import {
   Adapter,
   AdapterOperations,
   Change,
-  DeployProgressReporter,
+  AsyncTaskProgressReporter,
   DeployResult,
   ElemID,
   getChangeData,
@@ -40,7 +40,7 @@ import { INCLUDE_ALL_CONFIG } from '../../src/fetch/query'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
-const nullProgressReporter: DeployProgressReporter = {
+const nullProgressReporter: AsyncTaskProgressReporter = {
   reportProgress: () => '',
   reportServiceAsyncTaskId: () => {},
 }

@@ -16,7 +16,7 @@ import {
   Change,
   ChangeDataType,
   ChangeError,
-  DeployProgressReporter,
+  AsyncTaskProgressReporter,
   DetailedChange,
   Element,
   ElemID,
@@ -164,7 +164,7 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
-  reportServiceAsyncTaskId: DeployProgressReporter['reportServiceAsyncTaskId'] = () => undefined,
+  reportServiceAsyncTaskId: AsyncTaskProgressReporter['reportServiceAsyncTaskId'] = () => undefined,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])

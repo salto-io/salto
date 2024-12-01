@@ -587,6 +587,15 @@ export type CustomListFuncDef = {
   mode: CustomListFuncMode
 }
 
+type CanceledDeployResult = {
+  deployResult: {
+    status: string
+  }
+}
+
+const isCancelDeployResult = (result: unknown): result is CanceledDeployResult =>
+  _.isString(_.get(result, ['deployResult', 'status']))
+
 export default class SalesforceClient implements ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
@@ -1020,7 +1029,11 @@ export default class SalesforceClient implements ISalesforceClient {
             },
           }),
         })
-        if (_.get(cancelDeployResult, ['deployResult', 'status']) === 'Canceling') {
+        if (!isCancelDeployResult(cancelDeployResult)) {
+          log.error('cancelDeployResult value does not contain status: %s', inspectValue(cancelDeployResult))
+          return
+        }
+        if (cancelDeployResult.deployResult.status === 'Canceling') {
           await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
           await checkStatus()
         }

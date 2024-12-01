@@ -33,7 +33,7 @@ type ProfileActionOverride = {
   profile: string
 }
 
-type CustomApplicationValue = {
+type CustomApplicationWithOverrides = {
   actionOverrides: ActionOverride[]
   profileActionOverrides: ProfileActionOverride[]
 }
@@ -51,7 +51,7 @@ const hasProfileActionOverrides = (value: unknown): boolean =>
   _.isArray(_.get(value, 'profileActionOverrides')) &&
   _.every(_.get(value, 'profileActionOverrides'), isValidProfileActionOverride)
 
-const isCustomApplication = (value: unknown): value is CustomApplicationValue =>
+const isCustomApplicationWithOverrides = (value: unknown): value is CustomApplicationWithOverrides =>
   _.isObject(value) && (hasActionOverrides(value) || hasProfileActionOverrides(value))
 
 const generateActionOverrideKey = (action: ProfileActionOverride | ActionOverride): string => {
@@ -87,7 +87,7 @@ const createChangeError = (duplicates: Set<string>, elemId: ElemID): ChangeError
 
 const findActionOverridesDuplications = (instance: InstanceElement): ChangeError | undefined => {
   const values: unknown = instance.value
-  if (!isCustomApplication(values)) {
+  if (!isCustomApplicationWithOverrides(values)) {
     return undefined
   }
   const actionOverridesArray = values.actionOverrides ?? []

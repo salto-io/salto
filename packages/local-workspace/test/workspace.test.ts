@@ -6,13 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import path from 'path'
-import { Adapter, ElemID, GetCustomReferencesFunc, InstanceElement, ObjectType, Value } from '@salto-io/adapter-api'
+import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
 import { EnvironmentsSources, configSource as cs } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
-import { mockAdaptersConfigSource } from '@salto-io/workspace/test/common/workspace'
 import {
   initLocalWorkspace,
   ExistingWorkspaceError,
@@ -22,12 +21,10 @@ import {
   CREDENTIALS_CONFIG_PATH,
   loadLocalElementsSources,
   locateWorkspaceRoot,
-  getCustomReferences,
-} from '../../../src/local-workspace/workspace'
-import { getSaltoHome } from '../../../src/app_config'
-import * as mockDirStore from '../../../src/local-workspace/dir_store'
-import { adapterCreators } from '../../../src/core/adapters'
-import { mockStaticFilesSource } from '../../common/state'
+} from '../src/workspace'
+import { getSaltoHome } from '../src/app_config'
+import * as mockDirStore from '../src/dir_store'
+import { mockStaticFilesSource } from './common/state'
 
 const { awu } = collections.asynciterable
 const { ENVS_PREFIX } = ws.nacl
@@ -61,9 +58,9 @@ jest.mock('@salto-io/workspace', () => ({
   initWorkspace: jest.fn(),
   loadWorkspace: jest.fn(),
 }))
-jest.mock('../../../src/local-workspace/dir_store')
-jest.mock('../../../src/local-workspace/remote_map', () => ({
-  ...jest.requireActual<{}>('../../../src/local-workspace/remote_map'),
+jest.mock('../src/dir_store')
+jest.mock('../src/remote_map', () => ({
+  ...jest.requireActual<{}>('../src/remote_map'),
   createRemoteMapCreator: () => mockRemoteMapCreator,
 }))
 describe('local workspace', () => {
@@ -141,18 +138,22 @@ describe('local workspace', () => {
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => filename === '/fake/salto.config')
-      await expect(initLocalWorkspace('/fake/tmp/')).rejects.toThrow(ExistingWorkspaceError)
+      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
+        ExistingWorkspaceError,
+      )
     })
 
     it('should throw error if local storage exists', async () => {
       mockExists.mockImplementation((filename: string) => filename.startsWith(getSaltoHome()))
-      await expect(initLocalWorkspace('/fake/tmp/')).rejects.toThrow(NotAnEmptyWorkspaceError)
+      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
+        NotAnEmptyWorkspaceError,
+      )
     })
 
     it('should call initWorkspace with correct input', async () => {
       const envName = 'env-name'
       mockExists.mockResolvedValue(false)
-      await initLocalWorkspace('.', envName)
+      await initLocalWorkspace('.', envName, [], async () => [])
       expect(mockInit.mock.calls[0][1]).toBe(envName)
       const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][5]
       expect(Object.keys(envSources.sources)).toHaveLength(2)
@@ -169,7 +170,9 @@ describe('local workspace', () => {
     const mockLoad = ws.loadWorkspace as jest.Mock
     it('should throw error if not a workspace', async () => {
       mockExists.mockImplementation((filename: string) => !filename.endsWith('salto.config'))
-      await expect(loadLocalWorkspace({ path: '.' })).rejects.toThrow(NotAWorkspaceError)
+      await expect(
+        loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+      ).rejects.toThrow(NotAWorkspaceError)
     })
 
     describe('with valid workspace configuration', () => {
@@ -195,7 +198,7 @@ describe('local workspace', () => {
         })
       })
       it('should call loadWorkspace with correct input', async () => {
-        await loadLocalWorkspace({ path: '.' })
+        await loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] })
 
         expect(mockLoad).toHaveBeenCalledTimes(1)
         const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
@@ -214,6 +217,8 @@ describe('local workspace', () => {
           await loadLocalWorkspace({
             path: '.',
             credentialSource,
+            getConfigTypes: async () => [],
+            getCustomReferences: async () => [],
           })
         })
         it('should use the credentials source that was passed as a paramter', async () => {
@@ -261,7 +266,11 @@ describe('local workspace', () => {
     })
 
     it('should invoke the rename command on the dir stores after adding the local prefix to the env name', async () => {
-      const workspace = await loadLocalWorkspace({ path: '.' })
+      const workspace = await loadLocalWorkspace({
+        path: '.',
+        getConfigTypes: async () => [],
+        getCustomReferences: async () => [],
+      })
       await workspace.renameEnvironment('default', 'newEnvName')
       expect(mockRenameEnvironment).toHaveBeenCalledWith('default', 'newEnvName', 'envs/newEnvName')
     })
@@ -301,7 +310,11 @@ describe('local workspace', () => {
       })
 
       it('should successfully demote all without crashing', async () => {
-        const workspace = await loadLocalWorkspace({ path: '/west' })
+        const workspace = await loadLocalWorkspace({
+          path: '/west',
+          getConfigTypes: async () => [],
+          getCustomReferences: async () => [],
+        })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
       })
@@ -332,7 +345,11 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
-        const workspace = await loadLocalWorkspace({ path: '.' })
+        const workspace = await loadLocalWorkspace({
+          path: '.',
+          getConfigTypes: async () => [],
+          getCustomReferences: async () => [],
+        })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
         expect(repoDirStore.rename).toHaveBeenCalled()
@@ -343,7 +360,11 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(false)
-        const workspace = await loadLocalWorkspace({ path: '/west' })
+        const workspace = await loadLocalWorkspace({
+          path: '/west',
+          getConfigTypes: async () => [],
+          getCustomReferences: async () => [],
+        })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
@@ -377,7 +398,11 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
-        const workspace = await loadLocalWorkspace({ path: '.' })
+        const workspace = await loadLocalWorkspace({
+          path: '.',
+          getConfigTypes: async () => [],
+          getCustomReferences: async () => [],
+        })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
@@ -387,7 +412,11 @@ describe('local workspace', () => {
         repoIsEmpty.mockResolvedValueOnce(false)
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(false)
-        const workspace = await loadLocalWorkspace({ path: '/west' })
+        const workspace = await loadLocalWorkspace({
+          path: '/west',
+          getConfigTypes: async () => [],
+          getCustomReferences: async () => [],
+        })
         await workspace.demoteAll()
         expect(repoDirStore.rename).not.toHaveBeenCalled()
       })
@@ -424,7 +453,7 @@ describe('local workspace', () => {
       const envIsEmpty = envDirStore.isEmpty as jest.Mock
       envIsEmpty.mockResolvedValueOnce(false)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      await loadLocalWorkspace({ path: '.' })
+      await loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] })
       expect(mockLoad).toHaveBeenCalledTimes(1)
       const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
       expect(Object.keys(envSources.sources)).toHaveLength(2)
@@ -445,7 +474,11 @@ describe('local workspace', () => {
       })
     })
     it('calls workspace clear with the specified parameters and removes the empty envs folder', async () => {
-      const workspace = await loadLocalWorkspace({ path: '/west' })
+      const workspace = await loadLocalWorkspace({
+        path: '/west',
+        getConfigTypes: async () => [],
+        getCustomReferences: async () => [],
+      })
       const args = {
         nacl: true,
         state: true,
@@ -463,7 +496,11 @@ describe('local workspace', () => {
 
     it('does not remove the envs folder if not empty', async () => {
       jest.spyOn(file.isEmptyDir, 'notFoundAsUndefined').mockReturnValueOnce(Promise.resolve(false))
-      const workspace = await loadLocalWorkspace({ path: '/west' })
+      const workspace = await loadLocalWorkspace({
+        path: '/west',
+        getConfigTypes: async () => [],
+        getCustomReferences: async () => [],
+      })
       const args = {
         nacl: true,
         state: true,
@@ -476,91 +513,6 @@ describe('local workspace', () => {
       expect(lastWorkspace.clear).toHaveBeenCalledWith(args)
       expect(file.isEmptyDir.notFoundAsUndefined).toHaveBeenCalledTimes(1)
       expect(file.rm).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('getCustomReferences', () => {
-    let instance: InstanceElement
-    const adaptersConfigSource = mockAdaptersConfigSource()
-
-    beforeEach(() => {
-      const type = new ObjectType({
-        elemID: new ElemID('test2', 'type'),
-      })
-      instance = new InstanceElement('instance', type, {
-        field: 'val',
-      })
-
-      const mockTestAdapter = {
-        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockResolvedValue([
-          {
-            source: new ElemID('test2', 'type', 'instance', 'inst1'),
-            target: new ElemID('test2', 'type', 'instance', 'inst2'),
-            type: 'strong',
-          },
-        ]),
-      }
-
-      const mockTest2Adapter = {
-        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockResolvedValue([
-          {
-            source: new ElemID('test2', 'type', 'instance', 'inst3'),
-            target: new ElemID('test2', 'type', 'instance', 'inst4'),
-            type: 'strong',
-          },
-        ]),
-      }
-
-      adapterCreators.test = mockTestAdapter as unknown as Adapter
-      adapterCreators.test2 = mockTest2Adapter as unknown as Adapter
-    })
-    it('Should call the right adapter getCustomReferences', async () => {
-      const AdapterConfigType = new ObjectType({
-        elemID: new ElemID('adapter'),
-        isSettings: true,
-      })
-      const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
-      await adaptersConfigSource.setAdapter('test2', 'test', adapterConfig)
-      const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
-      expect(references).toEqual([
-        {
-          source: new ElemID('test2', 'type', 'instance', 'inst1'),
-          target: new ElemID('test2', 'type', 'instance', 'inst2'),
-          type: 'strong',
-        },
-      ])
-    })
-
-    it('Should use the adapter name when it is not present in the account to service name mapping', async () => {
-      const references = await getCustomReferences([instance], {}, adaptersConfigSource)
-      expect(references).toEqual([
-        {
-          source: new ElemID('test2', 'type', 'instance', 'inst3'),
-          target: new ElemID('test2', 'type', 'instance', 'inst4'),
-          type: 'strong',
-        },
-      ])
-    })
-
-    it('Should return empty array if adapter does not have getCustomReferences func', async () => {
-      adapterCreators.test = {} as unknown as Adapter
-      const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
-      expect(references).toEqual([])
-    })
-
-    it('Should not access the adapter config if adapter does not have getCustomReferences func', async () => {
-      adapterCreators.test = {} as unknown as Adapter
-      const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
-      expect(adaptersConfigSource.getAdapter).not.toHaveBeenCalled()
-      expect(references).toEqual([])
-    })
-
-    it('Should return empty array if adapter getCustomReferences throws an error', async () => {
-      adapterCreators.test = {
-        getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockRejectedValue(new Error('aaa')),
-      } as unknown as Adapter
-      const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
-      expect(references).toEqual([])
     })
   })
 })

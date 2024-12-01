@@ -9,7 +9,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
-import { cleanDatabases } from '../local-workspace/remote_map'
+import { cleanDatabases } from '@salto-io/local-workspace'
 import { getDefaultAdapterConfig } from './adapters'
 
 const { awu } = collections.asynciterable

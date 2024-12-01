@@ -28,8 +28,8 @@ import {
   NamedStream,
   StateContentProvider,
 } from './content_providers'
-import { getLocalStoragePath } from '../../app_config'
-import { CORE_FLAGS } from '../../core/flags'
+import { getLocalStoragePath } from '../app_config'
+import { LOCAL_WORKSPACE_FLAGS } from '../flags'
 
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
@@ -240,14 +240,14 @@ export const localState = (
     const accountToElementStreams = await promises.object.mapValuesAsync(elementsByAccount, accountElements =>
       serializeStream({
         elements: _.sortBy(accountElements, element => element.elemID.getFullName()),
-        streamSerializer: flags.getSaltoFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+        streamSerializer: flags.getSaltoFlagBool(LOCAL_WORKSPACE_FLAGS.dumpStateWithLegacyFormat)
           ? serialize.getSerializedStream
           : elementsStreamSerializer,
       }),
     )
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray(),
-      flags.getSaltoFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+      flags.getSaltoFlagBool(LOCAL_WORKSPACE_FLAGS.dumpStateWithLegacyFormat)
         ? serialize.getSerializedStream
         : pathIndicesStreamSerializer,
     )
@@ -259,7 +259,7 @@ export const localState = (
         }
       }
       yield* yieldWithEOL(
-        flags.getSaltoFlagBool(CORE_FLAGS.dumpStateWithLegacyFormat)
+        flags.getSaltoFlagBool(LOCAL_WORKSPACE_FLAGS.dumpStateWithLegacyFormat)
           ? [
               accountToElementStreams[account],
               awu([safeJsonStringify({ [account]: account })]),

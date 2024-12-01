@@ -7,9 +7,9 @@
  */
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { nacl, remoteMap, validator } from '@salto-io/workspace'
-import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
-import { buildLocalAdaptersConfigSource } from '../../../src/local-workspace/adapters_config'
-import { createMockNaclFileSource } from '../../common/nacl_file_source'
+import { localDirectoryStore, createExtensionFileFilter } from '../src/dir_store'
+import { buildLocalAdaptersConfigSource } from '../src/adapters_config'
+import { createMockNaclFileSource } from './common/nacl_file_source'
 
 jest.mock('@salto-io/workspace', () => {
   const actual = jest.requireActual('@salto-io/workspace')
@@ -25,7 +25,7 @@ jest.mock('@salto-io/workspace', () => {
     },
   }
 })
-jest.mock('../../../src/local-workspace/dir_store')
+jest.mock('../src/dir_store')
 describe('adapters local config', () => {
   let mockNaclFilesSource: MockInterface<nacl.NaclFilesSource>
   let validationErrorsMap: MockInterface<remoteMap.RemoteMap<validator.ValidationError[]>>

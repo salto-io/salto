@@ -10,10 +10,7 @@ import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
 import { setupTmpDir } from '@salto-io/test-utils'
 import { writeFile, readDir } from '@salto-io/file'
-import {
-  createFileStateContentProvider,
-  StateContentProvider,
-} from '../../../../../src/local-workspace/state/content_providers'
+import { createFileStateContentProvider, StateContentProvider } from '../../../src/state/content_providers'
 
 const { awu } = collections.asynciterable
 

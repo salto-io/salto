@@ -24,19 +24,14 @@ import {
 } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
-import {
-  getStateContentProvider,
-  loadState,
-  localState,
-  parseStateContent,
-} from '../../../../src/local-workspace/state/state'
-import * as stateFunctions from '../../../../src/local-workspace/state/state'
-import { getTopLevelElements } from '../../../common/elements'
-import { mockStaticFilesSource } from '../../../common/state'
-import { inMemRemoteMapCreator } from '../../../common/helpers'
-import { getHashFromHashes, StateContentProvider } from '../../../../src/local-workspace/state/content_providers'
-import * as contentProviders from '../../../../src/local-workspace/state/content_providers'
-import { getLocalStoragePath } from '../../../../src/app_config'
+import { getStateContentProvider, loadState, localState, parseStateContent } from '../../src/state/state'
+import * as stateFunctions from '../../src/state/state'
+import { getTopLevelElements } from '../common/elements'
+import { mockStaticFilesSource } from '../common/state'
+import { inMemRemoteMapCreator } from '../common/helpers'
+import { getHashFromHashes, StateContentProvider } from '../../src/state/content_providers'
+import * as contentProviders from '../../src/state/content_providers'
+import { getLocalStoragePath } from '../../src/app_config'
 
 const { awu } = collections.asynciterable
 const { toMD5 } = hash

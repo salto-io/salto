@@ -9,19 +9,11 @@ import path from 'path'
 import { exists, rename } from '@salto-io/file'
 import { Values } from '@salto-io/adapter-api'
 import { dirStore } from '@salto-io/workspace'
-import { getSaltoHome } from '../../../src/app_config'
-import {
-  workspaceConfigSource,
-  WorkspaceConfigSource,
-  getLocalStorage,
-} from '../../../src/local-workspace/workspace_config'
-import * as mockDirStore from '../../../src/local-workspace/dir_store'
-import {
-  WORKSPACE_CONFIG_NAME,
-  ENVS_CONFIG_NAME,
-  USER_CONFIG_NAME,
-} from '../../../src/local-workspace/workspace_config_types'
-import { NoEnvsConfig, NoWorkspaceConfig } from '../../../src/local-workspace/errors'
+import { getSaltoHome } from '../src/app_config'
+import { workspaceConfigSource, WorkspaceConfigSource, getLocalStorage } from '../src/workspace_config'
+import * as mockDirStore from '../src/dir_store'
+import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, USER_CONFIG_NAME } from '../src/workspace_config_types'
+import { NoEnvsConfig, NoWorkspaceConfig } from '../src/errors'
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual<{}>('@salto-io/file'),
@@ -29,7 +21,7 @@ jest.mock('@salto-io/file', () => ({
   rename: jest.fn(),
 }))
 
-jest.mock('../../../src/local-workspace/dir_store')
+jest.mock('../src/dir_store')
 describe('workspace local config', () => {
   const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore<string> =>
     ({

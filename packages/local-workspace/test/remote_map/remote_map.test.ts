@@ -21,16 +21,16 @@ import {
   closeRemoteMapsOfLocation,
   cleanDatabases,
   closeAllRemoteMaps,
-} from '../../../../src/local-workspace/remote_map/remote_map'
-import { remoteMapLocations } from '../../../../src/local-workspace/remote_map/location_pool'
+} from '../../src/remote_map/remote_map'
+import { remoteMapLocations } from '../../src/remote_map/location_pool'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const rocksdbImpl = require('../../../../src/local-workspace/remote_map/rocksdb').default
+const rocksdbImpl = require('../../src/remote_map/rocksdb').default
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
 const ADAPTER_NAME = 'dummy'
-const createElements = (): Element[] => {
+const generateElements = (): Element[] => {
   const HelloType = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'Hello'),
     fields: {
@@ -111,7 +111,6 @@ const createElements = (): Element[] => {
   })
   return [HelloType, increasedCrimsonEsterType, ...instances, typeWithNoInstances, typeWithNoInstances2]
 }
-
 const DB_LOCATION = '/tmp/test_db'
 
 const createMap = async (
@@ -150,7 +149,7 @@ describe('test operations on remote db', () => {
   const filterFn = (key: string): boolean => key.includes('a')
 
   beforeEach(async () => {
-    elements = createElements()
+    elements = generateElements()
     sortedElements = _.sortBy(elements, e => e.elemID.getFullName()).map(e => e.elemID.getFullName())
     filteredSortedElements = sortedElements.filter(filterFn)
     const namespace = 'namespace'
@@ -904,7 +903,7 @@ describe('full integration', () => {
   let remoteMap: rm.RemoteMap<Element>
   it('creates keys and values, flushes', async () => {
     remoteMap = await createMap('integration')
-    const elements = createElements()
+    const elements = generateElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     await remoteMap.setAll(createAsyncIterable(elements.slice(1, elements.length)))
     await remoteMap.flush()

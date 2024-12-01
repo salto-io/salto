@@ -24,7 +24,7 @@
       ],
       "ignoreDependencies": ["webpack-cli"]
     },
-    "packages/core": {
+    "packages/local-workspace": {
       "entry": "index.ts",
       "ignoreDependencies": ["@types/leveldown", "@types/webpack-env"]
     },

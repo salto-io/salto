@@ -13,8 +13,8 @@ import {
   MAX_CONNECTIONS,
   closeAllRemoteMaps,
   closeRemoteMapsOfLocation,
-} from '../../../../src/local-workspace/remote_map/remote_map'
-import { remoteMapLocations } from '../../../../src/local-workspace/remote_map/location_pool'
+} from '../../src/remote_map/remote_map'
+import { remoteMapLocations } from '../../src/remote_map/location_pool'
 
 describe('connection creation', () => {
   const DB_LOCATION = '/tmp/test_db'
@@ -34,7 +34,7 @@ describe('connection creation', () => {
     mockedRocksdb.destroy = jest.fn().mockImplementation((_loc, cb) => {
       cb()
     })
-    jest.mock('../../../../src/local-workspace/remote_map/rocksdb', () => ({
+    jest.mock('../../src/remote_map/rocksdb', () => ({
       default: mockedRocksdb,
     }))
   })

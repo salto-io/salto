@@ -61,10 +61,18 @@ const odataTypeToScriptsExtractionParams: Record<string, ScriptsExtractionParams
     toFileName: ({ scriptsRootFieldName }) => `${scriptsRootFieldName}.sh`,
   },
   win32LobApp: {
-    scriptsRootFieldNames: ['detectionRules', 'requirementRules', 'rules'],
+    scriptsRootFieldNames: ['detectionRules', 'requirementRules'],
     validateFunc: validateArray,
-    toFileName: ({ scriptsRootFieldName, scriptField, index }) =>
-      `${scriptsRootFieldName}_${scriptField.displayName ?? index}.ps1`,
+    toFileName: ({ scriptsRootFieldName, scriptField }) => {
+      // The displayName exists and is required for the requirementRules.
+      // For detectionRules, the displayName does not exist, but there can be at most one detection rule with script.
+      if (scriptsRootFieldName === 'requirementRules') {
+        const { displayName } = scriptField
+        const hasPs1Extension = _.isString(displayName) && displayName.endsWith('.ps1')
+        return `${scriptsRootFieldName}_${displayName}${hasPs1Extension ? '' : '.ps1'}`
+      }
+      return `${scriptsRootFieldName}.ps1`
+    },
   },
 }
 

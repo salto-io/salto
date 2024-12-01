@@ -37,8 +37,7 @@ describe('Script content utils', () => {
       typeName: 'testType',
       scriptsRootFieldName: 'testScriptsRoot',
       scriptValuePath: ['path', 'to', 'script'],
-      toFileName: ({ scriptsRootFieldName, scriptField, index }) =>
-        `${scriptsRootFieldName}_${scriptField.otherValue}_${index}`,
+      toFileName: ({ scriptsRootFieldName, scriptField }) => `${scriptsRootFieldName}_${scriptField.otherValue}`,
       validateFunc: scriptRootFieldValue => {
         validateArray(scriptRootFieldValue, 'testType')
         if (scriptRootFieldValue.length === 0) {
@@ -81,12 +80,12 @@ describe('Script content utils', () => {
         await validateStaticFile({
           value: clonedValue.testScriptsRoot[0].path.to.script,
           expectedContent: '<note>This is a test</note>',
-          expectedPath: 'microsoft_security/testType/test/testScriptsRoot_test1_0',
+          expectedPath: 'microsoft_security/testType/test/testScriptsRoot_test1',
         })
         await validateStaticFile({
           value: clonedValue.testScriptsRoot[1].path.to.script,
           expectedContent: 'This is a test</note>',
-          expectedPath: 'microsoft_security/testType/test/testScriptsRoot_test2_1',
+          expectedPath: 'microsoft_security/testType/test/testScriptsRoot_test2',
         })
       })
 
@@ -101,12 +100,12 @@ describe('Script content utils', () => {
         await validateStaticFile({
           value: clonedValue.testScriptsRoot[0].path.to.script,
           expectedContent: '<note>This is a test</note>',
-          expectedPath: 'microsoft_security/testType/different/testScriptsRoot_test1_0',
+          expectedPath: 'microsoft_security/testType/different/testScriptsRoot_test1',
         })
         await validateStaticFile({
           value: clonedValue.testScriptsRoot[1].path.to.script,
           expectedContent: 'This is a test</note>',
-          expectedPath: 'microsoft_security/testType/different/testScriptsRoot_test2_1',
+          expectedPath: 'microsoft_security/testType/different/testScriptsRoot_test2',
         })
       })
 
@@ -121,12 +120,12 @@ describe('Script content utils', () => {
         await validateStaticFile({
           value: clonedValue.testScriptsRoot[0].path.to.script,
           expectedContent: '<note>This is a test</note>',
-          expectedPath: 'microsoft_security/testType/subdir/test/testScriptsRoot_test1_0',
+          expectedPath: 'microsoft_security/testType/subdir/test/testScriptsRoot_test1',
         })
         await validateStaticFile({
           value: clonedValue.testScriptsRoot[1].path.to.script,
           expectedContent: 'This is a test</note>',
-          expectedPath: 'microsoft_security/testType/subdir/test/testScriptsRoot_test2_1',
+          expectedPath: 'microsoft_security/testType/subdir/test/testScriptsRoot_test2',
         })
       })
     })

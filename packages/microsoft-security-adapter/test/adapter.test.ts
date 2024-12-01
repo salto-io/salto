@@ -373,7 +373,7 @@ describe('Microsoft Security adapter', () => {
                 expect(detectionRules).toHaveLength(1)
                 await validateStaticFile({
                   value: detectionRules[0].scriptContent,
-                  expectedPath: 'microsoft_security/IntuneApplication/win32LobApp/test/detectionRules_0.ps1',
+                  expectedPath: 'microsoft_security/IntuneApplication/win32LobApp/test/detectionRules.ps1',
                   expectedContent: 'echo "Hello, World!"',
                 })
               })
@@ -389,20 +389,8 @@ describe('Microsoft Security adapter', () => {
                 })
               })
 
-              it('should parse script content correctly for rules field', async () => {
-                const { rules } = win32LobAppWithScripts.value
-                expect(rules).toHaveLength(2)
-                await validateStaticFile({
-                  value: rules[0].scriptContent,
-                  expectedPath: 'microsoft_security/IntuneApplication/win32LobApp/test/rules_0.ps1',
-                  expectedContent: 'echo "Hello, World!"',
-                })
-                await validateStaticFile({
-                  value: rules[1].scriptContent,
-                  expectedPath:
-                    'microsoft_security/IntuneApplication/win32LobApp/test/rules_sample_requirement_script.uss.ps1',
-                  expectedContent: 'echo "Hello, World!"',
-                })
+              it('should omit the rules field', async () => {
+                expect(win32LobAppWithScripts.value.rules).toBeUndefined()
               })
             })
 

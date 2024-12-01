@@ -20,7 +20,6 @@ describe('Intune application fetch utils', () => {
     describe('win32LobApp', () => {
       const DETECTION_RULES_FIELD_NAME = 'detectionRules'
       const REQUIREMENT_RULES_FIELD_NAME = 'requirementRules'
-      const RULES_FIELD_NAME = 'rules'
 
       const WIN32_LOB_APP_VALUE = {
         [getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]: 'win32LobApp',
@@ -36,6 +35,21 @@ describe('Intune application fetch utils', () => {
         ...BASIC_RULE,
         [SCRIPT_CONTENT_FIELD_NAME]: 'ZWNobyAiSGVsbG8sIFdvcmxkISI=',
       }
+
+      describe('when the odata type field is not present', () => {
+        it('should return the value as is', async () => {
+          const value = {
+            displayName: 'test win32 lob app',
+          }
+          expect(
+            await application.setApplicationScriptValueAsStaticFile({
+              value,
+              typeName: 'testApplication',
+              context: { ...contextMock, fragments: [] },
+            }),
+          ).toEqual({ value })
+        })
+      })
 
       describe('when no rule field is present', () => {
         it('should return the value as is', async () => {
@@ -56,7 +70,6 @@ describe('Intune application fetch utils', () => {
             ...WIN32_LOB_APP_VALUE,
             [DETECTION_RULES_FIELD_NAME]: [],
             [REQUIREMENT_RULES_FIELD_NAME]: [],
-            [RULES_FIELD_NAME]: [],
           }
           expect(
             await application.setApplicationScriptValueAsStaticFile({
@@ -74,7 +87,6 @@ describe('Intune application fetch utils', () => {
             ...WIN32_LOB_APP_VALUE,
             [DETECTION_RULES_FIELD_NAME]: [BASIC_RULE],
             [REQUIREMENT_RULES_FIELD_NAME]: [BASIC_RULE],
-            [RULES_FIELD_NAME]: [BASIC_RULE],
           }
           expect(
             await application.setApplicationScriptValueAsStaticFile({
@@ -92,7 +104,6 @@ describe('Intune application fetch utils', () => {
             ...WIN32_LOB_APP_VALUE,
             [DETECTION_RULES_FIELD_NAME]: [_.clone(RULE_WITH_SCRIPT_CONTENT)],
             [REQUIREMENT_RULES_FIELD_NAME]: [_.clone(RULE_WITH_SCRIPT_CONTENT)],
-            [RULES_FIELD_NAME]: [_.clone(RULE_WITH_SCRIPT_CONTENT)],
           }
           const result = await application.setApplicationScriptValueAsStaticFile({
             value: _.clone(value),
@@ -103,48 +114,76 @@ describe('Intune application fetch utils', () => {
             ...WIN32_LOB_APP_VALUE,
             [DETECTION_RULES_FIELD_NAME]: [{ ...BASIC_RULE, [SCRIPT_CONTENT_FIELD_NAME]: expect.any(StaticFile) }],
             [REQUIREMENT_RULES_FIELD_NAME]: [{ ...BASIC_RULE, [SCRIPT_CONTENT_FIELD_NAME]: expect.any(StaticFile) }],
-            [RULES_FIELD_NAME]: [{ ...BASIC_RULE, [SCRIPT_CONTENT_FIELD_NAME]: expect.any(StaticFile) }],
           })
         })
 
-        it('should use the displayName in the static file name if exists, otherwise use the rule index', async () => {
-          const value = {
-            ...WIN32_LOB_APP_VALUE,
-            [DETECTION_RULES_FIELD_NAME]: [_.clone(RULE_WITH_SCRIPT_CONTENT)],
-            [REQUIREMENT_RULES_FIELD_NAME]: [
-              {
-                ...RULE_WITH_SCRIPT_CONTENT,
-                displayName: 'test detection rule',
-              },
-            ],
-          }
-          const result = await application.setApplicationScriptValueAsStaticFile({
-            value: _.clone(value),
-            typeName: 'testApplication',
-            context: { ...contextMock, fragments: [] },
+        describe('Detection rules', () => {
+          it('should use the fieldName for the static file name', async () => {
+            const value = {
+              ...WIN32_LOB_APP_VALUE,
+              [DETECTION_RULES_FIELD_NAME]: [_.clone(RULE_WITH_SCRIPT_CONTENT)],
+            }
+            const result = await application.setApplicationScriptValueAsStaticFile({
+              value: _.clone(value),
+              typeName: 'testApplication',
+              context: { ...contextMock, fragments: [] },
+            })
+            expect(result.value[DETECTION_RULES_FIELD_NAME][0][SCRIPT_CONTENT_FIELD_NAME].filepath).toEqual(
+              'microsoft_security/IntuneApplication/win32LobApp/test_win32_lob_app.s/detectionRules.ps1',
+            )
           })
-          expect(result.value).toEqual({
-            ...WIN32_LOB_APP_VALUE,
-            [DETECTION_RULES_FIELD_NAME]: [
-              {
-                ...BASIC_RULE,
-                [SCRIPT_CONTENT_FIELD_NAME]: expect.any(StaticFile),
-              },
-            ],
-            [REQUIREMENT_RULES_FIELD_NAME]: [
-              {
-                ...BASIC_RULE,
-                displayName: 'test detection rule',
-                [SCRIPT_CONTENT_FIELD_NAME]: expect.any(StaticFile),
-              },
-            ],
+        })
+
+        describe('Requirement rules', () => {
+          it('should use the fieldName and displayName for the static file name', async () => {
+            const value = {
+              ...WIN32_LOB_APP_VALUE,
+              [REQUIREMENT_RULES_FIELD_NAME]: [
+                {
+                  ...RULE_WITH_SCRIPT_CONTENT,
+                  displayName: 'test detection rule',
+                },
+              ],
+            }
+            const result = await application.setApplicationScriptValueAsStaticFile({
+              value: _.clone(value),
+              typeName: 'testApplication',
+              context: { ...contextMock, fragments: [] },
+            })
+            expect(result.value[REQUIREMENT_RULES_FIELD_NAME][0][SCRIPT_CONTENT_FIELD_NAME].filepath).toEqual(
+              'microsoft_security/IntuneApplication/win32LobApp/test_win32_lob_app.s/requirementRules_test_detection_rule.uss.ps1',
+            )
           })
-          expect(result.value[DETECTION_RULES_FIELD_NAME][0][SCRIPT_CONTENT_FIELD_NAME].filepath).toEqual(
-            'microsoft_security/IntuneApplication/win32LobApp/test_win32_lob_app.s/detectionRules_0.ps1',
-          )
-          expect(result.value[REQUIREMENT_RULES_FIELD_NAME][0][SCRIPT_CONTENT_FIELD_NAME].filepath).toEqual(
-            'microsoft_security/IntuneApplication/win32LobApp/test_win32_lob_app.s/requirementRules_test_detection_rule.uss.ps1',
-          )
+
+          it('should use not add another ps1 extension to the file name if the rule display name already has it', async () => {
+            const value = {
+              ...WIN32_LOB_APP_VALUE,
+              [REQUIREMENT_RULES_FIELD_NAME]: [
+                {
+                  ...RULE_WITH_SCRIPT_CONTENT,
+                  displayName: 'test detection rule.ps1',
+                },
+              ],
+            }
+            const result = await application.setApplicationScriptValueAsStaticFile({
+              value: _.clone(value),
+              typeName: 'testApplication',
+              context: { ...contextMock, fragments: [] },
+            })
+            expect(result.value).toEqual({
+              ...WIN32_LOB_APP_VALUE,
+              [REQUIREMENT_RULES_FIELD_NAME]: [
+                {
+                  ...BASIC_RULE,
+                  displayName: 'test detection rule.ps1',
+                  [SCRIPT_CONTENT_FIELD_NAME]: expect.any(StaticFile),
+                },
+              ],
+            })
+            expect(result.value[REQUIREMENT_RULES_FIELD_NAME][0][SCRIPT_CONTENT_FIELD_NAME].filepath).toEqual(
+              'microsoft_security/IntuneApplication/win32LobApp/test_win32_lob_app.s/requirementRules_test_detection_rule.uss.ps1',
+            )
+          })
         })
 
         it('should throw an error when the rule fields are not arrays', async () => {
@@ -152,7 +191,6 @@ describe('Intune application fetch utils', () => {
             ...WIN32_LOB_APP_VALUE,
             [DETECTION_RULES_FIELD_NAME]: RULE_WITH_SCRIPT_CONTENT,
             [REQUIREMENT_RULES_FIELD_NAME]: RULE_WITH_SCRIPT_CONTENT,
-            [RULES_FIELD_NAME]: RULE_WITH_SCRIPT_CONTENT,
           }
           await expect(
             application.setApplicationScriptValueAsStaticFile({

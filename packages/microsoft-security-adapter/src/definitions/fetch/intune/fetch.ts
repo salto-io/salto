@@ -61,7 +61,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           // TODO SALTO-6483: We need to store the largeIcon as a static file, for now we omit it
-          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT],
+          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT, 'rules'],
           adjust: concatAdjustFunctions(
             odataType.transformOdataTypeField('fetch'),
             application.setApplicationScriptValueAsStaticFile,

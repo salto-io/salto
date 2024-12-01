@@ -18,7 +18,7 @@ const { array } = collections
 const log = logger(module)
 
 type ValidateScriptsRootFieldFunc = (scriptRootFieldValue: unknown, path: string) => void
-type ToFileNameFunc = (metadata: { scriptsRootFieldName: string; scriptField: Values; index: number }) => string
+type ToFileNameFunc = (metadata: { scriptsRootFieldName: string; scriptField: Values }) => string
 
 export type ExtractScriptParams = {
   value: Values
@@ -69,7 +69,7 @@ export const extractStaticFileFromBinaryScript = ({
         typeName,
         // SALTO-6935: handle custom elemIds
         fullName: value[elemIDFieldName],
-        fileName: toFileName({ scriptsRootFieldName, scriptField, index }),
+        fileName: toFileName({ scriptsRootFieldName, scriptField }),
         content: scriptContent,
         subDirectory: staticFileSubDirectory,
       }),

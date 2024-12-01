@@ -184,7 +184,6 @@ describe('ParsedNaclFileCache', () => {
     expect(p1.filename).toEqual(p2.filename)
     expect(await p1.sourceMap?.()).toEqual(p2.sourceMap?.())
     expect((await p1.data.errors()) ?? []).toEqual(p2.data.errors())
-    expect(await p1.data.referenced()).toEqual(await p2.data.referenced())
   }
 
   beforeAll(async () => {

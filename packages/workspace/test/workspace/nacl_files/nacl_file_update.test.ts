@@ -132,7 +132,7 @@ describe('getChangeLocations', () => {
     it('should add the element at the end of the file', () => {
       const mockType = createMockType({})
       const change: DetailedChange = { ...toChange({ after: mockType }), id: mockType.elemID }
-      const result = getChangeLocations(change, new Map())
+      const result = getChangeLocations(change, new SourceMap())
       expect(result).toEqual([
         {
           ...change,
@@ -149,7 +149,7 @@ describe('getChangeLocations', () => {
       const noPath = createMockType({})
       noPath.path = undefined
       const change: DetailedChange = { ...toChange({ after: noPath }), id: noPath.elemID }
-      const result = getChangeLocations(change, new Map())
+      const result = getChangeLocations(change, new SourceMap())
       expect(result).toEqual([
         {
           ...change,
@@ -224,7 +224,7 @@ describe('getChangeLocations', () => {
         baseChange: toChange({ before: createMockType({ dropFields: ['numArray'] }), after: mockType }),
         path: ['file'],
       }
-      const result = getChangeLocations(change, new Map())
+      const result = getChangeLocations(change, new SourceMap())
       expect(result).toEqual([
         {
           ...change,

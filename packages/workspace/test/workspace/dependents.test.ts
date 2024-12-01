@@ -74,94 +74,84 @@ describe('dependents', () => {
     objInstFile,
   }
 
-  describe.each([true, false] as const)(
-    'getDependents (use old dependents calculation: %s)',
-    useOldDependentsCalculation => {
-      const getDependentIDs = async (elemID: ElemID): Promise<ElemID[]> => {
-        const dependents = await getDependents(
-          [elemID],
-          await workspace.elements(),
-          await workspace.getReferenceSourcesIndex(),
-          id => naclFiles.getElementReferencedFiles(id),
-          filename => workspace.getParsedNaclFile(filename),
-        )
-        return dependents.map(element => element.elemID)
-      }
+  describe('getDependents', () => {
+    const getDependentIDs = async (elemID: ElemID): Promise<ElemID[]> => {
+      const dependents = await getDependents(
+        [elemID],
+        await workspace.elements(),
+        await workspace.getReferenceSourcesIndex(),
+      )
+      return dependents.map(element => element.elemID)
+    }
+
+    beforeAll(async () => {
+      naclFiles = await naclFilesSource(
+        '',
+        mockDirStore(undefined, undefined, files),
+        mockStaticFilesSource(),
+        persistentMockCreateRemoteMap(),
+        true,
+      )
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
+        '': {
+          naclFiles,
+        },
+        default: {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([], true),
+        },
+      })
+    })
+
+    describe('type dependents', () => {
+      let dependentIDs: ElemID[]
 
       beforeAll(async () => {
-        process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION = useOldDependentsCalculation ? '1' : '0'
-        naclFiles = await naclFilesSource(
-          '',
-          mockDirStore(undefined, undefined, files),
-          mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
-          true,
-        )
-        workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {
-          '': {
-            naclFiles,
-          },
-          default: {
-            naclFiles: createMockNaclFileSource([]),
-            state: createState([], true),
-          },
-        })
+        dependentIDs = await getDependentIDs(new ElemID('salto', 'prim'))
       })
-
-      afterAll(() => {
-        delete process.env.SALTO_USE_OLD_DEPENDENTS_CALCULATION
+      it('should have the correct amount of dependents', () => {
+        expect(dependentIDs).toHaveLength(6)
       })
-
-      describe('type dependents', () => {
-        let dependentIDs: ElemID[]
-
-        beforeAll(async () => {
-          dependentIDs = await getDependentIDs(new ElemID('salto', 'prim'))
-        })
-        it('should have the correct amount of dependents', () => {
-          expect(dependentIDs).toHaveLength(6)
-        })
-        it('should have dependent type because of a field type', () => {
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.base')).toBeDefined()
-        })
-        it('should have dependent type because of a field type that is dependent too', () => {
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.obj')).toBeDefined()
-        })
-        it('should have dependent instances that their type is a dependent too', () => {
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.aBaseInst')).toBeDefined()
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.bBaseInst')).toBeDefined()
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.cBaseInst')).toBeDefined()
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.obj.instance.objInst')).toBeDefined()
-        })
+      it('should have dependent type because of a field type', () => {
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.base')).toBeDefined()
       })
-
-      describe('reference dependents', () => {
-        let dependentIDs: ElemID[]
-
-        beforeAll(async () => {
-          dependentIDs = await getDependentIDs(new ElemID('salto', 'base', 'instance', 'aBaseInst'))
-        })
-        it('should have the correct amount of dependents', () => {
-          expect(dependentIDs).toHaveLength(2)
-        })
-        it('should have a dependent that have a reference to the input ID', () => {
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.bBaseInst')).toBeDefined()
-        })
-        it('should have a dependent that have a reference to another dependent ID', () => {
-          expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.cBaseInst')).toBeDefined()
-        })
+      it('should have dependent type because of a field type that is dependent too', () => {
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.obj')).toBeDefined()
       })
-
-      describe('when element is not referenced', () => {
-        let dependentIDs: ElemID[]
-
-        beforeAll(async () => {
-          dependentIDs = await getDependentIDs(new ElemID('salto', 'obj', 'instance', 'objInst'))
-        })
-        it('should have no dependents', () => {
-          expect(dependentIDs).toHaveLength(0)
-        })
+      it('should have dependent instances that their type is a dependent too', () => {
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.aBaseInst')).toBeDefined()
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.bBaseInst')).toBeDefined()
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.cBaseInst')).toBeDefined()
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.obj.instance.objInst')).toBeDefined()
       })
-    },
-  )
+    })
+
+    describe('reference dependents', () => {
+      let dependentIDs: ElemID[]
+
+      beforeAll(async () => {
+        dependentIDs = await getDependentIDs(new ElemID('salto', 'base', 'instance', 'aBaseInst'))
+      })
+      it('should have the correct amount of dependents', () => {
+        expect(dependentIDs).toHaveLength(2)
+      })
+      it('should have a dependent that have a reference to the input ID', () => {
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.bBaseInst')).toBeDefined()
+      })
+      it('should have a dependent that have a reference to another dependent ID', () => {
+        expect(dependentIDs.find(id => id.getFullName() === 'salto.base.instance.cBaseInst')).toBeDefined()
+      })
+    })
+
+    describe('when element is not referenced', () => {
+      let dependentIDs: ElemID[]
+
+      beforeAll(async () => {
+        dependentIDs = await getDependentIDs(new ElemID('salto', 'obj', 'instance', 'objInst'))
+      })
+      it('should have no dependents', () => {
+        expect(dependentIDs).toHaveLength(0)
+      })
+    })
+  })
 })

@@ -95,10 +95,7 @@ const getPositionInParent = <T>(change: DetailedChange<T> & AdditionChange<T>): 
   }
 }
 
-export const getChangeLocations = (
-  change: DetailedChange,
-  sourceMap: ReadonlyMap<string, parser.SourceRange[]>,
-): DetailedChangeWithSource[] => {
+export const getChangeLocations = (change: DetailedChange, sourceMap: parser.SourceMap): DetailedChangeWithSource[] => {
   const lastNestedLocation = (parentScope: parser.SourceRange): parser.SourceRange => {
     // We want to insert just before the scope's closing bracket, so we place the change
     // one byte before the closing bracket.

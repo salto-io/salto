@@ -63,6 +63,6 @@ export const permissionSchemeValidator: ChangeValidator = async changes =>
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,
       message: 'Cannot deploy the permission scheme permission',
-      detailedMessage: `Jira does not allow granting the permission 'VIEW_AGGREGATED_DATA' to 'sd.customer.portal.only'. The permission scheme ${instance.elemID.getFullName()} will be deployed without it`,
+      detailedMessage: `Jira does not allow granting the permissions 'ARCHIVE_ISSUES', 'UNARCHIVE_ISSUES' and 'VIEW_AGGREGATED_DATA' to 'sd.customer.portal.only'. The permission scheme ${instance.elemID.getFullName()} will be deployed without them`,
     }))
     .toArray()

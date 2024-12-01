@@ -27,7 +27,6 @@ export type ExtractScriptParams = {
   scriptValuePath?: string[]
   elemIDFieldName?: string
   staticFileSubDirectory?: string
-  throwOnEmptyField?: boolean
   validateFunc: ValidateScriptsRootFieldFunc
   toFileName: ToFileNameFunc
 }
@@ -39,18 +38,13 @@ export const extractStaticFileFromBinaryScript = ({
   scriptValuePath = [SCRIPT_CONTENT_FIELD_NAME],
   elemIDFieldName = NAME_ID_FIELD.fieldName,
   staticFileSubDirectory = '',
-  throwOnEmptyField = false,
   validateFunc,
   toFileName,
-}: ExtractScriptParams): void => {
+}: ExtractScriptParams): { value: Values } => {
   const scriptsField = _.get(value, scriptsRootFieldName)
   if (_.isEmpty(scriptsField)) {
-    if (throwOnEmptyField) {
-      const message = `Expected to find ${typeName}.${scriptsRootFieldName} but got ${safeJsonStringify(scriptsField)}`
-      log.error(message)
-      throw new Error(message)
-    }
-    return
+    log.debug(`No scripts found in ${typeName}.${scriptsRootFieldName}. Skipping`)
+    return { value }
   }
 
   validateFunc(scriptsField, `${typeName}.${scriptsRootFieldName}`)
@@ -61,15 +55,11 @@ export const extractStaticFileFromBinaryScript = ({
     validatePlainObject(scriptField, path)
 
     const scriptContent = _.get(scriptField, scriptValuePath)
-    if (scriptContent === undefined) {
-      log.debug(`No script content found for ${typeName}.${scriptsRootFieldName} (ID: ${value.id})`)
-      return
-    }
-
     if (!_.isString(scriptContent)) {
-      const message = `Invalid script content for ${typeName}.${scriptsRootFieldName}. Expected string, got ${safeJsonStringify(scriptContent)}`
-      log.error(message)
-      throw new Error(message)
+      log.trace(
+        `Received non-string script content for ${path}.${scriptValuePath.join('.')}: ${safeJsonStringify(scriptContent)}. Skipping`,
+      )
+      return
     }
 
     _.set(
@@ -85,4 +75,6 @@ export const extractStaticFileFromBinaryScript = ({
       }),
     )
   })
+
+  return { value }
 }

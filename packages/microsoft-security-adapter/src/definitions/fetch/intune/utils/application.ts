@@ -52,14 +52,13 @@ export const APPLICATION_NAME_PARTS: definitions.fetch.FieldIDPart[] = [
 
 type ScriptsExtractionParams = {
   scriptsRootFieldNames: string[]
-} & Pick<ExtractScriptParams, 'validateFunc' | 'toFileName' | 'throwOnEmptyField'>
+} & Pick<ExtractScriptParams, 'validateFunc' | 'toFileName'>
 
 const odataTypeToScriptsExtractionParams: Record<string, ScriptsExtractionParams> = {
   macOSPkgApp: {
     scriptsRootFieldNames: ['preInstallScript', 'postInstallScript'],
     validateFunc: validatePlainObject,
     toFileName: ({ scriptsRootFieldName }) => `${scriptsRootFieldName}.sh`,
-    throwOnEmptyField: true,
   },
   win32LobApp: {
     scriptsRootFieldNames: ['detectionRules', 'requirementRules', 'rules'],

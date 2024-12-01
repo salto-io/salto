@@ -75,7 +75,6 @@ export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async
     typeName,
     value,
     scriptsRootFieldName: SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,
-    throwOnEmptyField: true,
     validateFunc: validateScriptContent,
     toFileName: () => value.fileName,
   })

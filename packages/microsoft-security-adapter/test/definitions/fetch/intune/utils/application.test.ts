@@ -172,20 +172,18 @@ describe('Intune application fetch utils', () => {
           )
         })
 
-        it('should throw an error when the script content is not a string', async () => {
+        it('should return the value as is when the script content is not a string', async () => {
           const value = {
             ...WIN32_LOB_APP_VALUE,
             [DETECTION_RULES_FIELD_NAME]: [{ ...BASIC_RULE, [SCRIPT_CONTENT_FIELD_NAME]: 5 }],
           }
-          await expect(
-            application.setApplicationScriptValueAsStaticFile({
+          expect(
+            await application.setApplicationScriptValueAsStaticFile({
               value,
               typeName: 'testApplication',
               context: { ...contextMock, fragments: [] },
             }),
-          ).rejects.toThrow(
-            new Error('Invalid script content for IntuneApplication.detectionRules. Expected string, got 5'),
-          )
+          ).toEqual({ value })
         })
       })
     })
@@ -195,36 +193,36 @@ describe('Intune application fetch utils', () => {
       const POST_INSTALL_SCRIPT_FIELD_NAME = 'postInstallScript'
 
       describe('when no script field is present', () => {
-        it('should throw an error', async () => {
+        it('should return the value as is', async () => {
           const value = {
             [getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]: 'macOSPkgApp',
             displayName: 'test mac os pkg app',
           }
-          await expect(
-            application.setApplicationScriptValueAsStaticFile({
+          expect(
+            await application.setApplicationScriptValueAsStaticFile({
               value,
               typeName: 'testApplication',
               context: { ...contextMock, fragments: [] },
             }),
-          ).rejects.toThrow(new Error('Expected to find IntuneApplication.preInstallScript but got undefined'))
+          ).toEqual({ value })
         })
       })
 
       describe('when all the script fields are empty', () => {
-        it('should throw an error', async () => {
+        it('should return the value as is', async () => {
           const value = {
             [getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]: 'macOSPkgApp',
             displayName: 'test mac os pkg app',
             [PRE_INSTALL_SCRIPT_FIELD_NAME]: {},
             [POST_INSTALL_SCRIPT_FIELD_NAME]: {},
           }
-          await expect(
-            application.setApplicationScriptValueAsStaticFile({
+          expect(
+            await application.setApplicationScriptValueAsStaticFile({
               value,
               typeName: 'testApplication',
               context: { ...contextMock, fragments: [] },
             }),
-          ).rejects.toThrow(new Error('Expected to find IntuneApplication.preInstallScript but got {}'))
+          ).toEqual({ value })
         })
       })
 
@@ -296,7 +294,7 @@ describe('Intune application fetch utils', () => {
           ).rejects.toThrow("Expected IntuneApplication.preInstallScript to be a plain object, but got 'not an object'")
         })
 
-        it('should throw an error when the script content is not a string', async () => {
+        it('should return the value as is when the script content is not a string', async () => {
           const value = {
             [getAdjustedOdataTypeFieldName(APPLICATION_TYPE_NAME)]: 'macOSPkgApp',
             displayName: 'test mac os pkg app',
@@ -304,15 +302,13 @@ describe('Intune application fetch utils', () => {
               [SCRIPT_CONTENT_FIELD_NAME]: 5,
             },
           }
-          await expect(
-            application.setApplicationScriptValueAsStaticFile({
+          expect(
+            await application.setApplicationScriptValueAsStaticFile({
               value,
               typeName: 'testApplication',
               context: { ...contextMock, fragments: [] },
             }),
-          ).rejects.toThrow(
-            new Error('Invalid script content for IntuneApplication.preInstallScript. Expected string, got 5'),
-          )
+          ).toEqual({ value })
         })
       })
     })

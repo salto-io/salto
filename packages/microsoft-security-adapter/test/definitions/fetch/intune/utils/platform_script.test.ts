@@ -157,15 +157,20 @@ describe('Intune platform script fetch utils', () => {
     }
 
     describe('when the instance has no script content', () => {
-      it('should throw an error', async () => {
+      it('should return the value as is', async () => {
         const value = _.omit(WINDOWS_PLATFORM_SCRIPT_VALUE, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
-        await expect(
-          platformScript.setScriptValueAsStaticFile({
+        expect(
+          await platformScript.setScriptValueAsStaticFile({
             value,
             typeName: 'testPlatformScript',
             context: { ...contextMock, fragments: [] },
           }),
-        ).rejects.toThrow('Expected to find testPlatformScript.scriptContentRecurseInto but got undefined')
+        ).toEqual({
+          value: {
+            ...value,
+            scriptContent: undefined,
+          },
+        })
       })
     })
 

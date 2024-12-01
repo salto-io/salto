@@ -132,23 +132,14 @@ describe('Script content utils', () => {
     })
 
     describe('when the rootField is empty', () => {
-      it('should throw if throwOnEmptyField is true', () => {
-        expect(() =>
+      it('should return the value as is', () => {
+        const clonedValue = _.cloneDeep(VALUE)
+        expect(
           extractStaticFileFromBinaryScript({
             ...PARAMS_WITHOUT_VALUE,
-            throwOnEmptyField: true,
-            value: { testScriptsRoot: [] },
+            value: { ...clonedValue, testScriptsRoot: [] },
           }),
-        ).toThrow('Expected to find testType.testScriptsRoot but got []')
-      })
-
-      it('should not throw if throwOnEmptyField is not provided', () => {
-        expect(() =>
-          extractStaticFileFromBinaryScript({
-            ...PARAMS_WITHOUT_VALUE,
-            value: { testScriptsRoot: [] },
-          }),
-        ).not.toThrow()
+        ).toEqual({ value: { ...clonedValue, testScriptsRoot: [] } })
       })
     })
 
@@ -165,20 +156,21 @@ describe('Script content utils', () => {
         ).toThrow('validation error')
       })
 
-      it('should throw when the script content is not a string', () => {
-        expect(() =>
+      it('should return the value as is when the script content is not a string', () => {
+        const value = {
+          testScriptsRoot: [
+            {
+              path: { to: { script: 1 } },
+              otherValue: 'test1',
+            },
+          ],
+        }
+        expect(
           extractStaticFileFromBinaryScript({
             ...PARAMS_WITHOUT_VALUE,
-            value: {
-              testScriptsRoot: [
-                {
-                  path: { to: { script: 1 } },
-                  otherValue: 'test1',
-                },
-              ],
-            },
+            value,
           }),
-        ).toThrow('Invalid script content for testType.testScriptsRoot. Expected string, got 1')
+        ).toEqual({ value })
       })
     })
   })

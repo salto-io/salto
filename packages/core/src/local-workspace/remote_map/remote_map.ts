@@ -633,8 +633,7 @@ export const createRemoteMapCreator = (
     // Retrieve a value from the DBs directly, ignoring the cache.
     // If the value is not found in the temporary db, it will be retrieved from the persistent db.
     const getFromDb = async (key: string): Promise<T | undefined> => {
-      let valueFromDb: rocksdb.Bytes | undefined
-      valueFromDb = await getAwaitable(tmpDB, keyToTempDBKey(key))
+      let valueFromDb = await getAwaitable(tmpDB, keyToTempDBKey(key))
       if (valueFromDb === undefined) {
         if (wasClearCalled) {
           statCounters.RemoteMapMiss.inc()

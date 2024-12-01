@@ -8,7 +8,7 @@
 import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
 import {
   permissionSchemeValidator,
-  UNSUPPORTED_PERMISSION_SCHEME,
+  UNSUPPORTED_PERMISSION_SCHEMES,
 } from '../../src/change_validators/sd_portals_permission_scheme'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
 
@@ -26,14 +26,14 @@ describe('permissionSchemeChangeValidator', () => {
   })
 
   it('should return a warning when attempting to deploy this permissionScheme', async () => {
-    permissionSchemeInstance.value.permissions = [UNSUPPORTED_PERMISSION_SCHEME]
+    permissionSchemeInstance.value.permissions = UNSUPPORTED_PERMISSION_SCHEMES
 
     expect(await permissionSchemeValidator([toChange({ after: permissionSchemeInstance })])).toEqual([
       {
         elemID: permissionSchemeInstance.elemID,
         severity: 'Warning',
         message: 'Cannot deploy the permission scheme permission',
-        detailedMessage: `Jira does not allow granting the permission 'VIEW_AGGREGATED_DATA' to 'sd.customer.portal.only'. The permission scheme ${permissionSchemeInstance.elemID.getFullName()} will be deployed without it`,
+        detailedMessage: `Jira does not allow granting the permissions 'ARCHIVE_ISSUES', 'UNARCHIVE_ISSUES' and 'VIEW_AGGREGATED_DATA' to 'sd.customer.portal.only'. The permission scheme ${permissionSchemeInstance.elemID.getFullName()} will be deployed without them`,
       },
     ])
   })

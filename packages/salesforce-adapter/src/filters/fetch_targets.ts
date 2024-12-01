@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
@@ -21,7 +21,9 @@ import {
   CUSTOM_OBJECTS_FIELD,
   CUSTOM_OBJECTS_LOOKUPS_FIELD,
   FETCH_TARGETS,
+  RECORDS_PATH,
   SALESFORCE,
+  SETTINGS_PATH,
 } from '../constants'
 
 const { toArrayAsync } = collections.asynciterable
@@ -64,7 +66,15 @@ const filterCreator: FilterCreator = ({ config }) => ({
     warningMessage: 'Error occurred when attempting to populate Fetch Targets',
     config,
     fetchFilterFunc: async elements => {
-      const fetchTargetsInstance = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets)
+      const fetchTargetsInstance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        ArtificialTypes.FetchTargets,
+        undefined,
+        [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, FETCH_TARGETS],
+        {
+          [CORE_ANNOTATIONS.HIDDEN]: true,
+        },
+      )
       populateCustomObjects({
         elements: await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
         fetchTargetsInstance,

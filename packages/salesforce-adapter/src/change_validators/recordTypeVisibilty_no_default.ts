@@ -12,23 +12,12 @@ import { entries } from 'lodash'
 
 const TYPES_WITH_RECORD_TYPE_VISIBILITY = new Set(['Profile'])
 
-// const checkError = (record: Object | null, index: number, fields: string[][] | undefined[]): boolean => {
-//   if (!record) {
-//     return false
-//   }
-//   if (fields[index] === undefined) {
-//     return true
-//   }
-//   const ans1 = fields[index].reduce((res, curr) => {
-//     if (res === 'false') {
-//       return res
-//     }
-//     const currRes = !_.get(_.get(record, [curr]), 'default') && !_.get(_.get(record, [curr]), 'visible')
-//     return currRes ? 'true' : 'false'
-//   }, 'true')
-
-//   return ans1 === 'false'
-// }
+// const createNoDefaultError = (id: ElemID): ChangeError => ({
+//   elemID: id,
+//   severity: 'Error',
+//   message: 'Must have one field that is set as default and visible',
+//   detailedMessage: `Must have one field that is set as default and visible, or no default fields and no visible fields, under recordTypeVisibility of a Profile`,
+// })
 
 const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | undefined): Promise<ChangeError[]> => {
   const record = change?.value?.recordTypeVisibilities
@@ -111,14 +100,15 @@ const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | u
   const instancesWithErrors = recordEntries
     .map((val, index) => {
       if (!changeErrors[index]) {
-        return `${change.elemID.getFullName()}.recordTypeVisibilities.${val[0]}`
+        return `${change.elemID}.recordTypeVisibilities.${val[0]}`
       }
       return undefined
     })
     .filter(a => a != undefined)
-  const c = recordsOnly[0][elementsToCheck[0][0] as keyof Object]
-  const d = _.get(c, 'default')
-  if (d === undefined || instancesWithErrors) {
+  // return instancesWithErrors.map(a=>createNoDefaultError(a))
+  // const c = recordsOnly[0][elementsToCheck[0][0] as keyof Object]
+  // const d = _.get(c, 'default')
+  if (instancesWithErrors) {
   }
   return []
 }
@@ -129,44 +119,44 @@ const changeValidator: ChangeValidator = async changes => {
     cha !== undefined ? TYPES_WITH_RECORD_TYPE_VISIBILITY.has(cha?.elemID.typeName) : false,
   )
   const q = a.map(getRecordTypeVisibilityNoDefaultError)
-  const n = a
-    .map(e => e?.value?.recordTypeVisibilities)
-    .filter(e => e !== undefined)
-    .map(a => entries(a))
-  const m = n.filter(a => a.length > 0)
-  const l = m.map(a =>
-    a.map(b => {
-      if (b.length < 2) {
-        return undefined
-      }
-      return b[1]
-    }),
-  )
-  const t = l.map(a =>
-    a.filter(b => {
-      if (typeof b !== 'object' || b === null) {
-        return false
-      }
-      return Object.keys(b).length > 1
-    }),
-  )
-  const tt = t.map(c =>
-    c.map(p => {
-      if (typeof p !== 'object' || p === null) {
-        return null
-      }
-      const temp = Object.entries(p).reduce((acc, curr) => {
-        acc = curr[1].default ? acc + 1 : acc
-        return acc
-      }, 0)
-      return temp
-    }),
-  ) // from tt need to filter all that have more than one - meaning more than one default
-  //check what happens if there is more than one default
+  // const n = a
+  //   .map(e => e?.value?.recordTypeVisibilities)
+  //   .filter(e => e !== undefined)
+  //   .map(a => entries(a))
+  // const m = n.filter(a => a.length > 0)
+  // const l = m.map(a =>
+  //   a.map(b => {
+  //     if (b.length < 2) {
+  //       return undefined
+  //     }
+  //     return b[1]
+  //   }),
+  // )
+  // const t = l.map(a =>
+  //   a.filter(b => {
+  //     if (typeof b !== 'object' || b === null) {
+  //       return false
+  //     }
+  //     return Object.keys(b).length > 1
+  //   }),
+  // )
+  // const tt = t.map(c =>
+  //   c.map(p => {
+  //     if (typeof p !== 'object' || p === null) {
+  //       return null
+  //     }
+  //     const temp = Object.entries(p).reduce((acc, curr) => {
+  //       acc = curr[1].default ? acc + 1 : acc
+  //       return acc
+  //     }, 0)
+  //     return temp
+  //   }),
+  // ) // from tt need to filter all that have more than one - meaning more than one default
+  // //check what happens if there is more than one default
 
-  const p = tt.map(a => a.filter(b => (b ? b < 1 : false)))
+  // const p = tt.map(a => a.filter(b => (b ? b < 1 : false)))
 
-  if (p || q) {
+  if (q) {
   }
   return []
 }

@@ -21,10 +21,10 @@ import { createDefaultInstanceFromType, inspectValue, getDetailedChanges } from 
 import { collections } from '@salto-io/lowerdash'
 import { initLocalWorkspace, loadLocalWorkspace } from '@salto-io/local-workspace'
 import { logger } from '@salto-io/logging'
+import { Workspace } from '@salto-io/workspace'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, fetchErrorType } from './generator'
-import { Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
 

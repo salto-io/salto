@@ -216,21 +216,35 @@ const sectionsReferenceParams: Record<ProfileSection, ReferenceFromSectionParams
   },
 }
 
-export const mapInstanceSections = <T>(
-  instance: InstanceElement,
-  f: (sectionName: string, sectionEntryKey: string, target: ElemID, sourceField?: string) => T,
-): T[] =>
+export const mapInstanceSections = <T>({
+  instance,
+  func,
+  applyFilter,
+}: {
+  instance: InstanceElement
+  func: (sectionName: string, sectionEntryKey: string, target: ElemID, sourceField?: string) => T
+  applyFilter: boolean
+}): T[] =>
   Object.entries(sectionsReferenceParams).flatMap(([sectionName, params]) =>
-    mapSectionEntries(instance, sectionName as ProfileSection, params, _.curry(f)(sectionName)),
+    mapSectionEntries(
+      instance,
+      sectionName as ProfileSection,
+      applyFilter ? params : { ...params, filter: () => true },
+      _.curry(func)(sectionName),
+    ),
   )
 
 const referencesFromInstance = (instance: InstanceElement): ReferenceInfo[] =>
-  mapInstanceSections(instance, (sectionName, sectionEntryKey, target, sourceField) => ({
-    source: instance.elemID.createNestedID(sectionName, sectionEntryKey, ...makeArray(sourceField)),
-    target,
-    type: 'weak',
-    sourceScope: 'value',
-  }))
+  mapInstanceSections({
+    instance,
+    func: (sectionName, sectionEntryKey, target, sourceField) => ({
+      source: instance.elemID.createNestedID(sectionName, sectionEntryKey, ...makeArray(sourceField)),
+      target,
+      type: 'weak',
+      sourceScope: 'value',
+    }),
+    applyFilter: true,
+  })
 
 const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   elements: Element[],
@@ -243,17 +257,6 @@ const findWeakReferences: WeakReferencesHandler['findWeakReferences'] = async (
   log.debug('Generated %d references for %d elements.', refs.length, elements.length)
   return refs
 }
-
-const instanceEntriesTargets = (instance: InstanceElement, metadataQuery: MetadataQuery<ElemID>): Dictionary<ElemID> =>
-  _(
-    mapInstanceSections(instance, (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
-      [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
-      target,
-    ]),
-  )
-    .filter(([, target]) => metadataQuery.isInstanceIncluded(target))
-    .fromPairs()
-    .value()
 
 const isStandardFieldPermissionsPath = (path: string): boolean =>
   path.startsWith(ProfileSection.FieldPermissions) && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(path)
@@ -298,11 +301,28 @@ export const getProfilesAndPsBrokenReferenceFields = async ({
   elementsSource: ReadOnlyElementsSource
   metadataQuery: MetadataQuery
 }): Promise<{ paths: string[]; entriesTargets: Record<string, ElemID> }> => {
+  const elemIDMetadataQuery = buildElemIDMetadataQuery(metadataQuery)
+  const instanceEntriesTargets = (instance: InstanceElement): Dictionary<ElemID> =>
+    _(
+      mapInstanceSections({
+        instance,
+        func: (sectionName, sectionEntryKey, target, sourceField): [string, ElemID] => [
+          [sectionName, sectionEntryKey, ...makeArray(sourceField)].join('.'),
+          target,
+        ],
+        // Unlike in findWeakReferences, we don't want to filter out the entries that don't have a target
+        // here, and we should handle all of them. The filters are implemented in order to reduce the amount
+        // of total references we create, and we create references only when we need to
+        // (When the value of the entry is not the default value from Salesforce). This optimization is not required here.
+        applyFilter: false,
+      }),
+    )
+      .filter(([, target]) => elemIDMetadataQuery.isInstanceIncluded(target))
+      .fromPairs()
+      .value()
   const entriesTargets: Dictionary<ElemID> = _.merge(
     {},
-    ...profilesAndPermissionSets.map(instance =>
-      instanceEntriesTargets(instance, buildElemIDMetadataQuery(metadataQuery)),
-    ),
+    ...profilesAndPermissionSets.map(instance => instanceEntriesTargets(instance)),
   )
   const elementNames = new Set(
     await awu(await elementsSource.getAll())

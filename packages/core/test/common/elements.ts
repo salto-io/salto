@@ -16,7 +16,6 @@ import {
   MapType,
   ReferenceExpression,
   Field,
-  Element,
 } from '@salto-io/adapter-api'
 
 type AllElementsTypes = [
@@ -139,8 +138,3 @@ export const getAllElements = (accountName = 'salto'): AllElementsTypes => {
     fieldElement,
   ]
 }
-
-export const getTopLevelElements = (accountName = 'salto'): Element[] =>
-  getAllElements(accountName)
-    .filter(elem => elem.elemID.isTopLevel())
-    .filter(elem => elem.elemID.adapter === accountName)

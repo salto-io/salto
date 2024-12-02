@@ -11,7 +11,7 @@ import { extractPayloadToStaticFile } from '../../../../../src/definitions/fetch
 import { contextMock } from '../../../../mocks'
 
 describe('device configuration utils', () => {
-  describe(`${extractPayloadToStaticFile.name}`, () => {
+  describe(extractPayloadToStaticFile.name, () => {
     it('should throw if value is not a plain object', async () => {
       await expect(
         extractPayloadToStaticFile({ value: 'value', typeName: 'test', context: contextMock }),

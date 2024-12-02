@@ -13,7 +13,7 @@ import { Filter } from '../../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
-import { UNSUPPORTED_PERMISSION_SCHEME } from '../../../src/change_validators/sd_portals_permission_scheme'
+import { UNSUPPORTED_PERMISSION_SCHEMES } from '../../../src/change_validators/sd_portals_permission_scheme'
 
 const PERMISSION_SCHEME = {
   holder: {
@@ -64,18 +64,20 @@ describe('permissionSchemeFilter', () => {
     })
 
     it('should remove the problematic permission scheme in the preDeploy and add it back in the onDeploy', async () => {
-      instance.value.permissions.push(UNSUPPORTED_PERMISSION_SCHEME)
+      instance.value.permissions.push(...UNSUPPORTED_PERMISSION_SCHEMES)
       const changes = [toChange({ after: instance })]
-      expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
+      expect(getChangeData(changes[0]).value.permissions.length).toEqual(4)
       await filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
       await filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
-      expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
+      expect(getChangeData(changes[0]).value.permissions.length).toEqual(4)
       expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
-      expect(getChangeData(changes[0]).value.permissions[1]).toEqual(UNSUPPORTED_PERMISSION_SCHEME)
+      expect(getChangeData(changes[0]).value.permissions[1]).toEqual(UNSUPPORTED_PERMISSION_SCHEMES[0])
+      expect(getChangeData(changes[0]).value.permissions[2]).toEqual(UNSUPPORTED_PERMISSION_SCHEMES[1])
+      expect(getChangeData(changes[0]).value.permissions[3]).toEqual(UNSUPPORTED_PERMISSION_SCHEMES[2])
     })
   })
 })

@@ -16,14 +16,13 @@ import { intuneConstants } from '../../../../constants'
 import { EndpointPath } from '../../../types'
 import { SERVICE_BASE_URL } from '../../../../constants/intune'
 import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './group_assignments'
-import { createStaticFileFromBase64Blob } from '../../shared/utils'
+import { extractStaticFileFromBinaryScript } from './script_content'
 
 const log = logger(module)
 const { recursiveNestedTypeName } = fetchUtils.element
 
 const {
   PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-  PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME,
   SCRIPT_VALUE_FIELD_NAME,
   SCRIPT_CONTENT_FIELD_NAME,
   SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,
@@ -41,42 +40,18 @@ const {
 export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value }) => {
   validatePlainObject(value, PLATFORM_SCRIPT_LINUX_TYPE_NAME)
 
-  const settings = value[SETTINGS_FIELD_NAME]
-  if (!settings) {
-    return { value }
-  }
-  validateArray(settings, PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME)
-
-  const mappedSettings = settings.map(setting => {
-    validatePlainObject(setting, PLATFORM_SCRIPT_LINUX_SETTINGS_TYPE_NAME)
-    const fileContent = _.get(setting, [
-      SETTING_INSTANCE_FIELD_NAME,
-      SIMPLE_SETTING_VALUE_FIELD_NAME,
-      SCRIPT_VALUE_FIELD_NAME,
-    ])
-    // Not all settings have a script value
-    if (!fileContent) {
-      return setting
-    }
-    _.set(
-      setting,
-      [SETTING_INSTANCE_FIELD_NAME, SIMPLE_SETTING_VALUE_FIELD_NAME, SCRIPT_VALUE_FIELD_NAME],
-      createStaticFileFromBase64Blob({
-        typeName: PLATFORM_SCRIPT_LINUX_TYPE_NAME,
-        fullName: value.name,
-        fileName: `${_.get(setting, [SETTING_INSTANCE_FIELD_NAME, SETTING_DEFINITION_ID_FIELD_NAME])}.sh`,
-        content: fileContent,
-      }),
-    )
-    return setting
+  extractStaticFileFromBinaryScript({
+    value,
+    typeName: PLATFORM_SCRIPT_LINUX_TYPE_NAME,
+    scriptsRootFieldName: SETTINGS_FIELD_NAME,
+    scriptValuePath: [SETTING_INSTANCE_FIELD_NAME, SIMPLE_SETTING_VALUE_FIELD_NAME, SCRIPT_VALUE_FIELD_NAME],
+    elemIDFieldName: 'name',
+    validateFunc: validateArray,
+    toFileName: ({ scriptField }) =>
+      `${_.get(scriptField, [SETTING_INSTANCE_FIELD_NAME, SETTING_DEFINITION_ID_FIELD_NAME])}.sh`,
   })
 
-  return {
-    value: {
-      ...value,
-      [SETTINGS_FIELD_NAME]: mappedSettings,
-    },
-  }
+  return { value }
 }
 
 /**
@@ -85,28 +60,35 @@ export const setLinuxScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = 
  */
 export const setScriptValueAsStaticFile: AdjustFunctionMergeAndTransform = async ({ value, typeName }) => {
   validatePlainObject(value, typeName)
-  const scriptContent = _.get(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
-  validateArray(scriptContent, `${typeName}.${SCRIPT_CONTENT_FIELD_NAME}`)
-  if (scriptContent.length !== 1) {
-    log.error(
-      `Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}: ${value.id}. Found ${scriptContent.length}`,
-    )
-    throw new Error(`Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}: ${value.id}`)
+
+  const validateScriptContent = (scriptContent: unknown): void => {
+    validateArray(scriptContent, `${typeName}.${SCRIPT_CONTENT_FIELD_NAME}`)
+    if (scriptContent.length !== 1) {
+      log.error(
+        `Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}: ${value.id}. Found ${scriptContent.length}`,
+      )
+      throw new Error(`Expected exactly one script content for script ${value[NAME_ID_FIELD.fieldName]}: ${value.id}`)
+    }
   }
+
+  extractStaticFileFromBinaryScript({
+    typeName,
+    value,
+    scriptsRootFieldName: SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME,
+    validateFunc: validateScriptContent,
+    toFileName: () => value.fileName,
+  })
+
+  const scriptContent = _.get(value, [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME, 0, SCRIPT_CONTENT_FIELD_NAME])
 
   return {
     value: {
-      ..._.omit(value, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME),
-      [SCRIPT_CONTENT_FIELD_NAME]: createStaticFileFromBase64Blob({
-        typeName,
-        // SALTO-6935: handle custom elemIds
-        fullName: value[NAME_ID_FIELD.fieldName],
-        fileName: value.fileName,
-        content: _.get(scriptContent[0], SCRIPT_CONTENT_FIELD_NAME),
-      }),
+      ..._.omit(value, [SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME]),
+      [SCRIPT_CONTENT_FIELD_NAME]: scriptContent,
     },
   }
 }
+
 /**
  * Creates a fetch definition for fetching macOS or windows platform scripts.
  * Includes fetching the script content separately for each script, and transforming it into a static file.

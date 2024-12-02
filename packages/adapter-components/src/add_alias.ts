@@ -64,17 +64,19 @@ const getAliasFromField = ({
   component: AliasComponent
   elementsById: Record<string, TopLevelElement>
 }): string | undefined => {
-  const { fieldName, referenceFieldName } = component
+  const { fieldName, referenceFieldName, useFieldValueAsFallback } = component
 
   const fieldValue = getFieldValue(element, fieldName)
   if (referenceFieldName === undefined) {
     return _.isString(fieldValue) ? fieldValue : undefined
   }
   if (!isReferenceExpression(fieldValue)) {
-    if (component.useFieldValueAsFallback === true) {
-      return _.isString(fieldValue) ? fieldValue : undefined
+    if (useFieldValueAsFallback === true && _.isString(fieldValue)) {
+      return fieldValue
     }
-    log.error(`${fieldName} is treated as a reference expression but it is not`)
+    log.error(
+      `${fieldName} with useFieldValueAsFallback: ${useFieldValueAsFallback} is treated as a reference expression but it is not`,
+    )
     return undefined
   }
   const topLevelReferenceFullName = fieldValue.elemID.createTopLevelParentID().parent.getFullName()

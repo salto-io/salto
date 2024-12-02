@@ -12,7 +12,7 @@ import {
   createLocationCachePool,
   LocationCachePoolContents,
   LocationCache,
-} from '../../../../src/local-workspace/remote_map/location_cache'
+} from '../../src/remote_map/location_cache'
 
 describe('remote map location cache pool', () => {
   let poolContents: LocationCachePoolContents

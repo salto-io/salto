@@ -7,6 +7,7 @@
  */
 import _ from 'lodash'
 import path from 'path'
+import 'jest-extended'
 import { Readable } from 'stream'
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'
@@ -23,11 +24,8 @@ import {
 } from '@aws-sdk/client-s3'
 import { AwsStub, mockClient } from 'aws-sdk-client-mock'
 import { sdkStreamMixin } from '@aws-sdk/util-stream-node'
-import {
-  createS3StateContentProvider,
-  StateContentProvider,
-} from '../../../../../src/local-workspace/state/content_providers'
-import { LocalStateFileContent } from '../../../../../src/local-workspace/state/content_providers/s3_content_provider'
+import { createS3StateContentProvider, StateContentProvider } from '../../../src/state/content_providers'
+import { LocalStateFileContent } from '../../../src/state/content_providers/s3_content_provider'
 
 const { awu } = collections.asynciterable
 

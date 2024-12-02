@@ -4115,20 +4115,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@salto-io/core@workspace:packages/core"
   dependencies:
-    "@aws-sdk/client-s3": 3.198.0
-    "@aws-sdk/util-stream-node": 3.198.0
     "@salto-io/adapter-api": 0.4.6
     "@salto-io/adapter-components": 0.4.6
     "@salto-io/adapter-utils": 0.4.6
-    "@salto-io/aws-utils": 0.4.6
     "@salto-io/confluence-adapter": 0.4.6
     "@salto-io/dag": 0.4.6
     "@salto-io/dummy-adapter": 0.4.6
-    "@salto-io/file": 0.4.6
     "@salto-io/google-workspace-adapter": 0.4.6
     "@salto-io/intercom-adapter": 0.4.6
     "@salto-io/jamf-adapter": 0.4.6
     "@salto-io/jira-adapter": 0.4.6
+    "@salto-io/local-workspace": 0.4.6
     "@salto-io/logging": 0.4.6
     "@salto-io/lowerdash": 0.4.6
     "@salto-io/microsoft-entra-adapter": 0.4.6
@@ -4137,8 +4134,6 @@ __metadata:
     "@salto-io/node-diff3": 3.1.2-salto.1
     "@salto-io/okta-adapter": 0.4.6
     "@salto-io/pagerduty-adapter": 0.4.6
-    "@salto-io/parser": 0.4.6
-    "@salto-io/rocksdb": 5.1.1-salto-18
     "@salto-io/salesforce-adapter": 0.4.6
     "@salto-io/sap-adapter": 0.4.6
     "@salto-io/serviceplaceholder-adapter": 0.4.6
@@ -4148,43 +4143,19 @@ __metadata:
     "@salto-io/workspace": 0.4.6
     "@salto-io/zendesk-adapter": 0.4.6
     "@salto-io/zuora-billing-adapter": 0.4.6
-    "@types/async-lock": ^1.1.2
-    "@types/fs-extra": ^9.0.8
     "@types/jest": ^29.5.12
-    "@types/leveldown": ^4.0.2
     "@types/lodash": ^4.14.168
-    "@types/lru-cache": ^5.1.0
-    "@types/stream-json": ^1.7.2
-    "@types/uuid": ^10.0.0
-    "@types/webpack-env": ^1.16.0
-    "@types/wu": ^2.1.40
-    async-lock: ^1.2.4
-    aws-sdk-client-mock: ^0.5.5
-    axios: ^1.7.2
-    bottleneck: ^2.19.5
     eslint: ^9.6.0
-    fs-extra: ^9.1.0
-    get-stream: ^6.0.1
-    glob: ^7.1.6
     istextorbinary: ^6.0.0
     jest: ^29.7.0
     jest-extended: ^4.0.2
-    joi: ^17.4.0
     lodash: ^4.17.21
-    lru-cache: ^6.0.0
-    nock: ^12.0.1
     pietile-eventemitter: ^1.0.0
     prettier: 3.2.5
-    readdirp: ^3.1.1
-    rimraf: ^3.0.2
-    stream-chain: ^2.2.5
-    stream-json: ^1.7.5
     ts-jest: ^29.2.0
     tsc-watch: ^2.2.1
     turbo: ^2.0.6
     typescript: 4.8.4
-    uuid: ^10.0.0
-    wait-for-expect: ^3.0.2
     wu: ^2.1.0
   languageName: unknown
   linkType: soft
@@ -4459,6 +4430,59 @@ __metadata:
     turbo: ^2.0.6
     typescript: 4.8.4
     wu: ^2.1.0
+  languageName: unknown
+  linkType: soft
+
+"@salto-io/local-workspace@0.4.6, @salto-io/local-workspace@workspace:packages/local-workspace":
+  version: 0.0.0-use.local
+  resolution: "@salto-io/local-workspace@workspace:packages/local-workspace"
+  dependencies:
+    "@aws-sdk/client-s3": 3.198.0
+    "@aws-sdk/util-stream-node": 3.198.0
+    "@salto-io/adapter-api": 0.4.6
+    "@salto-io/adapter-utils": 0.4.6
+    "@salto-io/aws-utils": 0.4.6
+    "@salto-io/file": 0.4.6
+    "@salto-io/logging": 0.4.6
+    "@salto-io/lowerdash": 0.4.6
+    "@salto-io/parser": 0.4.6
+    "@salto-io/rocksdb": 5.1.1-salto-18
+    "@salto-io/test-utils": 0.4.6
+    "@salto-io/workspace": 0.4.6
+    "@types/async-lock": ^1.1.2
+    "@types/fs-extra": ^9.0.8
+    "@types/jest": ^29.5.12
+    "@types/leveldown": ^4.0.2
+    "@types/lodash": ^4.14.168
+    "@types/lru-cache": ^5.1.0
+    "@types/stream-json": ^1.7.2
+    "@types/uuid": ^10.0.0
+    "@types/webpack-env": ^1.16.0
+    async-lock: ^1.2.4
+    aws-sdk-client-mock: ^0.5.5
+    axios: ^1.7.2
+    bottleneck: ^2.19.5
+    eslint: ^9.6.0
+    fs-extra: ^9.1.0
+    get-stream: ^6.0.1
+    glob: ^7.1.6
+    jest: ^29.7.0
+    jest-extended: ^4.0.2
+    joi: ^17.4.0
+    lodash: ^4.17.21
+    lru-cache: ^6.0.0
+    nock: ^12.0.1
+    prettier: 3.2.5
+    readdirp: ^3.1.1
+    rimraf: ^3.0.2
+    stream-chain: ^2.2.5
+    stream-json: ^1.7.5
+    ts-jest: ^29.2.0
+    tsc-watch: ^2.2.1
+    turbo: ^2.0.6
+    typescript: 4.8.4
+    uuid: ^10.0.0
+    wait-for-expect: ^3.0.2
   languageName: unknown
   linkType: soft
 

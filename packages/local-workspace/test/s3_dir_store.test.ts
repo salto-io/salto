@@ -8,7 +8,7 @@
 import { staticFiles } from '@salto-io/workspace'
 import * as AWS from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
-import { buildS3DirectoryStore } from '../../../src/local-workspace/s3_dir_store'
+import { buildS3DirectoryStore } from '../src/s3_dir_store'
 
 describe('buildS3DirectoryStore', () => {
   const bucketName = 'bucketName'

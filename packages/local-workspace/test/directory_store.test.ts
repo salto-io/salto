@@ -19,7 +19,7 @@ import {
   notFoundAsUndefined,
 } from '@salto-io/file'
 import { dirStore as workspaceDirStore } from '@salto-io/workspace'
-import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
+import { localDirectoryStore, createExtensionFileFilter } from '../src/dir_store'
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual<{}>('@salto-io/file'),

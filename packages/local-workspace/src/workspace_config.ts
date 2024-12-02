@@ -12,7 +12,7 @@ import { Value } from '@salto-io/adapter-api'
 import { workspaceConfigSource as wcs, WorkspaceConfig, configSource } from '@salto-io/workspace'
 import { exists, rename } from '@salto-io/file'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, getLocalStoragePath, CONFIG_DIR_NAME } from '../app_config'
+import { getSaltoHome, getLocalStoragePath, CONFIG_DIR_NAME } from './app_config'
 import {
   WORKSPACE_CONFIG_NAME,
   ENVS_CONFIG_NAME,

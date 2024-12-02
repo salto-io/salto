@@ -22,24 +22,17 @@ export {
 } from './src/core/adapters/adapters'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
+export { getAdapterConfigsPerAccount, getCustomReferences } from './src/local-workspace/workspace'
+// Note: SALTO-7000: These are exported for backward compatibility
 export {
-  loadLocalWorkspace,
-  initLocalWorkspace,
-  loadLocalElementsSources,
-  CACHE_DIR_NAME,
-  STATES_DIR_NAME,
-  locateWorkspaceRoot,
-  createEnvironmentSource,
-  getAdapterConfigsPerAccount,
-  getCustomReferences,
-} from './src/local-workspace/workspace'
-export {
-  workspaceConfigSource as localWorkspaceConfigSource,
-  WorkspaceConfigSource as LocalWorkspaceConfigSource,
-} from './src/local-workspace/workspace_config'
-export { buildLocalAdaptersConfigSource as localAdaptersConfigSource } from './src/local-workspace/adapters_config'
-export { SALTO_HOME_VAR, AppConfig, configFromDisk, CommandConfig, CONFIG_DIR_NAME } from './src/app_config'
-export {
+  localWorkspaceConfigSource,
+  LocalWorkspaceConfigSource,
+  SALTO_HOME_VAR,
+  AppConfig,
+  configFromDisk,
+  CommandConfig,
+  CONFIG_DIR_NAME,
+  localDirectoryStore,
   telemetrySender,
   Telemetry,
   TelemetryEvent,
@@ -51,25 +44,27 @@ export {
   isCountEvent,
   isStackEvent,
   EVENT_TYPES,
-} from './src/telemetry'
-export { localDirectoryStore } from './src/local-workspace/dir_store'
-export { buildS3DirectoryStore } from './src/local-workspace/s3_dir_store'
-export {
+  localAdaptersConfigSource,
+  buildS3DirectoryStore,
   WORKSPACE_CONFIG_NAME,
   USER_CONFIG_NAME,
   ADAPTERS_CONFIG_NAME,
   ENVS_CONFIG_NAME,
   workspaceConfigTypes,
   EnvsConfig,
-} from './src/local-workspace/workspace_config_types'
-export {
   createRemoteMapCreator,
   closeAllRemoteMaps,
+  NoWorkspaceConfig,
   closeRemoteMapsOfLocation,
   replicateDB,
+  loadLocalElementsSources,
+  CACHE_DIR_NAME,
+  STATES_DIR_NAME,
+  locateWorkspaceRoot,
+  createEnvironmentSource,
   createReadOnlyRemoteMapCreator,
-} from './src/local-workspace/remote_map'
-export { NoWorkspaceConfig } from './src/local-workspace/errors'
+} from '@salto-io/local-workspace'
+export { loadLocalWorkspace, initLocalWorkspace } from './src/local-workspace/workspace'
 export * from './src/types'
 export {
   calculatePatch,

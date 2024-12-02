@@ -22,7 +22,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const APPLY_PATCH_ADAPTERS = ['salesforce', 'netsuite', 'dummy'] as const
-type ApplyPatchAdapters = (typeof APPLY_PATCH_ADAPTERS)[number] // type def
+type ApplyPatchAdapters = (typeof APPLY_PATCH_ADAPTERS)[number]
 type ApplyPatchArgs = {
   fromDir: string
   toDir: string
@@ -162,7 +162,7 @@ const applyPatchCmd = createWorkspaceCommand({
 })
 
 const SYNC_WORKSPACE_ADAPTERS = ['salesforce', 'dummy'] as const
-type SyncWorkspaceAdapters = (typeof SYNC_WORKSPACE_ADAPTERS)[number] // type def
+type SyncWorkspaceAdapters = (typeof SYNC_WORKSPACE_ADAPTERS)[number]
 
 type SyncWorkspaceToFolderArgs = {
   toDir: string

@@ -29,7 +29,13 @@ import filterCreator, {
   WORKFLOW_TASKS_FIELD,
   WORKFLOW_FIELD_TO_TYPE,
 } from '../../src/filters/workflow'
-import { INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE } from '../../src/constants'
+import {
+  INSTANCE_FULL_NAME_FIELD,
+  RECORDS_PATH,
+  SALESFORCE,
+  WORKFLOW_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE,
+} from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import {
   metadataType,
@@ -38,7 +44,7 @@ import {
   MetadataValues,
   MetadataTypeAnnotations,
 } from '../../src/transformers/transformer'
-import { isInstanceOfTypeChange } from '../../src/filters/utils'
+import { isInstanceOfTypeChangeSync } from '../../src/filters/utils'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
@@ -197,7 +203,7 @@ describe('Workflow filter', () => {
         })
         it('should return the original changes', () => {
           expect(changes).toHaveLength(1)
-          const workflowChange = changes.find(isInstanceOfTypeChange(WORKFLOW_METADATA_TYPE))
+          const workflowChange = changes.find(isInstanceOfTypeChangeSync(WORKFLOW_RULE_METADATA_TYPE))
           expect(workflowChange).toBeDefined()
           workflowAfter = getChangeData(workflowChange as Change<InstanceElement>)
         })

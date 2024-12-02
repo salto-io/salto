@@ -31,12 +31,12 @@ import { adapter } from '@salto-io/salesforce-adapter'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { expressions } from '@salto-io/workspace'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   initAdapters,
   getAdaptersCredentialsTypes,
   getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
-  adapterCreators,
   getAdaptersConfigTypesMap,
   createResolvedTypesElementsSource,
 } from '../../../src/core/adapters'
@@ -54,8 +54,8 @@ jest.mock('@salto-io/adapter-utils', () => ({
   createDefaultInstanceFromType: jest.fn((...args) => createDefaultInstanceFromTypeMock(...args)),
 }))
 
-jest.mock('../../../src/core/adapters/creators', () => {
-  const actual = jest.requireActual('../../../src/core/adapters/creators')
+jest.mock('@salto-io/adapter-creators', () => {
+  const actual = jest.requireActual('@salto-io/adapter-creators')
   return {
     ...actual,
     __esModule: true,

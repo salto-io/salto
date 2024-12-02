@@ -49,9 +49,9 @@ import {
   getDetailedChanges as getDetailedChangesFromChange,
   inspectValue,
 } from '@salto-io/adapter-utils'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
-  adapterCreators,
   getAdapterDependencyChangers,
   getAdapters,
   getAdaptersCredentialsTypes,

@@ -23,7 +23,8 @@ import {
   loadLocalWorkspace as localWorkspaceLoad,
   initLocalWorkspace as localInitLocalWorkspace,
 } from '@salto-io/local-workspace'
-import { adapterCreators, getAdaptersConfigTypesMap } from '../core/adapters'
+import { adapterCreators } from '@salto-io/adapter-creators'
+import { getAdaptersConfigTypesMap } from '../core/adapters'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

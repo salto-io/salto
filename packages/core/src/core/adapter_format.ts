@@ -19,8 +19,8 @@ import {
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { FetchResult } from '../types'
-import { adapterCreators } from './adapters'
 import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
 import { getPlan } from './plan'
 

@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import {
   definitions,
@@ -42,6 +43,9 @@ import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
 import { assignPolicyIdsToApplication } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
 import { isNotDeletedEmailDomain } from './types/email_domain'
+import { isDefaultDomain } from './types/domain'
+import { isDefaultBrand } from './types/brand'
+import { isDefaultAccessPolicy } from './types/access_policy'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -116,34 +120,6 @@ const getPrivateAPISettingsDefinitions = ({
   }
 }
 
-const accessPolicyCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {
-  custom:
-    args =>
-    ({ entry, defaultName }) => {
-      // Each Okta tenant has exactly one default access policy configured marked with "system = true"
-      // The default policy can be renamed, but it has a specific function and can only be partially modified,
-      // therefore, we should verify default policies across envs will have the same elemID.
-      if (entry?.system === true) {
-        return naclCase('Default Policy')
-      }
-      const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)
-      return elemIDFunc({ entry, defaultName })
-    },
-}
-
-const accessPolicyRuleCustomizer: definitions.fetch.FetchTopLevelElementDefinition['elemID'] = {
-  custom:
-    args =>
-    ({ entry, defaultName, parent }) => {
-      if (parent?.value?.system === true) {
-        return naclCase(`Default Policy__${entry.name}`)
-      }
-      const elemIDFunc = fetchUtils.element.createElemIDFunc<never>(args)
-      return elemIDFunc({ entry, defaultName, parent })
-    },
-  extendsParent: true,
-}
-
 const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFetchApiDefinitions<OktaOptions>> => {
   const policiesToOmitPriorities = [
     ACCESS_POLICY_TYPE_NAME,
@@ -185,7 +161,16 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
         topLevel: {
           isTopLevel: true,
           serviceUrl: { path: details.policyServiceUrl },
-          ...(typeName === ACCESS_POLICY_TYPE_NAME ? { elemID: accessPolicyCustomizer } : {}),
+          ...(typeName === ACCESS_POLICY_TYPE_NAME
+            ? {
+                elemID: {
+                  parts: [
+                    { fieldName: 'name', condition: (value: Values) => !isDefaultAccessPolicy(value) },
+                    { fieldName: '', condition: isDefaultAccessPolicy, custom: () => () => 'Default Policy' },
+                  ],
+                },
+              }
+            : {}),
         },
         fieldCustomizations: {
           id: { hide: true },
@@ -208,9 +193,7 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
       element: {
         topLevel: {
           isTopLevel: true,
-          ...(typeName === ACCESS_POLICY_TYPE_NAME
-            ? { elemID: accessPolicyRuleCustomizer }
-            : { elemID: { extendsParent: true } }),
+          elemID: { extendsParent: true },
           serviceUrl: { path: details.ruleServiceUrl ?? details.policyServiceUrl },
         },
 
@@ -696,6 +679,12 @@ const createCustomizations = ({
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/customizations/footer' },
+        elemID: {
+          parts: [
+            { fieldName: 'name', condition: value => !isDefaultBrand(value) },
+            { fieldName: '', condition: isDefaultBrand, custom: () => () => 'Default Brand' },
+          ],
+        },
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -1077,7 +1066,17 @@ const createCustomizations = ({
     requests: [{ endpoint: { path: '/api/v1/domains' }, transformation: { root: 'domains' } }],
     resource: { directFetch: true },
     element: {
-      topLevel: { isTopLevel: true, elemID: { parts: [{ fieldName: 'domain' }], extendsParent: true } },
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [
+            { fieldName: 'domain', condition: value => !isDefaultDomain(value) },
+            { fieldName: '', condition: isDefaultDomain, custom: () => () => 'Default Domain' },
+          ],
+          extendsParent: true,
+        },
+        alias: { aliasComponents: [{ fieldName: 'domain' }] },
+      },
       fieldCustomizations: {
         id: { hide: true },
         _links: { omit: true },

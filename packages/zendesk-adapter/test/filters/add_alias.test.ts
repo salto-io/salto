@@ -137,7 +137,7 @@ describe('add alias filter', () => {
         undefined,
       ])
     })
-    it('should not crush when one of the values is undefined', async () => {
+    it('should not crash when one of the values is undefined', async () => {
       const appInstallationInstanceInvalid = new InstanceElement('instance2', appInstallationType, {
         settings: { name: undefined },
       })
@@ -145,7 +145,7 @@ describe('add alias filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })
-    it('should not crush when there is not parent', async () => {
+    it('should not crash when there is not parent', async () => {
       const categoryTranslationInstance = new InstanceElement(
         'instance8',
         categoryTranslationType,
@@ -158,23 +158,26 @@ describe('add alias filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })
-    it('should not crush when there is a value instead of a reference', async () => {
+    it('should use the value instead of a reference if there is a useFieldValueAsFallback = true', async () => {
       const categoryTranslationInstance = new InstanceElement(
         'instance8',
         categoryTranslationType,
         {
-          locale: 'en-US',
+          locale: 'fallback',
         },
         undefined,
         {
           _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
         },
       )
-      const elements = [categoryTranslationInstance]
+      const elements = [categoryInstance, categoryTranslationInstance]
       await filter.onFetch(elements)
-      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([
+        'category name',
+        'fallback - category name',
+      ])
     })
-    it('should not crush when there is a reference instead of a value', async () => {
+    it('should not crash when there is a reference instead of a value', async () => {
       const dynamicContentItemInstance = new InstanceElement('instance3', dynamicContentItemType, {
         name: new ReferenceExpression(localeInstance.elemID, localeInstance),
       })

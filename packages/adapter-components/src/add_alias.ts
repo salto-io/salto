@@ -23,6 +23,7 @@ const log = logger(module)
 export type AliasComponent = {
   fieldName: string
   referenceFieldName?: string
+  useFieldValueAsFallback?: boolean
 }
 
 export type ConstantComponent = {
@@ -70,6 +71,9 @@ const getAliasFromField = ({
     return _.isString(fieldValue) ? fieldValue : undefined
   }
   if (!isReferenceExpression(fieldValue)) {
+    if (component.useFieldValueAsFallback === true) {
+      return _.isString(fieldValue) ? fieldValue : undefined
+    }
     log.error(`${fieldName} is treated as a reference expression but it is not`)
     return undefined
   }

@@ -1170,6 +1170,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   queue: {
+    transformation: {
+      serviceUrl: '/admin/objects-rules/omnichannel-routing/queues',
+    },
     deployRequests: {
       add: {
         url: '/api/v2/queues',

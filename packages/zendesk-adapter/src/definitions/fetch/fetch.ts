@@ -903,6 +903,7 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: { path: '/admin/objects-rules/omnichannel-routing/queues' },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'string' },

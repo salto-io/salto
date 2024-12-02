@@ -6,12 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Change, ChangeDataType, isEqualValues } from '@salto-io/adapter-api'
-import { UNSUPPORTED_PERMISSION_SCHEME } from '../../change_validators/sd_portals_permission_scheme'
+import { UNSUPPORTED_PERMISSION_SCHEMES } from '../../change_validators/sd_portals_permission_scheme'
 import { FilterCreator } from '../../filter'
 import { omitChanges, OmitChangesPredicate, PermissionHolder, addBackPermissions } from './omit_permissions_common'
 
 const sdPermissionSchemePredicate: OmitChangesPredicate = (permissionScheme: PermissionHolder) =>
-  isEqualValues(permissionScheme, UNSUPPORTED_PERMISSION_SCHEME)
+  UNSUPPORTED_PERMISSION_SCHEMES.some(permissionHolder => isEqualValues(permissionScheme, permissionHolder))
 
 const filter: FilterCreator = () => {
   let unsupportedPermissionSchemes: Record<string, PermissionHolder[]> = {}

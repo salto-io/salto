@@ -16,7 +16,7 @@ import { ASSIGNMENT_FIELD_CUSTOMIZATION } from '../../../../../src/definitions/f
 const { SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME } = intuneConstants
 
 describe('Intune platform script fetch utils', () => {
-  describe(`${platformScript.setLinuxScriptValueAsStaticFile.name}`, () => {
+  describe(platformScript.setLinuxScriptValueAsStaticFile.name, () => {
     const SETTING_WITHOUT_A_SCRIPT_0 = {
       settingInstance: {
         '_odata_type@mv': '#microsoft.graph.deviceManagementConfigurationChoiceSettingInstance',
@@ -142,7 +142,7 @@ describe('Intune platform script fetch utils', () => {
     })
   })
 
-  describe(`${platformScript.setScriptValueAsStaticFile.name}`, () => {
+  describe(platformScript.setScriptValueAsStaticFile.name, () => {
     const WINDOWS_PLATFORM_SCRIPT_VALUE = {
       displayName: 'test windows platform script',
       platforms: 'windows',
@@ -157,15 +157,20 @@ describe('Intune platform script fetch utils', () => {
     }
 
     describe('when the instance has no script content', () => {
-      it('should throw an error', async () => {
+      it('should return the value as is', async () => {
         const value = _.omit(WINDOWS_PLATFORM_SCRIPT_VALUE, SCRIPT_CONTENT_RECURSE_INTO_FIELD_NAME)
-        await expect(
-          platformScript.setScriptValueAsStaticFile({
+        expect(
+          await platformScript.setScriptValueAsStaticFile({
             value,
             typeName: 'testPlatformScript',
             context: { ...contextMock, fragments: [] },
           }),
-        ).rejects.toThrow('Expected testPlatformScript.scriptContent to be an array, but got undefined')
+        ).toEqual({
+          value: {
+            ...value,
+            scriptContent: undefined,
+          },
+        })
       })
     })
 
@@ -209,7 +214,7 @@ describe('Intune platform script fetch utils', () => {
     })
   })
 
-  describe(`${platformScript.createPlatformScriptFetchDefinition.name}`, () => {
+  describe(platformScript.createPlatformScriptFetchDefinition.name, () => {
     it('should return the correct fetch definition for Windows Script', () => {
       const fetchDefinition = platformScript.createPlatformScriptFetchDefinition({
         typeName: 'testPlatformScript',

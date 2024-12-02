@@ -7,11 +7,15 @@
  */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { Value } from '@salto-io/adapter-api'
 import { SourceRange as InternalSourceRange } from './internal/types'
 import { Functions } from './functions'
 import PeekableLexer from './internal/native/lexer'
 import { parseBuffer } from './internal/native/parse'
-import { ParseResult } from './types'
+import { ParseError, ParseResult } from './types'
+import { SourceMap } from './source_map'
+import { ParseContext } from './internal/native/types'
+import { consumeValue } from './internal/native/consumers/values'
 
 export { parseTopLevelID } from './internal/native/helpers'
 export { IllegalReference } from './internal/types'
@@ -71,5 +75,33 @@ export function* tokenizeContent(content: string): IterableIterator<Token> {
     }
   } catch (e) {
     log.error('Error occured while getting token: %o', e)
+  }
+}
+
+export const parseValue = (
+  content: string,
+  functions?: Functions,
+): {
+  value: Value
+  errors: ParseError[]
+} => {
+  const context: ParseContext = {
+    calcSourceMap: false,
+    filename: 'unknown',
+    functions: functions ?? {},
+    lexer: new PeekableLexer(content),
+    errors: [],
+    listTypes: {},
+    mapTypes: {},
+    sourceMap: new SourceMap(),
+    valuePromiseWatchers: [],
+  }
+  const result = consumeValue(context)
+  if (context.valuePromiseWatchers.length > 0) {
+    throw new Error('Unexpected promise')
+  }
+  return {
+    value: result.value,
+    errors: context.errors,
   }
 }

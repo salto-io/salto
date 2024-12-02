@@ -24,7 +24,7 @@ import {
   positionAtStart,
   positionAtEnd,
 } from '../helpers'
-import Lexer, { TOKEN_TYPES, LexerToken, TRUE, FALSE, stringLexer } from '../lexer'
+import { TOKEN_TYPES, LexerToken, TRUE, FALSE, stringLexer } from '../lexer'
 import {
   missingComma,
   unknownFunction,
@@ -39,7 +39,6 @@ import {
 } from '../errors'
 
 import { IllegalReference } from '../../types'
-import { SourceMap } from '../../../source_map'
 
 export const MISSING_VALUE = '****dynamic****'
 
@@ -459,19 +458,4 @@ export const consumeValue = (
       log.error('Received an undefined token in `consumeValue`')
       throw new Error('Unknown value')
   }
-}
-
-export const parseValue = (content: string): Value => {
-  const context: ParseContext = {
-    calcSourceMap: false,
-    filename: 'unknown',
-    functions: {},
-    lexer: new Lexer(content),
-    errors: [],
-    listTypes: {},
-    mapTypes: {},
-    sourceMap: new SourceMap(),
-    valuePromiseWatchers: [],
-  }
-  return consumeValue(context).value
 }

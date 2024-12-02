@@ -952,6 +952,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'welcomeTemplate', parentTypes: ['Network'] },
     target: { type: 'EmailTemplate' },
   },
+  {
+    src: { field: 'picassoSite', parentTypes: ['Network'] },
+    target: { type: 'ExperienceBundle' },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>

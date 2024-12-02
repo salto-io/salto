@@ -27,6 +27,9 @@ describe('omit inactive', () => {
   const webhook3 = new InstanceElement('webhook3', webhookObjType, { name: 'test' })
   const ticketForm = new ObjectType({ elemID: new ElemID(ZENDESK, 'ticket_form') })
   const ticketForm1 = new InstanceElement('inst1', ticketForm, { name: 'test', active: false })
+  const workspace = new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') })
+  const workspace1 = new InstanceElement('workspace1', workspace, { title: 'inactive workspace', activated: false })
+  const workspace2 = new InstanceElement('workspace2', workspace, { title: 'active workspace', activated: true })
 
   const activeTicketFieldItem = {
     value: {
@@ -123,6 +126,25 @@ describe('omit inactive', () => {
     context: {},
   }
 
+  const activeWorkspaceItem = {
+    value: {
+      id: 123,
+      title: 'active workspace',
+      activated: true,
+    },
+    typeName: 'workspace',
+    context: {},
+  }
+  const inactiveWorkspaceItem = {
+    value: {
+      id: 123,
+      title: 'inactive workspace',
+      activated: false,
+    },
+    typeName: 'workspace',
+    context: {},
+  }
+
   const valueGeneratedItems = [
     activeTicketFieldItem,
     activeCustomRoleItem,
@@ -131,6 +153,8 @@ describe('omit inactive', () => {
     inactiveViewItem,
     activeWebhookItem,
     inactiveWebhookItem,
+    activeWorkspaceItem,
+    inactiveWorkspaceItem,
   ]
 
   describe('onFetch', () => {
@@ -156,12 +180,16 @@ describe('omit inactive', () => {
           webhook1.elemID.getFullName(),
           webhook3.elemID.getFullName(),
         ])
+        expect(instanceFilter([workspace1, workspace2]).map(elem => elem.elemID.getFullName())).toEqual([
+          workspace2.elemID.getFullName(),
+        ])
         expect(instanceFilter([view1]).map(elem => elem.elemID.getFullName())).toEqual([])
         expect(valueGeneratedItems.filter(item => itemFilter(item))).toEqual([
           activeTicketFieldItem,
           activeCustomRoleItem,
           activeOrganizationFieldItem,
           activeWebhookItem,
+          activeWorkspaceItem,
         ])
       })
       it('should not omit instance of types that we need their inactive instances for reorder', async () => {

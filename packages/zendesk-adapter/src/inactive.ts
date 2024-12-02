@@ -8,7 +8,7 @@
 import { InstanceElement } from '@salto-io/adapter-api'
 import { definitions, fetch } from '@salto-io/adapter-components'
 import { ZendeskConfig, FETCH_CONFIG, OMIT_INACTIVE_DEFAULT } from './config'
-import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME } from './constants'
+import { TICKET_FORM_TYPE_NAME, WEBHOOK_TYPE_NAME, WORKSPACE_TYPE_NAME } from './constants'
 
 /**
  * Helper for omitting inactive instances during the initial fetch, in order to avoid creating their standalone
@@ -36,6 +36,9 @@ export const filterOutInactiveInstancesForType = (
     if (typeName === WEBHOOK_TYPE_NAME) {
       return instances.filter(instance => instance.value.status !== 'inactive')
     }
+    if (typeName === WORKSPACE_TYPE_NAME) {
+      return instances.filter(instance => instance.value.activated !== false)
+    }
     return instances.filter(instance => instance.value.active !== false)
   }
 }
@@ -59,6 +62,9 @@ export const filterOutInactiveItemForType = (config: ZendeskConfig): ((item: fet
     }
     if (typeName === WEBHOOK_TYPE_NAME) {
       return item.value?.status !== 'inactive'
+    }
+    if (typeName === WORKSPACE_TYPE_NAME) {
+      return item.value?.activated !== false
     }
     return item.value?.active !== false
   }

@@ -4131,6 +4131,7 @@ __metadata:
     "@salto-io/google-workspace-adapter": 0.4.6
     "@salto-io/intercom-adapter": 0.4.6
     "@salto-io/jamf-adapter": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/jira-adapter": 0.4.6
     "@salto-io/local-workspace": 0.4.6
     "@salto-io/logging": 0.4.6
@@ -4155,7 +4156,6 @@ __metadata:
     eslint: ^9.6.0
     istextorbinary: ^6.0.0
     jest: ^29.7.0
-    jest-extended: ^4.0.2
     lodash: ^4.17.21
     pietile-eventemitter: ^1.0.0
     prettier: 3.2.5
@@ -4367,6 +4367,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@salto-io/jest-extended@npm:^4.0.3":
+  version: 4.0.3
+  resolution: "@salto-io/jest-extended@npm:4.0.3"
+  dependencies:
+    jest-diff: ^29.0.0
+    jest-get-type: ^29.0.0
+  peerDependencies:
+    jest: ">=27.2.5"
+  peerDependenciesMeta:
+    jest:
+      optional: true
+  checksum: c905866ae492c3469a6ddfb65bd18dc063561cd06c68a54214deb54e4ccb61b13f1112efe051fb6f3e1ebdea276b14852038cf479e7d311fdfbb8a0ab7634d12
+  languageName: node
+  linkType: hard
+
 "@salto-io/jira-adapter@0.4.6, @salto-io/jira-adapter@workspace:packages/jira-adapter":
   version: 0.0.0-use.local
   resolution: "@salto-io/jira-adapter@workspace:packages/jira-adapter"
@@ -4378,6 +4393,7 @@ __metadata:
     "@salto-io/dag": 0.4.6
     "@salto-io/e2e-credentials-store": 0.4.6
     "@salto-io/element-test-utils": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/logging": 0.4.6
     "@salto-io/lowerdash": 0.4.6
     "@salto-io/test-utils": 0.4.6
@@ -4391,7 +4407,6 @@ __metadata:
     eslint: ^9.6.0
     jest: ^29.7.0
     jest-each: ^26.6.2
-    jest-extended: ^4.0.2
     joi: ^17.4.0
     lodash: ^4.17.21
     node-html-parser: ^6.1.5
@@ -4476,6 +4491,7 @@ __metadata:
     "@salto-io/aws-utils": 0.4.6
     "@salto-io/element-test-utils": 0.4.6
     "@salto-io/file": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/logging": 0.4.6
     "@salto-io/lowerdash": 0.4.6
     "@salto-io/parser": 0.4.6
@@ -4500,7 +4516,6 @@ __metadata:
     get-stream: ^6.0.1
     glob: ^7.1.6
     jest: ^29.7.0
-    jest-extended: ^4.0.2
     joi: ^17.4.0
     lodash: ^4.17.21
     lru-cache: ^6.0.0
@@ -4719,6 +4734,7 @@ __metadata:
     "@salto-io/adapter-utils": 0.4.6
     "@salto-io/e2e-credentials-store": 0.4.6
     "@salto-io/element-test-utils": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/logging": 0.4.6
     "@salto-io/lowerdash": 0.4.6
     "@salto-io/test-utils": 0.4.6
@@ -4731,7 +4747,6 @@ __metadata:
     eslint: ^9.6.0
     form-data: ^4.0.0
     jest: ^29.7.0
-    jest-extended: ^4.0.2
     joi: ^17.4.0
     lodash: ^4.17.21
     nock: ^12.0.1
@@ -4845,6 +4860,7 @@ __metadata:
     "@salto-io/e2e-credentials-store": 0.4.6
     "@salto-io/element-test-utils": 0.4.6
     "@salto-io/file": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/jsforce": ^1.9.4
     "@salto-io/jsforce-types": ^0.1.0
     "@salto-io/logging": 0.4.6
@@ -4861,7 +4877,6 @@ __metadata:
     fast-xml-parser: ^4.4.0
     humanize-duration: ^3.22.0
     jest: ^29.7.0
-    jest-extended: ^4.0.2
     joi: ^17.4.0
     jszip: ^3.10.1
     lodash: ^4.17.21
@@ -4945,6 +4960,7 @@ __metadata:
     "@salto-io/adapter-components": 0.4.6
     "@salto-io/adapter-utils": 0.4.6
     "@salto-io/element-test-utils": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/logging": 0.4.6
     "@types/jest": ^29.5.12
     "@types/lodash": ^4.14.168
@@ -4952,7 +4968,6 @@ __metadata:
     axios-mock-adapter: ^1.19.0
     eslint: ^9.6.0
     jest: ^29.7.0
-    jest-extended: ^4.0.2
     lodash: ^4.17.21
     prettier: 3.2.5
     ts-jest: ^29.2.0
@@ -5030,6 +5045,7 @@ __metadata:
     "@salto-io/adapter-utils": 0.4.6
     "@salto-io/dag": 0.4.6
     "@salto-io/element-test-utils": 0.4.6
+    "@salto-io/jest-extended": ^4.0.3
     "@salto-io/logging": 0.4.6
     "@salto-io/lowerdash": 0.4.6
     "@salto-io/parser": 0.4.6
@@ -5040,7 +5056,6 @@ __metadata:
     async-lock: ^1.2.4
     eslint: ^9.6.0
     jest: ^29.7.0
-    jest-extended: ^4.0.2
     lodash: ^4.17.21
     prettier: 3.2.5
     ts-jest: ^29.2.0
@@ -13086,21 +13101,6 @@ __metadata:
     jest-mock: ^29.7.0
     jest-util: ^29.7.0
   checksum: 501a9966292cbe0ca3f40057a37587cb6def25e1e0c5e39ac6c650fe78d3c70a2428304341d084ac0cced5041483acef41c477abac47e9a290d5545fd2f15646
-  languageName: node
-  linkType: hard
-
-"jest-extended@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "jest-extended@npm:4.0.2"
-  dependencies:
-    jest-diff: ^29.0.0
-    jest-get-type: ^29.0.0
-  peerDependencies:
-    jest: ">=27.2.5"
-  peerDependenciesMeta:
-    jest:
-      optional: true
-  checksum: afdc255eec7caa173f9e805e94562273d8b8aa4c7ab9b396668f018c18ea5236270a6ac499ca84b8c60e90ccbe9ccb4aebf998daef13aec9542c426df1df6079
   languageName: node
   linkType: hard
 

@@ -20,6 +20,7 @@ describe('addAliasToElements', () => {
   const categoryTypeName = 'category'
   const categoryOrderTypeName = 'category_order'
   const categoryTranslationTypeName = 'category_translation'
+  const anotherTranslationTypeName = 'another_translation'
   const ZENDESK = 'zendesk'
 
   const aliasMap: Record<string, AliasData> = {
@@ -88,6 +89,20 @@ describe('addAliasToElements', () => {
         },
       ],
     },
+    [anotherTranslationTypeName]: {
+      aliasComponents: [
+        {
+          fieldName: 'locale',
+          referenceFieldName: 'locale',
+          useFieldValueAsFallback: true,
+        },
+        {
+          fieldName: '_parent.0',
+          referenceFieldName: '_alias',
+        },
+      ],
+      separator: ' - ',
+    },
   }
 
   const appInstallationType = new ObjectType({ elemID: new ElemID(ZENDESK, appInstallationTypeName) })
@@ -99,6 +114,7 @@ describe('addAliasToElements', () => {
   const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryTypeName) })
   const categoryOrderType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryOrderTypeName) })
   const categoryTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryTranslationTypeName) })
+  const anotherTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, anotherTranslationTypeName) })
 
   const localeInstance = new InstanceElement('instance4', localeType, {
     locale: 'en-us', // will be used for category translation
@@ -145,6 +161,17 @@ describe('addAliasToElements', () => {
     const categoryTranslationInstanceInvalid = new InstanceElement('instance9', categoryTranslationType, {
       locale: new ReferenceExpression(localeInstance.elemID),
     })
+    const anotherTranslationInstance = new InstanceElement(
+      'instance10',
+      anotherTranslationType,
+      {
+        locale: 'en-au',
+      },
+      undefined,
+      {
+        _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
+      },
+    )
     const elements = [
       appInstallationInstance,
       appInstallationInstanceInvalid,
@@ -155,6 +182,7 @@ describe('addAliasToElements', () => {
       categoryOrderInstance,
       categoryTranslationInstance,
       categoryTranslationInstanceInvalid,
+      anotherTranslationInstance,
     ]
     addAliasToElements({
       elementsMap: groupByTypeName(elements),
@@ -170,9 +198,10 @@ describe('addAliasToElements', () => {
       'category name Category Order',
       'en-us - category name',
       undefined,
+      'en-au - category name',
     ])
   })
-  it('should not crush when one of the values is undefined', async () => {
+  it('should not crash when one of the values is undefined', async () => {
     const appInstallationInstanceInvalid = new InstanceElement('instance2', appInstallationType, {
       settings: { name: undefined },
     })
@@ -183,7 +212,7 @@ describe('addAliasToElements', () => {
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
-  it('should not crush when there is not parent', async () => {
+  it('should not crash when there is not parent', async () => {
     const categoryTranslationInstance = new InstanceElement(
       'instance8',
       categoryTranslationType,
@@ -199,7 +228,7 @@ describe('addAliasToElements', () => {
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
-  it('should not crush when there is a value instead of a reference', async () => {
+  it('should not crash when there is a value instead of a reference when useFieldValueAsFallback = false', async () => {
     const categoryTranslationInstance = new InstanceElement(
       'instance8',
       categoryTranslationType,
@@ -218,7 +247,7 @@ describe('addAliasToElements', () => {
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
-  it('should not crush when there is a reference instead of a value', async () => {
+  it('should not crash when there is a reference instead of a value', async () => {
     const dynamicContentItemInstance = new InstanceElement('instance3', dynamicContentItemType, {
       name: new ReferenceExpression(localeInstance.elemID, localeInstance),
     })

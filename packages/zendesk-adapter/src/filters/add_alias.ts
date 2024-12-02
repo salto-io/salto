@@ -147,6 +147,7 @@ const aliasMap: Record<string, AliasData> = {
       {
         fieldName: 'locale_id',
         referenceFieldName: 'locale',
+        useFieldValueAsFallback: true,
       },
     ],
     separator: ' - ',
@@ -324,6 +325,7 @@ const aliasMap: Record<string, AliasData> = {
       {
         fieldName: 'locale',
         referenceFieldName: 'locale',
+        useFieldValueAsFallback: true,
       },
       {
         fieldName: '_parent.0',
@@ -355,6 +357,7 @@ const aliasMap: Record<string, AliasData> = {
       {
         fieldName: 'locale',
         referenceFieldName: 'locale',
+        useFieldValueAsFallback: true,
       },
       {
         fieldName: '_parent.0',
@@ -386,6 +389,7 @@ const aliasMap: Record<string, AliasData> = {
       {
         fieldName: 'locale',
         referenceFieldName: 'locale',
+        useFieldValueAsFallback: true,
       },
       {
         fieldName: '_parent.0',

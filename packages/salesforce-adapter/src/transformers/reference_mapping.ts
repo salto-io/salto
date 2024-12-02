@@ -224,6 +224,37 @@ const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
   },
 ]
 
+const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'changePasswordTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'chgEmailVerNewTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'chgEmailVerOldTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'forgotPasswordTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'lockoutTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'verificationTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'welcomeTemplate', parentTypes: ['Network'] },
+    target: { type: 'EmailTemplate' },
+  },
+]
+
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
@@ -940,22 +971,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'recordField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
-  {
-    src: { field: 'changePasswordTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
-  },
-  {
-    src: { field: 'forgotPasswordTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
-  },
-  {
-    src: { field: 'welcomeTemplate', parentTypes: ['Network'] },
-    target: { type: 'EmailTemplate' },
-  },
-  {
-    src: { field: 'picassoSite', parentTypes: ['Network'] },
-    target: { type: 'ExperienceBundle' },
-  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
@@ -1100,7 +1115,9 @@ const getLookUpNameImpl = ({
 }
 
 export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldReferenceDefinition[] =>
-  fieldNameToTypeMappingDefs.concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
+  fieldNameToTypeMappingDefs
+    .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
+    .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

@@ -21,10 +21,12 @@ import { getUserBooleanInput } from '../callbacks'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
+const APPLY_PATCH_ADAPTERS = ['salesforce', 'netsuite', 'dummy'] as const
+type ApplyPatchAdapters = (typeof APPLY_PATCH_ADAPTERS)[number]
 type ApplyPatchArgs = {
   fromDir: string
   toDir: string
-  accountName: 'salesforce' | 'netsuite'
+  accountName: ApplyPatchAdapters
   targetEnvs?: string[]
   updateStateInEnvs?: string[]
 } & UpdateModeArg
@@ -124,7 +126,7 @@ const applyPatchCmd = createWorkspaceCommand({
           'The account name for elements, this determines the expected format of the elements in the directories',
         type: 'string',
         required: true,
-        choices: ['salesforce', 'netsuite'],
+        choices: [...APPLY_PATCH_ADAPTERS],
       },
       {
         name: 'targetEnvs',
@@ -159,9 +161,12 @@ const applyPatchCmd = createWorkspaceCommand({
   action: applyPatchAction,
 })
 
+const SYNC_WORKSPACE_ADAPTERS = ['salesforce', 'dummy'] as const
+type SyncWorkspaceAdapters = (typeof SYNC_WORKSPACE_ADAPTERS)[number]
+
 type SyncWorkspaceToFolderArgs = {
   toDir: string
-  accountName: 'salesforce'
+  accountName: SyncWorkspaceAdapters
   force: boolean
 }
 export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceToFolderArgs> = async ({
@@ -218,7 +223,7 @@ const syncToWorkspaceCmd = createWorkspaceCommand({
         type: 'string',
         alias: 'a',
         description: 'The name of the account to synchronize to the project',
-        choices: ['salesforce'],
+        choices: [...SYNC_WORKSPACE_ADAPTERS],
         default: 'salesforce',
       },
       {

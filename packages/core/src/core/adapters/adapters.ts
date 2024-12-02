@@ -33,22 +33,27 @@ import {
   elementSource as workspaceElementSource,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { adapterCreators } from '@salto-io/adapter-creators'
+import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
 
 const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
-export const getAdaptersCredentialsTypes = (names?: ReadonlyArray<string>): Record<string, AdapterAuthentication> => {
+export const getAdaptersCredentialsTypes = (
+  names?: ReadonlyArray<string>,
+  adapterCreators?: Record<string, Adapter>,
+): Record<string, AdapterAuthentication> => {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
   let relevantAdapterCreators: Record<string, Adapter>
   if (names === undefined) {
-    relevantAdapterCreators = adapterCreators
+    relevantAdapterCreators = actualAdapterCreator
   } else {
-    const nonExistingAdapters = names.filter(name => !Object.keys(adapterCreators).includes(name))
+    const nonExistingAdapters = names.filter(name => !Object.keys(actualAdapterCreator).includes(name))
     if (!_.isEmpty(nonExistingAdapters)) {
       throw new Error(`No adapter available for ${nonExistingAdapters}`)
     }
-    relevantAdapterCreators = _.pick(adapterCreators, names)
+    relevantAdapterCreators = _.pick(actualAdapterCreator, names)
   }
   return _.mapValues(relevantAdapterCreators, creator => creator.authenticationMethods)
 }
@@ -56,15 +61,18 @@ export const getAdaptersCredentialsTypes = (names?: ReadonlyArray<string>): Reco
 export const initAdapters = (
   config: Record<string, AdapterOperationsContext>,
   accountToServiceNameMap: Record<string, string> = {},
+  adapterCreators?: Record<string, Adapter>,
 ): Record<string, AdapterOperations> =>
   _.mapValues(config, (context, account) => {
+    // for backward compatibility SAAS-7006
+    const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
     if (!context.credentials) {
       throw new Error(`${account} is not logged in.\n\nPlease login and try again.`)
     }
     if (!accountToServiceNameMap[account]) {
       throw new Error(`${account} account does not exist in environment.`)
     }
-    const creator = adapterCreators[accountToServiceNameMap[account]]
+    const creator = actualAdapterCreator[accountToServiceNameMap[account]]
     if (!creator) {
       throw new Error(`${accountToServiceNameMap[account]} adapter is not registered.`)
     }
@@ -76,40 +84,70 @@ export const initAdapters = (
     return creator.operations(context)
   })
 
-const getAdapterConfigFromType = async (adapterName: string): Promise<InstanceElement | undefined> => {
+const getAdapterConfigFromType = async (
+  adapterName: string,
+  adapterCreators: Record<string, Adapter>,
+): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const getAdaptersConfigTypesMap = (): Record<string, ObjectType[]> =>
-  Object.fromEntries(
+export const getAdaptersConfigTypesMap = (adapterCreators?: Record<string, Adapter>): Record<string, ObjectType[]> => {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  return Object.fromEntries(
     Object.entries(
-      _.mapValues(adapterCreators, adapterCreator =>
+      _.mapValues(actualAdapterCreator, adapterCreator =>
         adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
       ),
     ).filter(entry => entry[1].length > 0),
   )
-
+}
 export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
   Object.values(getAdaptersConfigTypesMap()).flat()
 
 export const getDefaultAdapterConfig = async (
-  adapterName: string,
+  object:
+    | string
+    | {
+        adapterName: string
+        accountName?: string
+        options?: InstanceElement
+        adapterCreators: Record<string, Adapter>
+      },
   accountName?: string,
   options?: InstanceElement,
 ): Promise<InstanceElement[] | undefined> => {
-  const { getConfig } = adapterCreators[adapterName]?.configCreator ?? {}
+  // for backward compatibility SAAS-7006
+  let adapterName: string
+  let actualAccountName: string | undefined
+  let actualOptions: InstanceElement | undefined
+  let actualAdapterCreator: Record<string, Adapter>
+  if (_.isString(object)) {
+    adapterName = object
+    actualAccountName = accountName
+    actualOptions = options
+    actualAdapterCreator = deprecatedAdapterCreators
+  } else {
+    adapterName = object.adapterName
+    actualAccountName = object.accountName
+    actualOptions = object.options
+    actualAdapterCreator = object.adapterCreators
+  }
+  const { getConfig } = actualAdapterCreator[adapterName]?.configCreator ?? {}
   const defaultConf = [
-    getConfig !== undefined ? await getConfig(options) : (await getAdapterConfigFromType(adapterName)) ?? [],
+    getConfig !== undefined
+      ? await getConfig(actualOptions)
+      : (await getAdapterConfigFromType(adapterName, actualAdapterCreator)) ?? [],
   ].flat()
   if (defaultConf.length === 0) {
     return undefined
   }
-  if (accountName && adapterName !== accountName) {
+  if (actualAccountName && adapterName !== actualAccountName) {
     return awu(defaultConf)
       .map(async conf => {
         const confClone = conf.clone()
-        await updateElementsWithAlternativeAccount([confClone], accountName, adapterName)
+        await updateElementsWithAlternativeAccount([confClone], actualAccountName as string, adapterName)
         return confClone
       })
       .toArray()

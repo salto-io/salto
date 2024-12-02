@@ -33,7 +33,7 @@ import {
   elementSource as workspaceElementSource,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import adapterCreators from './creators'
+import { adapterCreators } from '@salto-io/adapter-creators'
 
 const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource

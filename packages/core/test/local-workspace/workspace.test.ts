@@ -8,7 +8,7 @@
 import { Adapter, ElemID, GetCustomReferencesFunc, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getCustomReferences } from '../../src/local-workspace/workspace'
-import { adapterCreators } from '../../src/core/adapters'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { mockAdaptersConfigSource } from '../common/workspace'
 
 describe('local workspace', () => {

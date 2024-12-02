@@ -1,0 +1,13 @@
+# Coverage reports
+coverage
+/reports
+
+# API keys and secrets
+.env
+
+/dist
+
+# Generated parser js file
+/src/parser/internal/ts_plugin/hcl.js
+
+

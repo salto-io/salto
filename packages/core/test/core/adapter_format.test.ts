@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { adapterCreators } from '../../src/core/adapters'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { mockWorkspace } from '../common/workspace'
 import { createMockAdapter } from '../common/helpers'
 import {

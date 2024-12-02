@@ -216,7 +216,7 @@ describe('omit inactive', () => {
           const config = _.cloneDeep(DEFAULT_CONFIG)
           config[FETCH_CONFIG].omitInactive = {
             default: false,
-            customizations: { trigger: true, macro: true, webhook: true, view: true },
+            customizations: { trigger: true, macro: true, webhook: true, view: true, workspace: true },
           }
           itemFilter = filterOutInactiveItemForType(config)
           instanceFilter = filterOutInactiveInstancesForType(config)
@@ -232,11 +232,15 @@ describe('omit inactive', () => {
             webhook1.elemID.getFullName(),
             webhook3.elemID.getFullName(),
           ])
+          expect(instanceFilter([workspace1, workspace2]).map(elem => elem.elemID.getFullName())).toEqual([
+            workspace2.elemID.getFullName(),
+          ])
           expect(valueGeneratedItems.filter(item => itemFilter(item))).toEqual([
             activeTicketFieldItem,
             activeCustomRoleItem,
             activeOrganizationFieldItem,
             activeWebhookItem,
+            activeWorkspaceItem,
           ])
         })
       })
@@ -262,6 +266,10 @@ describe('omit inactive', () => {
             webhook1.elemID.getFullName(),
             webhook2.elemID.getFullName(),
             webhook3.elemID.getFullName(),
+          ])
+          expect(instanceFilter([workspace1, workspace2]).map(elem => elem.elemID.getFullName())).toEqual([
+            workspace1.elemID.getFullName(),
+            workspace2.elemID.getFullName(),
           ])
           expect(valueGeneratedItems.filter(item => itemFilter(item))).toEqual(valueGeneratedItems)
         })

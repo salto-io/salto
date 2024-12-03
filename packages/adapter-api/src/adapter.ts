@@ -77,11 +77,12 @@ export type DeployOptions = {
   changeGroup: ChangeGroup
 }
 
-export type ServiceAsyncTaskType = 'deployment' | 'validation'
-
 export type CancelServiceAsyncTaskInput = {
   readonly taskId: string
-  readonly taskType: ServiceAsyncTaskType
+}
+
+export type CancelServiceAsyncTaskResult = {
+  errors: SaltoError[]
 }
 
 export type PostFetchOptions = {
@@ -154,7 +155,7 @@ export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
   validate?: (opts: DeployOptions) => Promise<DeployResult>
-  cancelServiceAsyncTask?: (opts: CancelServiceAsyncTaskInput) => Promise<void>
+  cancelServiceAsyncTask?: (opts: CancelServiceAsyncTaskInput) => Promise<CancelServiceAsyncTaskResult>
   postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
   validationModifiers?: ValidationModifiers

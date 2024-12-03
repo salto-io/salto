@@ -33,7 +33,18 @@ const isHolidaySpanTooLong = (instance: InstanceElement): boolean => {
   if (!isBusinessHoursScheduleHoliday(values)) {
     return false
   }
-  return true
+  const startDate = new Date(values.start_date)
+  const endDate = new Date(values.end_date)
+  const yearDifference = endDate.getFullYear() - startDate.getFullYear()
+  const monthDifference = endDate.getMonth() - startDate.getMonth()
+  const dayDifference = endDate.getDate() - startDate.getDate()
+  if (
+    yearDifference > 2 ||
+    (yearDifference === 2 && (monthDifference > 0 || (monthDifference === 0 && dayDifference >= 0)))
+  ) {
+    return true
+  }
+  return false
 }
 
 export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = async changes =>

@@ -192,9 +192,6 @@ const compareSpecialValuesWithCircularRefs = (
   if (typeof first === 'string' && typeof second === 'string') {
     return compareStringsIgnoreNewlineDifferences(first, second)
   }
-  if (first instanceof ElemID && second instanceof ElemID) {
-    return first.isEqual(second)
-  }
   return undefined
 }
 

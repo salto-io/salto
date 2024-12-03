@@ -1137,7 +1137,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.CUSTOM_VALUE.LABEL]: 'DO',
           },
         ]
-        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]?.[ORDERED_MAP_VALUES_FIELD]).toEqual(
+        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual(
           sorted ? _.sortBy(expectedValueSet, constants.CUSTOM_VALUE.FULL_NAME) : expectedValueSet,
         )
         const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]

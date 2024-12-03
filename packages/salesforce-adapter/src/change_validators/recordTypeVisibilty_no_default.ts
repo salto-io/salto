@@ -6,18 +6,18 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ChangeError, ChangeValidator, getChangeIfInstanceChange, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, ElemID, getChangeIfInstanceChange, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { entries } from 'lodash'
 
 const TYPES_WITH_RECORD_TYPE_VISIBILITY = new Set(['Profile'])
 
-// const createNoDefaultError = (id: ElemID): ChangeError => ({
-//   elemID: id,
-//   severity: 'Error',
-//   message: 'Must have one field that is set as default and visible',
-//   detailedMessage: `Must have one field that is set as default and visible, or no default fields and no visible fields, under recordTypeVisibility of a Profile`,
-// })
+const createNoDefaultError = (id: ElemID, recordTypeVisibility: string): ChangeError => ({
+  elemID: id,
+  severity: 'Error',
+  message: 'Must have one field that is set as default and visible',
+  detailedMessage: `Must have one field that is set as default and visible, or no default fields and no visible fields, under ${id.getFullName()}.${recordTypeVisibility}`,
+})
 
 const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | undefined): Promise<ChangeError[]> => {
   const record = change?.value?.recordTypeVisibilities
@@ -97,20 +97,14 @@ const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | u
 
   // note that the check is separate for each element in recordsOnly (klomar - every element of recordsOnly should follow the two rules)
   //
-  const instancesWithErrors = recordEntries
+  return recordEntries
     .map((val, index) => {
       if (!changeErrors[index]) {
-        return `${change.elemID}.recordTypeVisibilities.${val[0]}`
+        return createNoDefaultError(change.elemID, `.recordTypeVisibilities.${val[0]}`)
       }
       return undefined
     })
     .filter(a => a != undefined)
-  // return instancesWithErrors.map(a=>createNoDefaultError(a))
-  // const c = recordsOnly[0][elementsToCheck[0][0] as keyof Object]
-  // const d = _.get(c, 'default')
-  if (instancesWithErrors) {
-  }
-  return []
 }
 
 const changeValidator: ChangeValidator = async changes => {
@@ -119,43 +113,6 @@ const changeValidator: ChangeValidator = async changes => {
     cha !== undefined ? TYPES_WITH_RECORD_TYPE_VISIBILITY.has(cha?.elemID.typeName) : false,
   )
   const q = a.map(getRecordTypeVisibilityNoDefaultError)
-  // const n = a
-  //   .map(e => e?.value?.recordTypeVisibilities)
-  //   .filter(e => e !== undefined)
-  //   .map(a => entries(a))
-  // const m = n.filter(a => a.length > 0)
-  // const l = m.map(a =>
-  //   a.map(b => {
-  //     if (b.length < 2) {
-  //       return undefined
-  //     }
-  //     return b[1]
-  //   }),
-  // )
-  // const t = l.map(a =>
-  //   a.filter(b => {
-  //     if (typeof b !== 'object' || b === null) {
-  //       return false
-  //     }
-  //     return Object.keys(b).length > 1
-  //   }),
-  // )
-  // const tt = t.map(c =>
-  //   c.map(p => {
-  //     if (typeof p !== 'object' || p === null) {
-  //       return null
-  //     }
-  //     const temp = Object.entries(p).reduce((acc, curr) => {
-  //       acc = curr[1].default ? acc + 1 : acc
-  //       return acc
-  //     }, 0)
-  //     return temp
-  //   }),
-  // ) // from tt need to filter all that have more than one - meaning more than one default
-  // //check what happens if there is more than one default
-
-  // const p = tt.map(a => a.filter(b => (b ? b < 1 : false)))
-
   if (q) {
   }
   return []

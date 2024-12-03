@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../transformers/xml_transformer'
 import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '../constants'
-import { isInstanceOfTypeChange, parentApiName } from './utils'
+import { isInstanceOfTypeChange, metadataTypeSync, parentApiName } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -33,7 +33,7 @@ const territory2TypesToNestedDirName: Record<string, string[]> = {
 const territory2Types = [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE]
 
 const removeCustomFieldsFromTypes = async (elements: Element[], typeNames: string[]): Promise<void> => {
-  const elementsOfTypes = elements.filter(async elem => typeNames.includes(await metadataType(elem)))
+  const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataTypeSync(elem)))
   elementsOfTypes.filter(isMetadataObjectType).forEach(type => {
     delete type.fields.customFields
   })

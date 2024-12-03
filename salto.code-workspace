@@ -45,6 +45,10 @@
       "path": "packages/e2e-credentials-store",
     },
     {
+      "name": "element-test-utils",
+      "path": "packages/element-test-utils",
+    },
+    {
       "name": "microsoft-entra-adapter",
       "path": "packages/microsoft-entra-adapter",
     },

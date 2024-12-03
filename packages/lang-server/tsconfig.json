@@ -11,10 +11,11 @@
   "references": [
     { "path": "../adapter-api" },
     { "path": "../adapter-utils" },
+    { "path": "../element-test-utils" },
     { "path": "../lowerdash" },
-    { "path": "../workspace" },
     { "path": "../lowerdash" },
+    { "path": "../parser" },
     { "path": "../test-utils" },
-    { "path": "../parser" }
+    { "path": "../workspace" }
   ]
 }

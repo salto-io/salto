@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "resolveJsonModule": true
+  },
+  "references": [{ "path": "../adapter-api" }],
+  "include": ["src/**/*", "test/**/*", "index.ts"]
+}

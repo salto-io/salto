@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import 'jest-extended'
+import '@salto-io/jest-extended'
 import { filterUtils } from '@salto-io/adapter-components'
 import { Element, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { getFilterParams, mockClient } from '../../utils'

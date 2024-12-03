@@ -16,10 +16,11 @@
   "include": ["src/**/*", "test/**/*", "e2e_test/**/*"],
   "references": [
     { "path": "../core" },
+    { "path": "../element-test-utils" },
+    { "path": "../file" },
     { "path": "../lang-server" },
     { "path": "../lowerdash" },
-    { "path": "../file" },
-    { "path": "../workspace" },
-    { "path": "../parser" }
+    { "path": "../parser" },
+    { "path": "../workspace" }
   ]
 }

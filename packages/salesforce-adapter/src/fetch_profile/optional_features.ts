@@ -15,10 +15,10 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendedCustomFieldInformation: false,
   hideTypesFolder: true,
   metaTypes: false,
-  extendTriggersMetadata: true,
   picklistsAsMaps: false,
   retrieveSettings: false,
   genAiReferences: false,
+  networkReferences: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

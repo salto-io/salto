@@ -19,12 +19,21 @@ describe('forbidden permission scheme', () => {
   const instance = new InstanceElement('instance', type, {
     permissions: [
       {
+        holder: {
+          type: 'applicationRole',
+        },
         permission: 'ADMINISTER_PROJECTS',
       },
       {
+        holder: {
+          type: 'applicationRole',
+        },
         permission: 'VIEW_PROJECTS',
       },
       {
+        holder: {
+          type: 'applicationRole',
+        },
         permission: 'VIEW_ISSUES',
       },
     ],
@@ -37,6 +46,9 @@ describe('forbidden permission scheme', () => {
     expect(instance.value).toEqual({
       permissions: [
         {
+          holder: {
+            type: 'applicationRole',
+          },
           permission: 'ADMINISTER_PROJECTS',
         },
       ],

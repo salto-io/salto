@@ -8,9 +8,10 @@
   },
   "include": ["src/**/*", "test/**/*", "index.ts"],
   "references": [
-    { "path": "../lowerdash" },
-    { "path": "../logging" },
     { "path": "../adapter-api" },
+    { "path": "../element-test-utils" },
+    { "path": "../logging" },
+    { "path": "../lowerdash" },
     { "path": "../test-utils" }
   ]
 }

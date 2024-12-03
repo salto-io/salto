@@ -99,10 +99,10 @@ const OPTIONAL_FEATURES = [
   'extendedCustomFieldInformation',
   'hideTypesFolder',
   'metaTypes',
-  'extendTriggersMetadata',
   'picklistsAsMaps',
   'retrieveSettings',
   'genAiReferences',
+  'networkReferences',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -111,6 +111,7 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'describeSObjects',
   'elementsUrls',
   'excludeNonRetrievedProfilesRelatedInstances',
+  'extendTriggersMetadata',
   'extraDependencies',
   'extraDependenciesV2',
   'fetchCustomObjectUsingRetrieveApi',
@@ -178,6 +179,7 @@ export type ChangeValidatorName =
   | 'managedApexComponent'
   | 'orderedMaps'
   | 'layoutDuplicateFields'
+  | 'customApplications'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -867,6 +869,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
     orderedMaps: { refType: BuiltinTypes.BOOLEAN },
     layoutDuplicateFields: { refType: BuiltinTypes.BOOLEAN },
+    customApplications: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

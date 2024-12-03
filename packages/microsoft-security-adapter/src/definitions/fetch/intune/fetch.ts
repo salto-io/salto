@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { definitions } from '@salto-io/adapter-components'
+import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
 import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { EndpointPath, Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
@@ -61,8 +61,11 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           // TODO SALTO-6483: We need to store the largeIcon as a static file, for now we omit it
-          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT],
-          adjust: odataType.transformOdataTypeField('fetch'),
+          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT, 'rules'],
+          adjust: concatAdjustFunctions(
+            odataType.transformOdataTypeField('fetch'),
+            application.setApplicationScriptValueAsStaticFile,
+          ),
         },
       },
     ],

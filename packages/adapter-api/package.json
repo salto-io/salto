@@ -35,6 +35,8 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@jest/expect-utils": "^29.7.0",
+    "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "@types/node": "^18.9.0",

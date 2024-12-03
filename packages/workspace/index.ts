@@ -23,6 +23,7 @@ import {
   getStaticFileCacheName,
   UpdateNaclFilesResult,
   listElementsDependenciesInWorkspace,
+  WorkspaceGetCustomReferencesFunc,
   COMMON_ENV_PREFIX,
 } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
@@ -86,6 +87,7 @@ export {
   flags,
   elementSource,
   remoteMap,
+  WorkspaceGetCustomReferencesFunc,
   WorkspaceConfig,
   ProviderOptionsS3,
   ProviderOptionsFile,

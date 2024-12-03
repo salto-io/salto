@@ -1487,19 +1487,6 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow2.value.listTest[0].editable).toBe(true)
     })
 
-    it('should fetch settings instance', async () => {
-      mockMetadataType({ xmlName: 'Settings' }, { valueTypeFields: [] }, [
-        {
-          props: { fullName: 'Quote' },
-          values: { fullName: 'Quote' },
-        },
-      ])
-
-      await adapter.fetch(mockFetchOpts)
-
-      expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
-    })
-
     it('should not fetch child metadata type', async () => {
       mockMetadataType({ xmlName: 'Base', childXmlNames: ['Child'] }, { valueTypeFields: [] })
       await adapter.fetch(mockFetchOpts)

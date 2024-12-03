@@ -55,7 +55,6 @@ const {
   DOMAIN_NAME_REFERENCES_FIELD_NAME,
   DOMAIN_NAME_REFERENCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
-  PERMISSION_GRANT_POLICY_TYPE_NAME,
   APP_ROLE_TYPE_NAME,
 } = entraConstants
 
@@ -680,24 +679,6 @@ const graphV1Customizations: FetchCustomizations = {
         isTopLevel: true,
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
-  [PERMISSION_GRANT_POLICY_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/policies/permissionGrantPolicies',
-        },
-        transformation: DEFAULT_TRANSFORMATION,
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-      },
     },
   },
 }

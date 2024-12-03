@@ -95,7 +95,6 @@ describe('Microsoft Security adapter', () => {
           'EntraGroupLifeCyclePolicy',
           'EntraGroup__appRoleAssignments',
           'EntraOauth2PermissionGrant',
-          'EntraPermissionGrantPolicy',
           'EntraRoleDefinition',
           'EntraServicePrincipal',
           'IntuneApplication',
@@ -1224,7 +1223,6 @@ describe('Microsoft Security adapter', () => {
           'EntraGroupLifeCyclePolicy',
           'EntraGroup__appRoleAssignments',
           'EntraOauth2PermissionGrant',
-          'EntraPermissionGrantPolicy',
           'EntraRoleDefinition',
           'EntraServicePrincipal',
         ])

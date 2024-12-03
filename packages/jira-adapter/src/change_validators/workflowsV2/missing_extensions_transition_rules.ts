@@ -104,7 +104,7 @@ export const missingExtensionsTransitionRulesChangeValidator =
     let installedExtensionsMap: Record<string, ExtensionType>
     try {
       installedExtensionsMap = await getInstalledExtensionsMap(client)
-    } catch (error) {
+    } catch {
       log.error("Couldn't fetch installed extensions.")
       return []
     }

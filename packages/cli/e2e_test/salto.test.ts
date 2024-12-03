@@ -506,7 +506,9 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
         await runSetEnv(fetchOutputDir, 'default')
         try {
           await runDeleteEnv(fetchOutputDir, 'env2')
-        } catch (err) {} // eslint-disable-line no-empty
+        } catch {
+          /* empty */
+        }
         jest.clearAllMocks()
       })
 

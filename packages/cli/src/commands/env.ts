@@ -350,7 +350,7 @@ export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> =
     outputLine(formatCreateEnv(envName), args.output)
     args.cliTelemetry.success()
     return CliExitCode.Success
-  } catch (e) {
+  } catch {
     args.cliTelemetry.failure()
     return CliExitCode.AppError
   }

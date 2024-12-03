@@ -174,7 +174,7 @@ export const createElementSelector = (selector: string, caseInSensitive = false)
   }
   try {
     ElemID.fromFullName(selector)
-  } catch (e) {
+  } catch {
     throw new Error(`Illegal element selector is not a valid element ID: "${selector}"`)
   }
 
@@ -192,7 +192,7 @@ const isValidSelector = (selector: string): boolean => {
   try {
     createElementSelector(selector)
     return true
-  } catch (e) {
+  } catch {
     return false
   }
 }

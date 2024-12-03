@@ -10,7 +10,7 @@ export const isValidRegex = (str: string): boolean => {
   try {
     RegExp(str)
     return true
-  } catch (e) {
+  } catch {
     return false
   }
 }

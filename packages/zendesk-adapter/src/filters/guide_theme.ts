@@ -227,7 +227,7 @@ const extractFilesFromThemeDirectory = (
       if (isTemplateExpression(fileRecord.content)) {
         try {
           replaceTemplatesWithValues({ values: [fileRecord], fieldName: 'content' }, {}, prepRef)
-        } catch (e) {
+        } catch {
           log.error('Error while resolving references in file %s', fileRecord.filename)
           errors.push(`Error while resolving references in file ${fileRecord.filename}`)
           return

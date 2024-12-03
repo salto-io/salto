@@ -103,6 +103,7 @@ import {
 } from './setup'
 import { testHelpers } from './jest_environment'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { ORDERED_MAP_VALUES_FIELD } from '../src/filters/convert_maps'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -1098,7 +1099,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.LABEL]).toBe('Picklist label')
         expect(annotations[constants.DESCRIPTION]).toBe('Picklist description')
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
-        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
+        expect(Object.values(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET][ORDERED_MAP_VALUES_FIELD])).toEqual([
           {
             [constants.CUSTOM_VALUE.FULL_NAME]: 'NEW',
             [constants.CUSTOM_VALUE.DEFAULT]: true,

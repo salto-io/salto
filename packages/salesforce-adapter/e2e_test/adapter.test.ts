@@ -1100,7 +1100,7 @@ describe('Salesforce adapter E2E with real account', () => {
         if (valueSet === undefined) {
           return undefined
         }
-        return valueSet[ORDERED_MAP_VALUES_FIELD] === undefined
+        return !_.isArray(valueSet[ORDERED_MAP_VALUES_FIELD])
           ? valueSet
           : Object.values(valueSet[ORDERED_MAP_VALUES_FIELD])
       }

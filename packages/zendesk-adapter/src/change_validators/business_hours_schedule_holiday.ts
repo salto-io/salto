@@ -57,6 +57,6 @@ export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = asyn
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Holiday schedule span exceeds maximum duration',
-      detailedMessage: `The holiday schedule '${instance.value.name || instance.elemID.name}' has a duration of more than 2 years (from ${instance.value.start_date} to ${instance.value.end_date}). Holiday schedules must be 2 years or less.`,
+      message: 'Holiday schedule duration is too long',
+      detailedMessage: `Holiday schedule '${instance.value.name || instance.elemID.name}' duration must be 2 years or less, current duration is from ${instance.value.start_date} to ${instance.value.end_date}`,
     }))

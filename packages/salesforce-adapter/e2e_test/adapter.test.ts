@@ -1100,9 +1100,9 @@ describe('Salesforce adapter E2E with real account', () => {
         if (valueSet === undefined) {
           return undefined
         }
-        return !_.isArray(valueSet[ORDERED_MAP_VALUES_FIELD])
-          ? valueSet
-          : Object.values(valueSet[ORDERED_MAP_VALUES_FIELD])
+        return _.isPlainObject(valueSet[ORDERED_MAP_VALUES_FIELD])
+          ? Object.values(valueSet[ORDERED_MAP_VALUES_FIELD])
+          : valueSet
       }
 
       const testPicklist = (annotations: Values): void => {

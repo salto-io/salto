@@ -120,12 +120,13 @@ export class ElemID {
   readonly typeName: string
   readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
-  private fullName?: string
+  private readonly fullName: string
   constructor(adapter: string, typeName?: string, idType?: ElemIDType, ...name: ReadonlyArray<string>) {
     this.adapter = adapter
     this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : (typeName as string)
     this.idType = idType || ElemID.getDefaultIdType(adapter)
     this.nameParts = name
+    this.fullName = this.generateFullName()
   }
 
   get name(): string {
@@ -165,9 +166,6 @@ export class ElemID {
   }
 
   getFullName(): string {
-    if (this.fullName === undefined) {
-      this.fullName = this.generateFullName()
-    }
     return this.fullName
   }
 

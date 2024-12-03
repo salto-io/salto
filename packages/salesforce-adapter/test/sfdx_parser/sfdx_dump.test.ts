@@ -399,8 +399,7 @@ describe('dumpElementsToFolder', () => {
       let dumpResult: DumpElementsResult
       beforeAll(async () => {
         const labelInstance = new InstanceElement('label1', mockTypes.CustomLabel, { fullName: 'label1' })
-        const settingsInstance = new InstanceElement(ElemID.CONFIG_NAME, mockTypes.TestSettings, { fullName: 'Test' })
-        changes = [toChange({ after: labelInstance }), toChange({ after: settingsInstance })]
+        changes = [toChange({ after: labelInstance })]
         dumpResult = await dumpElementsToFolder({
           baseDir: project.name(),
           changes,

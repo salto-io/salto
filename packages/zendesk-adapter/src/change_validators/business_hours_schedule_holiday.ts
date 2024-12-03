@@ -42,9 +42,10 @@ export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = asyn
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === BUSINESS_HOUR_SCHEDULE_HOLIDAY)
+    .filter(isHolidaySpanTooLong)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
       message: `Element ${instance.elemID.getFullName()} cannot be deployed.`,
-      detailedMessage: `Element ${instance.elemID.getFullName()} is a Zendesk Guide element which isn't related to a brand, and therefore cannot be deployed.`,
+      detailedMessage: `Element ${instance.elemID.getFullName()} span is too long, needs to be less than 2 years.`,
     }))

@@ -23,7 +23,15 @@ describe('businessHoursScheduleHolidayChangeValidator', () => {
     const holiday = createHolidayInstance('test_holiday', '2024-01-01', '2026-01-01')
     changes = [toChange({ after: holiday })]
     const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-    expect(errors).toHaveLength(1)
+    expect(errors).toMatchObject([
+      {
+        elemID: holiday.elemID,
+        severity: 'Error',
+        message: 'Holiday schedule duration is too long',
+        detailedMessage:
+          "Holiday schedule 'test_holiday' duration must be 2 years or less, current duration is from 2024-01-01 to 2026-01-01",
+      },
+    ])
   })
   it('should error when holiday span years difference is 2 and month difference larger than zero', async () => {
     const holiday = createHolidayInstance('test_holiday', '2022-01-01', '2024-02-01')

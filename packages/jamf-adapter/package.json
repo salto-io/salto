@@ -42,6 +42,7 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
+    "@salto-io/element-test-utils": "0.4.6",
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.14.168",
     "axios": "^1.7.2",

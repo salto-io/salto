@@ -5,7 +5,6 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
   isAdditionOrModificationChange,
@@ -15,10 +14,8 @@ import {
   getChangeData,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { apiName } from '../transformers/transformer'
-import { isInstanceOfType } from '../filters/utils'
-
-const { awu } = collections.asynciterable
+import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
+import { OPPORTUNITY_METADATA_TYPE } from '../constants'
 
 type ForbiddenFilterScope = {
   parentType: string
@@ -28,22 +25,23 @@ type ForbiddenFilterScope = {
 // cf. https://developer.salesforce.com/docs/atlas.en-us.236.0.api_meta.meta/api_meta/meta_listview.htm#filterScope
 const INVALID_FILTERSCOPES: ForbiddenFilterScope[] = [
   {
-    parentType: 'Opportunity',
+    parentType: OPPORTUNITY_METADATA_TYPE,
     filterScope: 'MyTerritory',
   },
   {
-    parentType: 'Opportunity',
+    parentType: OPPORTUNITY_METADATA_TYPE,
     filterScope: 'MyTeamTerritory',
   },
 ]
 
-export const isFilterScopeInvalid = async (instance: InstanceElement): Promise<boolean> => {
-  if ((await apiName(await instance.getType())) !== 'ListView') {
+export const isFilterScopeInvalid = (instance: InstanceElement): boolean => {
+  if (apiNameSync(instance.getTypeSync()) !== 'ListView') {
     return false
   }
+  const parents = getParents(instance)
   return INVALID_FILTERSCOPES.some(
     filterScopeDef =>
-      getParents(instance).some(parentType => parentType === filterScopeDef.parentType) &&
+      parents.some(isInstanceOfTypeSync(filterScopeDef.parentType)) &&
       instance.value.filterScope === filterScopeDef.filterScope,
   )
 }
@@ -61,14 +59,13 @@ const invalidListViewFilterScopeError = (element: InstanceElement): ChangeError 
  */
 const changeValidator: ChangeValidator = async changes => {
   const typesOfInterest = INVALID_FILTERSCOPES.map(scopeDef => scopeDef.parentType)
-  return awu(changes)
+  return changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(async elem => getParents(elem).some(isInstanceOfType(...typesOfInterest)))
-    .filter(async elem => isFilterScopeInvalid(elem))
+    .filter(elem => getParents(elem).some(isInstanceOfTypeSync(...typesOfInterest)))
+    .filter(elem => isFilterScopeInvalid(elem))
     .map(invalidListViewFilterScopeError)
-    .toArray()
 }
 
 export default changeValidator

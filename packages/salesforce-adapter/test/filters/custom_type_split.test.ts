@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import 'jest-extended'
+import '@salto-io/jest-extended'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { BuiltinTypes, Element, ElemID, ObjectType } from '@salto-io/adapter-api'

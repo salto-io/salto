@@ -36,6 +36,7 @@ import {
   RECORD_TYPE_HISTORY_TRACKING_ENABLED,
   RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED,
 } from '../constants'
+import { isCustomObjectSync } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -210,7 +211,7 @@ const filter: FilterCreator = () => {
       trackedFieldsDefinitions.forEach(trackingDef =>
         elements
           .filter(isObjectType)
-          .filter(isCustomObject)
+          .filter(isCustomObjectSync)
           .forEach(objType => centralizeHistoryTrackingAnnotations(objType, trackingDef)),
       )
     },
@@ -299,7 +300,7 @@ const filter: FilterCreator = () => {
           .filter(isAdditionOrModificationChange)
           .filter(isObjectTypeChange)
           .map(getChangeData)
-          .filter(isCustomObject)
+          .filter(isCustomObjectSync)
           .forEach(objType => {
             delete objType.annotations[trackingDef.aggregate]
           })

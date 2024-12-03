@@ -45,8 +45,8 @@
       "path": "packages/e2e-credentials-store",
     },
     {
-      "name": "microsoft-entra-adapter",
-      "path": "packages/microsoft-entra-adapter",
+      "name": "element-test-utils",
+      "path": "packages/element-test-utils",
     },
     {
       "name": "file",
@@ -73,12 +73,20 @@
       "path": "packages/lang-server",
     },
     {
+      "name": "local-workspace",
+      "path": "packages/local-workspace",
+    },
+    {
       "name": "logging",
       "path": "packages/logging",
     },
     {
       "name": "lowerdash",
       "path": "packages/lowerdash",
+    },
+    {
+      "name": "microsoft-entra-adapter",
+      "path": "packages/microsoft-entra-adapter",
     },
     {
       "name": "microsoft-security-adapter",

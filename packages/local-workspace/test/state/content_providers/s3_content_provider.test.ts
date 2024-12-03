@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import path from 'path'
-import 'jest-extended'
+import '@salto-io/jest-extended'
 import { Readable } from 'stream'
 import getStream from 'get-stream'
 import { collections } from '@salto-io/lowerdash'

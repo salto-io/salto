@@ -89,14 +89,6 @@ const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | u
       return noDefaultNoVisible || oneDefaultIsVisible
     }
   })
-
-  //now go over all elements in recordsOnly, and for each check their fields from elementsToCheck
-  //check if one of the two legal options happens:
-  //all are set to default false and visible false
-  //only one set to default and its visibility is also true
-
-  // note that the check is separate for each element in recordsOnly (klomar - every element of recordsOnly should follow the two rules)
-  //
   return recordEntries
     .map((val, index) => {
       if (!changeErrors[index]) {

@@ -796,7 +796,7 @@ describe('Convert maps filter', () => {
         const valueSetType = picklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
         expect(valueSetType.elemID.typeName).toEqual(`${ORDERED_MAP_PREFIX}valueSet`)
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
-        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<salesforce.valueSet>')
         expect(picklistType.annotationRefTypes.valueSet?.elemID.name).toEqual(`${ORDERED_MAP_PREFIX}valueSet`)
         expect(
           elements
@@ -811,7 +811,7 @@ describe('Convert maps filter', () => {
         const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
         expect(valueSetType.elemID.typeName).toEqual(`${ORDERED_MAP_PREFIX}valueSet`)
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
-        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<salesforce.valueSet>')
         expect(multiselectPicklistType.annotationRefTypes.valueSet?.elemID.name).toEqual(
           `${ORDERED_MAP_PREFIX}valueSet`,
         )

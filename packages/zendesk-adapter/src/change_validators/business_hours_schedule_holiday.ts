@@ -47,6 +47,8 @@ const isHolidaySpanTooLong = (instance: InstanceElement): boolean => {
   return false
 }
 
+// Ensures that the holiday duration is less than 2 years (Zendesk limit).
+// Assumes that the start and end dates are in a valid date format.
 export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = async changes =>
   changes
     .filter(isAdditionOrModificationChange)

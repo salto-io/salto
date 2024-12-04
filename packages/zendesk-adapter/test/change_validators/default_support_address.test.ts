@@ -5,9 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import _ from 'lodash'
-import { Change, toChange } from '../../../adapter-api/src/change'
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Change, toChange } from '../../../adapter-api/src/change'
 import { defaultSupportAddressValidator } from '../../src/change_validators'
 
 // const mockedLodash = jest.mocked(_)
@@ -46,7 +45,7 @@ const createInstanceNoDefault = (name: string, forwardingStatus: string, typeNam
 
 describe('defaultSupportAddressValidator', () => {
   it('should return an error when default is true and forward_status is not verified for each type_name in the list', async () => {
-    const errs = await SUPPORT_ADDRESS_TYPE_NAME.map(typeName =>
+    const errs = SUPPORT_ADDRESS_TYPE_NAME.map(typeName =>
       defaultSupportAddressValidator(createChangesWithElements([createInstance('inst', 'failed', true, typeName)])),
     )
     const changeErrors = errs.map(async err => (await err)[0])

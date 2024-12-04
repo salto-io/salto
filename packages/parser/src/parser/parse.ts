@@ -8,6 +8,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Value } from '@salto-io/adapter-api'
+import isPromise from 'is-promise'
 import { SourceRange as InternalSourceRange } from './internal/types'
 import { Functions } from './functions'
 import PeekableLexer from './internal/native/lexer'
@@ -120,7 +121,7 @@ export const parseValue = ({
   } catch (e) {
     processParseError(context, e)
   }
-  if (context.valuePromiseWatchers.length > 0) {
+  if (context.valuePromiseWatchers.length > 0 || isPromise(result?.value)) {
     context.errors.push(
       unexpectedPromise({
         ...(result?.range ?? { start: { line: 0, col: 0, byte: 0 }, end: { line: 0, col: 0, byte: 0 } }),

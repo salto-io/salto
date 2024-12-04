@@ -28,6 +28,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import isPromise from 'is-promise'
 import { registerTestFunction, registerThrowingFunction } from '../utils'
 import { Functions, SourceRange, parse, SourceMap, tokenizeContent, ParseError } from '../../src/parser'
 import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
@@ -1794,12 +1795,10 @@ multiline
       it('should return the errors in the result', () => {
         const result = parseValue({ content: '"value' })
         expect(result.value).toBeUndefined()
-        expect(result.errors).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              summary: 'All lexer tokens have already been consumed.',
-            }),
-          ]),
+        expect(result.errors[0]).toEqual(
+          expect.objectContaining({
+            summary: 'All lexer tokens have already been consumed.',
+          }),
         )
       })
     })
@@ -1811,6 +1810,19 @@ multiline
         expect(result.errors).toEqual([
           unexpectedPromise({ start: { line: 1, col: 1, byte: 0 }, end: { line: 1, col: 21, byte: 20 }, filename: '' }),
         ])
+      })
+      describe('when consumeValue returns a promise', () => {
+        it('should return the errors in the result', () => {
+          const result = parseValue({ content: 'myFunc("some.png")', functions })
+          expect(isPromise(result.value)).toBeTruthy()
+          expect(result.errors).toEqual([
+            unexpectedPromise({
+              start: { line: 1, col: 1, byte: 0 },
+              end: { line: 1, col: 19, byte: 18 },
+              filename: '',
+            }),
+          ])
+        })
       })
     })
   })

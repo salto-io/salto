@@ -12,16 +12,16 @@ import {
   ElemID,
   getChangeData,
   isAdditionOrModificationChange,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-
-const TYPES_TO_CHECK = new Set(['support_address'])
+import { SUPPORT_ADDRESS_TYPE_NAME } from '../constants'
 
 const createDefaultSupportAddressError = (id: ElemID): ChangeError => ({
   elemID: id,
   severity: 'Error',
   message: "Email: Cannot be a default until it's forwarding is verified",
-  detailedMessage: `${id.getFullName()} has default field true and forwarding_status field that is not verified`,
+  detailedMessage: `${id.getFullName()} has default field true and forwarding_status field that is not verified\nIn order to fix this you should change the default field to false, and then verify the email on zendesk\nYou in the link for help:\n`,
 })
 /*
  * This change validator checks that an Email is not set as default if it's forward status is not verified
@@ -31,19 +31,14 @@ export const defaultSupportAddressValidator: ChangeValidator = async changes =>
   changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(c => TYPES_TO_CHECK.has(c.elemID.typeName))
-    .filter(ch => {
-      const forwardingValue = _.get(ch, 'value').forwarding_status
+    .filter(change => SUPPORT_ADDRESS_TYPE_NAME === change.elemID.typeName)
+    .filter(isInstanceElement)
+    .filter(instance => {
+      const forwardingValue = instance.value.forwarding_status
       if (!forwardingValue || forwardingValue === 'verified') {
         return false
       }
-      const defaultValue = _.get(ch, 'value').default
-      if (!defaultValue) {
-        return false
-      }
-      if (defaultValue === true) {
-        return true
-      }
-      return false
+      const defaultValue = instance.value.default
+      return defaultValue ? defaultValue : false
     })
-    .map(a => createDefaultSupportAddressError(a.elemID))
+    .map(instance => createDefaultSupportAddressError(instance.elemID))

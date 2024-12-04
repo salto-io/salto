@@ -11,7 +11,8 @@
     "access": "public"
   },
   "files": [
-    "dist/src"
+    "dist/src",
+    "dist/index.*"
   ],
   "types": "dist/src/index.d.ts",
   "scripts": {
@@ -27,8 +28,8 @@
     "check-format": "prettier --check . --ignore-path=../../.prettierignore --ignore-path=../../.gitignore --ignore-path=.gitignore"
   },
   "exports": {
-    ".": "./index.ts",
-    "./all": "./src/all.ts"
+    ".": "./dist/index.js",
+    "./all": "./dist/src/all.js"
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.4.6"

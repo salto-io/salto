@@ -32,7 +32,7 @@ import { registerTestFunction, registerThrowingFunction } from '../utils'
 import { Functions, SourceRange, parse, SourceMap, tokenizeContent, ParseError } from '../../src/parser'
 import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
 import { parseValue } from '../../src/parser/parse'
-import * as values from '../../src/parser/internal/native/consumers/values'
+import { unexpectedPromise } from '../../src/parser/internal/native/errors'
 
 const { awu } = collections.asynciterable
 const funcName = 'myFunc'
@@ -1746,65 +1746,71 @@ multiline
       ])
     })
   })
-  /*
-   * Copyright 2024 Salto Labs Ltd.
-   * Licensed under the Salto Terms of Use (the "License");
-   * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
-   *
-   * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
-   */
 
   describe('parseValue', () => {
-    const mockConsumeValue = jest.spyOn(values, 'consumeValue')
-
     describe('when value is string', () => {
       it('should return string value', () => {
         const value = '"value"'
-        expect(parseValue(value).value).toEqual('value')
+        const result = parseValue({ content: value })
+        expect(result.value).toEqual('value')
+        expect(result.errors).toEqual([])
       })
     })
+
     describe('when value is number', () => {
       it('should return number value', () => {
         const value = '1'
-        expect(parseValue(value).value).toEqual(1)
+        const result = parseValue({ content: value })
+        expect(result.value).toEqual(1)
+        expect(result.errors).toEqual([])
       })
     })
+
     describe('when value is boolean', () => {
       it('should return boolean value', () => {
         const value = 'true'
-        expect(parseValue(value).value).toEqual(true)
+        const result = parseValue({ content: value })
+        expect(result.value).toEqual(true)
+        expect(result.errors).toEqual([])
       })
     })
+
     describe('when value is reference expression', () => {
       const value = new ReferenceExpression(new ElemID('adapter', 'someType', 'instance', 'someInstance'))
       it('should return reference expression value', () => {
-        expect(parseValue('adapter.someType.instance.someInstance').value).toEqual(value)
+        const result = parseValue({ content: 'adapter.someType.instance.someInstance' })
+        expect(result.value).toEqual(value)
+        expect(result.errors).toEqual([])
       })
     })
+
+    describe('when value is an array', () => {
+      const result = parseValue({ content: '[1,2,3]' })
+      expect(result.value).toEqual([1, 2, 3])
+      expect(result.errors).toEqual([])
+    })
+
     describe('when consumeValue adds errors to context', () => {
       it('should return the errors in the result', () => {
-        const mockError: ParseError = { message: 'Test error', detailedMessage: 'Test error' } as ParseError
-        const mockResult = { value: 'mockValue', range: {} as Omit<SourceRange, 'filename'> }
-
-        mockConsumeValue.mockImplementation(context => {
-          context.errors.push(mockError)
-          return mockResult
-        })
-
-        const result = parseValue('mock input')
-
-        expect(result.errors).toEqual([mockError])
-        expect(result.value).toEqual(mockResult.value)
+        const result = parseValue({ content: '"value' })
+        expect(result.value).toBeUndefined()
+        expect(result.errors).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              summary: 'All lexer tokens have already been consumed.',
+            }),
+          ]),
+        )
       })
     })
-    describe('when consumeValue adds promises to context', () => {
+
+    describe('when consumeValue adds a promise to valuePromiseWatchers', () => {
       it('should return the errors in the result', () => {
-        const mockResult = { value: 'mockValue', range: {} as Omit<SourceRange, 'filename'> }
-        mockConsumeValue.mockImplementation(context => {
-          context.valuePromiseWatchers.push({ parent: 'some value', key: 'some key' })
-          return mockResult
-        })
-        expect(() => parseValue('mock input')).toThrow('Unexpected promise')
+        const result = parseValue({ content: '[myFunc("some.png")]', functions })
+        expect(Array.isArray(result.value)).toBeTruthy()
+        expect(result.errors).toEqual([
+          unexpectedPromise({ start: { line: 1, col: 1, byte: 0 }, end: { line: 1, col: 21, byte: 20 }, filename: '' }),
+        ])
       })
     })
   })

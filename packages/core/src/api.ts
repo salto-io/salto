@@ -12,9 +12,11 @@ import {
   AdapterFailureInstallResult,
   AdapterOperations,
   AdapterSuccessInstallResult,
+  CancelServiceAsyncTaskInput,
   Change,
   ChangeDataType,
   ChangeError,
+  AsyncTaskProgressReporter,
   DetailedChange,
   Element,
   ElemID,
@@ -162,6 +164,7 @@ export const deploy = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
+  reportServiceAsyncTaskId: AsyncTaskProgressReporter['reportServiceAsyncTaskId'] = () => undefined,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
@@ -198,6 +201,7 @@ export const deploy = async (
     reportProgress,
     postDeployAction,
     checkOnly,
+    reportServiceAsyncTaskId,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve
@@ -723,4 +727,31 @@ export const fixElements = async (
     .flatMap(async fixedElement => detailedCompare(await workspaceElements.get(fixedElement.elemID), fixedElement))
     .toArray()
   return { errors: fixes.errors, changes }
+}
+
+export const cancelServiceAsyncTask = async ({
+  workspace,
+  account,
+  input,
+}: {
+  workspace: Workspace
+  account: string
+  input: CancelServiceAsyncTaskInput
+}): Promise<void> => {
+  const accounts = [account]
+  const adaptersMap = await getAdapters(
+    accounts,
+    await workspace.accountCredentials(accounts),
+    workspace.accountConfig.bind(workspace),
+    await workspace.elements(),
+    getAccountToServiceNameMap(workspace, accounts),
+  )
+  const adapter = adaptersMap[account]
+  if (adapter === undefined) {
+    throw new Error(`No adapter found for account ${account}`)
+  }
+  if (adapter.cancelServiceAsyncTask === undefined) {
+    throw new Error(`cancelServiceAsyncTask is not supported for account ${account}`)
+  }
+  await adapter.cancelServiceAsyncTask(input)
 }

@@ -58,8 +58,13 @@ import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRet
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
-import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
-import { SalesforceClient } from '../index'
+import {
+  SalesforceArtifacts,
+  INSTANCE_FULL_NAME_FIELD,
+  ProgressReporterSuffix,
+  METADATA_CHANGE_GROUP,
+} from '../src/constants'
+import { SalesforceClient, SalesforceDeployProgressReporter } from '../index'
 
 const { makeArray } = collections.array
 
@@ -2431,6 +2436,56 @@ describe('SalesforceAdapter CRUD', () => {
             expect(changesToFullNames(result.appliedChanges)).toEqual(changesToFullNames(changeGroup.changes))
           })
         })
+      })
+    })
+
+    describe('when ProgressReporter with reportServiceAsyncTaskId is provided', () => {
+      const POLLING_INTERVAL = 10
+      let reportedAsyncTaskId: string
+      let asyncTaskProgressReporter: SalesforceDeployProgressReporter
+      beforeEach(() => {
+        asyncTaskProgressReporter = {
+          ...progressReporter,
+          reportServiceAsyncTaskId: taskId => {
+            reportedAsyncTaskId = taskId
+          },
+        }
+        ;({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            config: {
+              client: {
+                polling: {
+                  interval: POLLING_INTERVAL,
+                },
+              },
+            },
+          },
+        }))
+        connection.metadata.deploy.mockReturnValue(
+          mockDeployResult(
+            {
+              id: 'testDeploymentId',
+              success: true,
+              componentSuccess: [
+                {
+                  fullName: 'Test__c',
+                  componentType: constants.CUSTOM_OBJECT,
+                },
+              ],
+            },
+            POLLING_INTERVAL * 2,
+          ),
+        )
+      })
+      it('should report the deployment async task id', async () => {
+        await adapter.deploy({
+          changeGroup: {
+            groupID: METADATA_CHANGE_GROUP,
+            changes: [toChange({ after: mockTypes.Account.clone() })],
+          },
+          progressReporter: asyncTaskProgressReporter,
+        })
+        expect(reportedAsyncTaskId).toBeString()
       })
     })
   })

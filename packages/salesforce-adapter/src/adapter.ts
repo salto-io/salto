@@ -27,6 +27,7 @@ import {
   isField,
   isObjectType,
   TypeReference,
+  CancelServiceAsyncTaskInput,
 } from '@salto-io/adapter-api'
 import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
@@ -801,6 +802,12 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
+  }
+
+  async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<void> {
+    if (input.taskType === 'deployment' || input.taskType === 'validation') {
+      await this.client.cancelMetadataValidateOrDeployTask(input)
+    } else throw new Error(`Salesforce cancelServiceAsyncTask is not supported for task type: ${input.taskType}`)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

@@ -63,14 +63,25 @@ export type ProgressReporter = {
   reportProgress: (progress: Progress) => void
 }
 
+export type AsyncTaskProgressReporter = ProgressReporter & {
+  reportServiceAsyncTaskId?: (id: string) => void
+}
+
 export type FetchOptions = {
   progressReporter: ProgressReporter
   withChangesDetection?: boolean
 }
 
 export type DeployOptions = {
-  progressReporter: ProgressReporter
+  progressReporter: AsyncTaskProgressReporter
   changeGroup: ChangeGroup
+}
+
+export type ServiceAsyncTaskType = 'deployment' | 'validation'
+
+export type CancelServiceAsyncTaskInput = {
+  readonly taskId: string
+  readonly taskType: ServiceAsyncTaskType
 }
 
 export type PostFetchOptions = {
@@ -143,6 +154,7 @@ export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
   validate?: (opts: DeployOptions) => Promise<DeployResult>
+  cancelServiceAsyncTask?: (opts: CancelServiceAsyncTaskInput) => Promise<void>
   postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
   validationModifiers?: ValidationModifiers

@@ -53,7 +53,7 @@ import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
 import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
-import { DeployProgressReporter } from './adapter_creator'
+import { SalesforceDeployProgressReporter } from './adapter_creator'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -442,8 +442,9 @@ const quickDeployOrDeploy = async (
   pkgData: Buffer,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
-  progressReporter?: DeployProgressReporter,
+  progressReporter?: SalesforceDeployProgressReporter,
 ): Promise<SFDeployResult> => {
+  let wasTaskIdReported = false
   const createProgressReporterCallback =
     (suffix?: string) =>
     (deployResult: SFDeployResult): void => {
@@ -451,6 +452,10 @@ const quickDeployOrDeploy = async (
         return
       }
       progressReporter.reportMetadataProgress({ result: deployResult, suffix })
+      if (!wasTaskIdReported && progressReporter.reportServiceAsyncTaskId) {
+        progressReporter.reportServiceAsyncTaskId(deployResult.id)
+        wasTaskIdReported = true
+      }
     }
 
   if (quickDeployParams !== undefined) {
@@ -497,7 +502,7 @@ export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
-  progressReporter: DeployProgressReporter,
+  progressReporter: SalesforceDeployProgressReporter,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,

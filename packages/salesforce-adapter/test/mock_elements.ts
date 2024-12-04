@@ -38,6 +38,7 @@ import {
   LABEL,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   METADATA_TYPE,
+  ORGANIZATION_SETTINGS,
   OWNER_ID,
   PATH_ASSISTANT_METADATA_TYPE,
   SALESFORCE,
@@ -56,6 +57,7 @@ import {
   CUSTOM_METADATA_TYPE_NAME,
   CPQ_TERM_CONDITION,
   CPQ_INDEX_FIELD,
+  OPPORTUNITY_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -482,6 +484,11 @@ export const mockTypes = {
       metadataType: INSTALLED_PACKAGE_METADATA,
     },
   }),
+  Opportunity: createMetadataObjectType({
+    annotations: {
+      metadataType: OPPORTUNITY_METADATA_TYPE,
+    },
+  }),
   Product2: new ObjectType({
     elemID: new ElemID(SALESFORCE, 'Product2'),
     fields: {
@@ -723,6 +730,7 @@ export const mockTypes = {
       hasMetaFile: true,
     },
   }),
+  [ORGANIZATION_SETTINGS]: new ObjectType({ elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS) }),
   TestCustomObject__c: createCustomObjectType('TestCustomObject__c', {}),
   TestCustomEvent__e: createCustomObjectType('TestCustomEvent__e', {}),
   BusinessProcess: createMetadataObjectType({

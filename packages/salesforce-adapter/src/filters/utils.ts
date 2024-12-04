@@ -37,12 +37,14 @@ import {
   TypeElement,
   TypeMap,
   Value,
+  Values,
 } from '@salto-io/adapter-api'
 import {
   buildElementsSourceFromElements,
   createSchemeGuard,
   detailedCompare,
   getParents,
+  inspectValue,
   setAdditionalPropertiesAnnotation,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from '@salto-io/jsforce-types'
@@ -52,6 +54,7 @@ import SalesforceClient, { ErrorFilter } from '../client/client'
 import {
   FetchElements,
   INSTANCE_SUFFIXES,
+  MetadataQueryParams,
   OptionalFeatures,
   ProfileRelatedMetadataType,
   SalesforceConfig,
@@ -95,6 +98,8 @@ import {
   EVENT_CUSTOM_OBJECT,
   PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS,
   PATHS_FIELD,
+  CUSTOM_OBJECTS_LOOKUPS_FIELD,
+  CUSTOM_OBJECTS_FIELD,
 } from '../constants'
 import { CustomField, CustomObject, JSONBool, SalesforceRecord } from '../client/types'
 import * as transformer from '../transformers/transformer'
@@ -111,6 +116,8 @@ import {
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 import { createListMetadataObjectsConfigChange } from '../config_change'
+import { getFetchTargetsWithDependencies, SUPPORTED_METADATA_TYPES } from '../fetch_profile/metadata_types'
+import { FETCH_TARGETS_INSTANCE_ELEM_ID } from './fetch_targets'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { splitDuplicates } = collections.array
@@ -964,4 +971,97 @@ export const getProfilesAndPermissionSetsBrokenPaths = async (
     return []
   }
   return instance.value[PATHS_FIELD] ?? []
+}
+
+type CustomObjectsTargets = {
+  customObjects: readonly string[]
+  customObjectsLookups: Record<string, readonly string[]>
+}
+type SalesforceFetchTargets = {
+  metadataTypes: readonly string[]
+} & CustomObjectsTargets
+
+const isStringArray = (val: unknown): val is string[] => _.isArray(val) && val.every(_.isString)
+
+const isCustomObjectsTargets = (val: Values): val is CustomObjectsTargets =>
+  isStringArray(val[CUSTOM_OBJECTS_FIELD]) &&
+  _.isPlainObject(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]) &&
+  Object.values(val[CUSTOM_OBJECTS_LOOKUPS_FIELD]).every(isStringArray)
+
+export const getOrgFetchTargets = async (elementsSource: ReadOnlyElementsSource): Promise<SalesforceFetchTargets> => {
+  const orgSettings = await elementsSource.get(FETCH_TARGETS_INSTANCE_ELEM_ID)
+  if (!isInstanceElement(orgSettings)) {
+    log.warn('Expected org settings Instance to be in elements source. Fetch targets will only include metadata types')
+    return {
+      metadataTypes: SUPPORTED_METADATA_TYPES,
+      customObjects: [],
+      customObjectsLookups: {},
+    }
+  }
+  const orgSettingsValues = orgSettings.value
+  if (!isCustomObjectsTargets(orgSettingsValues)) {
+    log.warn(
+      'Failed to extract customObject fetch settings from OrganizationSettings instance. Fetch targets will only include Metadata types',
+    )
+    log.trace('Singleton values are: %s', inspectValue(orgSettingsValues))
+    return {
+      metadataTypes: SUPPORTED_METADATA_TYPES,
+      customObjects: [],
+      customObjectsLookups: {},
+    }
+  }
+  return {
+    metadataTypes: SUPPORTED_METADATA_TYPES,
+    customObjects: orgSettingsValues[CUSTOM_OBJECTS_FIELD],
+    customObjectsLookups: orgSettingsValues[CUSTOM_OBJECTS_LOOKUPS_FIELD],
+  }
+}
+
+const getCustomObjectDependenciesRecursively = (
+  target: string,
+  lookups: Record<string, readonly string[]>,
+  handledTypes: Set<string>,
+): string[] => {
+  if (handledTypes.has(target)) {
+    return []
+  }
+  handledTypes.add(target)
+  const dependencies = lookups[target] ?? []
+  return _.uniq(
+    dependencies.reduce(
+      (acc, dep) => acc.concat(dep, getCustomObjectDependenciesRecursively(dep, lookups, handledTypes)),
+      [target],
+    ),
+  )
+}
+
+export const getMetadataIncludeFromFetchTargets = async (
+  targets: string[],
+  elementsSource: ReadOnlyElementsSource,
+): Promise<MetadataQueryParams[]> => {
+  const targetsWithDependencies = getFetchTargetsWithDependencies(targets)
+  const includeParams: MetadataQueryParams[] = []
+  const orgFetchTargets = await getOrgFetchTargets(elementsSource)
+  const orgCustomObjects = new Set(orgFetchTargets.customObjects)
+  const [customObjectTargets, metadataTypeTargets] = _.partition(targetsWithDependencies, target =>
+    orgCustomObjects.has(target),
+  )
+  const handledTypes = new Set<string>()
+  const customObjectTargetsWithDependencies = _.uniq(
+    customObjectTargets.flatMap(target =>
+      getCustomObjectDependenciesRecursively(target, orgFetchTargets.customObjectsLookups, handledTypes),
+    ),
+  )
+  metadataTypeTargets.forEach(typeName => {
+    includeParams.push({
+      metadataType: typeName,
+    })
+  })
+  customObjectTargetsWithDependencies.forEach(customObjectName => {
+    includeParams.push({
+      metadataType: CUSTOM_OBJECT,
+      name: customObjectName,
+    })
+  })
+  return includeParams
 }

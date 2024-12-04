@@ -9,8 +9,8 @@ import { Element, ObjectType, Field, ReferenceExpression, isObjectType } from '@
 import { multiIndex } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { VALUE_SET_FIELDS } from '../constants'
-import { isCustomObject, apiName } from '../transformers/transformer'
-import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
+import { apiName } from '../transformers/transformer'
+import { isInstanceOfType, buildElementsSourceForFetch, isCustomObjectSync } from './utils'
 
 export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
@@ -49,7 +49,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       filter: isInstanceOfType(GLOBAL_VALUE_SET),
       key: async inst => [await apiName(inst)],
     })
-    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
+    const customObjects = elements.filter(isObjectType).filter(isCustomObjectSync)
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
   },
 })

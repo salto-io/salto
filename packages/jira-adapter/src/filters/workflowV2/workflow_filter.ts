@@ -629,7 +629,7 @@ const deployWorkflow = async ({
   if (config.client.usePrivateAPI) {
     try {
       isDeployedSteps = await deploySteps(change, activeWorkflowsNames, client)
-    } catch (error) {
+    } catch {
       const workflowName = getChangeData(change).value.workflows[0].name
       const workflowStepsLink = getWorkflowStepsUrl(client.baseUrl, workflowName)
       const message = `Failed to deploy step names for workflow ${workflowName}; step names will be identical to status names. If required, you can manually edit the step names in Jira: ${workflowStepsLink.href}`

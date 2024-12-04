@@ -182,7 +182,7 @@ const filter: FilterCreator = ({ scriptRunnerClient, config }) => ({
         throw new Error('Received an invalid script runner listeners response')
       }
       valuesFromService = response.data.values
-    } catch (e) {
+    } catch {
       const message = 'Error getting other script-listeners information from the service'
       return {
         leftoverChanges,

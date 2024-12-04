@@ -81,7 +81,7 @@ const filter: FilterCreator = ({ client, config }) => ({
                 )
               }),
             )
-          } catch (err) {
+          } catch {
             log.warn(`Failed to add triggers to workflow, removing ${instance.elemID.getFullName()}`)
             failedWorkflowsIds.add(instance.elemID.getFullName())
           }

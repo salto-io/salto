@@ -611,6 +611,7 @@ describe('updateElementFolder', () => {
       delete (mockAdapter as Adapter).adapterFormat
       result = await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
       expect(result).toEqual({
+        unappliedChanges: [],
         errors: [
           {
             detailedMessage: "Account mock's adapter does not support writing a non-nacl format",

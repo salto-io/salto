@@ -115,6 +115,7 @@ import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import extendTriggersMetadataFilter from './filters/extend_triggers_metadata'
 import profilesAndPermissionSetsBrokenPathsFilter from './filters/profiles_and_permission_sets_broken_paths'
+import fetchTargetsFilter from './filters/fetch_targets'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
@@ -127,6 +128,7 @@ import {
   apiNameSync,
   buildDataRecordsSoqlQueries,
   getFLSProfiles,
+  getMetadataIncludeFromFetchTargets,
   instanceInternalId,
   isCustomObjectSync,
   isCustomType,
@@ -191,10 +193,11 @@ export const allFilters: Array<FilterCreator> = [
   customMetadataToObjectTypeFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   customObjectsFromDescribeFilter,
-  organizationWideDefaults,
   // customSettingsFilter depends on customObjectsFilter
   customSettingsFilter,
   customObjectsToObjectTypeFilter,
+  // organizationWideDefaults depends on customObjectsToObjectTypeFilter
+  organizationWideDefaults,
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   customObjectsInstancesFilter,
   removeFieldsAndValuesFilter,
@@ -264,7 +267,8 @@ export const allFilters: Array<FilterCreator> = [
   mergeProfilesWithSourceValuesFilter,
   // profilesAndPermissionSetsBrokenPathsFilter should run after mergeProfilesWithSourceValuesFilter
   profilesAndPermissionSetsBrokenPathsFilter,
-  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
+  fetchTargetsFilter,
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter, profilesAndPermissionSetsBrokenPathsFilter and fetchTargetsFilter
   customTypeSplit,
   // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
   profileInstanceSplitFilter,
@@ -580,14 +584,18 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
     })
+    const targetedFetchInclude = fetchParams.target
+      ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
+      : undefined
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
+          targetedFetchInclude,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
           customObjectsWithDeletedFields: await this.getCustomObjectsWithDeletedFields(),
         })
-      : buildMetadataQuery({ fetchParams })
+      : buildMetadataQuery({ fetchParams, targetedFetchInclude })
     const fetchProfile = buildFetchProfile({
       fetchParams,
       customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],

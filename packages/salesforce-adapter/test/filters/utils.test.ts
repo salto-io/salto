@@ -58,6 +58,8 @@ import {
   isCustomField,
   isFieldOfTaskOrEvent,
   getProfilesAndPermissionSetsBrokenPaths,
+  getOrgFetchTargets,
+  getMetadataIncludeFromFetchTargets,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -80,6 +82,8 @@ import {
   VALUE_SETTINGS_FIELDS,
   VALUE_SET_FIELDS,
   ArtificialTypes,
+  CUSTOM_OBJECTS_FIELD,
+  CUSTOM_OBJECTS_LOOKUPS_FIELD,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -87,6 +91,7 @@ import { createFlowChange, mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType, createField, createValueSetEntry } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 import { mockFileProperties } from '../connection'
+import { SUPPORTED_METADATA_TYPES } from '../../src/fetch_profile/metadata_types'
 
 const { makeArray } = collections.array
 
@@ -1467,6 +1472,119 @@ describe('filter utils', () => {
     describe('when instance does not exist in the Elements Source', () => {
       it('should return empty array', async () => {
         expect(await getProfilesAndPermissionSetsBrokenPaths(buildElementsSourceFromElements([]))).toEqual([])
+      })
+    })
+  })
+  describe('getOrgFetchTargets', () => {
+    let elementsSource: ReadOnlyElementsSource
+    describe('when Custom Objects Targets are invalid in the organization settings instance', () => {
+      beforeEach(() => {
+        const invalidOrgSettings = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+          [CUSTOM_OBJECTS_FIELD]: 'Invalid',
+        })
+        elementsSource = buildElementsSourceFromElements([invalidOrgSettings])
+      })
+      it('should return metadata types only', async () => {
+        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+          metadataTypes: SUPPORTED_METADATA_TYPES,
+          customObjects: [],
+          customObjectsLookups: {},
+        })
+      })
+    })
+    describe('when Custom Objects Targets are valid in the organization settings instance', () => {
+      beforeEach(() => {
+        const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+          [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact'],
+          [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
+            Account: ['Contact'],
+          },
+        })
+        elementsSource = buildElementsSourceFromElements([fetchTargets])
+      })
+      it('should return correct fetch targets', async () => {
+        expect(await getOrgFetchTargets(elementsSource)).toEqual({
+          metadataTypes: SUPPORTED_METADATA_TYPES,
+          customObjects: ['Account', 'Contact'],
+          customObjectsLookups: { Account: ['Contact'] },
+        })
+      })
+    })
+  })
+  describe('getMetadataIncludeFromFetchTargets', () => {
+    let elementsSource: ReadOnlyElementsSource
+    beforeEach(() => {
+      const fetchTargets = new InstanceElement(ElemID.CONFIG_NAME, ArtificialTypes.FetchTargets, {
+        [CUSTOM_OBJECTS_FIELD]: ['Account', 'Contact', 'Product2', 'User'],
+        [CUSTOM_OBJECTS_LOOKUPS_FIELD]: {
+          Account: ['Product2'],
+          Product2: ['Contact'],
+          Contact: ['Account', 'Product2', 'User'],
+        },
+      })
+      elementsSource = buildElementsSourceFromElements([fetchTargets])
+    })
+    describe('When targets include Custom Objects', () => {
+      describe('when type has lookups', () => {
+        it('should return include entries for the type and resolve its lookups recursively', async () => {
+          expect(await getMetadataIncludeFromFetchTargets(['Account'], elementsSource)).toIncludeSameMembers([
+            {
+              metadataType: CUSTOM_OBJECT,
+              name: 'Account',
+            },
+            {
+              metadataType: CUSTOM_OBJECT,
+              name: 'Product2',
+            },
+            {
+              metadataType: CUSTOM_OBJECT,
+              name: 'Contact',
+            },
+            {
+              metadataType: CUSTOM_OBJECT,
+              name: 'User',
+            },
+          ])
+        })
+      })
+      describe('when type has no lookups', () => {
+        it('should return include entries for the type', async () => {
+          expect(await getMetadataIncludeFromFetchTargets(['User'], elementsSource)).toIncludeSameMembers([
+            {
+              metadataType: CUSTOM_OBJECT,
+              name: 'User',
+            },
+          ])
+        })
+      })
+    })
+    describe('When targets include Metadata Types', () => {
+      describe('when metadata types has no dependencies', () => {
+        it('should return include entries for the metadata types', async () => {
+          expect(await getMetadataIncludeFromFetchTargets(['ApexClass', 'Role'], elementsSource)).toIncludeSameMembers([
+            {
+              metadataType: 'ApexClass',
+            },
+            {
+              metadataType: 'Role',
+            },
+          ])
+        })
+      })
+      describe('when metadata types has dependencies', () => {
+        it('should return include entries for the metadata types and their dependencies', async () => {
+          expect(await getMetadataIncludeFromFetchTargets(['ValidationRule'], elementsSource)).toIncludeSameMembers([
+            {
+              metadataType: 'ValidationRule',
+            },
+            {
+              metadataType: 'CustomObject',
+            },
+            {
+              metadataType: 'TopicsForObjects',
+            },
+          ])
+        })
       })
     })
   })

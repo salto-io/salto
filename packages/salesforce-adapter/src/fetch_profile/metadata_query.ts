@@ -10,7 +10,7 @@ import _ from 'lodash'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { FileProperties } from '@salto-io/jsforce'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   CUSTOM_OBJECT,
   DEFAULT_NAMESPACE,
@@ -37,7 +37,7 @@ import {
   isTypeWithNestedInstancesPerParent,
   NESTED_TYPE_TO_PARENT_TYPE,
 } from '../last_change_date_of_types_with_nested_instances'
-import { getFetchTargetsWithDependencies, includesSettingsTypes } from './metadata_types'
+import { includesSettingsTypes } from './metadata_types'
 import { isFeatureEnabled } from './optional_features'
 
 const { makeArray } = collections.array
@@ -79,6 +79,7 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 
 type BuildMetadataQueryParams = {
   fetchParams: FetchParameters
+  targetedFetchInclude?: MetadataQueryParams[]
 }
 
 type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParams & {
@@ -87,12 +88,10 @@ type BuildFetchWithChangesDetectionMetadataQueryParams = BuildMetadataQueryParam
   customObjectsWithDeletedFields: Set<string>
 }
 
-export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): MetadataQuery => {
+export const buildMetadataQuery = ({ fetchParams, targetedFetchInclude }: BuildMetadataQueryParams): MetadataQuery => {
   const metadata = fetchParams.metadata ?? {}
-  const target: readonly string[] | undefined =
-    fetchParams.target && getFetchTargetsWithDependencies(fetchParams.target)
-  if (target !== undefined) {
-    log.debug('targeted fetch types: %o', target)
+  if (targetedFetchInclude !== undefined) {
+    log.debug('targeted fetch include is: %s', inspectValue(targetedFetchInclude))
   }
   const fullExcludeList: MetadataQueryParams[] = [
     ...(metadata.exclude ?? []),
@@ -104,11 +103,11 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
     ),
   ]
 
-  const isIncludedInTargetedFetch = (type: string): boolean => {
-    if (target === undefined) {
+  const isTypeIncludedInTargetedFetch = (type: string): boolean => {
+    if (targetedFetchInclude === undefined) {
       return true
     }
-    return target.includes(type)
+    return targetedFetchInclude.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
   }
 
   const include = metadata.include
@@ -122,7 +121,7 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
   const isTypeIncluded = (type: string): boolean =>
     include.some(({ metadataType = '.*' }) =>
       new RegExp(`^${metadataType}$`).test(NESTED_TYPE_TO_PARENT_TYPE[type] ?? type),
-    ) && isIncludedInTargetedFetch(type)
+    ) && isTypeIncludedInTargetedFetch(type)
 
   const isTypeExcluded = (type: string): boolean =>
     fullExcludeList.some(
@@ -157,11 +156,17 @@ export const buildMetadataQuery = ({ fetchParams }: BuildMetadataQueryParams): M
       : regex.isFullRegexMatch(instance.name, name)
   }
 
+  const isInstanceIncludedInTargetedFetch = (instance: MetadataInstance): boolean => {
+    if (targetedFetchInclude === undefined) {
+      return true
+    }
+    return targetedFetchInclude.some(params => isInstanceMatchQueryParams(instance, params))
+  }
   const isInstanceIncluded = (instance: MetadataInstance): boolean =>
     include.some(params => isInstanceMatchQueryParams(instance, params)) &&
+    isInstanceIncludedInTargetedFetch(instance) &&
     !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
-
-  const isTargetedFetch = (): boolean => target !== undefined
+  const isTargetedFetch = (): boolean => fetchParams.target !== undefined
   return {
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
     isTargetedFetch,

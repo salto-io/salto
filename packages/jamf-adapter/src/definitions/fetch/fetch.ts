@@ -406,7 +406,7 @@ const createCustomizations = (
         },
         transformation: {
           root: 'os_x_configuration_profile',
-          omit: ['general.uuid', 'general.payloads'],
+          omit: ['general.uuid'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },
@@ -465,7 +465,7 @@ const createCustomizations = (
         },
         transformation: {
           root: 'configuration_profile',
-          omit: ['general.uuid', 'general.payloads'],
+          omit: ['general.uuid'],
           adjust: transforms.adjustConfigurationProfile,
         },
       },

@@ -26,7 +26,7 @@ describe('index', () => {
     jest.spyOn(env, 'config').mockImplementation(() => mockConfig)
 
     delete require.cache[require.resolve(INDEX_PATH)]
-    // eslint-disable-next-line import/no-dynamic-require, global-require
+    // eslint-disable-next-line import/no-dynamic-require, global-require, @typescript-eslint/no-require-imports
     require(INDEX_PATH)
   })
 
@@ -48,7 +48,7 @@ describe('index', () => {
   })
 
   test('compareLogLevels', () => {
-    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
+    // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
     const { compareLogLevels } = require('../src')
     expect(compareLogLevels('info', 'debug')).toBeLessThan(0)
   })

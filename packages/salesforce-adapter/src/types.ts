@@ -102,6 +102,7 @@ const OPTIONAL_FEATURES = [
   'picklistsAsMaps',
   'retrieveSettings',
   'genAiReferences',
+  'networkReferences',
   'extendFetchTargets',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [

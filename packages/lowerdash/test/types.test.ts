@@ -29,6 +29,7 @@ describe('types', () => {
     class B {
       constructor(public val: number) {}
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const map = {
       a: A,
       b: B,

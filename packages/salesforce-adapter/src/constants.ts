@@ -430,6 +430,7 @@ export const ESCALATION_RULES_TYPE = 'EscalationRules'
 export const ESCALATION_RULE_TYPE = 'EscalationRule'
 export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
 export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
+export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'

@@ -46,7 +46,7 @@ export type TypeGuard<T, S extends T> = (item: T) => item is S
 export type Predicate<T> = (item: T) => boolean
 export type AsyncPredicate<T> = (item: T) => Promise<boolean>
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 export type PickDataFields<T> = Omit<T, KeysOfType<T, Function>>
 
 /*

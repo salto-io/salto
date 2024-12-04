@@ -316,7 +316,7 @@ describe('localState', () => {
         it('should not clear the old provider', async () => {
           try {
             await result
-          } catch (e) {
+          } catch {
             // We expect this to fail
           }
           expect(contentProvider.clear).not.toHaveBeenCalled()

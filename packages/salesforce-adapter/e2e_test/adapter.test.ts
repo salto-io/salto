@@ -1095,11 +1095,21 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(2)
       }
 
+      const getValueSetValues = (annotations: Values): Values | undefined => {
+        const valueSet = annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
+        if (valueSet === undefined) {
+          return undefined
+        }
+        return _.isPlainObject(valueSet[ORDERED_MAP_VALUES_FIELD])
+          ? Object.values(valueSet[ORDERED_MAP_VALUES_FIELD])
+          : valueSet
+      }
+
       const testPicklist = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Picklist label')
         expect(annotations[constants.DESCRIPTION]).toBe('Picklist description')
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
-        expect(Object.values(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET][ORDERED_MAP_VALUES_FIELD])).toEqual([
+        expect(getValueSetValues(annotations)).toEqual([
           {
             [constants.CUSTOM_VALUE.FULL_NAME]: 'NEW',
             [constants.CUSTOM_VALUE.DEFAULT]: true,
@@ -1137,7 +1147,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.CUSTOM_VALUE.LABEL]: 'DO',
           },
         ]
-        expect(Object.values(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET][ORDERED_MAP_VALUES_FIELD])).toEqual(
+        expect(getValueSetValues(annotations)).toEqual(
           sorted ? _.sortBy(expectedValueSet, constants.CUSTOM_VALUE.FULL_NAME) : expectedValueSet,
         )
         const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]

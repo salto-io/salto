@@ -39,7 +39,6 @@ export const onTextChangeEvent = (event: vscode.TextDocumentChangeEvent, workspa
 
 export const onFileOpen = async (workspace: ws.EditorWorkspace, filename: string): Promise<void> => {
   // We really do *not* want to await on this.
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   vscode.commands.executeCommand('editor.foldAllMarkerRegions')
   await workspace.validateFiles([filename])
 }
@@ -50,7 +49,6 @@ const showReloadWSPrompt = _.debounce(async (): Promise<void> => {
   const choice = await vscode.window.showInformationMessage(msg, action)
   if (action === choice) {
     // We really do *not* want to await on this.
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     vscode.commands.executeCommand('workbench.action.reloadWindow')
   }
 }, FS_FILE_CHANGE_TIMEOUT)

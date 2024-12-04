@@ -57,6 +57,7 @@ import {
   CUSTOM_METADATA_TYPE_NAME,
   CPQ_TERM_CONDITION,
   CPQ_INDEX_FIELD,
+  OPPORTUNITY_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -481,6 +482,11 @@ export const mockTypes = {
   [INSTALLED_PACKAGE_METADATA]: createMetadataObjectType({
     annotations: {
       metadataType: INSTALLED_PACKAGE_METADATA,
+    },
+  }),
+  Opportunity: createMetadataObjectType({
+    annotations: {
+      metadataType: OPPORTUNITY_METADATA_TYPE,
     },
   }),
   Product2: new ObjectType({

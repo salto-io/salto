@@ -26,7 +26,7 @@ const SALTO_ENV_CONFIG_PREFIX = `${SALTO_ENV_PREFIX}_CONFIG_`
 export const convertValueType = (value: string): Value => {
   try {
     return JSON.parse(value)
-  } catch (e) {
+  } catch {
     return value
   }
 }

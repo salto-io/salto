@@ -49,10 +49,6 @@
       "path": "packages/element-test-utils",
     },
     {
-      "name": "microsoft-entra-adapter",
-      "path": "packages/microsoft-entra-adapter",
-    },
-    {
       "name": "file",
       "path": "packages/file",
     },
@@ -77,12 +73,20 @@
       "path": "packages/lang-server",
     },
     {
+      "name": "local-workspace",
+      "path": "packages/local-workspace",
+    },
+    {
       "name": "logging",
       "path": "packages/logging",
     },
     {
       "name": "lowerdash",
       "path": "packages/lowerdash",
+    },
+    {
+      "name": "microsoft-entra-adapter",
+      "path": "packages/microsoft-entra-adapter",
     },
     {
       "name": "microsoft-security-adapter",

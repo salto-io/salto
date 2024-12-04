@@ -12,7 +12,7 @@ import { createInstanceElement } from '../../src/transformers/transformer'
 
 const createListView = (filterScopeValue: string): InstanceElement =>
   createInstanceElement({ fullName: 'Some.FullName', filterScope: filterScopeValue }, mockTypes.ListView, undefined, {
-    [CORE_ANNOTATIONS.PARENT]: 'Opportunity',
+    [CORE_ANNOTATIONS.PARENT]: createInstanceElement({ fullName: 'Some.Opportunity' }, mockTypes.Opportunity),
   })
 
 describe('ListView filterScope validator', () => {

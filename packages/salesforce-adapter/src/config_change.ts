@@ -161,13 +161,10 @@ export const createNonTransientSalesforceErrorConfigSuggestion: CreateConfigSugg
 
 const NON_TRANSIENT_SALESFORCE_ERROR = 'NON_TRANSIENT_SALESFORCE_ERROR'
 
-const CONFIG_SUGGESTION_CREATOR_NAMES = [
-  SOCKET_TIMEOUT,
-  INVALID_CROSS_REFERENCE_KEY,
-  NON_TRANSIENT_SALESFORCE_ERROR,
-] as const
-
-type ConfigSuggestionCreatorName = (typeof CONFIG_SUGGESTION_CREATOR_NAMES)[number]
+type ConfigSuggestionCreatorName =
+  | typeof SOCKET_TIMEOUT
+  | typeof INVALID_CROSS_REFERENCE_KEY
+  | typeof NON_TRANSIENT_SALESFORCE_ERROR
 
 const CONFIG_SUGGESTION_CREATORS: Record<ConfigSuggestionCreatorName, ConfigSuggestionCreator> = {
   [SOCKET_TIMEOUT]: {

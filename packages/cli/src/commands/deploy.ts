@@ -259,7 +259,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
-  const executingDeploy = !dryRun ? force || (await shouldDeploy(actionPlan, checkOnly)) : false
+  const executingDeploy = !dryRun && (force || (await shouldDeploy(actionPlan, checkOnly)))
   const result = dryRun
     ? { success: true, errors: [] }
     : await deployPlan(actionPlan, workspace, cliTelemetry, output, executingDeploy, checkOnly, actualAccounts)

@@ -733,9 +733,21 @@ describe('multi env source', () => {
           elemIDs: { before: envObject.elemID },
           path: envObject.path,
           baseChange: {
-            action: 'modify',
+            action: 'remove',
             data: {
               before: envObject,
+            },
+          },
+        },
+        {
+          action: 'add',
+          data: { after: envObjectMeta },
+          id: envObject.elemID,
+          elemIDs: { after: envObjectMeta.elemID },
+          path: envObject.path,
+          baseChange: {
+            action: 'add',
+            data: {
               after: envObjectMeta,
             },
           },
@@ -747,23 +759,8 @@ describe('multi env source', () => {
           elemIDs: { after: envObjectMeta.elemID },
           path: envObject.path,
           baseChange: {
-            action: 'modify',
+            action: 'add',
             data: {
-              before: envObject,
-              after: envObjectMeta,
-            },
-          },
-        },
-        {
-          action: 'add',
-          data: { after: envObjectMeta },
-          id: envObject.elemID,
-          elemIDs: { after: envObjectMeta.elemID },
-          path: envObject.path,
-          baseChange: {
-            action: 'modify',
-            data: {
-              before: envObject,
               after: envObjectMeta,
             },
           },
@@ -775,10 +772,9 @@ describe('multi env source', () => {
           elemIDs: { before: field.elemID },
           path: field.path,
           baseChange: {
-            action: 'modify',
+            action: 'remove',
             data: {
               before: field,
-              after: fieldNumber,
             },
           },
         },
@@ -789,9 +785,8 @@ describe('multi env source', () => {
           elemIDs: { after: fieldNumber.elemID },
           path: field.path,
           baseChange: {
-            action: 'modify',
+            action: 'add',
             data: {
-              before: field,
               after: fieldNumber,
             },
           },

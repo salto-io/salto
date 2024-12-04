@@ -19,36 +19,77 @@ describe('businessHoursScheduleHolidayChangeValidator', () => {
       start_date: startDate,
       end_date: endDate,
     })
-  it('should error when holiday span is exactly 2 years', async () => {
-    const holiday = createHolidayInstance('test_holiday', '2024-01-01', '2026-01-01')
-    changes = [toChange({ after: holiday })]
-    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-    expect(errors).toMatchObject([
-      {
-        elemID: holiday.elemID,
-        severity: 'Error',
-        message: 'Holiday schedule duration is too long',
-        detailedMessage:
-          "Holiday schedule 'test_holiday' duration must be 2 years or less, current duration is from 2024-01-01 to 2026-01-01",
-      },
-    ])
-  })
-  it('should error when holiday span years difference is 2 and month difference larger than zero', async () => {
-    const holiday = createHolidayInstance('test_holiday', '2022-01-01', '2024-02-01')
-    changes = [toChange({ after: holiday })]
-    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-    expect(errors).toHaveLength(1)
-  })
-  it('should error when holiday span years difference is 2, month difference 0 and day difference larger than zero', async () => {
-    const holiday = createHolidayInstance('test_holiday', '2024-01-01', '2026-01-05')
-    changes = [toChange({ after: holiday })]
-    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-    expect(errors).toHaveLength(1)
-  })
-  it('should not error when holiday span years difference is less than 2', async () => {
-    const holiday = createHolidayInstance('test_holiday', '2024-01-01', '2025-02-01')
-    changes = [toChange({ after: holiday })]
-    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-    expect(errors).toHaveLength(0)
+
+  const dateYearsAgo = (years: number): string => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() - years)
+    return date.toISOString()
+  }
+
+  const dateYearsFromNow = (years: number): string => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() + years)
+    return date.toISOString()
+  }
+
+  describe('when validating holiday schedule duration', () => {
+    it('should error when duration is exactly 2 years', async () => {
+      const holiday = createHolidayInstance('test_holiday', dateYearsAgo(2), new Date().toISOString())
+      changes = [toChange({ after: holiday })]
+
+      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+      expect(errors).toMatchObject([
+        {
+          elemID: holiday.elemID,
+          severity: 'Error',
+          message: 'Holiday schedule dates are outside the allowed range',
+          detailedMessage: `Holiday schedule 'test_holiday' has invalid dates. The start date must not be earlier than two years before the current date ${new Date().toISOString().split('T')[0]}, and the end date must not be later than two years after the current date. Provided dates are from ${dateYearsAgo(2).split('T')[0]} to ${new Date().toISOString().split('T')[0]}.`,
+        },
+      ])
+    })
+
+    it('should error when duration is more than 2 years', async () => {
+      const holiday = createHolidayInstance('test_holiday', dateYearsAgo(3), new Date().toISOString())
+      changes = [toChange({ after: holiday })]
+
+      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+      expect(errors).toHaveLength(1)
+    })
+
+    it('should not error when duration is less than 2 years', async () => {
+      const holiday = createHolidayInstance('test_holiday', dateYearsAgo(1), new Date().toISOString())
+      changes = [toChange({ after: holiday })]
+
+      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+      expect(errors).toHaveLength(0)
+    })
+
+    it('should handle future dates correctly', async () => {
+      const holiday = createHolidayInstance('test_holiday', new Date().toISOString(), dateYearsFromNow(3))
+      changes = [toChange({ after: holiday })]
+
+      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+      expect(errors).toHaveLength(1)
+    })
+
+    it('should handle invalid date formats gracefully', async () => {
+      const holiday = createHolidayInstance('test_holiday', 'invalid-date', 'also-invalid')
+      changes = [toChange({ after: holiday })]
+
+      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+      expect(errors).toHaveLength(0)
+    })
+
+    it('should handle missing dates', async () => {
+      const holiday = new InstanceElement(
+        'test_holiday',
+        new ObjectType({ elemID: new ElemID(ZENDESK, BUSINESS_HOUR_SCHEDULE_HOLIDAY) }),
+        { name: 'test_holiday' },
+      )
+      changes = [toChange({ after: holiday })]
+
+      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+      expect(errors).toHaveLength(0)
+    })
   })
 })

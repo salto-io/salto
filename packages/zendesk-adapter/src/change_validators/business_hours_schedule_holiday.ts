@@ -14,7 +14,10 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { BUSINESS_HOUR_SCHEDULE_HOLIDAY } from '../constants'
+
+const log = logger(module)
 
 type BusinessHoursScheduleHoliday = {
   start_date: string
@@ -28,26 +31,25 @@ const hasEndDate = (value: unknown): boolean => _.isString(_.get(value, 'end_dat
 const isBusinessHoursScheduleHoliday = (value: unknown): value is BusinessHoursScheduleHoliday =>
   _.isObject(value) && hasStartDate(value) && hasEndDate(value)
 
-const isHolidaySpanTooLong = (instance: InstanceElement): boolean => {
-  const values: unknown = instance.value
-  if (!isBusinessHoursScheduleHoliday(values)) {
+const isDateRangeWithinLimit = (instance: InstanceElement): boolean => {
+  const { value } = instance
+  if (!isBusinessHoursScheduleHoliday(value)) {
+    log.error(
+      `Invalid business hours schedule holiday instance encountered. Expected an object with valid 'start_date' and 'end_date' fields, but received: ${value}`,
+    )
     return false
   }
-  const startDate = new Date(values.start_date)
-  const endDate = new Date(values.end_date)
-  const yearDifference = endDate.getFullYear() - startDate.getFullYear()
-  const monthDifference = endDate.getMonth() - startDate.getMonth()
-  const dayDifference = endDate.getDate() - startDate.getDate()
-  if (
-    yearDifference > 2 ||
-    (yearDifference === 2 && (monthDifference > 0 || (monthDifference === 0 && dayDifference >= 0)))
-  ) {
-    return true
-  }
-  return false
+  const startDate = new Date(value.start_date)
+  const endDate = new Date(value.end_date)
+  const currentDate = new Date(Date.now())
+  const twoYearsInMs = 1000 * 60 * 60 * 24 * 365 * 2
+  const differenceToStartDate = Math.abs(currentDate.getTime() - startDate.getTime())
+  const differenceToEndDate = Math.abs(currentDate.getTime() - endDate.getTime())
+  return differenceToStartDate >= twoYearsInMs || differenceToEndDate >= twoYearsInMs
 }
 
-// Ensures that the holiday duration is less than 2 years (Zendesk limit).
+// Ensures that the start date is no sooner than two years in the past and
+// end date no later than two years in the future (Zendesk limit).
 // Assumes that the start and end dates are in a valid date format.
 export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = async changes =>
   changes
@@ -55,10 +57,10 @@ export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = asyn
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === BUSINESS_HOUR_SCHEDULE_HOLIDAY)
-    .filter(isHolidaySpanTooLong)
+    .filter(isDateRangeWithinLimit)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Holiday schedule duration is too long',
-      detailedMessage: `Holiday schedule '${instance.value.name || instance.elemID.name}' duration must be 2 years or less, current duration is from ${instance.value.start_date} to ${instance.value.end_date}`,
+      message: 'Holiday schedule dates are outside the allowed range',
+      detailedMessage: `Holiday schedule '${instance.value.name || instance.elemID.name}' has invalid dates. The start date must not be earlier than two years before the current date ${new Date().toISOString().split('T')[0]}, and the end date must not be later than two years after the current date. Provided dates are from ${instance.value.start_date.split('T')[0]} to ${instance.value.end_date.split('T')[0]}.`,
     }))

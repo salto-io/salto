@@ -24,7 +24,7 @@ import {
 } from '../../src/remote_map/remote_map'
 import { remoteMapLocations } from '../../src/remote_map/location_pool'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const rocksdbImpl = require('../../src/remote_map/rocksdb').default
 
 const { serialize, deserialize } = serialization

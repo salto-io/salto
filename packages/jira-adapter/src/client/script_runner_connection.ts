@@ -55,7 +55,7 @@ const getUrlFromService = async (jiraClient: JiraClient): Promise<string> => {
   try {
     // eslint-disable-next-line no-new
     new URL(jiraResponse.data.url)
-  } catch (e) {
+  } catch {
     log.error(
       'Failed to parse scriptRunner token, the response from the jira service was not a valid url',
       jiraResponse.data.url,

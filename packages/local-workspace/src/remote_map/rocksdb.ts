@@ -13,7 +13,7 @@ import { getSaltoHome } from '../app_config'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const requireOrExtract = (externalsLocation: string): any => {
   try {
-    // eslint-disable-next-line global-require
+    // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
     return require('@salto-io/rocksdb')
   } catch {
     // eslint-disable-next-line camelcase

@@ -62,7 +62,7 @@ const getLogoContent = async (link: string, client: OktaClient): Promise<Buffer 
       return new Error('Received invalid response from Okta API for attachment content')
     }
     return content
-  } catch (e) {
+  } catch {
     return new Error('Failed to fetch attachment content from Okta API')
   }
 }

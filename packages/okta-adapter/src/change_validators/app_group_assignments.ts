@@ -22,7 +22,7 @@ const isParentAppInStatusInactive = (appGroupInstance: InstanceElement): boolean
   try {
     const parent = getParent(appGroupInstance)
     return parent.elemID.typeName === APPLICATION_TYPE_NAME && parent.value.status === INACTIVE_STATUS
-  } catch (err) {
+  } catch {
     log.error(
       'Failed to get parent app, skipping appGroupAssignmentValidator for %s',
       appGroupInstance.elemID.getFullName(),

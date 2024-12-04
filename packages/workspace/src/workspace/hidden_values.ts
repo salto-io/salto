@@ -738,7 +738,7 @@ export const filterOutHiddenChanges = async (
       return { visible: change, hidden: change }
     }
 
-    const { parent } = change.id.createTopLevelParentID()
+    const { parent, path } = change.id.createTopLevelParentID()
     const baseElem = change.id.isTopLevel() ? change.data.after : await state.get(parent)
 
     if (baseElem === undefined) {
@@ -775,7 +775,6 @@ export const filterOutHiddenChanges = async (
         changeType: TypeElement | undefined
         changePath: ReadonlyArray<string>
       }> => {
-        const { path } = change.id.createTopLevelParentID()
         if (change.id.isAttrID()) {
           return {
             changeType: (await elementAnnotationTypes(baseElem, state))[path[0]],

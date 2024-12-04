@@ -1021,7 +1021,9 @@ export default class SalesforceClient implements ISalesforceClient {
   @mapToUserFriendlyErrorMessages
   @logDecorator()
   @requiresLogin()
-  public async cancelMetadataValidateOrDeployTask({ taskId }: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
+  public async cancelMetadataValidateOrDeployTask({
+    taskId,
+  }: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
     const checkStatus = async (): Promise<CancelServiceAsyncTaskResult> => {
       try {
         const cancelDeployResult = await this.conn.request({
@@ -1035,7 +1037,13 @@ export default class SalesforceClient implements ISalesforceClient {
         })
         if (!isCancelDeployResult(cancelDeployResult)) {
           return {
-            errors: [{message: `Failed to cancel async deployment with id ${taskId}`, detailedMessage: 'Salesforce cancelDeployResult value does not contain status', severity: 'Error'}],
+            errors: [
+              {
+                message: `Failed to cancel async deployment with id ${taskId}`,
+                detailedMessage: 'Salesforce cancelDeployResult value does not contain status',
+                severity: 'Error',
+              },
+            ],
           }
         }
         if (cancelDeployResult.deployResult.status === 'Canceling') {
@@ -1046,7 +1054,13 @@ export default class SalesforceClient implements ISalesforceClient {
       } catch (e) {
         log.error('Failed to cancel deployment with id %s: %s', taskId, inspectValue(e))
         return {
-          errors: [{message: `Failed to cancel async deployment with id ${taskId}`, detailedMessage: e.message, severity: 'Error'}],
+          errors: [
+            {
+              message: `Failed to cancel async deployment with id ${taskId}`,
+              detailedMessage: e.message,
+              severity: 'Error',
+            },
+          ],
         }
       }
     }

@@ -27,7 +27,8 @@ import {
   isField,
   isObjectType,
   TypeReference,
-  CancelServiceAsyncTaskInput, CancelServiceAsyncTaskResult,
+  CancelServiceAsyncTaskInput,
+  CancelServiceAsyncTaskResult,
 } from '@salto-io/adapter-api'
 import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
@@ -805,7 +806,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   }
 
   async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
-      return this.client.cancelMetadataValidateOrDeployTask(input)
+    return this.client.cancelMetadataValidateOrDeployTask(input)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

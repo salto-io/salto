@@ -1523,7 +1523,6 @@ describe('api.ts', () => {
 
   describe('cancelServiceAsyncTask', () => {
     const input: CancelServiceAsyncTaskInput = {
-      taskType: 'validation',
       taskId: '123',
     }
     const ACCOUNT_NAME = 'test1'

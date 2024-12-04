@@ -303,6 +303,30 @@ export const mockTypes = {
       folderContentType: 'EmailTemplate',
     },
   }),
+  ReportFolder: createMetadataObjectType({
+    annotations: {
+      metadataType: 'ReportFolder',
+      dirName: 'reports',
+      hasMetaFile: true,
+      folderContentType: 'Report',
+    },
+  }),
+  DocumentFolder: createMetadataObjectType({
+    annotations: {
+      metadataType: 'DocumentFolder',
+      dirName: 'documents',
+      hasMetaFile: true,
+      folderContentType: 'Document',
+    },
+  }),
+  DashboardFolder: createMetadataObjectType({
+    annotations: {
+      metadataType: 'DashboardFolder',
+      dirName: 'dashboards',
+      hasMetaFile: true,
+      folderContentType: 'Dashboard',
+    },
+  }),
   AssignmentRules: createMetadataObjectType({
     annotations: {
       metadataType: ASSIGNMENT_RULES_METADATA_TYPE,
@@ -402,10 +426,35 @@ export const mockTypes = {
       metadataType: 'EmailTemplate',
       suffix: 'email',
       dirName: 'emails',
+      folderType: 'EmailFolder',
     },
     fields: {
       content: { refType: BuiltinTypes.STRING },
       attachments: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+  }),
+  Report: createMetadataObjectType({
+    annotations: {
+      folderType: 'ReportFolder',
+      suffix: 'report',
+      dirName: 'reports',
+      metadataType: 'Report',
+    },
+  }),
+  Document: createMetadataObjectType({
+    annotations: {
+      hasMetaFile: true,
+      folderType: 'DocumentFolder',
+      dirName: 'documents',
+      metadataType: 'Document',
+    },
+  }),
+  Dashboard: createMetadataObjectType({
+    annotations: {
+      folderType: 'DashboardFolder',
+      suffix: 'dashboard',
+      dirName: 'dashboards',
+      metadataType: 'Dashboard',
     },
   }),
   RecordType: createMetadataObjectType({

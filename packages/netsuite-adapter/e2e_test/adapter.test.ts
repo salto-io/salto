@@ -646,7 +646,6 @@ describe('Netsuite adapter E2E with real account', () => {
             fetch: {
               include: fullQueryParams(),
               exclude: emptyQueryParams(),
-              addAlias: true,
             },
           },
         )

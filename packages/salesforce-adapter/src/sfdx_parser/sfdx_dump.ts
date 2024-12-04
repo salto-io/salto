@@ -36,6 +36,7 @@ import {
 } from './salesforce_imports'
 import { SyncZipTreeContainer } from './tree_container'
 import { detailedMessageFromSfError } from './errors'
+import { loadElementsFromFolder } from './sfdx_parser'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -44,9 +45,6 @@ const { withLimitedConcurrency } = promises.array
 const FILE_DELETE_CONCURRENCY = 100
 
 export const UNSUPPORTED_TYPES = new Set([
-  // Salto uses non-standard type names here (SFDX names them all "Settings", we have a separate type for each one)
-  // This causes us to always think the settings in the project need to be deleted
-  'Settings',
   // For documents with a file extension (e.g. bla.txt) the SF API returns their fullName with the extension (so "bla.txt")
   // but the SFDX convert code loads them as a component with a fullName without the extension (so "bla").
   // This causes us to always think documents with an extension in the project need to be deleted
@@ -66,10 +64,6 @@ const isSupportedMetadataChange = (change: Change): boolean => {
   const element = getChangeData(change)
   const metadataTypeName = metadataTypeSync(element)
   if (UNSUPPORTED_TYPES.has(metadataTypeName)) {
-    return false
-  }
-  if (UNSUPPORTED_TYPES.has('Settings') && element.elemID.isConfigInstance() && metadataTypeName.endsWith('Settings')) {
-    // Settings have all kinds of metadata type names, but they all end with "Settings"
     return false
   }
   return true
@@ -238,6 +232,14 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     pathsToDelete.map(pathToDelete => () => rm(pathToDelete)),
     FILE_DELETE_CONCURRENCY,
   )
+
+  log.debug('Loading elements from folder to validate dump.')
+  const { errors: loadErrors } = await loadElementsFromFolder({ baseDir, elementsSource })
+  loadErrors?.forEach(error => {
+    log.error('Got an error validating dumped SFDX: %o', error)
+    error.message = 'Error validating dumped SFDX project'
+    errors.push(error)
+  })
 
   return { errors, unappliedChanges }
 }

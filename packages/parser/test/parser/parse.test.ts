@@ -28,9 +28,12 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import isPromise from 'is-promise'
 import { registerTestFunction, registerThrowingFunction } from '../utils'
 import { Functions, SourceRange, parse, SourceMap, tokenizeContent, ParseError } from '../../src/parser'
 import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
+import { parseValue } from '../../src/parser/parse'
+import { unexpectedPromise } from '../../src/parser/internal/native/errors'
 
 const { awu } = collections.asynciterable
 const funcName = 'myFunc'
@@ -1742,6 +1745,85 @@ multiline
         { value: 'eee fff  ggg.hhh', type: 'content', line: 1, col: 22 },
         { value: '"', type: 'dq', line: 1, col: 38 },
       ])
+    })
+  })
+
+  describe('parseValue', () => {
+    describe('when value is string', () => {
+      it('should return string value', () => {
+        const value = '"value"'
+        const result = parseValue({ content: value })
+        expect(result.value).toEqual('value')
+        expect(result.errors).toEqual([])
+      })
+    })
+
+    describe('when value is number', () => {
+      it('should return number value', () => {
+        const value = '1'
+        const result = parseValue({ content: value })
+        expect(result.value).toEqual(1)
+        expect(result.errors).toEqual([])
+      })
+    })
+
+    describe('when value is boolean', () => {
+      it('should return boolean value', () => {
+        const value = 'true'
+        const result = parseValue({ content: value })
+        expect(result.value).toEqual(true)
+        expect(result.errors).toEqual([])
+      })
+    })
+
+    describe('when value is reference expression', () => {
+      const value = new ReferenceExpression(new ElemID('adapter', 'someType', 'instance', 'someInstance'))
+      it('should return reference expression value', () => {
+        const result = parseValue({ content: 'adapter.someType.instance.someInstance' })
+        expect(result.value).toEqual(value)
+        expect(result.errors).toEqual([])
+      })
+    })
+
+    describe('when value is an array', () => {
+      const result = parseValue({ content: '[1,2,3]' })
+      expect(result.value).toEqual([1, 2, 3])
+      expect(result.errors).toEqual([])
+    })
+
+    describe('when consumeValue adds errors to context', () => {
+      it('should return the errors in the result', () => {
+        const result = parseValue({ content: '"value' })
+        expect(result.value).toBeUndefined()
+        expect(result.errors[0]).toEqual(
+          expect.objectContaining({
+            summary: 'All lexer tokens have already been consumed.',
+          }),
+        )
+      })
+    })
+
+    describe('when consumeValue adds a promise to valuePromiseWatchers', () => {
+      it('should return the errors in the result', () => {
+        const result = parseValue({ content: '[myFunc("some.png")]', functions })
+        expect(Array.isArray(result.value)).toBeTruthy()
+        expect(result.errors).toEqual([
+          unexpectedPromise({ start: { line: 1, col: 1, byte: 0 }, end: { line: 1, col: 21, byte: 20 }, filename: '' }),
+        ])
+      })
+      describe('when consumeValue returns a promise', () => {
+        it('should return the errors in the result', () => {
+          const result = parseValue({ content: 'myFunc("some.png")', functions })
+          expect(isPromise(result.value)).toBeTruthy()
+          expect(result.errors).toEqual([
+            unexpectedPromise({
+              start: { line: 1, col: 1, byte: 0 },
+              end: { line: 1, col: 19, byte: 18 },
+              filename: '',
+            }),
+          ])
+        })
+      })
     })
   })
 })

@@ -3,6 +3,9 @@ import react from 'eslint-plugin-react'
 import _import from 'eslint-plugin-import'
 import jest from 'eslint-plugin-jest'
 import typescriptEslint from '@typescript-eslint/eslint-plugin'
+import 'eslint-config-airbnb'
+import 'eslint-config-prettier'
+import 'eslint-plugin-jsx-a11y'
 // TODO: switch back to the upstream plugin once they fix https://github.com/Stuk/eslint-plugin-header/issues/57
 import header from '@tony.ganchev/eslint-plugin-header'
 import globals from 'globals'
@@ -174,23 +177,15 @@ export default [
       'no-shadow': ['off'],
       '@typescript-eslint/no-shadow': ['error'],
 
-      '@typescript-eslint/ban-types': [
-        'error',
-        {
-          extendDefaults: true,
-
-          types: {
-            '{}': false,
-            object: false,
-          },
-        },
-      ],
+      '@typescript-eslint/no-unsafe-function-type': ['error'],
+      '@typescript-eslint/no-empty-object-type': ['off'],
+      '@typescript-eslint/no-wrapper-object-types': ['off'],
 
       '@typescript-eslint/explicit-module-boundary-types': ['off'],
       '@typescript-eslint/return-await': ['error', 'in-try-catch'],
       '@typescript-eslint/no-floating-promises': ['error'],
 
-      '@typescript-eslint/no-misused-promises': ['error'],
+      '@typescript-eslint/no-misused-promises': 'error',
 
       'jest/valid-describe': ['off'],
 
@@ -226,8 +221,7 @@ export default [
         },
       ],
 
-      'no-unused-expressions': 'off',
-      '@typescript-eslint/no-unused-expressions': ['error'],
+      'no-unused-expressions': ['error'],
       '@typescript-eslint/await-thenable': ['error'],
     },
   },

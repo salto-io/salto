@@ -73,7 +73,14 @@ export const REFERENCES: definitions.ApiDefinitions<Options>['references'] = {
     ODataType: referenceUtils.neighborContextGetter({
       contextFieldName: ODATA_TYPE_FIELD_NACL_CASE,
       getLookUpName: async ({ ref }) => ref.elemID.name,
-      contextValueMapper: refType => entraConstants.SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME[refType],
+      contextValueMapper: odataFieldValue =>
+        entraConstants.SUPPORTED_DIRECTORY_OBJECTS_ODATA_TYPE_NAME_TO_TYPE_NAME[odataFieldValue],
+    }),
+    resourceAccessType: referenceUtils.neighborContextGetter({
+      contextFieldName: 'type',
+      getLookUpName: async ({ ref }) => ref.elemID.name,
+      // TODO SALTO-6933: Cover 'Scope' type
+      contextValueMapper: typeFieldValue => (typeFieldValue === 'Role' ? entraConstants.APP_ROLE_TYPE_NAME : undefined),
     }),
   },
 }

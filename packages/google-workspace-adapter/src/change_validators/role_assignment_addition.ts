@@ -34,7 +34,7 @@ const isNonSecurityGroup = async (
         group.value.labels,
         'cloudidentity_googleapis_com_groups_security@vvdv',
       )
-    } catch (e) {
+    } catch {
       log.error('Failed to resolve group reference %s for role assignment', groupReference.elemID.getFullName())
       return false
     }

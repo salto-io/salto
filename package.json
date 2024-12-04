@@ -9,9 +9,27 @@
     "typescript": "4.8.4"
   },
   "devDependencies": {
+    "@eslint/compat": "^1.1.0",
+    "@eslint/eslintrc": "^3.1.0",
+    "@eslint/js": "^9.6.0",
+    "@tony.ganchev/eslint-plugin-header": "^3.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.16.0",
+    "@typescript-eslint/parser": "^8.16.0",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "globals": "^15.8.0",
+    "jest-junit": "^16.0.0",
     "jsonc-parser": "^2.2.1",
+    "knip": "^5.37.1",
     "lerna": "^5.6.2",
-    "turbo": "^2.0.6"
+    "lodash": "^4.17.21",
+    "tmp": "^0.0.33",
+    "turbo": "^2.0.6",
+    "yargs": "^13.3.0"
   },
   "scripts": {
     "preinstall": "./build_utils/find_conflicting_versions.js",
@@ -23,6 +41,7 @@
     "lint-fix": "yarn workspaces foreach -vpAi -j 4 run lint-fix",
     "check-format": "yarn workspaces foreach -vpAi -j 4 run check-format",
     "format": "yarn workspaces foreach -vpAi -j 4 run format",
+    "knip": "knip",
     "build-ts": "./build_utils/turbo_run.sh build-ts",
     "build-all": "yarn workspaces foreach -vpAi -j 4 run build",
     "clean": "./build_utils/turbo_run.sh clean",

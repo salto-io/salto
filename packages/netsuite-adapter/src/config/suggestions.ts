@@ -25,8 +25,18 @@ import { emptyQueryParams, fullFetchConfig } from './config_creator'
 
 const DEPRECATED_CONFIGS_TO_REMOVE = [
   'fetch.skipResolvingAccountSpecificValuesToTypes',
+  'fetch.addAlias',
+  'fetch.addBundles',
+  'fetch.addImportantValues',
+  'fetch.addLockedCustomRecordTypes',
+  'fetch.forceFileCabinetExclude',
+  'fetch.calculateNewReferencesInSuiteScripts',
+  'fetch.useNewReferencesInSuiteScripts',
+  'fetch.resolveAccountSpecificValues',
   'suiteAppClient.maxRecordsPerSuiteQLTable',
   'useChangesDetection',
+  'withPartialDeletion',
+  'deployReferencedElements',
 ]
 
 export const STOP_MANAGING_ITEMS_MSG =

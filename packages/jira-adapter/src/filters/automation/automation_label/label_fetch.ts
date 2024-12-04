@@ -44,7 +44,7 @@ const createInstance = (values: Values, type: ObjectType, getElemIdFunc?: ElemId
  * We first use `/resources` endpoint to get the cloud id of the account.
  * Using the cloud id, we create the url to query the automation labels with
  */
-export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
+const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
   name: 'automationLabelFetchFilter',
   onFetch: async elements => {
     if (!fetchQuery.isTypeMatch(AUTOMATION_LABEL_TYPE)) {

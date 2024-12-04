@@ -167,3 +167,5 @@ export const invalidStringChar = (stringRange: SourceRange, errMsg: string): Par
 
 export const invalidElemIDType = (typeName: string, range: SourceRange): ParseError =>
   createError(range, 'Invalid type name', `"${typeName}" is invalid. Valid type names format is {adapter}.{type}`)
+
+export const unexpectedPromise = (range: SourceRange): ParseError => createError(range, 'Received unexpected promise')

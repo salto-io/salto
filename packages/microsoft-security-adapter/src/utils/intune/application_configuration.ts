@@ -56,7 +56,7 @@ export const parseApplicationConfigurationBinaryFields: <TContext = definitions.
           [ENCODED_SETTING_XML_FIELD_NAME]: parseField(value[ENCODED_SETTING_XML_FIELD_NAME], 'xml'),
         },
       }
-    } catch (e) {
+    } catch {
       log.error(
         'Failed to %s binary fields for type: %s',
         operation === 'fetch' ? 'decode' : 'encode',

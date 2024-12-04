@@ -66,7 +66,7 @@ const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = 
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
-export const API_VERSION = '61.0'
+export const API_VERSION = '62.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete call
@@ -148,6 +148,8 @@ const errorMessagesToRetry = [
   'down for maintenance',
   'REQUEST_RUNNING_TOO_LONG',
   'request exceeded the time limit for processing',
+  'INVALID_LOCATOR',
+  'FUNCTIONALITY_TEMPORARILY_UNAVAILABLE',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -252,6 +254,10 @@ const oauthConnection = (params: OauthConnectionParams): Connection => {
   })
 
   conn.on('refresh', accessToken => {
+    if (!_.isString(accessToken)) {
+      log.warn('Got a non string access token: %s', inspectValue(accessToken))
+      return
+    }
     log.debug('accessToken has been refreshed', {
       accessToken: toMD5(accessToken),
     })

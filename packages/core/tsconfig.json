@@ -8,13 +8,12 @@
   "include": ["src/**/*", "src/**/*.json", "test/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
-    { "path": "../adapter-utils" },
     { "path": "../adapter-components" },
-    { "path": "../aws-utils" },
+    { "path": "../adapter-utils" },
     { "path": "../confluence-adapter" },
     { "path": "../dag" },
     { "path": "../dummy-adapter" },
-    { "path": "../file" },
+    { "path": "../element-test-utils" },
     { "path": "../google-workspace-adapter" },
     { "path": "../intercom-adapter" },
     { "path": "../jamf-adapter" },
@@ -25,7 +24,7 @@
     { "path": "../microsoft-security-adapter" },
     { "path": "../netsuite-adapter" },
     { "path": "../okta-adapter" },
-    { "path": "../parser" },
+    { "path": "../pagerduty-adapter" },
     { "path": "../salesforce-adapter" },
     { "path": "../sap-adapter" },
     { "path": "../serviceplaceholder-adapter" },
@@ -33,8 +32,8 @@
     { "path": "../test-utils" },
     { "path": "../workato-adapter" },
     { "path": "../workspace" },
+    { "path": "../local-workspace" },
     { "path": "../zendesk-adapter" },
-    { "path": "../zuora-billing-adapter" },
-    { "path": "../pagerduty-adapter" }
+    { "path": "../zuora-billing-adapter" }
   ]
 }

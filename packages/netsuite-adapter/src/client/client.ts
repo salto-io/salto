@@ -121,7 +121,6 @@ const determineAccountType = (accountId: string, envType: EnvType): EnvType | 'T
 const logDecorator = decorators.wrapMethodWith(async ({ call, name }: decorators.OriginalCall): Promise<unknown> => {
   const desc = `client.${name}`
   try {
-    // eslint-disable-next-line @typescript-eslint/return-await
     return await log.timeDebug(call, desc)
   } catch (e) {
     log.error('failed to run Netsuite client command on: %o', e)
@@ -228,16 +227,9 @@ export default class NetsuiteClient {
     query: NetsuiteQuery,
     maxFileCabinetSizeInGB: number,
     extensionsToExclude: string[],
-    forceFileCabinetExclude: boolean,
   ): Promise<ImportFileCabinetResult> {
     if (this.suiteAppClient !== undefined) {
-      return importFileCabinet(
-        this.suiteAppClient,
-        query,
-        maxFileCabinetSizeInGB,
-        extensionsToExclude,
-        forceFileCabinetExclude,
-      )
+      return importFileCabinet(this.suiteAppClient, query, maxFileCabinetSizeInGB, extensionsToExclude)
     }
 
     return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)

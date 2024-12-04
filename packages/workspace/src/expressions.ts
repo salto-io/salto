@@ -306,12 +306,17 @@ export const resolve = (
 
       // Since fields technically reference their parent type with the .parent property
       // we need to make sure to resolve all field parents as well
-      const fieldParents = elementsToResolve.filter(isField).map(field => field.parent)
+      const fieldParents = _.uniqBy(
+        elementsToResolve.filter(isField).map(field => field.parent),
+        elem => elem.elemID.getFullName(),
+      )
 
       // We assume that if we got a field and its parent type in the same resolve call, the field's
       // parent will point to the same object type that we got to resolve, so we don't need to resolve
       // both.
-      const allElementsToResolve = _.uniqBy(elementsToResolve.concat(fieldParents), elem => elem.elemID.getFullName())
+      const elementIDsToResolve = new Set(elements.map(elem => elem.elemID.getFullName()))
+      const fieldParentsToResolve = fieldParents.filter(elem => !elementIDsToResolve.has(elem.elemID.getFullName()))
+      const allElementsToResolve = elementsToResolve.concat(fieldParentsToResolve)
 
       const resolvedElements = new Map(
         allElementsToResolve

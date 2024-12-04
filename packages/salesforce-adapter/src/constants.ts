@@ -8,7 +8,15 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ActionName, BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
+import {
+  ActionName,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ElemID,
+  ListType,
+  MapType,
+  ObjectType,
+} from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -154,8 +162,8 @@ export const CUSTOM_SETTINGS_TYPE = 'customSettingsType'
 export const LIST_CUSTOM_SETTINGS_TYPE = 'List'
 export const IS_ATTRIBUTE = 'isAttribute'
 export const FOLDER_CONTENT_TYPE = 'folderContentType'
-// must have the same name as INTERNAL_ID_FIELD
-export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
+// Must have the same name as INTERNAL_ID_FIELD
+export const INTERNAL_ID_ANNOTATION = `${INTERNAL_ID_FIELD}`
 export const HISTORY_TRACKED_FIELDS = 'historyTrackedFields'
 export const FEED_HISTORY_TRACKED_FIELDS = 'feedHistoryTrackedFields'
 
@@ -357,6 +365,7 @@ export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 export const ACTIVE_VERSION_NUMBER = 'activeVersionNumber'
 export const STATUS = 'status'
 export const ACTIVE = 'Active'
+export const INVALID_DRAFT = 'InvalidDraft'
 
 // Metadata types
 export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'
@@ -421,6 +430,7 @@ export const ESCALATION_RULES_TYPE = 'EscalationRules'
 export const ESCALATION_RULE_TYPE = 'EscalationRule'
 export const CUSTOM_PERMISSION_METADATA_TYPE = 'CustomPermission'
 export const EXTERNAL_DATA_SOURCE_METADATA_TYPE = 'ExternalDataSource'
+export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'
@@ -444,6 +454,12 @@ export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 export const PROFILE_AND_PERMISSION_SETS_BROKEN_PATHS = 'ProfilesAndPermissionSetsBrokenPaths'
 export const PATHS_FIELD = 'paths'
+export const FETCH_TARGETS = 'FetchTargets'
+export const TARGETS_FIELD = 'targets'
+export const CUSTOM_OBJECTS_FIELD = 'customObjects'
+export const CUSTOM_OBJECTS_LOOKUPS_FIELD = 'customObjectsLookups'
+
+export const ORDERED_MAP_PREFIX = 'OrderedMapOf'
 
 export const getTypePath = (name: string, isTopLevelType = true): string[] => [
   SALESFORCE,
@@ -470,6 +486,15 @@ export const ArtificialTypes = {
     },
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+  }),
+  [FETCH_TARGETS]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, FETCH_TARGETS),
+    isSettings: true,
+    path: getTypePath(FETCH_TARGETS),
+    fields: {
+      [CUSTOM_OBJECTS_FIELD]: { refType: new ListType(BuiltinTypes.STRING) },
+      [CUSTOM_OBJECTS_LOOKUPS_FIELD]: { refType: new MapType(new ListType(BuiltinTypes.STRING)) },
     },
   }),
 } as const

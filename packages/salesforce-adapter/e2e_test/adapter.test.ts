@@ -103,6 +103,7 @@ import {
 } from './setup'
 import { testHelpers } from './jest_environment'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { ORDERED_MAP_VALUES_FIELD } from '../src/filters/convert_maps'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -181,8 +182,10 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(lead.fields.CleanStatus.annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
 
         // Test standard picklist values from a standard value set
-        expect(lead.fields.LeadSource.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-          new ReferenceExpression(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadSource')),
+        expect(lead.fields.LeadSource.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toSatisfy(
+          ref =>
+            isReferenceExpression(ref) &&
+            ref.elemID.isEqual(new ElemID(constants.SALESFORCE, STANDARD_VALUE_SET, 'instance', 'LeadSource')),
         )
 
         // Test default value for checkbox
@@ -1092,11 +1095,21 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(2)
       }
 
+      const getValueSetValues = (annotations: Values): Values | undefined => {
+        const valueSet = annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
+        if (valueSet === undefined) {
+          return undefined
+        }
+        return _.isPlainObject(valueSet[ORDERED_MAP_VALUES_FIELD])
+          ? Object.values(valueSet[ORDERED_MAP_VALUES_FIELD])
+          : valueSet
+      }
+
       const testPicklist = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Picklist label')
         expect(annotations[constants.DESCRIPTION]).toBe('Picklist description')
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
-        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual([
+        expect(getValueSetValues(annotations)).toEqual([
           {
             [constants.CUSTOM_VALUE.FULL_NAME]: 'NEW',
             [constants.CUSTOM_VALUE.DEFAULT]: true,
@@ -1134,7 +1147,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.CUSTOM_VALUE.LABEL]: 'DO',
           },
         ]
-        expect(annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual(
+        expect(getValueSetValues(annotations)).toEqual(
           sorted ? _.sortBy(expectedValueSet, constants.CUSTOM_VALUE.FULL_NAME) : expectedValueSet,
         )
         const fieldDependency = annotations[constants.FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
@@ -1346,10 +1359,12 @@ describe('Salesforce adapter E2E with real account', () => {
           it('global picklist', () => {
             const field = fields[CUSTOM_FIELD_NAMES.GLOBAL_PICKLIST]
             verifyFieldFetch(field, testGlobalPicklist, Types.primitiveDataTypes.Picklist)
-            expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
-              new ReferenceExpression(
-                new ElemID(constants.SALESFORCE, naclCase(GLOBAL_VALUE_SET), 'instance', naclCase(gvsName)),
-              ),
+            expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toSatisfy(
+              ref =>
+                isReferenceExpression(ref) &&
+                ref.elemID.isEqual(
+                  new ElemID(constants.SALESFORCE, naclCase(GLOBAL_VALUE_SET), 'instance', naclCase(gvsName)),
+                ),
             )
           })
 

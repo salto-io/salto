@@ -448,9 +448,6 @@ const filterCreator: RemoteFilterCreator = ({
   name: 'dataAccountSpecificValues',
   remote: true,
   onFetch: async elements => {
-    if (config.fetch.resolveAccountSpecificValues === false) {
-      return
-    }
     const instances = elements.filter(isInstanceElement)
     const suiteQLTablesMap = _.keyBy(
       instances.filter(instance => instance.elemID.typeName === SUITEQL_TABLE),
@@ -497,9 +494,6 @@ const filterCreator: RemoteFilterCreator = ({
     addReferenceTypes(elements)
   },
   preDeploy: async changes => {
-    if (config.fetch.resolveAccountSpecificValues === false) {
-      return
-    }
     const relevantChangedInstances = changes
       .filter(isAdditionOrModificationChange)
       .flatMap(change => Object.values(change.data))

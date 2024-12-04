@@ -990,7 +990,8 @@ describe('SalesforceAdapter fetch', () => {
           2 /* field dependency & value settings */ +
           7 /* range restrictions */ +
           2 /* ChangedAtSingleton type & instance */ +
-          1 /* ProfilesAndPermissionSetsBrokenPaths */,
+          1 /* ProfilesAndPermissionSetsBrokenPaths */ +
+          2 /* FetchTargets */,
       )
 
       const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
@@ -1485,19 +1486,6 @@ describe('SalesforceAdapter fetch', () => {
       const flow2 = findElements(result, 'Flow', 'FlowInstance2').pop() as InstanceElement
       expect(flow2.value.listTest[0].field).toEqual('Field11')
       expect(flow2.value.listTest[0].editable).toBe(true)
-    })
-
-    it('should fetch settings instance', async () => {
-      mockMetadataType({ xmlName: 'Settings' }, { valueTypeFields: [] }, [
-        {
-          props: { fullName: 'Quote' },
-          values: { fullName: 'Quote' },
-        },
-      ])
-
-      await adapter.fetch(mockFetchOpts)
-
-      expect(connection.metadata.read).toHaveBeenCalledWith('QuoteSettings', ['Quote'])
     })
 
     it('should not fetch child metadata type', async () => {

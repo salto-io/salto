@@ -7,9 +7,10 @@
  */
 import _ from 'lodash'
 import {
+  fileNameFromNaclCase,
+  fileNameFromUniqueName,
   invertNaclCase,
   naclCase,
-  fileNameNaclCase,
   normalizeFilePathPart,
   pathNaclCase,
   prettifyName,
@@ -18,7 +19,7 @@ import {
 describe('naclCase utils', () => {
   const generateRandomChar = (): string => String.fromCharCode(Math.random() * 65535)
 
-  describe('naclCase func', () => {
+  describe(`${naclCase.name} func`, () => {
     it('should return empty string for undefined', () => {
       expect(naclCase(undefined)).toEqual('')
     })
@@ -88,7 +89,7 @@ describe('naclCase utils', () => {
       })
     })
   })
-  describe('invertNaclCase func', () => {
+  describe(`${invertNaclCase.name} func`, () => {
     it('should return empty string for undefined', () => {
       expect(invertNaclCase('')).toEqual('')
     })
@@ -115,7 +116,7 @@ describe('naclCase utils', () => {
     })
   })
 
-  describe('pathNaclCase func', () => {
+  describe(`${pathNaclCase.name} func`, () => {
     describe('Without naclCase separator', () => {
       const noSeparatorNames = ['lalala', 'Lead', 'LALA__Lead__c', 'NameWithNumber2']
       it('Should remain the same', () => {
@@ -144,19 +145,7 @@ describe('naclCase utils', () => {
     })
   })
 
-  describe('fileNameNaclCase func', () => {
-    it('should return empty string for empty input', () => {
-      expect(fileNameNaclCase('')).toEqual('')
-    })
-    it('should replace @ with . at the end of the input', () => {
-      expect(fileNameNaclCase('name@')).toEqual('name.')
-    })
-    it('should replace @ with . in the middle of the input', () => {
-      expect(fileNameNaclCase('name@name')).toEqual('name.name')
-    })
-  })
-
-  describe('normalizeStaticResourcePath func', () => {
+  describe(`${normalizeFilePathPart.name} func`, () => {
     describe('With a short path', () => {
       const shortPaths = ['lalala.txt', 'aבגדe.טקסט', 'noExtension']
       it('Should remain the same', () => {
@@ -199,7 +188,29 @@ describe('naclCase utils', () => {
       })
     })
   })
-  describe('prettifyName func', () => {
+
+  describe(`${fileNameFromNaclCase.name} func`, () => {
+    it('should return empty string for empty input', () => {
+      expect(fileNameFromNaclCase('')).toEqual('')
+    })
+    it('should replace @ with . at the end of the input', () => {
+      expect(fileNameFromNaclCase('name@')).toEqual('name.')
+    })
+    it('should replace @ with . in the middle of the input', () => {
+      expect(fileNameFromNaclCase('name@name')).toEqual('name.name')
+    })
+  })
+
+  describe(`${fileNameFromUniqueName.name} func`, () => {
+    it('should return empty string for empty input', () => {
+      expect(fileNameFromUniqueName('')).toEqual('')
+    })
+    it('should convert the input to nacl case and replace @ with . at the end', () => {
+      expect(fileNameFromUniqueName('Name Special Char')).toEqual('Name_Special_Char.s')
+    })
+  })
+
+  describe(`${prettifyName.name} func`, () => {
     it('should return if there is a space', () => {
       expect(prettifyName('prettify_camelCase_text@su')).toEqual('prettify camelCase_text')
     })

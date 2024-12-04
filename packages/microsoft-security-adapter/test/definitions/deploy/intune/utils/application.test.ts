@@ -99,7 +99,7 @@ describe('Intune application deploy utils', () => {
     })
   })
 
-  describe(`${omitApplicationRedundantFields.name}`, () => {
+  describe(omitApplicationRedundantFields.name, () => {
     const applicationValues = {
       id: 'id',
       displayName: 'displayName',

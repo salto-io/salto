@@ -55,7 +55,7 @@ const validateChildParentAnnotation = (
     ) {
       return createChildReferencesError(parentChange, childFullName)
     }
-  } catch (e) {
+  } catch {
     return createChildReferencesError(parentChange, childFullName)
   }
   return undefined

@@ -758,4 +758,22 @@ describe('Test Salto Expressions', () => {
       })
     })
   })
+
+  describe('when resolving split instances', () => {
+    let resolvedType: ObjectType
+    let resolvedInstances: InstanceElement[]
+    beforeEach(async () => {
+      const type = new ObjectType({ elemID: new ElemID('salto', 'type') })
+      const fragment1 = new InstanceElement('inst', new TypeReference(type.elemID), { a: 1 })
+      const fragment2 = new InstanceElement('inst', new TypeReference(type.elemID), { b: 1 })
+
+      const resolved = await resolve([type, fragment1, fragment2], createInMemoryElementSource([]))
+      ;[resolvedType, ...resolvedInstances] = resolved as [ObjectType, ...InstanceElement[]]
+    })
+    it('should resolve the type on all fragments', () => {
+      expect(resolvedInstances).toHaveLength(2)
+      expect(resolvedInstances[0].refType.type).toBe(resolvedType)
+      expect(resolvedInstances[1].refType.type).toBe(resolvedType)
+    })
+  })
 })

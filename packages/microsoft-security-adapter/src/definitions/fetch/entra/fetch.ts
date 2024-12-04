@@ -23,6 +23,7 @@ import { CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES } from '../../../constant
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 
 const {
+  SERVICE_BASE_URL,
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_TYPE_NAME,
   DELEGATED_PERMISSION_CLASSIFICATION_TYPE_NAME,
@@ -56,7 +57,6 @@ const {
   DOMAIN_NAME_REFERENCE_TYPE_NAME,
   DOMAIN_TYPE_NAME,
   PERMISSION_GRANT_POLICY_TYPE_NAME,
-  CROSS_TENANT_ACCESS_POLICY_TYPE_NAME,
   APP_ROLE_TYPE_NAME,
 } = entraConstants
 
@@ -68,6 +68,7 @@ const APP_ROLES_FIELD_CUSTOMIZATIONS = {
   },
 }
 
+// TODO SALTO-6996: Add service url to missing instances once we can use a custom function to generate it
 const graphV1Customizations: FetchCustomizations = {
   [GROUP_TYPE_NAME]: {
     requests: [
@@ -151,6 +152,10 @@ const graphV1Customizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_IAM/GroupDetailsMenuBlade/~/Overview/groupId/{id}',
+        },
       },
       fieldCustomizations: {
         ...ID_FIELD_TO_HIDE,
@@ -205,6 +210,10 @@ const graphV1Customizations: FetchCustomizations = {
       topLevel: {
         isTopLevel: true,
         singleton: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_IAM/GroupsManagementMenuBlade/~/Lifecycle/menuId/Overview',
+        },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -529,6 +538,10 @@ const graphV1Customizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_ConditionalAccess/AuthStrengths.ReactView',
+        },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -633,6 +646,10 @@ const graphV1Customizations: FetchCustomizations = {
         elemID: {
           parts: [{ fieldName: 'id' }],
         },
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_IAM/DomainDnsRecordsBlade/domainName/{id}',
+        },
       },
     },
   },
@@ -701,28 +718,6 @@ const graphV1Customizations: FetchCustomizations = {
       },
     },
   },
-  [CROSS_TENANT_ACCESS_POLICY_TYPE_NAME]: {
-    requests: [
-      {
-        endpoint: {
-          path: '/policies/crossTenantAccessPolicy',
-        },
-      },
-    ],
-    resource: {
-      directFetch: true,
-    },
-    element: {
-      topLevel: {
-        isTopLevel: true,
-        singleton: true,
-        elemID: {
-          parts: [{ fieldName: 'id' }],
-        },
-      },
-      fieldCustomizations: ID_FIELD_TO_HIDE,
-    },
-  },
 }
 
 const graphBetaCustomizations: FetchCustomizations = {
@@ -747,6 +742,10 @@ const graphBetaCustomizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_IAM/AdminUnitDetailsMenuBlade/~/AdminUnitPropertiesPreview/adminUnitId/{id}/adminUnitName/{displayName}',
+        },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -814,6 +813,10 @@ const graphBetaCustomizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_ConditionalAccess/PolicyBlade/policyId/{id}',
+        },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },
@@ -833,6 +836,10 @@ const graphBetaCustomizations: FetchCustomizations = {
     element: {
       topLevel: {
         isTopLevel: true,
+        serviceUrl: {
+          baseUrl: SERVICE_BASE_URL,
+          path: '/#view/Microsoft_AAD_ConditionalAccess/ConditionalAccessBlade/~/NamedLocations',
+        },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },

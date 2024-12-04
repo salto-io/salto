@@ -96,18 +96,14 @@ export type MetadataParams = {
 }
 
 const OPTIONAL_FEATURES = [
-  'skipAliases',
   'extendedCustomFieldInformation',
-  'importantValues',
   'hideTypesFolder',
   'metaTypes',
-  'improvedDataBrokenReferences',
-  'skipParsingXmlNumbers',
-  'logDiffsFromParsingXmlNumbers',
-  'extendTriggersMetadata',
   'picklistsAsMaps',
   'retrieveSettings',
   'genAiReferences',
+  'networkReferences',
+  'extendFetchTargets',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -116,6 +112,7 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'describeSObjects',
   'elementsUrls',
   'excludeNonRetrievedProfilesRelatedInstances',
+  'extendTriggersMetadata',
   'extraDependencies',
   'extraDependenciesV2',
   'fetchCustomObjectUsingRetrieveApi',
@@ -123,12 +120,17 @@ const DEPRECATED_OPTIONAL_FEATURES = [
   'flowCoordinates',
   'formulaDeps',
   'generateRefsInProfiles',
+  'importantValues',
+  'improvedDataBrokenReferences',
   'indexedEmailTemplateAttachments',
   'lightningPageFieldItemReference',
+  'logDiffsFromParsingXmlNumbers',
   'omitStandardFieldsNonDeployableValues',
   'profilePaths',
   'removeReferenceFromFilterItemToRecordType',
   'sharingRulesMaps',
+  'skipAliases',
+  'skipParsingXmlNumbers',
   'storeProfilesAndPermissionSetsBrokenPaths',
   'taskAndEventCustomFields',
   'toolingDepsOfCurrentNamespace',
@@ -178,6 +180,7 @@ export type ChangeValidatorName =
   | 'managedApexComponent'
   | 'orderedMaps'
   | 'layoutDuplicateFields'
+  | 'customApplications'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -431,12 +434,8 @@ export type ClientDeployConfig = Partial<{
   flsProfiles: string[]
 }>
 
-export enum RetryStrategyName {
-  'HttpError',
-  'HTTPOrNetworkError',
-  'NetworkError',
-}
-type RetryStrategy = keyof typeof RetryStrategyName
+export const RETRY_STRATEGY_NAMES = ['HttpError', 'HTTPOrNetworkError', 'NetworkError'] as const
+type RetryStrategy = (typeof RETRY_STRATEGY_NAMES)[number]
 export type ClientRetryConfig = Partial<{
   maxAttempts: number
   retryDelay: number
@@ -741,7 +740,7 @@ const clientRetryConfigType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: Object.keys(RetryStrategyName),
+          values: RETRY_STRATEGY_NAMES,
         }),
       },
     },
@@ -871,6 +870,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
     orderedMaps: { refType: BuiltinTypes.BOOLEAN },
     layoutDuplicateFields: { refType: BuiltinTypes.BOOLEAN },
+    customApplications: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -944,6 +944,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'DashboardFolder' },
               { metadataType: 'Document' },
               { metadataType: 'DocumentFolder' },
+              { metadataType: 'Profile' },
+              { metadataType: 'PermissionSet' },
+              { metadataType: 'MutingPermissionSet' },
+              { metadataType: 'PermissionSetGroup' },
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',

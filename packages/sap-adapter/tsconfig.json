@@ -11,7 +11,7 @@
     { "path": "../adapter-api" },
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
-    { "path": "../logging" },
-    { "path": "../test-utils" }
+    { "path": "../element-test-utils" },
+    { "path": "../logging" }
   ]
 }

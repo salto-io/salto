@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import 'jest-extended'
+import '@salto-io/jest-extended'
 import _ from 'lodash'
 import wu from 'wu'
 import {
@@ -3149,6 +3149,7 @@ salesforce.staticFile staticFileInstance {
         await expect(workspace.addAccount('salto', 'new;;')).rejects.toThrow(InvalidAccountNameError)
         await expect(workspace.addAccount('salto', 'new account')).rejects.toThrow(InvalidAccountNameError)
         await expect(workspace.addAccount('salto', 'new.')).rejects.toThrow(InvalidAccountNameError)
+        await expect(workspace.addAccount('salto', '1new')).rejects.toThrow(InvalidAccountNameError)
       })
 
       it('should persist', () => {
@@ -3305,115 +3306,6 @@ salesforce.staticFile staticFileInstance {
     it('should get creds partials', async () => {
       await workspace.accountCredentials(services)
       expect(credsSource.get).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe('references', () => {
-    const defFile = `
-      type salesforce.lead {
-
-      }
-    `
-
-    const usedAsInstType = `
-      salesforce.lead inst {
-        key = "value"
-      }
-    `
-
-    const usedAsField = `
-      type salesforce.leader {
-        salesforce.lead lead {
-          
-        }
-      }
-    `
-
-    const usedAsInnerFieldType = `
-    type salesforce.leaders {
-      "List<salesforce.lead>" lead {
-      }
-    }
-  `
-
-    const usedAsReference = `
-      type salesforce.stam {
-        annotations {
-          string key {
-          }
-        }
-        key = salesforce.lead
-      }
-    `
-
-    const usedAsNestedReference = `
-      type salesforce.stam2 {
-        annotations {
-          string key {
-          }
-        }
-        key = salesforce.lead.attr.key
-      }
-    `
-
-    const usedInUnmerged = `
-      type salesforce.unmerged {
-        annotations {
-          string key {
-          }
-        }
-        whatami = salesforce.lead.attr.key
-      }
-    `
-    const files = {
-      'defFile.nacl': defFile,
-      'usedAsInstType.nacl': usedAsInstType,
-      'usedAsField.nacl': usedAsField,
-      'usedAsInnerFieldType.nacl': usedAsInnerFieldType,
-      'usedAsReference.nacl': usedAsReference,
-      'usedAsNestedReference.nacl': usedAsNestedReference,
-      'unmerged.nacl': usedInUnmerged,
-    }
-
-    describe('getElementReferencedFiles', () => {
-      let workspace: Workspace
-      let referencedFiles: string[]
-      const naclFileStore = mockDirStore(undefined, undefined, files)
-
-      beforeAll(async () => {
-        workspace = await createWorkspace(naclFileStore)
-        referencedFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
-      })
-
-      it('should find files in which the id is used as an instance type', () => {
-        expect(referencedFiles).toContain('usedAsInstType.nacl')
-      })
-
-      it('should find files in which the id is used as an field type', () => {
-        expect(referencedFiles).toContain('usedAsField.nacl')
-      })
-
-      it('should find files in which the id is used as an inner field type', () => {
-        expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
-      })
-
-      it('should find files in which the id is used as reference', () => {
-        expect(referencedFiles).toContain('usedAsReference.nacl')
-      })
-
-      it('should find files in which the id is used as nested reference', () => {
-        expect(referencedFiles).toContain('usedAsNestedReference.nacl')
-      })
-
-      it('should find nested attr referenced', async () => {
-        const attrRefFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-        expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
-      })
-
-      it('should find referenced in values of with no matching field in the type', async () => {
-        const attrRefFiles = await workspace.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-        expect(attrRefFiles).toContain('unmerged.nacl')
-      })
     })
   })
 

@@ -70,12 +70,9 @@ const addBundleToRecords = (scriptIdToElem: Record<string, Element>, bundleInsta
   })
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'bundleIds',
   onFetch: async elements => {
-    if (config.fetch.addBundles === false) {
-      return
-    }
     const [bundleInstances, nonBundleElements] = _.partition(elements, isBundleInstance)
     const [existingBundles, missingBundles] = _.partition(
       bundleInstances,

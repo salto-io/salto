@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { definitions } from '@salto-io/adapter-components'
+import { concatAdjustFunctions, definitions } from '@salto-io/adapter-components'
 import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { EndpointPath, Options } from '../../types'
 import { GRAPH_BETA_PATH } from '../../requests/clients'
@@ -16,7 +16,7 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shar
 import { odataType } from '../../../utils'
 import { applicationConfiguration } from '../../../utils/intune'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
-import { application, deviceConfigurationSettings, platformScript } from './utils'
+import { application, deviceConfiguration, deviceConfigurationSettings, platformScript } from './utils'
 import { ASSIGNMENT_FIELD_CUSTOMIZATION } from './utils/group_assignments'
 
 const {
@@ -61,8 +61,11 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           // TODO SALTO-6483: We need to store the largeIcon as a static file, for now we omit it
-          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT],
-          adjust: odataType.transformOdataTypeField('fetch'),
+          omit: ['largeIcon', ASSIGNMENTS_ODATA_CONTEXT, 'rules'],
+          adjust: concatAdjustFunctions(
+            odataType.transformOdataTypeField('fetch'),
+            application.setApplicationScriptValueAsStaticFile,
+          ),
         },
       },
     ],
@@ -171,6 +174,7 @@ const graphBetaCustomizations: FetchCustomizations = {
         transformation: {
           ...DEFAULT_TRANSFORMATION,
           omit: ['version', 'supportsScopeTags', ASSIGNMENTS_ODATA_CONTEXT],
+          adjust: deviceConfiguration.extractPayloadToStaticFile,
         },
       },
     ],

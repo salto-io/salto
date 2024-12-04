@@ -12,18 +12,14 @@ type OptionalFeaturesDefaultValues = {
 }
 
 const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
-  skipAliases: false,
   extendedCustomFieldInformation: false,
-  importantValues: true,
   hideTypesFolder: true,
   metaTypes: false,
-  improvedDataBrokenReferences: true,
-  skipParsingXmlNumbers: true,
-  logDiffsFromParsingXmlNumbers: true,
-  extendTriggersMetadata: true,
-  picklistsAsMaps: false,
-  retrieveSettings: false,
-  genAiReferences: false,
+  picklistsAsMaps: true,
+  retrieveSettings: true,
+  genAiReferences: true,
+  networkReferences: false,
+  extendFetchTargets: true,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

@@ -23,7 +23,13 @@ import {
 } from '@salto-io/adapter-api'
 import FormData from 'form-data'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { getParent, getParents, fileNameNaclCase, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
+import {
+  getParent,
+  getParents,
+  fileNameFromNaclCase,
+  normalizeFilePathPart,
+  pathNaclCase,
+} from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
 import { getOktaError } from './deprecated_deployment'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
@@ -56,7 +62,7 @@ const getLogoContent = async (link: string, client: OktaClient): Promise<Buffer 
       return new Error('Received invalid response from Okta API for attachment content')
     }
     return content
-  } catch (e) {
+  } catch {
     return new Error('Failed to fetch attachment content from Okta API')
   }
 }
@@ -159,7 +165,7 @@ export const getLogo = async ({
   }
   // Use the full NaCL name (including suffix) to avoid naming collisions, but replace '@' with '.' to ensure file
   // names are valid across all operating systems.
-  const resourcePathName = `${normalizeFilePathPart(fileNameNaclCase(logoName))}.${contentType}`
+  const resourcePathName = `${normalizeFilePathPart(fileNameFromNaclCase(logoName))}.${contentType}`
   const logoId = extractIdFromUrl(link)
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(

@@ -35,7 +35,6 @@ export const createEmptyElementsSourceIndexes = (): ElementsSourceIndexes => ({
 })
 
 export const mockChangeValidatorParams = (): Parameters<NetsuiteChangeValidator>[1] => ({
-  deployReferencedElements: false,
   elementsSource: buildElementsSourceFromElements([]),
   config: {
     fetch: fullFetchConfig(),

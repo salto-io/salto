@@ -12,6 +12,8 @@ const { recursiveNestedTypeName } = fetchUtils.element
 
 const toEntraTypeName = (typeName: string): string => `Entra${typeName}`
 
+export const SERVICE_BASE_URL = 'https://entra.microsoft.com'
+
 /* Fields */
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
 export const APP_ROLES_FIELD_NAME = 'appRoles'
@@ -24,6 +26,7 @@ export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicy'
 export const IDENTIFIER_URIS_FIELD_NAME = 'identifierUris'
 export const MEMBERS_FIELD_NAME = 'members'
 export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications'
+export const REQUIRED_RESOURCE_ACCESS_FIELD_NAME = 'requiredResourceAccess'
 
 /* Type names */
 // Top level
@@ -37,7 +40,6 @@ export const CONDITIONAL_ACCESS_POLICY_TYPE_NAME = toEntraTypeName('ConditionalA
 export const CONDITIONAL_ACCESS_POLICY_NAMED_LOCATION_TYPE_NAME = toEntraTypeName(
   'ConditionalAccessPolicyNamedLocation',
 )
-export const CROSS_TENANT_ACCESS_POLICY_TYPE_NAME = toEntraTypeName('CrossTenantAccessPolicy')
 export const CUSTOM_SECURITY_ATTRIBUTE_DEFINITION_TYPE_NAME = toEntraTypeName('CustomSecurityAttributeDefinition')
 export const CUSTOM_SECURITY_ATTRIBUTE_SET_TYPE_NAME = toEntraTypeName('CustomSecurityAttributeSet')
 export const DOMAIN_TYPE_NAME = toEntraTypeName('Domain')

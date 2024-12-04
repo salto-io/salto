@@ -15,15 +15,15 @@ import {
   isInstanceElement,
   ObjectType,
   ReferenceExpression,
-  StaticFile,
   Values,
 } from '@salto-io/adapter-api'
 import { definitions } from '@salto-io/adapter-components'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, getParent } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import fetchMockReplies from './fetch_mock_replies.json'
 import { credentialsType, MicrosoftServicesToManage } from '../src/auth'
+import { validateStaticFile } from './utils'
 
 type MockReply = {
   url: string
@@ -86,7 +86,6 @@ describe('Microsoft Security adapter', () => {
           'EntraAuthenticationStrengthPolicy',
           'EntraConditionalAccessPolicy',
           'EntraConditionalAccessPolicyNamedLocation',
-          'EntraCrossTenantAccessPolicy',
           'EntraCustomSecurityAttributeDefinition',
           'EntraCustomSecurityAttributeDefinition__allowedValues',
           'EntraCustomSecurityAttributeSet',
@@ -119,6 +118,148 @@ describe('Microsoft Security adapter', () => {
       })
 
       describe('specific instances', () => {
+        describe('Entra', () => {
+          describe('applications', () => {
+            let entraApplications: InstanceElement[]
+            beforeEach(async () => {
+              entraApplications = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraApplication')
+            })
+
+            it('should create the correct instances for Entra applications', async () => {
+              expect(entraApplications).toHaveLength(2)
+
+              const entraApplicationNames = entraApplications.map(e => e.elemID.name)
+              expect(entraApplicationNames).toEqual(
+                expect.arrayContaining(['test_application@s', 'test_application_with_resource_ref@s']),
+              )
+            })
+
+            describe('required resource access', () => {
+              it('should prioritize referencing an app when it exists', async () => {
+                const applicationWithAppRoles = entraApplications.find(
+                  e => e.elemID.name === 'test_application_with_resource_ref@s',
+                )
+                expect(applicationWithAppRoles).toBeDefined()
+                const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                  .requiredResourceAccess
+                expect(requiredResourceAccessArr).toHaveLength(2)
+
+                const appResourceRef = requiredResourceAccessArr[0]
+
+                const resourceApp = appResourceRef.resourceAppId
+                expect(resourceApp).toBeInstanceOf(ReferenceExpression)
+                expect(resourceApp.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraApplication.instance.test_application@s',
+                )
+
+                const { resourceAccess } = appResourceRef
+                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraAppRole.instance.test_application__testAppRole_variation1@suuu',
+                )
+              })
+
+              it('should reference a service principal when the app does not exist', async () => {
+                const applicationWithAppRoles = entraApplications.find(
+                  e => e.elemID.name === 'test_application_with_resource_ref@s',
+                )
+                expect(applicationWithAppRoles).toBeDefined()
+                const requiredResourceAccessArr = (applicationWithAppRoles as InstanceElement).value
+                  .requiredResourceAccess
+                expect(requiredResourceAccessArr).toHaveLength(2)
+
+                const servicePrincipalResourceRef = requiredResourceAccessArr[1]
+
+                const resourceApp = servicePrincipalResourceRef.resourceAppId
+                expect(resourceApp).toBeInstanceOf(ReferenceExpression)
+                expect(resourceApp.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
+                )
+
+                const { resourceAccess } = servicePrincipalResourceRef
+                expect(resourceAccess).toHaveLength(1)
+                expect(resourceAccess[0].id).toBeInstanceOf(ReferenceExpression)
+                expect(resourceAccess[0].id.elemID.getFullName()).toEqual(
+                  'microsoft_security.EntraAppRole.instance.test_service_principal_2__testAppRole_test@sssuuu',
+                )
+              })
+            })
+          })
+
+          describe('app roles', () => {
+            let appRoleInstances: InstanceElement[]
+            beforeEach(async () => {
+              appRoleInstances = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'EntraAppRole')
+            })
+
+            it('should create the correct instances for Entra app roles', async () => {
+              expect(appRoleInstances).toHaveLength(3)
+
+              const appRoleNames = appRoleInstances.map(e => e.elemID.name)
+              expect(appRoleNames).toEqual(
+                expect.arrayContaining([
+                  'test_application__testAppRole_variation2@suuu',
+                  'test_application__testAppRole_variation1@suuu',
+                  'test_service_principal_2__testAppRole_test@sssuuu',
+                ]),
+              )
+            })
+
+            it('should include parent reference to the application', async () => {
+              const parentRefs = appRoleInstances.map(ar => getParent(ar))
+              expect(
+                parentRefs.every(
+                  p =>
+                    p?.elemID.getFullName() === 'microsoft_security.EntraApplication.instance.test_application@s' ||
+                    p?.elemID.getFullName() ===
+                      'microsoft_security.EntraServicePrincipal.instance.test_service_principal_2@s',
+                ),
+              ).toBeTruthy()
+            })
+          })
+
+          describe('service principals', () => {
+            let servicePrincipalInstances: InstanceElement[]
+            beforeEach(async () => {
+              servicePrincipalInstances = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraServicePrincipal')
+            })
+
+            it('should create the correct instances for Entra service principals', async () => {
+              expect(servicePrincipalInstances).toHaveLength(2)
+
+              const servicePrincipalNames = servicePrincipalInstances.map(e => e.elemID.name)
+              expect(servicePrincipalNames).toEqual(
+                expect.arrayContaining(['test_service_principal@s', 'test_service_principal_2@s']),
+              )
+            })
+
+            it('should reference the correct app when it exists', async () => {
+              const servicePrincipalWithAppRef = servicePrincipalInstances.find(
+                e => e.elemID.name === 'test_service_principal@s',
+              )
+              expect(servicePrincipalWithAppRef).toBeDefined()
+              const { appId: appIdRef } = (servicePrincipalWithAppRef as InstanceElement).value
+              expect(appIdRef).toBeInstanceOf(ReferenceExpression)
+              expect(appIdRef.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraApplication.instance.test_application@s',
+              )
+
+              const servicePrincipalWithoutAppRef = servicePrincipalInstances.find(
+                e => e.elemID.name === 'test_service_principal_2@s',
+              )
+              expect(servicePrincipalWithoutAppRef).toBeDefined()
+              const { appId: appIdString } = (servicePrincipalWithoutAppRef as InstanceElement).value
+              expect(appIdString).not.toBeInstanceOf(ReferenceExpression)
+              expect(appIdString).toEqual('b0d12345-ef57-41d3-a7f7-cb2dcd0ef7c8')
+            })
+          })
+        })
+
         describe('Intune', () => {
           describe('applications', () => {
             let intuneApplications: InstanceElement[]
@@ -129,7 +270,7 @@ describe('Microsoft Security adapter', () => {
             })
 
             it('should create the correct instances for Intune applications', async () => {
-              expect(intuneApplications).toHaveLength(6)
+              expect(intuneApplications).toHaveLength(10)
 
               const intuneApplicationNames = intuneApplications.map(e => e.elemID.name)
               expect(intuneApplicationNames).toEqual(
@@ -140,6 +281,10 @@ describe('Microsoft Security adapter', () => {
                   'managedIOSStoreApp_test',
                   'managedAndroidStoreApp_com_test2@uv',
                   'managedAndroidStoreApp_com_test@uv',
+                  'win32LobApp_test',
+                  'win32LobApp_test2',
+                  'win32LobApp_test3',
+                  'macOSPkgApp_test',
                 ]),
               )
             })
@@ -154,6 +299,9 @@ describe('Microsoft Security adapter', () => {
                   ['microsoft_security', 'Records', 'IntuneApplication', 'managedIOSStoreApp', 'test'],
                   ['microsoft_security', 'Records', 'IntuneApplication', 'managedAndroidStoreApp', 'com_test2'],
                   ['microsoft_security', 'Records', 'IntuneApplication', 'managedAndroidStoreApp', 'com_test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'win32LobApp', 'test'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'win32LobApp', 'test2'],
+                  ['microsoft_security', 'Records', 'IntuneApplication', 'win32LobApp', 'test3'],
                 ]),
               )
             })
@@ -192,7 +340,7 @@ describe('Microsoft Security adapter', () => {
               const applicationsWithoutAssignments = intuneApplications.filter(
                 e => e.elemID.name !== 'managedAndroidStoreApp_com_test@uv',
               )
-              expect(applicationsWithoutAssignments).toHaveLength(5)
+              expect(applicationsWithoutAssignments).toHaveLength(9)
               expect(applicationsWithoutAssignments.every(e => e.value.assignments?.length === 0)).toBeTruthy()
             })
 
@@ -210,6 +358,67 @@ describe('Microsoft Security adapter', () => {
                   'microsoft_security.IntuneScopeTag.instance.test_scope_tag@s',
                 ]),
               )
+            })
+
+            describe('win32LobApp', () => {
+              let win32LobAppWithScripts: InstanceElement
+              beforeEach(async () => {
+                const testApp = intuneApplications.find(e => e.elemID.name === 'win32LobApp_test')
+                expect(testApp).toBeDefined()
+                win32LobAppWithScripts = testApp as InstanceElement
+              })
+
+              it('should parse script content correctly for detectionRules field', async () => {
+                const { detectionRules } = win32LobAppWithScripts.value
+                expect(detectionRules).toHaveLength(1)
+                await validateStaticFile({
+                  value: detectionRules[0].scriptContent,
+                  expectedPath: 'microsoft_security/IntuneApplication/win32LobApp/test/detectionRules.ps1',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
+
+              it('should parse script content correctly for requirementRules field', async () => {
+                const { requirementRules } = win32LobAppWithScripts.value
+                expect(requirementRules).toHaveLength(1)
+                await validateStaticFile({
+                  value: requirementRules[0].scriptContent,
+                  expectedPath:
+                    'microsoft_security/IntuneApplication/win32LobApp/test/requirementRules_sample_requirement_script.uss.ps1',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
+
+              it('should omit the rules field', async () => {
+                expect(win32LobAppWithScripts.value.rules).toBeUndefined()
+              })
+            })
+
+            describe('macOSPkgApp', () => {
+              let macOSPkgAppWithScripts: InstanceElement
+              beforeEach(async () => {
+                const testApp = intuneApplications.find(e => e.elemID.name === 'macOSPkgApp_test')
+                expect(testApp).toBeDefined()
+                macOSPkgAppWithScripts = testApp as InstanceElement
+              })
+
+              it('should parse script content correctly for preInstallScript field', async () => {
+                const { preInstallScript } = macOSPkgAppWithScripts.value
+                await validateStaticFile({
+                  value: preInstallScript.scriptContent,
+                  expectedPath: 'microsoft_security/IntuneApplication/macOSPkgApp/test/preInstallScript.sh',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
+
+              it('should parse script content correctly for postInstallScript field', async () => {
+                const { postInstallScript } = macOSPkgAppWithScripts.value
+                await validateStaticFile({
+                  value: postInstallScript.scriptContent,
+                  expectedPath: 'microsoft_security/IntuneApplication/macOSPkgApp/test/postInstallScript.sh',
+                  expectedContent: 'echo "Hello, World!"',
+                })
+              })
             })
           })
 
@@ -400,11 +609,12 @@ describe('Microsoft Security adapter', () => {
             })
 
             it('should create the correct instances for Intune device configurations', async () => {
-              expect(intuneDeviceConfigurations).toHaveLength(4)
+              expect(intuneDeviceConfigurations).toHaveLength(5)
 
               const intuneDeviceConfigurationNames = intuneDeviceConfigurations.map(e => e.elemID.name)
               expect(intuneDeviceConfigurationNames).toEqual(
                 expect.arrayContaining([
+                  'test_custom_template@s',
                   'test_ios_email_configuration@s',
                   'test_wifi_configuration@s',
                   'test_windows_10_email_configuration@s',
@@ -431,7 +641,7 @@ describe('Microsoft Security adapter', () => {
               const intuneDeviceConfigurationWithoutAssignments = intuneDeviceConfigurations.filter(
                 e => e.elemID.name !== 'test_windows_health_monitoring@s',
               )
-              expect(intuneDeviceConfigurationWithoutAssignments).toHaveLength(3)
+              expect(intuneDeviceConfigurationWithoutAssignments).toHaveLength(4)
               expect(
                 intuneDeviceConfigurationWithoutAssignments.every(e => e.value.assignments?.length === 0),
               ).toBeTruthy()
@@ -448,6 +658,18 @@ describe('Microsoft Security adapter', () => {
               expect(roleScopeTagIds.map((s: ReferenceExpression) => s.elemID.getFullName())).toEqual([
                 'microsoft_security.IntuneScopeTag.instance.Default',
               ])
+            })
+
+            it('should convert payload field to a static file', async () => {
+              const intuneDeviceConfiguration = intuneDeviceConfigurations.find(
+                e => e.elemID.name === 'test_custom_template@s',
+              )
+              expect(intuneDeviceConfiguration).toBeDefined()
+              await validateStaticFile({
+                value: intuneDeviceConfiguration?.value.payload,
+                expectedPath: 'microsoft_security/IntuneDeviceConfiguration/test_custom_template.s/example.xml',
+                expectedContent: '<note>This is a test</note>',
+              })
             })
           })
 
@@ -620,16 +842,13 @@ describe('Microsoft Security adapter', () => {
                 'simpleSettingValue',
                 'value',
               ])
-              expect(linuxScript).toBeInstanceOf(StaticFile)
-              const scriptContent = await linuxScript.getContent()
-              expect(scriptContent).toBeInstanceOf(Buffer)
-              expect(scriptContent.toString()).toEqual(
-                '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
-              )
-              expect(linuxScript.encoding).toEqual('base64')
-              expect(linuxScript.filepath).toEqual(
-                'microsoft_security/IntunePlatformScriptLinux/test_linux_script.s/linux_customconfig_script.sh',
-              )
+              await validateStaticFile({
+                value: linuxScript,
+                expectedPath:
+                  'microsoft_security/IntunePlatformScriptLinux/test_linux_script.s/linux_customconfig_script.sh',
+                expectedContent:
+                  '#!/bin/bash\n\n# This is a simple bash script example.\n\n# Print a welcome message\necho "Welcome to the dummy bash script!"\n',
+              })
             })
 
             it('should include assignments field with references to the matching groups', async () => {
@@ -671,15 +890,12 @@ describe('Microsoft Security adapter', () => {
 
             it('should include scriptContent field as a static file', async () => {
               const platformScriptWindows = platformScriptsWindows[0]
-              const { scriptContent } = platformScriptWindows.value
-              expect(scriptContent).toBeInstanceOf(StaticFile)
-              const content = await scriptContent.getContent()
-              expect(content).toBeInstanceOf(Buffer)
-              expect(content.toString()).toEqual('echo "Hello, World!"')
-              expect(scriptContent.encoding).toEqual('base64')
-              expect(scriptContent.filepath).toEqual(
-                'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s/simple_powershell_script.ps1',
-              )
+              await validateStaticFile({
+                value: platformScriptWindows.value.scriptContent,
+                expectedPath:
+                  'microsoft_security/IntunePlatformScriptWindows/test_windows_platform_script.s/simple_powershell_script.ps1',
+                expectedContent: 'echo "Hello, World!"',
+              })
             })
 
             it('should include assignments field with references to the matching groups', async () => {
@@ -721,15 +937,12 @@ describe('Microsoft Security adapter', () => {
 
             it('should include scriptContent field as a static file', async () => {
               const platformScriptMacOS = platformScriptsMacOS[0]
-              const { scriptContent } = platformScriptMacOS.value
-              expect(scriptContent).toBeInstanceOf(StaticFile)
-              const content = await scriptContent.getContent()
-              expect(content).toBeInstanceOf(Buffer)
-              expect(content.toString()).toEqual('echo "Hello, World! This is macOS test"')
-              expect(scriptContent.encoding).toEqual('base64')
-              expect(scriptContent.filepath).toEqual(
-                'microsoft_security/IntunePlatformScriptMacOS/test_script_macOS.s/intune-macOS-script-example.sh',
-              )
+              await validateStaticFile({
+                value: platformScriptMacOS.value.scriptContent,
+                expectedPath:
+                  'microsoft_security/IntunePlatformScriptMacOS/test_script_macOS.s/intune_macOS_script_example.b.sh',
+                expectedContent: 'echo "Hello, World! This is macOS test"',
+              })
             })
 
             it('should include assignments field with references to the matching groups', async () => {
@@ -1002,7 +1215,6 @@ describe('Microsoft Security adapter', () => {
           'EntraAuthenticationStrengthPolicy',
           'EntraConditionalAccessPolicy',
           'EntraConditionalAccessPolicyNamedLocation',
-          'EntraCrossTenantAccessPolicy',
           'EntraCustomSecurityAttributeDefinition',
           'EntraCustomSecurityAttributeDefinition__allowedValues',
           'EntraCustomSecurityAttributeSet',

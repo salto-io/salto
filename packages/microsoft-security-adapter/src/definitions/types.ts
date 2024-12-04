@@ -11,7 +11,7 @@ import { UserConfig } from '../config'
 export type AdditionalAction = never
 export type ClientOptions = 'main'
 type PaginationOptions = 'cursor'
-export type ReferenceContextStrategies = 'ODataType'
+export type ReferenceContextStrategies = 'ODataType' | 'resourceAccessType'
 export type CustomReferenceSerializationStrategyName = 'appId' | 'bundleId' | 'packageId' | 'servicePrincipalAppId'
 export type CustomIndexField = CustomReferenceSerializationStrategyName
 

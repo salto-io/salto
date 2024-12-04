@@ -13,6 +13,7 @@ import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
 
 export const MAX_ENV_NAME_LEN = 100
+export const MAX_ACCOUNT_NAME_LENGTH = 100
 
 export class Errors extends types.Bean<
   Readonly<{
@@ -58,7 +59,10 @@ export class InvalidEnvNameError extends Error {
 export class InvalidAccountNameError extends Error {
   constructor(accountName: string) {
     super(
-      `${accountName} is an invalid account name.\nAccount names should include only alphanumeric characters or '_'`,
+      `The account name: "${accountName}" is invalid. Make sure your name meets the following rules:
+        - Contains only alphanumeric characters or '_'
+        - Cannot start with a digit
+        - Cannot exceed ${MAX_ACCOUNT_NAME_LENGTH} chars`,
     )
   }
 }

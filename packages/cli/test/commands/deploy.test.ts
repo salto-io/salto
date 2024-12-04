@@ -9,12 +9,14 @@ import { DeployResult, GroupProperties } from '@salto-io/core'
 import * as saltoCoreModule from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
-import { Artifact } from '@salto-io/adapter-api'
+import { Artifact, Change } from '@salto-io/adapter-api'
+import chalk from 'chalk'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
+import * as deployModule from '../../src/commands/deploy'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -36,8 +38,14 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
   deploy: jest.fn(),
   preview: jest.fn().mockImplementation((_workspace: Workspace, _accounts: string[]) => mockPreview()),
+  summarizeDeployChanges: jest
+    .fn()
+    .mockImplementation((requested: Change[], applied: Change[]) =>
+      jest.requireActual<typeof saltoCoreModule>('@salto-io/core').summarizeDeployChanges(requested, applied),
+    ),
 }))
 const mockedCore = jest.mocked(saltoCoreModule)
+const mockedDeploy = jest.mocked(deployModule)
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -65,6 +73,7 @@ describe('deploy command', () => {
     workspace = mocks.mockWorkspace({})
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
+    jest.spyOn(deployModule, 'shouldDeploy')
   })
 
   describe('when deploying changes', () => {
@@ -324,6 +333,8 @@ describe('deploy command', () => {
       // exit without attempting to deploy
       expect(output.stdout.content).not.toContain('Cancelling deploy')
       expect(output.stdout.content).not.toContain('Deployment succeeded')
+      expect(output.stdout.content).not.toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+      expect(mockedDeploy.shouldDeploy).not.toHaveBeenCalled()
     })
   })
 
@@ -426,6 +437,7 @@ describe('deploy command', () => {
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
         expect(output.stderr.content).toContain('Failed')
+        expect(mockedDeploy.shouldDeploy).not.toHaveBeenCalled()
       })
     })
   })
@@ -467,6 +479,7 @@ describe('deploy command', () => {
       expect(output.stdout.content).toMatch(/second subtext2/s)
       expect(output.stdout.content).toMatch(/third subtext2/s)
       expect(output.stdout.content).toMatch(/fourth subtext2/s)
+      expect(mockedDeploy.shouldDeploy).toHaveBeenCalled()
     }
     it('should print deploy actions when deploy is done', async () => {
       await testDeployActionsVisability(true)
@@ -490,6 +503,122 @@ describe('deploy command', () => {
         workspace,
       })
       expect(workspace.setCurrentEnv).toHaveBeenCalledWith(mocks.withEnvironmentParam, false)
+    })
+  })
+  describe('Post deployment summary', () => {
+    describe('when all elements deployed successfully', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          a: 'success',
+          b: 'success',
+        })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should not print legend or instances', async () => {
+        expect(output.stdout.content).not.toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+        expect(output.stdout.content).not.toContain(chalk.green('S'))
+        expect(output.stdout.content).not.toContain(chalk.yellow('P'))
+        expect(output.stdout.content).not.toContain(chalk.red('F'))
+      })
+      it('should print headline and success message', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.ALL_DEPLOYMENT_ELEMENTS_SUCCEEDED)
+      })
+    })
+    describe('when all elements failed deployment', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          instance_test: 'failure',
+          test_instance: 'failure',
+        })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all failed elements as failed', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.ALL_DEPLOYMENT_ELEMENTS_FAILED)
+      })
+      it('should not print elements', async () => {
+        expect(output.stdout.content).not.toContain(chalk.green('S'))
+        expect(output.stdout.content).not.toContain(chalk.yellow('P'))
+        expect(output.stdout.content).not.toContain(`${chalk.red('F')} instance_test`)
+        expect(output.stdout.content).not.toContain(`${chalk.red('F')} test_instance`)
+      })
+    })
+    describe('when deployment is partially successful', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          instance_test: 'failure',
+          test_instance: 'success',
+          tester_instance: 'partial-success',
+        })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all the elements and their deployment status', async () => {
+        expect(output.stdout.content).toContain(`${chalk.red('F')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.green('S')} test_instance`)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} tester_instance`)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+      })
+    })
+    describe('when all elements are partially successful', () => {
+      beforeEach(async () => {
+        mockedCore.summarizeDeployChanges.mockReturnValue({
+          instance_test: 'partial-success',
+          test_instance: 'partial-success',
+        })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+        await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: true,
+            checkOnly: false,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should print all elements as partially successful', async () => {
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+        expect(output.stdout.content).toContain(Prompts.DEPLOYMENT_SUMMARY_LEGEND)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} instance_test`)
+        expect(output.stdout.content).toContain(`${chalk.yellow('P')} test_instance`)
+      })
     })
   })
 })

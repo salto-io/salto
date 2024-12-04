@@ -653,7 +653,7 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch('Field reqStr is required but has no value')
-          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqStr'))
+          expect(errors[0].elemID).toEqual(extInst.elemID)
         })
 
         it('should return error when required object field is missing', async () => {
@@ -668,7 +668,7 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(`Field ${extType.fields.reqNested.name} is required but has no value`)
-          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested'))
+          expect(errors[0].elemID).toEqual(extInst.elemID)
         })
 
         it('should return error when lists elements missing required fields', async () => {
@@ -700,7 +700,7 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
-          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', '1', 'bool'))
+          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', '1'))
         })
 
         it('should return error when element inside a map is missing a required field', async () => {
@@ -725,7 +725,7 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
-          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', 'b', 'bool'))
+          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', 'b'))
         })
 
         it('should not return validation errors when the value is a legal reference', async () => {
@@ -1460,7 +1460,7 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
-        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
+        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested'))
       })
 
       it('should not return error on list/primitive mismatch if inner type is valid', async () => {
@@ -1509,7 +1509,7 @@ describe('Elements validation', () => {
         )
         expect(errors).toContainEqual(
           expect.objectContaining({
-            elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid1', 'bool'),
+            elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid1'),
             error: 'Field bool is required but has no value',
           }),
         )
@@ -1576,7 +1576,7 @@ describe('Elements validation', () => {
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
         expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', '1', 'bool'))
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', '1'))
       })
 
       it('should not return error list/object mismatch with non-empty valid array', async () => {
@@ -1701,7 +1701,7 @@ describe('Elements validation', () => {
           createInMemoryElementSource([extInst, nestedType, ...(await getFieldsAndAnnoTypes(nestedType))]),
         )
         expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
       })
 
       it('should return an error when primitive instead of list object item', async () => {
@@ -1713,7 +1713,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
         // TODO: The second error is a strange UX and we should not have it
-        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
+        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
       })
 
       it('should return error list item mismatch', async () => {

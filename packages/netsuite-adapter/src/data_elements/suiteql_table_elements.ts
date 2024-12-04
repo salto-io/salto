@@ -652,9 +652,6 @@ export const getSuiteQLTableElements = async (
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
 ): Promise<{ elements: TopLevelElement[] }> => {
-  if (config.fetch.resolveAccountSpecificValues === false) {
-    return { elements: [] }
-  }
   const suiteQLTableType = new ObjectType({
     elemID: new ElemID(NETSUITE, SUITEQL_TABLE),
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },

@@ -167,7 +167,7 @@ describe('dumpElementsToFolder', () => {
             )
             await expect(exists(parentXmlPath)).resolves.toBeTrue()
             const xmlContent = await readTextFile(parentXmlPath)
-            const values = xmlToValues(xmlContent, true)
+            const values = xmlToValues(xmlContent)
             rules = collections.array.makeArray(values.values.rules)
           })
           it('should add the instance to the parent XML', () => {
@@ -209,7 +209,7 @@ describe('dumpElementsToFolder', () => {
             )
             await expect(exists(parentXmlPath)).resolves.toBeTrue()
             const xmlContent = await readTextFile(parentXmlPath)
-            const values = xmlToValues(xmlContent, true)
+            const values = xmlToValues(xmlContent)
             rules = collections.array.makeArray(values.values.rules)
           })
           it('should remove the nested instance from the parent XML', () => {
@@ -399,8 +399,7 @@ describe('dumpElementsToFolder', () => {
       let dumpResult: DumpElementsResult
       beforeAll(async () => {
         const labelInstance = new InstanceElement('label1', mockTypes.CustomLabel, { fullName: 'label1' })
-        const settingsInstance = new InstanceElement(ElemID.CONFIG_NAME, mockTypes.TestSettings, { fullName: 'Test' })
-        changes = [toChange({ after: labelInstance }), toChange({ after: settingsInstance })]
+        changes = [toChange({ after: labelInstance })]
         dumpResult = await dumpElementsToFolder({
           baseDir: project.name(),
           changes,

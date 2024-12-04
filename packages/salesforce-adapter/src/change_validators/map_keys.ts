@@ -15,12 +15,9 @@ import {
   MapType,
   isObjectType,
   isAdditionOrModificationChange,
-  isInstanceChange,
 } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import { resolveValues } from '@salto-io/adapter-components'
-
-import { collections } from '@salto-io/lowerdash'
 import { defaultMapper, getMetadataTypeToFieldToMapDef } from '../filters/convert_maps'
 import {
   API_NAME_SEPARATOR,
@@ -28,11 +25,8 @@ import {
   PERMISSION_SET_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
 } from '../constants'
-import { isInstanceOfTypeChange } from '../filters/utils'
-import { apiName } from '../transformers/transformer'
+import { apiNameSync, isInstanceOfTypeSync } from '../filters/utils'
 import { FetchProfile } from '../types'
-
-const { awu } = collections.asynciterable
 
 const metadataTypesToValidate = [
   PROFILE_METADATA_TYPE,
@@ -42,20 +36,18 @@ const metadataTypesToValidate = [
 
 const isNum = (str: string | undefined): boolean => !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
 
-const getMapKeyErrors = async (after: InstanceElement, fetchProfile: FetchProfile): Promise<ChangeError[]> => {
+const getMapKeyErrors = (after: InstanceElement, fetchProfile: FetchProfile): ChangeError[] => {
   const errors: ChangeError[] = []
-  const type = await after.getType()
-  const typeName = await apiName(type)
+  const type = after.getTypeSync()
+  const typeName = apiNameSync(type) ?? ''
   const mapper = getMetadataTypeToFieldToMapDef(fetchProfile)[typeName]
-  await awu(Object.entries(after.value))
-    .filter(
-      async ([fieldName]) => isMapType(await type.fields[fieldName]?.getType()) && mapper[fieldName] !== undefined,
-    )
-    .forEach(async ([fieldName, fieldValues]) => {
-      const fieldType = (await type.fields[fieldName].getType()) as MapType
+  Object.entries(after.value)
+    .filter(([fieldName]) => isMapType(type.fields[fieldName]?.getTypeSync()) && mapper[fieldName] !== undefined)
+    .forEach(([fieldName, fieldValues]) => {
+      const fieldType = type.fields[fieldName].getTypeSync() as MapType
       const mapDef = mapper[fieldName]
-      const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
-        if (isObjectType(await field?.getType()) && path !== undefined) {
+      const findInvalidPaths: TransformFuncSync = ({ value, path, field }) => {
+        if (isObjectType(field?.getTypeSync()) && path !== undefined) {
           if (value[mapDef.key] === undefined) {
             errors.push({
               elemID: path,
@@ -87,7 +79,7 @@ const getMapKeyErrors = async (after: InstanceElement, fetchProfile: FetchProfil
         return value
       }
 
-      await transformValues({
+      transformValuesSync({
         values: fieldValues,
         type: fieldType,
         transformFunc: findInvalidPaths,
@@ -103,13 +95,14 @@ const getMapKeyErrors = async (after: InstanceElement, fetchProfile: FetchProfil
 const changeValidator =
   (getLookupNameFunc: GetLookupNameFunc, fetchProfile: FetchProfile): ChangeValidator =>
   async changes =>
-    awu(changes)
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
-      .flatMap(async change =>
-        getMapKeyErrors(await resolveValues(getChangeData(change), getLookupNameFunc), fetchProfile),
+    (
+      await Promise.all(
+        changes
+          .filter(isAdditionOrModificationChange)
+          .map(getChangeData)
+          .filter(isInstanceOfTypeSync(...metadataTypesToValidate))
+          .map(instance => resolveValues(instance, getLookupNameFunc)),
       )
-      .toArray()
+    ).flatMap(instance => getMapKeyErrors(instance, fetchProfile))
 
 export default changeValidator

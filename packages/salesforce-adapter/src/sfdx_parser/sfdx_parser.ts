@@ -181,6 +181,9 @@ export const loadElementsFromFolder: LoadElementsFromFolderFunc = async ({ baseD
         // this should make the filters not assume all elements are in the elements list
         // this is needed because, for example, we want to search for references to elements outside of the folder elements
         target: allTypes.map(metadataTypeSync),
+        optionalFeatures: {
+          retrieveSettings: true,
+        },
       },
     })
 

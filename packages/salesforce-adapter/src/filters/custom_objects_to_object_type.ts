@@ -89,7 +89,7 @@ import {
   CUSTOM_SETTINGS_META_TYPE,
   CUSTOM_FIELD_DEPLOYABLE_TYPES,
 } from '../constants'
-import { FilterContext, FilterCreator } from '../filter'
+import { FilterCreator } from '../filter'
 import {
   Types,
   isCustomObject,
@@ -484,14 +484,12 @@ export const createCustomTypeFromCustomObjectInstance = async ({
   metaType,
   fieldsToSkip = [],
   metadataType: objectMetadataType,
-  config,
 }: {
   instance: InstanceElement
   typesFromInstance?: TypesFromInstance
   metaType?: ObjectType
   fieldsToSkip?: string[]
   metadataType?: string
-  config: FilterContext
 }): Promise<ObjectType> => {
   const name = instance.value[INSTANCE_FULL_NAME_FIELD]
   const label = instance.value[LABEL]
@@ -522,16 +520,13 @@ export const createCustomTypeFromCustomObjectInstance = async ({
       object.fields[field.name] = field
     }
   })
-  if (!config.fetchProfile.isFeatureEnabled('skipAliases')) {
-    object.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(instance as MetadataInstanceElement)
-  }
+  object.annotations[CORE_ANNOTATIONS.ALIAS] = await getInstanceAlias(instance as MetadataInstanceElement)
   return object
 }
 
 const createFromInstance = async (
   instance: InstanceElement,
   typesFromInstance: TypesFromInstance,
-  config: FilterContext,
   metaTypes?: MetaTypes,
   fieldsToSkip?: string[],
 ): Promise<Element[]> => {
@@ -543,7 +538,6 @@ const createFromInstance = async (
         ? getMetaType(metaTypes, instance, hasCustomSuffix(instance.value[INSTANCE_FULL_NAME_FIELD]))
         : undefined,
     fieldsToSkip,
-    config,
   })
   const nestedMetadataInstances = await createNestedMetadataInstances(
     instance,
@@ -956,7 +950,7 @@ const filterCreator: FilterCreator = ({ config, client }) => {
       )
 
       await awu(customObjectInstances)
-        .flatMap(instance => createFromInstance(instance, typesFromInstance, config, metaTypes, fieldsToSkip))
+        .flatMap(instance => createFromInstance(instance, typesFromInstance, metaTypes, fieldsToSkip))
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))

@@ -122,6 +122,7 @@ export const createMockNaclFileSource = (
       },
       elements: () => Promise.resolve(naclFiles[filename] || []),
       buffer: '',
+      sourceMap: () => Promise.resolve(undefined),
     })),
     getElementNaclFiles: mockFunction<NaclFilesSource['getElementNaclFiles']>().mockImplementation(async elemID =>
       getElementNaclFiles(elemID),

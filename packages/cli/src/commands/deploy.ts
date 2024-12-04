@@ -119,7 +119,6 @@ const deployPlan = async (
   workspace: Workspace,
   cliTelemetry: CliTelemetry,
   output: CliOutput,
-  executingDeploy: boolean,
   checkOnly: boolean,
   accounts?: string[],
 ): Promise<DeployResult> => {
@@ -178,17 +177,13 @@ const deployPlan = async (
       }
     }
   }
-
-  await printStartDeploy(output, executingDeploy, checkOnly)
-  const result = executingDeploy
-    ? await deploy(
-        workspace,
-        actionPlan,
-        (item: PlanItem, step: ItemStatus, details?: string) => updateAction(item, step, details),
-        accounts,
-        checkOnly,
-      )
-    : { success: true, errors: [] }
+  const result = await deploy(
+    workspace,
+    actionPlan,
+    (item: PlanItem, step: ItemStatus, details?: string) => updateAction(item, step, details),
+    accounts,
+    checkOnly,
+  )
   const nonErroredActions = Object.keys(actions).filter(
     action => !result.errors.map(error => error !== undefined && error.groupId).includes(action),
   )
@@ -196,10 +191,8 @@ const deployPlan = async (
   outputLine(deployPhaseEpilogue(nonErroredActions.length, result.errors.length, checkOnly), output)
   log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.detailedMessage).join('\n')}`)
 
-  if (executingDeploy) {
-    cliTelemetry.actionsSuccess(nonErroredActions.length)
-    cliTelemetry.actionsFailure(result.errors.length)
-  }
+  cliTelemetry.actionsSuccess(nonErroredActions.length)
+  cliTelemetry.actionsFailure(result.errors.length)
 
   // Since we are done deploying, clear any leftover intervals
   Object.values(actions)
@@ -260,9 +253,12 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
   const executingDeploy = !dryRun && (force || (await shouldDeploy(actionPlan, checkOnly)))
-  const result = dryRun
-    ? { success: true, errors: [] }
-    : await deployPlan(actionPlan, workspace, cliTelemetry, output, executingDeploy, checkOnly, actualAccounts)
+  if (!dryRun) {
+    await printStartDeploy(output, executingDeploy, checkOnly)
+  }
+  const result = executingDeploy
+    ? await deployPlan(actionPlan, workspace, cliTelemetry, output, checkOnly, actualAccounts)
+    : { success: true, errors: [] }
   await writeArtifacts(result, input.artifactsDir)
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   // We don't flush the workspace for check-only deployments

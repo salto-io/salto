@@ -31,7 +31,7 @@ const hasEndDate = (value: unknown): boolean => _.isString(_.get(value, 'end_dat
 const isBusinessHoursScheduleHoliday = (value: unknown): value is BusinessHoursScheduleHoliday =>
   _.isObject(value) && hasStartDate(value) && hasEndDate(value)
 
-const isDateRangeWithinLimit = (instance: InstanceElement): boolean => {
+const isDateRangeExceedsLimit = (instance: InstanceElement): boolean => {
   const { value } = instance
   if (!isBusinessHoursScheduleHoliday(value)) {
     log.error(
@@ -57,7 +57,7 @@ export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = asyn
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === BUSINESS_HOUR_SCHEDULE_HOLIDAY)
-    .filter(isDateRangeWithinLimit)
+    .filter(isDateRangeExceedsLimit)
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',

@@ -13,7 +13,7 @@ import { AdapterFormat, Change, getChangeData, isField, isObjectType } from '@sa
 import { resolveChangeElement } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
 import { collections, objects, promises, values } from '@salto-io/lowerdash'
-import { allFilters, NESTED_METADATA_TYPES } from '../adapter'
+import { allFilters, NESTED_METADATA_TYPES, salesforceAdapterResolveValues } from '../adapter'
 import { CUSTOM_METADATA, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS, API_NAME } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
@@ -146,7 +146,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
   })
 
   const resolvedChanges = await awu(supportedMetadataChanges)
-    .map(change => resolveChangeElement(change, getLookUpName(fetchProfile)))
+    .map(change => resolveChangeElement(change, getLookUpName(fetchProfile), salesforceAdapterResolveValues))
     .toArray()
   const filterRunner = filter.filtersRunner(
     {

@@ -20,6 +20,7 @@ import {
   StaticFile,
   isModificationChange,
   DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -340,7 +341,12 @@ const buildMultiEnvSource = (
     data: { after: change.data.after },
     id: change.id,
     elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
-    baseChange: change.baseChange,
+    baseChange: change.id.isBaseID()
+      ? toChange({ after: change.data.after })
+      : // in this case `baseChange` will be incorrect because `change.baseChange.before` will contain
+        // the value of `change.data.before`, although the returned change is an addition change. this should
+        // never happen because we call `additionFromModificationChange` only on changes with a base id.
+        change.baseChange,
     path: change.path,
   })
 
@@ -355,7 +361,12 @@ const buildMultiEnvSource = (
             id: changes[0].id,
             elemIDs: { before: changes[0].id },
             path: changes[0].path,
-            baseChange: changes[0].baseChange,
+            baseChange: changes[0].id.isBaseID()
+              ? toChange({ before: changes[0].data.before })
+              : // in this case `baseChange` will be incorrect because `changes[0].baseChange.after` will contain
+                // the value of `changes[0].data.after`, although the returned change is a removal change. this should
+                // never happen because we call `removalChangeFromModificationChanges` only on changes with a base id.
+                changes[0].baseChange,
           },
         ]
       : []

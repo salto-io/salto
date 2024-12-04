@@ -52,8 +52,6 @@ import {
   isTypeReference,
   DetailedChangeWithBaseChange,
   toChange,
-  isFieldChange,
-  getChangeData,
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
@@ -740,9 +738,8 @@ export const filterOutHiddenChanges = async (
       return { visible: change, hidden: change }
     }
 
-    const baseElem = isFieldChange(change.baseChange)
-      ? getChangeData(change.baseChange).parent
-      : getChangeData(change.baseChange)
+    const { parent } = change.id.createTopLevelParentID()
+    const baseElem = change.id.isTopLevel() ? change.data.after : await state.get(parent)
 
     if (baseElem === undefined) {
       // If something is not in the state it cannot be hidden

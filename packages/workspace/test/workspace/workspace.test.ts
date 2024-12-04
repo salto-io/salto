@@ -138,24 +138,31 @@ const getElemMap = async (elements: ElementsSource): Promise<Record<string, Elem
 
 const addBaseChangeToDetailedChanges = async (
   elements: ElementsSource,
+  state: State,
   changes: DetailedChange[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
   const clonedChangesByBaseId = _.groupBy(changes, change => change.id.createBaseID().parent.getFullName())
 
   const res = await Promise.all(
     Object.entries(clonedChangesByBaseId).map(async ([key, detailedChanges]) => {
-      const element = await elements.get(ElemID.fromFullName(key))
-      if (isElement(element)) {
-        const wholeElementChange = detailedChanges.find(dc => dc.id.isEqual(element.elemID))
-        if (wholeElementChange !== undefined) {
-          return detailedChanges.map(dc => ({ ...dc, baseChange: dc as Change<Element> }))
+      const element = (await elements.get(ElemID.fromFullName(key))) ?? (await state.get(ElemID.fromFullName(key)))
+      if (!isElement(element)) {
+        const [baseChanges, nestedChanges] = _.partition(detailedChanges, dc => dc.id.isBaseID())
+        if (nestedChanges.length > 0) {
+          throw new Error(
+            `there are nested changes without an element: ${nestedChanges.map(dc => dc.id.getFullName())}`,
+          )
         }
-        const after = element.clone()
-        applyDetailedChanges(after, detailedChanges)
-        const baseChange = toChange({ before: element, after })
-        return detailedChanges.map(dc => ({ ...dc, baseChange }))
+        return baseChanges.map(dc => ({ ...dc, baseChange: dc as Change<Element> }))
       }
-      return detailedChanges.map(dc => ({ ...dc, baseChange: dc as Change<Element> }))
+      const wholeElementChange = detailedChanges.find(dc => dc.id.isEqual(element.elemID))
+      if (wholeElementChange !== undefined) {
+        return detailedChanges.map(dc => ({ ...dc, baseChange: dc as Change<Element> }))
+      }
+      const after = element.clone()
+      applyDetailedChanges(after, detailedChanges)
+      const baseChange = toChange({ before: element, after })
+      return detailedChanges.map(dc => ({ ...dc, baseChange }))
     }),
   )
 
@@ -1759,7 +1766,11 @@ salesforce.staticFile staticFileInstance {
 
       workspace = await createWorkspace(dirStore, state)
 
-      clonedChanges = await addBaseChangeToDetailedChanges(await workspace.elements(false), _.cloneDeep(changes))
+      clonedChanges = await addBaseChangeToDetailedChanges(
+        await workspace.elements(false),
+        workspace.state(),
+        _.cloneDeep(changes),
+      )
 
       updateNaclFileResults = await workspace.updateNaclFiles(clonedChanges)
       elemMap = await getElemMap(await workspace.elements(false))
@@ -3880,7 +3891,7 @@ salesforce.staticFile staticFileInstance {
       // which the entire flow is broken and errors are not created at all...
       expect((await workspace.errors()).validation).toHaveLength(2)
       resultNumber = await workspace.updateNaclFiles(
-        await addBaseChangeToDetailedChanges(await workspace.elements(false), changes),
+        await addBaseChangeToDetailedChanges(await workspace.elements(false), workspace.state(), changes),
       )
       validationErrs = (await workspace.errors()).validation
     })
@@ -4610,7 +4621,11 @@ describe('stateOnly update', () => {
         id: hiddenInstToRemove.elemID.createNestedID('key'),
       },
     ]
-    await ws.updateNaclFiles(await addBaseChangeToDetailedChanges(await ws.elements(false), changes), 'default', true)
+    await ws.updateNaclFiles(
+      await addBaseChangeToDetailedChanges(await ws.elements(false), ws.state(), changes),
+      'default',
+      true,
+    )
   })
 
   it('should update add changes for state only elements in the workspace cache', async () => {

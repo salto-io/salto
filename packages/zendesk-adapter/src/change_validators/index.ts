@@ -81,3 +81,4 @@ export { immutableTypeAndKeyForUserFieldsValidator } from './immutable_fields_in
 export { localeModificationValidator } from './locale'
 export { emptyAutomationOrderValidator } from './empty_automation_order'
 export { viewCustomStatusConditionsValidator } from './view_custom_status_conditions'
+export { defaultSupportAddressValidator } from './default_support_address'

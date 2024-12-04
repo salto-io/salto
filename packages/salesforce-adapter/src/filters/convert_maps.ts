@@ -416,7 +416,7 @@ const updateFieldTypes = async (
         if (isObjectType(deepInnerType)) {
           const keyFieldType = deepInnerType.fields[mapDef.key]
           if (!keyFieldType) {
-            log.error('could not find key field %s for field %s', mapDef.key, field.elemID.getFullName())
+            log.warn('could not find key field %s for field %s', mapDef.key, field.elemID.getFullName())
             return acc
           }
           keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true

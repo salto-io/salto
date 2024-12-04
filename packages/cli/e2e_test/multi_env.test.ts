@@ -9,7 +9,7 @@ import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesfo
 // eslint-disable-next-line no-restricted-imports
 import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import path from 'path'
-import { Plan } from '@salto-io/core'
+import { Plan, loadLocalWorkspace } from '@salto-io/core'
 import { parser } from '@salto-io/parser'
 import { logger } from '@salto-io/logging'
 import { strings, collections } from '@salto-io/lowerdash'
@@ -38,7 +38,6 @@ import {
   getNaclFileElements,
   cleanup as workspaceHelpersCleanup,
   getCurrentEnv,
-  loadValidWorkspace,
 } from './helpers/workspace'
 import './helpers/jest_matchers'
 import * as templates from './helpers/templates'
@@ -287,7 +286,7 @@ describe.each([
       let elementsWithHidden: readonly Element[]
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
-        const workspace = await loadValidWorkspace(baseDir)
+        const workspace = await loadLocalWorkspace({ path: baseDir })
         visibleElements = await awu(await (await workspace.elements(false)).getAll()).toArray()
         elementsWithHidden = await awu(await (await workspace.elements(true)).getAll()).toArray()
       })

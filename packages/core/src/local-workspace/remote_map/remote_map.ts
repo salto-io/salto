@@ -585,10 +585,14 @@ export const createRemoteMapCreator = (
       value,
     }: remoteMap.RemoteMapEntry<string>): Promise<remoteMap.RemoteMapEntry<T, K>> => {
       const cacheKey = keyToTempDBKey(key)
-      const cacheValue = await locationCache.get(cacheKey)
-      if (cacheValue !== undefined) {
-        statCounters.LocationCacheHit.inc()
-        return { key: key as K, value: cacheValue }
+      const cachePromise = locationCache.get(cacheKey)
+      if (cachePromise !== undefined) {
+        const cacheValue = await cachePromise
+        if (cacheValue !== undefined) {
+          statCounters.LocationCacheHit.inc()
+          return { key: key as K, value: cacheValue }
+        }
+        log.error('Unexpected cache miss for key %s', key)
       }
       statCounters.LocationCacheMiss.inc()
       const deserializedValue = await deserialize(value)
@@ -656,10 +660,12 @@ export const createRemoteMapCreator = (
       const cached = locationCache.get(keyToTempDBKey(key))
       if (cached !== undefined) {
         const value = await cached
+        statCounters.LocationCacheHit.inc()
         if (value !== undefined) {
           isNamespaceEmpty = false
-          statCounters.LocationCacheHit.inc()
           statCounters.RemoteMapHit.inc()
+        } else {
+          statCounters.RemoteMapMiss.inc()
         }
         return value
       }

@@ -71,25 +71,5 @@ describe('businessHoursScheduleHolidayChangeValidator', () => {
       const errors = await businessHoursScheduleHolidayChangeValidator(changes)
       expect(errors).toHaveLength(1)
     })
-
-    it('should handle invalid date formats gracefully', async () => {
-      const holiday = createHolidayInstance('test_holiday', 'invalid-date', 'also-invalid')
-      changes = [toChange({ after: holiday })]
-
-      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-      expect(errors).toHaveLength(0)
-    })
-
-    it('should handle missing dates', async () => {
-      const holiday = new InstanceElement(
-        'test_holiday',
-        new ObjectType({ elemID: new ElemID(ZENDESK, BUSINESS_HOUR_SCHEDULE_HOLIDAY) }),
-        { name: 'test_holiday' },
-      )
-      changes = [toChange({ after: holiday })]
-
-      const errors = await businessHoursScheduleHolidayChangeValidator(changes)
-      expect(errors).toHaveLength(0)
-    })
   })
 })

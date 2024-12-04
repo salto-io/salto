@@ -62,5 +62,5 @@ export const businessHoursScheduleHolidayChangeValidator: ChangeValidator = asyn
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Holiday schedule dates are outside the allowed range',
-      detailedMessage: `Holiday schedule '${instance.value.name || instance.elemID.name}' has invalid dates. The start date must not be earlier than two years before the current date ${new Date().toISOString().split('T')[0]}, and the end date must not be later than two years after the current date. Provided dates are from ${instance.value.start_date.split('T')[0]} to ${instance.value.end_date.split('T')[0]}.`,
+      detailedMessage: `Holiday schedule ‘${instance.value.name || instance.elemID.name}’ has invalid dates. The start and end dates must be within two years from ${new Date().toISOString().split('T')[0]}.`,
     }))

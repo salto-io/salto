@@ -28,7 +28,14 @@ import {
   isObjectType,
   TypeReference,
 } from '@salto-io/adapter-api'
-import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  filter,
+  GetLookupNameFunc,
+  inspectValue,
+  logDuration,
+  ResolveValuesFunc,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -479,6 +486,12 @@ export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
     : resolvedElement
 }
 
+export const resolveSalesforceChanges = (
+  changes: readonly Change[],
+  getLookupNameFunc: GetLookupNameFunc,
+): Promise<Change[]> =>
+  Promise.all(changes.map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues)))
+
 type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
   deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
   validate: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
@@ -724,9 +737,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const getLookupNameFunc = isDataDeployGroup
       ? getLookupNameForDataInstances(fetchProfile)
       : getLookUpName(fetchProfile)
-    const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues))
-      .toArray()
+    const resolvedChanges = await resolveSalesforceChanges(changeGroup.changes, getLookupNameFunc)
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner({ fetchProfile })

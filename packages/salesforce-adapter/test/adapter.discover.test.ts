@@ -990,7 +990,8 @@ describe('SalesforceAdapter fetch', () => {
           2 /* field dependency & value settings */ +
           7 /* range restrictions */ +
           2 /* ChangedAtSingleton type & instance */ +
-          1 /* ProfilesAndPermissionSetsBrokenPaths */,
+          1 /* ProfilesAndPermissionSetsBrokenPaths */ +
+          2 /* FetchTargets */,
       )
 
       const elementsMap = _.keyBy(result, element => element.elemID.getFullName())

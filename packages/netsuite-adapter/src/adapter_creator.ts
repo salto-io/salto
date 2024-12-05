@@ -117,7 +117,7 @@ const netsuiteCredentialsFromCredentials = (credsInstance: Readonly<InstanceElem
 }
 
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
-  const adapterConfig = netsuiteConfigFromConfig(context.config)
+  const { config: adapterConfig, userConfig } = netsuiteConfigFromConfig(context.config)
   const credentials = netsuiteCredentialsFromCredentials(context.credentials)
 
   const globalLimiter = new Bottleneck({
@@ -152,6 +152,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
     client: new NetsuiteClient(sdfClient, suiteAppClient),
     elementsSource: context.elementsSource,
     config: adapterConfig,
+    userConfig,
     getElemIdFunc: context.getElemIdFunc,
   })
 }

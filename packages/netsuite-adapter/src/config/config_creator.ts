@@ -15,6 +15,8 @@ import { fileCabinetTypesNames } from '../types/file_cabinet_types'
 import {
   ClientConfig,
   CriteriaQuery,
+  CONFIG,
+  CLIENT_CONFIG,
   FETCH_PARAMS,
   FetchParams,
   FetchTypeQueryParams,
@@ -167,10 +169,21 @@ const updatedFetchConfig = (config: NetsuiteConfig): FetchParams => ({
   exclude: updatedFetchExclude(config),
 })
 
+const updateClientConfig = (config: NetsuiteConfig): ClientConfig | undefined => {
+  if (config.fetchTarget !== undefined && config.client?.fetchAllTypesAtOnce) {
+    log.warn(
+      `${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`,
+    )
+    return { ...config.client, fetchAllTypesAtOnce: false }
+  }
+  return config.client
+}
+
 const updatedConfig = (config: NetsuiteConfig): NetsuiteConfig => {
   log.debug('user netsuite adapter config: %o', loggableConfig(config))
   const updated: NetsuiteConfig = {
     ...config,
+    client: updateClientConfig(config),
     fetchTarget: updatedFetchTarget(config),
     fetch: updatedFetchConfig(config),
   }
@@ -197,12 +210,18 @@ export const instanceLimiterCreator =
     return maxInstancesOptions.every(limit => instanceCount > limit)
   }
 
-export const netsuiteConfigFromConfig = (configInstance: Readonly<InstanceElement> | undefined): NetsuiteConfig => {
+export const netsuiteConfigFromConfig = (
+  configInstance: Readonly<InstanceElement> | undefined,
+): { config: NetsuiteConfig; userConfig: NetsuiteConfig } => {
   if (!configInstance) {
     log.warn('missing config instance - using netsuite adapter config with full fetch')
-    return { fetch: fullFetchConfig() }
+    return {
+      config: { fetch: fullFetchConfig() },
+      userConfig: { fetch: fullFetchConfig() },
+    }
   }
-  const { value: config } = configInstance
-  validateConfig(config)
-  return updatedConfig(config)
+  const { value: userConfig } = configInstance
+  validateConfig(userConfig)
+  const config = updatedConfig(userConfig)
+  return { config, userConfig }
 }

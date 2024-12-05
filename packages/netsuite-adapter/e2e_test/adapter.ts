@@ -63,6 +63,7 @@ export const realAdapter = (
     client,
     elementsSource: buildElementsSourceFromElements(elements),
     config: config ?? { fetch: fullFetchConfig() },
+    userConfig: config ?? { fetch: fullFetchConfig() },
     ...(adapterParams || { getElemIdFunc: mockGetElemIdFunc }),
   })
   return { client, adapter }

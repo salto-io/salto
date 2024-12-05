@@ -79,11 +79,17 @@ describe('adjust configuration profile', () => {
   describe('maskPayloadsPassword', () => {
     it('should mask passwords within payloads', async () => {
       const value = {
-        general: { payloads: '<?xml version="1.0" encoding="UTF-8"?><plist version="1"><dict><key>Password</key><string>1234</string></dict></plist>' },
+        general: {
+          payloads:
+            '<?xml version="1.0" encoding="UTF-8"?><plist version="1"><dict><key>Password</key><string>1234</string></dict></plist>',
+        },
       }
       await expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).resolves.toEqual({
         value: {
-          general: { payloads: '<?xml version="1.0" encoding="UTF-8"?><plist version="1"><dict><key>Password</key><string>**MASKED_PASSWORD**</string></dict></plist>' },
+          general: {
+            payloads:
+              '<?xml version="1.0" encoding="UTF-8"?><plist version="1"><dict><key>Password</key><string>**MASKED_PASSWORD**</string></dict></plist>',
+          },
         },
       })
     })

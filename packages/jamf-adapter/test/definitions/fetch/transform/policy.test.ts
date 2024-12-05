@@ -70,10 +70,7 @@ describe('adjust policy', () => {
       const value = {
         a: 'a',
         general: {},
-        scripts: [
-          { parameter4: 'yay' },
-          { parameter5: 'client_secret=823463286532896589' },
-        ],
+        scripts: [{ parameter4: 'yay' }, { parameter5: 'client_secret=823463286532896589' }],
         b: 'b',
       }
       await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({

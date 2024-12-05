@@ -14,7 +14,7 @@
     "dist/src",
     "dist/index.*"
   ],
-  "types": "dist/src/index.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "../../build_utils/turbo_run.sh build-ts ; ../../build_utils/turbo_run.sh lint",
     "test": "jest",

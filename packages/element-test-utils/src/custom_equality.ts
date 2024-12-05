@@ -14,3 +14,5 @@ export const isEqualElemID: Tester = function isEqualElemID(a, b) {
   }
   return undefined
 }
+
+export const allEqualityTesters = [isEqualElemID]

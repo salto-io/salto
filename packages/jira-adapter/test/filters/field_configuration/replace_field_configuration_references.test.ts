@@ -26,7 +26,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
 
   beforeEach(async () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    config.fetch.splitFieldConfiguration = false
 
     fieldConfigItemType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONFIGURATION_ITEM_TYPE_NAME),

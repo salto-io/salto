@@ -63,8 +63,6 @@ import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
 import issueTypeFilter from './filters/issue_type'
 import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
-import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
-import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
 import missingFieldDescriptionsFilter from './filters/field_configuration/missing_field_descriptions'
 import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
 import fieldConfigurationDeployment from './filters/field_configuration/field_configuration_deployment'
@@ -315,7 +313,6 @@ export const DEFAULT_FILTERS = [
   issueTypeScreenSchemeFilter,
   issueTypeHierarchyFilter,
   fieldConfigurationFilter,
-  fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
@@ -343,7 +340,6 @@ export const DEFAULT_FILTERS = [
   requestTypelayoutsToValuesFilter,
   projectFieldContextOrder,
   fieldContextOptionsSplitFilter,
-  fieldConfigurationSplitFilter,
   fieldConfigurationDeployment,
   // Must run after fieldConfigurationSplitFilter
   fieldConfigurationDependenciesFilter,

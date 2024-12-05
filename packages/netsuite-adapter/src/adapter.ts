@@ -222,7 +222,7 @@ export interface NetsuiteAdapterParams {
   // config to use in the adapter
   config: NetsuiteConfig
   // config that is determined by the user
-  userConfig: NetsuiteConfig
+  originalConfig: NetsuiteConfig
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {
@@ -232,7 +232,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly filePathRegexSkipList: string[]
   private readonly additionalDependencies: AdditionalDependencies
   private readonly config: NetsuiteConfig
-  private readonly userConfig: NetsuiteConfig
+  private readonly originalConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
   private fixElementsFunc: FixElementsFunc
   private readonly fetchInclude: QueryParams
@@ -264,14 +264,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filePathRegexSkipList = [],
     getElemIdFunc,
     config,
-    userConfig,
+    originalConfig,
   }: NetsuiteAdapterParams) {
     this.client = client
     this.elementsSource = elementsSource
     this.typesToSkip = typesToSkip.concat(makeArray(config.typesToSkip))
     this.filePathRegexSkipList = filePathRegexSkipList.concat(makeArray(config.filePathRegexSkipList))
     this.config = config
-    this.userConfig = userConfig
+    this.originalConfig = originalConfig
     this.getElemIdFunc = getElemIdFunc
     this.fetchInclude = config.fetch.include
     this.fetchExclude = config.fetch.exclude
@@ -555,8 +555,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       isPartial,
     )
 
-    // we use here `userConfig` because it doesn't include changes that were done to `config` in `netsuiteConfigFromConfig`
-    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
+    // we use here `originalConfig` because it doesn't include changes that were done to `config` in `netsuiteConfigFromConfig`
+    const updatedConfig = getConfigFromConfigChanges(failures, this.originalConfig)
 
     const partialFetchData = setPartialFetchData(isPartial, deletedElements)
 

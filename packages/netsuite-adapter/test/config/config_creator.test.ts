@@ -29,8 +29,8 @@ describe('netsuite config creator', () => {
 
   const netsuiteConfigFromConfig = (configInstance: Readonly<InstanceElement> | undefined): NetsuiteConfig => {
     const clonedConfig = configInstance?.clone()
-    const { config: adapterConfig, userConfig } = getConfig(configInstance)
-    expect(userConfig).toEqual(clonedConfig?.value ?? { fetch: fullFetchConfig() })
+    const { config: adapterConfig, originalConfig } = getConfig(configInstance)
+    expect(originalConfig).toEqual(clonedConfig?.value ?? { fetch: fullFetchConfig() })
     return adapterConfig
   }
 

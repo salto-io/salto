@@ -212,16 +212,16 @@ export const instanceLimiterCreator =
 
 export const netsuiteConfigFromConfig = (
   configInstance: Readonly<InstanceElement> | undefined,
-): { config: NetsuiteConfig; userConfig: NetsuiteConfig } => {
+): { config: NetsuiteConfig; originalConfig: NetsuiteConfig } => {
   if (!configInstance) {
     log.warn('missing config instance - using netsuite adapter config with full fetch')
     return {
       config: { fetch: fullFetchConfig() },
-      userConfig: { fetch: fullFetchConfig() },
+      originalConfig: { fetch: fullFetchConfig() },
     }
   }
-  const { value: userConfig } = configInstance
-  validateConfig(userConfig)
-  const config = updatedConfig(userConfig)
-  return { config, userConfig }
+  const { value: originalConfig } = configInstance
+  validateConfig(originalConfig)
+  const config = updatedConfig(originalConfig)
+  return { config, originalConfig }
 }

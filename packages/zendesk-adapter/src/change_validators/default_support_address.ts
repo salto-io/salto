@@ -14,7 +14,6 @@ import {
   isAdditionOrModificationChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { SUPPORT_ADDRESS_TYPE_NAME } from '../constants'
 
 const createDefaultSupportAddressError = (id: ElemID): ChangeError => ({
@@ -38,7 +37,6 @@ export const defaultSupportAddressValidator: ChangeValidator = async changes =>
       if (!forwardingValue || forwardingValue === 'verified') {
         return false
       }
-      const defaultValue = instance.value.default
-      return defaultValue ? defaultValue : false
+      return instance.value.default
     })
     .map(instance => createDefaultSupportAddressError(instance.elemID))

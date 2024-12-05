@@ -861,6 +861,8 @@ describe('isolated routing', () => {
     primarySrcObj.annotate({ boolean: true })
     const secSrcObj = envObj.clone()
     secSrcObj.annotate({ boolean: false })
+    const commonSrcUpdated = commonObj.clone()
+    commonSrcUpdated.annotate({ boolean: undefined })
     const specificChange: DetailedChangeWithBaseChange = {
       action: 'modify',
       data: { before: false, after: true },
@@ -886,7 +888,7 @@ describe('isolated routing', () => {
       action: 'remove',
       data: { before: specificChange.data.before },
       id: specificChange.id,
-      baseChange: specificChange.baseChange,
+      baseChange: toChange({ before: commonObj, after: commonSrcUpdated }),
       path: ['test', 'path'],
     })
     expect(routedChanges.envSources?.[secSrcName][0]).toEqual({
@@ -1038,11 +1040,6 @@ describe('isolated routing', () => {
     const commonChange = routedChanges.commonSource && routedChanges.commonSource[0]
     const expectedCommonAfter = new InstanceElement('commonInst', commonObj, {
       commonField: 'commonField',
-      listField: [
-        {
-          str2: 'STR_2',
-        },
-      ],
     })
     expect(commonChange).toEqual({
       action: 'remove',

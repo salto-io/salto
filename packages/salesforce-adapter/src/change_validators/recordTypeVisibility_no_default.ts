@@ -6,12 +6,21 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ChangeError, ChangeValidator, ElemID, getChangeIfInstanceChange, InstanceElement } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  ChangeValidator,
+  ElemID,
+  getChangeIfInstanceChange,
+  InstanceElement,
+  Value,
+} from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { PROFILE_METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
+
+type fieldsFlags = { noDefaultNoVisibleFlag: boolean; oneDefaultIsVisibleFlag: boolean }
 
 const TYPES_WITH_RECORD_TYPE_VISIBILITY = new Set([PROFILE_METADATA_TYPE])
 
@@ -22,6 +31,57 @@ const createNoDefaultError = (id: ElemID, recordTypeVisibility: string): ChangeE
   detailedMessage: `Must have one field that is set as default and visible, or no default fields and no visible fields, under ${id.getFullName()}.${recordTypeVisibility}`,
 })
 
+const getRecEntryFields = (entry: [string, unknown]): Value | undefined => {
+  if (entry.length < 2) {
+    return undefined
+  }
+  return entry[1] ?? undefined
+}
+
+const getKeys = (entryFields: Value | undefined): string[] | undefined => {
+  if (entryFields) {
+    return Object.keys(entryFields)
+  }
+  return undefined
+}
+
+/*
+ * this function checks the relevant fields if they're valid
+ * valid option 1: no default field is true and no visible field is true (marked initially as true [valid] in res[0], and changed to false [invalid] in case of default or visible field being true)
+ * valid option 2: there is exactly one element with default field as true and it's visible field is also true (marked initially as false [invalid] in res[1], and changed to true [valid] in case one element's default and visible fields are true)
+ * NOTICE: although it is not allowed to have more than one element with default field set to true, this CV doesn't check for this case because it is caught in the 'multiple_defaults' CV
+ */
+const isValidRecord = (records: (Value | undefined)[], fieldsToCheck: (string[] | undefined)[]): boolean[] =>
+  records.map((val, index) => {
+    if (val) {
+      if (fieldsToCheck[index] === undefined) {
+        return true
+      }
+      const ans = fieldsToCheck[index]?.reduce<fieldsFlags>(
+        (res, curr) => {
+          if (!res.noDefaultNoVisibleFlag && res.oneDefaultIsVisibleFlag) {
+            return res
+          }
+          const noDefaultNoVisible = res.noDefaultNoVisibleFlag
+            ? !_.get(_.get(val, curr), 'default') && !_.get(_.get(val, curr), 'visible')
+            : res.noDefaultNoVisibleFlag
+          const oneDefaultIsVisible = res.oneDefaultIsVisibleFlag
+            ? res.oneDefaultIsVisibleFlag
+            : _.get(_.get(val, curr), 'default') && _.get(_.get(val, curr), 'visible')
+          return { noDefaultNoVisibleFlag: noDefaultNoVisible, oneDefaultIsVisibleFlag: oneDefaultIsVisible }
+        },
+        { noDefaultNoVisibleFlag: true, oneDefaultIsVisibleFlag: false },
+      )
+      if (ans === undefined) {
+        return true
+      }
+      const noDefaultNoVisible = ans.noDefaultNoVisibleFlag ?? true
+      const oneDefaultIsVisible = ans.oneDefaultIsVisibleFlag ?? true
+      return noDefaultNoVisible || oneDefaultIsVisible
+    }
+    return true
+  })
+
 const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | undefined): Promise<ChangeError[]> => {
   const record = change?.value?.recordTypeVisibilities
   if (!record) {
@@ -31,69 +91,13 @@ const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | u
   if (recordEntries.length === 0) {
     return []
   }
-  const recordsOnly = recordEntries
-    .map(b => {
-      if (b.length < 2) {
-        return undefined
-      }
-      return b[1]
-    })
-    .filter(a => a !== undefined)
+  const recordsOnly = recordEntries.map(getRecEntryFields).filter(a => a !== undefined)
   if (!recordsOnly) {
     return []
   }
-  const elementsToCheck = recordsOnly
-    .map(a => {
-      if (a) {
-        return Object.keys(a)
-      } else {
-        return undefined
-      }
-    })
-    .filter(a => a !== undefined)
-  if (
-    !recordsOnly ||
-    recordsOnly.length < 1 ||
-    recordsOnly[0] === null ||
-    recordsOnly[0] === undefined ||
-    elementsToCheck[0] === undefined
-  ) {
-    return []
-  }
-
-  const changeErrors = recordsOnly.map((val, index) => {
-    if (val) {
-      if (!record) {
-        return false
-      }
-      if (elementsToCheck[index] === undefined) {
-        return true
-      }
-      const ans = elementsToCheck[index]?.reduce<Boolean[]>(
-        (res, curr) => {
-          if (res[0] === false && res[1] === true) {
-            return res
-          }
-          const noDefaultNoVisible = res[0]
-            ? !_.get(_.get(val, curr), 'default') && !_.get(_.get(val, curr), 'visible')
-            : res[0]
-          const oneDefaultIsVisible = res[1]
-            ? res[1]
-            : _.get(_.get(val, curr), 'default') && _.get(_.get(val, curr), 'visible')
-          return [noDefaultNoVisible, oneDefaultIsVisible]
-        },
-        [true, false],
-      )
-      if (ans === undefined) {
-        return true
-      }
-      const noDefaultNoVisible = ans[0] ?? true
-      const oneDefaultIsVisible = ans[1] ?? true
-      return noDefaultNoVisible || oneDefaultIsVisible
-    }
-    return false
-  })
-  return await recordEntries
+  const elementsToCheck = recordsOnly.map(getKeys).filter(a => a !== undefined)
+  const changeErrors = isValidRecord(recordsOnly, elementsToCheck)
+  return recordEntries
     .map((val, index) => {
       if (!changeErrors[index]) {
         return createNoDefaultError(change.elemID, `recordTypeVisibilities.${val[0]}`)

@@ -428,12 +428,23 @@ export const routeIsolated = async (
   // active env.
   // If the element is not in common, then we can apply the change to
   // the primary source
-  const currentCommonElement = await commonSource.get(change.id)
-  if (currentCommonElement === undefined) {
+  const currentCommonElement = await commonSource.get(change.id.createTopLevelParentID().parent)
+  if (!isElement(currentCommonElement)) {
     return { primarySource: [change] }
   }
 
-  const commonChangeProjection = projectElementOrValueToEnv(getChangeData(change), currentCommonElement)
+  const currentCommonValue = resolvePath(currentCommonElement, change.id)
+  if (currentCommonValue === undefined) {
+    return { primarySource: [change] }
+  }
+
+  const updatedCommonElement = currentCommonElement.clone()
+  setPath(updatedCommonElement, change.id, undefined)
+  // Note that this base change includes only the removal of change.id from common.
+  // It doesn't include any other change of the same element.
+  const commonBaseChange = toChange({ before: currentCommonElement, after: updatedCommonElement })
+
+  const commonChangeProjection = projectElementOrValueToEnv(getChangeData(change), currentCommonValue)
   // Add the changed part of common to the target source
   const addCommonProjectionToCurrentChanges =
     change.action === 'modify'
@@ -456,11 +467,11 @@ export const routeIsolated = async (
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
     commonSource: [
       {
-        data: { before: currentCommonElement },
+        data: { before: currentCommonValue },
         action: 'remove',
         id: change.id,
         path: pathHint,
-        baseChange: change.baseChange,
+        baseChange: commonBaseChange,
       },
     ],
     secondarySources: secondaryChanges,
@@ -485,6 +496,8 @@ const createMergeableChange = (
       before: resolvePath(baseElement, mergeableID),
       after: resolvePath(afterElement, mergeableID),
     },
+    // Note that this base change includes only changes inside the mergeableID scope.
+    // It doesn't include any other change of the same element from other mergeableIDs.
     baseChange: toChange({ before: baseElement, after: afterElement }),
   }
 }

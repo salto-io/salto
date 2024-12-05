@@ -5,16 +5,15 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../../src/constants'
-import replaceFieldConfigurationReferencesFilter from '../../../src/filters/field_configuration/replace_field_configuration_references'
+import FieldConfigurationFilter from '../../../src/filters/field_configuration/field_configuration'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
-import { getFilterParams } from '../../utils'
+import { createMockElementsSource, getFilterParams } from '../../utils'
 
 describe('replaceFieldConfigurationReferencesFilter', () => {
   let filter: filterUtils.FilterWith<'deploy'>
@@ -45,7 +44,7 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
     instance = new InstanceElement('instance', fieldConfigType, {
       fields: [
         {
-          id: new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'), {}),
+          id: 'fieldInstance',
           isRequired: true,
         },
       ],
@@ -55,10 +54,12 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       elemID: new ElemID(JIRA, FIELD_TYPE_NAME),
     })
 
-    fieldInstance = new InstanceElement('fieldInstance', fieldType)
+    fieldInstance = new InstanceElement('fieldInstance', fieldType, {
+      id: 'fieldInstance',
+    })
 
-    const elementsSource = buildElementsSourceFromElements([fieldInstance])
-    filter = replaceFieldConfigurationReferencesFilter(
+    const elementsSource = createMockElementsSource([fieldInstance])
+    filter = FieldConfigurationFilter(
       getFilterParams({
         config,
         elementsSource,
@@ -68,7 +69,7 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
 
   describe('fetch', () => {
     it('should convert fields to a map', async () => {
-      await filter.onFetch?.([instance, fieldConfigType])
+      await filter.onFetch?.([instance, fieldConfigType, fieldInstance])
       expect(instance.value.fields).toEqual({
         fieldInstance: {
           isRequired: true,
@@ -79,12 +80,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
     it('should convert the fields field', async () => {
       await filter.onFetch?.([instance, fieldConfigType])
       expect(await fieldConfigType.fields.fields.getType()).toBeInstanceOf(MapType)
-    })
-
-    it('should do nothing if splitFieldConfiguration is true', async () => {
-      config.fetch.splitFieldConfiguration = true
-      await filter.onFetch?.([instance, fieldConfigType])
-      expect(instance.value.fields).toBeArray()
     })
   })
 
@@ -108,6 +103,22 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
         },
       })
     })
+    it('should not fail if the field does not exist', async () => {
+      const emptySource = createMockElementsSource([])
+      const emptyFilter = FieldConfigurationFilter(
+        getFilterParams({
+          config,
+          elementsSource: emptySource,
+        }),
+      ) as typeof filter
+      await emptyFilter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.fields).toBeArrayOfSize(0)
+    })
+    it('should not fail if the fields value is deleted', async () => {
+      instance.value.fields = undefined
+      await filter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.fields).toBeUndefined()
+    })
 
     it('should do nothing if fields is corrupted', async () => {
       instance.value.fields = 'invalid'
@@ -119,23 +130,6 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       instance.value.fields.anotherField = 'invalid'
       await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value.fields).toBeArrayOfSize(1)
-    })
-
-    it('should do nothing if splitFieldConfiguration is true', async () => {
-      config.fetch.splitFieldConfiguration = true
-      await filter.preDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({
-        fieldInstance: {
-          isRequired: true,
-        },
-      })
-
-      await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({
-        fieldInstance: {
-          isRequired: true,
-        },
-      })
     })
   })
 })

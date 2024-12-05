@@ -5,28 +5,19 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  getChangeData,
-  InstanceElement,
-  isAdditionOrModificationChange,
-  isInstanceChange,
-  isInstanceElement,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { InstanceElement } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../../filter'
-import { FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 
 type FieldConfigurationItem = {
-  id: ReferenceExpression
+  id: string
   isHidden?: boolean
   isRequired?: boolean
   description?: string
 }
 
 const FIELD_CONFIGURATION_ITEM_SCHEME = Joi.object({
-  id: Joi.object().required(),
+  id: Joi.string().required(),
   isHidden: Joi.boolean(),
   isRequired: Joi.boolean(),
   description: Joi.string().allow(''),
@@ -38,7 +29,10 @@ const isFieldConfigurationItem = createSchemeGuard<FieldConfigurationItem>(
 )
 
 // the default values of isHidden and isRequired are false
-const removeFieldConfigurationItemDefaultValues = (instance: InstanceElement): void => {
+export const removeFieldConfigurationItemDefaultValues = (
+  instance: InstanceElement,
+  fieldsMap: Record<string, InstanceElement>,
+): void => {
   Object.values(instance.value.fields)
     .filter(isFieldConfigurationItem)
     .forEach(fieldItem => {
@@ -49,15 +43,18 @@ const removeFieldConfigurationItemDefaultValues = (instance: InstanceElement): v
         delete fieldItem.isRequired
       }
       if (
-        isResolvedReferenceExpression(fieldItem.id) &&
-        fieldItem.description === fieldItem.id.value.value.description
+        fieldsMap[fieldItem.id] !== undefined &&
+        fieldItem.description === fieldsMap[fieldItem.id].value.description
       ) {
         delete fieldItem.description
       }
     })
 }
 
-const addFieldConfigurationItemDefaultValues = (instance: InstanceElement): void => {
+export const addFieldConfigurationItemDefaultValues = (
+  instance: InstanceElement,
+  fieldsMap: Record<string, InstanceElement>,
+): void => {
   Object.values(instance.value.fields)
     .filter(isFieldConfigurationItem)
     .forEach(fieldItem => {
@@ -67,45 +64,8 @@ const addFieldConfigurationItemDefaultValues = (instance: InstanceElement): void
       if (fieldItem.isRequired === undefined) {
         fieldItem.isRequired = false
       }
-      if (fieldItem.description === undefined && isResolvedReferenceExpression(fieldItem.id)) {
-        fieldItem.description = fieldItem.id.value.value.description
+      if (fieldItem.description === undefined && fieldsMap[fieldItem.id] !== undefined) {
+        fieldItem.description = fieldsMap[fieldItem.id].value.description
       }
     })
 }
-
-const filter: FilterCreator = ({ config }) => ({
-  name: 'fieldConfigurationDefaultValuesFilter',
-  onFetch: async elements => {
-    if (!config.fetch.removeFieldConfigurationDefaultValues) {
-      return
-    }
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-      .forEach(removeFieldConfigurationItemDefaultValues)
-  },
-  preDeploy: async changes => {
-    if (!config.fetch.removeFieldConfigurationDefaultValues) {
-      return
-    }
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-      .map(addFieldConfigurationItemDefaultValues)
-  },
-  onDeploy: async changes => {
-    if (!config.fetch.removeFieldConfigurationDefaultValues) {
-      return
-    }
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-      .map(removeFieldConfigurationItemDefaultValues)
-  },
-})
-
-export default filter

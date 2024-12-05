@@ -682,6 +682,8 @@ const createCustomizations = ({
         elemID: {
           parts: [
             { fieldName: 'name', condition: value => !isDefaultBrand(value) },
+            // fieldName is required, but our custom function doesn't need it, so use an empty string for typing.
+            // TODO(SALTO-7005): Remove fieldName from this definition.
             { fieldName: '', condition: isDefaultBrand, custom: () => () => 'Default Brand' },
           ],
         },

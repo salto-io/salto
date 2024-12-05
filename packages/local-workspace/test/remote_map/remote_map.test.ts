@@ -190,6 +190,48 @@ describe('test operations on remote db', () => {
         expect(element).toBeUndefined()
       })
     })
+    it('should read from cache in subsequent reads', async () => {
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+      expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(expectedElementFromMap)
+
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(1)
+      expect(locationInfo.counters.LocationCacheHit.value()).toEqual(3)
+      expect(locationInfo.cache.length).toEqual(1)
+    })
+    it('should read from cache in concurrent reads', async () => {
+      const getResults = await Promise.all([
+        remoteMap.get(elements[0].elemID.getFullName()),
+        remoteMap.get(elements[0].elemID.getFullName()),
+        remoteMap.get(elements[0].elemID.getFullName()),
+        remoteMap.get(elements[0].elemID.getFullName()),
+      ])
+      expect(getResults).toEqual([
+        expectedElementFromMap,
+        expectedElementFromMap,
+        expectedElementFromMap,
+        expectedElementFromMap,
+      ])
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(1)
+      expect(locationInfo.counters.LocationCacheHit.value()).toEqual(3)
+      expect(locationInfo.cache.length).toEqual(1)
+    })
+    it('should read from cache in concurrent reads, after set', async () => {
+      await remoteMap.set(elements[1].elemID.getFullName(), elements[1])
+
+      await Promise.all([
+        remoteMap.get(elements[1].elemID.getFullName()),
+        remoteMap.get(elements[1].elemID.getFullName()),
+        remoteMap.get(elements[1].elemID.getFullName()),
+        remoteMap.get(elements[1].elemID.getFullName()),
+      ])
+      const locationInfo = remoteMapLocations.get(DB_LOCATION)
+      expect(locationInfo.counters.LocationCacheMiss.value()).toEqual(0)
+      expect(locationInfo.counters.LocationCacheHit.value()).toEqual(4)
+    })
   })
   describe('getMany', () => {
     it('should get items after set', async () => {
@@ -254,6 +296,7 @@ describe('test operations on remote db', () => {
         elements.slice(0, 1).map(elem => elem.elemID.getFullName()),
       )
     })
+
     describe('read only', () => {
       it('should throw an error', async () => {
         await expect(readOnlyRemoteMap.delete(elements[0].elemID.getFullName())).rejects.toThrow()
@@ -354,6 +397,17 @@ describe('test operations on remote db', () => {
     })
     it('should return false if the remote map is not empty', async () => {
       expect(await remoteMap.isEmpty()).toEqual(false)
+    })
+    it('should return true after finding a value in the cache', async () => {
+      // This test reproduces a bug where we would mark the cache as not empty after finding a value in the cache,
+      // even if that value is a Promise that will eventually resolve to undefined.
+      await remoteMap.clear()
+      const key = elements[1].elemID.getFullName()
+      // This `get` adds a Promise to the cache, but the remote map is still empty.
+      await remoteMap.get(key)
+      // This `get` would find the Promise in the cache, and wrongly mark the cache as not empty.
+      await remoteMap.get(key)
+      expect(await remoteMap.isEmpty()).toEqual(true)
     })
     describe('read only', () => {
       it('should return true if the remote map is empty', async () => {

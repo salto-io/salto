@@ -249,7 +249,9 @@ describe.each([
         expect(env2ObjFilePath()).toExist()
         expect(env1InstFilePath()).toExist()
         expect(env2InstFilePath()).toExist()
+      })
 
+      it('should not place env unique elements in the common folder', () => {
         expect(path.join(env2ObjectDir(), naclNameToSFName(env1ObjName))).not.toExist()
         expect(path.join(env1ObjectDir(), naclNameToSFName(env2ObjName))).not.toExist()
         expect(path.join(env1InstanceDir(), `${env2InstName}.nacl`)).not.toExist()

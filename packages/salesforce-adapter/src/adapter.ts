@@ -452,7 +452,7 @@ type CreateFiltersRunnerParams = {
   contextOverrides?: Partial<FilterContext>
 }
 
-const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
+export const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
   typeRef.elemID.name.startsWith(ORDERED_MAP_PREFIX)
 
 const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>

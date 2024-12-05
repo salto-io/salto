@@ -37,7 +37,7 @@ describe('defaultSupportAddressValidator', () => {
     const err = await defaultSupportAddressValidator(
       createChangesWithElements([createInstance('inst', 'failed', true, SUPPORT_ADDRESS_TYPE_NAME)]),
     )
-    expect((await err[0]).severity).toEqual('Error')
+    expect(err[0].severity).toEqual('Error')
   })
   it('should return no errors when default is true and forward_status is verified', async () => {
     const errs = await defaultSupportAddressValidator(

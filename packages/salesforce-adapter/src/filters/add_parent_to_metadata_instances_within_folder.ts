@@ -18,7 +18,7 @@ const { DefaultMap } = collections.map
 
 type FolderInstancesIndex = Map<string, Record<string, InstanceElement>>
 
-const isWithinFolder = (instance: InstanceElement): boolean => isDefined(instance.annotations.folderType)
+const isWithinFolder = (instance: InstanceElement): boolean => isDefined(instance.getTypeSync().annotations.folderType)
 
 const createFolderInstancesIndex = (elements: Element[]): FolderInstancesIndex => {
   const folderInstancesIndex = new DefaultMap<string, Record<string, InstanceElement>>(() => ({}))
@@ -37,7 +37,7 @@ const filter: FilterCreator = ({ config }) => ({
       await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
     )
     const getFolderInstance = (instance: InstanceElement): InstanceElement | undefined => {
-      const { folderType } = instance.annotations
+      const { folderType } = instance.getTypeSync().annotations
       const folderName = apiNameSync(instance)?.split('/')[0] ?? ''
       return folderInstancesIndex.get(folderType)?.[folderName]
     }

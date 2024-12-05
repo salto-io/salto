@@ -9,10 +9,11 @@
 import { ChangeError, ChangeValidator, ElemID, getChangeIfInstanceChange, InstanceElement } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { PROFILE_METADATA_TYPE } from '../constants'
 
 const { isDefined } = values
 
-const TYPES_WITH_RECORD_TYPE_VISIBILITY = new Set(['Profile'])
+const TYPES_WITH_RECORD_TYPE_VISIBILITY = new Set([PROFILE_METADATA_TYPE])
 
 const createNoDefaultError = (id: ElemID, recordTypeVisibility: string): ChangeError => ({
   elemID: id,
@@ -105,8 +106,7 @@ const getRecordTypeVisibilityNoDefaultError = async (change: InstanceElement | u
 const changeValidator: ChangeValidator = async changes => {
   const errors = changes
     .map(getChangeIfInstanceChange)
-    .filter(ch => ch !== undefined)
-    .filter(cha => (cha !== undefined ? TYPES_WITH_RECORD_TYPE_VISIBILITY.has(cha?.elemID.typeName) : false))
+    .filter(change => (change !== undefined ? TYPES_WITH_RECORD_TYPE_VISIBILITY.has(change?.elemID.typeName) : false))
     .map(getRecordTypeVisibilityNoDefaultError)
   const resolved = await Promise.all(errors)
   return resolved.flat()

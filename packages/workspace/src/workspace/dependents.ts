@@ -10,14 +10,14 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReadOnlyElementsSource, isElement } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from './reference_indexes'
-import { ReadOnlyRemoteMap } from './remote_map'
+import { RemoteMap } from './remote_map'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 const getDependentIDsFromReferenceSourceIndex = async (
   elemIDs: ElemID[],
-  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
+  referenceSourcesIndex: RemoteMap<ReferenceIndexEntry[]>,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<ElemID[]> =>
   log.timeDebug(
@@ -29,17 +29,18 @@ const getDependentIDsFromReferenceSourceIndex = async (
           addedIDs.add(id.getFullName())
         })
 
-        const dependentIDs = await log.timeTrace(
-          async () =>
-            awu(ids)
-              .map(id => referenceSourcesIndex.get(id.getFullName()))
-              .flatMap(references => references ?? [])
-              .map(ref => ref.id.createTopLevelParentID().parent)
-              .filter(id => !addedIDs.has(id.getFullName()))
-              .uniquify(id => id.getFullName())
-              .toArray(),
-          'getDependentIDs for %d ids',
+        const references = await log.timeTrace(
+          () => referenceSourcesIndex.getMany(ids.map(id => id.getFullName())),
+          'referenceSourcesIndex.getMany for %d ids',
           ids.length,
+        )
+
+        const dependentIDs = _.uniqBy(
+          references
+            .flatMap(refs => refs ?? [])
+            .map(ref => ref.id.createTopLevelParentID().parent)
+            .filter(id => !addedIDs.has(id.getFullName())),
+          id => id.getFullName(),
         )
 
         return dependentIDs.length === 0 ? dependentIDs : dependentIDs.concat(await getDependentIDs(dependentIDs))
@@ -80,7 +81,7 @@ const getDependentElements = (elementsSource: ReadOnlyElementsSource, dependentI
 export const getDependents = async (
   elemIDs: ElemID[],
   elementsSource: ReadOnlyElementsSource,
-  referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
+  referenceSourcesIndex: RemoteMap<ReferenceIndexEntry[]>,
 ): Promise<Element[]> => {
   const dependentIDs = await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
   const dependents = await getDependentElements(elementsSource, dependentIDs)

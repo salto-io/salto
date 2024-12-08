@@ -12,6 +12,8 @@ import { mockDirStore } from '../common/nacl_file_store'
 import { createWorkspace, createState } from '../common/workspace'
 import { getDependents } from '../../src/workspace/dependents'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
+import { RemoteMap } from '../../src/workspace/remote_map'
+import { ReferenceIndexEntry } from '../../src/workspace/reference_indexes'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 
@@ -79,7 +81,7 @@ describe('dependents', () => {
       const dependents = await getDependents(
         [elemID],
         await workspace.elements(),
-        await workspace.getReferenceSourcesIndex(),
+        (await workspace.getReferenceSourcesIndex()) as RemoteMap<ReferenceIndexEntry[]>,
       )
       return dependents.map(element => element.elemID)
     }

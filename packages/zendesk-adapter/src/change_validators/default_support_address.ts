@@ -23,7 +23,7 @@ const createDefaultSupportAddressError = (id: ElemID): ChangeError => ({
   detailedMessage: `${id.getFullName()} has default field true and forwarding_status field that is not verified\nIn order to fix this go to the admin center in your zendesk application, search for 'email' and choose 'Email', find the email that is not verified (there should be a red ! under it), click on 'See details' and Verify forwarding`,
 })
 /*
- * This change validator checks that an Email is not set as default if it's forward status is not verified
+ * This change validator checks that a support_address is not set as default if it's forward status is not verified
  * NOTICE: zendesk doesn't allow the field 'default' to be false, and requires to delete it. This CV doesn't check this issue.
  */
 export const defaultSupportAddressValidator: ChangeValidator = async changes =>

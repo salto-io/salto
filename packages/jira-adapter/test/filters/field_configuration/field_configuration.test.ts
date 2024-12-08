@@ -18,6 +18,7 @@ describe('fieldConfigurationFilter', () => {
   let fieldConfigurationItemType: ObjectType
   let instance: InstanceElement
   let fieldInstance: InstanceElement
+  let lockedFieldInstance: InstanceElement
 
   beforeEach(async () => {
     filter = fieldConfigurationFilter(getFilterParams()) as typeof filter
@@ -42,10 +43,18 @@ describe('fieldConfigurationFilter', () => {
     fieldInstance = new InstanceElement('fieldInstance', createEmptyType(FIELD_TYPE_NAME), {
       id: 'fieldInstance',
     })
+    lockedFieldInstance = new InstanceElement('lockedFieldInstance', createEmptyType(FIELD_TYPE_NAME), {
+      id: 'lockedFieldInstance',
+      isLocked: true,
+    })
     instance = new InstanceElement('instance', fieldConfigurationType, {
       fields: [
         {
           id: 'fieldInstance',
+          isRequired: true,
+        },
+        {
+          id: 'lockedFieldInstance',
           isRequired: true,
         },
       ],
@@ -89,9 +98,12 @@ describe('fieldConfigurationFilter', () => {
       })
     })
     it('should remove locked fields', async () => {
-      fieldInstance.value.isLocked = true
-      await filter.onFetch([instance, fieldInstance])
-      expect(instance.value.fields).toEqual({})
+      await filter.onFetch([instance, fieldInstance, lockedFieldInstance])
+      expect(instance.value.fields).toEqual({
+        fieldInstance: {
+          isRequired: true,
+        },
+      })
     })
   })
 })

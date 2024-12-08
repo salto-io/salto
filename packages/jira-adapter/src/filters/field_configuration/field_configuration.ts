@@ -21,7 +21,7 @@ import {
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { setFieldDeploymentAnnotations } from '../../utils'
+import { setFieldDeploymentAnnotations, setTypeDeploymentAnnotationsRecursively } from '../../utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 import {
@@ -35,7 +35,7 @@ const log = logger(module)
 const ID_PATH = ['value', 'id']
 const NAME_PATH = ['elemID', 'name']
 
-const updateFieldConfigurationType = (elements: Element[]): void => {
+const updateFieldConfigurationType = async (elements: Element[]): Promise<void> => {
   const types = elements.filter(isObjectType)
 
   const fieldConfigurationType = types.find(type => type.elemID.name === FIELD_CONFIGURATION_TYPE_NAME)
@@ -60,9 +60,7 @@ const updateFieldConfigurationType = (elements: Element[]): void => {
   if (fieldConfigurationItemType === undefined) {
     log.warn(`${FIELD_CONFIGURATION_ITEM_TYPE_NAME} type not found`)
   } else {
-    ;['id', 'description', 'isHidden', 'isRequired', 'renderer'].forEach(fieldName => {
-      setFieldDeploymentAnnotations(fieldConfigurationItemType, fieldName)
-    })
+    await setTypeDeploymentAnnotationsRecursively(fieldConfigurationItemType)
   }
 }
 
@@ -96,7 +94,7 @@ const removeLockedFields = (instance: InstanceElement, fieldsMap: Record<string,
 const filter: FilterCreator = ({ config, fetchQuery, elementsSource }) => ({
   name: 'fieldConfigurationFilter',
   onFetch: async elements => {
-    updateFieldConfigurationType(elements)
+    await updateFieldConfigurationType(elements)
 
     if (!fetchQuery.isTypeMatch(FIELD_TYPE_NAME)) {
       log.warn(
@@ -112,14 +110,14 @@ const filter: FilterCreator = ({ config, fetchQuery, elementsSource }) => ({
     if (fieldConfigurationInstances.length === 0) {
       return
     }
-    const fieldsMap = createFieldsMap(elements.filter(isInstanceElement), ID_PATH)
+    const idToFieldMap = createFieldsMap(elements.filter(isInstanceElement), ID_PATH)
 
     fieldConfigurationInstances.forEach(instance => {
-      removeLockedFields(instance, fieldsMap)
+      removeLockedFields(instance, idToFieldMap)
       if (config.fetch.removeFieldConfigurationDefaultValues) {
-        removeFieldConfigurationItemDefaultValues(instance, fieldsMap)
+        removeFieldConfigurationItemDefaultValues(instance, idToFieldMap)
       }
-      replaceToMap(instance, fieldsMap)
+      replaceToMap(instance, idToFieldMap)
     })
   },
   preDeploy: async changes => {
@@ -156,13 +154,13 @@ const filter: FilterCreator = ({ config, fetchQuery, elementsSource }) => ({
     }
 
     const fieldInstances = await getInstancesFromElementSource(elementsSource, [FIELD_TYPE_NAME])
-    const fieldsMap = createFieldsMap(fieldInstances, ID_PATH)
+    const idToFieldMap = createFieldsMap(fieldInstances, ID_PATH)
 
     fieldConfigurationInstances.forEach(instance => {
       if (config.fetch.removeFieldConfigurationDefaultValues) {
-        removeFieldConfigurationItemDefaultValues(instance, fieldsMap)
+        removeFieldConfigurationItemDefaultValues(instance, idToFieldMap)
       }
-      replaceToMap(instance, fieldsMap)
+      replaceToMap(instance, idToFieldMap)
     })
   },
 })

@@ -9,7 +9,7 @@ import path from 'path'
 import {
   BuiltinTypes,
   Change,
-  DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   getChangeData,
@@ -455,11 +455,17 @@ describe('multi env source', () => {
   })
   describe('update', () => {
     it('should route an update to the proper sub source', async () => {
-      const changes: DetailedChange[] = [
+      const changes: DetailedChangeWithBaseChange[] = [
         {
           action: 'remove',
           data: {
             before: commonObject.fields.field,
+          },
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: commonObject.fields.field,
+            },
           },
           id: commonObject.fields.field.elemID,
         },
@@ -467,6 +473,12 @@ describe('multi env source', () => {
           action: 'remove',
           data: {
             before: envObject,
+          },
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: envObject,
+            },
           },
           id: envElemID,
         },
@@ -502,7 +514,12 @@ describe('multi env source', () => {
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const detailedChange = { ...change, id: commonElemID, path: ['test'] } as DetailedChange
+      const detailedChange = {
+        ...change,
+        baseChange: change,
+        id: commonElemID,
+        path: ['test'],
+      } as DetailedChangeWithBaseChange
       const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, [detailedChange])
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
@@ -542,12 +559,16 @@ describe('multi env source', () => {
       const detailedChange = {
         action: 'modify',
         data: { before: mergedSaltoObject, after: envFragment },
+        baseChange: {
+          action: 'modify',
+          data: { before: mergedSaltoObject, after: envFragment },
+        },
         path: ['bla'],
         id: objectElemID,
-      } as DetailedChange
+      } as DetailedChangeWithBaseChange
       const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, [detailedChange])
       expect(Object.keys(elementChanges).length).toEqual(1)
-      expect(elementChanges[primarySourceName].changes).toEqual([_.omit(detailedChange, ['path', 'id'])])
+      expect(elementChanges[primarySourceName].changes).toEqual([_.omit(detailedChange, ['path', 'id', 'baseChange'])])
       expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
         sortElemArray([envObject, envFragment]),
       )
@@ -597,26 +618,40 @@ describe('multi env source', () => {
         {
           action: 'remove',
           data: { before: envObject },
+          baseChange: {
+            action: 'remove',
+            data: { before: envObject },
+          },
           path: ['bla1'],
           id: envElemID,
         },
         {
           action: 'modify',
           data: { before: mergedSaltoObject, after: newEnvFragment },
+          baseChange: {
+            action: 'modify',
+            data: { before: mergedSaltoObject as ObjectType, after: newEnvFragment },
+          },
           path: ['bla'],
           id: objectElemID,
         },
         {
           action: 'add',
           data: { after: commonObject },
+          baseChange: {
+            action: 'add',
+            data: { after: commonObject },
+          },
           path: ['bla1'],
           id: commonElemID,
         },
-      ] as DetailedChange[]
+      ] as DetailedChangeWithBaseChange[]
       const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, detailedChanges)
       const elements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(_.sortBy(elementChanges[primarySourceName].changes, c => getChangeData(c).elemID.getFullName())).toEqual(
-        _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc => _.omit(dc, ['path', 'id'])),
+        _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc =>
+          _.omit(dc, ['path', 'id', 'baseChange']),
+        ),
       )
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })
@@ -627,12 +662,19 @@ describe('multi env source', () => {
       const fieldNumber = field.clone()
       fieldNumber.refType = new TypeReference(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER)
 
-      const changes: DetailedChange[] = [
+      const changes: DetailedChangeWithBaseChange[] = [
         {
           action: 'modify',
           data: {
             before: envObject,
             after: envObjectMeta,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: envObject,
+              after: envObjectMeta,
+            },
           },
           id: envObject.elemID,
           elemIDs: {
@@ -646,6 +688,13 @@ describe('multi env source', () => {
           data: {
             before: envObject,
             after: envObjectMeta,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: envObject,
+              after: envObjectMeta,
+            },
           },
           id: envObject.elemID,
           elemIDs: {
@@ -659,6 +708,13 @@ describe('multi env source', () => {
           data: {
             before: field,
             after: fieldNumber,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: field,
+              after: fieldNumber,
+            },
           },
           id: field.elemID,
           elemIDs: {
@@ -676,6 +732,12 @@ describe('multi env source', () => {
           id: envObject.elemID,
           elemIDs: { before: envObject.elemID },
           path: envObject.path,
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: envObject,
+            },
+          },
         },
         {
           action: 'add',
@@ -683,6 +745,12 @@ describe('multi env source', () => {
           id: envObject.elemID,
           elemIDs: { after: envObjectMeta.elemID },
           path: envObject.path,
+          baseChange: {
+            action: 'add',
+            data: {
+              after: envObjectMeta,
+            },
+          },
         },
         {
           action: 'add',
@@ -690,6 +758,12 @@ describe('multi env source', () => {
           id: envObject.elemID,
           elemIDs: { after: envObjectMeta.elemID },
           path: envObject.path,
+          baseChange: {
+            action: 'add',
+            data: {
+              after: envObjectMeta,
+            },
+          },
         },
         {
           action: 'remove',
@@ -697,6 +771,12 @@ describe('multi env source', () => {
           id: field.elemID,
           elemIDs: { before: field.elemID },
           path: field.path,
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: field,
+            },
+          },
         },
         {
           action: 'add',
@@ -704,6 +784,12 @@ describe('multi env source', () => {
           id: fieldNumber.elemID,
           elemIDs: { after: fieldNumber.elemID },
           path: field.path,
+          baseChange: {
+            action: 'add',
+            data: {
+              after: fieldNumber,
+            },
+          },
         },
       ])
     })

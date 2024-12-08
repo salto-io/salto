@@ -14,12 +14,13 @@ import {
   ElemID,
   getChangeData,
   DetailedChange,
-  AdditionChange,
   ModificationChange,
   Change,
   ChangeDataType,
   StaticFile,
   isModificationChange,
+  DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { promises, collections, values, objects } from '@salto-io/lowerdash'
@@ -98,7 +99,7 @@ export type EnvsChanges = Record<string, ChangeSet<Change>>
 export type FromSource = 'env' | 'common' | 'all'
 
 export type MultiEnvSource = {
-  updateNaclFiles: (env: string, changes: DetailedChange[], mode?: RoutingMode) => Promise<EnvsChanges>
+  updateNaclFiles: (env: string, changes: DetailedChangeWithBaseChange[], mode?: RoutingMode) => Promise<EnvsChanges>
   listNaclFiles: (env: string) => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -335,18 +336,24 @@ const buildMultiEnvSource = (
   }
 
   const additionFromModificationChange = <T>(
-    change: DetailedChange<T> & ModificationChange<T>,
-  ): DetailedChange<T> & AdditionChange<T> => ({
+    change: DetailedChangeWithBaseChange & ModificationChange<T>,
+  ): DetailedChangeWithBaseChange => ({
     action: 'add',
     data: { after: change.data.after },
     id: change.id,
     elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
+    baseChange: change.id.isBaseID()
+      ? toChange({ after: change.data.after })
+      : // in this case `baseChange` will be incorrect because `change.baseChange.before` will contain
+        // the value of `change.data.before`, although the returned change is an addition change. this should
+        // never happen because we call `additionFromModificationChange` only on changes with a base id.
+        change.baseChange,
     path: change.path,
   })
 
   const removalChangeFromModificationChanges = <T>(
-    changes: (DetailedChange<T> & ModificationChange<T>)[],
-  ): DetailedChange<T>[] =>
+    changes: (DetailedChangeWithBaseChange & ModificationChange<T>)[],
+  ): DetailedChangeWithBaseChange[] =>
     changes.length > 0
       ? [
           {
@@ -355,6 +362,12 @@ const buildMultiEnvSource = (
             id: changes[0].id,
             elemIDs: { before: changes[0].id },
             path: changes[0].path,
+            baseChange: changes[0].id.isBaseID()
+              ? toChange({ before: changes[0].data.before })
+              : // in this case `baseChange` will be incorrect because `changes[0].baseChange.after` will contain
+                // the value of `changes[0].data.after`, although the returned change is a removal change. this should
+                // never happen because we call `removalChangeFromModificationChanges` only on changes with a base id.
+                changes[0].baseChange,
           },
         ]
       : []
@@ -363,7 +376,7 @@ const buildMultiEnvSource = (
   // so we split them into a removal and additions.
   // For this to work for modifications of elements spread across multiple files, this relies on the
   // fact that we receive a separate modification for the part of the element in each file.
-  const normalizeChanges = (changes: DetailedChange[]): DetailedChange[] =>
+  const normalizeChanges = (changes: DetailedChangeWithBaseChange[]): DetailedChangeWithBaseChange[] =>
     _(changes)
       .groupBy(change => change.id.getFullName())
       .values()
@@ -383,7 +396,7 @@ const buildMultiEnvSource = (
 
   const updateNaclFiles = async (
     env: string,
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
     mode: RoutingMode = 'default',
   ): Promise<EnvsChanges> => {
     const normalizedChanges = normalizeChanges(changes)

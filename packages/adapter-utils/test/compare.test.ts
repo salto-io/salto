@@ -609,8 +609,14 @@ describe('detailedCompare', () => {
     describe('with field changes', () => {
       const changes = detailedCompare(before, after, { createFieldChanges: true })
       it('should add the right baseChange', () => {
-        const baseChange = toChange({ before, after })
-        changes.forEach(change => expect(change.baseChange).toEqual(baseChange))
+        changes.forEach(change => {
+          const fieldName = change.id.createBaseID().parent.name
+          expect(change.baseChange).toEqual(
+            change.id.idType === 'field'
+              ? toChange({ before: before.fields[fieldName], after: after.fields[fieldName] })
+              : toChange({ before, after }),
+          )
+        })
       })
       it('should identify field changes, and create changes with the field id', () => {
         expect(hasChange(changes, 'modify', after.fields.modify.elemID.createNestedID('modify'))).toBeTruthy()

@@ -5,8 +5,16 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { values } from '@salto-io/lowerdash'
+import { regex as lowerdashRegex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+
+export const MASK_VALUE = '**MASKED_PASSWORD**'
+
+const PASSWORD_REGEX = /<key>Password<\/key><string>.*?<\/string>/
+const MASKED_PASSWORD = `<key>Password</key><string>${MASK_VALUE}</string>`
+
+const CLIENT_SECRET_REGEX = '^client_secret=.*'
+const MASKED_CLIENT_SECRET = `client_secret=${MASK_VALUE}`
 
 type WithIdType = {
   id: number
@@ -68,7 +76,7 @@ export const removeSelfServiceIcon = (value: Record<string, unknown>): void => {
 }
 
 /*
- * Remove security.password from self_service object as its a secret
+ * Remove security.password from self_service object as it's a secret
  */
 export const removeSelfServiceSecurityPassword = (value: Record<string, unknown>): void => {
   const { self_service: selfService } = value
@@ -77,5 +85,25 @@ export const removeSelfServiceSecurityPassword = (value: Record<string, unknown>
     if (values.isPlainRecord(security)) {
       delete security.password
     }
+  }
+}
+
+export const maskPayloadsPassword = (value: Record<string, unknown>): void => {
+  const payloads = _.get(value, 'general.payloads')
+  if (typeof payloads === 'string') {
+    _.set(value, 'general.payloads', payloads.replace(PASSWORD_REGEX, MASKED_PASSWORD))
+  }
+}
+
+export const maskPasswordsForScriptsObjectArray = (value: Record<string, unknown>): void => {
+  const { scripts } = value
+  if (Array.isArray(scripts)) {
+    scripts.forEach(script =>
+      Object.keys(script).forEach(key => {
+        if (lowerdashRegex.isFullRegexMatch(script[key], CLIENT_SECRET_REGEX)) {
+          script[key] = MASKED_CLIENT_SECRET
+        }
+      }),
+    )
   }
 }

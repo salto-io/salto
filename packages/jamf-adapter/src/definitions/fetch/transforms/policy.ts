@@ -13,6 +13,7 @@ import {
   adjustServiceIdToTopLevel,
   adjustSiteObjectToSiteId,
   removeSelfServiceIcon,
+  maskPasswordsForScriptsObjectArray,
 } from './utils'
 
 /*
@@ -28,6 +29,7 @@ export const adjust: definitions.AdjustFunctionSingle = async ({ value }) => {
     removeIdsForScriptsObjectArray,
     adjustServiceIdToTopLevel,
     removeSelfServiceIcon,
+    maskPasswordsForScriptsObjectArray,
   ].forEach(fn => fn(value))
   return { value }
 }

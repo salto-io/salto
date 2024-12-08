@@ -12,6 +12,7 @@ import {
   adjustServiceIdToTopLevel,
   adjustSiteObjectToSiteId,
   removeSelfServiceSecurityPassword,
+  maskPayloadsPassword,
 } from './utils'
 
 /*
@@ -26,6 +27,7 @@ export const adjust: definitions.AdjustFunctionSingle = async ({ value }) => {
     adjustSiteObjectToSiteId,
     adjustServiceIdToTopLevel,
     removeSelfServiceSecurityPassword,
+    maskPayloadsPassword,
   ].forEach(fn => fn(value))
   return { value }
 }

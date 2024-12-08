@@ -6,8 +6,4 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-export const CORE_FLAGS = {
-  skipResolveTypesInElementSource: 'SKIP_RESOLVE_TYPES_IN_ELEMENT_SOURCE',
-  autoMergeListsDisabled: 'AUTO_MERGE_LISTS_DISABLE',
-  failPlanOnCircularDependencies: 'FAIL_PLAN_ON_CIRCULAR_DEPENDENCY',
-} as const
+export const CORE_FLAGS = {} as const

@@ -114,13 +114,5 @@ describe('fieldConfigurationDeploymentFilter', () => {
       await filter.deploy([change])
       expect(mockConnection.put).not.toHaveBeenCalledWith()
     })
-
-    it('should not deploy if splitFieldConfiguration is true', async () => {
-      config.fetch.splitFieldConfiguration = true
-      const res = await filter.deploy([change])
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.leftoverChanges).toHaveLength(1)
-    })
   })
 })

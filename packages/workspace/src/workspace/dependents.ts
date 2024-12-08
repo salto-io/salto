@@ -9,10 +9,8 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReadOnlyElementsSource, isElement } from '@salto-io/adapter-api'
-import { getSaltoFlagBool, WORKSPACE_FLAGS } from '../flags'
 import { ReferenceIndexEntry } from './reference_indexes'
 import { ReadOnlyRemoteMap } from './remote_map'
-import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -72,54 +70,6 @@ const getDependentIDsFromReferenceSourceIndex = async (
     elemIDs.length,
   )
 
-const getDependentIDsFromReferencedFiles = async (
-  elemIDs: ElemID[],
-  getElementReferencedFiles: (id: ElemID) => Promise<string[]>,
-  getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>,
-): Promise<ElemID[]> =>
-  log.timeDebug(
-    async () => {
-      const addedIDs = new Set<string>()
-
-      const getDependentIDs = async (ids: ElemID[]): Promise<ElemID[]> =>
-        log.timeTrace(
-          async () => {
-            ids.forEach(id => addedIDs.add(id.getFullName()))
-            const filesWithDependencies = await log.timeTrace(
-              async () =>
-                awu(ids)
-                  .flatMap(id => getElementReferencedFiles(id))
-                  .uniquify(filename => filename)
-                  .toArray(),
-
-              'running getElementReferencedFiles for %d ids',
-              ids.length,
-            )
-            const dependentsIDs = await log.timeTrace(
-              async () =>
-                awu(filesWithDependencies)
-                  .map(filename => getParsedNaclFile(filename))
-                  .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
-                  .filter(id => !addedIDs.has(id.getFullName()))
-                  .uniquify(id => id.getFullName())
-                  .toArray(),
-              'get dependentsIDs from %d files',
-              filesWithDependencies.length,
-            )
-            return dependentsIDs.length === 0
-              ? dependentsIDs
-              : dependentsIDs.concat(await getDependentIDs(dependentsIDs))
-          },
-          'getDependentIDs for %d ids',
-          ids.length,
-        )
-
-      return getDependentIDs(elemIDs)
-    },
-    'getDependentIDsFromReferencedFiles for %d elemIDs',
-    elemIDs.length,
-  )
-
 const getDependentElements = (elementsSource: ReadOnlyElementsSource, dependentIDs: ElemID[]): Promise<Element[]> =>
   log.timeDebug(
     () => Promise.all(dependentIDs.map(id => elementsSource.get(id))).then(res => res.filter(isElement)),
@@ -131,13 +81,8 @@ export const getDependents = async (
   elemIDs: ElemID[],
   elementsSource: ReadOnlyElementsSource,
   referenceSourcesIndex: ReadOnlyRemoteMap<ReferenceIndexEntry[]>,
-  getElementReferencedFiles: (id: ElemID) => Promise<string[]>,
-  getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>,
 ): Promise<Element[]> => {
-  const dependentIDs = getSaltoFlagBool(WORKSPACE_FLAGS.useOldDependentsCalculation)
-    ? await getDependentIDsFromReferencedFiles(elemIDs, getElementReferencedFiles, getParsedNaclFile)
-    : await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
-
+  const dependentIDs = await getDependentIDsFromReferenceSourceIndex(elemIDs, referenceSourcesIndex, elementsSource)
   const dependents = await getDependentElements(elementsSource, dependentIDs)
   log.debug('found %d dependents of %d elements', dependents.length, elemIDs.length)
   if (dependentIDs.length !== dependents.length) {

@@ -10,13 +10,11 @@ import { parser } from '@salto-io/parser'
 
 type SyncParsedNaclFileData = {
   errors: () => parser.ParseError[]
-  referenced: () => Promise<string[]>
-  staticFiles: () => Promise<string[]>
+  staticFiles: () => string[]
 }
 
 type ParsedNaclFileData = {
   errors: () => Promise<parser.ParseError[] | undefined>
-  referenced: () => Promise<string[] | undefined>
   staticFiles: () => Promise<string[] | undefined>
 }
 

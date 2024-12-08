@@ -18,7 +18,6 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { JiraConfig } from '../../config/config'
 import { FilterCreator } from '../../filter'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
@@ -46,15 +45,7 @@ const deployFieldConfigurationItems = async (
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
-  const fields: Values[] = (instance.value.fields ?? [])
-    .filter((fieldConf: Values) => isResolvedReferenceExpression(fieldConf.id))
-    .map((fieldConf: Values) => ({ ...fieldConf, id: fieldConf.id.value.value.id }))
-
-  if (fields.length === 0) {
-    return
-  }
-
-  const fieldChunks = _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit)
+  const fieldChunks: Values[][] = _.chunk(instance.value.fields, config.client.fieldConfigurationItemsDeploymentLimit)
   if (client.isDataCenter) {
     // in DC calling deploy in parallel for field configuration items causes deadlocks and data corruption
     await awu(fieldChunks).forEach(async fieldsChunk => putFieldItemsChunk(client, instance.value.id, fieldsChunk))

@@ -607,11 +607,6 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: 'Field' },
   },
   {
-    src: { field: 'id', parentTypes: ['FieldConfigurationItem'] },
-    serializationStrategy: 'id',
-    target: { type: 'Field' },
-  },
-  {
     src: { field: 'projectId', parentTypes: ['Board_location', SCRIPT_RUNNER_TYPE] },
     serializationStrategy: 'id',
     missingRefStrategy: 'typeAndValue',

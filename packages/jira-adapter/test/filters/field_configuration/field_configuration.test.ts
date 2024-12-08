@@ -75,26 +75,31 @@ describe('fieldConfigurationFilter', () => {
       expect(fieldConfigurationItemType.fields.id.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.DELETABLE]: true,
       })
 
       expect(fieldConfigurationItemType.fields.description.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.DELETABLE]: true,
       })
 
       expect(fieldConfigurationItemType.fields.isHidden.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.DELETABLE]: true,
       })
 
       expect(fieldConfigurationItemType.fields.isRequired.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.DELETABLE]: true,
       })
 
       expect(fieldConfigurationItemType.fields.renderer.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
+        [CORE_ANNOTATIONS.DELETABLE]: true,
       })
     })
     it('should remove locked fields', async () => {

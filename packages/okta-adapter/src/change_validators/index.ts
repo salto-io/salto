@@ -8,7 +8,6 @@
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, elements as elementsUtils, definitions as definitionUtils } from '@salto-io/adapter-components'
-import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
 import { groupPushToApplicationUniquenessValidator } from './group_push_to_application_uniqueness'
 import { defaultPoliciesValidator } from './default_policies'
@@ -76,7 +75,6 @@ export default ({
       typesWithNoDeploy: typesHandledByFilters,
     }),
     appGroup: appGroupValidator,
-    groupRuleStatus: groupRuleStatusValidator,
     groupRuleActions: groupRuleActionsValidator,
     defaultPolicies: defaultPoliciesValidator,
     customApplicationStatus: customApplicationStatusValidator,

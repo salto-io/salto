@@ -349,47 +349,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  GroupRule: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/groups/rules',
-        method: 'post',
-        // status update deployed through different endpoint
-        fieldsToIgnore: ['status', 'allGroupsValid'],
-      },
-      modify: {
-        url: '/api/v1/groups/rules/{ruleId}',
-        method: 'put',
-        urlParamsToFields: {
-          ruleId: 'id',
-        },
-        // status update deployed through different endpoint
-        fieldsToIgnore: ['status', 'allGroupsValid'],
-      },
-      remove: {
-        url: '/api/v1/groups/rules/{ruleId}',
-        method: 'delete',
-        urlParamsToFields: {
-          ruleId: 'id',
-        },
-        omitRequestBody: true,
-      },
-      activate: {
-        url: '/api/v1/groups/rules/{ruleId}/lifecycle/activate',
-        method: 'post',
-        urlParamsToFields: {
-          ruleId: 'id',
-        },
-      },
-      deactivate: {
-        url: '/api/v1/groups/rules/{ruleId}/lifecycle/deactivate',
-        method: 'post',
-        urlParamsToFields: {
-          ruleId: 'id',
-        },
-      },
-    },
-  },
   TrustedOrigin: {
     deployRequests: {
       add: {
@@ -494,7 +453,6 @@ export const SUPPORTED_TYPES = {
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],
   Group: ['api__v1__groups'],
-  GroupRule: ['api__v1__groups__rules'],
   IdentityProvider: ['api__v1__idps'],
   InlineHook: ['api__v1__inlineHooks'],
   ProfileMapping: ['api__v1__mappings'],

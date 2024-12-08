@@ -59,7 +59,7 @@ import { metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
 import { STANDARD_VALUE_SET } from './standard_value_sets'
 import { FetchProfile } from '../types'
-import { apiNameSync, metadataTypeSync } from './utils'
+import { apiNameSync, isOrderedMapTypeOrRefType, metadataTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
@@ -379,6 +379,30 @@ const convertValuesToMapArrays = (
   })
 }
 
+const getOrderedMapInnerType = (orderedMap: ObjectType): TypeElement | undefined => {
+  const orderedMapValuesField = orderedMap.fields[ORDERED_MAP_VALUES_FIELD]
+  if (orderedMapValuesField === undefined) {
+    return undefined
+  }
+  const orderedMapValuesFieldType = orderedMapValuesField.getTypeSync()
+  return isMapType(orderedMapValuesFieldType) ? orderedMapValuesFieldType.getInnerTypeSync() : undefined
+}
+
+const getInnerType = (typeElement: TypeElement): TypeElement => {
+  if (isContainerType(typeElement)) {
+    return typeElement.getInnerTypeSync()
+  }
+  if (isOrderedMapTypeOrRefType(typeElement)) {
+    const innerType = getOrderedMapInnerType(typeElement)
+    if (innerType === undefined) {
+      log.warn('Could not resolve inner type for OrderedMap %s', inspectValue(typeElement))
+    } else {
+      return innerType
+    }
+  }
+  return typeElement
+}
+
 /**
  * Update the instance object type's fields to use maps.
  *
@@ -397,7 +421,7 @@ const updateFieldTypes = async (
       const fieldType = await field.getType()
       // navigate to the right field type
       if (!isMapType(fieldType)) {
-        let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
+        let innerType = getInnerType(fieldType)
         if (mapDef.mapToList || nonUniqueMapFields.includes(fieldName)) {
           innerType = new ListType(innerType)
         }
@@ -435,7 +459,7 @@ const updateAnnotationRefTypes = async (
     const fieldType = _.get(typeElement.annotationRefTypes, fieldName).type
     // navigate to the right field type
     if (isDefined(fieldType) && !isMapType(fieldType)) {
-      let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
+      let innerType = getInnerType(fieldType)
       if (mapDef.mapToList || nonUniqueMapFields.includes(fieldName)) {
         innerType = new ListType(innerType)
       }

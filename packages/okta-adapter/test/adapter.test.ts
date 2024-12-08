@@ -1274,7 +1274,25 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      // TODO(SALTO-6485): Allow to modify an active group rule
+
+      it('should successfully modify an active group rule without status change', async () => {
+        loadMockReplies('group_rule_modify_active.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const updatedGroupRule = groupRule.clone()
+        updatedGroupRule.value.name = 'your group rule'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: updatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
       it('should successfully modify an inactive group rule without status change', async () => {
         loadMockReplies('group_rule_modify_inactive.json')
         groupRule.value.id = 'grouprule-fakeid1'
@@ -1331,7 +1349,21 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      // TODO(SALTO-6485): Allow to remove an active group rule
+      it('should successfully remove an active group rule', async () => {
+        loadMockReplies('group_rule_remove_active.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
       it('should successfully remove an inactive group rule', async () => {
         loadMockReplies('group_rule_remove_inactive.json')
         groupRule.value.id = 'grouprule-fakeid1'

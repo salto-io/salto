@@ -17,6 +17,7 @@ import {
   ProgressReporter,
   ReferenceExpression,
   UnresolvedReference,
+  DEPLOY_SUMMARY_RESULTS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import DummyAdapter from '../src/adapter'
@@ -158,7 +159,38 @@ describe('dummy adapter', () => {
         })
       })
     })
+
+    describe('changeGroupIds', () => {
+      const deployResultWithNoChangeGroupIds = DEPLOY_SUMMARY_RESULTS.filter(r => r !== 'partial-success')
+      describe.each([...deployResultWithNoChangeGroupIds, undefined])('when deployResult is %s', deployResult => {
+        const adapterWithDeployResult = new DummyAdapter({ ...testParams, deployResult })
+
+        it('should not specify change group ids function', () => {
+          const changeGroupIds = adapterWithDeployResult.deployModifiers.getChangeGroupIds
+          expect(changeGroupIds).toBeUndefined()
+        })
+      })
+
+      describe('when deployResult is partial-success', () => {
+        it('should return changeGroupIdMap with all changes having the same groupId', async () => {
+          const adapterWithDeployResult = new DummyAdapter({ ...testParams, deployResult: 'partial-success' })
+          const changeGroupIds = await adapterWithDeployResult.deployModifiers.getChangeGroupIds?.(
+            new Map([
+              ['id-1', myInst1Change],
+              ['id-2', myInst2Change],
+            ]),
+          )
+          expect(changeGroupIds).toEqual({
+            changeGroupIdMap: new Map([
+              ['id-1', 'dummy.ChangeGroup'],
+              ['id-2', 'dummy.ChangeGroup'],
+            ]),
+          })
+        })
+      })
+    })
   })
+
   describe('fixElements', () => {
     it('should return correct value', async () => {
       const mockReporter = { reportProgress: jest.fn() }

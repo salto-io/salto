@@ -31,7 +31,7 @@ const isFieldConfigurationItem = createSchemeGuard<FieldConfigurationItem>(
 // the default values of isHidden and isRequired are false
 export const removeFieldConfigurationItemDefaultValues = (
   instance: InstanceElement,
-  fieldsMap: Record<string, InstanceElement>,
+  idToFieldMap: Record<string, InstanceElement>,
 ): void => {
   Object.values(instance.value.fields)
     .filter(isFieldConfigurationItem)
@@ -43,8 +43,8 @@ export const removeFieldConfigurationItemDefaultValues = (
         delete fieldItem.isRequired
       }
       if (
-        fieldsMap[fieldItem.id] !== undefined &&
-        fieldItem.description === fieldsMap[fieldItem.id].value.description
+        idToFieldMap[fieldItem.id] !== undefined &&
+        fieldItem.description === idToFieldMap[fieldItem.id].value.description
       ) {
         delete fieldItem.description
       }
@@ -53,7 +53,7 @@ export const removeFieldConfigurationItemDefaultValues = (
 
 export const addFieldConfigurationItemDefaultValues = (
   instance: InstanceElement,
-  fieldsMap: Record<string, InstanceElement>,
+  idToFieldMap: Record<string, InstanceElement>,
 ): void => {
   Object.values(instance.value.fields)
     .filter(isFieldConfigurationItem)
@@ -64,8 +64,8 @@ export const addFieldConfigurationItemDefaultValues = (
       if (fieldItem.isRequired === undefined) {
         fieldItem.isRequired = false
       }
-      if (fieldItem.description === undefined && fieldsMap[fieldItem.id] !== undefined) {
-        fieldItem.description = fieldsMap[fieldItem.id].value.description
+      if (fieldItem.description === undefined && idToFieldMap[fieldItem.id] !== undefined) {
+        fieldItem.description = idToFieldMap[fieldItem.id].value.description
       }
     })
 }

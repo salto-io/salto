@@ -71,10 +71,10 @@ const createFieldsMap = (instances: InstanceElement[], path: string[]): Record<s
       .map(instance => [_.get(instance, path), instance]),
   )
 
-const removeLockedFields = (instance: InstanceElement, fieldsMap: Record<string, InstanceElement>): void => {
+const removeLockedFields = (instance: InstanceElement, idToFieldMap: Record<string, InstanceElement>): void => {
   const [fields, trashedFields] = _.partition(
     instance.value.fields,
-    field => fieldsMap[field.id] !== undefined && !fieldsMap[field.id].value.isLocked,
+    field => idToFieldMap[field.id] !== undefined && !idToFieldMap[field.id].value.isLocked,
   )
 
   instance.value.fields = fields

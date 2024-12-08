@@ -15,33 +15,33 @@ const log = logger(module)
 const enrichFieldItem = (
   fieldName: string,
   fieldItem: Value,
-  fieldsMap: Record<string, InstanceElement>,
+  nameToFieldMap: Record<string, InstanceElement>,
   instanceName: string,
 ): Value => {
   if (!_.isPlainObject(fieldItem)) {
     log.warn('ignoring field item %s in instance %s that is not plain object: %o', fieldName, instanceName, fieldItem)
     return undefined
   }
-  if (fieldsMap[fieldName] === undefined) {
+  if (nameToFieldMap[fieldName] === undefined) {
     // not supposed to get here, since we run field-configuration fix-element
     log.debug(`Omitting element id ${fieldName} from instance ${instanceName}, since it does not exist in the account`)
     return undefined
   }
   return {
-    id: fieldsMap[fieldName].value.id,
+    id: nameToFieldMap[fieldName].value.id,
     ...fieldItem,
   }
 }
 
-export const replaceToMap = (instance: InstanceElement, fieldsMap: Record<string, InstanceElement>): void => {
+export const replaceToMap = (instance: InstanceElement, idToFieldMap: Record<string, InstanceElement>): void => {
   instance.value.fields = Object.fromEntries(
     instance.value.fields
-      .filter((field: Values) => fieldsMap[field.id] !== undefined)
-      .map((field: Values) => [fieldsMap[field.id].elemID.name, _.omit(field, 'id')]),
+      .filter((field: Values) => idToFieldMap[field.id] !== undefined)
+      .map((field: Values) => [idToFieldMap[field.id].elemID.name, _.omit(field, 'id')]),
   )
 }
 
-export const replaceFromMap = (instance: InstanceElement, fieldsMap: Record<string, InstanceElement>): void => {
+export const replaceFromMap = (instance: InstanceElement, nameToFieldMap: Record<string, InstanceElement>): void => {
   const fieldConfigurationItems = instance.value.fields
   if (fieldConfigurationItems === undefined) {
     log.warn('fields value is missing in instance %s, hence not changing fields format', instance.elemID.getFullName())
@@ -56,6 +56,8 @@ export const replaceFromMap = (instance: InstanceElement, fieldsMap: Record<stri
     return
   }
   instance.value.fields = Object.entries(fieldConfigurationItems)
-    .map(([fieldName, fieldItem]) => enrichFieldItem(fieldName, fieldItem, fieldsMap, instance.elemID.getFullName()))
+    .map(([fieldName, fieldItem]) =>
+      enrichFieldItem(fieldName, fieldItem, nameToFieldMap, instance.elemID.getFullName()),
+    )
     .filter(values.isDefined)
 }

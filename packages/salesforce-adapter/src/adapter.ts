@@ -917,7 +917,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   }
 
   @logDuration('fetching Metadata Settings types')
-  private async fetchMetadataSettingsTypes({
+  public async fetchMetadataSettingsTypes({
     instances,
     knownTypes,
     standardSettingsMetaType,

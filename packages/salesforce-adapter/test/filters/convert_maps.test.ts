@@ -29,7 +29,8 @@ import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FIELD_ANNOTATIONS, ORDERED_MAP_PREFIX } from '../../src/constants'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
-import { isOrderedMapTypeOrRefType, salesforceAdapterResolveValues } from '../../src/adapter'
+import { salesforceAdapterResolveValues } from '../../src/adapter'
+import { isOrderedMapTypeOrRefType } from '../../src/filters/utils'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 

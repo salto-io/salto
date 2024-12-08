@@ -64,8 +64,6 @@ import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 import { createCustomObjectType } from './utils'
 import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
-import { Dashboard } from '@salto-io/jsforce-types'
-import { string } from 'joi'
 
 const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
   fields: {
@@ -427,6 +425,7 @@ export const mockTypes = {
       metadataType: 'EmailTemplate',
       suffix: 'email',
       dirName: 'emails',
+      folderType: 'EmailFolder',
     },
     fields: {
       content: { refType: BuiltinTypes.STRING },

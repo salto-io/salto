@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { Element } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
@@ -17,48 +17,31 @@ import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('addParentToMetadataInstancesWithinFolder filter', () => {
   let elements: Element[]
-
-  const types = [
-    {
-      type: mockTypes.EmailTemplate,
-      annotations: { isAnnotated: true },
-      values: { fullName: 'root/second/third/mockedEmailTemplateFolder/mockedEmailTemplate' },
-    },
-    {
-      type: mockTypes.EmailFolder,
-      values: { fullName: 'mockedEmailTemplateFolder' },
-    },
-    {
-      type: mockTypes.Report,
-      values: { fullName: 'root/second/third/mockedReportFolder/mockedReport' },
-    },
-    {
-      type: mockTypes.ReportFolder,
-      values: { fullName: 'mockedReportFolder' },
-    },
-    {
-      type: mockTypes.Document,
-      values: { fullName: 'root/second/third/mockedDocumentFolder/mockedDocument' },
-    },
-    {
-      type: mockTypes.DocumentFolder,
-      values: { fullName: 'mockedDocumentFolder' },
-    },
-    {
-      type: mockTypes.Dashboard,
-      values: { fullName: 'root/second/third/mockedDashboardFolder/mockedDashboard' },
-    },
-    {
-      type: mockTypes.DashboardFolder,
-      values: { fullName: 'mockedDashboardFolder' },
-    },
-  ]
-
   let filter: FilterWith<'onFetch'>
+  let emailTemplateInstance: Element
+  let emailFolderInstance: Element
+  let reportInstance: Element
+  let reportFolderInstance: Element
+  let documentInstance: Element
+  let documentFolderInstance: Element
+  let dashboardInstance: Element
+  let dashboardFolderInstance: Element
 
   beforeEach(() => {
-    elements = []
-    types.forEach(({ values, type }) => elements.push(createInstanceElement(values, type)))
+    elements = [
+      (emailTemplateInstance = createInstanceElement(
+        { fullName: 'MarketingFolder/WelcomeEmail' },
+        mockTypes.EmailTemplate,
+      )),
+      (emailFolderInstance = createInstanceElement({ fullName: 'MarketingFolder' }, mockTypes.EmailFolder)),
+      (reportInstance = createInstanceElement({ fullName: 'SalesFolder/QuarterlySales' }, mockTypes.Report)),
+      (reportFolderInstance = createInstanceElement({ fullName: 'SalesFolder' }, mockTypes.ReportFolder)),
+      (documentInstance = createInstanceElement({ fullName: 'SharedDocs/Policy' }, mockTypes.Document)),
+      (documentFolderInstance = createInstanceElement({ fullName: 'SharedDocs' }, mockTypes.DocumentFolder)),
+      (dashboardInstance = createInstanceElement({ fullName: 'Dashboards/PerformanceDashboard' }, mockTypes.Dashboard)),
+      (dashboardFolderInstance = createInstanceElement({ fullName: 'Dashboards' }, mockTypes.DashboardFolder)),
+      ...Object.values(mockTypes),
+    ]
     filter = filterCreator({
       config: {
         ...defaultFilterContext,
@@ -66,9 +49,37 @@ describe('addParentToMetadataInstancesWithinFolder filter', () => {
         elementsSource: buildElementsSourceFromElements(elements),
       },
     }) as typeof filter
-    filter.onFetch(elements)
   })
-  it('should create parent annotation field with reference to folder instance', () => {
-    expect(elements[0].annotations.parent).toBeDefined()
+
+  describe('addParentToMetadataInstancesWithinFolder onfetch', () => {
+    describe('when the instances are within folder', () => {
+      beforeEach(async () => {
+        await filter.onFetch(elements)
+      })
+      it('should add parent annotation to email template', async () => {
+        expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+        expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+          new ReferenceExpression(emailFolderInstance.elemID, emailFolderInstance),
+        )
+      })
+      it('should add parent annotation to report', () => {
+        expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+        expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+          new ReferenceExpression(reportFolderInstance.elemID, reportFolderInstance),
+        )
+      })
+      it('should add parent annotation to document', () => {
+        expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+        expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+          new ReferenceExpression(documentFolderInstance.elemID, documentFolderInstance),
+        )
+      })
+      it('should add parent annotation to dashboard', () => {
+        expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+        expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+          new ReferenceExpression(dashboardFolderInstance.elemID, dashboardFolderInstance),
+        )
+      })
+    })
   })
 })

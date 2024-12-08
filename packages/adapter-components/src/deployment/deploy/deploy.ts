@@ -19,7 +19,7 @@ import {
   createSaltoElementErrorFromError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { types, values } from '@salto-io/lowerdash'
+import { types, values, promises } from '@salto-io/lowerdash'
 import { APIDefinitionsOptions, ApiDefinitions, queryWithDefault } from '../../definitions'
 import { ChangeAndContext } from '../../definitions/system/deploy'
 import { getRequester } from './requester'
@@ -28,8 +28,10 @@ import { createDependencyGraph } from './graph'
 import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
+import { createChangesForSubResources } from './deploy_subresources'
 
 const log = logger(module)
+const { mapValuesAsync } = promises.object
 
 export type ConvertError = (elemID: ElemID, error: Error) => Error | SaltoElementError | undefined
 
@@ -95,7 +97,28 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   const defQuery = queryWithDefault(definitions.deploy.instances)
   const { dependencies } = definitions.deploy
 
-  const graph = createDependencyGraph({ defQuery, dependencies, changes, ...changeContext })
+  const changesByID = _.keyBy(changes, change => getChangeData(change).elemID.getFullName())
+  const subResourceChangesByChangeID = await mapValuesAsync(changesByID, async change =>
+    createChangesForSubResources({ change, definitions, context: changeContext }),
+  )
+  const subResourceChangeIDToOriginChangeID = _.mapValues(
+    Object.fromEntries(
+      Object.entries(subResourceChangesByChangeID).flatMap(([originChangeID, subResourceChanges]) =>
+        subResourceChanges.map(subResourceChange => [
+          getChangeData(subResourceChange).elemID.getFullName(),
+          changesByID[originChangeID],
+        ]),
+      ),
+    ),
+    change => getChangeData(change).elemID,
+  )
+
+  const graph = createDependencyGraph({
+    defQuery,
+    dependencies,
+    changes: changes.concat(Object.values(subResourceChangesByChangeID).flat()),
+    ...changeContext,
+  })
 
   const errors: Record<string, SaltoElementError[]> = {}
   const appliedChanges: Change<InstanceElement>[] = []
@@ -128,6 +151,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
           const { elemID } = getChangeData(change)
           try {
             if (shouldFailChange(elemID)) {
+              // TODOS - avoid continuing here ?
               log.error(
                 'Not continuing deployment of change %s (action %s) due to earlier failure',
                 elemID.getFullName(),
@@ -143,22 +167,23 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
             })
             return change
           } catch (err) {
-            if (errors[elemID.getFullName()] === undefined) {
-              errors[elemID.getFullName()] = []
+            const failedElemID = subResourceChangeIDToOriginChangeID[elemID.getFullName()] ?? elemID
+            if (errors[failedElemID.getFullName()] === undefined) {
+              errors[failedElemID.getFullName()] = []
             }
-            log.error('Deployment of %s (action %s) failed: %o', elemID.getFullName(), change.action, err)
+            log.error('Deployment of %s (action %s) failed: %o', failedElemID, change.action, err)
             if (isSaltoError(err)) {
-              errors[elemID.getFullName()].push({
+              errors[failedElemID.getFullName()].push({
                 ...err,
-                elemID,
+                elemID: failedElemID,
               })
             } else {
               const message = `${err}`
-              errors[elemID.getFullName()].push({
+              errors[failedElemID.getFullName()].push({
                 message,
                 detailedMessage: message,
                 severity: 'Error',
-                elemID: getChangeData(change).elemID,
+                elemID: failedElemID,
               })
             }
             return undefined
@@ -168,6 +193,12 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     )
       .filter(values.isDefined)
       .filter(change => {
+        const isRecurseIntoChange =
+          subResourceChangeIDToOriginChangeID[getChangeData(change).elemID.getFullName()] !== undefined
+        if (isRecurseIntoChange) {
+          log.debug('Skipping marking recurse into change %s as applied', getChangeData(change).elemID.getFullName())
+          return false
+        }
         const { elemID } = getChangeData(change)
         if (shouldFailChange(elemID)) {
           log.error('Not marking change %s as successful due to partial failure', elemID.getFullName())
@@ -179,6 +210,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   })
 
   return {
+    // TODOS - filter here to only have "real" changes ?
     errors: Object.values(errors).flat(),
     // TODO SALTO-5557 decide if change should be marked as applied if one of the actions failed
     appliedChanges: _.uniqBy(appliedChanges, changeId),

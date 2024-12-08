@@ -8,7 +8,6 @@
 import wu from 'wu'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { flags } from '@salto-io/workspace'
 import { DataNodeMap, NodeId, buildAcyclicGroupedGraph, GroupDAG, GroupKeyFunc } from '@salto-io/dag'
 import {
   Change,
@@ -22,7 +21,6 @@ import {
   isObjectTypeChange,
   isFieldChange,
 } from '@salto-io/adapter-api'
-import { CORE_FLAGS } from '../flags'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -135,15 +133,9 @@ export const buildGroupedGraphFromDiffGraph = (
   }
 
   const diffGraphWithoutRedundantFieldNodes = removeRedundantFieldNodes(diffGraph, groupKey)
-  const shouldFailOnCircularDependency = flags.getSaltoFlagBool(CORE_FLAGS.failPlanOnCircularDependencies)
-  log.debug(
-    'building acyclic grouped graph with failPlanOnCircularDependencies value: %s',
-    shouldFailOnCircularDependency,
-  )
   return buildAcyclicGroupedGraph({
     source: diffGraphWithoutRedundantFieldNodes,
     groupKey,
-    shouldFailOnCircularDependency,
     disjointGroups,
   })
 }

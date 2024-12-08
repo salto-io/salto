@@ -47,7 +47,6 @@ import {
   ERROR_PAGE_TYPE_NAME,
   AUTHORIZATION_SERVER,
   GROUP_RULE_TYPE_NAME,
-  ACTIVE_STATUS,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -254,7 +253,6 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   path: '/api/v1/groups/rules/{id}',
                   method: 'put',
                 },
-                transformation: { omit: ['status', 'allGroupsValid'] },
               },
             },
           ],
@@ -271,22 +269,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           activate: [
             {
               condition: {
-                custom: () => sharedContext => {
-                  const { change } = sharedContext
-                  if (isAdditionChange(change)) {
-                    if (getChangeData(change).value.status !== ACTIVE_STATUS) {
-                      return false
-                    }
-                    return (
-                      _.get(sharedContext, [getChangeData(change).elemID.getFullName(), 'status']) !== ACTIVE_STATUS
-                    )
-                  }
-                  return (
-                    isActivationChange(change) ||
-                    // Group rules must deactivated before applying any other changes
-                    isActiveGroupRuleChange(change)
-                  )
-                },
+                custom: simpleStatus.activationCondition,
               },
               request: {
                 endpoint: {
@@ -299,13 +282,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           deactivate: [
             {
               condition: {
-                custom:
-                  () =>
-                  ({ change }) =>
-                    // Active group rules must be deactivated before removal
-                    (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) ||
-                    isDeactivationChange(change) ||
-                    isActiveGroupRuleChange(change),
+                custom: simpleStatus.deactivationCondition,
               },
               request: {
                 endpoint: {
@@ -319,10 +296,10 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
       toActionNames: changeContext => {
         const { change } = changeContext
-        if (isRemovalChange(change)) {
+        if (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) {
           return ['deactivate', 'remove']
         }
-        if (isModificationChange(change)) {
+        if (isActiveGroupRuleChange(change)) {
           return ['deactivate', 'modify', 'activate']
         }
 

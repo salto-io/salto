@@ -1275,7 +1275,7 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
 
-      it('should successfully modify an active group rule without status change', async () => {
+      it('should successfully modify an active group rule by deactivating and reactivating it"', async () => {
         loadMockReplies('group_rule_modify_active.json')
         groupRule.value.id = 'grouprule-fakeid1'
         groupRule.value.status = ACTIVE_STATUS

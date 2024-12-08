@@ -21,13 +21,13 @@ const createInstance = (
   defaultVal?: boolean,
   typeName?: string,
 ): InstanceElement =>
-  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, typeName ?? SUPPORT_ADDRESS_TYPE_NAME[0]) }), {
+  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, typeName ?? SUPPORT_ADDRESS_TYPE_NAME) }), {
     name,
     forwarding_status: forwardingStatus,
     default: defaultVal,
   })
 const createInstanceNoDefault = (name: string, forwardingStatus: string, typeName?: string): InstanceElement =>
-  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, typeName ?? SUPPORT_ADDRESS_TYPE_NAME[0]) }), {
+  new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, typeName ?? SUPPORT_ADDRESS_TYPE_NAME) }), {
     name,
     forwarding_status: forwardingStatus,
   })
@@ -38,6 +38,10 @@ describe('defaultSupportAddressValidator', () => {
       createChangesWithElements([createInstance('inst', 'failed', true, SUPPORT_ADDRESS_TYPE_NAME)]),
     )
     expect(err[0].severity).toEqual('Error')
+    expect(err[0].message).toEqual("Email: Cannot be a default until it's forwarding is verified")
+    expect(err[0].detailedMessage).toEqual(
+      "zendesk.support_address.instance.inst has default field true and forwarding_status field that is not verified\nIn order to fix this go to the admin center in your zendesk application, search for 'email' and choose 'Email', find the email that is not verified (there should be a red ! under it), click on 'See details' and Verify forwarding",
+    )
   })
   it('should return no errors when default is true and forward_status is verified', async () => {
     const errs = await defaultSupportAddressValidator(

@@ -70,6 +70,11 @@ export const isObjectTypeChange = <T extends Change<unknown>>(change: T): change
 export const isFieldChange = <T extends Change<unknown>>(change: T): change is T & Change<Field> =>
   isField(getChangeData(change))
 
+export const getChangeIfInstanceChange = <T extends Change<unknown>>(change: T): InstanceElement | undefined => {
+  const changedData = getChangeData(change)
+  return isInstanceElement(changedData) ? changedData : undefined
+}
+
 export type DetailedChange<T = ChangeDataType | Values | Value> = Change<T> & {
   id: ElemID
   elemIDs?: {

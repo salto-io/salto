@@ -13,7 +13,7 @@ import {
   isAdapterSuccessInstallResult,
   ObjectType,
 } from '@salto-io/adapter-api'
-import * as cli from '@salto-io/suitecloud-cli'
+import * as cli from '@salto-io/suitecloud-cli-legacy'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Bottleneck from 'bottleneck'
 import { adapter } from '../src/adapter_creator'
@@ -28,7 +28,7 @@ import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/confi
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
 jest.mock('../src/adapter')
-jest.mock('@salto-io/suitecloud-cli')
+jest.mock('@salto-io/suitecloud-cli-legacy')
 
 const mockDownload = cli.SdkDownloadService.download as jest.Mock
 mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })

@@ -39,7 +39,6 @@ import {
 import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import each from 'jest-each'
 import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/config/config_creator'
 import NetsuiteAdapter from '../src/adapter'
 import { configType } from '../src/config/types'
@@ -163,10 +162,11 @@ describe('Netsuite adapter E2E with real account', () => {
   // Set long timeout as we communicate with Netsuite APIs
   jest.setTimeout(1000000)
 
-  each([
-    ['without SuiteApp', false],
-    ['with SuiteApp', true],
-  ]).describe('%s', (_text, withSuiteApp) => {
+  describe.each([
+    ['without SuiteApp', { withSuiteApp: false, withOauth: false }],
+    ['with SuiteApp', { withSuiteApp: true, withOauth: false }],
+    ['with Oauth', { withSuiteApp: false, withOauth: true }],
+  ])('%s', (_text, { withSuiteApp, withOauth }) => {
     let fetchResult: FetchResult
     let fetchedElements: Element[]
 
@@ -444,7 +444,7 @@ describe('Netsuite adapter E2E with real account', () => {
           ? // in order to deploy folder modification (/Images) and file addition (/Images/e2eTest.js)
             // we need to get the folder internalId
             await realAdapter(
-              { credentials: credentialsLease.value, withSuiteApp },
+              { credentials: credentialsLease.value, withSuiteApp, withOauth },
               {
                 fetch: {
                   include: { types: [], fileCabinet: ['/Images/'], customRecords: [] },
@@ -463,7 +463,7 @@ describe('Netsuite adapter E2E with real account', () => {
           folderToModify.value.internalId = fetchedFolder.value.internalId
         }
 
-        const adapterAttr = realAdapter({ credentials: credentialsLease.value, withSuiteApp, elements })
+        const adapterAttr = realAdapter({ credentials: credentialsLease.value, withSuiteApp, withOauth, elements })
         adapter = adapterAttr.adapter
 
         const results = await deployChanges(adapter, changes)
@@ -528,7 +528,7 @@ describe('Netsuite adapter E2E with real account', () => {
         describe('with warnOnStaleWorkspaceData=true flag', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
-              { credentials: credentialsLease.value, withSuiteApp },
+              { credentials: credentialsLease.value, withSuiteApp, withOauth },
               {
                 fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: true },
@@ -556,7 +556,7 @@ describe('Netsuite adapter E2E with real account', () => {
         describe('with warnOnStaleWorkspaceData=false flag', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
-              { credentials: credentialsLease.value, withSuiteApp },
+              { credentials: credentialsLease.value, withSuiteApp, withOauth },
               {
                 fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: false },
@@ -589,7 +589,7 @@ describe('Netsuite adapter E2E with real account', () => {
         describe('with warnOnStaleWorkspaceData=true flag', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
-              { credentials: credentialsLease.value, withSuiteApp },
+              { credentials: credentialsLease.value, withSuiteApp, withOauth },
               {
                 fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: true },
@@ -617,7 +617,7 @@ describe('Netsuite adapter E2E with real account', () => {
         describe('with warnOnStaleWorkspaceData=false flag', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
-              { credentials: credentialsLease.value, withSuiteApp },
+              { credentials: credentialsLease.value, withSuiteApp, withOauth },
               {
                 fetch: fullFetchConfig(),
                 deploy: { warnOnStaleWorkspaceData: false },
@@ -641,7 +641,7 @@ describe('Netsuite adapter E2E with real account', () => {
     describe('Fetch after creation', () => {
       beforeAll(async () => {
         const adapterAttr = realAdapter(
-          { credentials: credentialsLease.value, withSuiteApp },
+          { credentials: credentialsLease.value, withSuiteApp, withOauth },
           {
             fetch: {
               include: fullQueryParams(),
@@ -827,7 +827,7 @@ describe('Netsuite adapter E2E with real account', () => {
         return
       }
 
-      const sdfExecutor = createSdfExecutor()
+      const sdfExecutor = createSdfExecutor({ withOauth })
       let projectInfo: ProjectInfo
       let loadedElements: Element[]
 
@@ -929,12 +929,9 @@ describe('Netsuite adapter E2E with real account', () => {
         projectInfo = await sdfExecutor.createProject(credentialsLease.value)
         const { projectPath } = projectInfo
         await Promise.all([
-          sdfExecutor.importObjects(projectPath, objectsToImport),
-          sdfExecutor.importFiles(
-            projectPath,
-            filesToImport.map(f => f.path),
-          ),
-          sdfExecutor.importFeatures(projectPath),
+          sdfExecutor.importObjects(objectsToImport),
+          sdfExecutor.importFiles(filesToImport.map(f => f.path)),
+          sdfExecutor.importFeatures(),
         ])
         await createAdditionalFiles(projectPath, [ADDITINAL_NEW_FILE, ADDITINAL_EXISTING_FILE])
         logMessage('loading elements from SDF project')
@@ -1163,7 +1160,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       let deployResult: DeployResult
       beforeAll(async () => {
-        const adapterAttr = realAdapter({ credentials: credentialsLease.value, withSuiteApp, elements: [] })
+        const adapterAttr = realAdapter({ credentials: credentialsLease.value, withSuiteApp, withOauth, elements: [] })
         adapter = adapterAttr.adapter
 
         const results = await deployChanges(adapter, revertChanges)

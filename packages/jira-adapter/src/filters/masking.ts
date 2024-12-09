@@ -37,7 +37,7 @@ const maskHeaders = (headers: Header[], headersToMask: string[], id: ElemID): vo
   headers
     .filter(({ name }) => headerRegexes.some(regex => regex.test(name)))
     .forEach(header => {
-      log.debug(`Masked header ${header.name} in ${id.getFullName()}`)
+      log.trace(`Masked header ${header.name} in ${id.getFullName()}`)
       header.value = MASK_VALUE
     })
 }
@@ -60,7 +60,7 @@ const maskValues = (instance: InstanceElement, masking: MaskingConfig): void => 
           _.isString(value) &&
           masking.secretRegexps.some(matcher => lowerdashRegex.isFullRegexMatch(value, matcher))
         ) {
-          log.debug(`Masked value ${path?.getFullName()}`)
+          log.trace(`Masked value ${path?.getFullName()}`)
           return MASK_VALUE
         }
         return value

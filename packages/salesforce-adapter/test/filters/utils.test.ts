@@ -60,6 +60,7 @@ import {
   getProfilesAndPermissionSetsBrokenPaths,
   getOrgFetchTargets,
   getMetadataIncludeFromFetchTargets,
+  isOrderedMapTypeOrRefType,
 } from '../../src/filters/utils'
 import {
   API_NAME,
@@ -84,6 +85,7 @@ import {
   ArtificialTypes,
   CUSTOM_OBJECTS_FIELD,
   CUSTOM_OBJECTS_LOOKUPS_FIELD,
+  ORDERED_MAP_PREFIX,
 } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomField, CustomObject, CustomPicklistValue, FilterItem } from '../../src/client/types'
@@ -1586,6 +1588,16 @@ describe('filter utils', () => {
           ])
         })
       })
+    })
+  })
+  describe('isOrderedMapTypeOrRefType', () => {
+    it('should return true for ordered map type', () => {
+      expect(new ObjectType({ elemID: new ElemID(SALESFORCE, `${ORDERED_MAP_PREFIX}TestType`) })).toSatisfy(
+        isOrderedMapTypeOrRefType,
+      )
+    })
+    it('should return false for non ordered map type', () => {
+      expect(new ObjectType({ elemID: new ElemID(SALESFORCE, 'TestType') })).not.toSatisfy(isOrderedMapTypeOrRefType)
     })
   })
 })

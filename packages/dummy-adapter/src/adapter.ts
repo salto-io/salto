@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import {
   FetchResult,
   AdapterOperations,
@@ -16,8 +17,7 @@ import {
   isInstanceElement,
   FixElementsFunc,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { generateElements, generateFetchErrorsFromConfig, GeneratorParams } from './generator'
+import { generateDeployResult, generateElements, generateFetchErrorsFromConfig, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
 
 export default class DummyAdapter implements AdapterOperations {
@@ -42,10 +42,7 @@ export default class DummyAdapter implements AdapterOperations {
         instance.value = _.omit(instance.value, this.genParams.fieldsToOmitOnDeploy ?? [])
       })
 
-    return {
-      appliedChanges: changeGroup.changes,
-      errors: [],
-    }
+    return generateDeployResult(changeGroup.changes, this.genParams.deployResult ?? 'success')
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -58,6 +55,13 @@ export default class DummyAdapter implements AdapterOperations {
 
   public deployModifiers: DeployModifiers = {
     changeValidator: changeValidator(this.genParams),
+    getChangeGroupIds:
+      this.genParams.deployResult === 'partial-success'
+        ? // In order to return partial success, we need all the changes to reside in the same group
+          async changesMap => ({
+            changeGroupIdMap: new Map(Array.from(changesMap.entries()).map(([id]) => [id, 'dummy.ChangeGroup'])),
+          })
+        : undefined,
   }
 
   // eslint-disable-next-line class-methods-use-this

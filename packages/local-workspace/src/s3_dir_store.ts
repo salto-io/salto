@@ -60,7 +60,7 @@ export const buildS3DirectoryStore = ({
           'Failed to read file %s from S3 bucket %s with body %s',
           fullFilePath,
           bucketName,
-          safeJsonStringify(s3Obj.Body),
+          inspectValue(s3Obj.Body),
         )
       }
       return { buffer, filename: filePath }

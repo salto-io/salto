@@ -21,6 +21,8 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
   const accountIdEnvVarName = addEnvName('NS_ACCOUNT_ID')
   const tokenIdEnvVarName = addEnvName('NS_TOKEN_ID')
   const tokenSecretEnvVarName = addEnvName('NS_TOKEN_SECRET')
+  const certificateIdEnvVarName = addEnvName('NS_CERTIFICATE_ID')
+  const privateKeyEnvVarName = addEnvName('NS_PRIVATE_KEY')
   const suiteAppTokenIdEnvVarName = addEnvName('NS_SUITE_APP_TOKEN_ID')
   const suiteAppTokenSecretEnvVarName = addEnvName('NS_SUITE_APP_TOKEN_SECRET')
   const suiteAppActivationKeyEnvVarName = addEnvName('NS_SUITE_APP_ACTIVATION_KEY')
@@ -32,6 +34,8 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
         accountId: envUtils.required(accountIdEnvVarName),
         tokenId: envUtils.required(tokenIdEnvVarName),
         tokenSecret: envUtils.required(tokenSecretEnvVarName),
+        certificateId: envUtils.required(certificateIdEnvVarName),
+        privateKey: envUtils.required(privateKeyEnvVarName),
         suiteAppTokenId: envUtils.required(suiteAppTokenIdEnvVarName),
         suiteAppTokenSecret: envUtils.required(suiteAppTokenSecretEnvVarName),
         suiteAppActivationKey: envUtils.required(suiteAppActivationKeyEnvVarName),

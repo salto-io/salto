@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { logger } from '@salto-io/logging'
 import {
   Adapter,
   BuiltinTypes,
@@ -15,7 +16,8 @@ import {
   AdapterOperationsContext,
   AdapterOperations,
 } from '@salto-io/adapter-api'
-import { SdkDownloadService } from '@salto-io/suitecloud-cli'
+import { SdkDownloadService as LegacySdkDownloadService } from '@salto-io/suitecloud-cli-legacy'
+import { SdkDownloadService as NewSdkDownloadService } from '@salto-io/suitecloud-cli-new'
 import { combineCustomReferenceGetters } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import Bottleneck from 'bottleneck'
@@ -23,13 +25,23 @@ import { DEFAULT_CONCURRENCY } from './config/constants'
 import { configType } from './config/types'
 import { netsuiteConfigFromConfig, instanceLimiterCreator } from './config/config_creator'
 import { NETSUITE } from './constants'
-import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
+import {
+  Credentials,
+  isSdfCredentialsOnly,
+  isSuiteAppCredentials,
+  SdfOauthCredentials,
+  SdfTokenBasedCredentials,
+  SuiteAppCredentials,
+  toCredentialsAccountId,
+} from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 import loadElementsFromFolder from './sdf_folder_loader'
 import { customReferenceHandlers } from './custom_references'
+
+const log = logger(module)
 
 const configID = new ElemID(NETSUITE)
 
@@ -43,11 +55,19 @@ export const defaultCredentialsType = new ObjectType({
     },
     tokenId: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Token ID' },
+      annotations: { message: 'SDF Token ID (for token-based auth)' },
     },
     tokenSecret: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Token Secret' },
+      annotations: { message: 'SDF Token Secret (for token-based auth)' },
+    },
+    certificateId: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'SDF Certificate ID (for oauth)' },
+    },
+    privateKey: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'SDF Private Key (for oauth)' },
     },
     suiteAppTokenId: {
       refType: BuiltinTypes.STRING,
@@ -72,6 +92,32 @@ export const defaultCredentialsType = new ObjectType({
   annotations: {},
 })
 
+const throwOnInvalidAccountId = (credentials: Credentials): void => {
+  const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
+  if (!isValidAccountIdFormat) {
+    throw new Error(
+      `received an invalid accountId value: (${credentials.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`,
+    )
+  }
+}
+
+const throwOnSdfCredentialsMismatch = (credentials: Credentials): void => {
+  const sdfTokenBasedCreds = credentials as SdfTokenBasedCredentials
+  const sdfOauthCreds = credentials as SdfOauthCredentials
+  if (sdfTokenBasedCreds.tokenId !== undefined && sdfOauthCreds.certificateId !== undefined) {
+    throw new Error('Expected to have one of tokenId and certificateId, but received both')
+  }
+  if (sdfTokenBasedCreds.tokenId === undefined && sdfOauthCreds.certificateId === undefined) {
+    throw new Error('Expected to have one of tokenId and certificateId, but received none')
+  }
+  if (sdfTokenBasedCreds.tokenId !== undefined && sdfTokenBasedCreds.tokenSecret === undefined) {
+    throw new Error('Expected to have tokenSecret when tokenId is specified, but received none')
+  }
+  if (sdfOauthCreds.certificateId !== undefined && sdfOauthCreds.privateKey === undefined) {
+    throw new Error('Expected to have privateKey when certificateId is specified, but received none')
+  }
+}
+
 const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
   if (isSdfCredentialsOnly(credentials)) {
     return
@@ -93,25 +139,31 @@ const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
 }
 
 const netsuiteCredentialsFromCredentials = (credsInstance: Readonly<InstanceElement>): Credentials => {
-  const throwOnInvalidAccountId = (credentials: Credentials): void => {
-    const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
-    if (!isValidAccountIdFormat) {
-      throw new Error(
-        `received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`,
-      )
-    }
+  const accountId = toCredentialsAccountId(credsInstance.value.accountId)
+  const SDFTokenBasedCredentials: SdfTokenBasedCredentials = {
+    accountId,
+    tokenId: credsInstance.value.tokenId === '' ? undefined : credsInstance.value.tokenId,
+    tokenSecret: credsInstance.value.tokenSecret === '' ? undefined : credsInstance.value.tokenSecret,
   }
-
-  const credentials = {
-    accountId: toCredentialsAccountId(credsInstance.value.accountId),
-    tokenId: credsInstance.value.tokenId,
-    tokenSecret: credsInstance.value.tokenSecret,
+  const SDFOauthCredentials: SdfOauthCredentials = {
+    accountId,
+    certificateId: credsInstance.value.certificateId === '' ? undefined : credsInstance.value.certificateId,
+    privateKey: credsInstance.value.privateKey === '' ? undefined : credsInstance.value.privateKey,
+  }
+  const suiteAppCredentials: SuiteAppCredentials = {
+    accountId,
     suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
     suiteAppTokenSecret:
       credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
     suiteAppActivationKey: credsInstance.value.suiteAppActivationKey,
   }
+  const credentials: Credentials = {
+    ...SDFTokenBasedCredentials,
+    ...SDFOauthCredentials,
+    ...suiteAppCredentials,
+  }
   throwOnInvalidAccountId(credentials)
+  throwOnSdfCredentialsMismatch(credentials)
   throwOnMissingSuiteAppLoginCreds(credentials)
   return credentials
 }
@@ -171,11 +223,11 @@ export const adapter: Adapter = {
   configType,
   install: async (): Promise<AdapterInstallResult> => {
     try {
-      const result = await SdkDownloadService.download()
-      if (result.success) {
-        return { ...result, installedVersions: [result.installedVersion] }
-      }
-      return result
+      const legacyResult = await LegacySdkDownloadService.download()
+      log.info('Installed legacy SDF: %o', legacyResult)
+      const newResult = await NewSdkDownloadService.download()
+      log.info('Installed new SDF: %o', newResult)
+      return newResult
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }
     }

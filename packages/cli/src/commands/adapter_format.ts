@@ -10,6 +10,7 @@ import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { calculatePatch, syncWorkspaceToFolder, initFolder, isInitializedFolder } from '@salto-io/core'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { WorkspaceCommandAction, createWorkspaceCommand, createCommandGroupDef } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
@@ -43,6 +44,7 @@ const applyPatchToWorkspace = async (
     fromDir,
     toDir,
     accountName,
+    adapterCreators,
   })
   if (mergeErrors.length > 0) {
     const mergeErrorsValues = await awu(mergeErrors.values()).flat().toArray()
@@ -197,7 +199,7 @@ export const syncWorkspaceToFolderAction: WorkspaceCommandAction<SyncWorkspaceTo
   }
 
   outputLine(`Synchronizing content of workspace to folder at ${toDir}`, output)
-  const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir })
+  const result = await syncWorkspaceToFolder({ workspace, accountName, baseDir: toDir, adapterCreators })
   if (result.errors.length > 0) {
     outputLine(formatSyncToWorkspaceErrors(result.errors), output)
     return CliExitCode.AppError

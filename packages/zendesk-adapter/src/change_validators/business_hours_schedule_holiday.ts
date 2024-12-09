@@ -15,6 +15,7 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { BUSINESS_HOUR_SCHEDULE_HOLIDAY } from '../constants'
 
 const log = logger(module)
@@ -35,7 +36,7 @@ const isDateRangeExceedsLimit = (instance: InstanceElement): boolean => {
   const { value } = instance
   if (!isBusinessHoursScheduleHoliday(value)) {
     log.error(
-      `Invalid business hours schedule holiday instance encountered. Expected an object with valid 'start_date' and 'end_date' fields, but received: ${value}`,
+      `Invalid business hours schedule holiday instance encountered. Expected an object with valid 'start_date' and 'end_date' fields, but received: ${inspectValue(value)}`,
     )
     return false
   }

@@ -166,6 +166,7 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { ZendeskFetchConfig } from './user_config'
 import { filterOutInactiveInstancesForType, filterOutInactiveItemForType } from './inactive'
 import ZendeskGuideClient from './client/guide_client'
+import ZendeskCsrfClient from './client/csrf_client'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -471,6 +472,7 @@ export interface ZendeskAdapterParams {
 export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
   private guideClient: ZendeskGuideClient | undefined
+  private graphqlClient: ZendeskCsrfClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
@@ -510,6 +512,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.getElemIdFunc = wrapper?.getElemIdFunc
     this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
+    this.graphqlClient = ZendeskCsrfClient.createFromZendeskClient(client)
     this.elementsSource = elementsSource
     this.brandsList = undefined
     this.guideClient = undefined
@@ -537,7 +540,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.adapterDefinitions = definitions.mergeDefinitionsWithOverrides(
       {
         // we can't add guide client at this point
-        clients: createClientDefinitions({ main: this.client, guide: this.client }),
+        clients: createClientDefinitions({ main: this.client, guide: this.client, graphql: this.graphqlClient }),
         pagination: PAGINATION,
         fetch: definitions.mergeWithUserElemIDDefinitions({
           userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
@@ -703,7 +706,11 @@ export default class ZendeskAdapter implements AdapterOperations {
         'brand',
       ])
       this.guideClient = new ZendeskGuideClient(brandClients)
-      const client = createClientDefinitions({ main: this.client, guide: this.guideClient })
+      const client = createClientDefinitions({
+        main: this.client,
+        guide: this.guideClient,
+        graphql: this.graphqlClient,
+      })
       const guideFetchDef = definitions.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
         fetchConfig: createFetchDefinitions(this.userConfig, {

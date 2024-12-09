@@ -9,7 +9,7 @@ import path from 'path'
 import { logger } from '@salto-io/logging'
 import * as AWS from '@aws-sdk/client-s3'
 import { createS3Client } from '@salto-io/aws-utils'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { dirStore, staticFiles } from '@salto-io/workspace'
 import Bottleneck from 'bottleneck'
 import getStream from 'get-stream'
@@ -50,7 +50,7 @@ export const buildS3DirectoryStore = ({
       })
 
       if (!(s3Obj.Body instanceof Readable)) {
-        log.error('Received unexpected body type from s3.getObject: %s', safeJsonStringify(s3Obj.Body))
+        log.error('Received unexpected body type from s3.getObject: %s', inspectValue(s3Obj.Body))
         return undefined
       }
 

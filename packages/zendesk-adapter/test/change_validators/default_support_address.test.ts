@@ -40,7 +40,7 @@ describe('defaultSupportAddressValidator', () => {
     expect(err[0].severity).toEqual('Error')
     expect(err[0].message).toEqual("Email: Cannot be a default until it's forwarding is verified")
     expect(err[0].detailedMessage).toEqual(
-      "zendesk.support_address.instance.inst has default field true and forwarding_status field that is not verified\nIn order to fix this go to the admin center in your zendesk application, search for 'email' and choose 'Email', find the email that is not verified (there should be a red ! under it), click on 'See details' and Verify forwarding",
+      "zendesk.support_address.instance.inst has default field true and forwarding_status field that is not verified\nIn order to successfully deploy, go to zendesk.support_address.instance.inst and change the default field from true to false\nIn order verify, go to the admin center in your zendesk application, search for 'email' and choose 'Email', find the email that is not verified (there should be a red ! under it), click on 'See details' and Verify forwarding",
     )
   })
   it('should return no errors when default is true and forward_status is verified', async () => {

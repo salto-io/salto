@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ActionName, Change, getChangeData, InstanceElement, ChangeId } from '@salto-io/adapter-api'
+import { ActionName, Change, getChangeData, InstanceElement, ChangeId, isDependentAction } from '@salto-io/adapter-api'
 import { DAG } from '@salto-io/dag'
 import { DefQuery } from '../../definitions'
 import { InstanceDeployApiDefinitions, ChangeDependency, ChangeAndContext } from '../../definitions/system/deploy'
@@ -32,6 +32,10 @@ const getRelevantActions = <AdditionalAction extends string>(
 const toDefaultActionNames = <AdditionalAction extends string = never>({
   change,
 }: ChangeAndContext): (AdditionalAction | ActionName)[] => [change.action]
+
+const isStandardAction = <AdditionalAction extends string = never>(
+  action: AdditionalAction | ActionName,
+): action is ActionName => action === 'add' || action === 'remove' || action === 'modify'
 
 /**
  * define the dependencies when deploying a change group, based on the existing changes.
@@ -100,7 +104,28 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       })
       graph.addEdge(toNodeID(typeName, second), toNodeID(typeName, first))
     })
+
+    // Add dependencies from original changes to subresource changes created for deployment
+    const typeActions = Object.keys(changesByTypeAndAction[typeName] ?? []) as (ActionName | AdditionalAction)[]
+    Object.keys(defQuery.query(typeName)?.recurseIntoTypes ?? []).forEach(recurseIntoTypeName => {
+      const recurseIntoActions = Object.keys(changesByTypeAndAction[recurseIntoTypeName] ?? []) as (
+        | ActionName
+        | AdditionalAction
+      )[]
+      typeActions.forEach(typeAction => {
+        recurseIntoActions.forEach(recurseIntoAction => {
+          if (
+            isStandardAction(typeAction) &&
+            isStandardAction(recurseIntoAction) &&
+            isDependentAction(typeAction, recurseIntoAction)
+          ) {
+            graph.addEdge(toNodeID(recurseIntoTypeName, recurseIntoAction), toNodeID(typeName, typeAction))
+          }
+        })
+      })
+    })
   })
+
   dependencies?.forEach(({ first, second }) => {
     getRelevantActions(changesByTypeAndAction[first.type], first.action).forEach(firstAction => {
       getRelevantActions(changesByTypeAndAction[second.type], second.action).forEach(secondAction => {

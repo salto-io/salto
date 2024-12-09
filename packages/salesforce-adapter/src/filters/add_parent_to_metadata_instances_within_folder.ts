@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
+import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -14,10 +15,12 @@ import { addElementParentReference, apiNameSync, buildElementsSourceForFetch, me
 const { isDefined } = lowerDashValues
 const { toArrayAsync } = collections.asynciterable
 const { DefaultMap } = collections.map
+const log = logger(module)
 
 type FolderInstancesIndex = Map<string, Record<string, InstanceElement>>
 
-const isWithinFolder = (instance: InstanceElement): boolean => isDefined(instance.getTypeSync().annotations.folderType)
+const isInstanceWithinFolder = (instance: InstanceElement): boolean =>
+  isDefined(instance.getTypeSync().annotations.folderType)
 
 const createFolderInstancesIndex = (elements: Element[]): FolderInstancesIndex => {
   const folderInstancesIndex = new DefaultMap<string, Record<string, InstanceElement>>(() => ({}))
@@ -35,6 +38,7 @@ const filter: FilterCreator = ({ config }) => ({
     if (!config.fetchProfile.isFeatureEnabled('addParentToMetadataInstancesWithinFolder')) {
       return
     }
+    let count: number = 0
     const folderInstancesIndex = createFolderInstancesIndex(
       await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
     )
@@ -45,13 +49,15 @@ const filter: FilterCreator = ({ config }) => ({
     }
     elements
       .filter(isInstanceElement)
-      .filter(isWithinFolder)
+      .filter(isInstanceWithinFolder)
       .forEach(instance => {
         const parent = getFolderInstance(instance)
         if (isDefined(parent)) {
           addElementParentReference(instance, parent)
+          count += 1
         }
       })
+    log.debug(':onfetch created %d references in total', count)
   },
 })
 

@@ -25,10 +25,9 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import _, { isUndefined } from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
-import { isDefined } from '@salto-io/lowerdash/src/values'
 
 const { awu } = collections.asynciterable
 
@@ -144,6 +143,18 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     return contexts.length > 1 ? contexts : undefined
   }
 
+  const checkSingleDefault = async (
+    value: Value,
+    fieldType: TypeElement,
+    key: string,
+  ): Promise<string[] | undefined> => {
+    const defaultObjects = getDefaultObjectsList(value, fieldType)
+    if (!_.isArray(defaultObjects)) {
+      return undefined
+    }
+    return isUndefined(key) ? undefined : ['as']
+  }
+
   const createChangeErrorFromContext = (
     field: Field,
     context: string[] | undefined,
@@ -170,12 +181,11 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
         return awu(Object.entries(value)).flatMap(async ([_key, innerValue]) => {
           const startLevelType = isMapType(fieldType) ? fieldType.getInnerTypeSync() : fieldType
           const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
-          if (isDefined(defaultsContexts)) {
+          if (defaultsContexts !== undefined) {
             return createChangeErrorFromContext(field, defaultsContexts, after)
-          } else {
-            const singleDefaultContexts = await checkSingleDefault(innerValue, startLevelType, valueName)
-            return createChangeErrorFromContextSingleDefault(field, singleDefaultContexts, after)
           }
+          const singleDefaultContexts = await checkSingleDefault(innerValue, startLevelType, _key)
+          return createChangeErrorFromContext(field, singleDefaultContexts, after)
         })
       }
       const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)

@@ -181,7 +181,6 @@ export type ChangeValidatorName =
   | 'orderedMaps'
   | 'layoutDuplicateFields'
   | 'customApplications'
-  | 'recordTypeVisibilityNoDefaults'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -872,7 +871,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     orderedMaps: { refType: BuiltinTypes.BOOLEAN },
     layoutDuplicateFields: { refType: BuiltinTypes.BOOLEAN },
     customApplications: { refType: BuiltinTypes.BOOLEAN },
-    recordTypeVisibilityNoDefaults: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -95,7 +95,7 @@ export const removeSelfServiceSecurityPassword = (value: Values): void => {
 export const maskPayloadsPassword = (value: Values): void => {
   const payloads = _.get(value, 'general.payloads')
   if (typeof payloads === 'string') {
-    if(PASSWORD_REGEX.test(payloads)) {
+    if (PASSWORD_REGEX.test(payloads)) {
       log.trace(`Masked value of payloads in '${_.get(value, 'general.name')}'`)
       _.set(value, 'general.payloads', payloads.replace(PASSWORD_REGEX, MASKED_PASSWORD))
     }

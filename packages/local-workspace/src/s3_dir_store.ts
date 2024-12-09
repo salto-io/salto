@@ -55,10 +55,18 @@ export const buildS3DirectoryStore = ({
       }
 
       const buffer = await getStream.buffer(s3Obj.Body)
-
+      if (buffer === undefined) {
+        log.warn(
+          'Failed to read file %s from S3 bucket %s with body %s',
+          fullFilePath,
+          bucketName,
+          safeJsonStringify(s3Obj.Body),
+        )
+      }
       return { buffer, filename: filePath }
     } catch (err) {
       if (err.name === 'NoSuchKey') {
+        log.warn('File %s not found in S3 bucket %s', fullFilePath, bucketName)
         return undefined
       }
       log.warn('Failed to read file %s from S3 bucket %s', fullFilePath, bucketName)

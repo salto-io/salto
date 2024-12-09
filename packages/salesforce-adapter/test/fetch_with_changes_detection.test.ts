@@ -321,4 +321,17 @@ describe('Salesforce Fetch With Changes Detection', () => {
       })
     })
   })
+  describe('Retrieve Settings', () => {
+    let fetchMetadataSettingsTypesSpy: jest.SpyInstance
+    describe('when retrieveSettings is enabled', () => {
+      beforeEach(() => {
+        setupMocks()
+        fetchMetadataSettingsTypesSpy = jest.spyOn(adapter, 'fetchMetadataSettingsTypes')
+      })
+      it('should not attempt to retrieve Settings metadata types', async () => {
+        await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(fetchMetadataSettingsTypesSpy).not.toHaveBeenCalled()
+      })
+    })
+  })
 })

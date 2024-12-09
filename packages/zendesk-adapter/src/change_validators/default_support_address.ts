@@ -19,8 +19,8 @@ import { SUPPORT_ADDRESS_TYPE_NAME } from '../constants'
 const createDefaultSupportAddressError = (id: ElemID): ChangeError => ({
   elemID: id,
   severity: 'Error',
-  message: "Email: Cannot be a default until it's forwarding is verified",
-  detailedMessage: `${id.getFullName()} has default field true and forwarding_status field that is not verified\nIn order to successfully deploy, go to ${id.getFullName()} and change the default field from true to false\nTo verify, go to the admin center in your zendesk application, search for 'email' and choose 'Email', find the email that is not verified (there should be a red ! under it), click on 'See details' and Verify forwarding`,
+  message: 'Only a verified support_address email can be set as the default.',
+  detailedMessage: `${id.getFullName()} has a default field set to true, but the forwarding_status is unverified.\nTo proceed, either set the default field to false and then verify the email in the Zendesk Admin Center by going to Email, locating the unverified email (marked with a red "!"), clicking See details, and verifying forwarding.`,
 })
 /*
  * This change validator checks that a support_address is not set as default if it's forward status is not verified

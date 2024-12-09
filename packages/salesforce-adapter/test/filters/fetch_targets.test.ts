@@ -47,25 +47,49 @@ describe('fetch targets filter', () => {
       elements = [customObjectType, customObjectTypeWithLookup]
     })
     describe('when feature is enabled', () => {
-      beforeEach(() => {
-        filter = filterCreator({
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures: { extendFetchTargets: true } } }),
-          },
-        }) as typeof filter
+      describe('when fetch is full', () => {
+        beforeEach(() => {
+          filter = filterCreator({
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({ fetchParams: { optionalFeatures: { extendFetchTargets: true } } }),
+            },
+          }) as typeof filter
+        })
+
+        it('should create a fetch targets instance with correct custom objects and lookups', async () => {
+          await filter.onFetch(elements)
+          const fetchTargetsInstance = elements
+            .filter(isInstanceElement)
+            .find(e => e.getTypeSync() === ArtificialTypes.FetchTargets) as InstanceElement
+          expect(fetchTargetsInstance).toBeDefined()
+          expect(fetchTargetsInstance.value).toEqual({
+            customObjects: [CUSTOM_OBJECT_NAME, CUSTOM_OBJECT_WITH_LOOKUP_NAME],
+            customObjectsLookups: {
+              [CUSTOM_OBJECT_WITH_LOOKUP_NAME]: [CUSTOM_OBJECT_NAME, 'Account', 'Contact'],
+            },
+          })
+        })
       })
-      it('should create a fetch targets instance with correct custom objects and lookups', async () => {
-        await filter.onFetch(elements)
-        const fetchTargetsInstance = elements
-          .filter(isInstanceElement)
-          .find(e => e.getTypeSync() === ArtificialTypes.FetchTargets) as InstanceElement
-        expect(fetchTargetsInstance).toBeDefined()
-        expect(fetchTargetsInstance.value).toEqual({
-          customObjects: [CUSTOM_OBJECT_NAME, CUSTOM_OBJECT_WITH_LOOKUP_NAME],
-          customObjectsLookups: {
-            [CUSTOM_OBJECT_WITH_LOOKUP_NAME]: [CUSTOM_OBJECT_NAME, 'Account', 'Contact'],
-          },
+
+      describe('when fetch is partial', () => {
+        beforeEach(() => {
+          filter = filterCreator({
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: { target: [], optionalFeatures: { extendFetchTargets: true } },
+              }),
+            },
+          }) as typeof filter
+        })
+
+        it('should not create a fetch targets instance', async () => {
+          await filter.onFetch(elements)
+          const fetchTargetsInstance = elements
+            .filter(isInstanceElement)
+            .find(e => e.getTypeSync() === ArtificialTypes.FetchTargets)
+          expect(fetchTargetsInstance).toBeUndefined()
         })
       })
     })

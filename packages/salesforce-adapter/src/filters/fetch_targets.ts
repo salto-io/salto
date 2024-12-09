@@ -66,6 +66,9 @@ const filterCreator: FilterCreator = ({ config }) => ({
     warningMessage: 'Error occurred when attempting to populate Fetch Targets',
     config,
     fetchFilterFunc: async elements => {
+      if (config.fetchProfile.metadataQuery.isPartialFetch()) {
+        return
+      }
       const fetchTargetsInstance = new InstanceElement(
         ElemID.CONFIG_NAME,
         ArtificialTypes.FetchTargets,

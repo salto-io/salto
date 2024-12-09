@@ -28,6 +28,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
+import { isDefined } from '@salto-io/lowerdash/src/values'
 
 const { awu } = collections.asynciterable
 
@@ -169,7 +170,12 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
         return awu(Object.entries(value)).flatMap(async ([_key, innerValue]) => {
           const startLevelType = isMapType(fieldType) ? fieldType.getInnerTypeSync() : fieldType
           const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
-          return createChangeErrorFromContext(field, defaultsContexts, after)
+          if (isDefined(defaultsContexts)) {
+            return createChangeErrorFromContext(field, defaultsContexts, after)
+          } else {
+            const singleDefaultContexts = await checkSingleDefault(innerValue, startLevelType, valueName)
+            return createChangeErrorFromContextSingleDefault(field, singleDefaultContexts, after)
+          }
         })
       }
       const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)

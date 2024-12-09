@@ -25,17 +25,13 @@ import { parser } from '@salto-io/parser'
 import { detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource, ParsedNaclFile } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/static_files'
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import {
-  InMemoryRemoteMap,
-  RemoteMapCreator,
-  RemoteMap,
-  CreateRemoteMapParams,
-} from '../../../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
+import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 import { getDanglingStaticFiles } from '../../../src/workspace/nacl_files/nacl_files_source'
@@ -106,9 +102,9 @@ describe.each([false, true])(
     let mockedStaticFilesSource: StaticFilesSource
 
     let createdMaps: Record<string, RemoteMap<Value>> = {}
-    const mockRemoteMapCreator: RemoteMapCreator = async <T, K extends string = string>({
+    const mockRemoteMapCreator = async <T, K extends string = string>({
       namespace,
-    }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+    }: Pick<CreateRemoteMapParams<T>, 'namespace'>): Promise<RemoteMap<T, K>> => {
       if (createdMaps[namespace] === undefined) {
         const realMap = new InMemoryRemoteMap()
         const getImpl = async (key: string): Promise<Value> => (key.endsWith('hash') ? 'HASH' : realMap.get(key))
@@ -205,6 +201,11 @@ describe.each([false, true])(
     })
 
     describe('flush', () => {
+      const deprecatedReferencedIndexes = [
+        'naclFileSource--referenced_index',
+        'parsedResultCache-naclFileSource--parsed_nacl_files-referenced',
+      ]
+
       it('should flush everything by default', async () => {
         mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
         mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
@@ -213,8 +214,50 @@ describe.each([false, true])(
         await naclSrc.load({})
         await naclSrc.flush()
         expect(mockDirStore.flush as jest.Mock).toHaveBeenCalledTimes(1)
-        Object.values(createdMaps).forEach(cache => expect(cache.flush).toHaveBeenCalledTimes(1))
+        Object.entries(createdMaps).forEach(([name, cache]) => {
+          if (!deprecatedReferencedIndexes.includes(name)) {
+            expect(cache.flush).toHaveBeenCalledTimes(1)
+          }
+        })
         expect(mockedStaticFilesSource.flush).toHaveBeenCalledTimes(1)
+      })
+
+      it('should clear&flush referenced_index if it is not empty', async () => {
+        const wrappedRemoteMapCreator = async <T, K extends string = string>({
+          namespace,
+        }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+          const remoteMapCreator = await mockRemoteMapCreator({ namespace })
+          if (deprecatedReferencedIndexes.includes(namespace)) {
+            ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(false)
+          }
+          return remoteMapCreator as RemoteMap<T, K>
+        }
+        const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, wrappedRemoteMapCreator, true)
+        await naclSrc.load({})
+        await naclSrc.flush()
+        deprecatedReferencedIndexes.forEach(namespace => {
+          expect(createdMaps[namespace].clear).toHaveBeenCalled()
+          expect(createdMaps[namespace].flush).toHaveBeenCalled()
+        })
+      })
+
+      it('should not clear&flush referenced_index if it is empty', async () => {
+        const wrappedRemoteMapCreator = async <T, K extends string = string>({
+          namespace,
+        }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+          const remoteMapCreator = await mockRemoteMapCreator({ namespace })
+          if (deprecatedReferencedIndexes.includes(namespace)) {
+            ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(true)
+          }
+          return remoteMapCreator as RemoteMap<T, K>
+        }
+        const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, wrappedRemoteMapCreator, true)
+        await naclSrc.load({})
+        await naclSrc.flush()
+        deprecatedReferencedIndexes.forEach(namespace => {
+          expect(createdMaps[namespace].clear).not.toHaveBeenCalled()
+          expect(createdMaps[namespace].flush).not.toHaveBeenCalled()
+        })
       })
     })
 
@@ -343,7 +386,7 @@ describe.each([false, true])(
         expect(mockedStaticFilesSource.rename).toHaveBeenCalledTimes(1)
         expect(mockedStaticFilesSource.rename).toHaveBeenCalledWith(newName)
 
-        const cacheKeysToRename = ['elements_index', 'referenced_index', 'metadata', 'searchableNamesIndex']
+        const cacheKeysToRename = ['elements_index', 'metadata', 'searchableNamesIndex']
         cacheKeysToRename.forEach(key => {
           const mapNames = Object.keys(createdMaps)
             .filter(namespace => !namespace.includes('parsedResultCache'))
@@ -587,18 +630,18 @@ describe.each([false, true])(
         expect(await naclSource.getParsedNaclFile(mockFileData.filename)).toEqual(undefined)
       })
 
-      it('should cache referenced result on parsedNaclFile', async () => {
+      it('should cache staticFiles result on parsedNaclFile', async () => {
         ;(mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
         const elements = [new ObjectType({ elemID: new ElemID('dummy', 'elem') })]
         mockParse.mockResolvedValueOnce({ elements, errors: [] })
-        const mockGetElementReferenced = jest.spyOn(naclFileSourceModule, 'getElementReferenced')
+        const mockGetElementStaticFiles = jest.spyOn(naclFileSourceModule, 'getElementsStaticFiles')
         const parsed = await naclSource.getParsedNaclFile(mockFileData.filename)
         expect(parsed).toBeDefined()
-        await parsed?.data.referenced()
-        expect(mockGetElementReferenced).toHaveBeenCalled()
-        mockGetElementReferenced.mockClear()
-        await parsed?.data.referenced()
-        expect(mockGetElementReferenced).not.toHaveBeenCalled()
+        await parsed?.data.staticFiles()
+        expect(mockGetElementStaticFiles).toHaveBeenCalled()
+        mockGetElementStaticFiles.mockClear()
+        await parsed?.data.staticFiles()
+        expect(mockGetElementStaticFiles).not.toHaveBeenCalled()
       })
 
       it('should return static file references', async () => {
@@ -827,112 +870,6 @@ describe.each([false, true])(
         it('should not query staticFilesIndex', () => {
           expect(mockStaticFilesIndex.get).not.toHaveBeenCalled()
         })
-      })
-    })
-    describe('getElementReferencedFiles', () => {
-      let source: NaclFilesSource
-      let referencedFiles: string[]
-
-      const defFile = `
-      type salesforce.lead {
-      }
-    `
-
-      const usedAsInstType = `
-      salesforce.lead inst {
-        key = "value"
-      }
-    `
-
-      const usedAsField = `
-      type salesforce.leader {
-        salesforce.lead lead {
-          
-        }
-      }
-    `
-
-      const usedAsInnerFieldType = `
-    type salesforce.leaders {
-      "List<salesforce.lead>" lead {
-      }
-    }
-  `
-
-      const usedAsReference = `
-      type salesforce.stam {
-        annotations {
-          string key {
-          }
-        }
-        key = salesforce.lead
-      }
-    `
-
-      const usedAsNestedReference = `
-      type salesforce.stam2 {
-        annotations {
-          string key {
-          }
-        }
-        key = salesforce.lead.attr.key
-      }
-    `
-
-      const usedInUnmerged = `
-      type salesforce.unmerged {
-        annotations {
-          string key {
-          }
-        }
-        whatami = salesforce.lead.attr.key
-      }
-    `
-      const files = {
-        'defFile.nacl': defFile,
-        'usedAsInstType.nacl': usedAsInstType,
-        'usedAsField.nacl': usedAsField,
-        'usedAsInnerFieldType.nacl': usedAsInnerFieldType,
-        'usedAsReference.nacl': usedAsReference,
-        'usedAsNestedReference.nacl': usedAsNestedReference,
-        'unmerged.nacl': usedInUnmerged,
-      }
-
-      beforeAll(async () => {
-        const naclFileStore = createMockDirStore(undefined, undefined, files)
-        source = await naclFilesSource('env1', naclFileStore, mockedStaticFilesSource, mockRemoteMapCreator, true)
-        await source.load({})
-        referencedFiles = await source.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead'))
-      })
-
-      it('should find files in which the id is used as an instance type', () => {
-        expect(referencedFiles).toContain('usedAsInstType.nacl')
-      })
-
-      it('should find files in which the id is used as an field type', () => {
-        expect(referencedFiles).toContain('usedAsField.nacl')
-      })
-
-      it('should find files in which the id is used as an inner field type', () => {
-        expect(referencedFiles).toContain('usedAsInnerFieldType.nacl')
-      })
-
-      it('should find files in which the id is used as reference', () => {
-        expect(referencedFiles).toContain('usedAsReference.nacl')
-      })
-
-      it('should find files in which the id is used as nested reference', () => {
-        expect(referencedFiles).toContain('usedAsNestedReference.nacl')
-      })
-
-      it('should find nested attr referenced', async () => {
-        const attrRefFiles = await source.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-        expect(attrRefFiles).toContain('usedAsNestedReference.nacl')
-      })
-
-      it('should find referenced in values of with no matching field in the type', async () => {
-        const attrRefFiles = await source.getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
-        expect(attrRefFiles).toContain('unmerged.nacl')
       })
     })
   },

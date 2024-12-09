@@ -59,7 +59,7 @@ const isTokenElemID = (token: string): boolean => {
   try {
     const refID = ElemID.fromFullName(token)
     return !refID.isConfigType() || !refID.isTopLevel()
-  } catch (e) {
+  } catch {
     return false
   }
 }

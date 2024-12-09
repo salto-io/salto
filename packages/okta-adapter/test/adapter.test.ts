@@ -240,8 +240,8 @@ describe('adapter', () => {
           'okta.AccessPolicy.instance.Seamless_access_based_on_network_context@s',
           'okta.AccessPolicy.instance.custom_policy@s',
           'okta.AccessPolicyRule.instance.Classic_Migrated_s__Catch_all_Rule@umuubs',
-          'okta.AccessPolicyRule.instance.Default_Policy__Catch_all_Rule@suubs',
-          'okta.AccessPolicyRule.instance.Default_Policy__shir_test@suus',
+          'okta.AccessPolicyRule.instance.Default_Policy_s__Catch_all_Rule@umuubs',
+          'okta.AccessPolicyRule.instance.Default_Policy_s__shir_test@umuus',
           'okta.AccessPolicyRule.instance.Microsoft_Office_365_s__Allow_Web_and_Modern_Auth@uumuussss',
           'okta.AccessPolicyRule.instance.Microsoft_Office_365_s__Catch_all_Rule@uumuubs',
           'okta.AccessPolicyRule.instance.Neta_test1234_s__Catch_all_Rule@umuubs',
@@ -307,10 +307,10 @@ describe('adapter', () => {
           'okta.BehaviorRule.instance.New_IP@s',
           'okta.BehaviorRule.instance.New_State@s',
           'okta.BehaviorRule.instance.Velocity',
+          'okta.Brand.instance.Default_Brand@s',
           'okta.Brand.instance.Shir_Brand_Test@b',
-          'okta.Brand.instance.salto_org_4289783@b',
+          'okta.BrandTheme.instance.Default_Brand_s@um',
           'okta.BrandTheme.instance.Shir_Brand_Test_b@uum',
-          'okta.BrandTheme.instance.salto_org_4289783_b@uum',
           'okta.BrowserPlugin.instance',
           'okta.DeviceAssurance.instance.IOS_policy@s',
           'okta.DeviceAssurance.instance.another_test@s',
@@ -318,7 +318,7 @@ describe('adapter', () => {
           'okta.DeviceAssurance.instance.some_test@s',
           'okta.DeviceAssurance.instance.test_device_assurance@s',
           'okta.DeviceAssurance.instance.windows_policy@s',
-          'okta.Domain.instance.salto_okta_com@v',
+          'okta.Domain.instance.Default_Domain@s',
           'okta.Domain.instance.test_salto_io@v',
           'okta.EmailNotifications.instance',
           'okta.EmbeddedSignInSuppport.instance',
@@ -1274,7 +1274,25 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.status).toEqual(INACTIVE_STATUS)
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      // TODO(SALTO-6485): Allow to modify an active group rule
+
+      it('should successfully modify an active group rule by deactivating and reactivating it"', async () => {
+        loadMockReplies('group_rule_modify_active.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const updatedGroupRule = groupRule.clone()
+        updatedGroupRule.value.name = 'your group rule'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule, after: updatedGroupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
       it('should successfully modify an inactive group rule without status change', async () => {
         loadMockReplies('group_rule_modify_inactive.json')
         groupRule.value.id = 'grouprule-fakeid1'
@@ -1331,7 +1349,21 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.name).toEqual('your group rule')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      // TODO(SALTO-6485): Allow to remove an active group rule
+      it('should successfully remove an active group rule', async () => {
+        loadMockReplies('group_rule_remove_active.json')
+        groupRule.value.id = 'grouprule-fakeid1'
+        groupRule.value.status = ACTIVE_STATUS
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'groupRule',
+            changes: [toChange({ before: groupRule })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
       it('should successfully remove an inactive group rule', async () => {
         loadMockReplies('group_rule_remove_inactive.json')
         groupRule.value.id = 'grouprule-fakeid1'

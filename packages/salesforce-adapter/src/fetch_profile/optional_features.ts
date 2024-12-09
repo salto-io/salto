@@ -17,8 +17,9 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   metaTypes: false,
   picklistsAsMaps: false,
   retrieveSettings: false,
-  genAiReferences: false,
+  genAiReferences: true,
   networkReferences: false,
+  extendFetchTargets: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

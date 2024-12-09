@@ -12,6 +12,8 @@ const { recursiveNestedTypeName } = fetchUtils.element
 
 const toEntraTypeName = (typeName: string): string => `Entra${typeName}`
 
+export const SERVICE_BASE_URL = 'https://entra.microsoft.com'
+
 /* Fields */
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
 export const APP_ROLES_FIELD_NAME = 'appRoles'

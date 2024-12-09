@@ -80,6 +80,7 @@ import {
   emptyAutomationOrderValidator,
   viewCustomStatusConditionsValidator,
   defaultSupportAddressValidator,
+  businessHoursScheduleHolidayChangeValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskConfig } from './config'
@@ -191,6 +192,7 @@ export default ({
     ticketFieldDeactivation: ticketFieldDeactivationValidator,
     defaultSupportAddress: defaultSupportAddressValidator,
     // ******************************
+    businessHoursScheduleHoliday: businessHoursScheduleHolidayChangeValidator,
   }
 
   return createSkipParentsOfSkippedInstancesValidator({

@@ -177,23 +177,15 @@ export default [
       'no-shadow': ['off'],
       '@typescript-eslint/no-shadow': ['error'],
 
-      '@typescript-eslint/ban-types': [
-        'error',
-        {
-          extendDefaults: true,
-
-          types: {
-            '{}': false,
-            object: false,
-          },
-        },
-      ],
+      '@typescript-eslint/no-unsafe-function-type': ['error'],
+      '@typescript-eslint/no-empty-object-type': ['off'],
+      '@typescript-eslint/no-wrapper-object-types': ['off'],
 
       '@typescript-eslint/explicit-module-boundary-types': ['off'],
       '@typescript-eslint/return-await': ['error', 'in-try-catch'],
       '@typescript-eslint/no-floating-promises': ['error'],
 
-      '@typescript-eslint/no-misused-promises': ['error'],
+      '@typescript-eslint/no-misused-promises': 'error',
 
       'jest/valid-describe': ['off'],
 
@@ -229,8 +221,7 @@ export default [
         },
       ],
 
-      'no-unused-expressions': 'off',
-      '@typescript-eslint/no-unused-expressions': ['error'],
+      'no-unused-expressions': ['error'],
       '@typescript-eslint/await-thenable': ['error'],
     },
   },

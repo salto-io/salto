@@ -10,10 +10,9 @@ import path from 'path'
 import { isSubDirectory, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import { AdapterFormat, Change, getChangeData, isField, isObjectType } from '@salto-io/adapter-api'
-import { resolveChangeElement } from '@salto-io/adapter-components'
 import { filter } from '@salto-io/adapter-utils'
-import { collections, objects, promises, values } from '@salto-io/lowerdash'
-import { allFilters, NESTED_METADATA_TYPES } from '../adapter'
+import { objects, promises, values } from '@salto-io/lowerdash'
+import { allFilters, NESTED_METADATA_TYPES, resolveSalesforceChanges } from '../adapter'
 import { CUSTOM_METADATA, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS, API_NAME } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
@@ -39,7 +38,6 @@ import { detailedMessageFromSfError } from './errors'
 import { loadElementsFromFolder } from './sfdx_parser'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
 
 const FILE_DELETE_CONCURRENCY = 100
@@ -145,9 +143,7 @@ export const dumpElementsToFolder: DumpElementsToFolderFunc = async ({ baseDir, 
     fetchParams: {},
   })
 
-  const resolvedChanges = await awu(supportedMetadataChanges)
-    .map(change => resolveChangeElement(change, getLookUpName(fetchProfile)))
-    .toArray()
+  const resolvedChanges = await resolveSalesforceChanges(supportedMetadataChanges, getLookUpName(fetchProfile))
   const filterRunner = filter.filtersRunner(
     {
       config: {

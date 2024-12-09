@@ -32,7 +32,7 @@ export const isClassicEngineOrg = async (oktaClient: OktaClient): Promise<boolea
     }
     // pipeline is idx for Okta Identity Engine, and v1 for Classic Engine
     return data.pipeline === 'v1'
-  } catch (err) {
+  } catch {
     log.debug('Failed to determine org type, defaults to Identity Engine Account')
     return false
   }

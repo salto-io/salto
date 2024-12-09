@@ -29,7 +29,6 @@ import { MockInterface } from '@salto-io/test-utils'
 import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 import JiraClient, { GQL_BASE_URL_GIRA, graphQLResponseType } from '../../../src/client/client'
 import issueLayoutFilter, { getLayoutRequestsAsync } from '../../../src/filters/layouts/issue_layout'
-import asyncApiCallsFilter from '../../../src/filters/async_api_calls'
 import { getFilterParams, mockClient, createEmptyType } from '../../utils'
 import {
   ISSUE_LAYOUT_TYPE,
@@ -51,7 +50,6 @@ describe('issue layout filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let layoutFilter: FilterType
   let config: JiraConfig
-  let asyncFilter: FilterType
   let elements: Element[]
   let screenType: ObjectType
   let screenInstance: InstanceElement
@@ -88,7 +86,6 @@ describe('issue layout filter', () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableIssueLayouts = true
     layoutFilter = issueLayoutFilter(getFilterParams({ client, config, adapterContext })) as typeof layoutFilter
-    asyncFilter = asyncApiCallsFilter(getFilterParams({ client, config })) as typeof asyncFilter
     screenType = createEmptyType('Screen')
 
     screenInstance = new InstanceElement('screen1', screenType, {

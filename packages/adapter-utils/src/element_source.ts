@@ -35,7 +35,8 @@ export const buildElementsSourceFromElements = (
     }
     const returnedIds = new Set(Object.keys(elementsMap))
 
-    for await (const fallbackSource of fallbackSources) {
+    for (const fallbackSource of fallbackSources) {
+      // eslint-disable-next-line no-await-in-loop
       for await (const elemID of await fallbackSource.list()) {
         if (!returnedIds.has(elemID.getFullName())) {
           returnedIds.add(elemID.getFullName())
@@ -51,7 +52,8 @@ export const buildElementsSourceFromElements = (
     }
     const returnedIds = new Set(Object.keys(elementsMap))
 
-    for await (const fallbackSource of fallbackSources) {
+    for (const fallbackSource of fallbackSources) {
+      // eslint-disable-next-line no-await-in-loop
       for await (const element of await fallbackSource.getAll()) {
         if (!returnedIds.has(element.elemID.getFullName())) {
           returnedIds.add(element.elemID.getFullName())

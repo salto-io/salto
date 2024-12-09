@@ -67,7 +67,6 @@ type JiraFetchConfig = definitions.UserFetchConfig<{ fetchCriteria: JiraFetchFil
   enableJSMPremium?: boolean
   removeDuplicateProjectRoles?: boolean
   addAlias?: boolean
-  splitFieldConfiguration?: boolean
   enableMissingReferences?: boolean
   enableIssueLayouts?: boolean
   enableNewWorkflowAPI?: boolean
@@ -341,7 +340,6 @@ const fetchConfigType = definitions.createUserFetchConfigType({
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
     parseAdditionalAutomationExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
-    splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
     enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
     enableIssueLayouts: { refType: BuiltinTypes.BOOLEAN },
     enableNewWorkflowAPI: { refType: BuiltinTypes.BOOLEAN },

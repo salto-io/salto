@@ -171,19 +171,18 @@ const ALL_TABLE_TO_INTERNAL_ID = {
   ...MANUALLY_TABLE_TO_INTERNAL_ID,
 } as const
 
-const ADDITIONAL_TABLES = [
-  'entityStatus',
-  'campaignEvent',
-  'revenueRecognitionRule',
-  'incoterm',
-  'approvalStatus',
-  'accountingBook',
-  'shipItem',
-  'employeeStatus',
-  'jobResourceRole',
-] as const
+type AdditionalTables =
+  | 'entityStatus'
+  | 'campaignEvent'
+  | 'revenueRecognitionRule'
+  | 'incoterm'
+  | 'approvalStatus'
+  | 'accountingBook'
+  | 'shipItem'
+  | 'employeeStatus'
+  | 'jobResourceRole'
 
-export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | (typeof ADDITIONAL_TABLES)[number]
+export type SuiteQLTableName = keyof typeof ALL_TABLE_TO_INTERNAL_ID | AdditionalTables
 
 const TRANSACTION_TYPES = [
   'advInterCompanyJournalEntry',

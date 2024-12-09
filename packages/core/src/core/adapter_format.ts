@@ -359,6 +359,7 @@ type UpdateElementFolderArgs = {
 }
 
 export type UpdateElementFolderResult = {
+  unappliedChanges: ReadonlyArray<Change>
   errors: ReadonlyArray<SaltoError>
 }
 
@@ -377,6 +378,7 @@ export const updateElementFolder = ({
       const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
       if (dumpElementsToFolder === undefined) {
         return {
+          unappliedChanges: [],
           errors: [
             {
               severity: 'Error' as const,

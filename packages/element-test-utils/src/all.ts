@@ -7,6 +7,6 @@
  */
 
 import { expect } from '@jest/globals'
-import { isEqualElemID } from './custom_equality'
+import { allEqualityTesters } from './custom_equality'
 
-expect.addEqualityTesters([isEqualElemID])
+expect.addEqualityTesters(allEqualityTesters)

@@ -103,6 +103,7 @@ const OPTIONAL_FEATURES = [
   'retrieveSettings',
   'genAiReferences',
   'networkReferences',
+  'extendFetchTargets',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

@@ -109,7 +109,7 @@
     "@salto-io/element-test-utils": "0.4.6",
     "@types/jest": "^29.5.12",
     "@types/vscode": "^1.36",
-    "eslint": "^9.6.0",
+    "eslint": "^9.16.0",
     "jest": "^29.7.0",
     "prettier": "3.2.5",
     "readdirp": "^3.1.1",

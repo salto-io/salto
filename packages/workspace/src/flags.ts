@@ -15,7 +15,7 @@ export const getSaltoFlagBool = (flagName: string): boolean => {
   let parsedFlagValue: unknown
   try {
     parsedFlagValue = flagValue === undefined ? undefined : JSON.parse(flagValue)
-  } catch (e) {
+  } catch {
     parsedFlagValue = flagValue
   }
   return Boolean(parsedFlagValue)

@@ -46,8 +46,8 @@ describe('Types', () => {
     describe('file type definition', () => {
       it('should have single fileContent field', () => {
         expect(
-          Object.values(additionalTypes.file.fields).find(async f => {
-            const fType = await f.getType()
+          Object.values(additionalTypes.file.fields).find(f => {
+            const fType = f.getTypeSync()
             return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
           }),
         ).toBeDefined()

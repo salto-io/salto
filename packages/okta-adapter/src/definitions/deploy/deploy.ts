@@ -46,6 +46,7 @@ import {
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
   AUTHORIZATION_SERVER,
+  GROUP_RULE_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -58,6 +59,7 @@ import * as simpleStatus from './utils/simple_status'
 import { isCustomApp } from '../fetch/types/application'
 import { addBrandIdToRequest } from './types/email_domain'
 import { isSystemScope } from './types/authorization_servers'
+import { isActiveGroupRuleChange } from './types/group_rules'
 
 const log = logger(module)
 
@@ -221,6 +223,95 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
       toActionNames: simpleStatus.toActionNames,
       actionDependencies: simpleStatus.actionDependencies,
+    },
+    [GROUP_RULE_TYPE_NAME]: {
+      requestsByAction: {
+        default: {
+          request: {
+            transformation: { omit: ['status', 'allGroupsValid'] },
+          },
+        },
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/groups/rules',
+                  method: 'post',
+                },
+              },
+              copyFromResponse: {
+                toSharedContext: simpleStatus.toSharedContext,
+              },
+            },
+          ],
+          modify: [
+            {
+              condition: simpleStatus.modificationCondition,
+              request: {
+                endpoint: {
+                  path: '/api/v1/groups/rules/{id}',
+                  method: 'put',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/groups/rules/{id}',
+                  method: 'delete',
+                },
+              },
+            },
+          ],
+          activate: [
+            {
+              condition: {
+                custom: simpleStatus.activationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/groups/rules/{id}/lifecycle/activate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          deactivate: [
+            {
+              condition: {
+                custom: simpleStatus.deactivationCondition,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/groups/rules/{id}/lifecycle/deactivate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: changeContext => {
+        const { change } = changeContext
+        if (isRemovalChange(change) && getChangeData(change).value.status !== INACTIVE_STATUS) {
+          return ['deactivate', 'remove']
+        }
+        if (isActiveGroupRuleChange(change)) {
+          return ['deactivate', 'modify', 'activate']
+        }
+
+        return simpleStatus.toActionNames(changeContext)
+      },
+      actionDependencies: [
+        ...simpleStatus.actionDependencies,
+        {
+          first: 'deactivate',
+          second: 'remove',
+        },
+      ],
     },
     [NETWORK_ZONE_TYPE_NAME]: {
       requestsByAction: {

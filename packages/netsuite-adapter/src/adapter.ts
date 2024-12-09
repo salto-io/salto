@@ -219,8 +219,10 @@ export interface NetsuiteAdapterParams {
   filePathRegexSkipList?: string[]
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
-  // config that is determined by the user
+  // config to use in the adapter
   config: NetsuiteConfig
+  // config that is determined by the user
+  originalConfig: NetsuiteConfig
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {
@@ -229,7 +231,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: string[]
   private readonly additionalDependencies: AdditionalDependencies
-  private readonly userConfig: NetsuiteConfig
+  private readonly config: NetsuiteConfig
+  private readonly originalConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
   private fixElementsFunc: FixElementsFunc
   private readonly fetchInclude: QueryParams
@@ -261,12 +264,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filePathRegexSkipList = [],
     getElemIdFunc,
     config,
+    originalConfig,
   }: NetsuiteAdapterParams) {
     this.client = client
     this.elementsSource = elementsSource
     this.typesToSkip = typesToSkip.concat(makeArray(config.typesToSkip))
     this.filePathRegexSkipList = filePathRegexSkipList.concat(makeArray(config.filePathRegexSkipList))
-    this.userConfig = config
+    this.config = config
+    this.originalConfig = originalConfig
     this.getElemIdFunc = getElemIdFunc
     this.fetchInclude = config.fetch.include
     this.fetchExclude = config.fetch.exclude
@@ -351,7 +356,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ])
     const { query: netsuiteBundlesQuery, bundlesToInclude } = buildNetsuiteBundlesQuery(
       installedBundles,
-      this.userConfig.excludeBundles ?? [],
+      this.config.excludeBundles ?? [],
     )
     const fetchQueryWithBundles = andQuery(fetchQuery, netsuiteBundlesQuery)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
@@ -368,8 +373,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
       const result = await this.client.importFileCabinetContent(
         updatedFetchQuery,
-        this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
-        this.userConfig.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
+        this.config.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+        this.config.fetch.exclude.fileCabinet.filter(reg => reg.startsWith(EXTENSION_REGEX)),
       )
       progressReporter.reportProgress({ message: 'Fetching instances' })
       return result
@@ -379,7 +384,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const scriptIdsSet = new Set(instancesIds.map(item => item.instanceId))
       const lockedCustomRecordTypesScriptIds = _.uniq(
         (failedTypes.lockedError[CUSTOM_RECORD_TYPE] ?? []).concat(
-          this.userConfig.fetch.lockedElementsToExclude?.types
+          this.config.fetch.lockedElementsToExclude?.types
             .filter(isIdsQuery)
             .filter(type => type.name === CUSTOM_RECORD_TYPE)
             .flatMap(type => type.ids ?? [])
@@ -454,7 +459,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ] = await Promise.all([
       getStandardAndCustomElements(),
       getDataElements(this.client, fetchQueryWithBundles, this.getElemIdFunc),
-      getSuiteQLTableElements(this.userConfig, this.elementsSource, isPartial),
+      getSuiteQLTableElements(this.config, this.elementsSource, isPartial),
     ])
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -550,7 +555,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       isPartial,
     )
 
-    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
+    // we use here `originalConfig` because it doesn't include changes that were done to `config` in `netsuiteConfigFromConfig`
+    const updatedConfig = getConfigFromConfigChanges(failures, this.originalConfig)
 
     const partialFetchData = setPartialFetchData(isPartial, deletedElements)
 
@@ -626,10 +632,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
   @logDuration('deploying account configuration')
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
-    const { internalIdToTypes } = getTypesToInternalId(this.userConfig.suiteAppClient?.additionalSuiteQLTables ?? [])
+    const { internalIdToTypes } = getTypesToInternalId(this.config.suiteAppClient?.additionalSuiteQLTables ?? [])
     const suiteQLNameToInternalIdsMap = await getUpdatedSuiteQLNameToInternalIdsMap(
       this.client,
-      this.userConfig,
+      this.config,
       this.elementsSource,
       changesToDeploy,
       internalIdToTypes,
@@ -669,7 +675,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         filtersRunner: (changesGroupId, suiteQLNameToInternalIdsMap) =>
           this.createFiltersRunner({ operation: 'deploy', changesGroupId, suiteQLNameToInternalIdsMap }),
         elementsSource: this.elementsSource,
-        config: this.userConfig,
+        config: this.config,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
       dependencyChanger,

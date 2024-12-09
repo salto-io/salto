@@ -353,6 +353,7 @@ describe('NetsuiteAdapter creator', () => {
           filePathRegexSkipList: ['^/Templates.*'],
           client: clientConfig,
         },
+        originalConfig: config.value,
         elementsSource,
         getElemIdFunc: mockGetElemIdFunc,
       })
@@ -385,6 +386,7 @@ describe('NetsuiteAdapter creator', () => {
             },
             fetchTarget: expect.any(Object),
           },
+          originalConfig: conf.value,
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })
@@ -399,6 +401,7 @@ describe('NetsuiteAdapter creator', () => {
         expect(NetsuiteAdapter).toHaveBeenCalledWith({
           client: expect.any(Object),
           config: { fetch: fullFetchConfig() },
+          originalConfig: { fetch: fullFetchConfig() },
           elementsSource,
           getElemIdFunc: mockGetElemIdFunc,
         })

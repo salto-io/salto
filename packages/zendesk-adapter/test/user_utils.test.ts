@@ -29,7 +29,7 @@ describe('userUtils', () => {
 
     beforeEach(() => {
       jest.isolateModules(() => {
-        // eslint-disable-next-line global-require
+        // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
         userUtils = require('../src/user_utils')
       })
     })
@@ -110,7 +110,7 @@ describe('userUtils', () => {
 
     beforeEach(() => {
       jest.isolateModules(() => {
-        // eslint-disable-next-line global-require
+        // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
         userUtils = require('../src/user_utils')
       })
     })
@@ -176,7 +176,7 @@ describe('userUtils', () => {
 
     beforeEach(() => {
       jest.isolateModules(() => {
-        // eslint-disable-next-line global-require
+        // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
         userUtils = require('../src/user_utils')
       })
     })

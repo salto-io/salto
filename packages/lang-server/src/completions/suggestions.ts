@@ -164,7 +164,7 @@ const referenceSuggestions = async (elements: ReadOnlyElementsSource, valueToken
       insertText: [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR),
       filterText: [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR),
     }))
-  } catch (e) {
+  } catch {
     return []
   }
 }

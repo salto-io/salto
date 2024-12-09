@@ -32,7 +32,6 @@ import {
   TypeElement,
   ElemID,
   isObjectTypeChange,
-  BuiltinTypes,
   isPrimitiveType,
   isReferenceExpression,
   isElement,
@@ -52,6 +51,9 @@ import {
   MUTING_PERMISSION_SET_METADATA_TYPE,
   SHARING_RULES_TYPE,
   INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE,
+  TYPES_PATH,
+  SUBTYPES_PATH,
 } from '../constants'
 import { metadataType } from '../transformers/transformer'
 import { GLOBAL_VALUE_SET } from './global_value_sets'
@@ -95,6 +97,7 @@ export const ORDERED_MAP_ORDER_FIELD = 'order'
 export const createOrderedMapType = <T extends TypeElement>(innerType: T): ObjectType =>
   new ObjectType({
     elemID: new ElemID('salesforce', `OrderedMapOf${innerType.elemID.name}`),
+    path: [SALESFORCE, TYPES_PATH, SUBTYPES_PATH, `OrderedMapOf${innerType.elemID.name}`],
     fields: {
       [ORDERED_MAP_VALUES_FIELD]: {
         refType: new MapType(innerType),
@@ -103,7 +106,7 @@ export const createOrderedMapType = <T extends TypeElement>(innerType: T): Objec
         },
       },
       [ORDERED_MAP_ORDER_FIELD]: {
-        refType: new ListType(BuiltinTypes.STRING),
+        refType: new ListType(innerType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -387,8 +390,8 @@ const updateFieldTypes = async (
   instanceType: ObjectType | TypeElement,
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
-): Promise<void> => {
-  await awu(Object.entries(instanceMapFieldDef)).forEach(async ([fieldName, mapDef]) => {
+): Promise<ObjectType[]> =>
+  awu(Object.entries(instanceMapFieldDef)).reduce<ObjectType[]>(async (acc, [fieldName, mapDef]) => {
     const field = await getField(instanceType, fieldName.split('.'))
     if (isDefined(field)) {
       const fieldType = await field.getType()
@@ -401,7 +404,9 @@ const updateFieldTypes = async (
         if (mapDef.nested) {
           field.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
         } else if (mapDef.maintainOrder) {
-          field.refType = createRefToElmWithValue(createOrderedMapType(innerType))
+          const orderedMapType = createOrderedMapType(innerType)
+          acc.push(orderedMapType)
+          field.refType = createRefToElmWithValue(orderedMapType)
         } else {
           field.refType = createRefToElmWithValue(new MapType(innerType))
         }
@@ -411,22 +416,22 @@ const updateFieldTypes = async (
         if (isObjectType(deepInnerType)) {
           const keyFieldType = deepInnerType.fields[mapDef.key]
           if (!keyFieldType) {
-            log.error('could not find key field %s for field %s', mapDef.key, field.elemID.getFullName())
-            return
+            log.warn('could not find key field %s for field %s', mapDef.key, field.elemID.getFullName())
+            return acc
           }
           keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
         }
       }
     }
-  })
-}
+    return acc
+  }, [])
 
 const updateAnnotationRefTypes = async (
   typeElement: TypeElement,
   nonUniqueMapFields: string[],
   mapFieldDef: Record<string, MapDef>,
-): Promise<void> => {
-  await awu(Object.entries(mapFieldDef)).forEach(async ([fieldName, mapDef]) => {
+): Promise<ObjectType[]> =>
+  awu(Object.entries(mapFieldDef)).reduce<ObjectType[]>(async (acc, [fieldName, mapDef]) => {
     const fieldType = _.get(typeElement.annotationRefTypes, fieldName).type
     // navigate to the right field type
     if (isDefined(fieldType) && !isMapType(fieldType)) {
@@ -437,7 +442,9 @@ const updateAnnotationRefTypes = async (
       if (mapDef.nested) {
         typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(new MapType(new MapType(innerType)))
       } else if (mapDef.maintainOrder) {
-        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(createOrderedMapType(innerType))
+        const orderedMapType = createOrderedMapType(innerType)
+        acc.push(orderedMapType)
+        typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(orderedMapType)
       } else {
         typeElement.annotationRefTypes[fieldName] = createRefToElmWithValue(new MapType(innerType))
       }
@@ -448,13 +455,13 @@ const updateAnnotationRefTypes = async (
         const keyFieldType = deepInnerType.fields[mapDef.key]
         if (!keyFieldType) {
           log.error('could not find key field %s for type %s', mapDef.key, fieldType.elemID.getFullName())
-          return
+          return acc
         }
         keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
       }
     }
-  })
-}
+    return acc
+  }, [])
 
 const convertElementFieldsToMaps = async (
   elementsToConvert: Element[],
@@ -625,39 +632,45 @@ const filter: FilterCreator = ({ config }) => ({
     const metadataTypeToFieldToMapDef = getMetadataTypeToFieldToMapDef(config.fetchProfile)
     const annotationDefsByType = getAnnotationDefsByType(config.fetchProfile)
 
-    await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
-      const typeToConvert = findTypeToConvert(elements, targetMetadataType)
-      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      if (isDefined(typeToConvert)) {
-        if (instancesToConvert.length === 0) {
-          await updateFieldTypes(typeToConvert, [], mapFieldDef)
-        } else {
+    await awu(Object.keys(metadataTypeToFieldToMapDef))
+      .flatMap<ObjectType>(async targetMetadataType => {
+        const instancesToConvert = findInstancesToConvert(elements, targetMetadataType)
+        const typeToConvert = findTypeToConvert(elements, targetMetadataType)
+        const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
+        if (isDefined(typeToConvert)) {
+          if (instancesToConvert.length === 0) {
+            return updateFieldTypes(typeToConvert, [], mapFieldDef)
+          }
           const nonUniqueMapFields = await convertElementFieldsToMaps(
             instancesToConvert,
             mapFieldDef,
             targetMetadataType,
           )
-          await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
+          return updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
         }
-      }
-    })
+        return []
+      })
+      .uniquify(newType => newType.elemID.getFullName())
+      .forEach(newType => elements.push(newType))
 
     const fields = elements.filter(isObjectType).flatMap(obj => Object.values(obj.fields))
     const primitiveTypesByName = _.keyBy(elements.filter(isPrimitiveType), e => e.elemID.name)
-    await awu(Object.entries(annotationDefsByType)).forEach(async ([fieldTypeName, annotationToMapDef]) => {
-      const fieldType = primitiveTypesByName[fieldTypeName]
-      if (fieldType === undefined) {
-        log.warn('Cannot find PrimitiveType %s. Skipping converting Fields of this type to maps', fieldTypeName)
-        return
-      }
-      const fieldsToConvert = fields.filter(field => fieldType.elemID.isEqual(field.getTypeSync().elemID))
-      if (fieldsToConvert.length === 0) {
-        return
-      }
-      const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef, fieldTypeName)
-      await updateAnnotationRefTypes(fieldType, nonUniqueMapFields, annotationToMapDef)
-    })
+    await awu(Object.entries(annotationDefsByType))
+      .flatMap<ObjectType>(async ([fieldTypeName, annotationToMapDef]) => {
+        const fieldType = primitiveTypesByName[fieldTypeName]
+        if (fieldType === undefined) {
+          log.warn('Cannot find PrimitiveType %s. Skipping converting Fields of this type to maps', fieldTypeName)
+          return []
+        }
+        const fieldsToConvert = fields.filter(field => fieldType.elemID.isEqual(field.getTypeSync().elemID))
+        if (fieldsToConvert.length === 0) {
+          return []
+        }
+        const nonUniqueMapFields = await convertElementFieldsToMaps(fieldsToConvert, annotationToMapDef, fieldTypeName)
+        return updateAnnotationRefTypes(fieldType, nonUniqueMapFields, annotationToMapDef)
+      })
+      .uniquify(newType => newType.elemID.getFullName())
+      .forEach(newType => elements.push(newType))
   },
 
   preDeploy: async changes => {

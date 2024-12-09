@@ -123,7 +123,6 @@ const retryOnBadResponseWithDelay = (
 
     const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
       try {
-        // eslint-disable-next-line @typescript-eslint/return-await
         return await call.call()
       } catch (e) {
         const error = toError(e)

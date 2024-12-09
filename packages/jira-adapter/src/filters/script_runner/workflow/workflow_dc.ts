@@ -32,7 +32,7 @@ const decodeBase64 = (base64: string): string => {
     }
     // all base64 strings of DC ScriptRunner scripts start with `!` (or YCFg in base 64)
     return decoded.substring(DC_ENCODE_PREFIX.length)
-  } catch (e) {
+  } catch {
     log.info(`Could not decode DC ScriptRunner script, expected base64, got: ${base64}`)
     return base64
   }
@@ -52,7 +52,7 @@ const decodeScriptObject = (base64: string): unknown => {
       delete value.script
     }
     return value
-  } catch (e) {
+  } catch {
     log.info(`Could not decode DC ScriptRunner script, assuming an old format. Expected JSON, got: ${decoded}`)
     return {
       script: decoded,

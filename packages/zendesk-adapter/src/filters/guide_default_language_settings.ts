@@ -60,7 +60,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
             settings: guideSettings.find(settings => settings.value.brand === brandId),
             languageSettings: guideLanguageSettings.filter(settings => settings.value.brand === brandId),
           }
-        } catch (e) {
+        } catch {
           log.error(`Failed requesting default locale for brand '${brand.elemID.name}'`)
           return undefined
         }

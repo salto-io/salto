@@ -130,7 +130,6 @@ const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
 
 const logDecorator = decorators.wrapMethodWith(async ({ call }: decorators.OriginalCall): Promise<unknown> => {
   try {
-    // eslint-disable-next-line @typescript-eslint/return-await
     return await call()
   } catch (e) {
     throw toError(e)

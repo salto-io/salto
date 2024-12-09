@@ -288,7 +288,7 @@ export const deployWorkflowScheme = async (
         log.warn(
           `failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${err.message}`,
         )
-      } catch (error) {
+      } catch {
         log.warn(
           `failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `,
         )

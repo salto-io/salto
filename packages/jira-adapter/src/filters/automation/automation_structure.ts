@@ -195,7 +195,7 @@ const convertToCompareFieldValue: TransformFuncSync = ({ value, path, field }) =
       try {
         value.compareFieldValue.values = JSON.parse(value.compareFieldValue.value)
         delete value.compareFieldValue.value
-      } catch (err) {
+      } catch {
         log.error(
           `Failed to parse JSON string in path: ${path.createNestedID('compareFieldValue', 'value').getFullName()}`,
         )

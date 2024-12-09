@@ -35,7 +35,7 @@ export const provideWorkspaceDefinition = async (
     if (locations.length !== 0) {
       return locations
     }
-  } catch (e) {
+  } catch {
     // token is not a valid element id
   }
 

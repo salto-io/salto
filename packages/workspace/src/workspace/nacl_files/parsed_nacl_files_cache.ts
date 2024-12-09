@@ -10,11 +10,14 @@ import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash, collections, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
+import { logger } from '@salto-io/logging'
 import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
 import { StaticFilesSource } from '../static_files'
 import { RemoteMapCreator, RemoteMap } from '../remote_map'
 import { ParsedNaclFile, SyncParsedNaclFile } from './parsed_nacl_file'
+
+const log = logger(module)
 
 const { toMD5 } = hash
 const { awu } = collections.asynciterable
@@ -33,7 +36,6 @@ type CacheSources = {
   sourceMap: RemoteMap<parser.SourceMap>
   metadata: RemoteMap<FileCacheMetadata>
   errors: RemoteMap<parser.ParseError[]>
-  referenced: RemoteMap<string[]>
   staticFiles: RemoteMap<string[]>
 }
 
@@ -61,7 +63,6 @@ const parseNaclFileFromCacheSources = (cacheSources: CacheSources, filename: str
   elements: () => cacheSources.elements.get(filename),
   data: {
     errors: () => cacheSources.errors.get(filename),
-    referenced: () => cacheSources.referenced.get(filename),
     staticFiles: () => cacheSources.staticFiles.get(filename),
   },
   sourceMap: () => cacheSources.sourceMap.get(filename),
@@ -119,12 +120,6 @@ const getCacheSources = async (
     persistent,
   }),
   errors: await getErrors(cacheName, remoteMapCreator, persistent),
-  referenced: await remoteMapCreator({
-    namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
-    serialize: async (val: string[]) => safeJsonStringify(val ?? []),
-    deserialize: data => JSON.parse(data),
-    persistent,
-  }),
   staticFiles: await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'staticFiles'),
     serialize: async (val: string[]) => safeJsonStringify(val ?? []),
@@ -135,7 +130,6 @@ const getCacheSources = async (
 
 const copyAllSourcesToNewName = async (oldCacheSources: CacheSources, newCacheSources: CacheSources): Promise<void> => {
   await newCacheSources.errors.setAll(oldCacheSources.errors.entries())
-  await newCacheSources.referenced.setAll(oldCacheSources.referenced.entries())
   await newCacheSources.elements.setAll(oldCacheSources.elements.entries())
   await newCacheSources.metadata.setAll(oldCacheSources.metadata.entries())
   await newCacheSources.sourceMap.setAll(oldCacheSources.sourceMap.entries())
@@ -154,7 +148,7 @@ export const createParseResultCache = (
   return {
     put: async (filename: string, value: SyncParsedNaclFile): Promise<void> => {
       cachedHash = undefined
-      const { metadata, errors, referenced, sourceMap, elements, staticFiles } = await cacheSources
+      const { metadata, errors, sourceMap, elements, staticFiles } = await cacheSources
       const fileErrors = value.data.errors()
       const currentError = await errors.get(filename)
       if (!_.isEqual(currentError ?? [], fileErrors ?? [])) {
@@ -164,8 +158,7 @@ export const createParseResultCache = (
           await errors.delete(value.filename)
         }
       }
-      await referenced.set(value.filename, await value.data.referenced())
-      await staticFiles.set(value.filename, await value.data.staticFiles())
+      await staticFiles.set(value.filename, value.data.staticFiles())
       const sourceMapValue = value.sourceMap?.()
       if (sourceMapValue !== undefined) {
         await sourceMap.set(value.filename, sourceMapValue)
@@ -176,7 +169,7 @@ export const createParseResultCache = (
       await metadata.set(filename, { hash: hash.toMD5(value.buffer ?? '') })
     },
     putAll: async (files: Record<string, SyncParsedNaclFile>): Promise<void> => {
-      const { metadata, errors, referenced, sourceMap, elements, staticFiles } = await cacheSources
+      const { metadata, errors, sourceMap, elements, staticFiles } = await cacheSources
       cachedHash = undefined
       const errorEntriesToAdd = awu(Object.keys(files))
         .map(async file => {
@@ -195,11 +188,8 @@ export const createParseResultCache = (
         .filter(values.isDefined)
       await errors.setAll(errorEntriesToAdd)
       await errors.deleteAll(errorEntriesToDelete)
-      await referenced.setAll(
-        awu(Object.keys(files)).map(async file => ({ key: file, value: await files[file].data.referenced() })),
-      )
       await staticFiles.setAll(
-        awu(Object.keys(files)).map(async file => ({ key: file, value: await files[file].data.staticFiles() })),
+        awu(Object.keys(files)).map(async file => ({ key: file, value: files[file].data.staticFiles() })),
       )
       await sourceMap.setAll(
         awu(Object.keys(files))
@@ -279,6 +269,19 @@ export const createParseResultCache = (
         throw new Error('can not flush an non persistent parsed nacl file cache')
       }
       await awu(Object.values(await cacheSources)).forEach(source => source.flush())
+
+      // clear deprecated referenced index
+      const referencedIndex = await remoteMapCreator({
+        namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
+        serialize: async (val: string[]) => safeJsonStringify(val ?? []),
+        deserialize: data => JSON.parse(data),
+        persistent,
+      })
+      if (!(await referencedIndex.isEmpty())) {
+        log.debug('going to clear entries of deprecated index referenced')
+        await referencedIndex.clear()
+        await referencedIndex.flush()
+      }
     },
     clone: (): ParsedNaclFileCache =>
       createParseResultCache(cacheName, remoteMapCreator, staticFilesSource.clone(), persistent),

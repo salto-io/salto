@@ -13,12 +13,11 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { deployment, filterUtils, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils, resolveChangeElement } from '@salto-io/adapter-components'
 
-import { getFilterParams, mockClient } from '../../utils'
+import { mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA } from '../../../src/constants'
-import fieldsDeploymentFilter from '../../../src/filters/fields/field_deployment_filter'
 import JiraClient from '../../../src/client/client'
 import { deployContextChange } from '../../../src/filters/fields/contexts'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
@@ -38,27 +37,17 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('deployContextChange', () => {
-  let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let contextType: ObjectType
   let parentField: InstanceElement
 
   const deployChangeMock = deployment.deployChange as jest.MockedFunction<typeof deployment.deployChange>
   let client: JiraClient
-  let paginator: clientUtils.Paginator
 
   beforeEach(() => {
     deployChangeMock.mockClear()
 
     const mockCli = mockClient()
     client = mockCli.client
-    paginator = mockCli.paginator
-
-    filter = fieldsDeploymentFilter(
-      getFilterParams({
-        client,
-        paginator,
-      }),
-    ) as typeof filter
 
     contextType = new ObjectType({
       elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME),

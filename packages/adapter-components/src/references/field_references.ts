@@ -300,7 +300,7 @@ export const addReferences = async <
             time: current.time + processTime,
             elements: current.elements + 1,
           })
-        } catch (e) {
+        } catch {
           log.error('failed to update processing time for %s', instance.elemID.getFullName())
         }
       }),

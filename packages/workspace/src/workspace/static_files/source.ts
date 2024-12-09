@@ -92,7 +92,7 @@ export const buildStaticFilesSource = (
 
     try {
       modified = await staticFilesDirStore.mtimestamp(filepath)
-    } catch (err) {
+    } catch {
       throw new StaticFileAccessDeniedError(filepath)
     }
     if (modified === undefined) {

@@ -16,6 +16,7 @@ import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
+import * as deployModule from '../../src/commands/deploy'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
@@ -44,6 +45,7 @@ jest.mock('@salto-io/core', () => ({
     ),
 }))
 const mockedCore = jest.mocked(saltoCoreModule)
+const mockedDeploy = jest.mocked(deployModule)
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -71,6 +73,7 @@ describe('deploy command', () => {
     workspace = mocks.mockWorkspace({})
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
+    jest.spyOn(deployModule, 'shouldDeploy')
   })
 
   describe('when deploying changes', () => {
@@ -330,6 +333,8 @@ describe('deploy command', () => {
       // exit without attempting to deploy
       expect(output.stdout.content).not.toContain('Cancelling deploy')
       expect(output.stdout.content).not.toContain('Deployment succeeded')
+      expect(output.stdout.content).not.toContain(Prompts.DEPLOYMENT_SUMMARY_HEADLINE)
+      expect(mockedDeploy.shouldDeploy).not.toHaveBeenCalled()
     })
   })
 
@@ -432,6 +437,7 @@ describe('deploy command', () => {
         expect(result).toBe(CliExitCode.AppError)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
         expect(output.stderr.content).toContain('Failed')
+        expect(mockedDeploy.shouldDeploy).not.toHaveBeenCalled()
       })
     })
   })
@@ -473,6 +479,7 @@ describe('deploy command', () => {
       expect(output.stdout.content).toMatch(/second subtext2/s)
       expect(output.stdout.content).toMatch(/third subtext2/s)
       expect(output.stdout.content).toMatch(/fourth subtext2/s)
+      expect(mockedDeploy.shouldDeploy).toHaveBeenCalled()
     }
     it('should print deploy actions when deploy is done', async () => {
       await testDeployActionsVisability(true)
@@ -505,6 +512,7 @@ describe('deploy command', () => {
           a: 'success',
           b: 'success',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {
@@ -534,6 +542,7 @@ describe('deploy command', () => {
           instance_test: 'failure',
           test_instance: 'failure',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {
@@ -564,6 +573,7 @@ describe('deploy command', () => {
           test_instance: 'success',
           tester_instance: 'partial-success',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {
@@ -590,6 +600,7 @@ describe('deploy command', () => {
           instance_test: 'partial-success',
           test_instance: 'partial-success',
         })
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
         await action({
           ...cliCommandArgs,
           input: {

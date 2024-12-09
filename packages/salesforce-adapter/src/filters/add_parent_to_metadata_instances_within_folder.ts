@@ -32,6 +32,9 @@ const createFolderInstancesIndex = (elements: Element[]): FolderInstancesIndex =
 const filter: FilterCreator = ({ config }) => ({
   name: 'addParentToMetadataInstancesWithinFolder',
   onFetch: async (elements: Element[]) => {
+    if (!config.fetchProfile.isFeatureEnabled('addParentToMetadataInstancesWithinFolder')) {
+      return
+    }
     const folderInstancesIndex = createFolderInstancesIndex(
       await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
     )

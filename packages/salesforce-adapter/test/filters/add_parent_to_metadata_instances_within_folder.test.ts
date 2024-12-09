@@ -27,6 +27,17 @@ describe('addParentToMetadataInstancesWithinFolder filter', () => {
   let dashboardInstance: Element
   let dashboardFolderInstance: Element
 
+  const createFilterWithOptionalFeature = (featureOption: boolean): typeof filter =>
+    filterCreator({
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          fetchParams: { target: [], optionalFeatures: { addParentToMetadataInstancesWithinFolder: featureOption } },
+        }),
+        elementsSource: buildElementsSourceFromElements(elements),
+      },
+    }) as typeof filter
+
   beforeEach(() => {
     elements = [
       (emailTemplateInstance = createInstanceElement(
@@ -42,43 +53,51 @@ describe('addParentToMetadataInstancesWithinFolder filter', () => {
       (dashboardFolderInstance = createInstanceElement({ fullName: 'Dashboards' }, mockTypes.DashboardFolder)),
       ...Object.values(mockTypes),
     ]
-    filter = filterCreator({
-      config: {
-        ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ fetchParams: { target: [] } }),
-        elementsSource: buildElementsSourceFromElements(elements),
-      },
-    }) as typeof filter
   })
 
   describe('addParentToMetadataInstancesWithinFolder onfetch', () => {
     describe('when the instances are within folder', () => {
-      beforeEach(async () => {
-        await filter.onFetch(elements)
+      describe('when addParentToMetadataInstancesWithinFolder is Enabled', () => {
+        beforeEach(async () => {
+          filter = createFilterWithOptionalFeature(true)
+          await filter.onFetch(elements)
+        })
+        it('should add parent annotation to email template', async () => {
+          expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+          expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+            new ReferenceExpression(emailFolderInstance.elemID, emailFolderInstance),
+          )
+        })
+        it('should add parent annotation to report', () => {
+          expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+          expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+            new ReferenceExpression(reportFolderInstance.elemID, reportFolderInstance),
+          )
+        })
+        it('should add parent annotation to document', () => {
+          expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+          expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+            new ReferenceExpression(documentFolderInstance.elemID, documentFolderInstance),
+          )
+        })
+        it('should add parent annotation to dashboard', () => {
+          expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
+          expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+            new ReferenceExpression(dashboardFolderInstance.elemID, dashboardFolderInstance),
+          )
+        })
       })
-      it('should add parent annotation to email template', async () => {
-        expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
-        expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
-          new ReferenceExpression(emailFolderInstance.elemID, emailFolderInstance),
-        )
-      })
-      it('should add parent annotation to report', () => {
-        expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
-        expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
-          new ReferenceExpression(reportFolderInstance.elemID, reportFolderInstance),
-        )
-      })
-      it('should add parent annotation to document', () => {
-        expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
-        expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
-          new ReferenceExpression(documentFolderInstance.elemID, documentFolderInstance),
-        )
-      })
-      it('should add parent annotation to dashboard', () => {
-        expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeDefined()
-        expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
-          new ReferenceExpression(dashboardFolderInstance.elemID, dashboardFolderInstance),
-        )
+      describe('when addParentToMetadataInstancesWithinFolder is Disabled', () => {
+        beforeEach(async () => {
+          filter = createFilterWithOptionalFeature(false)
+          await filter.onFetch(elements)
+        })
+        it('should not create parent annotation', () => {
+          expect(emailTemplateInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+          expect(reportInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+          expect(documentInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+          expect(dashboardInstance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+        })
       })
     })
   })

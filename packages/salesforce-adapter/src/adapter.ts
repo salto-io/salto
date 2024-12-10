@@ -27,6 +27,8 @@ import {
   isField,
   isObjectType,
   TypeReference,
+  CancelServiceAsyncTaskInput,
+  CancelServiceAsyncTaskResult,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -812,6 +814,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
+  }
+
+  async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
+    return this.client.cancelMetadataValidateOrDeployTask(input)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

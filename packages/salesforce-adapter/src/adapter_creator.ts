@@ -13,8 +13,8 @@ import {
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
-  ProgressReporter,
   DeployOptions,
+  CancelServiceAsyncTaskInput, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -223,25 +223,29 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-export type DeployProgressReporter = ProgressReporter & {
+export type SalesforceDeployProgressReporter = ProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
 }
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
-  progressReporter: DeployProgressReporter
+  progressReporter: SalesforceDeployProgressReporter
+}
+
+export type SalesforceAdapterCancelValidationOptions = CancelServiceAsyncTaskInput & {
+  progressReporter: SalesforceDeployProgressReporter
 }
 
 export const createDeployProgressReporter = async (
   progressReporter: ProgressReporter,
   client: SalesforceClient,
-): Promise<DeployProgressReporter> => {
+): Promise<SalesforceDeployProgressReporter> => {
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
   const baseUrl = await client.getUrl()
 
-  const linkToSalesforceDeployment = ({ id, checkOnly }: DeployResult): string => {
+  const linkToSalesforceDeployment = ({ id, checkOnly }: Pick<DeployResult, 'id' | 'checkOnly'>): string => {
     if (!baseUrl) {
       return ''
     }
@@ -295,7 +299,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
-    let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
+    let salesforceDeployProgressReporterPromise: Promise<SalesforceDeployProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -323,24 +327,24 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporterPromise =
-          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceDeployProgressReporterPromise =
+          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.deploy({
           ...opts,
-          progressReporter: await deployProgressReporterPromise,
+          progressReporter: await salesforceDeployProgressReporterPromise,
         })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        deployProgressReporterPromise =
-          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        salesforceDeployProgressReporterPromise =
+          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.validate({
           ...opts,
-          progressReporter: await deployProgressReporterPromise,
+          progressReporter: await salesforceDeployProgressReporterPromise,
         })
       },
-
+      cancelServiceAsyncTask: async opts => createSalesforceAdapter().cancelServiceAsyncTask(opts),
       deployModifiers: {
         changeValidator: createChangeValidator({
           config,

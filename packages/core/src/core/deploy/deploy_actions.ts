@@ -18,8 +18,8 @@ import {
   SeverityLevel,
   ChangeDataType,
   SaltoErrorType,
-  ProgressReporter,
   Progress,
+  ProgressReporter,
 } from '@salto-io/adapter-api'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { NodeSkippedError, WalkError } from '@salto-io/dag'
@@ -140,7 +140,7 @@ export const deployActions = async (
       })
       reportProgress(item, 'started')
       try {
-        const progressReporter = {
+        const progressReporter: ProgressReporter = {
           reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
         }
         const result = await deployAction(item, adapters, checkOnly, progressReporter)

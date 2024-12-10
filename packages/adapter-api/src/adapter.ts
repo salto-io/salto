@@ -73,6 +73,14 @@ export type DeployOptions = {
   changeGroup: ChangeGroup
 }
 
+export type CancelServiceAsyncTaskInput = {
+  readonly taskId: string
+}
+
+export type CancelServiceAsyncTaskResult = {
+  errors: SaltoError[]
+}
+
 export type PostFetchOptions = {
   currentAdapterElements: Element[]
   elementsByAccount: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
@@ -143,6 +151,7 @@ export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
   validate?: (opts: DeployOptions) => Promise<DeployResult>
+  cancelServiceAsyncTask?: (opts: CancelServiceAsyncTaskInput) => Promise<CancelServiceAsyncTaskResult>
   postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
   validationModifiers?: ValidationModifiers

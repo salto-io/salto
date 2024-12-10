@@ -11,6 +11,7 @@ import {
   AdapterOperations,
   AdditionChange,
   BuiltinTypes,
+  CancelServiceAsyncTaskInput,
   Change,
   ChangeDataType,
   ChangeValidator,
@@ -1517,6 +1518,80 @@ describe('api.ts', () => {
 
       expect(res).toEqual({ changes: [], errors: [] })
       expect(mockFixElements).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('cancelServiceAsyncTask', () => {
+    const input: CancelServiceAsyncTaskInput = {
+      taskId: '123',
+    }
+    const ACCOUNT_NAME = 'test1'
+    const ADAPTER_NAME = 'test'
+
+    let ws: workspace.Workspace
+    let mockCancelValidate: jest.MockedFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>
+
+    beforeEach(() => {
+      ws = mockWorkspace({
+        accounts: [ACCOUNT_NAME],
+        accountToServiceName: {
+          [ACCOUNT_NAME]: ADAPTER_NAME,
+        },
+      })
+      ;(ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
+        [ACCOUNT_NAME]: mockConfigInstance,
+      })
+    })
+    describe('when the adapter supports cancelServiceAsyncTask', () => {
+      beforeEach(() => {
+        mockCancelValidate = mockFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>()
+        adapterCreators[ADAPTER_NAME] = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+            deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+            cancelServiceAsyncTask: mockCancelValidate,
+          }),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
+        }
+      })
+
+      it('should invoke cancelServiceAsyncTask on the adapter', async () => {
+        await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        expect(mockCancelValidate).toHaveBeenCalledTimes(1)
+        expect(mockCancelValidate).toHaveBeenCalledWith(input)
+      })
+    })
+    describe('when the adapter does not support cancelServiceAsyncTask', () => {
+      beforeEach(() => {
+        adapterCreators[ADAPTER_NAME] = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+            deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+          }),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
+        }
+      })
+
+      it('should throw Error', async () => {
+        await expect(api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })).rejects.toThrow()
+      })
+    })
+    describe('when invoked with non existing account', () => {
+      it('should throw an error', async () => {
+        await expect(
+          api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' }),
+        ).rejects.toThrow()
+      })
     })
   })
 })

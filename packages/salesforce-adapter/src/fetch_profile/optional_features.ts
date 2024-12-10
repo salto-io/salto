@@ -20,6 +20,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   genAiReferences: true,
   networkReferences: false,
   addParentToInstancesWithinFolder: false,
+  extendFetchTargets: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

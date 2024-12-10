@@ -57,6 +57,7 @@ export type DeployResult<T extends ChangeDataType = ChangeDataType> = SaltoDeplo
 
 export type Progress = {
   message: string
+  asyncTaskId?: string
 }
 
 export type ProgressReporter = {

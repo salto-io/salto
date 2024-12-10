@@ -159,7 +159,7 @@ export const preview = async (
 export const deploy = async (
   workspace: Workspace,
   actionPlan: Plan,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string, asyncTaskId?: string) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
 ): Promise<DeployResult> => {

@@ -236,6 +236,7 @@ export const createDeployProgressReporter = async (
   progressReporter: ProgressReporter,
   client: SalesforceClient,
 ): Promise<DeployProgressReporter> => {
+  let wasDeploymentIdReported = false
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
@@ -277,6 +278,15 @@ export const createDeployProgressReporter = async (
     reportMetadataProgress: args => {
       deployResult = args.result
       suffix = args.suffix
+      if (!wasDeploymentIdReported && deployResult.id) {
+        wasDeploymentIdReported = true
+        const message = `Deployment with ID ${deployResult.id}  was created in Salesforce.`
+        log.debug(message)
+        progressReporter.reportProgress({
+          message,
+          asyncTaskId: deployResult.id,
+        })
+      }
       reportProgress()
     },
     reportDataProgress: successInstances => {

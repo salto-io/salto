@@ -58,13 +58,14 @@ import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRet
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
+import {SalesforceDeployProgressReporter} from '../src/adapter_creator'
 import {
   SalesforceArtifacts,
   INSTANCE_FULL_NAME_FIELD,
   ProgressReporterSuffix,
   METADATA_CHANGE_GROUP,
 } from '../src/constants'
-import { SalesforceClient, SalesforceDeployProgressReporter } from '../index'
+import { SalesforceClient } from '../index'
 
 const { makeArray } = collections.array
 
@@ -2442,13 +2443,10 @@ describe('SalesforceAdapter CRUD', () => {
     describe('when ProgressReporter with reportServiceAsyncTaskId is provided', () => {
       const POLLING_INTERVAL = 10
       let reportedAsyncTaskId: string
-      let asyncTaskProgressReporter: SalesforceDeployProgressReporter
+      let deployProgressReporter: SalesforceDeployProgressReporter
       beforeEach(() => {
-        asyncTaskProgressReporter = {
+        deployProgressReporter = {
           ...progressReporter,
-          reportServiceAsyncTaskId: taskId => {
-            reportedAsyncTaskId = taskId
-          },
         }
         ;({ connection, adapter } = mockAdapter({
           adapterParams: {
@@ -2483,7 +2481,7 @@ describe('SalesforceAdapter CRUD', () => {
             groupID: METADATA_CHANGE_GROUP,
             changes: [toChange({ after: mockTypes.Account.clone() })],
           },
-          progressReporter: asyncTaskProgressReporter,
+          progressReporter: deployProgressReporter,
         })
         expect(reportedAsyncTaskId).toBeString()
       })

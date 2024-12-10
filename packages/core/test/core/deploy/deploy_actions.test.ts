@@ -83,7 +83,6 @@ describe('deployActions', () => {
           () => {},
           async () => {},
           false,
-          () => {},
         )
       })
       it('Should produce the correct errors', () => {
@@ -127,7 +126,6 @@ describe('deployActions', () => {
           () => {},
           async () => {},
           false,
-          () => {},
         )
       })
       it('Should produce the correct error', () => {

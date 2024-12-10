@@ -12,13 +12,12 @@ import {
   Adapter,
   AdapterOperations,
   Change,
-  AsyncTaskProgressReporter,
   DeployResult,
   ElemID,
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  ObjectType,
+  ObjectType, ProgressReporter,
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -40,9 +39,8 @@ import { INCLUDE_ALL_CONFIG } from '../../src/fetch/query'
 import fetchMockReplies from './fetch_mock_replies.json'
 import deployMockReplies from './deploy_mock_replies.json'
 
-const nullProgressReporter: AsyncTaskProgressReporter = {
+const nullProgressReporter: ProgressReporter = {
   reportProgress: () => '',
-  reportServiceAsyncTaskId: () => {},
 }
 
 type MockReply = {

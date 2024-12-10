@@ -14,8 +14,7 @@ import {
   OauthAccessTokenResponse,
   Values,
   DeployOptions,
-  CancelServiceAsyncTaskInput,
-  AsyncTaskProgressReporter,
+  CancelServiceAsyncTaskInput, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -224,7 +223,7 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-export type SalesforceDeployProgressReporter = AsyncTaskProgressReporter & {
+export type SalesforceDeployProgressReporter = ProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
 }
@@ -238,7 +237,7 @@ export type SalesforceAdapterCancelValidationOptions = CancelServiceAsyncTaskInp
 }
 
 export const createDeployProgressReporter = async (
-  progressReporter: AsyncTaskProgressReporter,
+  progressReporter: ProgressReporter,
   client: SalesforceClient,
 ): Promise<SalesforceDeployProgressReporter> => {
   let deployResult: DeployResult | undefined

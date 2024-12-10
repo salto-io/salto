@@ -70,6 +70,12 @@ type FieldWithValueSetOrderedMap = Field & {
 
 type FieldWithValueSet = FieldWithValueSetList | FieldWithValueSetOrderedMap
 
+// type fieldsFlags = {
+//   noDefaultNoVisibleFlag: boolean
+//   oneDefaultIsVisibleFlag: boolean
+//   invalidRecord: string | undefined
+// }
+
 const isFieldWithValueSetList = (field: Field): field is FieldWithValueSetList =>
   _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
 
@@ -96,6 +102,20 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
     severity: 'Error',
     message: 'Instances cannot have more than one default',
     detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
+  }
+}
+
+const createInstanceChangeErrorSingleDefault = (
+  fieldPath: string,
+  field: string,
+  instance: InstanceElement,
+): ChangeError => {
+  const elementId = instance.elemID.createNestedID(fieldPath)
+  return {
+    elemID: elementId,
+    severity: 'Error',
+    message: 'Default entry must be visible',
+    detailedMessage: `Must have exactly one record with default and visible fields as true\nThis field has to be true in order to deploy: ${elementId.getFullName()}.${field}.visible`,
   }
 }
 
@@ -143,6 +163,35 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     return contexts.length > 1 ? contexts : undefined
   }
 
+  const checkSingleDefault = (value: Value, fieldType: TypeElement): string | undefined => {
+    const defaultObjects = getDefaultObjectsList(value, fieldType)
+    if (!_.isArray(defaultObjects)) {
+      return undefined
+    }
+    const isValid = defaultObjects.reduce<string | undefined>((res, curr) => {
+      if (res !== undefined) {
+        return res
+      }
+      const defaultField = _.get(curr, 'default')
+      const visibleField = _.get(curr, 'visible')
+      if (defaultField) {
+        if (visibleField) {
+          return ''
+        }
+        return curr.recordType
+      }
+      return undefined
+      // const noDefaultNoVisible = res.noDefaultNoVisibleFlag
+      //   ? !defaultField && !visibleField
+      //   : res.noDefaultNoVisibleFlag
+      // const oneDefaultIsVisible = res.oneDefaultIsVisibleFlag
+      //   ? res.oneDefaultIsVisibleFlag
+      //   : defaultField && visibleField
+      // return { noDefaultNoVisibleFlag: noDefaultNoVisible, oneDefaultIsVisibleFlag: oneDefaultIsVisible ,invalidRecord:}
+    }, undefined)
+    return isValid !== undefined && isValid !== '' ? isValid : undefined
+  }
+
   const createChangeErrorFromContext = (
     field: Field,
     context: string[] | undefined,
@@ -169,7 +218,13 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
         return awu(Object.entries(value)).flatMap(async ([_key, innerValue]) => {
           const startLevelType = isMapType(fieldType) ? fieldType.getInnerTypeSync() : fieldType
           const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
-          return createChangeErrorFromContext(field, defaultsContexts, after)
+          if (defaultsContexts !== undefined) {
+            return createChangeErrorFromContext(field, defaultsContexts, after)
+          }
+          const singleDefaultisValid = checkSingleDefault(innerValue, startLevelType)
+          return singleDefaultisValid && singleDefaultisValid !== ''
+            ? [createInstanceChangeErrorSingleDefault(fieldPath, singleDefaultisValid, after)]
+            : []
         })
       }
       const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)

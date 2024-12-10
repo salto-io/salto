@@ -13,7 +13,7 @@ import {
   isAdapterSuccessInstallResult,
   ObjectType,
 } from '@salto-io/adapter-api'
-import * as cli from '@salto-io/suitecloud-cli-legacy'
+import * as cli from '@salto-io/suitecloud-cli-new'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Bottleneck from 'bottleneck'
 import { adapter } from '../src/adapter_creator'
@@ -30,12 +30,13 @@ jest.mock('../src/client/suiteapp_client/suiteapp_client')
 jest.mock('../src/adapter')
 jest.mock('@salto-io/suitecloud-cli-legacy')
 
-const mockDownload = cli.SdkDownloadService.download as jest.Mock
-mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
-
 describe('NetsuiteAdapter creator', () => {
+  let mockDownload: jest.SpyInstance
+
   beforeEach(async () => {
     jest.clearAllMocks()
+    mockDownload = jest.spyOn(cli.SdkDownloadService, 'download')
+    mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
   })
 
   const credentials = new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, {

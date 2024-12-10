@@ -17,12 +17,29 @@ import {
   Element,
   isStaticFile,
   ElemID,
+  toChange,
+  InstanceElement,
+  ObjectType,
+  isSaltoElementError,
+  SaltoElementError,
+  getChangeData,
+  ModificationChange,
+  BuiltinTypes,
+  ChangeDataType,
+  Change,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import _, { every } from 'lodash'
 import path from 'path'
 import { ImportantValue } from '@salto-io/adapter-utils'
-import { defaultParams, generateElements, generateFetchErrorsFromConfig, GeneratorParams } from '../src/generator'
+import {
+  defaultParams,
+  DUMMY_ADAPTER,
+  generateDeployResult,
+  generateElements,
+  generateFetchErrorsFromConfig,
+  GeneratorParams,
+} from '../src/generator'
 import testParams from './test_params'
 
 const { awu } = collections.asynciterable
@@ -354,6 +371,193 @@ describe('generator', () => {
     })
     it('should not include elements that are explicitly excluded', () => {
       expect(elements.map(elem => elem.elemID.getFullName())).not.toContainEqual(elemToExclude)
+    })
+  })
+  describe(generateDeployResult.name, () => {
+    const sharedType = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'type'),
+      fields: { someStringVal: { refType: BuiltinTypes.STRING } },
+    })
+    const instanceRemovalChange = toChange({
+      before: new InstanceElement('testInstanceRemoval', sharedType, { someStringVal: 'someVal' }),
+    })
+    const instanceAdditionChange = toChange({
+      after: new InstanceElement('testInstanceAddition', sharedType, { someStringVal: 'someVal' }),
+    })
+    const instanceModificationChange = toChange({
+      before: new InstanceElement('testInstanceModification', sharedType, { someStringVal: 'someVal' }),
+      after: new InstanceElement('testInstanceModification', sharedType, { someStringVal: 'someOtherVal' }),
+    })
+    const objectTypeRemovalChange = toChange({
+      before: new ObjectType({
+        elemID: new ElemID(DUMMY_ADAPTER, 'removal'),
+        fields: { someStringVal: { refType: BuiltinTypes.STRING } },
+      }),
+    })
+    const objectTypeAdditionChange = toChange({
+      after: new ObjectType({
+        elemID: new ElemID(DUMMY_ADAPTER, 'addition'),
+        fields: { someStringVal: { refType: BuiltinTypes.STRING } },
+      }),
+    })
+    const objectTypeModificationChange = toChange({
+      before: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'modification') }),
+      after: new ObjectType({
+        elemID: new ElemID(DUMMY_ADAPTER, 'modification'),
+        fields: { someStringVal: { refType: BuiltinTypes.STRING } },
+      }),
+    })
+    const changes = [
+      instanceRemovalChange,
+      instanceAdditionChange,
+      instanceModificationChange,
+      objectTypeRemovalChange,
+      objectTypeAdditionChange,
+      objectTypeModificationChange,
+    ]
+
+    describe('when deploy result is success', () => {
+      it('should return a deploy result with the applied changes and no errors', () => {
+        const deployResult = generateDeployResult(changes, 'success')
+        expect(deployResult.appliedChanges).toHaveLength(changes.length)
+        expect(deployResult.appliedChanges).toEqual(changes)
+        expect(deployResult.errors).toHaveLength(0)
+      })
+    })
+
+    describe('when deploy result is failure', () => {
+      it('should return a deploy result with the applied changes and errors', () => {
+        const deployResult = generateDeployResult(changes, 'failure')
+        expect(deployResult.appliedChanges).toHaveLength(0)
+        expect(deployResult.errors).toHaveLength(changes.length)
+        expect(every(deployResult.errors, error => error.severity === 'Error')).toBeTruthy()
+        expect(deployResult.errors.map(error => error.message)).toEqual(changes.map(() => 'Failed to deploy'))
+        expect(every(deployResult.errors, isSaltoElementError)).toBeTruthy()
+        expect(deployResult.errors.map(error => (error as SaltoElementError).elemID.getFullName())).toEqual(
+          changes.map((change: Change<ChangeDataType>) => getChangeData(change).elemID.getFullName()),
+        )
+      })
+    })
+
+    describe('when deploy result is partial-success', () => {
+      describe('when no changes are provided', () => {
+        it('should return a deploy result with no changes and no errors', () => {
+          const deployResult = generateDeployResult([], 'partial-success')
+          expect(deployResult.appliedChanges).toHaveLength(0)
+          expect(deployResult.errors).toHaveLength(0)
+        })
+      })
+
+      describe('when only one change is provided', () => {
+        describe('when the change is a removal change', () => {
+          describe('when the change is an object type', () => {
+            it('should return a deploy result with 1 applied modification change and no errors', () => {
+              const deployResult = generateDeployResult([objectTypeRemovalChange], 'partial-success')
+              expect(deployResult.errors).toHaveLength(0)
+              expect(deployResult.appliedChanges).toHaveLength(1)
+              const appliedChange = deployResult.appliedChanges[0]
+              expect(appliedChange.action).toEqual('modify')
+            })
+
+            it('should return the object type with no fields as the applied change', () => {
+              const deployResult = generateDeployResult([objectTypeRemovalChange], 'partial-success')
+              const { before, after } = deployResult.appliedChanges[0].data as ModificationChange<ObjectType>['data']
+              expect(before.fields).toEqual(getChangeData(objectTypeRemovalChange).fields)
+              expect(after.fields).toEqual({})
+            })
+          })
+
+          describe('when the change is an instance', () => {
+            it('should return a deploy result with 1 applied removal change and no errors', () => {
+              const deployResult = generateDeployResult([instanceRemovalChange], 'partial-success')
+              expect(deployResult.errors).toHaveLength(0)
+              expect(deployResult.appliedChanges).toHaveLength(1)
+              const appliedChange = deployResult.appliedChanges[0]
+              expect(appliedChange.action).toEqual('modify')
+            })
+
+            it('should return the instance with no values as the applied change', () => {
+              const deployResult = generateDeployResult([instanceRemovalChange], 'partial-success')
+              const { before, after } = deployResult.appliedChanges[0]
+                .data as ModificationChange<InstanceElement>['data']
+              expect(before.value).toEqual(getChangeData(instanceRemovalChange).value)
+              expect(after.value).toEqual({})
+            })
+          })
+        })
+
+        describe.each(['add', 'modify'])('when the change is a %s change', action => {
+          const change = action === 'add' ? instanceAdditionChange : instanceModificationChange
+          it('should return a deploy result with one error and no applied changes', () => {
+            const deployResult = generateDeployResult([change], 'partial-success')
+            expect(deployResult.appliedChanges).toHaveLength(0)
+            expect(deployResult.errors).toHaveLength(1)
+            expect(deployResult.errors[0].severity).toEqual('Error')
+            expect(deployResult.errors[0].message).toEqual('Failed to deploy')
+            expect(isSaltoElementError(deployResult.errors[0])).toBeTruthy()
+            expect((deployResult.errors[0] as SaltoElementError).elemID.getFullName()).toEqual(
+              getChangeData(change).elemID.getFullName(),
+            )
+          })
+        })
+      })
+
+      describe('when more than one change is provided', () => {
+        describe('when some changes are removal changes', () => {
+          it('should return a deploy result with applied changes and no errors', () => {
+            const deployResult = generateDeployResult(changes, 'partial-success')
+            expect(deployResult.appliedChanges).toHaveLength(changes.length)
+            expect(deployResult.errors).toHaveLength(0)
+          })
+
+          it('should return modification changes as the applied changes for the removal changes', () => {
+            const deployResult = generateDeployResult(changes, 'partial-success')
+            const appliedChangesForRemoval = deployResult.appliedChanges.filter(change => {
+              const { elemID } = getChangeData(change)
+              return (
+                elemID.isEqual(getChangeData(instanceRemovalChange).elemID) ||
+                elemID.isEqual(getChangeData(objectTypeRemovalChange).elemID)
+              )
+            })
+            expect(appliedChangesForRemoval).toHaveLength(2)
+            appliedChangesForRemoval.forEach(appliedChange => {
+              expect(appliedChange.action).toEqual('modify')
+            })
+          })
+
+          it('should return the other changes as is', () => {
+            const deployResult = generateDeployResult(changes, 'partial-success')
+            const appliedChanges = deployResult.appliedChanges.filter(change => {
+              const { elemID } = getChangeData(change)
+              return (
+                !elemID.isEqual(getChangeData(instanceRemovalChange).elemID) &&
+                !elemID.isEqual(getChangeData(objectTypeRemovalChange).elemID)
+              )
+            })
+            expect(appliedChanges).toHaveLength(4)
+          })
+        })
+
+        describe('when all changes are addition or modification changes', () => {
+          it('should return a deploy result with 1 error and the rest of the changes as applied changes', () => {
+            const noRemovalChanges = [
+              instanceAdditionChange,
+              instanceModificationChange,
+              objectTypeAdditionChange,
+              objectTypeModificationChange,
+            ]
+            const deployResult = generateDeployResult(noRemovalChanges, 'partial-success')
+            expect(deployResult.errors).toHaveLength(1)
+            expect(deployResult.errors[0].severity).toEqual('Error')
+            expect(deployResult.errors[0].message).toEqual('Failed to deploy')
+            expect(isSaltoElementError(deployResult.errors[0])).toBeTruthy()
+            expect((deployResult.errors[0] as SaltoElementError).elemID.getFullName()).toEqual(
+              getChangeData(instanceAdditionChange).elemID.getFullName(),
+            )
+            expect(deployResult.appliedChanges.length).toEqual(3)
+          })
+        })
+      })
     })
   })
 })

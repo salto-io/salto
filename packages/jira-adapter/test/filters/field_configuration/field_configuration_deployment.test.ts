@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
@@ -54,11 +54,8 @@ describe('fieldConfigurationDeploymentFilter', () => {
 
   describe('deploy', () => {
     const supportedFields = _.range(0, 150).map(i => ({
-      id: new ReferenceExpression(new ElemID(JIRA, 'Field', 'instance', `supported${i}`), {
-        value: {
-          id: `supported${i}`,
-        },
-      }),
+      id: `supported${i}`,
+      description: `description${i}`,
     }))
 
     let instance: InstanceElement
@@ -69,12 +66,7 @@ describe('fieldConfigurationDeploymentFilter', () => {
       instance = new InstanceElement('instance', fieldConfigurationType, {
         name: 'name',
         id: 1,
-        fields: [
-          {
-            id: 'notSupported1',
-          },
-          ...supportedFields,
-        ],
+        fields: supportedFields,
       })
 
       const beforeInstance = instance.clone()
@@ -104,18 +96,14 @@ describe('fieldConfigurationDeploymentFilter', () => {
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
         {
-          fieldConfigurationItems: supportedFields
-            .slice(0, 100)
-            .map(field => ({ ...field, id: field.id.value.value.id })),
+          fieldConfigurationItems: supportedFields.slice(0, 100),
         },
         undefined,
       )
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
         {
-          fieldConfigurationItems: supportedFields
-            .slice(100, supportedFields.length)
-            .map(field => ({ ...field, id: field.id.value.value.id })),
+          fieldConfigurationItems: supportedFields.slice(100, supportedFields.length),
         },
         undefined,
       )
@@ -125,14 +113,6 @@ describe('fieldConfigurationDeploymentFilter', () => {
       delete instance.value.fields
       await filter.deploy([change])
       expect(mockConnection.put).not.toHaveBeenCalledWith()
-    })
-
-    it('should not deploy if splitFieldConfiguration is true', async () => {
-      config.fetch.splitFieldConfiguration = true
-      const res = await filter.deploy([change])
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.leftoverChanges).toHaveLength(1)
     })
   })
 })

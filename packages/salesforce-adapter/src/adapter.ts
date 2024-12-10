@@ -28,7 +28,14 @@ import {
   isObjectType,
   TypeReference,
 } from '@salto-io/adapter-api'
-import { filter, inspectValue, logDuration, ResolveValuesFunc, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  filter,
+  GetLookupNameFunc,
+  inspectValue,
+  logDuration,
+  ResolveValuesFunc,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-components'
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
@@ -114,6 +121,7 @@ import waveStaticFilesFilter from './filters/wave_static_files'
 import generatedDependenciesFilter from './filters/generated_dependencies'
 import extendTriggersMetadataFilter from './filters/extend_triggers_metadata'
 import profilesAndPermissionSetsBrokenPathsFilter from './filters/profiles_and_permission_sets_broken_paths'
+import fetchTargetsFilter from './filters/fetch_targets'
 import { CUSTOM_REFS_CONFIG, FetchElements, FetchProfile, MetadataQuery, SalesforceConfig } from './types'
 import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_source_values'
 import flowCoordinatesFilter from './filters/flow_coordinates'
@@ -127,6 +135,7 @@ import {
   apiNameSync,
   buildDataRecordsSoqlQueries,
   getFLSProfiles,
+  getMetadataIncludeFromFetchTargets,
   instanceInternalId,
   isCustomObjectSync,
   isCustomType,
@@ -191,10 +200,11 @@ export const allFilters: Array<FilterCreator> = [
   customMetadataToObjectTypeFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   customObjectsFromDescribeFilter,
-  organizationWideDefaults,
   // customSettingsFilter depends on customObjectsFilter
   customSettingsFilter,
   customObjectsToObjectTypeFilter,
+  // organizationWideDefaults depends on customObjectsToObjectTypeFilter
+  organizationWideDefaults,
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   customObjectsInstancesFilter,
   removeFieldsAndValuesFilter,
@@ -264,7 +274,8 @@ export const allFilters: Array<FilterCreator> = [
   mergeProfilesWithSourceValuesFilter,
   // profilesAndPermissionSetsBrokenPathsFilter should run after mergeProfilesWithSourceValuesFilter
   profilesAndPermissionSetsBrokenPathsFilter,
-  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
+  fetchTargetsFilter,
+  // customTypeSplit should run after omitStandardFieldsNonDeployableValuesFilter, profilesAndPermissionSetsBrokenPathsFilter and fetchTargetsFilter
   customTypeSplit,
   // profileInstanceSplitFilter should run after mergeProfilesWithSourceValuesFilter and profilesAndPermissionSetsBrokenPathsFilter
   profileInstanceSplitFilter,
@@ -443,7 +454,7 @@ type CreateFiltersRunnerParams = {
   contextOverrides?: Partial<FilterContext>
 }
 
-const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
+export const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
   typeRef.elemID.name.startsWith(ORDERED_MAP_PREFIX)
 
 const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
@@ -476,6 +487,12 @@ export const salesforceAdapterResolveValues: ResolveValuesFunc = async (
     ? resolveValues(resolvedElement, getLookUpNameFunc, elementsSource, allowEmpty)
     : resolvedElement
 }
+
+export const resolveSalesforceChanges = (
+  changes: readonly Change[],
+  getLookupNameFunc: GetLookupNameFunc,
+): Promise<Change[]> =>
+  Promise.all(changes.map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues)))
 
 type SalesforceAdapterOperations = Omit<AdapterOperations, 'deploy' | 'validate'> & {
   deploy: (deployOptions: SalesforceAdapterDeployOptions) => Promise<DeployResult>
@@ -581,14 +598,18 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
     })
+    const targetedFetchInclude = fetchParams.target
+      ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
+      : undefined
     const metadataQuery = withChangesDetection
       ? await buildMetadataQueryForFetchWithChangesDetection({
           fetchParams,
+          targetedFetchInclude,
           elementsSource: this.elementsSource,
           lastChangeDateOfTypesWithNestedInstances,
           customObjectsWithDeletedFields: await this.getCustomObjectsWithDeletedFields(),
         })
-      : buildMetadataQuery({ fetchParams })
+      : buildMetadataQuery({ fetchParams, targetedFetchInclude })
     const fetchProfile = buildFetchProfile({
       fetchParams,
       customReferencesSettings: this.userConfig[CUSTOM_REFS_CONFIG],
@@ -718,9 +739,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const getLookupNameFunc = isDataDeployGroup
       ? getLookupNameForDataInstances(fetchProfile)
       : getLookUpName(fetchProfile)
-    const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookupNameFunc, salesforceAdapterResolveValues))
-      .toArray()
+    const resolvedChanges = await resolveSalesforceChanges(changeGroup.changes, getLookupNameFunc)
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner({ fetchProfile })

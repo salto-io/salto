@@ -131,7 +131,6 @@ export const createMockNaclFileSource = (
       getElementFileNames(),
     ),
     clone: jest.fn().mockRejectedValue(new Error('not implemented in mock')),
-    getElementReferencedFiles: mockFunction<NaclFilesSource['getElementReferencedFiles']>().mockResolvedValue([]),
     load: mockFunction<NaclFilesSource['load']>().mockImplementation(
       returnChanges({
         cacheValid: true,

@@ -325,6 +325,7 @@ describe('State/cache serialization', () => {
       const serialized = await serialize([reference])
       expect(serialized).toContain('ReferenceExpression')
       expect(serialized).not.toContain('ObjectType')
+      expect(serialized).not.toContain('fullName')
       expect(await deserializeValues(serialized)).toEqual([reference.createWithValue(undefined)])
     })
     it('should serialize and deserialize type references', async () => {
@@ -333,6 +334,7 @@ describe('State/cache serialization', () => {
       const serialized = await serialize([reference])
       expect(serialized).toContain('TypeReference')
       expect(serialized).not.toContain('ObjectType')
+      expect(serialized).not.toContain('fullName')
       expect(await deserializeValues(serialized)).toEqual([new TypeReference(reference.elemID)])
     })
     it('should serialize and deserialize static files', async () => {
@@ -354,6 +356,16 @@ describe('State/cache serialization', () => {
       expect(mockStaticFileReviver).toHaveBeenCalledWith(
         new StaticFile({ filepath: staticFile.filepath, hash: staticFile.hash }),
       )
+    })
+    it('serialized fields should not contain values that are not used for deserialize', async () => {
+      const obj = new ObjectType({
+        elemID: new ElemID('dummy', 'test'),
+        fields: { field: { refType: BuiltinTypes.STRING } },
+      })
+      const fieldToSerialize = obj.fields.field
+      const serialized = await serialize([obj, fieldToSerialize])
+      expect(serialized).not.toContain('parent')
+      expect(serialized).not.toContain('fullName')
     })
   })
 

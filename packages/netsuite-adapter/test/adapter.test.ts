@@ -176,6 +176,7 @@ describe('Adapter', () => {
     elementsSource: buildElementsSourceFromElements([]),
     filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
     config,
+    originalConfig: config,
     getElemIdFunc: mockGetElemIdFunc,
   })
 
@@ -318,6 +319,7 @@ describe('Adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: configInput,
+          originalConfig: configInput,
           getElemIdFunc: mockGetElemIdFunc,
         })
       it('should fetch all types and instances without those in Types To Skip, skipList and exclude when fetch config, skipList and typeToSkip are defined', async () => {
@@ -366,6 +368,7 @@ describe('Adapter', () => {
         elementsSource: buildElementsSourceFromElements([dummyElement]),
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config: conf,
+        originalConfig: conf,
         getElemIdFunc: mockGetElemIdFunc,
       })
 
@@ -400,6 +403,7 @@ describe('Adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: conf,
+          originalConfig: conf,
           getElemIdFunc: mockGetElemIdFunc,
         })
 
@@ -417,6 +421,7 @@ describe('Adapter', () => {
           elementsSource: buildElementsSourceFromElements([dummyElement]),
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: conf,
+          originalConfig: conf,
           getElemIdFunc: mockGetElemIdFunc,
         })
 
@@ -672,6 +677,7 @@ describe('Adapter', () => {
             elementsSource: buildElementsSourceFromElements(scriptidListInstances),
             filtersCreators: [],
             config,
+            originalConfig: config,
             getElemIdFunc: mockGetElemIdFunc,
           })
           client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
@@ -739,6 +745,7 @@ describe('Adapter', () => {
             elementsSource: buildElementsSourceFromElements(scriptidListInstances),
             filtersCreators: [],
             config,
+            originalConfig: config,
             getElemIdFunc: mockGetElemIdFunc,
           })
           client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
@@ -788,6 +795,7 @@ describe('Adapter', () => {
             },
           },
         },
+        originalConfig: config,
         getElemIdFunc: mockGetElemIdFunc,
       })
       client.getCustomObjects = mockFunction<SdfClient['getCustomObjects']>().mockResolvedValue({
@@ -1145,6 +1153,7 @@ describe('Adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
           config: configWithAdditionalSdfDependencies,
+          originalConfig: config,
           getElemIdFunc: mockGetElemIdFunc,
         })
 
@@ -1201,6 +1210,7 @@ describe('Adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
           filtersCreators: [],
           config: { fetch: fullFetchConfig() },
+          originalConfig: config,
         })
       })
       it('should return correct deploy errors', async () => {
@@ -1337,6 +1347,7 @@ describe('Adapter', () => {
         elementsSource,
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config,
+        originalConfig: config,
         getElemIdFunc: mockGetElemIdFunc,
       })
     })
@@ -1406,6 +1417,7 @@ describe('Adapter', () => {
               filePaths: [],
             },
           },
+          originalConfig: config,
           getElemIdFunc: mockGetElemIdFunc,
         })
       })
@@ -1475,6 +1487,7 @@ describe('Adapter', () => {
               filePaths: [],
             },
           },
+          originalConfig: config,
           getElemIdFunc: mockGetElemIdFunc,
         })
 
@@ -1490,6 +1503,7 @@ describe('Adapter', () => {
           config: {
             ...config,
           },
+          originalConfig: config,
           getElemIdFunc: mockGetElemIdFunc,
         })
 

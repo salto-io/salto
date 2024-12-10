@@ -104,6 +104,7 @@ const OPTIONAL_FEATURES = [
   'genAiReferences',
   'networkReferences',
   'addParentToInstancesWithinFolder',
+  'extendFetchTargets',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

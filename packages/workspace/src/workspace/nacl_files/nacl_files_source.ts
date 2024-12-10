@@ -15,18 +15,11 @@ import {
   ElemID,
   isAdditionChange,
   isAdditionOrModificationChange,
-  isContainerType,
   isElement,
-  isIndexPathPart,
-  isInstanceElement,
   isModificationChange,
-  isObjectType,
   isObjectTypeChange,
-  isReferenceExpression,
   isRemovalOrModificationChange,
   isStaticFile,
-  isVariable,
-  placeholderReadonlyElementsSource,
   StaticFile,
   toChange,
   Value,
@@ -35,8 +28,9 @@ import {
   getRelevantNamesFromChange,
   resolvePath,
   safeJsonStringify,
-  transformElement,
-  TransformFuncArgs,
+  WALK_NEXT_STEP,
+  walkOnElement,
+  WalkOnFunc,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -96,7 +90,6 @@ export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
-  getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementFileNames: () => Promise<Map<string, string[]>>
   // TODO: this should be for single?
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<Changes>
@@ -125,7 +118,6 @@ type NaclFilesState = {
   elementsIndex: RemoteMap<string[]>
   mergedElements: RemoteElementSource
   mergeErrors: RemoteMap<MergeError[]>
-  referencedIndex: RemoteMap<string[]>
   searchableNamesIndex: RemoteMap<boolean>
   staticFilesIndex: RemoteMap<string[]>
   metadata: RemoteMap<string>
@@ -154,109 +146,52 @@ const createFilenameToElementIDFullNamesMapping = (
     'create filename to element id full names mapping from elements index',
   )
 
-export const getElementReferenced = async (
-  element: Element,
-): Promise<{
-  referenced: Set<string>
-  staticFiles: Set<string>
-}> => {
-  const referenced = new Set<string>()
+export const getElementsStaticFiles = (elements: Element[]): string[] => {
   const staticFiles = new Set<string>()
-  const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
-    if (field && path && !isIndexPathPart(path.name)) {
-      referenced.add(ElemID.getTypeOrContainerTypeID(field.refType.elemID).getFullName())
-    }
-    if (isReferenceExpression(value)) {
-      const { parent, path: valueIDPath } = value.elemID.createTopLevelParentID()
-      const nestedIds = valueIDPath.map((_p, index) =>
-        parent.createNestedID(
-          ...(value.elemID.idType !== parent.idType ? [value.elemID.idType] : []),
-          ...valueIDPath.slice(0, index + 1),
-        ),
-      )
-      referenced.add(parent.getFullName())
-      nestedIds.forEach(id => referenced.add(id.getFullName()))
-    }
+
+  const collectStaticFiles: WalkOnFunc = ({ value }) => {
     if (isStaticFile(value) || isInvalidStaticFile(value)) {
       staticFiles.add(value.filepath)
     }
-    return value
+    return WALK_NEXT_STEP.RECURSE
   }
 
-  if (isObjectType(element)) {
-    Object.values(element.fields)
-      .map(field => ElemID.getTypeOrContainerTypeID(field.refType.elemID))
-      .forEach(id => referenced.add(id.getFullName()))
-  }
-  if (isInstanceElement(element)) {
-    referenced.add(element.refType.elemID.getFullName())
-  }
-  Object.values(element.annotationRefTypes)
-    .map(anno => ElemID.getTypeOrContainerTypeID(anno.elemID))
-    .forEach(id => referenced.add(id.getFullName()))
-  if (!isContainerType(element) && !isVariable(element)) {
-    await transformElement({
+  elements.forEach(element =>
+    walkOnElement({
       element,
-      transformFunc,
-      strict: false,
-      elementsSource: placeholderReadonlyElementsSource,
-    })
-  }
-  return {
-    referenced,
-    staticFiles,
-  }
-}
-
-const getElementsReferencedAndStaticFiles = (
-  elements: ThenableIterable<Element>,
-): Promise<{
-  referenced: Set<string>
-  staticFiles: Set<string>
-}> =>
-  awu(elements).reduce(
-    async (acc, element) => {
-      const elementRefs = await getElementReferenced(element)
-      wu(elementRefs.referenced.keys()).forEach(key => acc.referenced.add(key))
-      wu(elementRefs.staticFiles.keys()).forEach(key => acc.staticFiles.add(key))
-      return acc
-    },
-    { referenced: new Set<string>(), staticFiles: new Set<string>() },
+      func: collectStaticFiles,
+    }),
   )
 
-export const toParsedNaclFile = (naclFile: NaclFile, parseResult: parser.ParseResult): SyncParsedNaclFile => {
-  const { elements, errors, sourceMap } = parseResult
-
-  let referenced: string[]
-  let staticFiles: string[]
-  const loadRefs = async (): Promise<void> => {
-    if (referenced === undefined || staticFiles === undefined) {
-      // TODO: change `getElementsReferencedAndStaticFiles` to be non-async when we remove the `referenced` index,
-      // then change `SyncParsedNaclFile['data']['staticFiles']` to be `string[]`
-      const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(elements)
-      referenced = Array.from(referencedAndStaticFiles.referenced)
-      staticFiles = Array.from(referencedAndStaticFiles.staticFiles)
-    }
-  }
-
-  return {
-    filename: naclFile.filename,
-    elements: () => elements,
-    data: {
-      errors: () => errors,
-      referenced: async () => {
-        await loadRefs()
-        return referenced
-      },
-      staticFiles: async () => {
-        await loadRefs()
-        return staticFiles
-      },
-    },
-    buffer: naclFile.buffer,
-    sourceMap: sourceMap !== undefined ? () => sourceMap : undefined,
-  }
+  return Array.from(staticFiles)
 }
+
+const loadStaticFiles = (elements: Element[]): (() => string[]) => {
+  let staticFiles: string[]
+
+  const getStaticFiles = (): string[] => {
+    if (staticFiles === undefined) {
+      staticFiles = getElementsStaticFiles(elements)
+    }
+    return staticFiles
+  }
+
+  return getStaticFiles
+}
+
+export const toParsedNaclFile = (
+  naclFile: NaclFile,
+  { elements, errors, sourceMap }: parser.ParseResult,
+): SyncParsedNaclFile => ({
+  filename: naclFile.filename,
+  elements: () => elements,
+  data: {
+    errors: () => errors,
+    staticFiles: loadStaticFiles(elements),
+  },
+  buffer: naclFile.buffer,
+  sourceMap: sourceMap !== undefined ? () => sourceMap : undefined,
+})
 
 type ParseNaclFileArgs = {
   naclFile: NaclFile
@@ -331,12 +266,6 @@ const createNaclFilesState = async (
       staticFilesSource,
       persistent,
     ),
-  referencedIndex: await remoteMapCreator<string[]>({
-    namespace: getRemoteMapNamespace('referenced_index', sourceName),
-    serialize: async val => safeJsonStringify(val),
-    deserialize: data => JSON.parse(data),
-    persistent,
-  }),
   searchableNamesIndex: await remoteMapCreator<boolean>({
     namespace: getRemoteMapNamespace('searchableNamesIndex', sourceName),
     serialize: async val => (val === true ? '1' : '0'),
@@ -369,10 +298,8 @@ const buildNaclFilesState = async ({
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
   const elementsIndexAdditions: Record<string, Set<string>> = {}
-  const referencedIndexAdditions: Record<string, Set<string>> = {}
   const staticFilesIndexAdditions: Record<string, Set<string>> = {}
   const elementsIndexDeletions: Record<string, Set<string>> = {}
-  const referencedIndexDeletions: Record<string, Set<string>> = {}
   const staticFilesIndexDeletions: Record<string, Set<string>> = {}
   // We need to iterate over this twice - so no point in making this iterable :/
   const relevantElementIDs: ElemID[] = []
@@ -472,19 +399,11 @@ const buildNaclFilesState = async ({
         const parsedFile = await getParsedNaclFileFromCache(naclFile)
         log.trace('Updating indexes of nacl file: %s', naclFile.filename)
         updateIndexOfFile(
-          referencedIndexAdditions,
-          referencedIndexDeletions,
-          naclFile.filename,
-          await parsedFile.data.referenced(),
-          await naclFile.data.referenced(),
-        )
-
-        updateIndexOfFile(
           staticFilesIndexAdditions,
           staticFilesIndexDeletions,
           naclFile.filename,
           await parsedFile.data.staticFiles(),
-          await naclFile.data.staticFiles(),
+          naclFile.data.staticFiles(),
         )
 
         const currentNaclFileElements = naclFile.elements() ?? []
@@ -514,11 +433,6 @@ const buildNaclFilesState = async ({
         const oldNaclFile = await getParsedNaclFileFromCache(naclFile)
 
         log.trace('Updating indexes of deleted nacl file: %s', naclFile.filename)
-        const oldNaclFileReferenced = await oldNaclFile.data.referenced()
-        oldNaclFileReferenced?.forEach((elementFullName: string) => {
-          referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName] ?? new Set<string>()
-          referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
-        })
         const oldNaclFileElementIDs = await getElementIDsFromNaclFile(oldNaclFile)
         oldNaclFileElementIDs.forEach(elemID => {
           const elementFullName = elemID.getFullName()
@@ -559,7 +473,6 @@ const buildNaclFilesState = async ({
   const postChangeHash = await currentState.parsedNaclFiles.getHash()
   await Promise.all([
     updateIndex(currentState.elementsIndex, elementsIndexAdditions, elementsIndexDeletions),
-    updateIndex(currentState.referencedIndex, referencedIndexAdditions, referencedIndexDeletions),
     updateIndex(currentState.staticFilesIndex, staticFilesIndexAdditions, staticFilesIndexDeletions),
     updateSearchableNamesIndex(changes),
   ])
@@ -767,8 +680,7 @@ const buildNaclFilesSource = (
       },
       data: {
         errors: () => Promise.resolve(parsed.data.errors()),
-        referenced: () => parsed.data.referenced(),
-        staticFiles: () => parsed.data.staticFiles(),
+        staticFiles: () => Promise.resolve(parsed.data.staticFiles()),
       },
       sourceMap: () => Promise.resolve(parsed.sourceMap?.()),
     })
@@ -800,9 +712,6 @@ const buildNaclFilesSource = (
     ).filter(values.isDefined)
   }
 
-  const getElementReferencedFiles = async (elemID: ElemID): Promise<string[]> =>
-    (await (await getState()).referencedIndex.get(elemID.getFullName())) ?? []
-
   const getSourceMap = async (filename: string, useCache = true): Promise<parser.SourceMap> => {
     if (useCache) {
       const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
@@ -830,30 +739,12 @@ const buildNaclFilesSource = (
     fileData: string,
   ): SyncParsedNaclFile => {
     const elements = [change.data.after]
-    let referenced: string[]
-    let staticFiles: string[]
-    const loadRefs = async (): Promise<void> => {
-      if (referenced === undefined || staticFiles === undefined) {
-        // TODO: change `getElementsReferencedAndStaticFiles` to be non-async when we remove the `referenced` index,
-        // then change `SyncParsedNaclFile['data']['staticFiles']` to be `string[]`
-        const referencedAndStaticFiles = await getElementsReferencedAndStaticFiles(elements)
-        referenced = Array.from(referencedAndStaticFiles.referenced)
-        staticFiles = Array.from(referencedAndStaticFiles.staticFiles)
-      }
-    }
     return {
       filename,
       elements: () => elements,
       data: {
         errors: () => [],
-        referenced: async () => {
-          await loadRefs()
-          return referenced
-        },
-        staticFiles: async () => {
-          await loadRefs()
-          return staticFiles
-        },
+        staticFiles: loadStaticFiles(elements),
       },
       buffer: fileData,
     }
@@ -1090,11 +981,23 @@ const buildNaclFilesSource = (
       await currentState.elementsIndex.flush()
       await currentState.mergeErrors.flush()
       await currentState.mergedElements.flush()
-      await currentState.referencedIndex.flush()
       await currentState.parsedNaclFiles.flush()
       await currentState.searchableNamesIndex.flush()
       await currentState.staticFilesIndex.flush()
       await currentState.metadata.flush()
+
+      // clear deprecated referenced index
+      const referencedIndex = await remoteMapCreator<string[]>({
+        namespace: getRemoteMapNamespace('referenced_index', sourceName),
+        serialize: async val => safeJsonStringify(val),
+        deserialize: data => JSON.parse(data),
+        persistent,
+      })
+      if (!(await referencedIndex.isEmpty())) {
+        log.debug('going to clear entries of deprecated index referenced_index')
+        await referencedIndex.clear()
+        await referencedIndex.flush()
+      }
     },
 
     getErrors: async (): Promise<Errors> => {
@@ -1156,7 +1059,6 @@ const buildNaclFilesSource = (
         await currentState.elementsIndex.clear()
         await currentState.mergeErrors.clear()
         await currentState.mergedElements.clear()
-        await currentState.referencedIndex.clear()
         await currentState.parsedNaclFiles.clear()
         await currentState.searchableNamesIndex.clear()
         await currentState.metadata.clear()
@@ -1184,8 +1086,6 @@ const buildNaclFilesSource = (
       await currentState.elementsIndex.clear()
       await newCurrentState.mergeErrors.setAll(currentState.mergeErrors.entries())
       await currentState.mergeErrors.clear()
-      await newCurrentState.referencedIndex.setAll(currentState.referencedIndex.entries())
-      await currentState.referencedIndex.clear()
       await newCurrentState.metadata.setAll(currentState.metadata.entries())
       await currentState.metadata.clear()
       await newCurrentState.searchableNamesIndex.setAll(currentState.searchableNamesIndex.entries())
@@ -1211,7 +1111,6 @@ const buildNaclFilesSource = (
     },
     getSourceMap,
     getElementNaclFiles,
-    getElementReferencedFiles,
     getElementFileNames: async () => {
       const { elementsIndex } = await getState()
       const elementsIndexEntries = await awu(elementsIndex.entries()).groupBy(entry => entry.key)

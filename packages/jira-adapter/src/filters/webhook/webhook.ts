@@ -85,8 +85,8 @@ const getWebhookValues = async (client: JiraClient): Promise<Values[]> => {
     throw new Error('Received invalid response from webhooks request')
   }
   return response.data.map((webhook: Values) => ({
-    id: getIdFromSelf(webhook.self),
     ...webhook,
+    id: getIdFromSelf(webhook.self),
   }))
 }
 

@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { adjustPolicy } from '../../../../src/definitions/fetch/transforms'
+import { SALTO_MASKED_VALUE } from '../../../../src/definitions/fetch/transforms/utils'
 
 describe('adjust policy', () => {
   it('should throw an error if value is not a record', async () => {
@@ -59,6 +60,24 @@ describe('adjust policy', () => {
           a: 'a',
           general: {},
           scripts: [{ anotherField: 'yay' }, { anotherField: 'hopa' }],
+          b: 'b',
+        },
+      })
+    })
+  })
+  describe('maskPasswordsForScriptsObjectArray', () => {
+    it('should mask passwords within scripts object array', async () => {
+      const value = {
+        a: 'a',
+        general: {},
+        scripts: [{ parameter4: 'yay' }, { parameter5: 'client_secret=823463286532896589' }],
+        b: 'b',
+      }
+      await expect(adjustPolicy({ value, context: {}, typeName: 'policy' })).resolves.toEqual({
+        value: {
+          a: 'a',
+          general: {},
+          scripts: [{ parameter4: 'yay' }, { parameter5: `client_secret=${SALTO_MASKED_VALUE}` }],
           b: 'b',
         },
       })

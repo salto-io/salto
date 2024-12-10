@@ -148,6 +148,8 @@ const getChangeWithoutRemovedFields = (change: ModificationChange<InstanceElemen
   }
   const clonedInst = after.clone()
   clonedInst.value.ticket_field_ids = (clonedInst.value.ticket_field_ids ?? []).concat(finalRemovedFields)
+  clonedInst.value.end_user_conditions ??= []
+  clonedInst.value.agent_conditions ??= []
   return clonedInst
 }
 

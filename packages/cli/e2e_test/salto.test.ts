@@ -215,9 +215,6 @@ describe.each([[SALESFORCE_SERVICE_NAME], [ALTERNATIVE_SALESFORCE_ACCOUNT_NAME]]
       it('should create statePath', async () => {
         expect(await exists(statePath)).toBe(true)
       })
-      it('should not hide Types folder', async () => {
-        expect(await exists(`${fetchOutputDir}/${accountName}/Types`)).toBe(true)
-      })
       afterAll(async () => {
         await runEmptyPreview(fetchOutputDir, accounts)
       })

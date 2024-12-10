@@ -858,8 +858,6 @@ export const loadWorkspace = async (
             changeIDs,
             stateToBuild.states[envName].merged,
             stateToBuild.states[envName].referenceSources,
-            id => source.getElementReferencedFiles(envName, id),
-            filename => source.getParsedNaclFile(filename),
           )
           const elementsToValidate = changedElements.concat(dependents)
           const validationErrors = await validateElements(elementsToValidate, stateToBuild.states[envName].merged)

@@ -22,7 +22,7 @@ const loadElementsFromFolder = async (
   filters = localFilters,
 ): Promise<FetchResult> => {
   const isPartial = true
-  const config = netsuiteConfigFromConfig(configInstance)
+  const { config } = netsuiteConfigFromConfig(configInstance)
   const { typeToInternalId, internalIdToTypes } = getTypesToInternalId(
     config.suiteAppClient?.additionalSuiteQLTables ?? [],
   )

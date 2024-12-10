@@ -202,8 +202,8 @@ describe('ticket form filter', () => {
       })
       const afterTicketForm = beforeTicketForm.clone()
       afterTicketForm.value.ticket_field_ids = [1, 11]
-      afterTicketForm.value.agent_conditions = []
-      afterTicketForm.value.end_user_conditions = []
+      afterTicketForm.value.agent_conditions = undefined
+      afterTicketForm.value.end_user_conditions = undefined
 
       const intermediateTicketForm = beforeTicketForm.clone()
       intermediateTicketForm.value.ticket_field_ids = [1, 11, 123, 1234]

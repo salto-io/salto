@@ -376,6 +376,11 @@ export class InvalidStaticFileError extends ValidationError {
   }
 }
 
+const validateRequiredValue = (elemID: ElemID, fieldName: string, annotations: Values): ValidationError[] =>
+  annotations[CORE_ANNOTATIONS.REQUIRED] === true
+    ? [new MissingRequiredFieldValidationError({ elemID, fieldName })]
+    : []
+
 const validateAnnotationsValue = (
   elemID: ElemID,
   value: Value,
@@ -441,14 +446,9 @@ const validateAnnotationsValue = (
     return restrictionValidations.flatMap(validation => validation())
   }
 
-  const validateRequiredValue = (): ValidationError[] =>
-    annotations[CORE_ANNOTATIONS.REQUIRED] === true
-      ? [new MissingRequiredFieldValidationError({ elemID, fieldName: elemID.name })]
-      : []
-
   // Checking _required annotation
   if (value === undefined) {
-    return validateRequiredValue()
+    return validateRequiredValue(elemID.createParentID(), elemID.name, annotations)
   }
 
   if (isListType(type) && shouldEnforceValue() && _.isArray(value)) {
@@ -550,7 +550,7 @@ const validateValue = (
   if (Array.isArray(value) && !isListType(type)) {
     if (value.length === 0) {
       // return an error if value is required
-      return validateAnnotationsValue(elemID, undefined, type.annotations, type) ?? []
+      return validateRequiredValue(elemID, elemID.name, type.annotations)
     }
     return validateValue(elemID, value, new ListType(type), validatedReferences)
   }
@@ -658,7 +658,7 @@ const validateFieldValue = (
 ): ValidationError[] => {
   if (!isListType(fieldType) && Array.isArray(value) && value.length === 0) {
     // return an error if value is required
-    return validateAnnotationsValue(elemID, undefined, annotations, fieldType) ?? []
+    return validateRequiredValue(elemID, elemID.name, annotations)
   }
   const innerType = isListType(fieldType) ? fieldType.refInnerType.type : fieldType
   if (!isType(innerType)) {

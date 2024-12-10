@@ -53,7 +53,7 @@ export const createOAuthRequest = (userInput: InstanceElement): OAuthRequestPara
   const baseUrl = getAuthenticationBaseUrl(tenantId)
   const redirectUri = getRedirectUri(port)
   const scope = `offline_access ${getOAuthRequiredScopes(userInput.value)}`
-  const url = `${baseUrl}/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`
+  const url = `${baseUrl}/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&prompt=select_account`
 
   return {
     url,

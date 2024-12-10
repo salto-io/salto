@@ -5,14 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Tester } from '@jest/expect-utils'
-import { ElemID } from '@salto-io/adapter-api'
 
-export const isEqualElemID: Tester = function isEqualElemID(a, b) {
-  if (a instanceof ElemID && b instanceof ElemID) {
-    return a.isEqual(b)
-  }
-  return undefined
-}
+import { Values } from '@salto-io/adapter-api'
 
-export const allEqualityTesters = [isEqualElemID]
+export const isDefaultBrand = (value: Values): boolean => value?.isDefault === true

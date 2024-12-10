@@ -90,6 +90,8 @@ export const createClientDefinitions = (
           '/api/v1/idps/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/authorizationServers/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/authorizationServers/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/groups/rules/{id}/lifecycle/activate': OMIT_STATUS_REQUEST_BODY,
+          '/api/v1/groups/rules/{id}/lifecycle/deactivate': OMIT_STATUS_REQUEST_BODY,
           '/api/v1/brands/{parent_id}/templates/email/{name}': {
             get: {
               omitBody: true,

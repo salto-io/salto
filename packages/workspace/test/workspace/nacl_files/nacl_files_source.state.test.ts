@@ -291,9 +291,9 @@ describe.each([false, true])(
             buffer: '',
           }
           const removedElemId = new ElemID('dummy', 'test')
-          expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId)).toEqual(['file2.nacl'])
+          expect(await naclFileSourceTest.getElementNaclFiles(removedElemId)).toEqual(['file1.nacl', 'file2.nacl'])
           await naclFileSourceTest.setNaclFiles([newFile])
-          expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId)).toEqual([])
+          expect(await naclFileSourceTest.getElementNaclFiles(removedElemId)).toEqual(['file1.nacl'])
         })
         describe('splitted elements', () => {
           describe('fragmented in all files', () => {

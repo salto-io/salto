@@ -179,13 +179,7 @@ export const runFetch = async (
       ...(inputEnvironment ? ['-e', inputEnvironment] : []),
       '-m',
       isolated ? 'isolated' : 'override',
-      ...(configOverrides ?? [])
-        // Temporary workaround until https://salto-io.atlassian.net/browse/SALTO-5544 is implemented
-        .concat([
-          'salesforce.fetch.optionalFeatures.hideTypesFolder=false',
-          'e2esalesforce.fetch.optionalFeatures.hideTypesFolder=false',
-        ])
-        .flatMap(override => ['-C', override]),
+      ...(configOverrides ?? []).flatMap(override => ['-C', override]),
     ],
   })
   expect(result).toEqual(CliExitCode.Success)

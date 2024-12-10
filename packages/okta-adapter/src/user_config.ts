@@ -37,7 +37,6 @@ export type OktaUserConfig = definitions.UserConfig<never, OktaClientConfig, Okt
 const changeValidatorNames = [
   'createCheckDeploymentBasedOnDefinitions',
   'appGroup',
-  'groupRuleStatus',
   'groupRuleActions',
   'defaultPolicies',
   'customApplicationStatus',

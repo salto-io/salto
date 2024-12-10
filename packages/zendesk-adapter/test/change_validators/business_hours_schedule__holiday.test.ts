@@ -1,0 +1,77 @@
+/*
+ * Copyright 2024 Salto Labs Ltd.
+ * Licensed under the Salto Terms of Use (the "License");
+ * You may not use this file except in compliance with the License.  You may obtain a copy of the License at https://www.salto.io/terms-of-use
+ *
+ * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
+ */
+
+import { Change, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BUSINESS_HOUR_SCHEDULE_HOLIDAY, ZENDESK } from '../../src/constants'
+import { businessHoursScheduleHolidayChangeValidator } from '../../src/change_validators'
+
+describe('businessHoursScheduleHolidayChangeValidator', () => {
+  let changes: Change<InstanceElement>[]
+
+  const createHolidayInstance = (name: string, startDate: string, endDate: string): InstanceElement =>
+    new InstanceElement(name, new ObjectType({ elemID: new ElemID(ZENDESK, BUSINESS_HOUR_SCHEDULE_HOLIDAY) }), {
+      name,
+      start_date: startDate,
+      end_date: endDate,
+    })
+
+  const dateYearsAgo = (years: number): string => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() - years)
+    return date.toISOString()
+  }
+
+  const dateYearsFromNow = (years: number): string => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() + years)
+    return date.toISOString()
+  }
+
+  it('should error when start date is exactly 2 years sooner', async () => {
+    const holiday = createHolidayInstance('test_holiday', dateYearsAgo(2), new Date().toISOString())
+    changes = [toChange({ after: holiday })]
+
+    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+    expect(errors).toMatchObject([
+      {
+        elemID: holiday.elemID,
+        severity: 'Error',
+        message: 'Holiday schedule dates are outside the allowed range',
+        detailedMessage: `Holiday schedule ‘test_holiday’ has invalid dates. The start and end dates must be within two years from ${new Date().toISOString().split('T')[0]}.`,
+      },
+    ])
+  })
+  it('should error when end date is exactly 2 years to the future', async () => {
+    const holiday = createHolidayInstance('test_holiday', new Date().toISOString(), dateYearsFromNow(2))
+    changes = [toChange({ after: holiday })]
+
+    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+    expect(errors).toHaveLength(1)
+  })
+  it('should error when start date is more than 2 years sooner', async () => {
+    const holiday = createHolidayInstance('test_holiday', dateYearsAgo(3), new Date().toISOString())
+    changes = [toChange({ after: holiday })]
+
+    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+    expect(errors).toHaveLength(1)
+  })
+  it('should error when start date is more than 2 years in the future', async () => {
+    const holiday = createHolidayInstance('test_holiday', new Date().toISOString(), dateYearsFromNow(3))
+    changes = [toChange({ after: holiday })]
+
+    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+    expect(errors).toHaveLength(1)
+  })
+  it('should not error date range is less than 2 years', async () => {
+    const holiday = createHolidayInstance('test_holiday', dateYearsAgo(1), new Date().toISOString())
+    changes = [toChange({ after: holiday })]
+
+    const errors = await businessHoursScheduleHolidayChangeValidator(changes)
+    expect(errors).toHaveLength(0)
+  })
+})

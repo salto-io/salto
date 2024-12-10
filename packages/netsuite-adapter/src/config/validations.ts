@@ -290,19 +290,10 @@ function validateMaxInstancesPerType(
   }
 }
 
-function validateClientConfig(
-  client: Record<string, unknown>,
-  fetchTargetDefined: boolean,
-): asserts client is ClientConfig {
+function validateClientConfig(client: Record<string, unknown>): asserts client is ClientConfig {
   validatePlainObject(client, CONFIG.client)
-  const { fetchAllTypesAtOnce, installedSuiteApps, maxInstancesPerType } = _.pick(client, Object.values(CLIENT_CONFIG))
+  const { installedSuiteApps, maxInstancesPerType } = _.pick(client, Object.values(CLIENT_CONFIG))
 
-  if (fetchAllTypesAtOnce && fetchTargetDefined) {
-    log.warn(
-      `${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`,
-    )
-    client[CLIENT_CONFIG.fetchAllTypesAtOnce] = false
-  }
   if (installedSuiteApps !== undefined) {
     validateInstalledSuiteApps(installedSuiteApps)
   }
@@ -493,7 +484,7 @@ export function validateConfig(input: Record<string, unknown>): asserts input is
     }
     if (config.client !== undefined) {
       validatePlainObject(config.client, CONFIG.client)
-      validateClientConfig(config.client, config.fetchTarget !== undefined)
+      validateClientConfig(config.client)
     }
     if (config.fetchTarget !== undefined) {
       validatePlainObject(config.fetchTarget, CONFIG.fetchTarget)

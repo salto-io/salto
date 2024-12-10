@@ -8,8 +8,12 @@
 import { regex } from '@salto-io/lowerdash'
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
-import { InstanceLimiterFunc, configType } from '../../src/config/types'
-import { instanceLimiterCreator, netsuiteConfigFromConfig, fullFetchConfig } from '../../src/config/config_creator'
+import { InstanceLimiterFunc, NetsuiteConfig, configType } from '../../src/config/types'
+import {
+  instanceLimiterCreator,
+  netsuiteConfigFromConfig as getConfig,
+  fullFetchConfig,
+} from '../../src/config/config_creator'
 import {
   GROUPS_TO_DATA_FILE_TYPES,
   DEFAULT_MAX_INSTANCES_VALUE,
@@ -22,6 +26,13 @@ describe('netsuite config creator', () => {
   beforeEach(async () => {
     config = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
   })
+
+  const netsuiteConfigFromConfig = (configInstance: Readonly<InstanceElement> | undefined): NetsuiteConfig => {
+    const clonedConfig = configInstance?.clone()
+    const { config: adapterConfig, originalConfig } = getConfig(configInstance)
+    expect(originalConfig).toEqual(clonedConfig?.value ?? { fetch: fullFetchConfig() })
+    return adapterConfig
+  }
 
   it('should return config when config instance is undefined', () => {
     expect(netsuiteConfigFromConfig(undefined)).toEqual({
@@ -114,6 +125,15 @@ describe('netsuite config creator', () => {
         filePaths: ['/SuiteScripts/file.txt', '/Templates/[^/]*\\.html', '/SuiteScripts/'],
         customRecords: {},
       })
+    })
+    it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
+      config.value.fetchTarget = {
+        filePaths: ['aaa'],
+      }
+      config.value.client = {
+        fetchAllTypesAtOnce: true,
+      }
+      expect(netsuiteConfigFromConfig(config).client?.fetchAllTypesAtOnce).toEqual(false)
     })
   })
 

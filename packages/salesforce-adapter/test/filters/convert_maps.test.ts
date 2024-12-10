@@ -29,7 +29,7 @@ import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FIELD_ANNOTATIONS, ORDERED_MAP_PREFIX } from '../../src/constants'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
-import { salesforceAdapterResolveValues } from '../../src/adapter'
+import { isOrderedMapTypeOrRefType, salesforceAdapterResolveValues } from '../../src/adapter'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -796,8 +796,14 @@ describe('Convert maps filter', () => {
         const valueSetType = picklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
         expect(valueSetType.elemID.typeName).toEqual(`${ORDERED_MAP_PREFIX}valueSet`)
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
-        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<salesforce.valueSet>')
         expect(picklistType.annotationRefTypes.valueSet?.elemID.name).toEqual(`${ORDERED_MAP_PREFIX}valueSet`)
+        expect(
+          elements
+            .filter(isObjectType)
+            .filter(isOrderedMapTypeOrRefType)
+            .map(orderedMapType => orderedMapType.elemID.name),
+        ).toEqual([`${ORDERED_MAP_PREFIX}valueSet`])
       })
 
       it('should convert MultiselectPicklist valueSet type to ordered map', async () => {
@@ -805,10 +811,16 @@ describe('Convert maps filter', () => {
         const valueSetType = multiselectPicklistType.annotationRefTypes.valueSet as TypeReference<ObjectType>
         expect(valueSetType.elemID.typeName).toEqual(`${ORDERED_MAP_PREFIX}valueSet`)
         expect(valueSetType.type?.fields.values.refType.elemID.typeName).toEqual('Map<salesforce.valueSet>')
-        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<string>')
+        expect(valueSetType.type?.fields.order.refType.elemID.typeName).toEqual('List<salesforce.valueSet>')
         expect(multiselectPicklistType.annotationRefTypes.valueSet?.elemID.name).toEqual(
           `${ORDERED_MAP_PREFIX}valueSet`,
         )
+        expect(
+          elements
+            .filter(isObjectType)
+            .filter(isOrderedMapTypeOrRefType)
+            .map(orderedMapType => orderedMapType.elemID.name),
+        ).toEqual([`${ORDERED_MAP_PREFIX}valueSet`])
       })
 
       it('should convert annotation value to map (Picklist)', () => {

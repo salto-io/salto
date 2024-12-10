@@ -103,7 +103,6 @@ export type MultiEnvSource = {
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (env: string, id: ElemID) => Promise<string[]>
-  getElementReferencedFiles: (env: string, id: ElemID) => Promise<string[]>
   getElementFileNames: (env: string) => Promise<Map<string, string[]>>
   setNaclFiles: (naclFiles: NaclFile[]) => Promise<EnvsChanges>
   removeNaclFiles: (names: string[]) => Promise<EnvsChanges>
@@ -668,14 +667,6 @@ const buildMultiEnvSource = (
       })
       return res
     },
-    getElementReferencedFiles: async (env: string, id: ElemID): Promise<string[]> =>
-      _.flatten(
-        await Promise.all(
-          Object.entries(getActiveSources(env)).map(async ([prefix, source]) =>
-            (await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p)),
-          ),
-        ),
-      ),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
       // We use loop here since we don't want to perform too much delete operation concurrently
       await awu(Object.values(sources)).forEach(async s => {

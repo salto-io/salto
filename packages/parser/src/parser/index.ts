@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export { parse, SourceRange, parseTopLevelID, tokenizeContent, Token } from './parse'
+export { parse, SourceRange, parseTopLevelID, tokenizeContent, Token, parseValue } from './parse'
 export { ParseResult, ParseError } from './types'
 export { dumpElements, dumpElemID, dumpValues, dumpSingleAnnotationType, dumpAnnotationTypes } from './dump'
 export { SourceMap } from './source_map'

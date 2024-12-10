@@ -18,7 +18,7 @@ import { ZendeskApiConfig } from '../user_config'
 import ZendeskClient from '../client/client'
 import { TARGET_TYPE_NAME } from '../constants'
 
-export const createChangeError = (
+export const createAuthenticationChangeError = (
   instanceElemId: ElemID,
   instanceTitle: string,
   baseUrl: string,
@@ -50,12 +50,23 @@ You will have to re-enter it after deployment;  please make sure you have the ap
   },
 })
 
-export const targetAuthDataValidator: (client: ZendeskClient, apiConfig: ZendeskApiConfig) => ChangeValidator =
-  (client, apiConfig) => async changes =>
-    changes
+const createInvalidTypeChangeError = (instanceElemId: ElemID, instanceTitle: string): ChangeError => ({
+  elemID: instanceElemId,
+  severity: 'Error',
+  message: 'Invalid target type detected',
+  detailedMessage: `The target ${instanceTitle} has an invalid type.
+Targets besides email target types have been deprecated.
+See more here: https://support.zendesk.com/hc/en-us/articles/6468124845210-Announcing-the-deprecation-of-URL-targets-and-branded-targets`,
+})
+
+export const targetValidator: (client: ZendeskClient, apiConfig: ZendeskApiConfig) => ChangeValidator =
+  (client, apiConfig) => async changes => {
+    const targetChanges = changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .filter(change => getChangeData(change).elemID.typeName === TARGET_TYPE_NAME)
+
+    const targetChangesWithAuthData = targetChanges
       .filter(change => change.data.after.value.username || change.data.after.value.password)
       .filter(
         change =>
@@ -65,10 +76,18 @@ export const targetAuthDataValidator: (client: ZendeskClient, apiConfig: Zendesk
       )
       .map(getChangeData)
       .flatMap(instance => [
-        createChangeError(
+        createAuthenticationChangeError(
           instance.elemID,
           instance.value.title,
           client.getUrl().href,
           apiConfig.types.target.transformation?.serviceUrl,
         ),
       ])
+
+    const targetChangesWithInvalidTypes = targetChanges
+      .map(getChangeData)
+      .filter(element => element.value.type !== 'email_target')
+      .map(element => createInvalidTypeChangeError(element.elemID, element.value.title))
+
+    return targetChangesWithAuthData.concat(targetChangesWithInvalidTypes)
+  }

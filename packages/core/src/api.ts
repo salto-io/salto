@@ -274,6 +274,7 @@ export const fetch: FetchFunc = async (
     configChanges,
     accountNameToConfigMessage,
     unmergedElements,
+    partiallyFetchedAccounts,
   } = await fetchChanges(
     accountToAdapter,
     await workspace.elements(),
@@ -298,6 +299,7 @@ export const fetch: FetchFunc = async (
     configChanges,
     updatedConfig,
     accountNameToConfigMessage,
+    partiallyFetchedAccounts,
   }
 }
 
@@ -329,6 +331,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges,
     accountNameToConfigMessage,
     unmergedElements,
+    partiallyFetchedAccounts,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
     fetchAccounts,
@@ -355,6 +358,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges,
     accountNameToConfigMessage,
     progressEmitter,
+    partiallyFetchedAccounts,
   }
 }
 

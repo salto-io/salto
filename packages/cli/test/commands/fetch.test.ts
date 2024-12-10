@@ -652,6 +652,7 @@ describe('fetch command', () => {
           ],
           updatedConfig: {},
           success: true,
+          partiallyFetchedAccounts: new Set(['salesforce']),
         })
         beforeEach(async () => {
           const workspace = mocks.mockWorkspace({})

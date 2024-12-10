@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import process from 'process'
+import { rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -169,6 +170,10 @@ describe('Netsuite adapter E2E with real account', () => {
   ])('%s', (_text, { withSuiteApp, withOauth }) => {
     let fetchResult: FetchResult
     let fetchedElements: Element[]
+
+    beforeAll(async () => {
+      await rm(`${process.env.HOME}/.suitecloud-sdk/credentials`)
+    })
 
     const logMessage = (message: string): void => {
       logging(`${withSuiteApp ? '(suiteapp) ' : ' '}${message}`)

@@ -32,15 +32,17 @@ yarn build
 ## Authenticate using OAuth
 
 1. Create certificate using the following command:
+
 ```
 openssl req -new -x509 -newkey rsa:4096 -keyout private.pem -sigopt rsa_padding_mode:pss -sha256 -sigopt rsa_pss_saltlen:64 -out public.pem -nodes -days 730
 ```
-2. Navigate in NetSuite UI to *Setup > Integration > Oauth Client Credentials (M2M) Setup*
+
+2. Navigate in NetSuite UI to _Setup > Integration > Oauth Client Credentials (M2M) Setup_
 3. Click "Create New"
 4. Select the **Entity** (employee) and **Role (must be Administrator)**
-4. Select "SuiteCloud Development Integration" in the **Application**
-5. Upload the public certificate you generated and click "Save"
-6. Copy the created **Certificate ID** and use it to connect your NetSuite to Salto, along with the content of the generated `private.pem` file.
+5. Select "SuiteCloud Development Integration" in the **Application**
+6. Upload the public certificate you generated and click "Save"
+7. Copy the created **Certificate ID** and use it to connect your NetSuite to Salto, along with the content of the generated `private.pem` file.
 
 ### Limitations
 

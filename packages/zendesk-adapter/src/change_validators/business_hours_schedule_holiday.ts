@@ -41,12 +41,16 @@ const isDateRangeExceedsLimit = (instance: InstanceElement): boolean => {
     return false
   }
   const startDate = new Date(value.start_date)
+  startDate.setHours(0, 0, 0, 0)
   const endDate = new Date(value.end_date)
-  const currentDate = new Date(Date.now())
-  const twoYearsInMs = 1000 * 60 * 60 * 24 * 365 * 2
-  const differenceToStartDate = Math.abs(currentDate.getTime() - startDate.getTime())
-  const differenceToEndDate = Math.abs(currentDate.getTime() - endDate.getTime())
-  return differenceToStartDate >= twoYearsInMs || differenceToEndDate >= twoYearsInMs
+  endDate.setHours(0, 0, 0, 0)
+  const currentDate = new Date()
+  currentDate.setHours(0, 0, 0, 0)
+  const twoYearsFromNow = new Date(currentDate.toDateString())
+  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2)
+  const twoYearsAgo = new Date(currentDate.toDateString())
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
+  return startDate <= twoYearsAgo || endDate >= twoYearsFromNow
 }
 
 // Ensures that the start date is no sooner than two years in the past and

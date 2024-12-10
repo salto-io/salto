@@ -10,13 +10,13 @@ import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 
-export const MASK_VALUE = '**SALTO_MASKED_VALUE**'
+export const SALTO_MASKED_VALUE = '**SALTO_MASKED_VALUE**'
 
 const PASSWORD_REGEX = /<key>Password<\/key><string>.*?<\/string>/
-const MASKED_PASSWORD = `<key>Password</key><string>${MASK_VALUE}</string>`
+const MASKED_PASSWORD = `<key>Password</key><string>${SALTO_MASKED_VALUE}</string>`
 
 const CLIENT_SECRET_REGEX = '^client_secret=.*'
-const MASKED_CLIENT_SECRET = `client_secret=${MASK_VALUE}`
+const MASKED_CLIENT_SECRET = `client_secret=${SALTO_MASKED_VALUE}`
 
 const log = logger(module)
 

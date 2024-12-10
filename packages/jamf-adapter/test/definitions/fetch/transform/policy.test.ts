@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { adjustPolicy } from '../../../../src/definitions/fetch/transforms'
-import { MASK_VALUE } from '../../../../src/definitions/fetch/transforms/utils'
+import { SALTO_MASKED_VALUE } from '../../../../src/definitions/fetch/transforms/utils'
 
 describe('adjust policy', () => {
   it('should throw an error if value is not a record', async () => {
@@ -77,7 +77,7 @@ describe('adjust policy', () => {
         value: {
           a: 'a',
           general: {},
-          scripts: [{ parameter4: 'yay' }, { parameter5: `client_secret=${MASK_VALUE}` }],
+          scripts: [{ parameter4: 'yay' }, { parameter5: `client_secret=${SALTO_MASKED_VALUE}` }],
           b: 'b',
         },
       })

@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import _, { isUndefined } from 'lodash'
+import _ from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
 
@@ -69,6 +69,8 @@ type FieldWithValueSetOrderedMap = Field & {
 }
 
 type FieldWithValueSet = FieldWithValueSetList | FieldWithValueSetOrderedMap
+
+type fieldsFlags = { noDefaultNoVisibleFlag: boolean; oneDefaultIsVisibleFlag: boolean }
 
 const isFieldWithValueSetList = (field: Field): field is FieldWithValueSetList =>
   _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
@@ -143,16 +145,29 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     return contexts.length > 1 ? contexts : undefined
   }
 
-  const checkSingleDefault = async (
-    value: Value,
-    fieldType: TypeElement,
-    key: string,
-  ): Promise<string[] | undefined> => {
+  const checkSingleDefault = (value: Value, fieldType: TypeElement, key: string): string | undefined => {
     const defaultObjects = getDefaultObjectsList(value, fieldType)
     if (!_.isArray(defaultObjects)) {
       return undefined
     }
-    return isUndefined(key) ? undefined : ['as']
+    const isValid = defaultObjects.reduce<fieldsFlags>(
+      (res, curr) => {
+        if (!res.noDefaultNoVisibleFlag && res.oneDefaultIsVisibleFlag) {
+          return res
+        }
+        const defaultField = _.get(curr, 'default')
+        const visibleField = _.get(curr, 'visible')
+        const noDefaultNoVisible = res.noDefaultNoVisibleFlag
+          ? !defaultField && !visibleField
+          : res.noDefaultNoVisibleFlag
+        const oneDefaultIsVisible = res.oneDefaultIsVisibleFlag
+          ? res.oneDefaultIsVisibleFlag
+          : defaultField && visibleField
+        return { noDefaultNoVisibleFlag: noDefaultNoVisible, oneDefaultIsVisibleFlag: oneDefaultIsVisible }
+      },
+      { noDefaultNoVisibleFlag: true, oneDefaultIsVisibleFlag: false },
+    )
+    return isValid.noDefaultNoVisibleFlag || isValid.oneDefaultIsVisibleFlag ? undefined : key
   }
 
   const createChangeErrorFromContext = (
@@ -184,8 +199,10 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
           if (defaultsContexts !== undefined) {
             return createChangeErrorFromContext(field, defaultsContexts, after)
           }
-          const singleDefaultContexts = await checkSingleDefault(innerValue, startLevelType, _key)
-          return createChangeErrorFromContext(field, singleDefaultContexts, after)
+          const singleDefaultContexts = checkSingleDefault(innerValue, startLevelType, _key) //default entry must be visible
+          return singleDefaultContexts !== undefined
+            ? createChangeErrorFromContext(field, [singleDefaultContexts], after)
+            : []
         })
       }
       const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)

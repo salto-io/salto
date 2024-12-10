@@ -19,7 +19,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   retrieveSettings: true,
   genAiReferences: true,
   networkReferences: false,
-  addParentToMetadataInstancesWithinFolder: false,
+  addParentToInstancesWithinFolder: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

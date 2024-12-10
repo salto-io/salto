@@ -11,14 +11,14 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { FilterWith } from './mocks'
-import filterCreator from '../../src/filters/add_parent_to_metadata_instances_within_folder'
+import filterCreator from '../../src/filters/add_parent_to_instances_within_folder'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
-describe('addParentToMetadataInstancesWithinFolder filter', () => {
+describe('addParentToInstancesWithinFolderFilter', () => {
   describe('onFetch', () => {
     let elements: Element[]
-    let filter: FilterWith<'onFetch'>
+    let elementsSource: Element[]
     let emailTemplateInstance: Element
     let emailFolderInstance: Element
     let reportInstance: Element
@@ -28,24 +28,14 @@ describe('addParentToMetadataInstancesWithinFolder filter', () => {
     let dashboardInstance: Element
     let dashboardFolderInstance: Element
 
-    const createFilterWithOptionalFeature = (featureOption: boolean): typeof filter =>
-      filterCreator({
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            fetchParams: { target: [], optionalFeatures: { addParentToMetadataInstancesWithinFolder: featureOption } },
-          }),
-          elementsSource: buildElementsSourceFromElements(elements),
-        },
-      }) as typeof filter
-
     beforeEach(() => {
+      emailFolderInstance = createInstanceElement({ fullName: 'MarketingFolder' }, mockTypes.EmailFolder)
+      elementsSource = [emailFolderInstance]
       elements = [
         (emailTemplateInstance = createInstanceElement(
           { fullName: 'MarketingFolder/WelcomeEmail' },
           mockTypes.EmailTemplate,
         )),
-        (emailFolderInstance = createInstanceElement({ fullName: 'MarketingFolder' }, mockTypes.EmailFolder)),
         (reportInstance = createInstanceElement({ fullName: 'SalesFolder/QuarterlySales' }, mockTypes.Report)),
         (reportFolderInstance = createInstanceElement({ fullName: 'SalesFolder' }, mockTypes.ReportFolder)),
         (documentInstance = createInstanceElement({ fullName: 'SharedDocs/Policy' }, mockTypes.Document)),
@@ -59,9 +49,17 @@ describe('addParentToMetadataInstancesWithinFolder filter', () => {
       ]
     })
     describe('when the instances are within folder', () => {
-      describe('when addParentToMetadataInstancesWithinFolder is Enabled', () => {
+      describe('when addParentToInstancesWithinFolder is Enabled', () => {
         beforeEach(async () => {
-          filter = createFilterWithOptionalFeature(true)
+          const filter: FilterWith<'onFetch'> = filterCreator({
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: { target: [], optionalFeatures: { addParentToInstancesWithinFolder: true } },
+              }),
+              elementsSource: buildElementsSourceFromElements(elementsSource),
+            },
+          }) as FilterWith<'onFetch'>
           await filter.onFetch(elements)
         })
         it('should add parent annotation to email template', async () => {
@@ -85,9 +83,17 @@ describe('addParentToMetadataInstancesWithinFolder filter', () => {
           )
         })
       })
-      describe('when addParentToMetadataInstancesWithinFolder is Disabled', () => {
+      describe('when addParentToInstancesWithinFolder is Disabled', () => {
         beforeEach(async () => {
-          filter = createFilterWithOptionalFeature(false)
+          const filter: FilterWith<'onFetch'> = filterCreator({
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: { target: [], optionalFeatures: { addParentToInstancesWithinFolder: false } },
+              }),
+              elementsSource: buildElementsSourceFromElements(elementsSource),
+            },
+          }) as FilterWith<'onFetch'>
           await filter.onFetch(elements)
         })
         it('should not create parent annotation', () => {

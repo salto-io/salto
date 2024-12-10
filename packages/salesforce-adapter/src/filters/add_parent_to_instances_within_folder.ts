@@ -19,6 +19,15 @@ const log = logger(module)
 
 type FolderInstancesIndex = Map<string, Record<string, InstanceElement>>
 
+const getFolderInstance = (
+  instance: InstanceElement,
+  folderInstancesIndex: FolderInstancesIndex,
+): InstanceElement | undefined => {
+  const { folderType } = instance.getTypeSync().annotations
+  const folderName = apiNameSync(instance)?.split('/')[0] ?? ''
+  return folderInstancesIndex.get(folderType)?.[folderName]
+}
+
 const isInstanceWithinFolder = (instance: InstanceElement): boolean =>
   isDefined(instance.getTypeSync().annotations.folderType)
 
@@ -33,31 +42,26 @@ const createFolderInstancesIndex = (elements: Element[]): FolderInstancesIndex =
 }
 
 const filter: FilterCreator = ({ config }) => ({
-  name: 'addParentToMetadataInstancesWithinFolder',
+  name: 'addParentToInstancesWithinFolderFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetchProfile.isFeatureEnabled('addParentToMetadataInstancesWithinFolder')) {
+    if (!config.fetchProfile.isFeatureEnabled('addParentToInstancesWithinFolder')) {
       return
     }
     let count: number = 0
     const folderInstancesIndex = createFolderInstancesIndex(
       await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
     )
-    const getFolderInstance = (instance: InstanceElement): InstanceElement | undefined => {
-      const { folderType } = instance.getTypeSync().annotations
-      const folderName = apiNameSync(instance)?.split('/')[0] ?? ''
-      return folderInstancesIndex.get(folderType)?.[folderName]
-    }
     elements
       .filter(isInstanceElement)
       .filter(isInstanceWithinFolder)
       .forEach(instance => {
-        const parent = getFolderInstance(instance)
+        const parent = getFolderInstance(instance, folderInstancesIndex)
         if (isDefined(parent)) {
           addElementParentReference(instance, parent)
           count += 1
         }
       })
-    log.debug(':onfetch created %d references in total', count)
+    log.debug('addParentToInstancesWithinFolderFilter created %d references in total', count)
   },
 })
 

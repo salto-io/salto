@@ -10,7 +10,14 @@ import { definitions, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { ZendeskConfig } from '../../config'
 import { ZendeskFetchOptions } from '../types'
 import { BUSINESS_HOUR_SCHEDULE_HOLIDAY, EVERYONE_USER_TYPE } from '../../constants'
-import { transformGuideItem, transformQueueItem, transformSectionItem, transformTriggerItem } from './transforms'
+import {
+  transformGraphQLItem,
+  transformGuideItem,
+  transformQueueItem,
+  transformSectionItem,
+  transformTriggerItem,
+} from './transforms'
+import { flowsQuery } from './graphql_schemas'
 
 const NAME_ID_FIELD: definitions.fetch.FieldIDPart = { fieldName: 'name' }
 const DEFAULT_ID_PARTS = [NAME_ID_FIELD]
@@ -1839,6 +1846,58 @@ const createCustomizations = (): Record<
         help_center_id: { omit: true },
         created_at: { omit: true },
         updated_at: { omit: true },
+      },
+    },
+  },
+
+  bot_builder_flow: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/admin/private/answer_bot/graphql',
+          client: 'graphql',
+          method: 'post',
+          data: {
+            operationName: 'fetchFlows',
+            query: flowsQuery,
+          },
+        },
+        transformation: { root: '.', adjust: transformGraphQLItem('flows') },
+      },
+    ],
+    resource: {
+      directFetch: true,
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'name' }] }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        subflows: {
+          standalone: {
+            typeName: 'bot_builder_answer',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  bot_builder_answer: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true },
+        path: {
+          pathParts: [{ parts: [{ fieldName: 'name' }], extendsParent: true }],
+        },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
       },
     },
   },

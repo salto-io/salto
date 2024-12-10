@@ -151,6 +151,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  bot_builder_flow: {
+    transformation: {
+      // This is added as the deprecated filter for references (referencedInstanceNamesFilterCreatorDeprecated) looks only in this config for the referenced idFields
+      idFields: ['&brandId', 'name'],
+    },
+  },
+  bot_builder_answer: {
+    transformation: {
+      idFields: ['name'],
+      extendsParentId: true,
+    },
+  },
   organization: {
     transformation: {
       sourceTypeName: 'organizations__organizations',

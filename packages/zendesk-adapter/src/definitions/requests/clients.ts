@@ -83,11 +83,9 @@ export const createClientDefinitions = (
     graphql: {
       httpClient: clients.graphql,
       endpoints: {
-        default: {
-          post: {
-            // This is for the graphql endpoint, which is readonly for fetch. It allows it to be used in fetch
-            readonly: true,
-          },
+        customizations: {
+          // This is for the graphql endpoint, which is readonly for fetch. It allows it to be used in fetch
+          '/api/admin/private/answer_bot/graphql': { post: { readonly: true } },
         },
       },
     },

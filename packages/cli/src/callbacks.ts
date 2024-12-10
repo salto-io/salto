@@ -148,6 +148,8 @@ const isPasswordInputType = (fieldName: string): boolean =>
     'password',
     'tokenId',
     'tokenSecret',
+    'certificateId',
+    'privateKey',
     'consumerKey',
     'consumerSecret',
     'suiteAppTokenId',

@@ -91,7 +91,7 @@ jest.mock('@salto-io/lowerdash', () => ({
 const mockExecuteAction = jest.fn()
 const mockSetCommandTimeout = jest.fn()
 
-jest.mock('@salto-io/suitecloud-cli', () => ({
+jest.mock('@salto-io/suitecloud-cli-legacy', () => ({
   ActionResultUtils: {
     getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
   },

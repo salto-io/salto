@@ -14,11 +14,19 @@ export type SuiteAppCredentials = {
 
 export type SuiteAppSoapCredentials = Omit<SuiteAppCredentials, 'suiteAppActivationKey'>
 
-export type SdfCredentials = {
+export type SdfTokenBasedCredentials = {
   accountId: string
   tokenId: string
   tokenSecret: string
 }
+
+export type SdfOauthCredentials = {
+  accountId: string
+  certificateId: string
+  privateKey: string
+}
+
+export type SdfCredentials = SdfTokenBasedCredentials | SdfOauthCredentials
 
 export type Credentials = SdfCredentials & Partial<SuiteAppCredentials>
 
@@ -27,6 +35,9 @@ export const isSuiteAppCredentials = (credentials: Credentials): credentials is 
 
 export const isSdfCredentialsOnly = (credentials: Credentials): boolean =>
   credentials.suiteAppTokenId === undefined && credentials.suiteAppTokenSecret === undefined
+
+export const isSdfOauthCredentials = (credentials: SdfCredentials): credentials is SdfOauthCredentials =>
+  (credentials as SdfOauthCredentials).certificateId !== undefined
 
 export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
 

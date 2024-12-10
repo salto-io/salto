@@ -10,4 +10,5 @@ import { FILTER_TYPE_NAME } from '../constants'
 
 export const isEnhancedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === FILTER_TYPE_NAME &&
-  instance.value.description?.startsWith('Filter managed by Enhanced Search')
+  (instance.value.description?.startsWith('Filter managed by Enhanced Search') ||
+    instance.value.description?.startsWith('Filter managed by ScriptRunner'))

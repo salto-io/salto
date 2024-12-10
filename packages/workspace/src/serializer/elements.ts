@@ -35,6 +35,7 @@ import {
   isVariableExpression,
   PlaceholderObjectType,
   isField,
+  TypeElement,
 } from '@salto-io/adapter-api'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
@@ -199,44 +200,13 @@ export const serializeStream = async <T = Element>({
     nameParts: _.get(id, 'nameParts'),
   })
 
-  const referenceExpressionReplacer = (e: ReferenceExpression): ReferenceExpression & SerializedClass => {
-    if (e.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(e)) {
-      // eslint-disable-next-line no-use-before-define
-      return saltoClassReplacer(_.cloneDeepWith(e.createWithValue(undefined), replacer))
-    }
-    // Replace ref with value in order to keep the result from changing between
-    // a fetch and a deploy.
-    if (isElement(e.value)) {
-      // eslint-disable-next-line no-use-before-define
-      return saltoClassReplacer(_.cloneDeepWith(new ReferenceExpression(e.value.elemID), replacer))
-    }
-    // eslint-disable-next-line no-use-before-define
-    return _.cloneDeepWith(e.value, replacer)
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resolveCircles = (v: any): any =>
+  const resolveCircles = (v: TypeElement): TypeElement =>
     isPrimitiveType(v)
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
       : new ObjectType({ elemID: v.elemID })
 
-  const referenceTypeReplacer = (e: TypeReference): TypeReference & SerializedClass => {
-    if (referenceSerializerMode === 'keepRef') {
-      if (isType(e.type) && !isContainerType(e.type)) {
-        // eslint-disable-next-line no-use-before-define
-        return saltoClassReplacer(_.cloneDeepWith(new TypeReference(e.elemID, resolveCircles(e.type)), replacer))
-      }
-    }
-    // eslint-disable-next-line no-use-before-define
-    return saltoClassReplacer(_.cloneDeepWith(new TypeReference(e.elemID), replacer))
-  }
-
-  const fieldReplacer = (field: Field): Pick<Field, 'elemID' | 'annotations' | 'refType'> & SerializedClass =>
-    // eslint-disable-next-line no-use-before-define
-    _.cloneDeepWith(_.pick(saltoClassReplacer(field), SALTO_CLASS_FIELD, 'elemID', 'annotations', 'refType'), replacer)
-
   const replacerRootMarker = Symbol('root marker for replacer')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const replacer = (v: any, k: any): any => {
+  const replacer = (v: unknown, k: unknown): unknown => {
     if (k !== undefined) {
       if (k !== replacerRootMarker && isType(v) && !isContainerType(v)) {
         // If we encounter a type anywhere except at the root, we serialize a placeholder instead
@@ -245,16 +215,32 @@ export const serializeStream = async <T = Element>({
         return saltoClassReplacer(resolveCircles(v))
       }
       if (isReferenceExpression(v)) {
-        return referenceExpressionReplacer(v)
+        if (v.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(v)) {
+          return saltoClassReplacer(_.cloneDeepWith(v.createWithValue(undefined), replacer))
+        }
+        // Replace ref with value in order to keep the result from changing between
+        // a fetch and a deploy.
+        if (isElement(v.value)) {
+          return saltoClassReplacer(_.cloneDeepWith(new ReferenceExpression(v.value.elemID), replacer))
+        }
+        return _.cloneDeepWith(v.value, replacer)
       }
       if (isTypeReference(v)) {
-        return referenceTypeReplacer(v)
+        if (referenceSerializerMode === 'keepRef') {
+          if (isType(v.type) && !isContainerType(v.type)) {
+            return saltoClassReplacer(_.cloneDeepWith(new TypeReference(v.elemID, resolveCircles(v.type)), replacer))
+          }
+        }
+        return saltoClassReplacer(_.cloneDeepWith(new TypeReference(v.elemID), replacer))
       }
       if (isStaticFile(v)) {
         return staticFileReplacer(v)
       }
       if (isField(v)) {
-        return fieldReplacer(v)
+        return _.cloneDeepWith(
+          _.pick(saltoClassReplacer(v), SALTO_CLASS_FIELD, 'elemID', 'annotations', 'refType'),
+          replacer,
+        )
       }
       if (isSaltoSerializable(v)) {
         return saltoClassReplacer(_.cloneDeepWith(v, replacer))

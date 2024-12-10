@@ -357,7 +357,7 @@ describe('State/cache serialization', () => {
         new StaticFile({ filepath: staticFile.filepath, hash: staticFile.hash }),
       )
     })
-    it('should serialize fields without values that are not used for deserialize', async () => {
+    it('serialized fields should not contain values that are not used for deserialize', async () => {
       const obj = new ObjectType({
         elemID: new ElemID('dummy', 'test'),
         fields: { field: { refType: BuiltinTypes.STRING } },

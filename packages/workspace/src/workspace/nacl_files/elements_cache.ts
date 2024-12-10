@@ -26,7 +26,7 @@ import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asyncitera
 import _ from 'lodash'
 import AsyncLock from 'async-lock'
 import { MergeError, MergeResult } from '../../merger'
-import { ElementsSource, createOverrideReadOnlyElementsSource } from '../elements_source'
+import { ElementsSource } from '../elements_source'
 import { RemoteMap, RemoteMapEntry, RemoteMapCreator } from '../remote_map'
 
 const { awu } = collections.asynciterable
@@ -71,7 +71,6 @@ export type RecoveryOverrideFunc = (
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
-  src2Overrides?: Record<string, Element | undefined>
   recoveryOverride?: RecoveryOverrideFunc
   src1Prefix: string
   src2Prefix: string
@@ -218,9 +217,7 @@ export const createMergeManager = async (
   }> => {
     const { src1Changes: possibleSrc1Changes, src2Changes: possibleSrc2Changes } = cacheUpdate
     const src1 = sources[cacheUpdate.src1Prefix]
-    const src2 = values.isDefined(cacheUpdate.src2Overrides)
-      ? createOverrideReadOnlyElementsSource(sources[cacheUpdate.src2Prefix], cacheUpdate.src2Overrides)
-      : sources[cacheUpdate.src2Prefix]
+    const src2 = sources[cacheUpdate.src2Prefix]
     const src1Changes =
       possibleSrc1Changes ?? createEmptyChangeSet(await hashes.get(getSourceHashKey(cacheUpdate.src1Prefix)))
     const src2Changes =

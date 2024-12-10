@@ -30,7 +30,6 @@ import {
   isModificationChange,
   TypeReference,
   DEFAULT_SOURCE_SCOPE,
-  isElement,
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -632,9 +631,10 @@ export const loadWorkspace = async (
         )
         const sources: Record<string, ReadOnlyElementsSource> = {}
         await awu(envs()).forEach(async envName => {
-          sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource.getElementsSource(envName)
+          const naclSource = await naclFilesSource.getElementsSource(envName)
+          sources[MULTI_ENV_SOURCE_PREFIX + envName] = naclSource
           sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(state(envName), async element =>
-            getElementHiddenParts(element, state(envName), await states[envName].merged.get(element.elemID)),
+            getElementHiddenParts(element, state(envName), await naclSource.get(element.elemID)),
           )
         })
         const initializedState = {
@@ -752,23 +752,6 @@ export const loadWorkspace = async (
           }
         }
 
-        const workspaceChangedElements = Object.fromEntries(
-          await awu(wsChanges[envName]?.changes ?? [])
-            .map(async (change: Change): Promise<[string, Element | undefined]> => {
-              const workspaceElement = getChangeData(change)
-              const stateElement = await state(envName).get(workspaceElement.elemID)
-              const hiddenOnlyElement = isRemovalChange(change)
-                ? undefined
-                : await getElementHiddenParts(
-                    isElement(stateElement) ? stateElement : workspaceElement,
-                    state(envName),
-                    workspaceElement,
-                  )
-              return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
-            })
-            .toArray(),
-        )
-
         const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements, src2) => {
           const src1ElementsToMerge = await awu(src1RecElements).toArray()
           const src1IDSet = new Set(src1ElementsToMerge.map(elemID => elemID.getFullName()))
@@ -789,7 +772,6 @@ export const loadWorkspace = async (
           src2Changes: await completeStateOnlyChanges(
             stateOnlyChanges[envName] ?? createEmptyChangeSet(await state(envName).getHash()),
           ),
-          src2Overrides: workspaceChangedElements,
           recoveryOverride: dropStateOnlyElementsRecovery,
           src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
           src2Prefix: STATE_SOURCE_PREFIX + envName,

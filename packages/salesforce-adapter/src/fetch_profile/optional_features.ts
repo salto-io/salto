@@ -19,6 +19,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   retrieveSettings: false,
   genAiReferences: true,
   networkReferences: false,
+  addParentToInstancesWithinFolder: false,
   extendFetchTargets: false,
 }
 

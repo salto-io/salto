@@ -127,6 +127,7 @@ import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_s
 import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
+import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterResult, FilterContext, FilterCreator } from './filter'
 import {
@@ -287,6 +288,7 @@ export const allFilters: Array<FilterCreator> = [
   flowCoordinatesFilter,
   // createChangedAtSingletonInstanceFilter should run last
   changedAtSingletonFilter,
+  addParentToInstancesWithinFolderFilter,
 ]
 
 export interface SalesforceAdapterParams {

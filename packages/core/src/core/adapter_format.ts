@@ -224,6 +224,7 @@ export const calculatePatch = async ({
       fetchErrors: [],
       success: false,
       updatedConfig: {},
+      partiallyFetchedAccounts: new Set([accountName]),
     }
   }
   const {
@@ -239,6 +240,7 @@ export const calculatePatch = async ({
       fetchErrors: [],
       success: false,
       updatedConfig: {},
+      partiallyFetchedAccounts: new Set([accountName]),
     }
   }
   const { changes } = await calcFetchChanges({
@@ -255,6 +257,7 @@ export const calculatePatch = async ({
     fetchErrors: [...(beforeLoadErrors ?? []), ...(afterLoadErrors ?? [])],
     success: true,
     updatedConfig: {},
+    partiallyFetchedAccounts: new Set([accountName]),
   }
 }
 

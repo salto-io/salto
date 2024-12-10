@@ -3033,6 +3033,7 @@ export type ChangeValidatorName =
   | 'localeModification'
   | 'emptyAutomationOrder'
   | 'viewCustomStatusConditions'
+  | 'defaultSupportAddress'
   | 'businessHoursScheduleHoliday'
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -3113,6 +3114,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     localeModification: { refType: BuiltinTypes.BOOLEAN },
     emptyAutomationOrder: { refType: BuiltinTypes.BOOLEAN },
     viewCustomStatusConditions: { refType: BuiltinTypes.BOOLEAN },
+    defaultSupportAddress: { refType: BuiltinTypes.BOOLEAN },
     businessHoursScheduleHoliday: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

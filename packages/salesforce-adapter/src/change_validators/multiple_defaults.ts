@@ -221,7 +221,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
           if (defaultsContexts !== undefined) {
             return createChangeErrorFromContext(field, defaultsContexts, after)
           }
-          const singleDefaultisValid = checkSingleDefault(innerValue, startLevelType) //default entry must be visible
+          const singleDefaultisValid = checkSingleDefault(innerValue, startLevelType)
           return singleDefaultisValid && singleDefaultisValid !== ''
             ? [createInstanceChangeErrorSingleDefault(fieldPath, singleDefaultisValid, after)]
             : []

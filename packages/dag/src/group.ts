@@ -192,7 +192,6 @@ type BuildAcyclicGroupedGraphImplParams<T> = {
   groupKey: GroupKeyFunc
   origGroupKey: GroupKeyFunc
   removedCycles?: collections.set.SetId[][]
-  shouldFailOnCircularDependency: boolean
 }
 
 const buildAcyclicGroupedGraphImpl = <T>({
@@ -200,7 +199,6 @@ const buildAcyclicGroupedGraphImpl = <T>({
   groupKey,
   origGroupKey,
   removedCycles = [],
-  shouldFailOnCircularDependency,
 }: BuildAcyclicGroupedGraphImplParams<T>): { graph: GroupDAG<T>; removedCycles: collections.set.SetId[][] } => {
   // Build group graph
   const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
@@ -215,10 +213,9 @@ const buildAcyclicGroupedGraphImpl = <T>({
       groupKey: updatedGroupKey,
       origGroupKey,
       removedCycles,
-      shouldFailOnCircularDependency,
     })
   } catch (error) {
-    if (!shouldFailOnCircularDependency && error instanceof CircularDependencyError) {
+    if (error instanceof CircularDependencyError) {
       const { causingNodeIds } = error
       log.debug(
         'detected circular dependency in group graph, removing the following nodes: %s',
@@ -229,7 +226,6 @@ const buildAcyclicGroupedGraphImpl = <T>({
         groupKey,
         origGroupKey,
         removedCycles: removedCycles.concat([causingNodeIds]),
-        shouldFailOnCircularDependency,
       })
     }
     throw error
@@ -239,14 +235,12 @@ const buildAcyclicGroupedGraphImpl = <T>({
 type BuildAcyclicGroupedGraphParams<T> = {
   source: DataNodeMap<T>
   groupKey: GroupKeyFunc
-  shouldFailOnCircularDependency: boolean
   disjointGroups?: Set<NodeId>
 }
 
 export const buildAcyclicGroupedGraph = <T>({
   source,
   groupKey,
-  shouldFailOnCircularDependency,
   disjointGroups,
 }: BuildAcyclicGroupedGraphParams<T>): { graph: GroupDAG<T>; removedCycles: collections.set.SetId[][] } =>
   log.timeDebug(
@@ -256,7 +250,6 @@ export const buildAcyclicGroupedGraph = <T>({
         source,
         groupKey: updatedGroupKey,
         origGroupKey: groupKey,
-        shouldFailOnCircularDependency,
       })
     },
     'build grouped graph for %o nodes',

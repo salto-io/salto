@@ -30,7 +30,7 @@ describe('buildGroupGraph', () => {
   }
 
   it('should return empty group graph for empty origin', () => {
-    subject = buildAcyclicGroupedGraph({ source: origin, groupKey, shouldFailOnCircularDependency: true }).graph
+    subject = buildAcyclicGroupedGraph({ source: origin, groupKey }).graph
     expect(getGroupNodes()).toEqual([])
   })
 
@@ -38,7 +38,7 @@ describe('buildGroupGraph', () => {
     origin.addNode('n1', ['n2', 'n3'], 'n1_data')
     origin.addNode('n2', ['n3'], 'n2_data')
     origin.addNode('n3', [], 'n3_data')
-    subject = buildAcyclicGroupedGraph({ source: origin, groupKey, shouldFailOnCircularDependency: true }).graph
+    subject = buildAcyclicGroupedGraph({ source: origin, groupKey }).graph
 
     const groupGraph = getGroupNodes()
     expect(groupGraph).toHaveLength(3)
@@ -51,7 +51,7 @@ describe('buildGroupGraph', () => {
     origin.addNode('group1_n1', [], 'n1_data')
     origin.addNode('group1_n2', [], 'n2_data')
     origin.addNode('group1_n3', [], 'n3_data')
-    subject = buildAcyclicGroupedGraph({ source: origin, groupKey, shouldFailOnCircularDependency: true }).graph
+    subject = buildAcyclicGroupedGraph({ source: origin, groupKey }).graph
 
     const groupGraph = getGroupNodes()
     expect(groupGraph).toHaveLength(1)
@@ -71,7 +71,6 @@ describe('buildGroupGraph', () => {
         source: origin,
         groupKey,
         disjointGroups: new Set(['group1']),
-        shouldFailOnCircularDependency: true,
       }).graph
 
       const groupGraph = getGroupNodes()
@@ -90,7 +89,6 @@ describe('buildGroupGraph', () => {
         source: origin,
         groupKey,
         disjointGroups: new Set(['group1']),
-        shouldFailOnCircularDependency: true,
       }).graph
 
       const groupGraph = getGroupNodes()
@@ -110,7 +108,6 @@ describe('buildGroupGraph', () => {
         source: origin,
         groupKey,
         disjointGroups: new Set(['group1', 'group2']),
-        shouldFailOnCircularDependency: true,
       }).graph
 
       const groupGraph = getGroupNodes()
@@ -129,7 +126,6 @@ describe('buildGroupGraph', () => {
           source: origin,
           groupKey,
           disjointGroups: new Set(['group1']),
-          shouldFailOnCircularDependency: true,
         }),
       ).toThrow()
     })
@@ -193,7 +189,6 @@ describe('buildGroupGraph', () => {
       const groupGraph = buildAcyclicGroupedGraph({
         source: srcGraph,
         groupKey: groupKeyFunc,
-        shouldFailOnCircularDependency: true,
       }).graph
       verifyGroupGraphOrder(groupGraph, edges, 2)
     })
@@ -221,35 +216,19 @@ describe('buildGroupGraph', () => {
         ['n8', 'n7'],
       ]
 
-      describe('when shouldFailOnCircularDependency is true', () => {
-        it('should throw circular dependency error', () => {
-          const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
-          expect(() =>
-            buildAcyclicGroupedGraph({
-              source: srcGraph,
-              groupKey: groupKeyFunc,
-              shouldFailOnCircularDependency: true,
-            }),
-          ).toThrow()
+      it('should remove the nodes that cause the cycle', () => {
+        const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
+        const { graph, removedCycles } = buildAcyclicGroupedGraph({
+          source: srcGraph,
+          groupKey: groupKeyFunc,
         })
-      })
+        expect(removedCycles).toHaveLength(2)
+        expect(removedCycles[0]).toEqual(['n1', 'n2', 'n3', 'n4'])
+        expect(removedCycles[1]).toEqual(['n7', 'n8'])
 
-      describe('when shouldFailOnCircularDependency false', () => {
-        it('should remove the nodes that cause the cycle', () => {
-          const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
-          const { graph, removedCycles } = buildAcyclicGroupedGraph({
-            source: srcGraph,
-            groupKey: groupKeyFunc,
-            shouldFailOnCircularDependency: false,
-          })
-          expect(removedCycles).toHaveLength(2)
-          expect(removedCycles[0]).toEqual(['n1', 'n2', 'n3', 'n4'])
-          expect(removedCycles[1]).toEqual(['n7', 'n8'])
-
-          expect(graph.size).toEqual(1)
-          expect(graph.nodeData.size).toEqual(1)
-          expect(graph.edges().length).toEqual(0)
-        })
+        expect(graph.size).toEqual(1)
+        expect(graph.nodeData.size).toEqual(1)
+        expect(graph.edges().length).toEqual(0)
       })
     })
 
@@ -269,7 +248,6 @@ describe('buildGroupGraph', () => {
       const groupGraph = buildAcyclicGroupedGraph({
         source: srcGraph,
         groupKey: groupKeyFunc,
-        shouldFailOnCircularDependency: true,
       }).graph
       verifyGroupGraphOrder(groupGraph, edges, 2)
     })
@@ -290,7 +268,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 3)
       })
@@ -314,7 +291,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 6)
       })
@@ -342,7 +318,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 6)
       })
@@ -369,7 +344,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 6)
       })
@@ -391,7 +365,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 3)
       })
@@ -414,7 +387,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 3)
       })
@@ -443,7 +415,6 @@ describe('buildGroupGraph', () => {
         const groupGraph = buildAcyclicGroupedGraph({
           source: srcGraph,
           groupKey: groupKeyFunc,
-          shouldFailOnCircularDependency: true,
         }).graph
         verifyGroupGraphOrder(groupGraph, edges, 7)
       })

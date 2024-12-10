@@ -10,7 +10,7 @@ import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 
-export const MASK_VALUE = '**MASKED_PASSWORD**'
+export const MASK_VALUE = '**SALTO_MASKED_VALUE**'
 
 const PASSWORD_REGEX = /<key>Password<\/key><string>.*?<\/string>/
 const MASKED_PASSWORD = `<key>Password</key><string>${MASK_VALUE}</string>`
@@ -95,10 +95,12 @@ export const removeSelfServiceSecurityPassword = (value: Values): void => {
 export const maskPayloadsPassword = (value: Values): void => {
   const payloads = _.get(value, 'general.payloads')
   if (typeof payloads === 'string') {
-    if (PASSWORD_REGEX.test(payloads)) {
+    const maskedPayloads = payloads.replace(PASSWORD_REGEX, () => {
       log.trace(`Masked value of payloads in '${_.get(value, 'general.name')}'`)
-      _.set(value, 'general.payloads', payloads.replace(PASSWORD_REGEX, MASKED_PASSWORD))
-    }
+      return MASKED_PASSWORD
+    })
+    _.set(value, 'general.payloads', maskedPayloads)
+    // TODO: change to replaceAll to support all occasions in the payloads
   }
 }
 

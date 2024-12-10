@@ -6,7 +6,12 @@
       "request": "launch",
       "name": "dummy-adapter Debug Jest Tests",
       "cwd": "${workspaceFolder}",
-      "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
+      "args": [
+        "${workspaceFolder}/../../node_modules/.bin/jest",
+        "--runInBand",
+        "--config",
+        "${workspaceFolder}/jest.config.js"
+      ],
       "outFiles": [],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"

@@ -104,12 +104,12 @@ const createInstanceChangeErrorSingleDefault = (
   field: string,
   instance: InstanceElement,
 ): ChangeError => {
-  const elementId = instance.elemID.createNestedID(fieldPath)
+  const elementId = instance.elemID.createNestedID(fieldPath, field, 'visible')
   return {
     elemID: elementId,
     severity: 'Error',
     message: 'Default entry must be visible',
-    detailedMessage: `Must have exactly one record with default and visible fields as true\nThis field has to be true in order to deploy: ${elementId.getFullName()}.${field}.visible`,
+    detailedMessage: `Must have exactly one default entry that is visible\nThis field has to be true in order to deploy: ${elementId.getFullName()}`,
   }
 }
 

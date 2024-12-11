@@ -70,12 +70,6 @@ type FieldWithValueSetOrderedMap = Field & {
 
 type FieldWithValueSet = FieldWithValueSetList | FieldWithValueSetOrderedMap
 
-// type fieldsFlags = {
-//   noDefaultNoVisibleFlag: boolean
-//   oneDefaultIsVisibleFlag: boolean
-//   invalidRecord: string | undefined
-// }
-
 const isFieldWithValueSetList = (field: Field): field is FieldWithValueSetList =>
   _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
 
@@ -181,13 +175,6 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
         return curr.recordType
       }
       return undefined
-      // const noDefaultNoVisible = res.noDefaultNoVisibleFlag
-      //   ? !defaultField && !visibleField
-      //   : res.noDefaultNoVisibleFlag
-      // const oneDefaultIsVisible = res.oneDefaultIsVisibleFlag
-      //   ? res.oneDefaultIsVisibleFlag
-      //   : defaultField && visibleField
-      // return { noDefaultNoVisibleFlag: noDefaultNoVisible, oneDefaultIsVisibleFlag: oneDefaultIsVisible ,invalidRecord:}
     }, undefined)
     return isValid !== undefined && isValid !== '' ? isValid : undefined
   }

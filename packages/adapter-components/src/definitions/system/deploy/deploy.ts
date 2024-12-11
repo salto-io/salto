@@ -64,6 +64,14 @@ export type ActionDependency<AdditionalAction extends string> = {
   second: ActionName | AdditionalAction
 }
 
+export type RecurseIntoTypeDef = {
+  fieldPath: string[]
+  changeIdFields: string[]
+  condition?: DeployRequestCondition
+  // when missing, all actions are used. currently only standard actions are supported.
+  onActions?: ActionName[]
+}
+
 export type InstanceDeployApiDefinitions<AdditionalAction extends string, ClientOptions extends string> = {
   // a sorted list of requests to make in order to deploy a change of this type
   requestsByAction: DefaultWithCustomizations<
@@ -103,6 +111,8 @@ export type InstanceDeployApiDefinitions<AdditionalAction extends string, Client
   // fail if the change already has (error-level) errors from previous actions
   // default: true
   failIfChangeHasErrors?: boolean
+
+  recurseIntoTypes?: Record<string, RecurseIntoTypeDef>
 }
 
 export type DeployApiDefinitions<AdditionalAction extends string, ClientOptions extends string> = {

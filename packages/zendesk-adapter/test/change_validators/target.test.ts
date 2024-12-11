@@ -8,76 +8,108 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TARGET_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { createChangeError, targetAuthDataValidator } from '../../src/change_validators/target'
+import { createAuthenticationChangeError, targetValidator } from '../../src/change_validators/target'
 import ZendeskClient from '../../src/client/client'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
-describe('targetAuthDataValidator', () => {
+describe('targetValidator', () => {
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
   const config = _.cloneDeep(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])
-  const changeValidator = targetAuthDataValidator(client, config)
+  const changeValidator = targetValidator(client, config)
 
   const targetType = new ObjectType({
     elemID: new ElemID(ZENDESK, TARGET_TYPE_NAME),
   })
-  const targetInstanceWithAuth = new InstanceElement('test1', targetType, {
-    title: 'test',
-    username: 'test_username',
-    password: 'test_password',
+  const basicTargetInstance = new InstanceElement('test2', targetType, { type: 'email_target', title: 'test' })
+  describe('auth data validation', () => {
+    const targetInstanceWithAuth = new InstanceElement('test1', targetType, {
+      title: 'test',
+      type: 'email_target',
+      username: 'test_username',
+      password: 'test_password',
+    })
+    it('should return an info message if a new target is created with auth', async () => {
+      const errors = await changeValidator([toChange({ after: targetInstanceWithAuth })])
+      expect(errors).toEqual([
+        createAuthenticationChangeError(
+          targetInstanceWithAuth.elemID,
+          targetInstanceWithAuth.value.title,
+          client.getUrl().href,
+          config.types.target.transformation?.serviceUrl,
+        ),
+      ])
+    })
+    it('should not return an info message if a new target is created without auth', async () => {
+      const errors = await changeValidator([toChange({ after: basicTargetInstance })])
+      expect(errors).toEqual([])
+    })
+    it('should not return an info message if target was modified but auth remained the same', async () => {
+      const clonedBefore = targetInstanceWithAuth.clone()
+      const clonedAfter = targetInstanceWithAuth.clone()
+      clonedAfter.value.title = 'test - updated'
+      const errors = await changeValidator([toChange({ before: clonedBefore, after: clonedAfter })])
+      expect(errors).toEqual([])
+    })
+    it('should return an info message if target username was modified', async () => {
+      const clonedBefore = targetInstanceWithAuth.clone()
+      const clonedAfter = targetInstanceWithAuth.clone()
+      clonedAfter.value.username = 'username - updated'
+      const errors = await changeValidator([toChange({ before: clonedBefore, after: clonedAfter })])
+      expect(errors).toEqual([
+        createAuthenticationChangeError(
+          targetInstanceWithAuth.elemID,
+          targetInstanceWithAuth.value.title,
+          client.getUrl().href,
+          config.types.target.transformation?.serviceUrl,
+        ),
+      ])
+    })
+    it('should return an info message if target password was modified', async () => {
+      const clonedBefore = targetInstanceWithAuth.clone()
+      const clonedAfter = targetInstanceWithAuth.clone()
+      clonedAfter.value.password = 'password - updated'
+      const errors = await changeValidator([toChange({ before: clonedBefore, after: clonedAfter })])
+      expect(errors).toEqual([
+        createAuthenticationChangeError(
+          targetInstanceWithAuth.elemID,
+          targetInstanceWithAuth.value.title,
+          client.getUrl().href,
+          config.types.target.transformation?.serviceUrl,
+        ),
+      ])
+    })
+
+    it('should not return an error if the target was removed', async () => {
+      const errors = await changeValidator([toChange({ before: targetInstanceWithAuth })])
+      expect(errors).toHaveLength(0)
+    })
   })
-  const targetInstanceWithoutAuth = new InstanceElement('test2', targetType, { title: 'test' })
-  it('should return an info message if a new target is created with auth', async () => {
-    const errors = await changeValidator([toChange({ after: targetInstanceWithAuth })])
-    expect(errors).toEqual([
-      createChangeError(
-        targetInstanceWithAuth.elemID,
-        targetInstanceWithAuth.value.title,
-        client.getUrl().href,
-        config.types.target.transformation?.serviceUrl,
-      ),
-    ])
-  })
-  it('should not return an info message if a new target is created without auth', async () => {
-    const errors = await changeValidator([toChange({ after: targetInstanceWithoutAuth })])
-    expect(errors).toEqual([])
-  })
-  it('should not return an info message if target was modified but auth remained the same', async () => {
-    const clonedBefore = targetInstanceWithAuth.clone()
-    const clonedAfter = targetInstanceWithAuth.clone()
-    clonedAfter.value.title = 'test - updated'
-    const errors = await changeValidator([toChange({ before: clonedBefore, after: clonedAfter })])
-    expect(errors).toEqual([])
-  })
-  it('should return an info message if target username was modified', async () => {
-    const clonedBefore = targetInstanceWithAuth.clone()
-    const clonedAfter = targetInstanceWithAuth.clone()
-    clonedAfter.value.username = 'username - updated'
-    const errors = await changeValidator([toChange({ before: clonedBefore, after: clonedAfter })])
-    expect(errors).toEqual([
-      createChangeError(
-        targetInstanceWithAuth.elemID,
-        targetInstanceWithAuth.value.title,
-        client.getUrl().href,
-        config.types.target.transformation?.serviceUrl,
-      ),
-    ])
-  })
-  it('should return an info message if target password was modified', async () => {
-    const clonedBefore = targetInstanceWithAuth.clone()
-    const clonedAfter = targetInstanceWithAuth.clone()
-    clonedAfter.value.password = 'password - updated'
-    const errors = await changeValidator([toChange({ before: clonedBefore, after: clonedAfter })])
-    expect(errors).toEqual([
-      createChangeError(
-        targetInstanceWithAuth.elemID,
-        targetInstanceWithAuth.value.title,
-        client.getUrl().href,
-        config.types.target.transformation?.serviceUrl,
-      ),
-    ])
-  })
-  it('should not return an error if the target was removed', async () => {
-    const errors = await changeValidator([toChange({ before: targetInstanceWithAuth })])
-    expect(errors).toHaveLength(0)
+  describe('target type validation', () => {
+    const invalidTargetInstance = basicTargetInstance.clone()
+    invalidTargetInstance.value.type = 'invalid_type'
+
+    it('should return an error if the target type is not email_target', async () => {
+      const errors = await changeValidator([toChange({ after: invalidTargetInstance })])
+      expect(errors).toEqual([
+        {
+          elemID: invalidTargetInstance.elemID,
+          severity: 'Error',
+          message: 'Invalid target type detected',
+          detailedMessage: `The target ${invalidTargetInstance.value.title} has an invalid type.
+Targets besides email target types have been deprecated.
+See more here: https://support.zendesk.com/hc/en-us/articles/6468124845210-Announcing-the-deprecation-of-URL-targets-and-branded-targets`,
+        },
+      ])
+    })
+
+    it('should not return an error if the target type is email_target', async () => {
+      const errors = await changeValidator([toChange({ after: basicTargetInstance })])
+      expect(errors).toEqual([])
+    })
+
+    it('should not return an error if the target was removed', async () => {
+      const errors = await changeValidator([toChange({ before: invalidTargetInstance })])
+      expect(errors).toHaveLength(0)
+    })
   })
 })

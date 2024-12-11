@@ -5,8 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-export type SuiteAppCredentials = {
+
+export type BaseCredentials = {
   accountId: string
+}
+
+export type SuiteAppCredentials = BaseCredentials & {
   suiteAppTokenId: string
   suiteAppTokenSecret: string
   suiteAppActivationKey?: string
@@ -14,14 +18,12 @@ export type SuiteAppCredentials = {
 
 export type SuiteAppSoapCredentials = Omit<SuiteAppCredentials, 'suiteAppActivationKey'>
 
-export type SdfTokenBasedCredentials = {
-  accountId: string
+export type SdfTokenBasedCredentials = BaseCredentials & {
   tokenId: string
   tokenSecret: string
 }
 
-export type SdfOauthCredentials = {
-  accountId: string
+export type SdfOauthCredentials = BaseCredentials & {
   certificateId: string
   privateKey: string
 }

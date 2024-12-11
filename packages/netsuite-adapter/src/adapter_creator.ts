@@ -43,6 +43,8 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 
+type AllCredentials = SdfTokenBasedCredentials & SdfOauthCredentials & SuiteAppCredentials
+
 const configID = new ElemID(NETSUITE)
 
 // The SuiteApp fields are commented out until we will be ready to expose them to the user
@@ -101,19 +103,17 @@ const throwOnInvalidAccountId = (credentials: Credentials): void => {
   }
 }
 
-const throwOnSdfCredentialsMismatch = (credentials: Credentials): void => {
-  const sdfTokenBasedCreds = credentials as SdfTokenBasedCredentials
-  const sdfOauthCreds = credentials as SdfOauthCredentials
-  if (sdfTokenBasedCreds.tokenId !== undefined && sdfOauthCreds.certificateId !== undefined) {
+const throwOnSdfCredentialsMismatch = (credentials: AllCredentials): void => {
+  if (credentials.tokenId !== undefined && credentials.certificateId !== undefined) {
     throw new Error('Expected to have one of tokenId and certificateId, but received both')
   }
-  if (sdfTokenBasedCreds.tokenId === undefined && sdfOauthCreds.certificateId === undefined) {
+  if (credentials.tokenId === undefined && credentials.certificateId === undefined) {
     throw new Error('Expected to have one of tokenId and certificateId, but received none')
   }
-  if (sdfTokenBasedCreds.tokenId !== undefined && sdfTokenBasedCreds.tokenSecret === undefined) {
+  if (credentials.tokenId !== undefined && credentials.tokenSecret === undefined) {
     throw new Error('Expected to have tokenSecret when tokenId is specified, but received none')
   }
-  if (sdfOauthCreds.certificateId !== undefined && sdfOauthCreds.privateKey === undefined) {
+  if (credentials.certificateId !== undefined && credentials.privateKey === undefined) {
     throw new Error('Expected to have privateKey when certificateId is specified, but received none')
   }
 }
@@ -139,28 +139,16 @@ const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
 }
 
 const netsuiteCredentialsFromCredentials = (credsInstance: Readonly<InstanceElement>): Credentials => {
-  const accountId = toCredentialsAccountId(credsInstance.value.accountId)
-  const SDFTokenBasedCredentials: SdfTokenBasedCredentials = {
-    accountId,
+  const credentials: AllCredentials = {
+    accountId: toCredentialsAccountId(credsInstance.value.accountId),
     tokenId: credsInstance.value.tokenId === '' ? undefined : credsInstance.value.tokenId,
     tokenSecret: credsInstance.value.tokenSecret === '' ? undefined : credsInstance.value.tokenSecret,
-  }
-  const SDFOauthCredentials: SdfOauthCredentials = {
-    accountId,
     certificateId: credsInstance.value.certificateId === '' ? undefined : credsInstance.value.certificateId,
     privateKey: credsInstance.value.privateKey === '' ? undefined : credsInstance.value.privateKey,
-  }
-  const suiteAppCredentials: SuiteAppCredentials = {
-    accountId,
     suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
     suiteAppTokenSecret:
       credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
     suiteAppActivationKey: credsInstance.value.suiteAppActivationKey,
-  }
-  const credentials: Credentials = {
-    ...SDFTokenBasedCredentials,
-    ...SDFOauthCredentials,
-    ...suiteAppCredentials,
   }
   throwOnInvalidAccountId(credentials)
   throwOnSdfCredentialsMismatch(credentials)

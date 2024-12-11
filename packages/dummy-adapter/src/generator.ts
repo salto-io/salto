@@ -1161,7 +1161,7 @@ const generateChangeError = (change: Change<ChangeDataType>): SaltoElementError 
   elemID: getChangeData(change).elemID,
   severity: 'Error',
   message: 'Failed to deploy',
-  detailedMessage: 'Failed to deploy',
+  detailedMessage: 'Deployment failed intentionally. Refer to the deployResult adapter config flag.',
 })
 
 /**
@@ -1200,7 +1200,7 @@ const generatePartialSuccessDeployResult = (changes: readonly Change<ChangeDataT
   }
 
   if (changes.length < 2) {
-    log.error('Expected at removal change or at least 2 changes for partial success. Falling back to error result')
+    log.error('Expected a removal change or at least 2 changes for partial success. Falling back to error result')
   }
 
   return {
@@ -1212,7 +1212,9 @@ const generatePartialSuccessDeployResult = (changes: readonly Change<ChangeDataT
 export const generateDeployResult = (
   changes: readonly Change<ChangeDataType>[],
   deployResult: DeploySummaryResult,
+  // eslint-disable-next-line consistent-return
 ): DeployResult => {
+  // eslint-disable-next-line default-case
   switch (deployResult) {
     case 'success':
       return {
@@ -1226,7 +1228,5 @@ export const generateDeployResult = (
       }
     case 'partial-success':
       return generatePartialSuccessDeployResult(changes)
-    default:
-      throw new Error('Unexpected dummy deploy result')
   }
 }

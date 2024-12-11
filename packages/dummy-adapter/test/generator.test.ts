@@ -419,16 +419,15 @@ describe('generator', () => {
     describe('when deploy result is success', () => {
       it('should return a deploy result with the applied changes and no errors', () => {
         const deployResult = generateDeployResult(changes, 'success')
-        expect(deployResult.appliedChanges).toHaveLength(changes.length)
+        expect(deployResult.errors).toEqual([])
         expect(deployResult.appliedChanges).toEqual(changes)
-        expect(deployResult.errors).toHaveLength(0)
       })
     })
 
     describe('when deploy result is failure', () => {
       it('should return a deploy result with the applied changes and errors', () => {
         const deployResult = generateDeployResult(changes, 'failure')
-        expect(deployResult.appliedChanges).toHaveLength(0)
+        expect(deployResult.appliedChanges).toEqual([])
         expect(deployResult.errors).toHaveLength(changes.length)
         expect(every(deployResult.errors, error => error.severity === 'Error')).toBeTruthy()
         expect(deployResult.errors.map(error => error.message)).toEqual(changes.map(() => 'Failed to deploy'))
@@ -443,8 +442,8 @@ describe('generator', () => {
       describe('when no changes are provided', () => {
         it('should return a deploy result with no changes and no errors', () => {
           const deployResult = generateDeployResult([], 'partial-success')
-          expect(deployResult.appliedChanges).toHaveLength(0)
-          expect(deployResult.errors).toHaveLength(0)
+          expect(deployResult.appliedChanges).toEqual([])
+          expect(deployResult.errors).toEqual([])
         })
       })
 
@@ -453,7 +452,7 @@ describe('generator', () => {
           describe('when the change is an object type', () => {
             it('should return a deploy result with 1 applied modification change and no errors', () => {
               const deployResult = generateDeployResult([objectTypeRemovalChange], 'partial-success')
-              expect(deployResult.errors).toHaveLength(0)
+              expect(deployResult.errors).toEqual([])
               expect(deployResult.appliedChanges).toHaveLength(1)
               const appliedChange = deployResult.appliedChanges[0]
               expect(appliedChange.action).toEqual('modify')
@@ -470,7 +469,7 @@ describe('generator', () => {
           describe('when the change is an instance', () => {
             it('should return a deploy result with 1 applied removal change and no errors', () => {
               const deployResult = generateDeployResult([instanceRemovalChange], 'partial-success')
-              expect(deployResult.errors).toHaveLength(0)
+              expect(deployResult.errors).toEqual([])
               expect(deployResult.appliedChanges).toHaveLength(1)
               const appliedChange = deployResult.appliedChanges[0]
               expect(appliedChange.action).toEqual('modify')
@@ -490,7 +489,7 @@ describe('generator', () => {
           const change = action === 'add' ? instanceAdditionChange : instanceModificationChange
           it('should return a deploy result with one error and no applied changes', () => {
             const deployResult = generateDeployResult([change], 'partial-success')
-            expect(deployResult.appliedChanges).toHaveLength(0)
+            expect(deployResult.appliedChanges).toEqual([])
             expect(deployResult.errors).toHaveLength(1)
             expect(deployResult.errors[0].severity).toEqual('Error')
             expect(deployResult.errors[0].message).toEqual('Failed to deploy')
@@ -507,7 +506,7 @@ describe('generator', () => {
           it('should return a deploy result with applied changes and no errors', () => {
             const deployResult = generateDeployResult(changes, 'partial-success')
             expect(deployResult.appliedChanges).toHaveLength(changes.length)
-            expect(deployResult.errors).toHaveLength(0)
+            expect(deployResult.errors).toEqual([])
           })
 
           it('should return modification changes as the applied changes for the removal changes', () => {

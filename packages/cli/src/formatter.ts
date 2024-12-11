@@ -33,7 +33,6 @@ import {
   isStaticFile,
   isSaltoElementError,
   SaltoElementError,
-  DeploySummaryResult,
 } from '@salto-io/adapter-api'
 import {
   Plan,
@@ -45,6 +44,7 @@ import {
   DeployError,
   GroupProperties,
   DetailedChangeId,
+  DeploySummaryResult,
 } from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'

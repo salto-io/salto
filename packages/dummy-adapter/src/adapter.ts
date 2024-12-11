@@ -42,7 +42,7 @@ export default class DummyAdapter implements AdapterOperations {
         instance.value = _.omit(instance.value, this.genParams.fieldsToOmitOnDeploy ?? [])
       })
 
-    return generateDeployResult(changeGroup.changes, this.genParams.deployResult ?? 'success')
+    return generateDeployResult(changeGroup.changes, Boolean(this.genParams.failDeploy))
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -55,13 +55,6 @@ export default class DummyAdapter implements AdapterOperations {
 
   public deployModifiers: DeployModifiers = {
     changeValidator: changeValidator(this.genParams),
-    getChangeGroupIds:
-      this.genParams.deployResult === 'partial-success'
-        ? // In order to return partial success, we need all the changes to reside in the same group
-          async changesMap => ({
-            changeGroupIdMap: new Map(Array.from(changesMap.entries()).map(([id]) => [id, 'dummy.ChangeGroup'])),
-          })
-        : undefined,
   }
 
   // eslint-disable-next-line class-methods-use-this

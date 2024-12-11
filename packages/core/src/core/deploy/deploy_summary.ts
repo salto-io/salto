@@ -26,7 +26,6 @@ import _ from 'lodash'
 
 const log = logger(module)
 
-// TODO SALTO-6934: Remove DeploySummaryResult after updating downstreams to import it from adapter-api.
 export type DeploySummaryResult = 'success' | 'failure' | 'partial-success'
 export type DetailedChangeId = string
 export type DetailedChangeDeploySummaryResult = [DetailedChangeId, DeploySummaryResult]

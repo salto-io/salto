@@ -55,9 +55,6 @@ type BaseDeployResult<T extends ChangeDataType = ChangeDataType> = {
 
 export type DeployResult<T extends ChangeDataType = ChangeDataType> = SaltoDeployErrors & BaseDeployResult<T>
 
-export const DEPLOY_SUMMARY_RESULTS = ['success', 'failure', 'partial-success'] as const
-export type DeploySummaryResult = (typeof DEPLOY_SUMMARY_RESULTS)[number]
-
 export type Progress = {
   message: string
 }

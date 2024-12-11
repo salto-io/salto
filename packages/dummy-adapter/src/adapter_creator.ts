@@ -16,7 +16,6 @@ import {
   ConfigCreator,
   createRestriction,
   AdapterFormat,
-  DEPLOY_SUMMARY_RESULTS,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -45,14 +44,7 @@ export const configType = new ObjectType({
     changeErrors: { refType: new ListType(changeErrorType) },
     extraNaclPaths: { refType: new ListType(BuiltinTypes.STRING) },
     generateEnvName: { refType: BuiltinTypes.STRING },
-    deployResult: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: DEPLOY_SUMMARY_RESULTS,
-        }),
-      },
-    },
+    failDeploy: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
     // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },

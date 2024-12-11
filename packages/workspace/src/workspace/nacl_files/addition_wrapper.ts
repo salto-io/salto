@@ -18,12 +18,14 @@ import {
   isField,
   FieldDefinition,
   Field,
+  Change,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
 export type DetailedAddition = AdditionDiff<Value> & {
   id: ElemID
   path: string[]
+  baseChange: Change<Element>
 }
 
 type NestedValue = {

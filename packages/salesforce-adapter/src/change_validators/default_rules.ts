@@ -109,7 +109,7 @@ const createInstanceChangeErrorSingleDefault = (
     elemID: elementId,
     severity: 'Error',
     message: 'Default entry must be visible',
-    detailedMessage: `Must have exactly one default entry that is visible\nThis field has to be true in order to deploy: ${elementId.getFullName()}`,
+    detailedMessage: 'Default entry must be visible',
   }
 }
 

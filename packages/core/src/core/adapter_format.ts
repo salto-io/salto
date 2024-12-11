@@ -217,6 +217,7 @@ export const calculatePatch = async ({
     mergeErrors: beforeMergeErrors,
     mergedElements: mergedBeforeElements,
   } = await loadElementsAndMerge(fromDir, loadElementsFromFolder, adapterContext)
+  const partiallyFetchedAccounts = new Set([accountName])
   if (beforeMergeErrors.length > 0) {
     return {
       changes: [],
@@ -224,7 +225,7 @@ export const calculatePatch = async ({
       fetchErrors: [],
       success: false,
       updatedConfig: {},
-      partiallyFetchedAccounts: new Set([accountName]),
+      partiallyFetchedAccounts,
     }
   }
   const {
@@ -240,7 +241,7 @@ export const calculatePatch = async ({
       fetchErrors: [],
       success: false,
       updatedConfig: {},
-      partiallyFetchedAccounts: new Set([accountName]),
+      partiallyFetchedAccounts,
     }
   }
   const { changes } = await calcFetchChanges({
@@ -257,7 +258,7 @@ export const calculatePatch = async ({
     fetchErrors: [...(beforeLoadErrors ?? []), ...(afterLoadErrors ?? [])],
     success: true,
     updatedConfig: {},
-    partiallyFetchedAccounts: new Set([accountName]),
+    partiallyFetchedAccounts,
   }
 }
 

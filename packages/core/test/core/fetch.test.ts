@@ -277,6 +277,20 @@ describe('fetch', () => {
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
         })
+        it('should return partiallyFetchedAccounts correctly', async () => {
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
+            elements: [newTypeBaseModified],
+            partialFetchData: { isPartial: true },
+          })
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            createInMemoryElementSource([]),
+            createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+            [],
+          )
+          expect(fetchChangesResult.partiallyFetchedAccounts).toEqual(new Set([newTypeDifferentAdapterID.adapter]))
+        })
       })
       describe('fetch is not partial', () => {
         it('should not ignore deletions', async () => {
@@ -371,6 +385,19 @@ describe('fetch', () => {
           expect(accountChange.data.before.resValue).toBe(6)
         }
       })
+      it('should return an empty partiallyFetchedAccounts correctly', async () => {
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
+          elements: [newTypeBaseModified],
+        })
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createInMemoryElementSource([newTypeBaseModifiedDifferentId, typeWithFieldDifferentID]),
+          createInMemoryElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          [],
+        )
+        expect(fetchChangesResult.partiallyFetchedAccounts).toEqual(new Set())
+      })
 
       describe('multiple adapters', () => {
         const adapters = {
@@ -402,6 +429,20 @@ describe('fetch', () => {
           expect(resultChanges.length).toBe(1)
           expect(resultChanges[0].change.action).toBe('remove')
           expect(getChangeData(resultChanges[0].change).elemID.adapter).toBe('dummy2')
+        })
+
+        it('should return partiallyFetchedAccounts correctly', async () => {
+          const fetchChangesResult = await fetchChanges(
+            adapters,
+            createInMemoryElementSource([
+              new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
+              new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
+            ]),
+            createInMemoryElementSource([]),
+            { dummy1AccountName: 'dummy1', dummy2: 'dummy2' },
+            [],
+          )
+          expect(fetchChangesResult.partiallyFetchedAccounts).toEqual(new Set(['dummy1AccountName']))
         })
       })
 

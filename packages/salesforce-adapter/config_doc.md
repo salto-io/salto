@@ -337,7 +337,7 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | customFieldType              | true                   | Ensure the type given to a custom field is a valid type for custom fields                         |
 | standardFieldLabel           | true                   | Disallow changing a label of a standard field                                                     |
 | mapKeys                      | true                   | Ensure proper structure of profiles before deploying                                              |
-| multipleDefaults             | true                   | Check for multiple default values in picklists and other places where only one default is allowed |
+| defaults_rules               | true                   | Check for default rules violations such as multiple defaults, no default etc.                     |
 | picklistPromote              | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API              |
 | dataCategoryGroup            | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                            |
 | installedPackages            | true                   | Disallow any changes on metadata instances of type InstalledPackage.                              |

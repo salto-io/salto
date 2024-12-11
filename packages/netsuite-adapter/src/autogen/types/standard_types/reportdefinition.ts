@@ -121,7 +121,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customreport[0-9a-z_]+' }),
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customreport[0-9a-z_]*' }),
         },
       } /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customreport’. */,
       name: {

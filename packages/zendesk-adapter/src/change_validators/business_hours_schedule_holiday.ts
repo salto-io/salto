@@ -41,6 +41,7 @@ const isDateRangeExceedsLimit = (instance: InstanceElement): boolean => {
     return false
   }
   const startDate = new Date(value.start_date)
+  // Normalize the date to day-level resolution to align with Zendesk’s resolution
   startDate.setHours(0, 0, 0, 0)
   const endDate = new Date(value.end_date)
   endDate.setHours(0, 0, 0, 0)

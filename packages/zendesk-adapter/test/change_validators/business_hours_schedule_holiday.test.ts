@@ -22,17 +22,15 @@ describe('businessHoursScheduleHolidayChangeValidator', () => {
     })
 
   const dateYearsAgo = (years: number): string => {
-    date.setFullYear(date.getFullYear() - years)
-    const ret = date.toISOString()
-    date.setFullYear(date.getFullYear() + years)
-    return ret
+    const newDate = new Date(date.toDateString())
+    newDate.setFullYear(date.getFullYear() - years)
+    return newDate.toISOString()
   }
 
   const dateYearsFromNow = (years: number): string => {
-    date.setFullYear(date.getFullYear() + years)
-    const ret = date.toISOString()
-    date.setFullYear(date.getFullYear() - years)
-    return ret
+    const newDate = new Date(date.toDateString())
+    newDate.setFullYear(date.getFullYear() + years)
+    return newDate.toISOString()
   }
 
   it('should error when start date is exactly 2 years sooner', async () => {
@@ -56,7 +54,7 @@ describe('businessHoursScheduleHolidayChangeValidator', () => {
     expect(errors).toHaveLength(1)
   })
   it('should error when start date is more than 2 years sooner', async () => {
-    const holiday = createHolidayInstance('test_holiday', dateYearsAgo(2), date.toISOString())
+    const holiday = createHolidayInstance('test_holiday', dateYearsAgo(3), date.toISOString())
     changes = [toChange({ after: holiday })]
     const errors = await businessHoursScheduleHolidayChangeValidator(changes)
     expect(errors).toHaveLength(1)

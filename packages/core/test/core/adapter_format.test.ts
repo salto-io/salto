@@ -234,6 +234,7 @@ describe('calculatePatch', () => {
       expect(res.fetchErrors).toHaveLength(0)
       expect(res.mergeErrors).toHaveLength(0)
       expect(res.changes).toHaveLength(2)
+      expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
     })
   })
 
@@ -257,6 +258,7 @@ describe('calculatePatch', () => {
       expect(res.mergeErrors).toHaveLength(0)
       expect(res.changes).toHaveLength(1)
       expect(res.changes[0].change.id.name).toEqual('f')
+      expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
     })
   })
 
@@ -277,6 +279,7 @@ describe('calculatePatch', () => {
       expect(res.fetchErrors).toHaveLength(0)
       expect(res.mergeErrors).toHaveLength(0)
       expect(res.changes).toHaveLength(0)
+      expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
     })
   })
 
@@ -294,6 +297,7 @@ describe('calculatePatch', () => {
       expect(res.fetchErrors).toHaveLength(0)
       expect(res.changes).toHaveLength(0)
       expect(res.mergeErrors).toHaveLength(1)
+      expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
     })
   })
 
@@ -325,6 +329,7 @@ describe('calculatePatch', () => {
       expect(res.changes).toHaveLength(1)
       expect(res.mergeErrors).toHaveLength(0)
       expect(res.fetchErrors).toHaveLength(1)
+      expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
     })
   })
 
@@ -351,6 +356,7 @@ describe('calculatePatch', () => {
       expect(res.changes).toHaveLength(1)
       const firstChange = (await awu(res.changes).toArray())[0]
       expect(firstChange.pendingChanges).toHaveLength(1)
+      expect(res.partiallyFetchedAccounts).toEqual(new Set(['mock']))
     })
   })
 

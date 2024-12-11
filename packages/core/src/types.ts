@@ -37,6 +37,7 @@ export type FetchResult = {
   configChanges?: Plan
   updatedConfig: Record<string, InstanceElement[]>
   accountNameToConfigMessage?: Record<string, string>
+  partiallyFetchedAccounts: Set<string>
 }
 
 export type GroupProperties = AdapterGroupProperties & {

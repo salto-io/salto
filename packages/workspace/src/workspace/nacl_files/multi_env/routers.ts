@@ -440,8 +440,9 @@ export const routeIsolated = async (
 
   const updatedCommonElement = currentCommonElement.clone()
   setPath(updatedCommonElement, change.id, undefined)
-  // Note that this base change includes only the removal of change.id from common.
-  // It doesn't include any other change of the same element.
+  // This base change is wrong!!!
+  // It includes only the removal of change.id from common.
+  // It doesn't include any other changes of the same element.
   const commonBaseChange = toChange({ before: currentCommonElement, after: updatedCommonElement })
 
   const commonChangeProjection = projectElementOrValueToEnv(getChangeData(change), currentCommonValue)
@@ -496,8 +497,9 @@ const createMergeableChange = (
       before: resolvePath(baseElement, mergeableID),
       after: resolvePath(afterElement, mergeableID),
     },
-    // Note that this base change includes only changes inside the mergeableID scope.
-    // It doesn't include any other change of the same element from other mergeableIDs.
+    // This base change is wrong!!!
+    // It includes only changes inside the mergeableID scope.
+    // It doesn't include any other changes of the same element from other mergeableIDs.
     baseChange: toChange({ before: baseElement, after: afterElement }),
   }
 }

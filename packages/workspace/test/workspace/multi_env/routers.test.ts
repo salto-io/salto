@@ -229,12 +229,7 @@ const onlyPrimSrc = {
 
 describe('default fetch routing', () => {
   it('should route add changes to common when there is only one configured env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newObj },
-      id: newObj.elemID,
-      baseChange: toChange({ after: newObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newObj }))
     const routedChanges = await routeChanges(
       [change],
       primarySrcName,
@@ -249,12 +244,7 @@ describe('default fetch routing', () => {
   })
 
   it('should route add changes to primary env when there are more then one configured env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newObj },
-      id: newObj.elemID,
-      baseChange: toChange({ after: newObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newObj }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'default')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -263,12 +253,7 @@ describe('default fetch routing', () => {
   })
 
   it('should handle ridiculously large changeset without stack overflow', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newObj },
-      id: newObj.elemID,
-      baseChange: toChange({ after: newObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newObj }))
     const changes: DetailedChangeWithBaseChange[] = []
     for (let i = 0; i < 140000; i += 1) {
       changes.push(change)
@@ -353,12 +338,9 @@ describe('default fetch routing', () => {
 
   it('should route env modify changes to env', async () => {
     const newEnvField = new Field(envObj, envField.name, BuiltinTypes.NUMBER)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: envObj.fields[envField.name], after: newEnvField },
-      id: newEnvField.elemID,
-      baseChange: toChange({ before: envObj.fields[envField.name], after: newEnvField }),
-    }
+    const change = toDetailedChangeFromBaseChange(
+      toChange({ before: envObj.fields[envField.name], after: newEnvField }),
+    )
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'default')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -366,12 +348,7 @@ describe('default fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route common remove changes to common', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: commonObj.fields.commonField },
-      id: commonObj.fields.commonField.elemID,
-      baseChange: toChange({ before: commonObj.fields.commonField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: commonObj.fields.commonField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'default')
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -379,12 +356,7 @@ describe('default fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route env remove changes to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: envObj.fields.envField },
-      id: envObj.fields.envField.elemID,
-      baseChange: toChange({ before: envObj.fields.envField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: envObj.fields.envField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'default')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -392,12 +364,7 @@ describe('default fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should split shared remove changes to all environments', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: sharedObject },
-      id: commonObj.elemID,
-      baseChange: toChange({ before: sharedObject }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: sharedObject }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'default')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -415,12 +382,7 @@ describe('default fetch routing', () => {
       'env when there are multiple envs configured',
     async () => {
       const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: newField },
-        id: newField.elemID,
-        baseChange: toChange({ after: newField }),
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
       const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'default')
       expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
       expect(routedChanges.commonSource).toHaveLength(0)
@@ -430,12 +392,7 @@ describe('default fetch routing', () => {
   )
   it('should route add changes of values of env specific elements to the env when there is only one env configured', async () => {
     const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'default')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -444,12 +401,7 @@ describe('default fetch routing', () => {
   })
   it('should route add changes of values of common elements to the primary env', async () => {
     const newField = new Field(commonObj, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'default')
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
@@ -458,12 +410,7 @@ describe('default fetch routing', () => {
   })
   it('should route add changes of values of split elements to the common when there is only one env', async () => {
     const newField = new Field(splitObjJoined, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'default')
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
@@ -474,12 +421,7 @@ describe('default fetch routing', () => {
 
 describe('align fetch routing', () => {
   it('should route add changes to primary source', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newObj },
-      id: newObj.elemID,
-      baseChange: toChange({ after: newObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newObj }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -520,12 +462,9 @@ describe('align fetch routing', () => {
   })
 
   it('should drop common modify changes', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: commonObj.fields.commonField, after: commonObj.fields.commonField },
-      id: commonObj.fields.commonField.elemID,
-      baseChange: toChange({ before: commonObj.fields.commonField, after: commonObj.fields.commonField }),
-    }
+    const change = toDetailedChangeFromBaseChange(
+      toChange({ before: commonObj.fields.commonField, after: commonObj.fields.commonField }),
+    )
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -533,12 +472,7 @@ describe('align fetch routing', () => {
   })
 
   it('should route env modify changes to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: envObj, after: envObj },
-      id: envObj.elemID,
-      baseChange: toChange({ before: envObj, after: envObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: envObj, after: envObj }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -547,12 +481,7 @@ describe('align fetch routing', () => {
   })
 
   it('should split shared modify changes and drop the common part', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: sharedObject, after: sharedObject },
-      id: commonObj.elemID,
-      baseChange: toChange({ before: sharedObject, after: sharedObject }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: sharedObject, after: sharedObject }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -567,24 +496,14 @@ describe('align fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should drop common remove changes', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: commonObj.fields.commonField },
-      id: commonObj.fields.commonField.elemID,
-      baseChange: toChange({ before: commonObj.fields.commonField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: commonObj.fields.commonField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route env remove changes to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: envObj },
-      id: envObj.elemID,
-      baseChange: toChange({ before: envObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: envObj }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -592,12 +511,7 @@ describe('align fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should split shared remove changes and drop common part', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: sharedObject },
-      id: commonObj.elemID,
-      baseChange: toChange({ before: sharedObject }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: sharedObject }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -609,12 +523,7 @@ describe('align fetch routing', () => {
   })
   it('should route add changes of values of env specific elements to the env', async () => {
     const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -623,12 +532,7 @@ describe('align fetch routing', () => {
   })
   it('should route add changes of values of common elements to env', async () => {
     const newField = new Field(commonObj, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'align')
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
@@ -655,12 +559,7 @@ describe('align fetch routing', () => {
 
 describe('override fetch routing', () => {
   it('should route add changes to common', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newObj },
-      id: newObj.elemID,
-      baseChange: toChange({ after: newObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newObj }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -669,12 +568,9 @@ describe('override fetch routing', () => {
   })
 
   it('should route common modify changes to common', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: commonObj.fields.commonField, after: commonObj.fields.commonField },
-      id: commonObj.fields.commonField.elemID,
-      baseChange: toChange({ before: commonObj.fields.commonField, after: commonObj.fields.commonField }),
-    }
+    const change = toDetailedChangeFromBaseChange(
+      toChange({ before: commonObj.fields.commonField, after: commonObj.fields.commonField }),
+    )
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -682,12 +578,9 @@ describe('override fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route env modify changes to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: envObj.fields.envField, after: envObj.fields.envField },
-      id: envObj.fields.envField.elemID,
-      baseChange: toChange({ before: envObj.fields.envField, after: envObj.fields.envField }),
-    }
+    const change = toDetailedChangeFromBaseChange(
+      toChange({ before: envObj.fields.envField, after: envObj.fields.envField }),
+    )
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -695,12 +588,7 @@ describe('override fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should split shared modify changes to common and env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: sharedObject, after: sharedObject },
-      id: commonObj.elemID,
-      baseChange: toChange({ before: sharedObject, after: sharedObject }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: sharedObject, after: sharedObject }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -721,12 +609,7 @@ describe('override fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route common remove changes to common', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: commonObj.fields.commonField },
-      id: commonObj.fields.commonField.elemID,
-      baseChange: toChange({ after: commonObj.fields.commonField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: commonObj.fields.commonField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -734,12 +617,7 @@ describe('override fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should route env remove changes to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: envObj.fields.envField },
-      id: envObj.fields.envField.elemID,
-      baseChange: toChange({ before: envObj.fields.envField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: envObj.fields.envField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -747,12 +625,7 @@ describe('override fetch routing', () => {
     expect(_.isEmpty(_.omit(routedChanges.envSources, [primarySrcName]))).toBeTruthy()
   })
   it('should split shared remove changes to common and env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: sharedObject },
-      id: commonObj.elemID,
-      baseChange: toChange({ before: sharedObject }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: sharedObject }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'override')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -767,12 +640,7 @@ describe('override fetch routing', () => {
   })
   it('should route add changes of values of env specific elements to the env', async () => {
     const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -781,12 +649,7 @@ describe('override fetch routing', () => {
   })
   it('should route add changes of values of common elements to the common', async () => {
     const newField = new Field(commonObj, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
@@ -795,12 +658,7 @@ describe('override fetch routing', () => {
   })
   it('should route add changes of values of split elements to the common', async () => {
     const newField = new Field(splitObjJoined, 'dreams', BuiltinTypes.STRING)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, onlyPrimSrc, 'override')
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.envSources?.[primarySrcName] ?? []).toHaveLength(0)
@@ -811,12 +669,7 @@ describe('override fetch routing', () => {
 
 describe('isolated routing', () => {
   it('should route an add change to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'add',
-      data: { after: newObj },
-      id: newObj.elemID,
-      baseChange: toChange({ after: newObj }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: newObj }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'isolated')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -827,12 +680,7 @@ describe('isolated routing', () => {
   })
   it('should route an env modification change to env', async () => {
     const newField = new Field(envObj, envField.name, BuiltinTypes.NUMBER)
-    const change: DetailedChangeWithBaseChange = {
-      action: 'modify',
-      data: { before: envObj.fields.envField, after: newField },
-      id: newField.elemID,
-      baseChange: toChange({ before: envObj.fields.envField, after: newField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: envObj.fields.envField, after: newField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'isolated')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -842,12 +690,7 @@ describe('isolated routing', () => {
     )
   })
   it('should route an env remove diff to env', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: envObj.fields.envField },
-      id: envObj.fields.envField.elemID,
-      baseChange: toChange({ before: envObj.fields.envField }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: envObj.fields.envField }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'isolated')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -969,12 +812,7 @@ describe('isolated routing', () => {
     })
   })
   it('should route a removal diff to common and env and revert the change in secondary envs', async () => {
-    const change: DetailedChangeWithBaseChange = {
-      action: 'remove',
-      data: { before: sharedObject },
-      id: sharedObject.elemID,
-      baseChange: toChange({ before: sharedObject }),
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ before: sharedObject }))
     const routedChanges = await routeChanges([change], primarySrcName, commonSource, envSources, 'isolated')
     expect(routedChanges.envSources?.[primarySrcName]).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)

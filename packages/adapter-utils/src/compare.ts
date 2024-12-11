@@ -244,27 +244,13 @@ export const detailedCompare = (
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChangeWithBaseChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
       .filter(fieldName => afterObj.fields[fieldName] === undefined)
-      .map(
-        (fieldName): DetailedChangeWithBaseChange => ({
-          action: 'remove',
-          id: beforeObj.fields[fieldName].elemID,
-          data: { before: beforeObj.fields[fieldName] },
-          elemIDs: { before: beforeObj.fields[fieldName].elemID },
-          baseChange: toChange({ before: beforeObj.fields[fieldName] }),
-        }),
-      )
+      .map(fieldName => beforeObj.fields[fieldName])
+      .map(field => toDetailedChangeFromBaseChange(toChange({ before: field }), { before: field.elemID }))
 
     const addChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] === undefined)
-      .map(
-        (fieldName): DetailedChangeWithBaseChange => ({
-          action: 'add',
-          id: afterObj.fields[fieldName].elemID,
-          data: { after: afterObj.fields[fieldName] },
-          elemIDs: { after: afterObj.fields[fieldName].elemID },
-          baseChange: toChange({ after: afterObj.fields[fieldName] }),
-        }),
-      )
+      .map(fieldName => afterObj.fields[fieldName])
+      .map(field => toDetailedChangeFromBaseChange(toChange({ after: field }), { after: field.elemID }))
 
     const modifyChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] !== undefined)

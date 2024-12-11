@@ -28,7 +28,14 @@ import {
   DetailedChange,
 } from '@salto-io/adapter-api'
 import { ActionName } from '@salto-io/dag'
-import { inspectValue, getPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import {
+  inspectValue,
+  getPath,
+  walkOnElement,
+  WalkOnFunc,
+  WALK_NEXT_STEP,
+  getDetailedChanges,
+} from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { parser } from '@salto-io/parser'
 
@@ -211,58 +218,57 @@ const fixEdgeIndentation = (data: string, action: ActionName, initialIndentation
   return [firstLine.trimLeft(), ...lines.slice(1)].join('\n')
 }
 
-export const groupAnnotationTypeChanges = (
-  fileChanges: DetailedChangeWithBaseChange[],
-  existingFileSourceMap?: parser.SourceMap,
-): DetailedChangeWithBaseChange[] => {
-  const isAnnotationTypeAddChange = (change: DetailedChangeWithBaseChange): change is DetailedAddition =>
-    change.id.isAnnotationTypeID() && isAdditionChange(change)
+const isAnnotationTypeAddChange = (change: DetailedChangeWithBaseChange): change is DetailedAddition =>
+  change.id.isAnnotationTypeID() && isAdditionChange(change)
 
-  const objectHasAnnotationTypesBlock = (topLevelIdFullName: string): boolean =>
-    !_.isUndefined(existingFileSourceMap) &&
-    existingFileSourceMap.has(ElemID.fromFullName(topLevelIdFullName).createNestedID('annotation').getFullName())
+const createGroupedAddAnnotationTypesChange = (
+  annotationTypesAddChanges: DetailedAddition[],
+): DetailedChangeWithBaseChange => {
+  const change = annotationTypesAddChanges[0]
+  const addedAnnotations = Object.fromEntries(annotationTypesAddChanges.map(c => [c.id.name, c.data.after]))
 
-  const createGroupedAddAnnotationTypesChange = (annotationTypesAddChanges: DetailedAddition[]): DetailedAddition => {
-    const change = annotationTypesAddChanges[0]
-    const addedAnnotations = Object.fromEntries(annotationTypesAddChanges.map(c => [c.id.name, c.data.after]))
-
-    const baseBefore = isRemovalOrModificationChange(change.baseChange)
-      ? change.baseChange.data.before.clone()
-      : undefined
-    if (baseBefore !== undefined) {
-      baseBefore.annotations = {}
-    }
-
-    const baseAfter = isAdditionOrModificationChange(change.baseChange)
-      ? change.baseChange.data.after.clone()
-      : undefined
-    if (baseAfter !== undefined) {
-      baseAfter.annotations = addedAnnotations
-    }
-
-    return {
-      id: new ElemID(change.id.adapter, change.id.typeName, 'annotation'),
-      action: 'add',
-      data: {
-        after: addedAnnotations,
-      },
-      baseChange: toChange({ before: baseBefore, after: baseAfter }),
-    }
+  const baseBefore = isRemovalOrModificationChange(change.baseChange)
+    ? change.baseChange.data.before.clone()
+    : undefined
+  if (baseBefore !== undefined) {
+    baseBefore.annotationRefTypes = {}
   }
 
+  const baseAfter = isAdditionOrModificationChange(change.baseChange) ? change.baseChange.data.after.clone() : undefined
+  if (baseAfter !== undefined) {
+    baseAfter.annotationRefTypes = addedAnnotations
+  }
+
+  return {
+    id: new ElemID(change.id.adapter, change.id.typeName, 'annotation'),
+    action: 'add',
+    data: {
+      after: addedAnnotations,
+    },
+    baseChange: toChange({ before: baseBefore, after: baseAfter }),
+  }
+}
+
+const objectHasAnnotationTypesBlock = (topLevelIdFullName: string, sourceMap: parser.SourceMap): boolean =>
+  sourceMap.has(ElemID.fromFullName(topLevelIdFullName).createNestedID('annotation').getFullName())
+
+const groupAnnotationTypeChanges = (
+  fileChanges: DetailedChangeWithBaseChange[],
+  sourceMap: parser.SourceMap,
+): DetailedChangeWithBaseChange[] => {
   const [annotationTypesAddChanges, otherChanges] = _.partition(fileChanges, isAnnotationTypeAddChange)
   const topLevelIdToAnnoTypeAddChanges = _.groupBy(annotationTypesAddChanges, change =>
     change.id.createTopLevelParentID().parent.getFullName(),
   )
   const transformedAnnotationTypeChanges = Object.entries(topLevelIdToAnnoTypeAddChanges).flatMap(
     ([topLevelIdFullName, objectAnnotationTypesAddChanges]) => {
-      if (objectHasAnnotationTypesBlock(topLevelIdFullName)) {
+      if (objectHasAnnotationTypesBlock(topLevelIdFullName, sourceMap)) {
         return objectAnnotationTypesAddChanges
       }
-      return [createGroupedAddAnnotationTypesChange(objectAnnotationTypesAddChanges)]
+      return createGroupedAddAnnotationTypesChange(objectAnnotationTypesAddChanges)
     },
   )
-  return [...otherChanges, ...transformedAnnotationTypeChanges]
+  return transformedAnnotationTypeChanges.concat(otherChanges)
 }
 
 const removeBracketLines = (dumpedObject: string): string =>
@@ -368,59 +374,56 @@ export const updateNaclFileData = async (
     .concat('\n')
 }
 
-const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {
-  const createObjectTypeFromNestedAdditions = (additions: DetailedAddition[]): ObjectType =>
-    new ObjectType(
-      additions.reduce(
-        (prev, addition) => {
-          switch (addition.id.idType) {
-            case 'field':
-              return {
-                ...prev,
-                fields: {
-                  ...prev.fields,
-                  [addition.id.name]: addition.data.after,
-                },
-              }
-            case 'attr':
-              return {
-                ...prev,
-                annotations: {
-                  ...prev.annotations,
-                  [addition.id.name]: addition.data.after,
-                },
-              }
-            case 'annotation': {
-              return {
-                ...prev,
-                annotationRefsOrTypes: {
-                  ...prev.annotationRefsOrTypes,
-                  [addition.id.name]: addition.data.after,
-                },
-              }
+const createObjectTypeFromNestedAdditions = (additions: DetailedAddition[]): ObjectType =>
+  new ObjectType(
+    additions.reduce(
+      (prev, addition) => {
+        switch (addition.id.idType) {
+          case 'field':
+            return {
+              ...prev,
+              fields: {
+                ...prev.fields,
+                [addition.id.name]: addition.data.after,
+              },
             }
-            default:
-              return prev
+          case 'attr':
+            return {
+              ...prev,
+              annotations: {
+                ...prev.annotations,
+                [addition.id.name]: addition.data.after,
+              },
+            }
+          case 'annotation': {
+            return {
+              ...prev,
+              annotationRefsOrTypes: {
+                ...prev.annotationRefsOrTypes,
+                [addition.id.name]: addition.data.after,
+              },
+            }
           }
-        },
-        {
-          elemID: additions[0].id.createTopLevelParentID().parent,
-          fields: {},
-          annotationRefsOrTypes: {},
-          annotations: {},
-        },
-      ),
-    )
-  const wrapperObject = createObjectTypeFromNestedAdditions(nestedAdditions)
-  return {
-    action: 'add',
-    id: wrapperObject.elemID,
-    path: nestedAdditions[0].path,
-    data: {
-      after: wrapperObject,
-    },
-    baseChange: toChange({ after: wrapperObject }),
-  }
+          default:
+            return prev
+        }
+      },
+      {
+        elemID: additions[0].id.createTopLevelParentID().parent,
+        fields: {},
+        annotationRefsOrTypes: {},
+        annotations: {},
+        path: additions[0].path,
+      },
+    ),
+  )
+
+const wrapAdditions = (additions: DetailedAddition[]): DetailedChangeWithBaseChange[] => {
+  const wrapperObject = createObjectTypeFromNestedAdditions(additions)
+  return getDetailedChanges(toChange({ after: wrapperObject })).map(change => ({
+    ...change,
+    path: wrapperObject.path,
+  }))
 }
 
 const parentElementExistsInPath = (dc: DetailedChangeWithBaseChange, sourceMap: parser.SourceMap): boolean => {
@@ -432,20 +435,20 @@ export const getChangesToUpdate = (
   changes: DetailedChangeWithBaseChange[],
   sourceMap: parser.SourceMap,
 ): DetailedChangeWithBaseChange[] => {
-  const isNestedAddition = (dc: DetailedChangeWithBaseChange): dc is DetailedAddition =>
-    (dc.path || false) &&
-    dc.action === 'add' &&
-    dc.id.idType !== 'instance' &&
-    dc.id.nestingLevel === (dc.id.isAnnotationTypeID() ? 2 : 1) &&
-    !parentElementExistsInPath(dc, sourceMap)
+  const isNestedAddition = (change: DetailedChangeWithBaseChange): change is DetailedAddition =>
+    change.path !== undefined &&
+    change.action === 'add' &&
+    change.id.idType !== 'instance' &&
+    change.id.nestingLevel === (change.id.isAnnotationTypeID() ? 2 : 1) &&
+    !parentElementExistsInPath(change, sourceMap)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(changes, isNestedAddition)
-  const wrappedNestedAdditions: DetailedAddition[] = _(nestedAdditionsWithPath)
-    .groupBy(addition => [addition.path, addition.id.createTopLevelParentID().parent])
-    .values()
-    .map(wrapAdditions)
-    .value()
-  return groupAnnotationTypeChanges([...otherChanges, ...wrappedNestedAdditions], sourceMap)
+  const additionsByTypeAndPath = _.groupBy(nestedAdditionsWithPath, addition => [
+    addition.path,
+    addition.id.createTopLevelParentID().parent,
+  ])
+  const wrappedNestedAdditions = Object.values(additionsByTypeAndPath).flatMap(wrapAdditions)
+  return groupAnnotationTypeChanges(wrappedNestedAdditions.concat(otherChanges), sourceMap)
 }
 
 export const getNestedStaticFiles = (value: Value): StaticFile[] => {

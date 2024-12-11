@@ -43,7 +43,12 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from 'index'
-import { findElement, applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  findElement,
+  applyDetailedChanges,
+  safeJsonStringify,
+  toDetailedChangeFromBaseChange,
+} from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
@@ -2132,19 +2137,7 @@ salesforce.staticFile staticFileInstance {
       const secondarySourceName = 'inactive'
       let wsWithMultipleEnvs: Workspace
       const obj = new ObjectType({ elemID: new ElemID('salesforce', 'dum') })
-      const change: DetailedChangeWithBaseChange = {
-        id: obj.elemID,
-        action: 'add',
-        data: {
-          after: obj,
-        },
-        baseChange: {
-          action: 'add',
-          data: {
-            after: obj,
-          },
-        },
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: obj }))
 
       beforeEach(async () => {
         wsWithMultipleEnvs = await createWorkspace(

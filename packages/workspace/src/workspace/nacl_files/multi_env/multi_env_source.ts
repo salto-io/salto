@@ -14,7 +14,6 @@ import {
   ElemID,
   getChangeData,
   DetailedChange,
-  ModificationChange,
   Change,
   ChangeDataType,
   StaticFile,
@@ -334,57 +333,44 @@ const buildMultiEnvSource = (
     return naclFile ? { ...naclFile, filename } : undefined
   }
 
-  const additionFromModificationChange = <T>(
-    change: DetailedChangeWithBaseChange & ModificationChange<T>,
+  const additionFromModificationChange = (
+    change: DetailedChangeWithBaseChange & { action: 'modify' },
   ): DetailedChangeWithBaseChange => ({
     action: 'add',
     data: { after: change.data.after },
     id: change.id,
     elemIDs: change.elemIDs?.after ? { after: change.elemIDs.after } : undefined,
-    baseChange: change.id.isBaseID()
-      ? toChange({ after: change.data.after })
-      : // in this case `baseChange` will be incorrect because `change.baseChange.before` will contain
-        // the value of `change.data.before`, although the returned change is an addition change. this should
-        // never happen because we call `additionFromModificationChange` only on changes with a base id.
-        change.baseChange,
+    // we call `additionFromModificationChange` only on changes with a base id, so `change.data.after` should be an element.
+    baseChange: toChange({ after: change.data.after }),
     path: change.path,
   })
 
-  const removalChangeFromModificationChanges = <T>(
-    changes: (DetailedChangeWithBaseChange & ModificationChange<T>)[],
-  ): DetailedChangeWithBaseChange[] =>
-    changes.length > 0
-      ? [
-          {
-            action: 'remove',
-            data: { before: changes[0].data.before },
-            id: changes[0].id,
-            elemIDs: { before: changes[0].id },
-            path: changes[0].path,
-            baseChange: changes[0].id.isBaseID()
-              ? toChange({ before: changes[0].data.before })
-              : // in this case `baseChange` will be incorrect because `changes[0].baseChange.after` will contain
-                // the value of `changes[0].data.after`, although the returned change is a removal change. this should
-                // never happen because we call `removalChangeFromModificationChanges` only on changes with a base id.
-                changes[0].baseChange,
-          },
-        ]
-      : []
+  const removalChangeFromModificationChanges = (
+    change: DetailedChangeWithBaseChange & { action: 'modify' },
+  ): DetailedChangeWithBaseChange[] => [
+    {
+      action: 'remove',
+      data: { before: change.data.before },
+      id: change.id,
+      elemIDs: { before: change.id },
+      path: change.path,
+      // we call `removalChangeFromModificationChanges` only on changes with a base id, so `change.data.before` should be an element.
+      baseChange: toChange({ before: change.data.before }),
+    },
+  ]
 
   // The update NaCl file logic doesn't know how to handle modifications that span multiple files,
   // so we split them into a removal and additions.
   // For this to work for modifications of elements spread across multiple files, this relies on the
   // fact that we receive a separate modification for the part of the element in each file.
-  const normalizeChanges = (changes: DetailedChangeWithBaseChange[]): DetailedChangeWithBaseChange[] =>
-    _(changes)
-      .groupBy(change => change.id.getFullName())
-      .values()
-      .flatMap(elemChanges =>
-        elemChanges[0].id.isBaseID() && elemChanges.every(isModificationChange)
-          ? removalChangeFromModificationChanges(elemChanges).concat(elemChanges.map(additionFromModificationChange))
-          : elemChanges,
-      )
-      .value()
+  const normalizeChanges = (changes: DetailedChangeWithBaseChange[]): DetailedChangeWithBaseChange[] => {
+    const changesById = _.groupBy(changes, change => change.id.getFullName())
+    return Object.values(changesById).flatMap(elemChanges =>
+      elemChanges[0].id.isBaseID() && elemChanges.every(isModificationChange)
+        ? removalChangeFromModificationChanges(elemChanges[0]).concat(elemChanges.map(additionFromModificationChange))
+        : elemChanges,
+    )
+  }
 
   const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<EnvsChanges> => ({
     ...(await resolveValues({

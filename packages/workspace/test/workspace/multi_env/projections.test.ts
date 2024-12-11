@@ -16,7 +16,9 @@ import {
   ListType,
   getChangeData,
   DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
+import { toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -190,15 +192,7 @@ describe('projections', () => {
     modifiedInstance.value = _.cloneDeepWith(instance.value, v => (_.isString(v) ? 'MODIFIED' : undefined))
 
     it('should project an add change for a missing instances', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: newInstance },
-        baseChange: {
-          action: 'add',
-          data: { after: newInstance },
-        },
-        id: newInstance.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: newInstance }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
@@ -211,10 +205,7 @@ describe('projections', () => {
       const change: DetailedChangeWithBaseChange = {
         action: 'add',
         data: { after: newPartialInstance.value.nested2 },
-        baseChange: {
-          action: 'modify',
-          data: { before: newPartialInstance, after: newPartialInstance },
-        },
+        baseChange: toChange({ before: newPartialInstance, after: newPartialInstance }),
         id: newPartialInstance.elemID.createNestedID('nested2'),
       }
       const projected = await projectChange(change, source)
@@ -224,27 +215,11 @@ describe('projections', () => {
       expect(changeData).toEqual(newPartialInstance.value.nested2)
     })
     it('should not project an add change for an existing fragment for instances', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: instance },
-        baseChange: {
-          action: 'add',
-          data: { after: instance },
-        },
-        id: instance.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: instance }))
       await expect(projectChange(change, source)).rejects.toThrow()
     })
     it('should project a modify change for an existing fragment for instances', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'modify',
-        data: { before: instance, after: modifiedInstance },
-        baseChange: {
-          action: 'modify',
-          data: { before: instance, after: modifiedInstance },
-        },
-        id: instance.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: instance, after: modifiedInstance }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('modify')
@@ -259,15 +234,7 @@ describe('projections', () => {
       })
     })
     it('should project a remove change for an existing fragment for instances', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'remove',
-        data: { before: instance },
-        baseChange: {
-          action: 'remove',
-          data: { before: instance },
-        },
-        id: instance.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: instance }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('remove')
@@ -291,15 +258,7 @@ describe('projections', () => {
     })
 
     it('should project an add change for a missing object type', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: newObjectType },
-        baseChange: {
-          action: 'add',
-          data: { after: newObjectType },
-        },
-        id: newObjectType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: newObjectType }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
@@ -312,10 +271,7 @@ describe('projections', () => {
       const change: DetailedChangeWithBaseChange = {
         action: 'add',
         data: { after: objectType.annotations.nested2 },
-        baseChange: {
-          action: 'modify',
-          data: { before: objectType, after: objectType },
-        },
+        baseChange: toChange({ before: objectType, after: objectType }),
         id: objectType.elemID.createNestedID('attr', 'nested2'),
       }
       const projected = await projectChange(change, source)
@@ -325,27 +281,11 @@ describe('projections', () => {
       expect(changeData).toEqual(objectType.annotations.nested2)
     })
     it('should not project an add change for an existing fragment for object types', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: objectType },
-        baseChange: {
-          action: 'add',
-          data: { after: objectType },
-        },
-        id: objectType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: objectType }))
       await expect(projectChange(change, source)).rejects.toThrow()
     })
     it('should project a modify change for an existing fragment for object types', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'modify',
-        data: { before: objectType, after: modifiedObject },
-        baseChange: {
-          action: 'modify',
-          data: { before: objectType, after: modifiedObject },
-        },
-        id: objectType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: objectType, after: modifiedObject }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('modify')
@@ -360,15 +300,7 @@ describe('projections', () => {
       })
     })
     it('should project a remove change for an existing fragment for object types', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'remove',
-        data: { before: objectType },
-        baseChange: {
-          action: 'remove',
-          data: { before: objectType },
-        },
-        id: objectType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: objectType }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('remove')
@@ -392,15 +324,7 @@ describe('projections', () => {
     })
 
     it('should project an add change for a missing primitive type', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: newPrimitiveType },
-        baseChange: {
-          action: 'add',
-          data: { after: newPrimitiveType },
-        },
-        id: newPrimitiveType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: newPrimitiveType }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('add')
@@ -413,10 +337,7 @@ describe('projections', () => {
       const change: DetailedChangeWithBaseChange = {
         action: 'add',
         data: { after: primitiveType.annotations.nested2 },
-        baseChange: {
-          action: 'modify',
-          data: { before: primitiveType, after: primitiveType },
-        },
+        baseChange: toChange({ before: primitiveType, after: primitiveType }),
         id: primitiveType.elemID.createNestedID('attr', 'nested2'),
       }
       const projected = await projectChange(change, source)
@@ -426,27 +347,11 @@ describe('projections', () => {
       expect(changeData).toEqual(primitiveType.annotations.nested2)
     })
     it('should not project an add change for an existing fragment for primitive types', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'add',
-        data: { after: primitiveType },
-        baseChange: {
-          action: 'add',
-          data: { after: primitiveType },
-        },
-        id: primitiveType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: primitiveType }))
       await expect(projectChange(change, source)).rejects.toThrow()
     })
     it('should project a modify change for an existing fragment for primitive types', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'modify',
-        data: { before: primitiveType, after: modifiedPrimitive },
-        baseChange: {
-          action: 'modify',
-          data: { before: primitiveType, after: modifiedPrimitive },
-        },
-        id: primitiveType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: primitiveType, after: modifiedPrimitive }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('modify')
@@ -461,15 +366,7 @@ describe('projections', () => {
       })
     })
     it('should project a remove change for an existing fragment for primitive types', async () => {
-      const change: DetailedChangeWithBaseChange = {
-        action: 'remove',
-        data: { before: primitiveType },
-        baseChange: {
-          action: 'remove',
-          data: { before: primitiveType },
-        },
-        id: primitiveType.elemID,
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: primitiveType }))
       const projected = await projectChange(change, source)
       expect(projected).toHaveLength(1)
       expect(projected[0].action).toBe('remove')
@@ -503,15 +400,7 @@ describe('projections', () => {
       })
 
       it('should project an add change for a missing field', async () => {
-        const change: DetailedChangeWithBaseChange = {
-          action: 'add',
-          data: { after: newField },
-          baseChange: {
-            action: 'add',
-            data: { after: newField },
-          },
-          id: newField.elemID,
-        }
+        const change = toDetailedChangeFromBaseChange(toChange({ after: newField }))
         const projected = await projectChange(change, source)
         expect(projected).toHaveLength(1)
         expect(projected[0].action).toBe('add')
@@ -521,15 +410,7 @@ describe('projections', () => {
       })
 
       it('should project an add change for a non existing fragment for fields', async () => {
-        const change: DetailedChangeWithBaseChange = {
-          action: 'add',
-          data: { after: newPartialField },
-          baseChange: {
-            action: 'add',
-            data: { after: newPartialField },
-          },
-          id: newPartialField.elemID,
-        }
+        const change = toDetailedChangeFromBaseChange(toChange({ after: newPartialField }))
         const projected = await projectChange(change, source)
         expect(projected).toHaveLength(1)
         expect(projected[0].action).toBe('add')
@@ -538,27 +419,11 @@ describe('projections', () => {
         expect(data.after).toEqual(newPartialField)
       })
       it('should not project an add change for an existing fragment for fields', async () => {
-        const change: DetailedChangeWithBaseChange = {
-          action: 'add',
-          data: { after: field },
-          baseChange: {
-            action: 'add',
-            data: { after: field },
-          },
-          id: field.elemID,
-        }
+        const change = toDetailedChangeFromBaseChange(toChange({ after: field }))
         await expect(projectChange(change, source)).rejects.toThrow()
       })
       it('should project a modify change for an existing fragment for fields', async () => {
-        const change: DetailedChangeWithBaseChange = {
-          action: 'modify',
-          data: { before: field, after: modifiedField },
-          baseChange: {
-            action: 'modify',
-            data: { before: field, after: modifiedField },
-          },
-          id: field.elemID,
-        }
+        const change = toDetailedChangeFromBaseChange(toChange({ before: field, after: modifiedField }))
         const projected = await projectChange(change, source)
         expect(projected).toHaveLength(1)
         expect(projected[0].action).toBe('modify')
@@ -573,15 +438,7 @@ describe('projections', () => {
         })
       })
       it('should project a remove change for an existing fragment for fields', async () => {
-        const change: DetailedChangeWithBaseChange = {
-          action: 'remove',
-          data: { before: field },
-          baseChange: {
-            action: 'remove',
-            data: { before: field },
-          },
-          id: field.elemID,
-        }
+        const change = toDetailedChangeFromBaseChange(toChange({ before: field }))
         const projected = await projectChange(change, source)
         expect(projected).toHaveLength(1)
         expect(projected[0].action).toBe('remove')

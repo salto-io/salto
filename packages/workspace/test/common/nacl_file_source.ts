@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ElemID, Element, Change, isObjectType, isStaticFile, ChangeDataType } from '@salto-io/adapter-api'
+import { ElemID, Element, Change, isObjectType, isStaticFile, ChangeDataType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections, hash } from '@salto-io/lowerdash'
@@ -133,7 +133,7 @@ export const createMockNaclFileSource = (
     load: mockFunction<NaclFilesSource['load']>().mockImplementation(
       returnChanges({
         cacheValid: true,
-        changes: currentElements.map(e => ({ data: { after: e as ChangeDataType }, action: 'add', id: e.elemID })),
+        changes: currentElements.map(element => toChange({ after: element as ChangeDataType })),
       }),
     ),
     getSearchableNames: mockFunction<NaclFilesSource['getSearchableNames']>().mockResolvedValue(

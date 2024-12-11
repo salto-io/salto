@@ -24,7 +24,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
-import { detailedCompare, transformElement } from '@salto-io/adapter-utils'
+import { detailedCompare, toDetailedChangeFromBaseChange, transformElement } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -53,13 +53,7 @@ const createChange = (): DetailedChangeWithBaseChange => {
     },
   })
   const change: DetailedChangeWithBaseChange = {
-    id: newElemID,
-    action: 'add',
-    data: { after: newElem },
-    baseChange: {
-      action: 'add',
-      data: { after: newElem },
-    },
+    ...toDetailedChangeFromBaseChange(toChange({ after: newElem })),
     path: ['new', 'file'],
   }
   return change

@@ -301,15 +301,7 @@ describe('handleHiddenChanges', () => {
         },
       })
       const { field } = objectType.fields
-      const change: DetailedChangeWithBaseChange = {
-        id: field.elemID,
-        action: 'add',
-        data: { after: field },
-        baseChange: {
-          action: 'add',
-          data: { after: field },
-        },
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ after: field }))
       const { hidden, visible } = await handleHiddenChanges(
         [change],
         mockState([objectType]),
@@ -346,15 +338,7 @@ describe('handleHiddenChanges', () => {
       let visibleInstance: InstanceElement
       let hiddenInstance: InstanceElement
       beforeEach(async () => {
-        const change: DetailedChangeWithBaseChange = {
-          id: instance.elemID,
-          action: 'add',
-          data: { after: instance },
-          baseChange: {
-            action: 'add',
-            data: { after: instance },
-          },
-        }
+        const change = toDetailedChangeFromBaseChange(toChange({ after: instance }))
 
         result = await handleHiddenChanges([change], mockState(), createInMemoryElementSource())
         expect(result.visible).toHaveLength(1)
@@ -379,7 +363,7 @@ describe('handleHiddenChanges', () => {
           id: instance.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL),
           action: 'add',
           data: { after: instance.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] },
-          baseChange: { action: 'modify', data: { before: instance, after: instance } },
+          baseChange: toChange({ before: instance, after: instance }),
         }
 
         result = await handleHiddenChanges([change], mockState([instanceType, instance]), createInMemoryElementSource())
@@ -400,19 +384,7 @@ describe('handleHiddenChanges', () => {
       const inst = new InstanceElement('hidden', obj, {}, [], {
         [INSTANCE_ANNOTATIONS.HIDDEN]: true,
       })
-      const change: DetailedChangeWithBaseChange = {
-        id: inst.elemID,
-        action: 'remove',
-        data: {
-          before: inst,
-        },
-        baseChange: {
-          action: 'remove',
-          data: {
-            before: inst,
-          },
-        },
-      }
+      const change = toDetailedChangeFromBaseChange(toChange({ before: inst }))
       it('should return the entire change and both hidden and visible', async () => {
         const res = await handleHiddenChanges(
           [change],
@@ -443,7 +415,7 @@ describe('handleHiddenChanges', () => {
         id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
         action: 'add',
         data: { after: 'someUrl' },
-        baseChange: { action: 'modify', data: { before: object.fields.field, after: object.fields.field } },
+        baseChange: toChange({ before: object.fields.field, after: object.fields.field }),
       }
       result = await handleHiddenChanges([change], mockState([object]), createInMemoryElementSource())
     })
@@ -484,7 +456,7 @@ describe('handleHiddenChanges', () => {
           data: {
             after: new ReferenceExpression(new ElemID('a', 'b')),
           },
-          baseChange: { action: 'modify', data: { before: instance, after: instance } },
+          baseChange: toChange({ before: instance, after: instance }),
         }
 
         result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource())
@@ -507,7 +479,7 @@ describe('handleHiddenChanges', () => {
             before: 'asd',
             after: new ReferenceExpression(new ElemID('a', 'b')),
           },
-          baseChange: { action: 'modify', data: { before: instance, after: instance } },
+          baseChange: toChange({ before: instance, after: instance }),
         }
 
         result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource())
@@ -534,12 +506,7 @@ describe('handleHiddenChanges', () => {
       },
     )
 
-    const change: DetailedChangeWithBaseChange = {
-      id: workspaceInstance.elemID,
-      action: 'add',
-      data: { after: workspaceInstance },
-      baseChange: { action: 'modify', data: { before: workspaceInstance, after: workspaceInstance } },
-    }
+    const change = toDetailedChangeFromBaseChange(toChange({ after: workspaceInstance }))
 
     it('should not hide anything if there is no hidden part, even if nested values are undefined', async () => {
       const result = await handleHiddenChanges([change], mockState([]), createInMemoryElementSource())
@@ -573,7 +540,7 @@ describe('handleHiddenChanges', () => {
       id: instance.elemID.createNestedID('val'),
       action: 'add',
       data: { after: instance.value.val },
-      baseChange: { action: 'modify', data: { before: instance, after: instance } },
+      baseChange: toChange({ before: instance, after: instance }),
     }
     const result = await handleHiddenChanges([change], mockState([instance]), createInMemoryElementSource([]))
     expect(result.visible).toEqual([change])
@@ -601,10 +568,7 @@ describe('handleHiddenChanges', () => {
       data: {
         after: { inner: 'abc' },
       },
-      baseChange: {
-        action: 'modify',
-        data: { before: stateInstance, after: stateInstance },
-      },
+      baseChange: toChange({ before: stateInstance, after: stateInstance }),
     }
 
     it('should not have a hidden change', async () => {
@@ -648,7 +612,7 @@ describe('handleHiddenChanges', () => {
             },
           },
         },
-        baseChange: { action: 'modify', data: { before: stateInstance, after: stateInstance } },
+        baseChange: toChange({ before: stateInstance, after: stateInstance }),
       }
 
       it('should have a hidden change', async () => {
@@ -676,7 +640,7 @@ describe('handleHiddenChanges', () => {
             visible: 'visible',
           },
         },
-        baseChange: { action: 'modify', data: { before: stateInstance, after: stateInstance } },
+        baseChange: toChange({ before: stateInstance, after: stateInstance }),
       }
 
       it('should have a hidden change', async () => {

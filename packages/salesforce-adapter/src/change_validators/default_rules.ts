@@ -109,7 +109,7 @@ const createInstanceChangeErrorSingleDefault = (
     elemID: elementId,
     severity: 'Error',
     message: 'Default entry must be visible',
-    detailedMessage: 'Default entry must be visible',
+    detailedMessage: `An entry that is set as default must also be set as visible\nThus the following entry must be visible ${elementId.getFullName()}`,
   }
 }
 
@@ -157,7 +157,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     return contexts.length > 1 ? contexts : undefined
   }
 
-  const checkSingleDefault = (value: Value, fieldType: TypeElement): string | undefined => {
+  const findSingleDefault = (value: Value, fieldType: TypeElement): string | undefined => {
     const defaultObjects = getDefaultObjectsList(value, fieldType)
     if (!_.isArray(defaultObjects)) {
       return undefined
@@ -176,7 +176,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
       }
       return undefined
     }, undefined)
-    return isValid !== undefined && isValid !== '' ? isValid : undefined
+    return isValid !== '' ? isValid : undefined
   }
 
   const createChangeErrorFromContext = (
@@ -206,10 +206,10 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
           const startLevelType = isMapType(fieldType) ? fieldType.getInnerTypeSync() : fieldType
           const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
           if (defaultsContexts !== undefined) {
-            return createChangeErrorFromContext(field, defaultsContexts, after)
+            return [createInstanceChangeError(field, defaultsContexts, after)]
           }
-          const singleDefaultisValid = checkSingleDefault(innerValue, startLevelType)
-          return singleDefaultisValid && singleDefaultisValid !== ''
+          const singleDefaultisValid = findSingleDefault(innerValue, startLevelType)
+          return singleDefaultisValid
             ? [createInstanceChangeErrorSingleDefault(fieldPath, singleDefaultisValid, after)]
             : []
         })

@@ -15,7 +15,7 @@ import customObjectInstancesValidator from './change_validators/custom_object_in
 import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
 import mapKeysValidator from './change_validators/map_keys'
-import multipleDefaultsValidator from './change_validators/default_rules'
+import defaultRulesValidator from './change_validators/default_rules'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
 import dataChangeValidator from './change_validators/data_change'
@@ -77,7 +77,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   customFieldType: () => customFieldTypeValidator,
   standardFieldLabel: () => standardFieldLabelValidator,
   mapKeys: ({ getLookupNameFunc, fetchProfile }) => mapKeysValidator(getLookupNameFunc, fetchProfile),
-  multipleDefaults: () => multipleDefaultsValidator,
+  DefaultRules: () => defaultRulesValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   recordTypeDeletion: () => recordTypeDeletionValidator,

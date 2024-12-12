@@ -66,7 +66,7 @@ import {
   getFailedObjectsMap,
   getFailedObjects,
 } from './errors'
-import { isSdfOauthCredentials, SdfCredentials, SdfOauthCredentials, SdfTokenBasedCredentials } from './credentials'
+import { isSdfOAuthCredentials, SdfCredentials, SdfOAuthCredentials, SdfTokenBasedCredentials } from './credentials'
 import {
   CustomizationInfo,
   CustomTypeInfo,
@@ -224,7 +224,7 @@ export default class SdfClient {
   private readonly instanceLimiter: InstanceLimiterFunc
 
   constructor({ credentials, config, globalLimiter, instanceLimiter }: SdfClientOpts) {
-    const { SdkProperties, baseCommandExecutor, getErrorMessagesString } = isSdfOauthCredentials(credentials)
+    const { SdkProperties, baseCommandExecutor, getErrorMessagesString } = isSdfOAuthCredentials(credentials)
       ? {
           SdkProperties: NewSdkProperties,
           baseCommandExecutor: SdfClient.initNewCommandActionExecutor(baseExecutionPath),
@@ -412,8 +412,8 @@ export default class SdfClient {
     return executor
   }
 
-  protected async setupAccountViaOauth(
-    credentials: SdfOauthCredentials,
+  protected async setupAccountViaOAuth(
+    credentials: SdfOAuthCredentials,
     projectPath: string,
     authId: string,
   ): Promise<NewCommandActionExecutor> {
@@ -447,8 +447,8 @@ export default class SdfClient {
     const projectName = `sdf-${authId}`
     await this.createProject(projectName, suiteAppId)
     const projectPath = osPath.resolve(baseExecutionPath, projectName)
-    const executor = isSdfOauthCredentials(this.credentials)
-      ? await this.setupAccountViaOauth(this.credentials, projectPath, authId)
+    const executor = isSdfOAuthCredentials(this.credentials)
+      ? await this.setupAccountViaOAuth(this.credentials, projectPath, authId)
       : await this.setupAccountViaTokenBased(this.credentials, projectPath, authId)
     return { projectPath, executor, authId, type: suiteAppId !== undefined ? 'SuiteApp' : 'AccountCustomization' }
   }

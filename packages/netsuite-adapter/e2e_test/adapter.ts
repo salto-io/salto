@@ -13,7 +13,7 @@ import { Element, ElemID, ServiceIds } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import {
   Credentials,
-  SdfOauthCredentials,
+  SdfOAuthCredentials,
   SdfTokenBasedCredentials,
   toCredentialsAccountId,
 } from '../src/client/credentials'
@@ -32,22 +32,22 @@ type Opts = {
   elements?: Element[]
   credentials: Required<Credentials>
   withSuiteApp: boolean
-  withOauth: boolean
+  withOAuth: boolean
 }
 
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
   new ElemID(adapterName, name)
 
 export const realAdapter = (
-  { adapterParams, credentials, withSuiteApp, withOauth, elements = [] }: Opts,
+  { adapterParams, credentials, withSuiteApp, withOAuth, elements = [] }: Opts,
   config?: NetsuiteConfig,
 ): { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
   const accountId = toCredentialsAccountId(credentials.accountId)
-  const netsuiteCredentials = withOauth
+  const netsuiteCredentials = withOAuth
     ? {
         accountId,
-        certificateId: (credentials as SdfOauthCredentials).certificateId,
-        privateKey: (credentials as SdfOauthCredentials).privateKey,
+        certificateId: (credentials as SdfOAuthCredentials).certificateId,
+        privateKey: (credentials as SdfOAuthCredentials).privateKey,
         suiteAppTokenId: credentials.suiteAppTokenId,
         suiteAppTokenSecret: credentials.suiteAppTokenSecret,
         suiteAppActivationKey: credentials.suiteAppActivationKey,

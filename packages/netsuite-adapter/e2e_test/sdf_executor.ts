@@ -13,7 +13,7 @@ import { mkdirp, rm, writeFile } from '@salto-io/file'
 import Bottleneck from 'bottleneck'
 import {
   SdfCredentials,
-  SdfOauthCredentials,
+  SdfOAuthCredentials,
   SdfTokenBasedCredentials,
   toCredentialsAccountId,
 } from '../src/client/credentials'
@@ -34,12 +34,12 @@ type SDFExecutor = {
   deleteProject: (projectInfo: ProjectInfo) => Promise<void>
 }
 
-function assertSDFOauthCredentials(_credentials: SdfCredentials): asserts _credentials is SdfOauthCredentials {}
+function assertSDFOAuthCredentials(_credentials: SdfCredentials): asserts _credentials is SdfOAuthCredentials {}
 function assertSDFTokenBasedCredentials(
   _credentials: SdfCredentials,
 ): asserts _credentials is SdfTokenBasedCredentials {}
 
-export const createSdfExecutor = ({ withOauth }: { withOauth: boolean }): SDFExecutor => {
+export const createSdfExecutor = ({ withOAuth }: { withOAuth: boolean }): SDFExecutor => {
   let baseCommandExecutor: CommandActionExecutor
   let executor: CommandActionExecutor
 
@@ -52,7 +52,7 @@ export const createSdfExecutor = ({ withOauth }: { withOauth: boolean }): SDFExe
       const projectName = `sdf-${authId}`
       const projectPath = osPath.resolve(baseExecutionPath, projectName)
 
-      if (withOauth) {
+      if (withOAuth) {
         baseCommandExecutor = SdfClient.initNewCommandActionExecutor(baseExecutionPath)
         executor = SdfClient.initNewCommandActionExecutor(projectPath)
       } else {
@@ -70,8 +70,8 @@ export const createSdfExecutor = ({ withOauth }: { withOauth: boolean }): SDFExe
         },
       })
 
-      if (withOauth) {
-        assertSDFOauthCredentials(credentials)
+      if (withOAuth) {
+        assertSDFOAuthCredentials(credentials)
         const privateKeyPath = osPath.resolve(baseExecutionPath, `${authId}.pem`)
         await writeFile(privateKeyPath, credentials.privateKey)
         const setupCommandArguments = {

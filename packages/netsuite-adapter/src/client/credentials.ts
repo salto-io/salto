@@ -23,12 +23,12 @@ export type SdfTokenBasedCredentials = BaseCredentials & {
   tokenSecret: string
 }
 
-export type SdfOauthCredentials = BaseCredentials & {
+export type SdfOAuthCredentials = BaseCredentials & {
   certificateId: string
   privateKey: string
 }
 
-export type SdfCredentials = SdfTokenBasedCredentials | SdfOauthCredentials
+export type SdfCredentials = SdfTokenBasedCredentials | SdfOAuthCredentials
 
 export type Credentials = SdfCredentials & Partial<SuiteAppCredentials>
 
@@ -38,8 +38,8 @@ export const isSuiteAppCredentials = (credentials: Credentials): credentials is 
 export const isSdfCredentialsOnly = (credentials: Credentials): boolean =>
   credentials.suiteAppTokenId === undefined && credentials.suiteAppTokenSecret === undefined
 
-export const isSdfOauthCredentials = (credentials: SdfCredentials): credentials is SdfOauthCredentials =>
-  (credentials as SdfOauthCredentials).certificateId !== undefined
+export const isSdfOAuthCredentials = (credentials: SdfCredentials): credentials is SdfOAuthCredentials =>
+  'certificateId' in credentials && credentials.certificateId !== undefined
 
 export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
 

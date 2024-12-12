@@ -8,7 +8,7 @@
 import Bottleneck from 'bottleneck'
 import SdfClient from '../../src/client/sdf_client'
 import { ClientConfig, InstanceLimiterFunc } from '../../src/config/types'
-import { SdfOauthCredentials, SdfTokenBasedCredentials } from '../../src/client/credentials'
+import { SdfOAuthCredentials, SdfTokenBasedCredentials } from '../../src/client/credentials'
 
 const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
 const DUMMY_TOKEN_ID = 'dummyTokenId'
@@ -22,7 +22,7 @@ export const DUMMY_TOKEN_BASED_CREDENTIALS: SdfTokenBasedCredentials = {
   tokenSecret: DUMMY_TOKEN_SECRET,
 }
 
-export const DUMMY_OAUTH_CREDENTIALS: SdfOauthCredentials = {
+export const DUMMY_OAUTH_CREDENTIALS: SdfOAuthCredentials = {
   accountId: `${DUMMY_ACCOUNT_ID}-oauth`,
   certificateId: DUMMY_CERTIFICATE_ID,
   privateKey: DUMMY_PRIVATE_KEY,
@@ -30,17 +30,17 @@ export const DUMMY_OAUTH_CREDENTIALS: SdfOauthCredentials = {
 
 const mockSdfClient = (
   {
-    withOauth,
+    withOAuth,
     config,
     instanceLimiter = () => false,
   }: {
-    withOauth: boolean
+    withOAuth: boolean
     config?: ClientConfig
     instanceLimiter?: InstanceLimiterFunc
-  } = { withOauth: true },
+  } = { withOAuth: true },
 ): SdfClient =>
   new SdfClient({
-    credentials: withOauth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS,
+    credentials: withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS,
     config,
     globalLimiter: new Bottleneck(),
     instanceLimiter,

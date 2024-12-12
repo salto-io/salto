@@ -29,7 +29,7 @@ import {
   Credentials,
   isSdfCredentialsOnly,
   isSuiteAppCredentials,
-  SdfOauthCredentials,
+  SdfOAuthCredentials,
   SdfTokenBasedCredentials,
   SuiteAppCredentials,
   toCredentialsAccountId,
@@ -43,7 +43,7 @@ import { customReferenceHandlers } from './custom_references'
 
 const log = logger(module)
 
-type AllCredentials = SdfTokenBasedCredentials & SdfOauthCredentials & SuiteAppCredentials
+type AllCredentials = SdfTokenBasedCredentials & SdfOAuthCredentials & SuiteAppCredentials
 
 const configID = new ElemID(NETSUITE)
 
@@ -57,19 +57,19 @@ export const defaultCredentialsType = new ObjectType({
     },
     tokenId: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Token ID (for token-based auth)' },
+      annotations: { message: 'SDF Token ID (for TBA)' },
     },
     tokenSecret: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Token Secret (for token-based auth)' },
+      annotations: { message: 'SDF Token Secret (for TBA)' },
     },
     certificateId: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Certificate ID (for oauth)' },
+      annotations: { message: 'SDF Certificate ID (for OAuth 2.0)' },
     },
     privateKey: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Private Key (for oauth)' },
+      annotations: { message: 'SDF Private Key (for OAuth 2.0)' },
     },
     suiteAppTokenId: {
       refType: BuiltinTypes.STRING,
@@ -212,10 +212,17 @@ export const adapter: Adapter = {
   install: async (): Promise<AdapterInstallResult> => {
     try {
       const legacyResult = await LegacySdkDownloadService.download()
-      log.info('Installed legacy SDF: %o', legacyResult)
+      log.info('Legacy SDF installation result: %o', legacyResult)
+      if (!legacyResult.success) {
+        return legacyResult
+      }
       const newResult = await NewSdkDownloadService.download()
-      log.info('Installed new SDF: %o', newResult)
-      return newResult
+      log.info('New SDF installation result: %o', newResult)
+      if (!newResult.success) {
+        return newResult
+      }
+      const installedVersions = [legacyResult.installedVersion, newResult.installedVersion]
+      return { ...newResult, installedVersions }
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }
     }

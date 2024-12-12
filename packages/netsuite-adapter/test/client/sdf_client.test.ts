@@ -110,11 +110,11 @@ jest.mock('../../src/client/file_cabinet_utils', () => ({
 }))
 
 describe.each([
-  ['tokenBased', { withOauth: false }],
-  ['oauth', { withOauth: true }],
-])('sdf client - creds type: %s', (_text, { withOauth }) => {
+  ['tokenBased', { withOAuth: false }],
+  ['oauth', { withOAuth: true }],
+])('sdf client - creds type: %s', (_text, { withOAuth }) => {
   const createProjectCommandMatcher = expect.objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
-  const saveTokenCommandMatcher = withOauth
+  const saveTokenCommandMatcher = withOAuth
     ? expect.objectContaining({
         commandName: COMMANDS.SETUP_OAUTH,
         arguments: expect.objectContaining({
@@ -200,20 +200,20 @@ describe.each([
   })
 
   it('should set command timeout when initializing client', () => {
-    mockClient({ withOauth })
+    mockClient({ withOAuth })
     expect(mockSetCommandTimeout).toHaveBeenCalledWith(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES * MINUTE_IN_MILLISECONDS)
   })
 
   describe('validateCredentials', () => {
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === (withOauth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
       await expect(
-        SdfClient.validateCredentials(withOauth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS),
+        SdfClient.validateCredentials(withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS),
       ).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -223,15 +223,15 @@ describe.each([
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const { accountId } = await SdfClient.validateCredentials(
-        withOauth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS,
+        withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS,
       )
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(accountId).toEqual(withOauth ? DUMMY_OAUTH_CREDENTIALS.accountId : DUMMY_TOKEN_BASED_CREDENTIALS.accountId)
+      expect(accountId).toEqual(withOAuth ? DUMMY_OAUTH_CREDENTIALS.accountId : DUMMY_TOKEN_BASED_CREDENTIALS.accountId)
     })
 
     it('should quote strings with space', async () => {
-      const credentialsWithSpaces = withOauth
+      const credentialsWithSpaces = withOAuth
         ? expect.objectContaining({
             commandName: COMMANDS.SETUP_OAUTH,
             arguments: expect.objectContaining({
@@ -252,7 +252,7 @@ describe.each([
           })
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const { accountId } = await SdfClient.validateCredentials({
-        ...(withOauth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS),
+        ...(withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS),
         accountId: 'account with space',
       })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -269,7 +269,7 @@ describe.each([
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient({ withOauth }).getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
+      await expect(mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -277,12 +277,12 @@ describe.each([
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === (withOauth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient({ withOauth }).getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
+      await expect(mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -292,7 +292,7 @@ describe.each([
     it('should retry to authenticate when SETUP_ACCOUNT has failed', async () => {
       let isFirstSetupTry = true
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === (withOauth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN) && isFirstSetupTry) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN) && isFirstSetupTry) {
           isFirstSetupTry = false
           return Promise.resolve({ isSuccess: () => false })
         }
@@ -311,7 +311,7 @@ describe.each([
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      await mockClient({ withOauth }).getCustomObjects(typeNames, typeNamesQueries)
+      await mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -340,7 +340,7 @@ describe.each([
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ withOauth, config: { fetchAllTypesAtOnce: true } })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: true } })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQueries)
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -377,7 +377,7 @@ describe.each([
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ withOauth, config: { fetchAllTypesAtOnce: false } })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: false } })
       await expect(client.getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
     })
 
@@ -407,7 +407,7 @@ describe.each([
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ withOauth, config: { fetchAllTypesAtOnce: false } })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: false } })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
@@ -468,7 +468,7 @@ describe.each([
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ withOauth, config: { fetchAllTypesAtOnce: false } })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: false } })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
@@ -528,7 +528,7 @@ describe.each([
       })
 
       const client = mockClient({
-        withOauth,
+        withOAuth,
         config: { fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 },
       })
       await client.getCustomObjects(typeNames, typeNamesQueries)
@@ -590,7 +590,7 @@ describe.each([
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const client = mockClient({ withOauth, instanceLimiter: (_type: string, count: number) => count > 3 })
+      const client = mockClient({ withOAuth, instanceLimiter: (_type: string, count: number) => count > 3 })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
       const numberOfExecuteActions = 6
@@ -632,12 +632,12 @@ describe.each([
         failedToFetchAllAtOnce,
         failedTypes,
         instancesIds: currentInstanceIds,
-      } = await mockClient({ withOauth }).getCustomObjects(typeNames, typeNamesQueries)
+      } = await mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(currentInstanceIds).toEqual([{ type: 'addressForm', instanceId: 'a' }])
       expect(readFileMock).toHaveBeenCalledTimes(4)
-      expect(rmMock).toHaveBeenCalledTimes(withOauth ? 2 : 1)
+      expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 2 : 1)
       expect(customizationInfos).toHaveLength(3)
       expect(customizationInfos).toEqual([
         {
@@ -693,7 +693,7 @@ describe.each([
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const { instancesIds: currentInstanceIds } = await mockClient({ withOauth }).getCustomObjects(
+      const { instancesIds: currentInstanceIds } = await mockClient({ withOAuth }).getCustomObjects(
         typeNames,
         typeNamesQueries,
       )
@@ -733,14 +733,14 @@ describe.each([
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ withOauth, config: { installedSuiteApps: ['a.b.c'] } }).getCustomObjects(
+      } = await mockClient({ withOAuth, config: { installedSuiteApps: ['a.b.c'] } }).getCustomObjects(
         typeNames,
         typeNamesQueries,
       )
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readFileMock).toHaveBeenCalledTimes(7)
-      expect(rmMock).toHaveBeenCalledTimes(withOauth ? 4 : 2)
+      expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 4 : 2)
       expect(customizationInfos).toEqual([
         {
           typeName: 'addressForm',
@@ -889,7 +889,7 @@ describe.each([
       const query = buildNetsuiteQuery({
         types: [{ name: 'savedcsvimport' }, { name: 'advancedpdftemplate' }],
       })
-      const { failedTypes } = await mockClient({ withOauth }).getCustomObjects(typeNames, {
+      const { failedTypes } = await mockClient({ withOAuth }).getCustomObjects(typeNames, {
         originFetchQuery: query,
         updatedFetchQuery: query,
       })
@@ -950,7 +950,7 @@ describe.each([
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const { failedTypes } = await mockClient({ withOauth }).getCustomObjects(typeNames, typeNamesQueries)
+      const { failedTypes } = await mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
@@ -985,7 +985,7 @@ describe.each([
       const query = buildNetsuiteQuery({
         types: [{ name: 'addressForm', ids: ['a'] }],
       })
-      await mockClient({ withOauth }).getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
+      await mockClient({ withOAuth }).getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
       expect(mockExecuteAction).toHaveBeenCalledWith(
         expect.objectContaining({
           commandName: COMMANDS.LIST_OBJECTS,
@@ -1018,7 +1018,7 @@ describe.each([
 
     it('should do nothing of no files are matched', async () => {
       const netsuiteQuery = buildNetsuiteQuery({ types: [] })
-      const { elements, failedToFetchAllAtOnce } = await mockClient({ withOauth }).getCustomObjects(typeNames, {
+      const { elements, failedToFetchAllAtOnce } = await mockClient({ withOAuth }).getCustomObjects(typeNames, {
         originFetchQuery: netsuiteQuery,
         updatedFetchQuery: netsuiteQuery,
       })
@@ -1038,7 +1038,7 @@ describe.each([
       allFilesQuery = buildNetsuiteQuery({
         fileCabinet: ['.*'],
       })
-      client = mockClient({ withOauth })
+      client = mockClient({ withOAuth })
     })
 
     it('should fail when CREATE_PROJECT has failed', async () => {
@@ -1070,7 +1070,7 @@ describe.each([
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === (withOauth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -1349,7 +1349,7 @@ describe.each([
         },
       ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
-      expect(rmMock).toHaveBeenCalledTimes(withOauth ? 2 : 1)
+      expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 2 : 1)
     })
 
     it('should filter out paths under excluded large folders', async () => {
@@ -1411,7 +1411,7 @@ describe.each([
     let testSDFNode: SDFObjectNode
 
     beforeEach(async () => {
-      client = mockClient({ withOauth })
+      client = mockClient({ withOAuth })
       testGraph = new Graph()
       DEFAULT_DEPLOY_PARAMS = [
         undefined,
@@ -1455,7 +1455,7 @@ describe.each([
           } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 4 : 3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>',
@@ -1483,7 +1483,7 @@ describe.each([
         ])
         await client.deploy('a.b.c', DEFAULT_DEPLOY_PARAMS[1], DEFAULT_DEPLOY_PARAMS[2])
         expect(renameMock).toHaveBeenCalled()
-        expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 4 : 3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>',
@@ -1518,7 +1518,7 @@ describe.each([
           } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 5 : 4)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 5 : 4)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>',
@@ -2055,7 +2055,7 @@ File: ~/AccountConfiguration/features.xml`,
             `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`,
           ),
         )
-        expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 4 : 3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>',
@@ -2064,7 +2064,7 @@ File: ~/AccountConfiguration/features.xml`,
           expect.stringContaining('manifest.xml'),
           MOCK_MANIFEST_VALID_DEPENDENCIES,
         )
-        expect(rmMock).toHaveBeenCalledTimes(withOauth ? 3 : 2)
+        expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 3 : 2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2103,7 +2103,7 @@ File: ~/AccountConfiguration/features.xml`,
             `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`,
           ),
         )
-        expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 5 : 4)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 5 : 4)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>',
@@ -2113,7 +2113,7 @@ File: ~/AccountConfiguration/features.xml`,
           expect.stringContaining('manifest.xml'),
           MOCK_MANIFEST_VALID_DEPENDENCIES,
         )
-        expect(rmMock).toHaveBeenCalledTimes(withOauth ? 3 : 2)
+        expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 3 : 2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2146,13 +2146,13 @@ File: ~/AccountConfiguration/features.xml`,
           data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'],
         })
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 4 : 3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining('manifest.xml'),
           MOCK_MANIFEST_VALID_DEPENDENCIES,
         )
-        expect(rmMock).toHaveBeenCalledTimes(withOauth ? 3 : 2)
+        expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 3 : 2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2214,7 +2214,7 @@ File: ~/AccountConfiguration/features.xml`,
         } as unknown as SDFObjectNode),
       ])
       await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-      expect(writeFileMock).toHaveBeenCalledTimes(withOauth ? 5 : 4)
+      expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 5 : 4)
       expect(writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>',

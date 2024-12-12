@@ -25,13 +25,20 @@ export const createFilterValues = (name: string, allElements: Element[]): Values
     ],
   }),
   sharePermissions: [
+    // Fetch order is user, project, group
+    {
+      type: 'user',
+      user: {
+        id: '712020:1d70a0f0-f922-491a-9936-2b97417e4d9f',
+        displayName: 'Jira Adapter Dev',
+      },
+    },
     {
       type: 'project',
       project: {
         id: createReference(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'Test_Project@s'), allElements),
       },
     },
-    // project should be before group- that is the fetch order
     {
       type: 'group',
       group: {

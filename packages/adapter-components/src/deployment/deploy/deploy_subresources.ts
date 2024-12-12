@@ -143,7 +143,7 @@ export const createChangesForSubResources = async <TOptions extends APIDefinitio
         async ([recurseIntoTypeName, { condition, fieldPath, changeIdFields, onActions }]) => {
           if (onActions !== undefined && !onActions.includes(change.action)) {
             log.trace(
-              'skipping recurce into %s in type %s and action %s',
+              'skipping recurse into %s in type %s and action %s',
               recurseIntoTypeName,
               getChangeData(change).elemID.typeName,
               change.action,

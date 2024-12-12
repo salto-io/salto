@@ -427,19 +427,19 @@ describe('multiple defaults change validator', () => {
                       testRecordType1: {
                         default: false,
                         visible: false,
-                        recordType: 'testRecordType1',
+                        recordType: 'test1.testRecordType1',
                       },
                       testRecordType2: {
                         default: false,
                         visible: false,
-                        recordType: 'testRecordType2',
+                        recordType: 'test1.testRecordType2',
                       },
                     },
                     test2: {
                       testRecordType3: {
                         default: false,
                         visible: false,
-                        recordType: 'testRecordType3',
+                        recordType: 'test2.testRecordType3',
                       },
                     },
                   },
@@ -450,7 +450,9 @@ describe('multiple defaults change validator', () => {
               const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
               expect(changeErrors).toHaveLength(1)
               const [changeError] = changeErrors
-              expect(changeError.elemID).toEqual(afterInstance.elemID.createNestedID('recordTypeVisibilities'))
+              expect(changeError.elemID).toEqual(
+                afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test1', 'testRecordType1', 'visible'),
+              )
               expect(changeError.severity).toEqual('Error')
             })
           })
@@ -464,19 +466,19 @@ describe('multiple defaults change validator', () => {
                       testRecordType1: {
                         default: false,
                         visible: false,
-                        recordType: 'testRecordType1',
+                        recordType: 'test1.testRecordType1',
                       },
                       testRecordType2: {
                         default: false,
                         visible: false,
-                        recordType: 'testRecordType2',
+                        recordType: 'test1.testRecordType2',
                       },
                     },
                     test2: {
                       testRecordType3: {
                         default: true,
                         visible: false,
-                        recordType: 'testRecordType3',
+                        recordType: 'test2.testRecordType3',
                       },
                     },
                   },
@@ -486,9 +488,13 @@ describe('multiple defaults change validator', () => {
               const afterInstance = createAfterInstance(beforeInstance, true)
               const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
               expect(changeErrors).toHaveLength(2)
-              expect(changeErrors[0].elemID).toEqual(afterInstance.elemID.createNestedID('recordTypeVisibilities'))
+              expect(changeErrors[0].elemID).toEqual(
+                afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test1', 'testRecordType1', 'visible'),
+              )
               expect(changeErrors[0].severity).toEqual('Error')
-              expect(changeErrors[1].elemID).toEqual(afterInstance.elemID.createNestedID('recordTypeVisibilities'))
+              expect(changeErrors[1].elemID).toEqual(
+                afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test2', 'testRecordType3', 'visible'),
+              )
               expect(changeErrors[1].severity).toEqual('Error')
             })
           })

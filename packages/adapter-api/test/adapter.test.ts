@@ -103,6 +103,7 @@ describe('adapter', () => {
       const result = isAdapterSuccessInstallResult({
         success: true,
         installedVersion: 'version',
+        installedVersions: ['version'],
       })
       expect(result).toEqual(true)
     })

@@ -342,6 +342,7 @@ const METADATA_TO_RETRIEVE = [
   'CustomPermission',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
+  'DiscoveryAIModel',
   'Document', // contains encoded zip content, is under a folder
   'DocumentFolder',
   'EclairGeoData', // contains encoded zip content

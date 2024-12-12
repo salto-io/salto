@@ -169,7 +169,7 @@ export type AdapterOperationsContext = {
 export type AdapterSuccessInstallResult = {
   success: true
   installedVersion: string
-  additionallyInstalledVersions?: string[]
+  installedVersions: string[]
 }
 
 export type AdapterFailureInstallResult = {

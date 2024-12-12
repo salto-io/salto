@@ -354,3 +354,4 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | lastLayoutRemoval            | true                   | Disallow deletion of the last layout for custom objects.                                          |
 | accountSettings              | true                   | Cannot set a value for enableAccountOwnerReport without proper org setting.                       |
 | unknownPicklistValues        | true                   | Disallow any usage of unknown pickList values.                                                    |
+| customApplications           | true                   | Check for multiple action overrides for the same action in customApplications instances.         |

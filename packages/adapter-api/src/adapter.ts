@@ -166,8 +166,17 @@ export type AdapterOperationsContext = {
   accountName?: string
 } & AdapterBaseContext
 
-export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
-export type AdapterFailureInstallResult = { success: false; errors: string[] }
+export type AdapterSuccessInstallResult = {
+  success: true
+  installedVersion: string
+  additionallyInstalledVersions?: string[]
+}
+
+export type AdapterFailureInstallResult = {
+  success: false
+  errors: string[]
+}
+
 export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureInstallResult
 
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult): result is AdapterSuccessInstallResult =>

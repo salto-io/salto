@@ -41,10 +41,6 @@ import {
   SaltoError,
   SaltoElementError,
   ReadOnlyElementsSource,
-  ChangeDataType,
-  Change,
-  DeployResult,
-  getChangeData,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -1153,23 +1149,3 @@ export const generateFetchErrorsFromConfig = (
         ...error,
         elemID: ElemID.fromFullName(error.elemID),
       }))
-
-export const generateDeployResult = (changes: readonly Change<ChangeDataType>[], failDeploy: boolean): DeployResult => {
-  const generateChangeError = (change: Change<ChangeDataType>): SaltoElementError => ({
-    elemID: getChangeData(change).elemID,
-    severity: 'Error',
-    message: 'Failed to deploy',
-    detailedMessage: 'Deployment failed intentionally. Refer to the failDeploy adapter config flag.',
-  })
-
-  if (failDeploy) {
-    return {
-      appliedChanges: [],
-      errors: changes.map(generateChangeError),
-    }
-  }
-  return {
-    appliedChanges: changes,
-    errors: [],
-  }
-}

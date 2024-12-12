@@ -17,28 +17,12 @@ import {
   Element,
   isStaticFile,
   ElemID,
-  toChange,
-  InstanceElement,
-  ObjectType,
-  isSaltoElementError,
-  SaltoElementError,
-  getChangeData,
-  BuiltinTypes,
-  ChangeDataType,
-  Change,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import _, { every } from 'lodash'
+import _ from 'lodash'
 import path from 'path'
 import { ImportantValue } from '@salto-io/adapter-utils'
-import {
-  defaultParams,
-  DUMMY_ADAPTER,
-  generateDeployResult,
-  generateElements,
-  generateFetchErrorsFromConfig,
-  GeneratorParams,
-} from '../src/generator'
+import { defaultParams, generateElements, generateFetchErrorsFromConfig, GeneratorParams } from '../src/generator'
 import testParams from './test_params'
 
 const { awu } = collections.asynciterable
@@ -370,70 +354,6 @@ describe('generator', () => {
     })
     it('should not include elements that are explicitly excluded', () => {
       expect(elements.map(elem => elem.elemID.getFullName())).not.toContainEqual(elemToExclude)
-    })
-  })
-  describe(generateDeployResult.name, () => {
-    const sharedType = new ObjectType({
-      elemID: new ElemID(DUMMY_ADAPTER, 'type'),
-      fields: { someStringVal: { refType: BuiltinTypes.STRING } },
-    })
-    const instanceRemovalChange = toChange({
-      before: new InstanceElement('testInstanceRemoval', sharedType, { someStringVal: 'someVal' }),
-    })
-    const instanceAdditionChange = toChange({
-      after: new InstanceElement('testInstanceAddition', sharedType, { someStringVal: 'someVal' }),
-    })
-    const instanceModificationChange = toChange({
-      before: new InstanceElement('testInstanceModification', sharedType, { someStringVal: 'someVal' }),
-      after: new InstanceElement('testInstanceModification', sharedType, { someStringVal: 'someOtherVal' }),
-    })
-    const objectTypeRemovalChange = toChange({
-      before: new ObjectType({
-        elemID: new ElemID(DUMMY_ADAPTER, 'removal'),
-        fields: { someStringVal: { refType: BuiltinTypes.STRING } },
-      }),
-    })
-    const objectTypeAdditionChange = toChange({
-      after: new ObjectType({
-        elemID: new ElemID(DUMMY_ADAPTER, 'addition'),
-        fields: { someStringVal: { refType: BuiltinTypes.STRING } },
-      }),
-    })
-    const objectTypeModificationChange = toChange({
-      before: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'modification') }),
-      after: new ObjectType({
-        elemID: new ElemID(DUMMY_ADAPTER, 'modification'),
-        fields: { someStringVal: { refType: BuiltinTypes.STRING } },
-      }),
-    })
-    const changes = [
-      instanceRemovalChange,
-      instanceAdditionChange,
-      instanceModificationChange,
-      objectTypeRemovalChange,
-      objectTypeAdditionChange,
-      objectTypeModificationChange,
-    ]
-
-    describe('when failDeploy is true', () => {
-      it('should return a deploy result with errors', () => {
-        const deployResult = generateDeployResult(changes, true)
-        expect(deployResult.errors).toHaveLength(changes.length)
-        expect(every(deployResult.errors, error => error.severity === 'Error')).toBeTruthy()
-        expect(deployResult.errors.map(error => error.message)).toEqual(changes.map(() => 'Failed to deploy'))
-        expect(every(deployResult.errors, isSaltoElementError)).toBeTruthy()
-        expect(deployResult.errors.map(error => (error as SaltoElementError).elemID.getFullName())).toEqual(
-          changes.map((change: Change<ChangeDataType>) => getChangeData(change).elemID.getFullName()),
-        )
-      })
-    })
-
-    describe('when failDeploy is false', () => {
-      it('should return a deploy result with the applied changes and no errors', () => {
-        const deployResult = generateDeployResult(changes, false)
-        expect(deployResult.errors).toEqual([])
-        expect(deployResult.appliedChanges).toEqual(changes)
-      })
     })
   })
 })

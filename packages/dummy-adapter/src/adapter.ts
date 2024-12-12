@@ -17,7 +17,7 @@ import {
   isInstanceElement,
   FixElementsFunc,
 } from '@salto-io/adapter-api'
-import { generateDeployResult, generateElements, generateFetchErrorsFromConfig, GeneratorParams } from './generator'
+import { generateElements, generateFetchErrorsFromConfig, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
 
 export default class DummyAdapter implements AdapterOperations {
@@ -35,6 +35,13 @@ export default class DummyAdapter implements AdapterOperations {
   }
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    if (this.genParams.failDeploy) {
+      return {
+        appliedChanges: [],
+        errors: [],
+      }
+    }
+
     changeGroup.changes
       .map(getChangeData)
       .filter(isInstanceElement)
@@ -42,7 +49,10 @@ export default class DummyAdapter implements AdapterOperations {
         instance.value = _.omit(instance.value, this.genParams.fieldsToOmitOnDeploy ?? [])
       })
 
-    return generateDeployResult(changeGroup.changes, Boolean(this.genParams.failDeploy))
+    return {
+      appliedChanges: changeGroup.changes,
+      errors: [],
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

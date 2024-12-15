@@ -124,7 +124,7 @@ class WalkDeployError extends Error {
 export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, AdapterOperations>,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string, asyncTaskId?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string | Progress) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
   checkOnly: boolean,
 ): Promise<DeployActionResult> => {
@@ -141,8 +141,7 @@ export const deployActions = async (
       reportProgress(item, 'started')
       try {
         const progressReporter = {
-          reportProgress: (progress: Progress) =>
-            reportProgress(item, 'started', progress.message, progress.asyncTaskId),
+          reportProgress: (progress: Progress) => reportProgress(item, 'started', progress),
         }
         const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))

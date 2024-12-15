@@ -27,6 +27,7 @@ import {
   isFieldChange,
   isRemovalChange,
   ObjectType,
+  Progress,
   ReferenceMapping,
   TopLevelElement,
 } from '@salto-io/adapter-api'
@@ -159,7 +160,7 @@ export const preview = async (
 export const deploy = async (
   workspace: Workspace,
   actionPlan: Plan,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string, asyncTaskId?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string | Progress) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
 ): Promise<DeployResult> => {

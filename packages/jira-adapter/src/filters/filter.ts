@@ -115,12 +115,12 @@ const deployFilter = async (
 const filter: FilterCreator = ({ config, client }) => ({
   name: 'filtersFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
-    const filterConfiguration = findObject(elements, FILTER_TYPE_NAME)
-    if (filterConfiguration === undefined) {
-      log.warn('filterConfiguration type was not found')
+    const filterType = findObject(elements, FILTER_TYPE_NAME)
+    if (filterType === undefined) {
+      log.warn('filterType type was not found')
       return
     }
-    filterConfiguration.fields.owner.annotations = {
+    filterType.fields.owner.annotations = {
       [CORE_ANNOTATIONS.CREATABLE]: true,
       [CORE_ANNOTATIONS.UPDATABLE]: true,
     }

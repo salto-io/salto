@@ -80,6 +80,7 @@ import {
   emptyAutomationOrderValidator,
   viewCustomStatusConditionsValidator,
   businessHoursScheduleHolidayChangeValidator,
+  defaultSupportAddressValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskConfig } from './config'
@@ -189,6 +190,7 @@ export default ({
     orderChildrenParent: orderChildrenParentValidator,
     guideOrderDeletion: orderDeletionValidator,
     ticketFieldDeactivation: ticketFieldDeactivationValidator,
+    defaultSupportAddress: defaultSupportAddressValidator,
     // ******************************
     businessHoursScheduleHoliday: businessHoursScheduleHolidayChangeValidator,
   }

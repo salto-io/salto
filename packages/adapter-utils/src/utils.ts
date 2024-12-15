@@ -109,6 +109,28 @@ export const applyFunctionToChangeData = async <T extends Change<unknown>>(
   return change
 }
 
+export const applyFunctionToChangeDataSync = <T extends Change<unknown>>(
+  change: T,
+  func: (arg: ChangeData<T>) => ChangeData<T>,
+): T => {
+  if (isAdditionChange(change)) {
+    return { ...change, data: { after: func(change.data.after) } }
+  }
+  if (isRemovalChange(change)) {
+    return { ...change, data: { before: func(change.data.before) } }
+  }
+  if (isModificationChange(change)) {
+    return {
+      ...change,
+      data: {
+        before: func(change.data.before),
+        after: func(change.data.after),
+      },
+    }
+  }
+  return change
+}
+
 /**
  * Generate synthetic object types for validating / transforming map type values.
  *

@@ -7,6 +7,7 @@
  */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
+import { applyFunctionToChangeDataSync } from '@salto-io/adapter-utils'
 import {
   PlanItem,
   Plan,
@@ -114,6 +115,10 @@ type DeployArgs = {
 } & AccountsArg &
   EnvArg
 
+type DeployResultAndSummary = DeployResult & {
+  summary: Record<string, DeploySummaryResult>
+}
+
 const deployPlan = async (
   actionPlan: Plan,
   workspace: Workspace,
@@ -121,7 +126,7 @@ const deployPlan = async (
   output: CliOutput,
   checkOnly: boolean,
   accounts?: string[],
-): Promise<DeployResult> => {
+): Promise<DeployResultAndSummary> => {
   const actions: Record<string, Action> = {}
   const endAction = (itemName: string): void => {
     const action = actions[itemName]
@@ -177,6 +182,11 @@ const deployPlan = async (
       }
     }
   }
+  // the plan will be mutated by deploy, we clone it before that so we can later compare the result
+  const requestedChanges = Array.from(actionPlan.itemsByEvalOrder())
+    .flatMap(item => Array.from(item.changes()))
+    .map(change => applyFunctionToChangeDataSync(change, element => element.clone()))
+
   const result = await deploy(
     workspace,
     actionPlan,
@@ -184,6 +194,8 @@ const deployPlan = async (
     accounts,
     checkOnly,
   )
+
+  const summary = summarizeDeployChanges(requestedChanges, result.appliedChanges ?? [])
   const nonErroredActions = Object.keys(actions).filter(
     action => !result.errors.map(error => error !== undefined && error.groupId).includes(action),
   )
@@ -199,7 +211,7 @@ const deployPlan = async (
     .filter(action => action.intervalId)
     .forEach(action => clearInterval(action.intervalId))
 
-  return result
+  return { ...result, summary }
 }
 
 type GroupWithArtifacts = GroupProperties & Required<Pick<GroupProperties, 'artifacts'>>
@@ -258,7 +270,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   }
   const result = executingDeploy
     ? await deployPlan(actionPlan, workspace, cliTelemetry, output, checkOnly, actualAccounts)
-    : { success: true, errors: [] }
+    : { success: true, errors: [], summary: {} }
   await writeArtifacts(result, input.artifactsDir)
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   // We don't flush the workspace for check-only deployments
@@ -278,15 +290,14 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     }
   }
 
-  const requested = Array.from(actionPlan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
-  const summary = summarizeDeployChanges(requested, result.appliedChanges ?? [])
   const changeErrorsForPostDeployOutput = actionPlan.changeErrors.filter(
     changeError =>
-      summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure,
+      result.summary[changeError.elemID.getFullName()] !== 'failure' ||
+      changeError.deployActions?.postAction?.showOnFailure,
   )
 
   if (executingDeploy) {
-    const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(summary))
+    const formattedDeploymentSummary = formatDeploymentSummary(getReversedSummarizeDeployChanges(result.summary))
     if (formattedDeploymentSummary) {
       outputLine(formattedDeploymentSummary, output)
     }

@@ -85,6 +85,7 @@ import {
   validateArray,
   getParentElemID,
   getParentAsyncWithElementsSource,
+  applyFunctionToChangeDataSync,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -1969,12 +1970,15 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('applyFunctionToChangeData', () => {
+  describe.each([
+    { name: 'applyFunctionToChangeData', functionToTest: applyFunctionToChangeData },
+    { name: 'applyFunctionToChangeDataSync', functionToTest: applyFunctionToChangeDataSync },
+  ])('$name', ({ functionToTest }) => {
     const transformFunc = (): string => 'changed'
     describe('with addition change', () => {
       let transformedChange: AdditionChange<string>
       beforeEach(async () => {
-        transformedChange = await applyFunctionToChangeData(
+        transformedChange = await functionToTest(
           { action: 'add', data: { after: 'orig' }, path: ['path'] },
           transformFunc,
         )
@@ -1989,10 +1993,7 @@ describe('Test utils.ts', () => {
     describe('with removal change', () => {
       let transformedChange: RemovalChange<string>
       beforeEach(async () => {
-        transformedChange = await applyFunctionToChangeData(
-          { action: 'remove', data: { before: 'orig' } },
-          transformFunc,
-        )
+        transformedChange = await functionToTest({ action: 'remove', data: { before: 'orig' } }, transformFunc)
       })
       it('should change the before value', () => {
         expect(transformedChange.data.before).toEqual('changed')
@@ -2001,7 +2002,7 @@ describe('Test utils.ts', () => {
     describe('with modification change', () => {
       let transformedChange: ModificationChange<string>
       beforeEach(async () => {
-        transformedChange = await applyFunctionToChangeData(
+        transformedChange = await functionToTest(
           { action: 'modify', data: { before: 'orig', after: 'orig' } },
           transformFunc,
         )

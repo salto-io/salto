@@ -1141,7 +1141,7 @@ const fixStaticFilesForFromStateChanges = async (
         return
       }
       const staticFilePath = staticFileValElemID.createTopLevelParentID().path
-      const relativePath = staticFilePath.filter(pathPart => !changePath.includes(pathPart))
+      const relativePath = staticFilePath.slice(changePath.length)
       _.set(change.data.after, relativePath, actualStaticFile)
     })
   })

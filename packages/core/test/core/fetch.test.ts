@@ -2212,7 +2212,6 @@ describe('fetch from workspace', () => {
               change.change.id.createTopLevelParentID().parent.isEqual(editStateExistingInstance.elemID),
             )
             .map(change => getChangeData(change.change))
-          expect(modifyStaticVals).toHaveLength(2)
           expect(modifyStaticVals).toIncludeSameMembers([
             fileOne,
             {

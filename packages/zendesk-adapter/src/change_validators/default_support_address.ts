@@ -20,7 +20,7 @@ const createDefaultSupportAddressError = (id: ElemID): ChangeError => ({
   elemID: id,
   severity: 'Error',
   message: 'Only a verified support_address email can be set as the default.',
-  detailedMessage: `${id.getFullName()} has a default field set to true, but the forwarding_status is unverified.\nTo proceed, either set the default field to false and then verify the email in the Zendesk Admin Center by going to Email, locating the unverified email (marked with a red "!"), clicking See details, and verifying forwarding.`,
+  detailedMessage: `${id.getFullName()} has a default field set to true, but the forwarding_status is unverified.\nTo proceed, set the default field to false and then verify the email in the Zendesk Admin Center by going to Email, locating the unverified email (marked with a red "!"), clicking See details, and verifying forwarding.`,
 })
 /*
  * This change validator checks that a support_address is not set as default if it's forward status is not verified

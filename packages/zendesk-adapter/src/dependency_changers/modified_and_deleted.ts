@@ -35,11 +35,11 @@ type DeletedDependency = {
   getDeletedTypeFullNameFromModificationChangeFunc: GetDeletedTypeFullNameFromModificationChangeFunc
 }
 
-const getFieldFromField = (arr: unknown): string[] => {
-  if (!isArray(arr)) {
+const getTicketFieldsFromField = (array: unknown): string[] => {
+  if (!isArray(array)) {
     return []
   }
-  return arr
+  return array
     .map(obj => obj.field)
     .filter(field => isReferenceExpression(field))
     .filter(field => field.elemID.typeName === TICKET_FIELD_TYPE_NAME)
@@ -50,10 +50,10 @@ const getFieldFromField = (arr: unknown): string[] => {
 const getFieldsFromMacro = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
   const data = change.data[type]
   const actions = data.value.actions ?? []
-  return getFieldFromField(actions)
+  return getTicketFieldsFromField(actions)
 }
 
-const getCategoryFromtrigger = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
+const getCategoryFromTrigger = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
   const data = change.data[type]
   const category = data.value.category_id
   if (!isReferenceExpression(category)) {
@@ -71,8 +71,8 @@ const getFieldsFromTrigger = (change: ModificationChange<InstanceElement>, type:
   const conditionsAll = conditions.all ?? []
   const conditionsAny = conditions.any ?? []
 
-  const conditionAllFields = getFieldFromField(conditionsAll)
-  const conditionAnyFields = getFieldFromField(conditionsAny)
+  const conditionAllFields = getTicketFieldsFromField(conditionsAll)
+  const conditionAnyFields = getTicketFieldsFromField(conditionsAny)
   return conditionAnyFields.concat(conditionAllFields)
 }
 
@@ -86,7 +86,7 @@ const dependencyTuple: Record<string, DeletedDependency[]> = {
   [TRIGGER_TYPE_NAME]: [
     {
       typeName: TRIGGER_CATEGORY_TYPE_NAME,
-      getDeletedTypeFullNameFromModificationChangeFunc: getCategoryFromtrigger,
+      getDeletedTypeFullNameFromModificationChangeFunc: getCategoryFromTrigger,
     },
     {
       typeName: TICKET_FIELD_TYPE_NAME,

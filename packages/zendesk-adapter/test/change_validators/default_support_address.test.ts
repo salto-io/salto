@@ -40,7 +40,7 @@ describe('defaultSupportAddressValidator', () => {
     expect(err[0].severity).toEqual('Error')
     expect(err[0].message).toEqual('Only a verified support_address email can be set as the default.')
     expect(err[0].detailedMessage).toEqual(
-      'zendesk.support_address.instance.inst has a default field set to true, but the forwarding_status is unverified.\nTo proceed, either set the default field to false and then verify the email in the Zendesk Admin Center by going to Email, locating the unverified email (marked with a red "!"), clicking See details, and verifying forwarding.',
+      'zendesk.support_address.instance.inst has a default field set to true, but the forwarding_status is unverified.\nTo proceed, set the default field to false and then verify the email in the Zendesk Admin Center by going to Email, locating the unverified email (marked with a red "!"), clicking See details, and verifying forwarding.',
     )
   })
   it('should return no errors when default is true and forward_status is verified', async () => {

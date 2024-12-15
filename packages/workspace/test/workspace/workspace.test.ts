@@ -187,6 +187,65 @@ describe('workspace', () => {
         new Error('Workspace with no environments is illegal'),
       )
     })
+    describe('when a field that has a hidden part is deleted from the nacl', () => {
+      let mainType: ObjectType
+      let workspace: Workspace
+      beforeEach(async () => {
+        const files = {
+          'bla.nacl': `type dummy.Type {
+            dummy.FieldType field {
+              visible = "asd"
+            }
+          }`,
+        }
+        const fieldType = new ObjectType({
+          elemID: new ElemID('dummy', 'FieldType'),
+          annotationRefsOrTypes: { visible: BuiltinTypes.STRING, hidden: BuiltinTypes.HIDDEN_STRING },
+        })
+        mainType = new ObjectType({
+          elemID: new ElemID('dummy', 'Type'),
+          fields: {
+            field: { refType: fieldType, annotations: { visible: 'asd', hidden: 'asd' } },
+          },
+        })
+        const state = mockState([fieldType, mainType])
+        const dirStore = mockDirStore([], false, files)
+        const remoteMapCreator = persistentMockCreateRemoteMap()
+        // Create the caches before making a change to the nacl
+        const tmpWorkspace = await createWorkspace(
+          dirStore,
+          state,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          remoteMapCreator,
+        )
+        await tmpWorkspace.elements()
+
+        // Make the change to the nacl
+        await dirStore.set({ filename: 'bla.nacl', buffer: 'type dummy.Type {}' })
+
+        // Load the workspace with the caches from the previous load
+        workspace = await createWorkspace(
+          dirStore,
+          state,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          remoteMapCreator,
+        )
+      })
+      it('should remove the field from the element', async () => {
+        const elements = await workspace.elements()
+        const type = (await elements.get(mainType.elemID)) as ObjectType
+        expect(type).toBeInstanceOf(ObjectType)
+        expect(type.fields).not.toHaveProperty('field')
+      })
+    })
   })
   describe('elements', () => {
     let workspace: Workspace

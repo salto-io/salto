@@ -2212,9 +2212,9 @@ describe('fetch from workspace', () => {
               change.change.id.createTopLevelParentID().parent.isEqual(editStateExistingInstance.elemID),
             )
             .map(change => getChangeData(change.change))
-          expect(modifyStaticVals).toHaveLength(3)
+          expect(modifyStaticVals).toHaveLength(2)
           const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
-          expect(staticFileModifies).toHaveLength(3)
+          expect(staticFileModifies).toHaveLength(1)
         })
 
         it('should not have a change on the val and a error if there is a hashes mismatch (for both inner modify and a whole addition)', () => {

@@ -113,6 +113,20 @@ const createInstanceChangeErrorSingleDefault = (
   }
 }
 
+const createInstanceChangeErrorNoDefault = (
+  fieldPath: string,
+  field: string,
+  instance: InstanceElement,
+): ChangeError => {
+  const elementId = instance.elemID.createNestedID(fieldPath, field)
+  return {
+    elemID: elementId,
+    severity: 'Error',
+    message: 'recordTypeVisibility segment must have one default entry',
+    detailedMessage: `Must have default entry if there are visible entries\nThus the following segment must have one default entry (or no visible entries at all) ${elementId.getFullName()}`,
+  }
+}
+
 const createFieldChangeError = (field: Field, contexts: string[]): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
@@ -162,7 +176,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     if (!_.isArray(defaultObjects)) {
       return undefined
     }
-    const isValid = defaultObjects.reduce<string | undefined>((res, curr) => {
+    const corruptedEntry = defaultObjects.reduce<string | undefined>((res, curr) => {
       if (res !== undefined) {
         return res
       }
@@ -176,7 +190,26 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
       }
       return undefined
     }, undefined)
-    return isValid !== '' ? isValid : undefined
+    return corruptedEntry
+  }
+
+  const findVisibleNoDefault = (value: Value, fieldType: TypeElement): boolean => {
+    const defaultObjects = getDefaultObjectsList(value, fieldType)
+    if (!_.isArray(defaultObjects)) {
+      return true
+    }
+    const isValid = defaultObjects.reduce<boolean>((res, curr) => {
+      if (!res) {
+        return res
+      }
+      const defaultField = _.get(curr, 'default')
+      const visibleField = _.get(curr, 'visible')
+      if (!defaultField) {
+        return !visibleField
+      }
+      return visibleField
+    }, true)
+    return isValid
   }
 
   const createChangeErrorFromContext = (
@@ -209,9 +242,13 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
             return [createInstanceChangeError(field, defaultsContexts, after)]
           }
           const singleDefaultisValid = findSingleDefault(innerValue, startLevelType)
-          return singleDefaultisValid
-            ? [createInstanceChangeErrorSingleDefault(fieldPath, singleDefaultisValid, after)]
-            : []
+          if (singleDefaultisValid !== undefined) {
+            return singleDefaultisValid !== ''
+              ? [createInstanceChangeErrorSingleDefault(fieldPath, singleDefaultisValid, after)]
+              : []
+          }
+          const noDefaultValidation = findVisibleNoDefault(innerValue, startLevelType)
+          return !noDefaultValidation ? [createInstanceChangeErrorNoDefault(fieldPath, _key, after)] : []
         })
       }
       const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)

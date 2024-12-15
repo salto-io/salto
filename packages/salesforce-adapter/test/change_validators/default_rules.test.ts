@@ -499,6 +499,76 @@ describe('multiple defaults change validator', () => {
             })
           })
         })
+        describe('when there are no defaults', () => {
+          describe('when there is visible entry', () => {
+            it('should have an error', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: true,
+                        visible: true,
+                        recordType: 'test1.testRecordType1',
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test1.testRecordType2',
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test2.testRecordType3',
+                      },
+                    },
+                  },
+                },
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, false)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(1)
+              const [changeError] = changeErrors
+              expect(changeError.elemID).toEqual(afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test1'))
+              expect(changeError.severity).toEqual('Error')
+            })
+          })
+          describe('when there is no visible entry', () => {
+            it('should have no errors', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: true,
+                        visible: false,
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: false,
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: false,
+                        visible: false,
+                      },
+                    },
+                  },
+                },
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, false)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(0)
+            })
+          })
+        })
       })
 
       describe('several errors in one instance', () => {

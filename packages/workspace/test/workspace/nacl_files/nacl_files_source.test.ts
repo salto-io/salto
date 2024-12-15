@@ -17,12 +17,14 @@ import {
   createRefToElmWithValue,
   InstanceElement,
   isStaticFile,
+  DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
-import { detailedCompare, transformElement } from '@salto-io/adapter-utils'
+import { detailedCompare, toDetailedChangeFromBaseChange, transformElement } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -39,7 +41,7 @@ import { DetailedChangeWithSource, getChangeLocations } from '../../../src/works
 
 const { awu } = collections.asynciterable
 
-const createChange = (): DetailedChange => {
+const createChange = (): DetailedChangeWithBaseChange => {
   const newElemID = new ElemID('salesforce', 'new_elem')
   const newElem = new ObjectType({
     elemID: newElemID,
@@ -50,12 +52,10 @@ const createChange = (): DetailedChange => {
       },
     },
   })
-  const change = {
-    id: newElemID,
-    action: 'add',
-    data: { after: newElem },
+  const change: DetailedChangeWithBaseChange = {
+    ...toDetailedChangeFromBaseChange(toChange({ after: newElem })),
     path: ['new', 'file'],
-  } as DetailedChange
+  }
   return change
 }
 
@@ -456,42 +456,64 @@ describe.each([false, true])(
         await src.load({})
       })
       it('should not parse file when updating single add changes in a new file', async () => {
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID }),
+        })
         const change = {
-          id: elemID,
+          id: elemID.createNestedID('attr', 'file'),
           action: 'remove',
           data: { before: sfile },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
       })
       it('should delete before file when path is changed', async () => {
+        const newFile = new StaticFile({ filepath: afterFilePath, hash: 'XI' })
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID, annotations: { file: newFile } }),
+        })
         const change = {
-          id: elemID,
+          id: elemID.createNestedID('attr', 'file'),
           action: 'modify',
-          data: { before: sfile, after: new StaticFile({ filepath: afterFilePath, hash: 'XI' }) },
+          data: { before: sfile, after: newFile },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
       })
       it('should delete before file when it is no longer a static file', async () => {
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID, annotations: { file: '' } }),
+        })
         const change = {
           id: elemID,
           action: 'modify',
           data: { before: sfile, after: '' },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
       })
       it('should not delete static file if the change is only in content and not in path', async () => {
+        const newFile = new StaticFile({ filepath, hash: 'XII' })
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID, annotations: { file: newFile } }),
+        })
         const change = {
           id: elemID,
           action: 'modify',
-          data: { before: sfile, after: new StaticFile({ filepath, hash: 'XII' }) },
+          data: { before: sfile, after: newFile },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
       })
@@ -537,12 +559,12 @@ describe.each([false, true])(
           action: 'add',
           id: newInstanceElement1.elemID,
           data: { after: newInstanceElement1 },
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         const detailedChange2 = {
           action: 'add',
           id: newInstanceElement2.elemID,
           data: { after: newInstanceElement2 },
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
 
         await src.updateNaclFiles([detailedChange1, detailedChange2])
 
@@ -550,7 +572,7 @@ describe.each([false, true])(
           id: newInstanceElement1.elemID.createNestedID('file'),
           action: 'remove',
           data: { before: sfile },
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([removal])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
       })
@@ -577,18 +599,30 @@ describe.each([false, true])(
               },
             }) as unknown as DetailedChangeWithSource[],
         )
+        const someFile = new StaticFile({ filepath, hash: 'XII' })
+        const anotherElemID = new ElemID('salesforce', 'new_elem2')
+        const additionBaseChange = toChange({
+          before: new ObjectType({ elemID: anotherElemID }),
+          after: new ObjectType({ elemID: anotherElemID, annotations: { file: someFile } }),
+        })
         const changeAdd = {
-          id: new ElemID('salesforce', 'new_elem2'),
+          id: anotherElemID.createNestedID('attr', 'file'),
           action: 'add',
-          data: { after: new StaticFile({ filepath, hash: 'XII' }) },
+          data: { after: someFile },
+          baseChange: additionBaseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
+        const removalBaseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: someFile } }),
+          after: new ObjectType({ elemID }),
+        })
         const changeDelete = {
-          id: elemID,
+          id: elemID.createNestedID('attr', 'file'),
           action: 'remove',
-          data: { before: new StaticFile({ filepath, hash: 'XII' }) },
+          data: { before: someFile },
+          baseChange: removalBaseChange,
           path: ['old', 'file2'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([changeAdd, changeDelete])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
       })

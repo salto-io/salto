@@ -706,6 +706,9 @@ type_name_to_special_script_id_prefix = {
     'customtransactiontype': '^(customtransaction|customsale|custompurchase)[0-9a-z_]+', # https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1520439377.html
     'kpiscorecard': '^(custkpiscorecard|kpiscorecard)[0-9a-z_]+', # The kpiscorecard prefix appeared when fetching the Extended Dev account
     'emailtemplate': 'standardemailtemplate|standardpaymentlinktransactionemailtemplate|^custemailtmpl[0-9a-z_]+', # The standardemailtemplate scriptid appeared to a certain customer's account & standardpaymentlinktransactionemailtemplate appeared when fetching from 2021.2 release preview
+    'role': '^customrole[0-9a-z_]*', # https://salto-io.atlassian.net/browse/SALTO-7054
+    'savedsearch': '^customsearch[0-9a-z_]*', # https://salto-io.atlassian.net/browse/SALTO-7054
+    'reportdefinition': '^customreport[0-9a-z_]*', # https://salto-io.atlassian.net/browse/SALTO-7054
 }
 
 fields_to_create = {

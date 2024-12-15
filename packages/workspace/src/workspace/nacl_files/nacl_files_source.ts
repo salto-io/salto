@@ -11,6 +11,7 @@ import { logger } from '@salto-io/logging'
 import {
   Change,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   isAdditionChange,
@@ -85,7 +86,7 @@ export type SourceLoadParams = {
 }
 
 export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 'clear'> & {
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Changes>
+  updateNaclFiles: (changes: DetailedChangeWithBaseChange[], mode?: RoutingMode) => Promise<Changes>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -757,7 +758,7 @@ const buildNaclFilesSource = (
   }
 
   const getChangeLocationsForFiles = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
     naclFiles: string[],
   ): Promise<DetailedChangeWithSource[]> => {
     const { parsedNaclFiles } = await getState()
@@ -784,7 +785,7 @@ const buildNaclFilesSource = (
   }
 
   const getChangesWithLocationsSplitSourceMap = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
   ): Promise<DetailedChangeWithSource[]> => {
     // Create separate source maps for groups of files and then find the location for each group of files separately
     const currentState = await getState()
@@ -834,7 +835,7 @@ const buildNaclFilesSource = (
   }
 
   const getChangesWithLocationsUnifiedSourceMap = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
   ): Promise<DetailedChangeWithSource[]> => {
     // Create a unified source map for all files and find the locations for all changes together
     const naclFiles = _.uniq(
@@ -847,7 +848,9 @@ const buildNaclFilesSource = (
     return getChangeLocationsForFiles(changes, naclFiles)
   }
 
-  const groupChangesByFilename = (changes: DetailedChange[]): Promise<Record<string, DetailedChangeWithSource[]>> =>
+  const groupChangesByFilename = (
+    changes: DetailedChangeWithBaseChange[],
+  ): Promise<Record<string, DetailedChangeWithSource[]>> =>
     log.timeDebug(
       async () => {
         const changesWithLocation = getSaltoFlagBool(WORKSPACE_FLAGS.useSplitSourceMapInUpdate)
@@ -864,7 +867,7 @@ const buildNaclFilesSource = (
       changes.length,
     )
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+  const updateNaclFiles = async (changes: DetailedChangeWithBaseChange[]): Promise<ChangeSet<Change>> => {
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)

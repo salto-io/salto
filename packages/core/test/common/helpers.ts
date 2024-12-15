@@ -42,7 +42,11 @@ export const createMockAdapter = (
       ),
       optionsType,
     },
-    install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({ success: true, installedVersion: '1' }),
+    install: mockFunction<Required<Adapter>['install']>().mockResolvedValue({
+      success: true,
+      installedVersion: '1',
+      installedVersions: ['1'],
+    }),
     adapterFormat: {
       isInitializedFolder: mockFunction<NonNullable<AdapterFormat['isInitializedFolder']>>().mockResolvedValue({
         result: false,

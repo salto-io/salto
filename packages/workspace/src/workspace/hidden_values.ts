@@ -16,6 +16,9 @@ import {
   elementAnnotationTypes,
   safeJsonStringify,
   resolvePath,
+  getDetailedChanges,
+  detailedCompare,
+  setPath,
 } from '@salto-io/adapter-utils'
 import {
   CORE_ANNOTATIONS,
@@ -47,10 +50,11 @@ import {
   getFieldType,
   isMapType,
   isTypeReference,
+  DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
-import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
 import { ElementsSource } from './elements_source'
 import { splitElementByPath } from './path_index'
 
@@ -253,10 +257,13 @@ const isTopLevelModificationAfterHidden = <T extends Element>(
  * When a type changes from/to hidden, we need to create a change that adds/removes
  * the whole type to the nacl instead of just changing the hidden annotation value.
  */
-const getHiddenTypeChanges = async (changes: DetailedChange[], state: State): Promise<DetailedChange[]> =>
+const getHiddenTypeChanges = async (
+  changes: DetailedChangeWithBaseChange[],
+  state: State,
+): Promise<DetailedChangeWithBaseChange[]> =>
   awu(changes)
     .filter(change => isTopLevelModificationWithHiddenChange(change) || isHiddenAttributeChange(change, false))
-    .map(async change => {
+    .flatMap(async change => {
       const elemId = change.id.createTopLevelParentID().parent
       const elem = await state.get(elemId)
       if (!isElement(elem)) {
@@ -266,17 +273,21 @@ const getHiddenTypeChanges = async (changes: DetailedChange[], state: State): Pr
           elemId.getFullName(),
           isAttributeChangeToHidden(change, false),
         )
-        return change
+        return [change]
       }
 
       const changeToHidden = isTopLevelModificationWithHiddenChange(change)
         ? isTopLevelModificationAfterHidden(change)
         : isAttributeChangeToHidden(change, false)
-      return changeToHidden ? createRemoveChange(elem, elemId) : createAddChange(elem, elemId)
+      const baseChange = changeToHidden ? toChange({ before: elem }) : toChange({ after: elem })
+      return getDetailedChanges(baseChange)
     })
     .toArray()
 
-const getInstanceTypeHiddenChanges = async (changes: DetailedChange[], state: State): Promise<DetailedChange[]> => {
+const getInstanceTypeHiddenChanges = async (
+  changes: DetailedChange[],
+  state: State,
+): Promise<DetailedChangeWithBaseChange[]> => {
   const hiddenValueOnElementChanges = changes.filter(c => isHiddenAttributeChange(c, true))
 
   // Exit early to avoid unneeded calculation if there are no hidden type changes
@@ -301,11 +312,11 @@ const getInstanceTypeHiddenChanges = async (changes: DetailedChange[], state: St
     .flatMap(async elem => {
       if (isInstanceElement(elem)) {
         if (toHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return [createRemoveChange(elem, elem.elemID)]
+          return getDetailedChanges(toChange({ before: elem }))
         }
         if (fromHiddenElemIds.has(elem.refType.elemID.getFullName())) {
-          return (await splitElementByPath(elem, pathIndex)).map(fragment =>
-            createAddChange(fragment, elem.elemID, fragment.path),
+          return (await splitElementByPath(elem, pathIndex)).flatMap(fragment =>
+            getDetailedChanges(toChange({ after: fragment })).map(change => ({ ...change, path: fragment.path })),
           )
         }
       }
@@ -316,8 +327,8 @@ const getInstanceTypeHiddenChanges = async (changes: DetailedChange[], state: St
 }
 
 const isAnnotationTypeChange = (
-  change: DetailedChange,
-): change is DetailedChange & ModificationChange<ReferenceExpression> =>
+  change: DetailedChangeWithBaseChange,
+): change is DetailedChangeWithBaseChange & ModificationChange<ReferenceExpression> =>
   isModificationChange(change) &&
   change.id.isAnnotationTypeID() &&
   isTypeReference(change.data.before) &&
@@ -376,10 +387,10 @@ const getChangeParentIdsByHideAction = (changes: DetailedChange[]): { hide: Set<
  * the values of that field in all relevant instances / annotation values
  */
 const getHiddenFieldAndAnnotationValueChanges = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   // TODO hide fields marked with _hidden=true
 
   // We need to find the following cases:
@@ -438,64 +449,85 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       .join(', '),
   )
 
-  const hiddenValueChanges: DetailedChange[] = []
-  const createHiddenValueChangeIfNeeded: TransformFunc = ({ value, field, path }) => {
-    if (path === undefined) {
-      return value
-    }
-    if (isField(value)) {
-      // Handle annotation values that now have a different type
-      // Note we have to do this first because when transforming fields the "field" we get here
-      // is undefined
-      const annotationsToHide = annotationTypesToHide[value.refType.elemID.getFullName()]
-      const annotationsToUnHide = annotationTypesToUnHide[value.refType.elemID.getFullName()]
-      if (annotationsToHide !== undefined || annotationsToUnHide !== undefined) {
-        Object.entries(value.annotations).forEach(([name, attrValue]) => {
-          if (annotationsToHide?.has(name)) {
-            hiddenValueChanges.push(createRemoveChange(attrValue, path.createNestedID(name)))
-          } else if (annotationsToUnHide?.has(name)) {
-            hiddenValueChanges.push(createAddChange(attrValue, path.createNestedID(name)))
-          }
-        })
+  const getVisibleElementWithHiddenValueChanges = async ({
+    stateElement,
+    visibleElement,
+  }: {
+    stateElement: Element
+    visibleElement: Element
+  }): Promise<Element> => {
+    const clonedVisibleElement = visibleElement.clone()
+
+    const transformFunc: TransformFunc = ({ value, field, path }) => {
+      if (path === undefined) {
+        return value
       }
-    }
-    if (field === undefined) {
-      return value
-    }
-    // Handle field values in instances
-    const fieldId = field.elemID.getFullName()
-    const fieldTypeId = field.refType.elemID.getFullName()
-    if (hideFieldIds.has(fieldId)) {
-      hiddenValueChanges.push(createRemoveChange(value, path))
-      return undefined
-    }
-    if (unhideFieldIds.has(fieldId)) {
-      hiddenValueChanges.push(createAddChange(value, path))
-      return undefined
-    }
-    // Handle annotation values on types
-    if (path.idType === 'attr') {
-      const isInTypes = (id: ElemID, typeGroup: Record<string, Set<string>>): boolean =>
-        typeGroup[id.createParentID().getFullName()]?.has(id.name)
-      if (isInTypes(path, annotationTypesToHide) || hideTypeIds.has(fieldTypeId)) {
-        hiddenValueChanges.push(createRemoveChange(value, path))
+      if (isField(value)) {
+        // Handle annotation values that now have a different type
+        // Note we have to do this first because when transforming fields the "field" we get here
+        // is undefined
+        const annotationsToHide = annotationTypesToHide[value.refType.elemID.getFullName()]
+        const annotationsToUnHide = annotationTypesToUnHide[value.refType.elemID.getFullName()]
+        if (annotationsToHide !== undefined || annotationsToUnHide !== undefined) {
+          Object.entries(value.annotations).forEach(([name, attrValue]) => {
+            if (annotationsToHide?.has(name)) {
+              setPath(clonedVisibleElement, path.createNestedID(name), undefined)
+            } else if (annotationsToUnHide?.has(name)) {
+              setPath(clonedVisibleElement, path.createNestedID(name), attrValue)
+            }
+          })
+        }
+      }
+      if (field === undefined) {
+        return value
+      }
+      // Handle field values in instances
+      const fieldId = field.elemID.getFullName()
+      const fieldTypeId = field.refType.elemID.getFullName()
+      if (hideFieldIds.has(fieldId)) {
+        setPath(clonedVisibleElement, path, undefined)
         return undefined
       }
-      if (isInTypes(path, annotationTypesToUnHide) || unhideTypeIds.has(fieldTypeId)) {
-        hiddenValueChanges.push(createAddChange(value, path))
+      if (unhideFieldIds.has(fieldId)) {
+        setPath(clonedVisibleElement, path, value)
         return undefined
       }
-    }
-    // Handle annotation values on fields where the annotation type has the same ID, but the type
-    // itself has changed
-    if (path.idType === 'field') {
-      if (hideTypeIds.has(fieldTypeId)) {
-        hiddenValueChanges.push(createRemoveChange(value, path))
-      } else if (unhideTypeIds.has(fieldTypeId)) {
-        hiddenValueChanges.push(createAddChange(value, path))
+      // Handle annotation values on types
+      if (path.idType === 'attr') {
+        const isInTypes = (id: ElemID, typeGroup: Record<string, Set<string>>): boolean =>
+          typeGroup[id.createParentID().getFullName()]?.has(id.name)
+        if (isInTypes(path, annotationTypesToHide) || hideTypeIds.has(fieldTypeId)) {
+          setPath(clonedVisibleElement, path, undefined)
+          return undefined
+        }
+        if (isInTypes(path, annotationTypesToUnHide) || unhideTypeIds.has(fieldTypeId)) {
+          setPath(clonedVisibleElement, path, value)
+          return undefined
+        }
       }
+      // Handle annotation values on fields where the annotation type has the same ID, but the type
+      // itself has changed
+      if (path.idType === 'field') {
+        if (hideTypeIds.has(fieldTypeId)) {
+          setPath(clonedVisibleElement, path, undefined)
+        } else if (unhideTypeIds.has(fieldTypeId)) {
+          setPath(clonedVisibleElement, path, value)
+        }
+      }
+      return value
     }
-    return value
+
+    await transformElement({
+      element: stateElement,
+      transformFunc,
+      strict: true,
+      elementsSource: state,
+      runOnFields: true,
+      allowEmptyArrays: true,
+      allowEmptyObjects: true,
+    })
+
+    return clonedVisibleElement
   }
 
   // In order to support making a field/annotation visible we must traverse all state elements
@@ -505,27 +537,22 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   // by only iterating the state elements and creating remove changes for values that are
   // newly hidden, some of these remove changes may be redundant (if the value we
   // are trying to hide was already removed manually from the visible element)
-  await awu(await state.getAll())
-    .filter(element => visibleElementSource.has(element.elemID))
-    .forEach(async element => {
-      await transformElement({
-        element,
-        transformFunc: createHiddenValueChangeIfNeeded,
-        strict: true,
-        elementsSource: state,
-        runOnFields: true,
-        allowEmptyArrays: true,
-        allowEmptyObjects: true,
-      })
+  return awu(await state.getAll())
+    .flatMap(async stateElement => {
+      const visibleElement = await visibleElementSource.get(stateElement.elemID)
+      if (!isElement(visibleElement)) {
+        return []
+      }
+      const modifiedVisibleElement = await getVisibleElementWithHiddenValueChanges({ stateElement, visibleElement })
+      return detailedCompare(visibleElement, modifiedVisibleElement, { createFieldChanges: true })
     })
-
-  return hiddenValueChanges
+    .toArray()
 }
 
 const removeDuplicateChanges = (
-  origChanges: DetailedChange[],
-  additionalChanges: DetailedChange[],
-): DetailedChange[] => {
+  origChanges: DetailedChangeWithBaseChange[],
+  additionalChanges: DetailedChangeWithBaseChange[],
+): DetailedChangeWithBaseChange[] => {
   // If there are no additional changes we'll save the calculation time
   if (additionalChanges.length === 0) {
     return origChanges
@@ -564,10 +591,10 @@ const removeDuplicateChanges = (
  * types that changed visibility and fields that changed visibility.
  */
 const getHiddenChangeNaclSideEffects = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   const additionalChanges = [
     ...(await getHiddenTypeChanges(changes, state)),
     ...(await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource)),
@@ -710,12 +737,12 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
 // Avoid using this function from out of this file. This filters out only the hidden changes but not
 // their side effects like done in handleHiddenChanges.
 export const filterOutHiddenChanges = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   state: State,
-): Promise<{ visible?: DetailedChange; hidden?: DetailedChange }[]> => {
+): Promise<{ visible?: DetailedChangeWithBaseChange; hidden?: DetailedChangeWithBaseChange }[]> => {
   const filterOutHidden = async (
-    change: DetailedChange,
-  ): Promise<{ visible?: DetailedChange; hidden?: DetailedChange }> => {
+    change: DetailedChangeWithBaseChange,
+  ): Promise<{ visible?: DetailedChangeWithBaseChange; hidden?: DetailedChangeWithBaseChange }> => {
     if (isRemovalChange(change)) {
       // There should be no harm in letting remove changes through here. remove should be resilient
       // to its subject not existing. We create both visible and hidden changes in order
@@ -814,7 +841,7 @@ export const filterOutHiddenChanges = async (
             data: {
               after: hidden,
             },
-          } as DetailedChange,
+          } as DetailedChangeWithBaseChange,
         }
       }
     }
@@ -826,10 +853,10 @@ export const filterOutHiddenChanges = async (
 }
 
 export const handleHiddenChanges = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   state: State,
   visibleElementSource: ReadOnlyElementsSource,
-): Promise<{ visible: DetailedChange[]; hidden: DetailedChange[] }> => {
+): Promise<{ visible: DetailedChangeWithBaseChange[]; hidden: DetailedChangeWithBaseChange[] }> => {
   // The side effects here are going to be applied to the nacls, so only
   // the visible part is needed. We filter it here and not with the rest
   // of the changes in order to prevent remove changes (which are always

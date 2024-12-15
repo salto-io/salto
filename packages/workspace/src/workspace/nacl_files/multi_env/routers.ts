@@ -8,15 +8,18 @@
 import {
   ChangeDataType,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   getChangeData,
   isAdditionChange,
+  isElement,
   isField,
   isIndexPathPart,
   isInstanceElement,
   isObjectType,
   isPrimitiveType,
+  toChange,
   Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -27,10 +30,12 @@ import {
   detailedCompare,
   FILTER_FUNC_NEXT_STEP,
   filterByID,
+  getDetailedChanges,
   resolvePath,
+  setPath,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createAddChange, createRemoveChange, projectChange, projectElementOrValueToEnv } from './projections'
+import { projectChange, projectElementOrValueToEnv } from './projections'
 import { DetailedAddition, wrapAdditions, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, RoutingMode, toPathHint } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
@@ -40,14 +45,14 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export interface RoutedChangesByRole {
-  primarySource?: DetailedChange[]
-  commonSource?: DetailedChange[]
-  secondarySources?: Record<string, DetailedChange[]>
+  primarySource?: DetailedChangeWithBaseChange[]
+  commonSource?: DetailedChangeWithBaseChange[]
+  secondarySources?: Record<string, DetailedChangeWithBaseChange[]>
 }
 
 export type RoutedChanges = {
-  commonSource?: DetailedChange[]
-  envSources?: Record<string, DetailedChange[]>
+  commonSource?: DetailedChangeWithBaseChange[]
+  envSources?: Record<string, DetailedChangeWithBaseChange[]>
 }
 
 // Exported for testing
@@ -104,7 +109,10 @@ const isEmptyChangeElement = (element: Element): boolean => {
   return false
 }
 
-const separateChangeByFiles = async (change: DetailedChange, source: NaclFilesSource): Promise<DetailedChange[]> => {
+const separateChangeByFiles = async (
+  change: DetailedChangeWithBaseChange,
+  source: NaclFilesSource,
+): Promise<DetailedChangeWithBaseChange[]> => {
   const isEmptyChangeElm = isEmptyChangeElement(getChangeData(change))
   const elementNaclFiles = await source.getElementNaclFiles(change.id)
   if (_.isEmpty(elementNaclFiles)) {
@@ -154,7 +162,11 @@ const separateChangeByFiles = async (change: DetailedChange, source: NaclFilesSo
   return sortedChanges
 }
 
-const overrideIdInSource = (id: ElemID, before: ChangeDataType, topLevelElement: ChangeDataType): DetailedChange[] => {
+const overrideIdInSource = (
+  id: ElemID,
+  before: ChangeDataType,
+  topLevelElement: ChangeDataType,
+): DetailedChangeWithBaseChange[] => {
   if (id.isTopLevel()) {
     return detailedCompare(before, topLevelElement, { createFieldChanges: true })
   }
@@ -163,7 +175,9 @@ const overrideIdInSource = (id: ElemID, before: ChangeDataType, topLevelElement:
   const beforeValue = resolvePath(before, id)
   if (beforeValue === undefined) {
     // Nothing to override, just need to add the new value
-    return [createAddChange(afterValue, id)]
+    return [
+      { data: { after: afterValue }, action: 'add', id, baseChange: toChange({ before, after: topLevelElement }) },
+    ]
   }
   // The value exists in the target - override only the relevant part
   return detailedCompare(
@@ -185,7 +199,7 @@ const addToSource = async ({
   targetSource: NaclFilesSource
   overrideTargetElements?: boolean
   valuesOverrides?: Record<string, Value>
-}): Promise<DetailedChange[]> =>
+}): Promise<DetailedChangeWithBaseChange[]> =>
   log.timeDebug(async () => {
     const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
     const fullChanges = await awu(Object.values(idsByParent))
@@ -210,7 +224,7 @@ const addToSource = async ({
               topLevelElement,
             )
         if (!values.isDefined(before)) {
-          return [createAddChange(wrappedElement, topLevelElement.elemID)]
+          return getDetailedChanges(toChange({ after: wrappedElement }))
         }
         if (overrideTargetElements) {
           // we want to override, not merge - so we need to wrap each gid individually
@@ -232,19 +246,16 @@ const addToSource = async ({
   }, 'addToSource')
 
 const createUpdateChanges = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   commonSource: NaclFilesSource,
   targetSource: NaclFilesSource,
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   const [nestedAdditions, otherChanges] = await promises.array.partition(
     changes,
     async change =>
       change.action === 'add' && change.id.nestingLevel > 0 && !(await targetSource.get(change.id.createParentID())),
   )
-  // const modifiedAdditions = await awu(Object.entries(_.groupBy(
-  //   nestedAdditions,
-  //   addition => addition.id.createTopLevelParentID().parent.getFullName()
-  // )))
+
   const [fullyNestedAdditions, partiallyNestedAdditions] = await promises.array.partition(
     nestedAdditions,
     async change => !(await targetSource.get(change.id.createTopLevelParentID().parent)),
@@ -287,7 +298,7 @@ const createUpdateChanges = async (
 }
 
 const routeDefaultRemoveOrModify = async (
-  change: DetailedChange,
+  change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>,
@@ -310,7 +321,7 @@ const routeDefaultRemoveOrModify = async (
 }
 
 export const routeOverride = async (
-  change: DetailedChange,
+  change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>,
@@ -336,7 +347,7 @@ export const routeOverride = async (
 }
 
 export const routeAlign = async (
-  change: DetailedChange,
+  change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
 ): Promise<RoutedChangesByRole> => {
@@ -361,7 +372,7 @@ export const routeAlign = async (
 }
 
 export const routeDefault = async (
-  change: DetailedChange,
+  change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>,
@@ -400,7 +411,7 @@ const getChangePathHint = async (
 }
 
 export const routeIsolated = async (
-  change: DetailedChange,
+  change: DetailedChangeWithBaseChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>,
@@ -417,12 +428,24 @@ export const routeIsolated = async (
   // active env.
   // If the element is not in common, then we can apply the change to
   // the primary source
-  const currentCommonElement = await commonSource.get(change.id)
-  if (currentCommonElement === undefined) {
+  const currentCommonElement = await commonSource.get(change.id.createTopLevelParentID().parent)
+  if (!isElement(currentCommonElement)) {
     return { primarySource: [change] }
   }
 
-  const commonChangeProjection = projectElementOrValueToEnv(getChangeData(change), currentCommonElement)
+  const currentCommonValue = resolvePath(currentCommonElement, change.id)
+  if (currentCommonValue === undefined) {
+    return { primarySource: [change] }
+  }
+
+  const updatedCommonElement = currentCommonElement.clone()
+  setPath(updatedCommonElement, change.id, undefined)
+  // This base change is wrong!!!
+  // It includes only the removal of change.id from common.
+  // It doesn't include any other changes of the same element.
+  const commonBaseChange = toChange({ before: currentCommonElement, after: updatedCommonElement })
+
+  const commonChangeProjection = projectElementOrValueToEnv(getChangeData(change), currentCommonValue)
   // Add the changed part of common to the target source
   const addCommonProjectionToCurrentChanges =
     change.action === 'modify'
@@ -443,16 +466,24 @@ export const routeIsolated = async (
   return {
     // No need to apply addToSource to primary env changes since it was handled by the original plan
     primarySource: [...currentEnvChanges, ...addCommonProjectionToCurrentChanges],
-    commonSource: [createRemoveChange(currentCommonElement, change.id, pathHint)],
+    commonSource: [
+      {
+        data: { before: currentCommonValue },
+        action: 'remove',
+        id: change.id,
+        path: pathHint,
+        baseChange: commonBaseChange,
+      },
+    ],
     secondarySources: secondaryChanges,
   }
 }
 
 const createMergeableChange = (
   mergeableID: ElemID,
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   baseElement: ChangeDataType,
-): DetailedChange => {
+): DetailedChangeWithBaseChange => {
   if (changes.length === 1 && changes[0].id.isEqual(mergeableID)) {
     return changes[0]
   }
@@ -466,15 +497,19 @@ const createMergeableChange = (
       before: resolvePath(baseElement, mergeableID),
       after: resolvePath(afterElement, mergeableID),
     },
+    // This base change is wrong!!!
+    // It includes only changes inside the mergeableID scope.
+    // It doesn't include any other changes of the same element from other mergeableIDs.
+    baseChange: toChange({ before: baseElement, after: afterElement }),
   }
 }
 
 const createMergeableChangesForElement = async (
   topLevelID: ElemID,
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   if (changes.every(change => change.id.isTopLevel())) {
     // changes of top level elements are always mergeable (they cannot be in an array)
     return changes
@@ -505,10 +540,10 @@ const createMergeableChangesForElement = async (
 }
 
 const toMergeableChanges = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithBaseChange[],
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   // First we create mergeable changes!
   // We need to modify a change iff:
   // 1) It has a common projection
@@ -538,7 +573,7 @@ const unpackSources = (
 })
 
 export const routeChanges = async (
-  rawChanges: DetailedChange[],
+  rawChanges: DetailedChangeWithBaseChange[],
   primarySourceName: string,
   commonSource: NaclFilesSource,
   envSources: Record<string, NaclFilesSource>,
@@ -588,17 +623,24 @@ export const routeChanges = async (
   }
 }
 
-const removeFromSource = async (ids: ElemID[], targetSource: NaclFilesSource): Promise<DetailedChange[]> => {
+const removeFromSource = async (
+  ids: ElemID[],
+  targetSource: NaclFilesSource,
+): Promise<DetailedChangeWithBaseChange[]> => {
   const groupedByTopLevel = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
   return awu(Object.entries(groupedByTopLevel))
     .flatMap(async ([key, groupedIds]) => {
       const targetTopElement = await targetSource.get(ElemID.fromFullName(key))
-      if (targetTopElement === undefined) {
+      if (!isElement(targetTopElement)) {
         return []
       }
-      return groupedIds.map(id => createRemoveChange(resolvePath(targetTopElement, id), id))
+      if (groupedIds.find(id => id.getFullName() === key) !== undefined) {
+        return getDetailedChanges(toChange({ before: targetTopElement }))
+      }
+      const after = targetTopElement.clone()
+      groupedIds.map(id => setPath(after, id, undefined))
+      return detailedCompare(targetTopElement, after, { createFieldChanges: true })
     })
-    .flat()
     .toArray()
 }
 

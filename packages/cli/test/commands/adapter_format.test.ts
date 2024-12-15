@@ -73,6 +73,7 @@ describe('apply-patch command', () => {
         fetchErrors: [],
         success: true,
         updatedConfig: {},
+        partiallyFetchedAccounts: new Set(['salesforce']),
       })
 
       exitCode = await applyPatchAction({
@@ -114,6 +115,7 @@ describe('apply-patch command', () => {
         fetchErrors: [],
         success: true,
         updatedConfig: {},
+        partiallyFetchedAccounts: new Set(['salesforce']),
       })
       exitCode = await applyPatchAction({
         ...cliCommandArgs,
@@ -167,6 +169,7 @@ describe('apply-patch command', () => {
         fetchErrors: [],
         success: true,
         updatedConfig: {},
+        partiallyFetchedAccounts: new Set(['salesforce']),
       })
       exitCode = await applyPatchAction({
         ...cliCommandArgs,
@@ -207,6 +210,7 @@ describe('apply-patch command', () => {
         fetchErrors: [],
         success: true,
         updatedConfig: {},
+        partiallyFetchedAccounts: new Set(['salesforce']),
       })
       exitCode = await applyPatchAction({
         ...cliCommandArgs,

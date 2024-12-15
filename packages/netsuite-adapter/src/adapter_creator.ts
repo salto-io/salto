@@ -171,7 +171,11 @@ export const adapter: Adapter = {
   configType,
   install: async (): Promise<AdapterInstallResult> => {
     try {
-      return await SdkDownloadService.download()
+      const result = await SdkDownloadService.download()
+      if (result.success) {
+        return { ...result, installedVersions: [result.installedVersion] }
+      }
+      return result
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }
     }

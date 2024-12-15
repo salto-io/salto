@@ -241,30 +241,22 @@ export const detailedCompare = (
   const baseChange = toChange({ before, after })
   const createFieldChanges = compareOptions?.createFieldChanges ?? false
 
-  const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
+  const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChangeWithBaseChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
       .filter(fieldName => afterObj.fields[fieldName] === undefined)
-      .map(fieldName => ({
-        action: 'remove' as const,
-        id: beforeObj.fields[fieldName].elemID,
-        data: { before: beforeObj.fields[fieldName] },
-        elemIDs: { before: beforeObj.fields[fieldName].elemID },
-      }))
+      .map(fieldName => beforeObj.fields[fieldName])
+      .map(field => toDetailedChangeFromBaseChange(toChange({ before: field }), { before: field.elemID }))
 
     const addChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] === undefined)
-      .map(fieldName => ({
-        action: 'add' as const,
-        id: afterObj.fields[fieldName].elemID,
-        data: { after: afterObj.fields[fieldName] },
-        elemIDs: { after: afterObj.fields[fieldName].elemID },
-      }))
+      .map(fieldName => afterObj.fields[fieldName])
+      .map(field => toDetailedChangeFromBaseChange(toChange({ after: field }), { after: field.elemID }))
 
     const modifyChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] !== undefined)
-      .map(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName], compareOptions))
+      .flatMap(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName], compareOptions))
 
-    return [...removeChanges, ...addChanges, ...(_.flatten(modifyChanges) as DetailedChange[])]
+    return removeChanges.concat(addChanges).concat(modifyChanges)
   }
 
   // A special case to handle type changes.
@@ -314,14 +306,18 @@ export const detailedCompare = (
   const fieldChanges =
     createFieldChanges && isObjectType(before) && isObjectType(after) ? getFieldsChanges(before, after) : []
 
-  return annotationTypeChanges
+  const elementChanges = annotationTypeChanges
     .concat(annotationChanges)
-    .concat(fieldChanges)
     .concat(valueChanges)
     .map(detailedChange => ({ ...detailedChange, baseChange }))
+
+  return elementChanges.concat(fieldChanges)
 }
 
-export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChangeWithBaseChange[] => {
+export const getDetailedChanges = (
+  change: Change<Element>,
+  compareOptions?: CompareOptions,
+): DetailedChangeWithBaseChange[] => {
   if (change.action !== 'modify') {
     return [toDetailedChangeFromBaseChange(change)]
   }

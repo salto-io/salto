@@ -10,11 +10,14 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
-import { PROJECT_COMPONENT_TYPE } from '../constants'
+import { FIELD_CONFIGURATION_TYPE_NAME, PROJECT_COMPONENT_TYPE } from '../constants'
 
 /**
  * Convert field values into references, based on predefined rules.
  */
+
+const noReferencesTypes = [PROJECT_COMPONENT_TYPE, FIELD_CONFIGURATION_TYPE_NAME]
+
 const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
@@ -24,7 +27,7 @@ const filter: FilterCreator = ({ config }) => ({
     // Remove once SALTO-6889 is done: ProjectComponents have no references, so don't need to scan them
     const relevantElements = elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName !== PROJECT_COMPONENT_TYPE)
+      .filter(instance => !noReferencesTypes.includes(instance.elemID.typeName))
     await referenceUtils.addReferences({
       elements: relevantElements,
       contextElements: elements,

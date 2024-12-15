@@ -22,7 +22,6 @@ export const getSaltoFlagBool = (flagName: string): boolean => {
 }
 
 export const WORKSPACE_FLAGS = {
-  useOldDependentsCalculation: 'USE_OLD_DEPENDENTS_CALCULATION',
   createFilenamesToElementIdsMapping: 'CREATE_FILENAMES_TO_ELEMENT_IDS_MAPPING',
   useSplitSourceMapInUpdate: 'USE_SPLIT_SOURCE_MAP_IN_UPDATE',
 } as const

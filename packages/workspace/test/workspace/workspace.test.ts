@@ -38,9 +38,17 @@ import {
   isStaticFile,
   TemplateExpression,
   ReferenceInfo,
+  DetailedChangeWithBaseChange,
+  isElement,
+  toChange,
 } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from 'index'
-import { findElement, applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  findElement,
+  applyDetailedChanges,
+  safeJsonStringify,
+  toDetailedChangeFromBaseChange,
+} from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
@@ -133,6 +141,39 @@ const getElemMap = async (elements: ElementsSource): Promise<Record<string, Elem
       .toArray(),
   )
 
+const addBaseChangeToDetailedChanges = async (
+  elements: ElementsSource,
+  state: State,
+  changes: DetailedChange[],
+): Promise<DetailedChangeWithBaseChange[]> => {
+  const clonedChangesByBaseId = _.groupBy(changes, change => change.id.createBaseID().parent.getFullName())
+
+  const res = await Promise.all(
+    Object.entries(clonedChangesByBaseId).map(async ([key, detailedChanges]) => {
+      const element = (await elements.get(ElemID.fromFullName(key))) ?? (await state.get(ElemID.fromFullName(key)))
+      if (!isElement(element)) {
+        const [baseChanges, nestedChanges] = _.partition(detailedChanges, dc => dc.id.isBaseID())
+        if (nestedChanges.length > 0) {
+          throw new Error(
+            `there are nested changes without an element: ${nestedChanges.map(dc => dc.id.getFullName())}`,
+          )
+        }
+        return baseChanges.map(dc => ({ ...dc, baseChange: dc as Change<Element> }))
+      }
+      const wholeElementChange = detailedChanges.find(dc => dc.id.isEqual(element.elemID))
+      if (wholeElementChange !== undefined) {
+        return detailedChanges.map(dc => ({ ...dc, baseChange: dc as Change<Element> }))
+      }
+      const after = element.clone()
+      applyDetailedChanges(after, detailedChanges)
+      const baseChange = toChange({ before: element, after })
+      return detailedChanges.map(dc => ({ ...dc, baseChange }))
+    }),
+  )
+
+  return res.flat()
+}
+
 describe('workspace', () => {
   describe('loadWorkspace', () => {
     it('should fail if envs is empty', async () => {
@@ -145,6 +186,65 @@ describe('workspace', () => {
       await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects.toThrow(
         new Error('Workspace with no environments is illegal'),
       )
+    })
+    describe('when a field that has a hidden part is deleted from the nacl', () => {
+      let mainType: ObjectType
+      let workspace: Workspace
+      beforeEach(async () => {
+        const files = {
+          'bla.nacl': `type dummy.Type {
+            dummy.FieldType field {
+              visible = "asd"
+            }
+          }`,
+        }
+        const fieldType = new ObjectType({
+          elemID: new ElemID('dummy', 'FieldType'),
+          annotationRefsOrTypes: { visible: BuiltinTypes.STRING, hidden: BuiltinTypes.HIDDEN_STRING },
+        })
+        mainType = new ObjectType({
+          elemID: new ElemID('dummy', 'Type'),
+          fields: {
+            field: { refType: fieldType, annotations: { visible: 'asd', hidden: 'asd' } },
+          },
+        })
+        const state = mockState([fieldType, mainType])
+        const dirStore = mockDirStore([], false, files)
+        const remoteMapCreator = persistentMockCreateRemoteMap()
+        // Create the caches before making a change to the nacl
+        const tmpWorkspace = await createWorkspace(
+          dirStore,
+          state,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          remoteMapCreator,
+        )
+        await tmpWorkspace.elements()
+
+        // Make the change to the nacl
+        await dirStore.set({ filename: 'bla.nacl', buffer: 'type dummy.Type {}' })
+
+        // Load the workspace with the caches from the previous load
+        workspace = await createWorkspace(
+          dirStore,
+          state,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          remoteMapCreator,
+        )
+      })
+      it('should remove the field from the element', async () => {
+        const elements = await workspace.elements()
+        const type = (await elements.get(mainType.elemID)) as ObjectType
+        expect(type).toBeInstanceOf(ObjectType)
+        expect(type.fields).not.toHaveProperty('field')
+      })
     })
   })
   describe('elements', () => {
@@ -396,6 +496,10 @@ describe('workspace', () => {
           id: accountIntSett.elemID,
           action: 'remove',
           data: { before: accountIntSett },
+          baseChange: {
+            action: 'remove',
+            data: { before: accountIntSett },
+          },
         },
       ])
       const numOfFields = Object.values(accountIntSett.fields).length
@@ -424,6 +528,10 @@ describe('workspace', () => {
           id: newElemID,
           action: 'add',
           data: { after: newObject },
+          baseChange: {
+            action: 'add',
+            data: { after: newObject },
+          },
         },
       ])
       expect(updateNaclFilesREsult).toEqual({
@@ -954,7 +1062,7 @@ salesforce.staticFile staticFileInstance {
     }
     it('should have right number of results when there is only a change in 1 static file', async () => {
       await setUp()
-      const changes: DetailedChange[] = [
+      const changes: DetailedChangeWithBaseChange[] = [
         // modify static file
         {
           id: new ElemID('salesforce', 'staticFile', 'instance', 'staticFileInstance', 'staticFile'),
@@ -962,6 +1070,13 @@ salesforce.staticFile staticFileInstance {
           data: {
             before: beforeStaticFile,
             after: afterStaticFile,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: staticFileInstanceBefore,
+              after: staticFileInstanceBefore,
+            },
           },
         },
       ]
@@ -1656,7 +1771,7 @@ salesforce.staticFile staticFileInstance {
       },
     ]
 
-    let clonedChanges: DetailedChange[]
+    let clonedChanges: DetailedChangeWithBaseChange[]
 
     // New elements
     let newHiddenType: ObjectType
@@ -1715,7 +1830,12 @@ salesforce.staticFile staticFileInstance {
 
       workspace = await createWorkspace(dirStore, state)
 
-      clonedChanges = _.cloneDeep(changes)
+      clonedChanges = await addBaseChangeToDetailedChanges(
+        await workspace.elements(false),
+        workspace.state(),
+        _.cloneDeep(changes),
+      )
+
       updateNaclFileResults = await workspace.updateNaclFiles(clonedChanges)
       elemMap = await getElemMap(await workspace.elements(false))
       elemMapWithHidden = await getElemMap(await workspace.elements())
@@ -2000,8 +2120,11 @@ salesforce.staticFile staticFileInstance {
         action: 'modify',
         data: { before: 'foo', after: 'blabla' },
       }
-
-      const updateNaclFilesResult = await workspace.updateNaclFiles([change1, change2])
+      const leadAfter = lead.clone()
+      applyDetailedChanges(leadAfter, [change1, change2])
+      const baseChange = toChange({ before: lead, after: leadAfter })
+      const changesWithBaseChange = [change1, change2].map(dc => ({ ...dc, baseChange }))
+      const updateNaclFilesResult = await workspace.updateNaclFiles(changesWithBaseChange)
       lead = findElement(
         await awu(await (await workspace.elements()).getAll()).toArray(),
         new ElemID('salesforce', 'lead'),
@@ -2073,13 +2196,7 @@ salesforce.staticFile staticFileInstance {
       const secondarySourceName = 'inactive'
       let wsWithMultipleEnvs: Workspace
       const obj = new ObjectType({ elemID: new ElemID('salesforce', 'dum') })
-      const change = {
-        id: obj.elemID,
-        action: 'add',
-        data: {
-          after: obj,
-        },
-      } as DetailedChange
+      const change = toDetailedChangeFromBaseChange(toChange({ after: obj }))
 
       beforeEach(async () => {
         wsWithMultipleEnvs = await createWorkspace(
@@ -2178,6 +2295,7 @@ salesforce.staticFile staticFileInstance {
 
         const modifiedWorkspaceType = workspaceType.clone()
         applyDetailedChanges(modifiedWorkspaceType, workspaceChanges)
+        const baseChange = toChange({ before: workspaceType, after: modifiedWorkspaceType })
 
         workspace = await createWorkspace(
           undefined,
@@ -2207,7 +2325,7 @@ salesforce.staticFile staticFileInstance {
             },
           },
         )
-        await workspace.updateNaclFiles(workspaceChanges)
+        await workspace.updateNaclFiles(workspaceChanges.map(dc => ({ ...dc, baseChange })))
       })
 
       it('should not have merge errors', async () => {
@@ -3824,7 +3942,9 @@ salesforce.staticFile staticFileInstance {
       // since the update resolves them ) are present. This check will help debug situations in
       // which the entire flow is broken and errors are not created at all...
       expect((await workspace.errors()).validation).toHaveLength(2)
-      resultNumber = await workspace.updateNaclFiles(changes)
+      resultNumber = await workspace.updateNaclFiles(
+        await addBaseChangeToDetailedChanges(await workspace.elements(false), workspace.state(), changes),
+      )
       validationErrs = (await workspace.errors()).validation
     })
 
@@ -4553,7 +4673,11 @@ describe('stateOnly update', () => {
         id: hiddenInstToRemove.elemID.createNestedID('key'),
       },
     ]
-    await ws.updateNaclFiles(changes, 'default', true)
+    await ws.updateNaclFiles(
+      await addBaseChangeToDetailedChanges(await ws.elements(false), ws.state(), changes),
+      'default',
+      true,
+    )
   })
 
   it('should update add changes for state only elements in the workspace cache', async () => {
@@ -5006,7 +5130,7 @@ describe('update nacl files with invalid state cache', () => {
   let workspace: Workspace
   beforeAll(async () => {
     const dirStore = mockDirStore<string>()
-    const changes: DetailedChange[] = [
+    const changes: DetailedChangeWithBaseChange[] = [
       {
         action: 'remove',
         id: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
@@ -5014,6 +5138,14 @@ describe('update nacl files with invalid state cache', () => {
           before: new ObjectType({
             elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
           }),
+        },
+        baseChange: {
+          action: 'remove',
+          data: {
+            before: new ObjectType({
+              elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
+            }),
+          },
         },
       },
     ]

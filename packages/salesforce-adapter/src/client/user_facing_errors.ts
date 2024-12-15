@@ -37,6 +37,9 @@ export const ERROR_HTTP_502_MESSAGE =
 
 export const INVALID_GRANT_MESSAGE = 'Salesforce user is inactive, please re-authenticate'
 
+export const INSUFFICIENT_ACCESS_MESSAGE =
+  "You have no permissions to perform this action. Make sure the profile attached to your user has 'Modify All Data' and 'Modify Metadata Through Metadata API Functions' enabled."
+
 type DNSException = Error & {
   [ERROR_PROPERTIES.CODE]: string
   [ERROR_PROPERTIES.HOSTNAME]: string
@@ -58,6 +61,7 @@ export type ErrorMappers = {
   [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: ErrorMapper<SalesforceError>
   [INVALID_GRANT]: ErrorMapper<Error>
   [ENOTFOUND]: ErrorMapper<DNSException>
+  [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: ErrorMapper<Error>
 }
 
 const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
@@ -89,6 +93,11 @@ export const ERROR_MAPPERS: ErrorMappers = {
         `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.` +
           ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
       ),
+  },
+  [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: {
+    test: (error: Error): error is SalesforceError =>
+      isSalesforceError(error) && error[ERROR_PROPERTIES.ERROR_CODE] === SALESFORCE_ERRORS.INSUFFICIENT_ACCESS,
+    map: (error: Error): string => withSalesforceError(error.message, INSUFFICIENT_ACCESS_MESSAGE),
   },
 }
 

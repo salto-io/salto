@@ -35,6 +35,7 @@ import {
   toServiceIdsString,
   ElemIdGetter,
   ServiceIds,
+  isElement,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -2134,6 +2135,8 @@ describe('fetch from workspace', () => {
     describe('with fromState true', () => {
       describe('With no errors and warnings', () => {
         beforeEach(async () => {
+          const modifiedExistingInstance = existingInstance.clone()
+          delete modifiedExistingInstance.value.complexField
           fetchRes = await fetchChangesFromWorkspace(
             mockWorkspace({
               elements: mergedElements,
@@ -2143,8 +2146,8 @@ describe('fetch from workspace', () => {
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, modifiedExistingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, modifiedExistingInstance, existingSubType]),
             configs,
             'default',
             true,
@@ -2174,8 +2177,21 @@ describe('fetch from workspace', () => {
         it('should create changes based on the current elements', () => {
           const changes = [...fetchRes.changes]
           const unmergedDiffElement = unmergedElements.filter(elem => elem.elemID.getFullName() === 'salto.obj')
-          const changesElements = changes.map(change => getChangeData(change.change))
+          const changesElements = changes.map(change => getChangeData(change.change)).filter(isElement)
           unmergedDiffElement.forEach(frag => expect(changesElements.filter(e => e.isEqual(frag))).toHaveLength(1))
+        })
+
+        it('should have correct change on addition of complexField value that contain static files', () => {
+          const changes = [...fetchRes.changes]
+          const nestedStaticFileChange = changes.find(c =>
+            c.change.id.isEqual(editStateExistingInstance.elemID.createNestedID('complexField')),
+          ) as FetchChange
+          expect(nestedStaticFileChange).toBeDefined()
+          const complexFieldValue = getChangeData(nestedStaticFileChange.change)
+          expect(complexFieldValue).toEqual({
+            staticFileField: fileTwo,
+            staticFilesArr: [fileThree],
+          })
         })
 
         it('should return changes with static files content from otherWorkspace when hashes match', async () => {

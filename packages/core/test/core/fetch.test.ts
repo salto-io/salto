@@ -2188,7 +2188,7 @@ describe('fetch from workspace', () => {
           ) as FetchChange
           expect(nestedStaticFileChange).toBeDefined()
           const complexFieldValue = getChangeData(nestedStaticFileChange.change)
-          expect(complexFieldValue).toEqual({
+          expect(complexFieldValue).toStrictEqual({
             staticFileField: fileTwo,
             staticFilesArr: [fileThree],
           })

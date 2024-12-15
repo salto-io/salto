@@ -380,13 +380,18 @@ const toFetchChanges = (
       )
       const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
       const wsChangeIds = new Set(wsChanges.map(change => change.id.getFullName()))
-      // TODO: Explain
+      // Service-to-workspace change were only computed for elements that have pending changes, because no pending
+      // changes means that service-to-workspace changes are identical to service-to-state changes. Since this
+      // function's output should include all changes, we need to copy the service-to-workspace changes that were not
+      // computed before. We are copying references to the changes, so this is still memory efficient.
       if (pendingChanges.length === 0) {
         serviceChanges
           .filter(change => !wsChangeIds.has(change.id.getFullName()))
           .forEach(change => {
             if (!isAdditionChange(change) && isReferenceExpression(change.data.before)) {
-              // TODO: Explain
+              // Reference expressions may resolve to different values in the workspace compared to the state,even when
+              // there are no pending changes. We clear resolved values here to force callers to resolve the references
+              // again with the correct element source.
               change.data.before.value = undefined
             }
             wsChanges.push(change)
@@ -868,8 +873,7 @@ export const calcFetchChanges = async ({
       'calculate service-state changes',
     )
 
-    // TODO: change this comment
-    // We only care about conflicts with changes from the service, so for the next two comparisons
+    // We only care about conflicts with changes from the service, so for the next comparison
     // we only need to check elements for which we have service changes
     const serviceChangesTopLevelIDs = new Set(
       wu(serviceChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
@@ -888,6 +892,9 @@ export const calcFetchChanges = async ({
       'calculate pending changes',
     )
 
+    // Workspace and service changes are only interesting for the elements that have pending changes -
+    // otherwise the diff will be the same as the service-to-state diff, so we avoid recalculating it by only checking
+    // elements that have pending changes.
     const pendingChangesTopLevelIDs = new Set(
       wu(pendingChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
     )
@@ -919,9 +926,7 @@ export const calcFetchChanges = async ({
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
-  // TODO: this is the code to change
   const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
-  // TODO: No changes should be done after this
   const serviceElementsMap = _.groupBy(accountElements, e => e.elemID.getFullName())
 
   const changes = await awu(fetchChanges)

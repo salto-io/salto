@@ -160,6 +160,139 @@ describe('modifiedAndDeletedDependencyChanger', () => {
       expect(dependencyChanges.length).toBe(0)
     })
   })
+  describe('trigger and ticket field', () => {
+    const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) })
+    const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
+    const trigger = new InstanceElement('trigger', triggerType, {
+      conditions: [],
+    })
+    const ticketField1 = new InstanceElement('field1', ticketFieldType, {})
+    const ticketField2 = new InstanceElement('field2', ticketFieldType, {})
+    it('should add dependency from deleted ticket to the trigger', async () => {
+      const triggerBefore = trigger.clone()
+      triggerBefore.value.conditions = { all: [{ field: new ReferenceExpression(ticketField1.elemID) }] }
+      const triggerAfter = trigger.clone()
+      triggerAfter.value.conditions = { all: [{ field: new ReferenceExpression(ticketField2.elemID) }] }
+      const inputChanges = new Map([
+        [0, toChange({ before: ticketField1 })],
+        [1, toChange({ before: triggerBefore, after: triggerAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(1)
+      expect(dependencyChanges.every(change => change.action === 'add')).toBe(true)
+      expect(dependencyChanges[0].dependency).toMatchObject({ source: 0, target: 1 })
+    })
+    it('should not add dependency from deleted ticket to the trigger if it is a missingReference', async () => {
+      const missingTicket = createMissingInstance(ZENDESK, TICKET_FIELD_TYPE_NAME, 'ticket')
+      const triggerBefore = trigger.clone()
+      triggerBefore.value.conditions = { all: [{ field: new ReferenceExpression(missingTicket.elemID) }] }
+      const triggerAfter = trigger.clone()
+      triggerAfter.value.conditions = { all: [{ field: new ReferenceExpression(ticketField2.elemID) }] }
+
+      const inputChanges = new Map([
+        [0, toChange({ before: missingTicket })],
+        [1, toChange({ before: triggerBefore, after: triggerAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(0)
+    })
+    it('should not add dependency if there is no reference from the trigger', async () => {
+      const triggerBefore = trigger.clone()
+      triggerBefore.value.conditions = {}
+      const triggerAfter = trigger.clone()
+      triggerAfter.value.conditions = { all: [{ field: new ReferenceExpression(ticketField2.elemID) }] }
+      const inputChanges = new Map([
+        [0, toChange({ before: ticketField1 })],
+        [1, toChange({ before: triggerBefore, after: triggerAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(0)
+    })
+    it('should not add dependency if the reference is not to a ticket field', async () => {
+      const macro = new InstanceElement('macro', new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) }), {})
+      const triggerBefore = trigger.clone()
+      triggerBefore.value.conditions = { all: [{ field: new ReferenceExpression(macro.elemID) }] }
+      const triggerAfter = trigger.clone()
+      triggerAfter.value.conditions = { all: [{ field: new ReferenceExpression(ticketField2.elemID) }] }
+      const inputChanges = new Map([
+        [0, toChange({ before: trigger })],
+        [1, toChange({ before: triggerBefore, after: triggerAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(0)
+    })
+    it('should not add dependency if the reference is not from a trigger', async () => {
+      const macro = new InstanceElement('macro', new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) }), {
+        conditions: { all: [{ field: new ReferenceExpression(ticketField1.elemID) }] },
+      })
+      const macroAfter = macro.clone()
+      macroAfter.value.conditions = {}
+      const inputChanges = new Map([
+        [0, toChange({ before: ticketField1 })],
+        [1, toChange({ before: macro, after: macroAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(0)
+    })
+    it('should not add dependency if the conditions are not in the right format', async () => {
+      const triggerBefore = trigger.clone()
+      triggerBefore.value.conditions = { all: [{ value: new ReferenceExpression(ticketField1.elemID) }] }
+      const triggerAfter = trigger.clone()
+      triggerAfter.value.conditions = { all: [{ field: new ReferenceExpression(ticketField2.elemID) }] }
+      const inputChanges = new Map([
+        [0, toChange({ before: ticketField1 })],
+        [1, toChange({ before: triggerBefore, after: triggerAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(0)
+    })
+    it('should not add dependency if there are no conditions', async () => {
+      const triggerBefore = trigger.clone()
+      const triggerAfter = trigger.clone()
+      triggerAfter.value.conditions = { all: [{ field: new ReferenceExpression(ticketField2.elemID) }] }
+      const inputChanges = new Map([
+        [0, toChange({ before: ticketField1 })],
+        [1, toChange({ before: triggerBefore, after: triggerAfter })],
+      ])
+      const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+        [0, new Set()],
+        [1, new Set()],
+      ])
+
+      const dependencyChanges = [...(await modifiedAndDeletedDependencyChanger(inputChanges, inputDeps))]
+      expect(dependencyChanges.length).toBe(0)
+    })
+  })
   describe('trigger and trigger category', () => {
     const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) })
     const triggerCategoryType = new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_CATEGORY_TYPE_NAME) })

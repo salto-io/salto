@@ -44,6 +44,7 @@ export const configType = new ObjectType({
     changeErrors: { refType: new ListType(changeErrorType) },
     extraNaclPaths: { refType: new ListType(BuiltinTypes.STRING) },
     generateEnvName: { refType: BuiltinTypes.STRING },
+    failDeploy: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
     // Exclude elements from the fetch by their elemIDs
     elementsToExclude: { refType: new ListType(BuiltinTypes.STRING) },

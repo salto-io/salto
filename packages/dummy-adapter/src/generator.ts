@@ -228,6 +228,7 @@ export type GeneratorParams = {
   listLengthStd: number
   changeErrors?: ChangeErrorFromConfigFile[]
   fetchErrors?: FetchErrorFromConfigFile[]
+  failDeploy?: boolean
   extraNaclPaths?: string[]
   generateEnvName?: string
   fieldsToOmitOnDeploy?: string[]

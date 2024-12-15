@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import {
   FetchResult,
   AdapterOperations,
@@ -16,7 +17,6 @@ import {
   isInstanceElement,
   FixElementsFunc,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { generateElements, generateFetchErrorsFromConfig, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
 
@@ -35,6 +35,13 @@ export default class DummyAdapter implements AdapterOperations {
   }
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    if (this.genParams.failDeploy) {
+      return {
+        appliedChanges: [],
+        errors: [],
+      }
+    }
+
     changeGroup.changes
       .map(getChangeData)
       .filter(isInstanceElement)

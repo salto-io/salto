@@ -45,9 +45,16 @@ const nullProgressReporter: ProgressReporter = {
 describe('dummy adapter', () => {
   const adapter = new DummyAdapter(testParams)
   describe('deploy', () => {
+    const type = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'type'),
+    })
+    const instance = new InstanceElement('instance', type, { fieldToOmit: 'val1', field2: 'val2' })
+    const additionChange = toChange({ after: instance })
+
     it('should be defined', () => {
       expect(adapter.deploy).toBeDefined()
     })
+
     it('should do nothing', async () => {
       expect(
         await adapter.deploy({ changeGroup: { changes: [], groupID: ':)' }, progressReporter: nullProgressReporter }),
@@ -58,19 +65,27 @@ describe('dummy adapter', () => {
     })
 
     it('should omit fields from instances if defined in fieldsToOmitOnDeploy', async () => {
-      const type = new ObjectType({
-        elemID: new ElemID(DUMMY_ADAPTER, 'type'),
-      })
-
-      const instance = new InstanceElement('instance', type, { fieldToOmit: 'val1', field2: 'val2' })
       const res = await adapter.deploy({
-        changeGroup: { changes: [toChange({ after: instance })], groupID: ':)' },
+        changeGroup: { changes: [additionChange], groupID: ':)' },
         progressReporter: nullProgressReporter,
       })
 
       const appliedInstance = getChangeData(res.appliedChanges[0]) as InstanceElement
 
       expect(appliedInstance.value).toEqual({ field2: 'val2' })
+    })
+
+    it('should return no applied changes and no errors when failDeploy is true', async () => {
+      const failAdapter = new DummyAdapter({ ...testParams, failDeploy: true })
+      expect(
+        await failAdapter.deploy({
+          changeGroup: { changes: [additionChange], groupID: ':)' },
+          progressReporter: nullProgressReporter,
+        }),
+      ).toEqual({
+        appliedChanges: [],
+        errors: [],
+      })
     })
   })
   describe('validate', () => {

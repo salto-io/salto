@@ -34,6 +34,7 @@ describe('adapter creator', () => {
       'changeErrors',
       'extraNaclPaths',
       'generateEnvName',
+      'failDeploy',
       'fieldsToOmitOnDeploy',
       'elementsToExclude',
       'fetchErrors',

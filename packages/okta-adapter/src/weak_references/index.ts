@@ -7,7 +7,9 @@
  */
 import { WeakReferencesHandler } from './weak_references_handler'
 import { policyPrioritiesHandler } from './policy_priorities'
+import { groupAssignmentToAppUserSchemaHandler } from './app_group_assignment_to_app_schema'
 
 export const weakReferenceHandlers: Record<string, WeakReferencesHandler> = {
   policyPrioritiesHandler,
+  groupAssignmentToAppUserSchemaHandler,
 }

@@ -118,7 +118,10 @@ describe('connection creation', () => {
           const { close } = await createMap('bla', false)
           await close()
         })
-        it('should close the connections to the readonly and tmp DBs', () => {
+        it('should close the additional connections to the readonly and tmp DBs', () => {
+          // 1 for the createDBIfNotExist that happens on createMap init when persistent=false
+          // 1 for closing readonly db
+          // 1 for closing temp dbs
           expect(mockClose).toHaveBeenCalledTimes(3)
         })
         it('should return the cache of the location', () => {

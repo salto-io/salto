@@ -26,10 +26,9 @@ import {
   WorkspaceGetCustomReferencesFunc,
 } from '../../src/workspace/workspace'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
-import { mockStaticFilesSource } from '../utils'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { createMockNaclFileSource } from './nacl_file_source'
 import { mockDirStore } from './nacl_file_store'
-import { inMemRemoteMapCreator } from './helpers'
 
 const services = ['salesforce']
 export const mockWorkspaceConfigSource = (
@@ -138,7 +137,7 @@ export const createWorkspace = async (
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   persistent = true,
 ): Promise<Workspace> => {
-  const mapCreator = remoteMapCreator ?? inMemRemoteMapCreator()
+  const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
   return loadWorkspace(
     configSource || mockWorkspaceConfigSource(),

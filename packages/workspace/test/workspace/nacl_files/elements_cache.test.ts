@@ -7,7 +7,7 @@
  */
 
 import { ElementMergeManager, createMergeManager, Flushable } from '../../../src/workspace/nacl_files/elements_cache'
-import { inMemRemoteMapCreator } from '../../common/helpers'
+import { persistentMockCreateRemoteMap } from '../../utils'
 
 const NAMESPACE = 'TEST_NAMESPACE'
 
@@ -22,7 +22,7 @@ describe('test cache manager', () => {
 
   beforeEach(async () => {
     flushables = [createFlushable(), createFlushable(), createFlushable()]
-    manager = await createMergeManager(flushables, {}, inMemRemoteMapCreator(), NAMESPACE, true)
+    manager = await createMergeManager(flushables, {}, persistentMockCreateRemoteMap(), NAMESPACE, true)
   })
 
   describe('On clear', () => {
@@ -46,7 +46,7 @@ describe('test cache manager', () => {
     })
 
     it('If flush was unsuccessful, clears on init', async () => {
-      const mapCreator = inMemRemoteMapCreator()
+      const mapCreator = persistentMockCreateRemoteMap()
       const origManager = await createMergeManager(flushables, {}, mapCreator, NAMESPACE, true)
       flushables[1].flush = () => {
         throw new Error('Error within flush')

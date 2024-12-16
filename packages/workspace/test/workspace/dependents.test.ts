@@ -12,9 +12,8 @@ import { mockDirStore } from '../common/nacl_file_store'
 import { createWorkspace, createState } from '../common/workspace'
 import { getDependents } from '../../src/workspace/dependents'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
-import { mockStaticFilesSource } from '../utils'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { inMemRemoteMapCreator } from '../common/helpers'
 
 describe('dependents', () => {
   let workspace: Workspace
@@ -90,7 +89,7 @@ describe('dependents', () => {
         '',
         mockDirStore(undefined, undefined, files),
         mockStaticFilesSource(),
-        inMemRemoteMapCreator(),
+        persistentMockCreateRemoteMap(),
         true,
       )
       workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, {

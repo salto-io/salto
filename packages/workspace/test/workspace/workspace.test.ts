@@ -3122,7 +3122,7 @@ salesforce.staticFile staticFileInstance {
     })
   })
   describe('close', () => {
-    it('should delegate the close to the remoteMapCreator close method', async () => {
+    it('should close the remoteMapCreator', async () => {
       const mockClose = jest.fn()
       const workspace = await createWorkspace(
         undefined,

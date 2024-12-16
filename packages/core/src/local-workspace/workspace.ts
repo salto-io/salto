@@ -7,7 +7,7 @@
  */
 
 import _ from 'lodash'
-import { ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER, DetailedChange } from '@salto-io/adapter-api'
+import { ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER, DetailedChange, Adapter } from '@salto-io/adapter-api'
 import {
   elementSource,
   EnvConfig,
@@ -23,14 +23,19 @@ import {
   loadLocalWorkspace as localWorkspaceLoad,
   initLocalWorkspace as localInitLocalWorkspace,
 } from '@salto-io/local-workspace'
-import { adapterCreators } from '@salto-io/adapter-creators'
+import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
 import { getAdaptersConfigTypesMap } from '../core/adapters'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
-  const configTypesByAccount = getAdaptersConfigTypesMap()
+export const getAdapterConfigsPerAccount = async (
+  envs: EnvConfig[],
+  adapterCreators?: Record<string, Adapter>,
+): Promise<ObjectType[]> => {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  const configTypesByAccount = getAdaptersConfigTypesMap(actualAdapterCreator)
   const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
   const differentlyNamedAccounts = Object.fromEntries(
     envs
@@ -55,11 +60,14 @@ export const getCustomReferences = async (
   elements: Element[],
   accountToServiceName: Record<string, string>,
   adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
+  adapterCreators?: Record<string, Adapter>,
 ): Promise<ReferenceInfo[]> => {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
   const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
     const serviceName = accountToServiceName[account] ?? account
     try {
-      const refFunc = adapterCreators[serviceName]?.getCustomReferences
+      const refFunc = actualAdapterCreator[serviceName]?.getCustomReferences
       if (refFunc !== undefined) {
         return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
       }
@@ -94,14 +102,41 @@ export async function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<
 }
 
 export const initLocalWorkspace = async (
-  baseDir: string,
+  baseDir:
+    | string
+    | {
+        baseDir: string
+        envName?: string
+        stateStaticFilesSource?: staticFiles.StateStaticFilesSource
+        adapterCreators: Record<string, Adapter>
+      },
   envName = 'default',
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> =>
-  localInitLocalWorkspace(
-    baseDir,
-    envName,
-    Object.values(getAdaptersConfigTypesMap()).flat(),
+): Promise<Workspace> => {
+  // for backward compatibility SAAS-7006
+  let actualBaseDir: string
+  let actualEnvName: string | undefined
+  let actualStateStaticFilesSource: staticFiles.StateStaticFilesSource | undefined
+  let actualAdapterCreator: Record<string, Adapter>
+  if (_.isString(baseDir)) {
+    actualBaseDir = baseDir
+    actualEnvName = envName
+    actualStateStaticFilesSource = stateStaticFilesSource
+    actualAdapterCreator = deprecatedAdapterCreators
+  } else {
+    actualBaseDir = baseDir.baseDir
+    actualEnvName = baseDir.envName
+    actualStateStaticFilesSource = baseDir.stateStaticFilesSource
+    actualAdapterCreator = baseDir.adapterCreators
+  }
+  if (!actualEnvName) {
+    actualEnvName = 'default'
+  }
+  return localInitLocalWorkspace(
+    actualBaseDir,
+    actualEnvName,
+    Object.values(getAdaptersConfigTypesMap(actualAdapterCreator)).flat(),
     getCustomReferences,
-    stateStaticFilesSource,
+    actualStateStaticFilesSource,
   )
+}

@@ -139,6 +139,7 @@ export const preview = async (
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
+    // todo
     accounts,
     await workspace.accountCredentials(accounts),
     workspace.accountConfig.bind(workspace),
@@ -166,6 +167,7 @@ export const deploy = async (
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
   const adapters = await getAdapters(
+    // todo
     accounts,
     await workspace.accountCredentials(accounts),
     workspace.accountConfig.bind(workspace),
@@ -259,7 +261,7 @@ export const fetch: FetchFunc = async (
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
   })
-  const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
+  const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap) // todo
 
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
@@ -563,7 +565,7 @@ export const getLoginStatuses = async (
   )
   const relevantServices = _.uniq(Object.values(accountToServiceMap))
   const logins = await mapValuesAsync(
-    getAdaptersCredentialsTypes(relevantServices),
+    getAdaptersCredentialsTypes(relevantServices), // todoe
     async (configTypeOptions, adapter) => ({
       configTypeOptions,
       isLoggedIn: !!creds[adapter],
@@ -683,6 +685,7 @@ export const fixElements = async (
 ): Promise<{ errors: ChangeError[]; changes: DetailedChangeWithBaseChange[] }> => {
   const accounts = workspace.accounts()
   const adapters = await getAdapters(
+    // todo
     accounts,
     await workspace.accountCredentials(accounts),
     workspace.accountConfig.bind(workspace),

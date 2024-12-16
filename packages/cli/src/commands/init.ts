@@ -7,6 +7,7 @@
  */
 import * as path from 'path'
 import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/core'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { logger } from '@salto-io/logging'
 import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
@@ -37,7 +38,7 @@ export const action: CommandDefAction<InitArgs> = async ({
       return CliExitCode.AppError
     }
     const defaultEnvName = envName ?? (await getEnvName())
-    const workspace = await initLocalWorkspace(baseDir, defaultEnvName)
+    const workspace = await initLocalWorkspace({ baseDir, envName: defaultEnvName, adapterCreators })
     cliTelemetry.setTags(getWorkspaceTelemetryTags(workspace))
     cliTelemetry.success()
     outputLine(Prompts.initCompleted(), output)

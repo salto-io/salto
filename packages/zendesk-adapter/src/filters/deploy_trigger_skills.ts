@@ -63,23 +63,21 @@ const filterCreator: FilterCreator = () => {
       )
     },
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      await Promise.all(
-        changes
-          .map(getChangeData)
-          .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME && Array.isArray(instance.value?.actions))
-          .map(async instance => {
-            instance.value.actions = instance.value.actions.map((action: { value: string }) => {
-              if (skillMapping[action.value]) {
-                return {
-                  ...action,
-                  value: skillMapping[action.value].value,
-                  priority: skillMapping[action.value].priority,
-                }
+      changes
+        .map(getChangeData)
+        .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME && Array.isArray(instance.value?.actions))
+        .forEach(instance => {
+          instance.value.actions = instance.value.actions.map((action: { value: string }) => {
+            if (skillMapping[action.value]) {
+              return {
+                ...action,
+                value: skillMapping[action.value].value,
+                priority: skillMapping[action.value].priority,
               }
-              return action
-            })
-          }),
-      )
+            }
+            return action
+          })
+        })
     },
   }
 }

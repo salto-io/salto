@@ -9,7 +9,7 @@ import _ from 'lodash'
 import { remoteMap as rm } from '@salto-io/workspace'
 import {
   createRemoteMapCreator,
-  createReadOnlyRemoteMapCreator,
+  createReadOnlyRemoteMap,
   MAX_CONNECTIONS,
   closeAllRemoteMaps,
   closeRemoteMapsOfLocation,
@@ -43,14 +43,22 @@ describe('connection creation', () => {
     jest.clearAllMocks()
   })
   describe('createRemoteMapCreator', () => {
-    const createMap = async (namespace: string, persistent = true): Promise<rm.RemoteMap<string>> =>
-      createRemoteMapCreator(DB_LOCATION)({
-        namespace,
-        batchInterval: 1000,
-        serialize: async str => str,
-        deserialize: async str => Promise.resolve(str),
-        persistent,
-      })
+    const createMap = async (
+      namespace: string,
+      persistent = true,
+    ): Promise<{ remoteMap: rm.RemoteMap<string>; close: () => Promise<void> }> => {
+      const { create, close } = createRemoteMapCreator(DB_LOCATION)
+      return {
+        close,
+        remoteMap: await create({
+          namespace,
+          batchInterval: 1000,
+          serialize: async str => str,
+          deserialize: async str => Promise.resolve(str),
+          persistent,
+        }),
+      }
+    }
     it('should create a single persistent db connection for a location', async () => {
       await Promise.all([createMap('integration'), createMap('integration')])
       const mockCalls = mockOpen.mock.calls
@@ -76,18 +84,6 @@ describe('connection creation', () => {
       beforeEach(() => {
         cacheReturnSpy = jest.spyOn(remoteMapLocations, 'return')
       })
-      describe('with a location that was opened as persistent', () => {
-        beforeEach(async () => {
-          await createMap('bla', true)
-          await closeRemoteMapsOfLocation(DB_LOCATION)
-        })
-        it('should close the connections to the main and tmp DBs', () => {
-          expect(mockClose).toHaveBeenCalledTimes(2)
-        })
-        it('should return the cache of the location', () => {
-          expect(cacheReturnSpy).toHaveBeenCalledWith(DB_LOCATION)
-        })
-      })
       describe('with a location that was not opened', () => {
         beforeEach(async () => {
           await closeRemoteMapsOfLocation('dummy_location')
@@ -100,10 +96,38 @@ describe('connection creation', () => {
         })
       })
     })
+    describe('createRemoteMapCreator.close', () => {
+      let cacheReturnSpy: jest.SpyInstance
+      beforeEach(() => {
+        cacheReturnSpy = jest.spyOn(remoteMapLocations, 'return')
+      })
+      describe('with a location that was opened as persistent', () => {
+        beforeEach(async () => {
+          const { close } = await createMap('bla', true)
+          await close()
+        })
+        it('should close the connections to the main and tmp DBs', () => {
+          expect(mockClose).toHaveBeenCalledTimes(2)
+        })
+        it('should return the cache of the location', () => {
+          expect(cacheReturnSpy).toHaveBeenCalledWith(DB_LOCATION)
+        })
+      })
+      describe('with a location that was opened as persistent=false', () => {
+        beforeEach(async () => {
+          const { close } = await createMap('bla', false)
+          await close()
+        })
+        it('should close the connections to the readonly and tmp DBs', async () => {
+          expect(mockClose).toHaveBeenCalledTimes(3)
+          expect(cacheReturnSpy).toHaveBeenCalledWith(DB_LOCATION)
+        })
+      })
+    })
   })
-  describe('createReadOnlyRemoteMapCreator', () => {
+  describe('createReadOnlyRemoteMap', () => {
     const createMap = async (location: string, namespace: string): Promise<rm.RemoteMap<string>> =>
-      createReadOnlyRemoteMapCreator(location)({ namespace, deserialize: async str => str })
+      createReadOnlyRemoteMap({ location, namespace, deserialize: async str => str })
     it('should open db successfully if the db does exist', async () => {
       await Promise.all([createMap(DB_LOCATION, 'integration'), createMap(DB_LOCATION, 'integration')])
       const mockCalls = mockOpen.mock.calls
@@ -123,7 +147,7 @@ describe('connection creation', () => {
   describe('connection cache limits', () => {
     describe('when opening many connections', () => {
       const createMap = async (location: string): Promise<rm.RemoteMap<string>> =>
-        createRemoteMapCreator(location)({
+        createRemoteMapCreator(location).create({
           namespace: 'namespace',
           batchInterval: 1000,
           serialize: async str => str,
@@ -131,10 +155,7 @@ describe('connection creation', () => {
           persistent: true,
         })
       const createReadOnlyMap = async (location: string): Promise<rm.RemoteMap<string>> =>
-        createReadOnlyRemoteMapCreator(location)({
-          namespace: 'namespace',
-          deserialize: async str => str,
-        })
+        createReadOnlyRemoteMap({ location, namespace: 'namespace', deserialize: async str => str })
       it('should correctly count when openning different db', async () => {
         // We open two connections each time
         await Promise.all(

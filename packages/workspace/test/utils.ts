@@ -90,7 +90,7 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(maps[opts.namespace])),
     }
   }
-  return creator
+  return { create: creator, close: async () => {} }
 }
 
 export const defaultContent = 'ZOMG'

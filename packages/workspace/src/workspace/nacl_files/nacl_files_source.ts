@@ -239,20 +239,20 @@ const createNaclFilesState = async (
   persistent: boolean,
   parsedNaclFiles?: ParsedNaclFileCache,
 ): Promise<NaclFilesState> => ({
-  elementsIndex: await remoteMapCreator<string[]>({
+  elementsIndex: await remoteMapCreator.create<string[]>({
     namespace: getRemoteMapNamespace('elements_index', sourceName),
     serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
-  mergeErrors: await remoteMapCreator<MergeError[]>({
+  mergeErrors: await remoteMapCreator.create<MergeError[]>({
     namespace: getRemoteMapNamespace('errors', sourceName),
     serialize: errors => serialize(errors, 'keepRef'),
     deserialize: async data => deserializeMergeErrors(data),
     persistent,
   }),
   mergedElements: new RemoteElementSource(
-    await remoteMapCreator<Element>({
+    await remoteMapCreator.create<Element>({
       namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: async element => serialize([element], 'keepRef'),
       deserialize: async data => deserializeSingleElement(data, async sf => staticFilesSource.getStaticFile(sf)),
@@ -267,19 +267,19 @@ const createNaclFilesState = async (
       staticFilesSource,
       persistent,
     ),
-  searchableNamesIndex: await remoteMapCreator<boolean>({
+  searchableNamesIndex: await remoteMapCreator.create<boolean>({
     namespace: getRemoteMapNamespace('searchableNamesIndex', sourceName),
     serialize: async val => (val === true ? '1' : '0'),
     deserialize: async data => data !== '0',
     persistent,
   }),
-  staticFilesIndex: await remoteMapCreator<string[]>({
+  staticFilesIndex: await remoteMapCreator.create<string[]>({
     namespace: getRemoteMapNamespace('static_files_index', sourceName),
     serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
-  metadata: await remoteMapCreator<string>({
+  metadata: await remoteMapCreator.create<string>({
     namespace: getRemoteMapNamespace('metadata', sourceName),
     serialize: async val => val,
     deserialize: async data => data,
@@ -990,7 +990,7 @@ const buildNaclFilesSource = (
       await currentState.metadata.flush()
 
       // clear deprecated referenced index
-      const referencedIndex = await remoteMapCreator<string[]>({
+      const referencedIndex = await remoteMapCreator.create<string[]>({
         namespace: getRemoteMapNamespace('referenced_index', sourceName),
         serialize: async val => safeJsonStringify(val),
         deserialize: data => JSON.parse(data),

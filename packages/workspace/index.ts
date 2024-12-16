@@ -71,8 +71,10 @@ import { State } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints, filterByPathHint } from './src/workspace/path_index'
 import { createPathIndexForElement } from './src/path_index_fallbacks'
 import { ReferenceIndexEntry } from './src/workspace/reference_indexes'
+import { inMemRemoteMapCreator } from './test/common/helpers'
 
 export {
+  inMemRemoteMapCreator,
   errors,
   hiddenValues,
   serialization,

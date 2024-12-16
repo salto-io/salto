@@ -35,7 +35,7 @@ export {
   closeAllRemoteMaps,
   closeRemoteMapsOfLocation,
   replicateDB,
-  createReadOnlyRemoteMapCreator,
+  createReadOnlyRemoteMap,
   cleanDatabases,
 } from './src/remote_map'
 export { NoWorkspaceConfig } from './src/errors'

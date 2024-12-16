@@ -89,9 +89,10 @@ const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> =
   }
 }
 
-const persistentMockCreateRemoteMap = (): (<T, K extends string = string>(
-  opts: CreateRemoteMapParams<T>,
-) => Promise<RemoteMap<T, K>>) => {
+const persistentMockCreateRemoteMap = (): {
+  close: () => Promise<void>
+  create: <T, K extends string = string>(opts: CreateRemoteMapParams<T>) => Promise<RemoteMap<T, K>>
+} => {
   const maps = {} as Record<string, Record<string, string>>
   const creator = async <T, K extends string = string>(opts: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
     if (maps[opts.namespace] === undefined) {
@@ -137,7 +138,7 @@ const persistentMockCreateRemoteMap = (): (<T, K extends string = string>(
       isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(maps[opts.namespace])),
     }
   }
-  return creator
+  return { create: creator, close: async () => {} }
 }
 
 const buildMockWorkspace = async (

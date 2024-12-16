@@ -59,7 +59,6 @@ import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace
 import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { buildStaticFilesCache } from '../../src/workspace/static_files/static_files_cache'
-import * as remoteMap from '../../src/workspace/remote_map'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
@@ -90,7 +89,7 @@ import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
-import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
+import { RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
 import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
@@ -104,6 +103,7 @@ import {
   mockCredentialsSource,
 } from '../common/workspace'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
+import { inMemRemoteMapCreator } from '../common/helpers'
 
 const { awu } = collections.asynciterable
 
@@ -1017,16 +1017,6 @@ describe('workspace', () => {
       ['Records', 'staticFile', 'staticFileInstance'],
     )
     const setUp = async (): Promise<void> => {
-      const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
-      const inMemRemoteMapCreator =
-        (): remoteMap.RemoteMapCreator =>
-        async <T, K extends string = string>(opts: remoteMap.CreateRemoteMapParams<T>) => {
-          const map = maps.get(opts.namespace) ?? new remoteMap.InMemoryRemoteMap<T, K>()
-          if (!maps.has(opts.namespace)) {
-            maps.set(opts.namespace, map)
-          }
-          return map as remoteMap.RemoteMap<T, K>
-        }
       const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
       const defaultFilePath = 'static1.nacl'
       const otherStaticFiles = { [defaultFilePath]: Buffer.from('I am a little static file') }
@@ -2363,7 +2353,7 @@ salesforce.staticFile staticFileInstance {
             },
           },
         },
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         async () => [],
       )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual({
@@ -2425,7 +2415,7 @@ salesforce.staticFile staticFileInstance {
     const mapFlushCounter: Record<string, number> = {}
     const mapCreator = persistentMockCreateRemoteMap()
     const mapCreatorWrapper = async (params: CreateRemoteMapParams<Value>): Promise<RemoteMap<Value>> => {
-      const m = await mapCreator(params)
+      const m = await mapCreator.create(params)
       return {
         ...m,
         flush: async () => {
@@ -2450,7 +2440,7 @@ salesforce.staticFile staticFileInstance {
         undefined,
         undefined,
         undefined,
-        mapCreatorWrapper as RemoteMapCreator,
+        { create: mapCreatorWrapper, close: () => {} } as RemoteMapCreator,
       )
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)

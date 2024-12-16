@@ -5,8 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { nacl, remoteMap, validator } from '@salto-io/workspace'
+import { MockInterface } from '@salto-io/test-utils'
+import { inMemRemoteMapCreator, nacl } from '@salto-io/workspace'
 import { localDirectoryStore, createExtensionFileFilter } from '../src/dir_store'
 import { buildLocalAdaptersConfigSource } from '../src/adapters_config'
 import { createMockNaclFileSource } from './common/nacl_file_source'
@@ -28,7 +28,6 @@ jest.mock('@salto-io/workspace', () => {
 jest.mock('../src/dir_store')
 describe('adapters local config', () => {
   let mockNaclFilesSource: MockInterface<nacl.NaclFilesSource>
-  let validationErrorsMap: MockInterface<remoteMap.RemoteMap<validator.ValidationError[]>>
 
   beforeEach(async () => {
     jest.resetAllMocks()
@@ -36,30 +35,7 @@ describe('adapters local config', () => {
     ;(nacl.naclFilesSource as jest.Mock).mockResolvedValue(mockNaclFilesSource)
     mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: true })
 
-    validationErrorsMap = {
-      delete: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['delete']>(),
-      get: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['get']>(),
-      getMany: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['getMany']>(),
-      has: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['has']>(),
-      set: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['set']>(),
-      setAll: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['setAll']>(),
-      deleteAll: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['deleteAll']>(),
-      entries: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['entries']>(),
-      keys: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['keys']>(),
-      values: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['values']>(),
-      flush: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['flush']>(),
-      clear: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['clear']>(),
-      close: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['close']>(),
-      isEmpty: mockFunction<remoteMap.RemoteMap<validator.ValidationError[]>['isEmpty']>(),
-    }
-
-    await buildLocalAdaptersConfigSource(
-      'baseDir',
-      mockFunction<remoteMap.RemoteMapCreator>().mockResolvedValue(validationErrorsMap),
-      true,
-      [],
-      [],
-    )
+    await buildLocalAdaptersConfigSource('baseDir', inMemRemoteMapCreator(), true, [], [])
   })
 
   describe('initialization', () => {

@@ -8,18 +8,16 @@
 import { ObjectType, ElemID, Value, SeverityLevel } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/parser'
 import { ParsedNaclFile, SyncParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
-import { InMemoryRemoteMap, CreateRemoteMapParams, RemoteMap } from '../../../src/workspace/remote_map'
+import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { inMemRemoteMapCreator } from '../../common/helpers'
 
 describe('ParsedNaclFileCache', () => {
   const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource
   // This is the "DB" for the cache and it is currently emptied per each "it"
   let remoteMaps: Record<string, InMemoryRemoteMap<Value, string>> = {}
-  const inMemoryRemoteMapsCreator = async <T, K extends string = string>(
-    _opts: CreateRemoteMapParams<T>,
-  ): Promise<RemoteMap<T, K>> => new InMemoryRemoteMap<T, K>()
   let cache: ParsedNaclFileCache
   const sourceMap = new parser.SourceMap()
 
@@ -196,7 +194,7 @@ describe('ParsedNaclFileCache', () => {
   })
 
   beforeEach(async () => {
-    cache = createParseResultCache('mockCache', inMemoryRemoteMapsCreator, mockedStaticFilesSource, true)
+    cache = createParseResultCache('mockCache', inMemRemoteMapCreator(), mockedStaticFilesSource, true)
   })
 
   describe('put', () => {
@@ -437,7 +435,7 @@ describe('ParsedNaclFileCache', () => {
 
   describe('non persistent workspace', () => {
     it('should not allow flush when the ws is non-persistent', async () => {
-      const nonPCache = createParseResultCache('mockCache', inMemoryRemoteMapsCreator, mockedStaticFilesSource, false)
+      const nonPCache = createParseResultCache('mockCache', inMemRemoteMapCreator(), mockedStaticFilesSource, false)
       await expect(() => nonPCache.flush()).rejects.toThrow()
     })
   })

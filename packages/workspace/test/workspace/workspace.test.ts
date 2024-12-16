@@ -3121,7 +3121,23 @@ salesforce.staticFile staticFileInstance {
       ).rejects.toThrow('Cannot clear static resources without clearing the state, cache and nacls')
     })
   })
-
+  describe('close', () => {
+    it('should delegate the close to the remoteMapCreator close method', async () => {
+      const mockClose = jest.fn()
+      const workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { create: persistentMockCreateRemoteMap().create, close: mockClose },
+      )
+      await workspace.close()
+      expect(mockClose).toHaveBeenCalledTimes(1)
+    })
+  })
   describe('renameEnvironment', () => {
     describe('should rename environment', () => {
       let workspaceConf: WorkspaceConfigSource

@@ -118,7 +118,7 @@ describe('connection creation', () => {
           const { close } = await createMap('bla', false)
           await close()
         })
-        it('should close the connections to the readonly and tmp DBs', async () => {
+        it('should close the connections to the readonly and tmp DBs', () => {
           expect(mockClose).toHaveBeenCalledTimes(3)
           expect(cacheReturnSpy).toHaveBeenCalledWith(DB_LOCATION)
         })

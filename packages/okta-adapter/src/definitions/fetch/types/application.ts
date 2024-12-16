@@ -92,3 +92,6 @@ export const isCustomApp = (value: Values, subdomain?: string): boolean => {
   const isCustomAppName = subdomainMatch || customAppNamePatternMatch
   return [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode) && isCustomAppName
 }
+
+// Okta Dashboard is a special app that can only have one instance. We need to ensure its element ID is identical across all environments.
+export const isOktaDashboard = (value: Values): boolean => value?.name === 'okta_enduser'

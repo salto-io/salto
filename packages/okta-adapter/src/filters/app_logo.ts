@@ -124,8 +124,8 @@ const appLogoFilter: FilterCreator = ({ definitions, getElemIdFunc }) => ({
     const appLogoType = createFileType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
 
-    const elemIDDef = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {}).query(APPLICATION_TYPE_NAME)
-      ?.element?.topLevel?.elemID
+    const typeDef = definitionsUtils.queryWithDefault(definitions.fetch?.instances ?? {}).query(APPLICATION_TYPE_NAME)
+    const elemIDDef = typeDef?.element?.topLevel?.elemID
     if (elemIDDef === undefined) {
       log.error('Could not find elemID definition for %s, skipping appLogoFilter', APPLICATION_TYPE_NAME)
       return undefined
@@ -134,6 +134,7 @@ const appLogoFilter: FilterCreator = ({ definitions, getElemIdFunc }) => ({
       elemIDDef,
       typeID: new ElemID('okta', APPLICATION_TYPE_NAME),
       getElemIdFunc,
+      serviceIDDef: typeDef?.resource?.serviceIDFields,
     })
     const allInstances = await Promise.all(
       appsWithLogo.map(async app => getAppLogo({ client, app, appLogoType, elemIDFunc })),

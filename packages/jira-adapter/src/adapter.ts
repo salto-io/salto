@@ -236,8 +236,11 @@ export const DEFAULT_FILTERS = [
   projectRoleRemoveTeamManagedDuplicatesFilter,
   // serviceUrl filters must run before duplicateIdsFilter to allow go-to-service link in the message
   serviceUrlInformationFilter,
+  // serviceUrl filters must run before duplicateIdsFilter to allow go-to-service link in the message
   serviceUrlFilter,
-  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
+  // serviceUrl filters must run before duplicateIdsFilter to allow go-to-service link in the message
+  // Must run before fieldReferencesFilter
+  serviceUrlJsmFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,

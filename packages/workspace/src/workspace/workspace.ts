@@ -36,6 +36,8 @@ import {
 import { logger } from '@salto-io/logging'
 import {
   applyDetailedChanges,
+  createElemIDReplacedElementsSource,
+  filterElementsSource,
   getIndependentElemIDs,
   inspectValue,
   naclCase,
@@ -185,6 +187,12 @@ export type Workspace = {
   uid: string
 
   elements: (includeHidden?: boolean, env?: string) => Promise<ElementsSource>
+  accountElements: (args: {
+    account: string
+    env?: string
+    includeHidden?: boolean
+    replaceAccountNameWithAdapter?: boolean
+  }) => Promise<ReadOnlyElementsSource | undefined>
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
@@ -1084,6 +1092,34 @@ export const loadWorkspace = async (
     return (await getLoadedNaclFilesSource()).getElementsSource(env ?? currentEnv())
   }
 
+  const accountElements: Workspace['accountElements'] = async ({
+    account,
+    env = currentEnv(),
+    replaceAccountNameWithAdapter = true,
+    includeHidden = true,
+  }) => {
+    const elementsSource = await elementsImpl(includeHidden, env)
+    const accountElementsSource = filterElementsSource(elementsSource, account)
+    if (!replaceAccountNameWithAdapter) {
+      return accountElementsSource
+    }
+    const envConfig = currentEnvsConf().find(e => e.name === env)
+    if (envConfig === undefined) {
+      log.error('Failed to find config for env %s')
+      return undefined
+    }
+    const adapterName = envConfig.accountToServiceName?.[account]
+    if (adapterName === undefined) {
+      log.error(
+        'Failed to find adapter name for account %s in env %s. Account to service name is %s',
+        account,
+        inspectValue(envConfig.accountToServiceName),
+      )
+      return undefined
+    }
+    return createElemIDReplacedElementsSource(accountElementsSource, account, adapterName)
+  }
+
   const getSourceByFilename = async (filename: string): Promise<AdaptersConfigSource | MultiEnvSource> =>
     adaptersConfig.isConfigFile(filename) ? adaptersConfig : getLoadedNaclFilesSource()
 
@@ -1209,6 +1245,7 @@ export const loadWorkspace = async (
   const workspace: Workspace = {
     uid: workspaceConfig.uid,
     elements: elementsImpl,
+    accountElements,
     state,
     envs,
     currentEnv,

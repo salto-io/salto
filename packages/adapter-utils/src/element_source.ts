@@ -5,11 +5,12 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, Value, isElement, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath, resolveTypeShallow } from './utils'
+import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
 
@@ -121,5 +122,46 @@ export const buildLazyShallowTypeResolverElementsSource = (
     getAll: async () => awu(await elementsSource.getAll()).map(getElementWithResolvedShallowType),
     list: async () => elementsSource.list(),
     has: async (id: ElemID) => elementsSource.has(id),
+  }
+}
+
+export const createElemIDReplacedElementsSource = (
+  elementsSource: ReadOnlyElementsSource,
+  account: string,
+  adapter: string,
+): ReadOnlyElementsSource =>
+  account === adapter
+    ? elementsSource
+    : {
+        getAll: async () =>
+          awu(await elementsSource.getAll()).map(async element => {
+            const ret = element.clone()
+            await updateElementsWithAlternativeAccount([ret], adapter, account, elementsSource)
+            return ret
+          }),
+        get: async id => {
+          const element = (await elementsSource.get(createAdapterReplacedID(id, account)))?.clone()
+          if (element) {
+            await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
+          }
+          return element
+        },
+        list: async () => awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
+        has: async id => {
+          const transformedId = createAdapterReplacedID(id, account)
+          return elementsSource.has(transformedId)
+        },
+      }
+
+export const filterElementsSource = (
+  elementsSource: ReadOnlyElementsSource,
+  accountName: string,
+): ReadOnlyElementsSource => {
+  const isRelevantID = (elemID: ElemID): boolean => elemID.adapter === accountName || elemID.adapter === GLOBAL_ADAPTER
+  return {
+    getAll: async () => awu(await elementsSource.getAll()).filter(elem => isRelevantID(elem.elemID)),
+    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
+    list: async () => awu(await elementsSource.list()).filter(isRelevantID),
+    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
   }
 }

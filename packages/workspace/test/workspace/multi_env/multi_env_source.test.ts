@@ -241,7 +241,6 @@ describe('multi env source', () => {
     const filePath = 'static1.nacl'
     const staticFile = new StaticFile({ filepath: filePath, content: Buffer.from('I am a little static file') })
     const setUp = async (sourceName: string, defaultFilePath?: string): Promise<NaclFilesSource> => {
-      // const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
       const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
       const otherStaticFiles = defaultFilePath ? { [defaultFilePath]: Buffer.from('I am a little static file') } : {}
       const mockStaticFileDirStore = mockDirStore<Buffer>(undefined, undefined, otherStaticFiles)

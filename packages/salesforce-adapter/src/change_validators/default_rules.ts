@@ -99,7 +99,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
   }
 }
 
-const createInstanceChangeErrorSingleDefault = (
+const createInstanceChangeErrorSingleDefaultNoVisible = (
   fieldPath: string,
   field: string,
   instance: InstanceElement,
@@ -190,7 +190,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
       }
       return undefined
     }, undefined)
-    return corruptedEntry
+    return corruptedEntry !== '' ? corruptedEntry : undefined
   }
 
   const findVisibleNoDefault = (value: Value, fieldType: TypeElement): boolean => {
@@ -243,9 +243,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
           }
           const singleDefaultisValid = findSingleDefault(innerValue, startLevelType)
           if (singleDefaultisValid !== undefined) {
-            return singleDefaultisValid !== ''
-              ? [createInstanceChangeErrorSingleDefault(fieldPath, singleDefaultisValid, after)]
-              : []
+            return [createInstanceChangeErrorSingleDefaultNoVisible(fieldPath, singleDefaultisValid, after)]
           }
           const noDefaultValidation = findVisibleNoDefault(innerValue, startLevelType)
           return !noDefaultValidation ? [createInstanceChangeErrorNoDefault(fieldPath, _key, after)] : []

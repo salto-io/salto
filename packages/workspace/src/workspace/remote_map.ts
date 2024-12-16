@@ -46,6 +46,7 @@ export interface CreateRemoteMapParams<T> {
 
 export interface CreateReadOnlyRemoteMapParams<T> {
   namespace: string
+  location: string
   deserialize: (s: string) => Promise<T>
 }
 

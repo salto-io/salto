@@ -847,7 +847,7 @@ export const createReadOnlyRemoteMap = async <T, K extends string = string>({
   location,
   namespace,
   deserialize,
-}: { location: string } & remoteMap.CreateReadOnlyRemoteMapParams<T>): Promise<remoteMap.RemoteMap<T, K>> => {
+}: remoteMap.CreateReadOnlyRemoteMapParams<T>): Promise<remoteMap.RemoteMap<T, K>> => {
   const notImplemented = (opName: string): void => {
     throw new Error(`${opName} is invalid operation on read only remote map`)
   }

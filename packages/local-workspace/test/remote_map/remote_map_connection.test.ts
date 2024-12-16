@@ -96,7 +96,7 @@ describe('connection creation', () => {
         })
       })
     })
-    describe('createRemoteMapCreator.close', () => {
+    describe('close', () => {
       let cacheReturnSpy: jest.SpyInstance
       beforeEach(() => {
         cacheReturnSpy = jest.spyOn(remoteMapLocations, 'return')

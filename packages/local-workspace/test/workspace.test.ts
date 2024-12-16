@@ -115,7 +115,7 @@ describe('local workspace', () => {
   describe('load elements  sources', () => {
     it('should build the appropriate nacl source', async () => {
       mockExists.mockResolvedValue(true)
-      const creator: ws.remoteMap.RemoteMapCreator = inMemRemoteMapCreator()
+      const creator = inMemRemoteMapCreator()
       const elemSources = await loadLocalElementsSources({
         baseDir: '.',
         envs: ['env1', 'env2'],

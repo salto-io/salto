@@ -62,7 +62,7 @@ const filterCreator: FilterCreator = () => {
           .map(instance => restoreTriggerSkillToApi(instance, skillMapping)),
       )
     },
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> =>
       changes
         .map(getChangeData)
         .filter(instance => instance.elemID.typeName === TRIGGER_TYPE_NAME && Array.isArray(instance.value?.actions))
@@ -77,8 +77,7 @@ const filterCreator: FilterCreator = () => {
             }
             return action
           })
-        })
-    },
+        }),
   }
 }
 

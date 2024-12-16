@@ -32,8 +32,8 @@ import * as routers from '../../../src/workspace/nacl_files/multi_env/routers'
 import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
-import { expectToContainAllItems, inMemRemoteMapCreator } from '../../common/helpers'
-import { RemoteMap, RemoteMapCreator } from '../../../src/workspace/remote_map'
+import { expectToContainAllItems } from '../../common/helpers'
+import { inMemRemoteMapCreator, RemoteMap, RemoteMapCreator } from '../../../src/workspace/remote_map'
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
 import {
   AbsoluteStaticFile,

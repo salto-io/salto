@@ -32,13 +32,17 @@ import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/sta
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import { InMemoryRemoteMap, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
+import {
+  InMemoryRemoteMap,
+  RemoteMap,
+  CreateRemoteMapParams,
+  inMemRemoteMapCreator,
+} from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 import { getDanglingStaticFiles } from '../../../src/workspace/nacl_files/nacl_files_source'
 import { DetailedChangeWithSource, getChangeLocations } from '../../../src/workspace/nacl_files/nacl_file_update'
-import { inMemRemoteMapCreator } from '../../common/helpers'
 
 const { awu } = collections.asynciterable
 

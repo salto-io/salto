@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { MockInterface } from '@salto-io/test-utils'
-import { inMemRemoteMapCreator, nacl } from '@salto-io/workspace'
+import { remoteMap, nacl } from '@salto-io/workspace'
 import { localDirectoryStore, createExtensionFileFilter } from '../src/dir_store'
 import { buildLocalAdaptersConfigSource } from '../src/adapters_config'
 import { createMockNaclFileSource } from './common/nacl_file_source'
@@ -35,7 +35,7 @@ describe('adapters local config', () => {
     ;(nacl.naclFilesSource as jest.Mock).mockResolvedValue(mockNaclFilesSource)
     mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: true })
 
-    await buildLocalAdaptersConfigSource('baseDir', inMemRemoteMapCreator(), true, [], [])
+    await buildLocalAdaptersConfigSource('baseDir', remoteMap.inMemRemoteMapCreator(), true, [], [])
   })
 
   describe('initialization', () => {

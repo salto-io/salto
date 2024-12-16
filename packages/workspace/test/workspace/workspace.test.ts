@@ -89,7 +89,12 @@ import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig, StateConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
-import { RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
+import {
+  RemoteMapCreator,
+  RemoteMap,
+  CreateRemoteMapParams,
+  inMemRemoteMapCreator,
+} from '../../src/workspace/remote_map'
 import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
@@ -103,7 +108,6 @@ import {
   mockCredentialsSource,
 } from '../common/workspace'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
-import { inMemRemoteMapCreator } from '../common/helpers'
 
 const { awu } = collections.asynciterable
 

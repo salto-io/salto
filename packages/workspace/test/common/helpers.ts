@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { collections } from '@salto-io/lowerdash'
-import { RemoteMap, RemoteMapCreator, InMemoryRemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -18,18 +17,4 @@ export const expectToContainAllItems = async <T>(
 ): Promise<void> => {
   const arr = await awu(itr).toArray()
   await awu(items).forEach(item => expect(arr).toContainEqual(item))
-}
-
-export const inMemRemoteMapCreator = (): RemoteMapCreator => {
-  const maps = new Map<string, RemoteMap<unknown>>()
-  return {
-    close: async () => {},
-    create: async <T, K extends string = string>(opts: CreateRemoteMapParams<T>) => {
-      const map = maps.get(opts.namespace) ?? new InMemoryRemoteMap<T, K>()
-      if (!maps.has(opts.namespace)) {
-        maps.set(opts.namespace, map)
-      }
-      return map as RemoteMap<T, K>
-    },
-  }
 }

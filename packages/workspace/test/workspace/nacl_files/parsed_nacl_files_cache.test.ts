@@ -8,11 +8,10 @@
 import { ObjectType, ElemID, Value, SeverityLevel } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/parser'
 import { ParsedNaclFile, SyncParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
-import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
+import { InMemoryRemoteMap, inMemRemoteMapCreator } from '../../../src/workspace/remote_map'
 import { createParseResultCache, ParsedNaclFileCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
-import { inMemRemoteMapCreator } from '../../common/helpers'
 
 describe('ParsedNaclFileCache', () => {
   const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource

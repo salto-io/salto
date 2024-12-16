@@ -21,7 +21,6 @@ import {
   elementSource,
   pathIndex,
   adaptersConfigSource as acs,
-  inMemRemoteMapCreator,
 } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
@@ -102,7 +101,7 @@ const buildMockWorkspace = async (
   }
 
   const mockedDirStore = mockDirStore(files)
-  const mockCreateRemoteMap = inMemRemoteMapCreator()
+  const mockCreateRemoteMap = remoteMap.inMemRemoteMapCreator()
   const commonStaticFilesSource = staticFiles.buildStaticFilesSource(
     mockDirStore(Object.fromEntries(staticFileNames.map(f => [f, Buffer.from(f)]))),
     mockStaticFilesCache,

@@ -21,7 +21,6 @@ import {
   serialization,
   StateConfig,
   ProviderOptionsS3,
-  inMemRemoteMapCreator,
 } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import { mockFunction, setupTmpDir } from '@salto-io/test-utils'
@@ -129,7 +128,7 @@ describe('localState', () => {
           elements: sfElements,
         }),
       })
-      mapCreator = inMemRemoteMapCreator()
+      mapCreator = remoteMap.inMemRemoteMapCreator()
       state = localState(pathPrefix, 'env', mapCreator, contentProvider)
       initialStateHash = await state.getHash()
     })
@@ -330,7 +329,7 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     beforeEach(() => {
       contentProvider = mockContentProvider({})
-      state = localState('empty', '', inMemRemoteMapCreator(), contentProvider)
+      state = localState('empty', '', remoteMap.inMemRemoteMapCreator(), contentProvider)
     })
 
     it('should return an undefined hash', async () => {
@@ -451,7 +450,7 @@ describe('localState', () => {
           elements: getTopLevelElements('noVersion'),
         }),
       })
-      state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
+      state = localState('malformed', '', remoteMap.inMemRemoteMapCreator(), contentProvider)
     })
 
     afterEach(() => {
@@ -499,7 +498,7 @@ describe('localState', () => {
       state = localState(
         path.join(testDir.name(), 'empty'),
         '',
-        inMemRemoteMapCreator(),
+        remoteMap.inMemRemoteMapCreator(),
         contentProvider,
         overridingStateFilesSource,
       )
@@ -584,7 +583,7 @@ describe('loadState', () => {
         workspaceId: 'workspaceId',
         baseDir: 'baseDir',
         envName: 'env',
-        remoteMapCreator: inMemRemoteMapCreator(),
+        remoteMapCreator: remoteMap.inMemRemoteMapCreator(),
         staticFilesSource: mockStaticFilesSource(),
         persistent: false,
       })

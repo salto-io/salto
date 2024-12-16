@@ -183,3 +183,17 @@ export const mapRemoteMapResult = <T, R>(
   values: () => awu(source.values()).map(func),
   has: id => source.has(id),
 })
+
+export const inMemRemoteMapCreator = (): RemoteMapCreator => {
+  const maps = new Map<string, RemoteMap<unknown>>()
+  return {
+    close: async () => {},
+    create: async <T, K extends string = string>(opts: CreateRemoteMapParams<T>) => {
+      const map = maps.get(opts.namespace) ?? new InMemoryRemoteMap<T, K>()
+      if (!maps.has(opts.namespace)) {
+        maps.set(opts.namespace, map)
+      }
+      return map as RemoteMap<T, K>
+    },
+  }
+}

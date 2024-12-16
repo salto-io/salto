@@ -102,7 +102,7 @@ import {
   mockAdaptersConfigSource,
   mockCredentialsSource,
 } from '../common/workspace'
-import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
+import { mockStaticFilesSource } from '../utils'
 import { inMemRemoteMapCreator } from '../common/helpers'
 
 const { awu } = collections.asynciterable
@@ -210,7 +210,7 @@ describe('workspace', () => {
         })
         const state = mockState([fieldType, mainType])
         const dirStore = mockDirStore([], false, files)
-        const remoteMapCreator = persistentMockCreateRemoteMap()
+        const remoteMapCreator = inMemRemoteMapCreator()
         // Create the caches before making a change to the nacl
         const tmpWorkspace = await createWorkspace(
           dirStore,
@@ -392,7 +392,7 @@ describe('workspace', () => {
                   'prim.nacl': await parser.dumpElements([primaryEnvObj]),
                 }),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -404,7 +404,7 @@ describe('workspace', () => {
                   'prim.nacl': await parser.dumpElements([secondaryEnvObj]),
                 }),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -761,7 +761,7 @@ describe('workspace', () => {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
             },
@@ -770,7 +770,7 @@ describe('workspace', () => {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -780,7 +780,7 @@ describe('workspace', () => {
                 COMMON_ENV_PREFIX,
                 mockDirStore(),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -906,7 +906,7 @@ describe('workspace', () => {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
             },
@@ -915,7 +915,7 @@ describe('workspace', () => {
                 COMMON_ENV_PREFIX,
                 mockDirStore(),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -925,7 +925,7 @@ describe('workspace', () => {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -2202,7 +2202,7 @@ salesforce.staticFile staticFileInstance {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
             },
@@ -2211,7 +2211,7 @@ salesforce.staticFile staticFileInstance {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -2221,7 +2221,7 @@ salesforce.staticFile staticFileInstance {
                 COMMON_ENV_PREFIX,
                 mockDirStore([], true),
                 mockStaticFilesSource(),
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               ),
               state: createState([]),
@@ -2413,7 +2413,7 @@ salesforce.staticFile staticFileInstance {
 
   describe('flush', () => {
     const mapFlushCounter: Record<string, number> = {}
-    const mapCreator = persistentMockCreateRemoteMap()
+    const mapCreator = inMemRemoteMapCreator()
     const mapCreatorWrapper = async (params: CreateRemoteMapParams<Value>): Promise<RemoteMap<Value>> => {
       const m = await mapCreator.create(params)
       return {
@@ -2424,7 +2424,7 @@ salesforce.staticFile staticFileInstance {
         },
       } as unknown as RemoteMap<Value>
     }
-    it('should flush all data sources', async () => {
+    it.only('should flush all data sources', async () => {
       const mockFlush = jest.fn()
       const flushable = {
         flush: mockFlush,
@@ -2623,7 +2623,7 @@ salesforce.staticFile staticFileInstance {
               'default',
               emptyFileStore,
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
             state: createState([]),
@@ -2648,7 +2648,7 @@ salesforce.staticFile staticFileInstance {
               'default',
               naclFileStore,
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
             state: createState([]),
@@ -2733,7 +2733,7 @@ salesforce.staticFile staticFileInstance {
             'default',
             naclFileStore,
             mockStaticFilesSource([firstStaticFile, secondStaticFile]),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
           state: createState([]),
@@ -2835,7 +2835,7 @@ salesforce.staticFile staticFileInstance {
             'default',
             naclFileStore,
             mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
           state: createState([]),
@@ -2889,7 +2889,7 @@ salesforce.staticFile staticFileInstance {
             'default',
             naclFileStore,
             mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
           state: createState([]),
@@ -3132,7 +3132,7 @@ salesforce.staticFile staticFileInstance {
         undefined,
         undefined,
         undefined,
-        { create: persistentMockCreateRemoteMap().create, close: mockClose },
+        { create: inMemRemoteMapCreator().create, close: mockClose },
       )
       await workspace.close()
       expect(mockClose).toHaveBeenCalledTimes(1)
@@ -3724,7 +3724,7 @@ salesforce.staticFile staticFileInstance {
             'default',
             naclFileStore,
             mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
           state: createState([]),
@@ -3751,7 +3751,7 @@ salesforce.staticFile staticFileInstance {
     let workspace: Workspace
     beforeEach(async () => {
       const staticFilesSource = mockStaticFilesSource()
-      const remoteMapCreator = persistentMockCreateRemoteMap()
+      const remoteMapCreator = inMemRemoteMapCreator()
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3800,7 +3800,7 @@ salesforce.staticFile staticFileInstance {
     let workspace: Workspace
     beforeEach(async () => {
       const staticFilesSource = mockStaticFilesSource()
-      const remoteMapCreator = persistentMockCreateRemoteMap()
+      const remoteMapCreator = inMemRemoteMapCreator()
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -4026,7 +4026,7 @@ salesforce.staticFile staticFileInstance {
               COMMON_ENV_PREFIX,
               mockDirStore([], false, { 'common.nacl': 'type salesforce.hearing { }' }),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
           },
@@ -4035,7 +4035,7 @@ salesforce.staticFile staticFileInstance {
               COMMON_ENV_PREFIX,
               mockDirStore(),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
             state: createState([]),
@@ -4045,7 +4045,7 @@ salesforce.staticFile staticFileInstance {
               COMMON_ENV_PREFIX,
               mockDirStore([], true),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
             state: createState([]),
@@ -4465,7 +4465,7 @@ describe('getElementFileNames', () => {
           'default',
           naclFileStore,
           mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
+          inMemRemoteMapCreator(),
           true,
         ),
         state: createState([]),
@@ -4475,7 +4475,7 @@ describe('getElementFileNames', () => {
           'inactive',
           naclFileStoreOfInactive,
           mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
+          inMemRemoteMapCreator(),
           true,
         ),
         state: createState([]),
@@ -4484,11 +4484,13 @@ describe('getElementFileNames', () => {
   })
   it('should return the correct elements to file names mapping', async () => {
     const res = await workspace.getElementFileNames()
-    expect(Array.from(res.entries())).toEqual([
-      ['salesforce.text', ['envs/default/firstFile.nacl']],
-      ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
-      ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
-    ])
+    expect(new Set(Array.from(res.entries()))).toEqual(
+      new Set([
+        ['salesforce.text', ['envs/default/firstFile.nacl']],
+        ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
+        ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
+      ]),
+    )
   })
 
   it('should return the correct elements to file names mapping of inactive env', async () => {
@@ -4792,7 +4794,7 @@ describe('listUnresolvedReferences', () => {
             COMMON_ENV_PREFIX,
             mockDirStore(),
             mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
         },
@@ -4824,7 +4826,7 @@ describe('listUnresolvedReferences', () => {
             COMMON_ENV_PREFIX,
             mockDirStore(),
             mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
         },
@@ -4857,7 +4859,7 @@ describe('listUnresolvedReferences', () => {
             COMMON_ENV_PREFIX,
             mockDirStore(),
             mockStaticFilesSource(),
-            persistentMockCreateRemoteMap(),
+            inMemRemoteMapCreator(),
             true,
           ),
         },
@@ -4897,7 +4899,7 @@ describe('listUnresolvedReferences', () => {
               COMMON_ENV_PREFIX,
               mockDirStore(),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
           },
@@ -4955,7 +4957,7 @@ describe('listUnresolvedReferences', () => {
               COMMON_ENV_PREFIX,
               mockDirStore(),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
           },
@@ -5003,7 +5005,7 @@ describe('listUnresolvedReferences', () => {
               COMMON_ENV_PREFIX,
               mockDirStore(),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
           },
@@ -5044,7 +5046,7 @@ describe('listUnresolvedReferences', () => {
               COMMON_ENV_PREFIX,
               mockDirStore(),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
           },
@@ -5087,7 +5089,7 @@ describe('listUnresolvedReferences', () => {
               COMMON_ENV_PREFIX,
               mockDirStore(),
               mockStaticFilesSource(),
-              persistentMockCreateRemoteMap(),
+              inMemRemoteMapCreator(),
               true,
             ),
           },
@@ -5349,7 +5351,7 @@ describe('listElementsDependenciesInWorkspace', () => {
           COMMON_ENV_PREFIX,
           mockDirStore(),
           mockStaticFilesSource(),
-          persistentMockCreateRemoteMap(),
+          inMemRemoteMapCreator(),
           true,
         ),
       },

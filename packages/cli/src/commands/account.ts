@@ -25,6 +25,7 @@ import {
   updateCredentials,
 } from '@salto-io/core'
 import { Workspace, errors, isValidAccountName } from '@salto-io/workspace'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
@@ -232,7 +233,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 
   await installAdapter(serviceType)
   if (login) {
-    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType])[serviceType]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType], adapterCreators)[serviceType]
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, theAccountName, loginParameters)
     } catch (e) {

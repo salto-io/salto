@@ -103,11 +103,11 @@ export const getAdaptersConfigTypesMap = (adapterCreators?: Record<string, Adapt
     ).filter(entry => entry[1].length > 0),
   )
 }
-export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
-  Object.values(getAdaptersConfigTypesMap()).flat()
+export const getAdaptersConfigTypes = async (adapterCreators?: Record<string, Adapter>): Promise<ObjectType[]> =>
+  Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat()
 
 export const getDefaultAdapterConfig = async (
-  object:
+  adapterName:
     | string
     | {
         adapterName: string
@@ -119,35 +119,35 @@ export const getDefaultAdapterConfig = async (
   options?: InstanceElement,
 ): Promise<InstanceElement[] | undefined> => {
   // for backward compatibility SAAS-7006
-  let adapterName: string
+  let actualAdapterName: string
   let actualAccountName: string | undefined
   let actualOptions: InstanceElement | undefined
   let actualAdapterCreator: Record<string, Adapter>
-  if (_.isString(object)) {
-    adapterName = object
+  if (_.isString(adapterName)) {
+    actualAdapterName = adapterName
     actualAccountName = accountName
     actualOptions = options
     actualAdapterCreator = deprecatedAdapterCreators
   } else {
-    adapterName = object.adapterName
-    actualAccountName = object.accountName
-    actualOptions = object.options
-    actualAdapterCreator = object.adapterCreators
+    actualAdapterName = adapterName.adapterName
+    actualAccountName = adapterName.accountName
+    actualOptions = adapterName.options
+    actualAdapterCreator = adapterName.adapterCreators
   }
-  const { getConfig } = actualAdapterCreator[adapterName]?.configCreator ?? {}
+  const { getConfig } = actualAdapterCreator[actualAdapterName]?.configCreator ?? {}
   const defaultConf = [
     getConfig !== undefined
       ? await getConfig(actualOptions)
-      : (await getAdapterConfigFromType(adapterName, actualAdapterCreator)) ?? [],
+      : (await getAdapterConfigFromType(actualAdapterName, actualAdapterCreator)) ?? [],
   ].flat()
   if (defaultConf.length === 0) {
     return undefined
   }
-  if (actualAccountName && adapterName !== actualAccountName) {
+  if (actualAccountName && actualAdapterName !== actualAccountName) {
     return awu(defaultConf)
       .map(async conf => {
         const confClone = conf.clone()
-        await updateElementsWithAlternativeAccount([confClone], actualAccountName as string, adapterName)
+        await updateElementsWithAlternativeAccount([confClone], actualAccountName as string, actualAdapterName)
         return confClone
       })
       .toArray()
@@ -159,7 +159,7 @@ const getMergedDefaultAdapterConfig = async (
   adapter: string,
   accountName: string,
 ): Promise<InstanceElement | undefined> => {
-  const defaultConfig = await getDefaultAdapterConfig(adapter, accountName)
+  const defaultConfig = await getDefaultAdapterConfig(adapter, accountName) // todoe
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
@@ -314,8 +314,11 @@ export const getAdapters = async (
   workspaceElementsSource: ReadOnlyElementsSource,
   accountToServiceName: Record<string, string>,
   elemIdGetters: Record<string, ElemIdGetter> = {},
-): Promise<Record<string, AdapterOperations>> =>
-  initAdapters(
+  adapterCreators?: Record<string, Adapter>,
+): Promise<Record<string, AdapterOperations>> => {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  return initAdapters(
     await getAdaptersCreatorConfigs(
       adapters,
       credentials,
@@ -325,4 +328,6 @@ export const getAdapters = async (
       elemIdGetters,
     ),
     accountToServiceName,
+    actualAdapterCreator,
   )
+}

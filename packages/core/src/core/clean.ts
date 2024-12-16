@@ -21,7 +21,7 @@ export const cleanWorkspace = async (workspace: Workspace, cleanArgs: WorkspaceC
   if (cleanArgs.accountConfig === true) {
     await awu(workspace.accounts()).forEach(async account => {
       const service = workspace.getServiceFromAccountName(account)
-      const defaultConfig = await getDefaultAdapterConfig(service, account)
+      const defaultConfig = await getDefaultAdapterConfig(service, account) // todoe
       if (defaultConfig === undefined) {
         // some services might not have configs to restore
         log.info('Cannot restore config for account %s', account)

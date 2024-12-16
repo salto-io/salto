@@ -120,6 +120,8 @@ describe('connection creation', () => {
         })
         it('should close the connections to the readonly and tmp DBs', () => {
           expect(mockClose).toHaveBeenCalledTimes(3)
+        })
+        it('should return the cache of the location', () => {
           expect(cacheReturnSpy).toHaveBeenCalledWith(DB_LOCATION)
         })
       })

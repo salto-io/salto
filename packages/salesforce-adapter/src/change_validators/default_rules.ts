@@ -117,9 +117,7 @@ const createInstanceChangeErrorSingleDefaultNoVisibleFromEntryName = (
   fieldPath: string,
   field: string,
   instance: InstanceElement,
-): ChangeError[] => {
-  return field === '' ? [] : [createInstanceChangeErrorSingleDefaultNoVisible(fieldPath, field, instance)]
-}
+): ChangeError[] => (field === '' ? [] : [createInstanceChangeErrorSingleDefaultNoVisible(fieldPath, field, instance)])
 
 const createInstanceChangeErrorNoDefault = (
   fieldPath: string,

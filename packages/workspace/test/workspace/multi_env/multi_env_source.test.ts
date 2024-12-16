@@ -33,12 +33,7 @@ import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems, inMemRemoteMapCreator } from '../../common/helpers'
-import {
-  CreateRemoteMapParams,
-  InMemoryRemoteMap,
-  RemoteMap,
-  RemoteMapCreator,
-} from '../../../src/workspace/remote_map'
+import { RemoteMap, RemoteMapCreator } from '../../../src/workspace/remote_map'
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
 import {
   AbsoluteStaticFile,
@@ -213,24 +208,6 @@ const sources = {
 }
 const source = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), true)
 
-type MockRemoteMapCreator = {
-  maps: Record<string, InMemoryRemoteMap<unknown>>
-  creator: RemoteMapCreator
-}
-const mockRemoteMaps = (): MockRemoteMapCreator => {
-  const maps: Record<string, InMemoryRemoteMap<unknown>> = {}
-  return {
-    maps,
-    creator: {
-      close: async () => {},
-      create: async <T, K extends string>({ namespace }: CreateRemoteMapParams<T>) => {
-        maps[namespace] = maps[namespace] ?? new InMemoryRemoteMap()
-        return maps[namespace] as unknown as RemoteMap<T, K>
-      },
-    },
-  }
-}
-
 describe('multi env source', () => {
   let referencedByIndex: RemoteMap<ReferenceIndexEntry[]>
   beforeAll(async () => {
@@ -278,9 +255,9 @@ describe('multi env source', () => {
   })
 
   describe('load', () => {
-    let remoteMaps: MockRemoteMapCreator
+    let remoteMapCreator: RemoteMapCreator
     beforeEach(() => {
-      remoteMaps = mockRemoteMaps()
+      remoteMapCreator = inMemRemoteMapCreator()
     })
     describe('first load', () => {
       describe('with empty sources', () => {
@@ -297,7 +274,7 @@ describe('multi env source', () => {
               [activePrefix]: loadEnvSource,
             },
             commonPrefix,
-            remoteMaps.creator,
+            remoteMapCreator,
             true,
           )
           loadResult = await multiSource.load({})
@@ -316,7 +293,7 @@ describe('multi env source', () => {
         beforeEach(async () => {
           // We can re-use the sources here because the mock nacl sources don't behave correctly
           // and will "replay" the "load" result regardless of how many times they are loaded
-          multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
+          multiSource = multiEnvSource(sources, commonPrefix, remoteMapCreator, true)
           loadResult = await multiSource.load({})
         })
         it('should return merged addition changes for environment elements', () => {
@@ -352,7 +329,7 @@ describe('multi env source', () => {
         beforeEach(async () => {
           // We can re-use the sources here because the mock nacl sources don't behave correctly
           // and will "replay" the "load" result regardless of how many times they are loaded
-          multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
+          multiSource = multiEnvSource(sources, commonPrefix, remoteMapCreator, true)
           loadResult = await multiSource.load({ ignoreFileChanges: true })
         })
 
@@ -379,7 +356,7 @@ describe('multi env source', () => {
               [commonPrefix]: firstLoadCommonSource,
             },
             commonPrefix,
-            remoteMaps.creator,
+            remoteMapCreator,
             true,
           )
           firstLoadResult = await firstLoadSource.load({})
@@ -409,7 +386,7 @@ describe('multi env source', () => {
               [commonPrefix]: secondLoadCommonSource,
             },
             commonPrefix,
-            remoteMaps.creator,
+            remoteMapCreator,
             true,
           )
           secondLoadResult = await secondLoadSource.load({})

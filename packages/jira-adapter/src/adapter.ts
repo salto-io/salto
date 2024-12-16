@@ -234,6 +234,13 @@ export const DEFAULT_FILTERS = [
   queryFilter,
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,
+  // serviceUrl filters must run before duplicateIdsFilter to allow go-to-service link in the message
+  serviceUrlInformationFilter,
+  // serviceUrl filters must run before duplicateIdsFilter to allow go-to-service link in the message
+  serviceUrlFilter,
+  // serviceUrl filters must run before duplicateIdsFilter to allow go-to-service link in the message
+  // Must run before fieldReferencesFilter
+  serviceUrlJsmFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,
@@ -325,7 +332,6 @@ export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
-  serviceUrlJsmFilter, // Must run before fieldReferencesFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
@@ -346,8 +352,6 @@ export const DEFAULT_FILTERS = [
   missingFieldDescriptionsFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
-  serviceUrlInformationFilter,
-  serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
   missingDescriptionsFilter,

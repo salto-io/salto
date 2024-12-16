@@ -51,6 +51,10 @@ const filter: FilterCreator = ({ config }) => ({
       )
     })
 
+    const getServiceUrl = (instance: InstanceElement): string =>
+      instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] !== undefined
+        ? `. View in the service - ${instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]}`
+        : ''
     const prettifiesName = (instance: InstanceElement): string =>
       instance.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
         ? instance.annotations[CORE_ANNOTATIONS.ALIAS]
@@ -58,7 +62,9 @@ const filter: FilterCreator = ({ config }) => ({
     const duplicateInstanceNames = _.uniq(
       duplicateInstances
         .filter(isInstanceElement)
-        .flatMap(instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})`),
+        .flatMap(
+          instance => `${prettifiesName(instance)} (${instance.elemID.getFullName()})${getServiceUrl(instance)}`,
+        ),
     )
     if (!config.fetch.fallbackToInternalId) {
       const message = `The following elements had duplicate names in Jira. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.

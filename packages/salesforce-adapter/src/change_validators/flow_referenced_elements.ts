@@ -31,13 +31,17 @@ type FlowElement = {
 const isFlowConnector = (value: unknown): value is FlowConnector =>
   _.isObject(value) && _.isString(_.get(value, 'targetReference'))
 
-const isFlowElement = (value: unknown): value is FlowElement =>
-  _.isObject(value) && _.isString(_.get(value, 'name')) && !_.isUndefined(_.get(value, 'processMetadataValues'))
+const hasProcessMetadataValues = (instance: InstanceElement): boolean => {
+  const { processMetadataValues } = instance.getTypeSync().fields
+  return _.isArray(processMetadataValues)
+}
+
+const isFlowElement = (value: unknown): value is FlowElement => _.isObject(value) && _.isString(_.get(value, 'name'))
 
 const getTargetReferences = (element: InstanceElement): Set<string> => {
   const targetReferences = new Set<string>()
   const findFlowConnectors: WalkOnFunc = ({ value }) => {
-    if (isFlowConnector(value)) {
+    if (hasProcessMetadataValues(value) && isFlowConnector(value)) {
       targetReferences.add(value.targetReference)
       return WALK_NEXT_STEP.SKIP
     }
@@ -56,7 +60,6 @@ const getFlowElements = (element: InstanceElement): { flowElements: Set<string>;
         duplicates.add(value.name)
       }
       flowElements.add(value.name)
-      return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
   }

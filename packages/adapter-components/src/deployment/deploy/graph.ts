@@ -107,7 +107,7 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
 
     // Add dependencies from original changes to subresource changes created for deployment
     const typeActions = Object.keys(changesByTypeAndAction[typeName] ?? []) as (ActionName | AdditionalAction)[]
-    Object.keys(defQuery.query(typeName)?.recurseIntoTypes ?? []).forEach(recurseIntoTypeName => {
+    ;(defQuery.query(typeName)?.recurseIntoPath ?? []).forEach(({ typeName: recurseIntoTypeName }) => {
       const recurseIntoActions = Object.keys(changesByTypeAndAction[recurseIntoTypeName] ?? []) as (
         | ActionName
         | AdditionalAction

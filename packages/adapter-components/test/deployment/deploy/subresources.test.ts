@@ -20,7 +20,7 @@ import {
 import { types } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
-import { createChangesForSubResources } from '../../../src/deployment/deploy/deploy_subresources'
+import { createChangesForSubResources } from '../../../src/deployment/deploy/subresources'
 import { ApiDefinitions } from '../../../src/definitions'
 import { noPagination } from '../../../src/fetch/request/pagination'
 import { HTTPReadClientInterface, HTTPWriteClientInterface } from '../../../src/client'
@@ -74,15 +74,16 @@ describe('createChangesForSubResources', () => {
                   ],
                 },
               },
-              recurseIntoTypes: {
-                typeB: {
+              recurseIntoPath: [
+                {
+                  typeName: 'typeB',
                   fieldPath: ['items'],
                   changeIdFields: ['name', 'role'],
                   condition: {
                     skipIfIdentical: true,
                   },
                 },
-              },
+              ],
             },
             typeB: {
               requestsByAction: {
@@ -242,10 +243,10 @@ describe('createChangesForSubResources', () => {
   })
   describe('custom condition', () => {
     it('should not create changes for subresources if the condition is not met', async () => {
-      if (!definitions.deploy.instances.customizations?.typeA?.recurseIntoTypes?.typeB) {
+      if (!definitions.deploy.instances.customizations?.typeA?.recurseIntoPath?.[0]) {
         return
       }
-      definitions.deploy.instances.customizations.typeA.recurseIntoTypes.typeB.condition = {
+      definitions.deploy.instances.customizations.typeA.recurseIntoPath[0].condition = {
         custom:
           () =>
           ({ change }) =>
@@ -273,10 +274,10 @@ describe('createChangesForSubResources', () => {
   })
   describe('with specific actions provided', () => {
     beforeEach(() => {
-      if (!definitions.deploy.instances.customizations?.typeA?.recurseIntoTypes?.typeB) {
+      if (!definitions.deploy.instances.customizations?.typeA?.recurseIntoPath?.[0]) {
         return
       }
-      definitions.deploy.instances.customizations.typeA.recurseIntoTypes.typeB.onActions = ['modify']
+      definitions.deploy.instances.customizations.typeA.recurseIntoPath[0].onActions = ['modify']
     })
     it('should create changes for the provided actions', async () => {
       const afterInstance = instance.clone()

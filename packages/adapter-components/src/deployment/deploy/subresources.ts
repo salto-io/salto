@@ -43,13 +43,14 @@ const getSubResourceType = (instance: InstanceElement, path: string[], recurseIn
     if (type === undefined || fieldPath.length === 0) {
       return type
     }
-    const field = type.fields[fieldPath[0]]
-    if (!field) {
+    const field = Object.prototype.hasOwnProperty.call(type.fields, fieldPath[0])
+      ? type.fields[fieldPath[0]]
+      : undefined
+    if (field === undefined) {
       log.warn('failed to find type for field %s in type %s', fieldPath[0], type.elemID.getFullName())
       return undefined
     }
 
-    // we currently ignore paths that contains any container types
     const fieldType = getDeepInnerTypeSync(field.getTypeSync())
     // TODO SALTO-7041 support primitive types
     if (!isObjectType(fieldType)) {
@@ -75,7 +76,9 @@ const getSubResourceType = (instance: InstanceElement, path: string[], recurseIn
 }
 
 /**
- * Creates changes for subresources of a change based on RecurseIntoTypeDef.
+ * Creates sub-resource changes from a parent change using RecurseIntoPath definitions.
+ * Identifies additions, removals, and modifications of sub-resources (like array items),
+ * with each change maintaining a reference to the original change.
  */
 export const createChangesForSubResources = async <TOptions extends APIDefinitionsOptions>({
   change,
@@ -87,8 +90,8 @@ export const createChangesForSubResources = async <TOptions extends APIDefinitio
   context: Omit<ChangeAndContext, 'change'>
 }): Promise<Change<InstanceElement>[]> => {
   const defQuery = queryWithDefault(definitions.deploy.instances)
-  const { recurseIntoTypes } = defQuery.query(getChangeData(change).elemID.typeName) ?? {}
-  if (recurseIntoTypes === undefined) {
+  const { recurseIntoPath } = defQuery.query(getChangeData(change).elemID.typeName) ?? {}
+  if (recurseIntoPath === undefined) {
     return []
   }
 
@@ -100,7 +103,7 @@ export const createChangesForSubResources = async <TOptions extends APIDefinitio
     const [fields, missingFields] = _.partition(nameParts, ({ fieldValue }) => fieldValue !== undefined)
     if (missingFields.length > 0) {
       log.warn(
-        'failed to fields %s in item %s of change %s',
+        'failed to find fields %s in item %s of change %s',
         missingFields.map(({ fieldName }) => fieldName),
         safeJsonStringify(item),
         getChangeData(change).elemID.getFullName(),
@@ -139,92 +142,90 @@ export const createChangesForSubResources = async <TOptions extends APIDefinitio
 
   const changes: Change<InstanceElement>[] = (
     await Promise.all(
-      Object.entries(recurseIntoTypes).map(
-        async ([recurseIntoTypeName, { condition, fieldPath, changeIdFields, onActions }]) => {
-          if (onActions !== undefined && !onActions.includes(change.action)) {
-            log.trace(
-              'skipping recurse into %s in type %s and action %s',
-              recurseIntoTypeName,
-              getChangeData(change).elemID.typeName,
-              change.action,
-            )
-            return []
-          }
-
-          const checkFunc = createCheck(condition, fieldPath)
-          if (!(await checkFunc({ change, ...context, errors: {} }))) {
-            log.trace(
-              'skipping recurse into %s in type %s for change %s because the condition was not met',
-              recurseIntoTypeName,
-              getChangeData(change).elemID.typeName,
-              getChangeData(change).elemID.getFullName(),
-            )
-            return []
-          }
-
-          const [beforeItemsById, afterItemsById] = [
-            isRemovalOrModificationChange(change) ? change.data.before : undefined,
-            isAdditionOrModificationChange(change) ? change.data.after : undefined,
-          ]
-            .map(instance => makeArray(_.get(instance?.value, fieldPath)))
-            .map(items => _.keyBy(items, item => getSubResourceId(item, changeIdFields)))
-
-          const recurseIntoType = getSubResourceType(getChangeData(change), fieldPath, recurseIntoTypeName)
-
-          const additions = Object.entries(afterItemsById)
-            .filter(([id]) => beforeItemsById[id] === undefined)
-            .map(([id, item]) => createChangeFromSubResource({ id, data: { after: item } }, recurseIntoType, change))
-
-          log.debug(
-            'found %d addition changes for %s in %s, the first 10 are: %s',
-            additions.length,
-            recurseIntoTypeName,
-            getChangeData(change).elemID.getFullName(),
-            inspectValue(additions, { maxArrayLength: 10 }),
+      recurseIntoPath.map(async ({ fieldPath, typeName, condition, changeIdFields, onActions }) => {
+        if (onActions !== undefined && !onActions.includes(change.action)) {
+          log.trace(
+            'skipping recurse into %s in type %s and action %s',
+            typeName,
+            getChangeData(change).elemID.typeName,
+            change.action,
           )
+          return []
+        }
 
-          const removals = Object.entries(beforeItemsById)
-            .filter(([id]) => afterItemsById[id] === undefined)
-            .map(([id, item]) => createChangeFromSubResource({ id, data: { before: item } }, recurseIntoType, change))
-
-          log.debug(
-            'found %d removal changes for %s in %s, the first 10 are: %s',
-            removals.length,
-            recurseIntoTypeName,
+        const checkFunc = createCheck(condition, fieldPath)
+        if (!(await checkFunc({ change, ...context, errors: {} }))) {
+          log.trace(
+            'skipping recurse into %s in type %s for change %s because the condition was not met',
+            typeName,
+            getChangeData(change).elemID.typeName,
             getChangeData(change).elemID.getFullName(),
-            inspectValue(removals, { maxArrayLength: 10 }),
           )
+          return []
+        }
 
-          const modifications = Object.entries(beforeItemsById)
-            .filter(([id, beforeItem]) => {
-              const afterItem = afterItemsById[id]
-              return afterItem !== undefined && !isEqualValues(beforeItem, afterItem)
-            })
-            .map(([id, beforeItem]) =>
-              createChangeFromSubResource(
-                {
-                  id,
-                  data: {
-                    before: beforeItem,
-                    after: afterItemsById[id],
-                  },
+        const [beforeItemsById, afterItemsById] = [
+          isRemovalOrModificationChange(change) ? change.data.before : undefined,
+          isAdditionOrModificationChange(change) ? change.data.after : undefined,
+        ]
+          .map(instance => makeArray(_.get(instance?.value, fieldPath)))
+          .map(items => _.keyBy(items, item => getSubResourceId(item, changeIdFields)))
+
+        const recurseIntoType = getSubResourceType(getChangeData(change), fieldPath, typeName)
+
+        const additions = Object.entries(afterItemsById)
+          .filter(([id]) => beforeItemsById[id] === undefined)
+          .map(([id, item]) => createChangeFromSubResource({ id, data: { after: item } }, recurseIntoType, change))
+
+        log.debug(
+          'found %d addition changes for %s in %s, the first 10 are: %s',
+          additions.length,
+          typeName,
+          getChangeData(change).elemID.getFullName(),
+          inspectValue(additions, { maxArrayLength: 10 }),
+        )
+
+        const removals = Object.entries(beforeItemsById)
+          .filter(([id]) => afterItemsById[id] === undefined)
+          .map(([id, item]) => createChangeFromSubResource({ id, data: { before: item } }, recurseIntoType, change))
+
+        log.debug(
+          'found %d removal changes for %s in %s, the first 10 are: %s',
+          removals.length,
+          typeName,
+          getChangeData(change).elemID.getFullName(),
+          inspectValue(removals, { maxArrayLength: 10 }),
+        )
+
+        const modifications = Object.entries(beforeItemsById)
+          .filter(([id, beforeItem]) => {
+            const afterItem = afterItemsById[id]
+            return afterItem !== undefined && !isEqualValues(beforeItem, afterItem)
+          })
+          .map(([id, beforeItem]) =>
+            createChangeFromSubResource(
+              {
+                id,
+                data: {
+                  before: beforeItem,
+                  after: afterItemsById[id],
                 },
-                recurseIntoType,
-                change,
-              ),
-            )
-
-          log.debug(
-            'found %d modification changes for %s in %s, the first 10 are: %s',
-            modifications.length,
-            recurseIntoTypeName,
-            getChangeData(change).elemID.getFullName(),
-            inspectValue(modifications, { maxArrayLength: 10 }),
+              },
+              recurseIntoType,
+              change,
+            ),
           )
 
-          return additions.concat(removals).concat(modifications)
-        },
-      ),
+        log.debug(
+          'found %d modification changes for %s in %s, the first 10 are: %s',
+          modifications.length,
+          typeName,
+          getChangeData(change).elemID.getFullName(),
+          inspectValue(modifications, { maxArrayLength: 10 }),
+        )
+
+        return additions.concat(removals).concat(modifications)
+      }),
     )
   ).flat()
 

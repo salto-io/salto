@@ -80,7 +80,7 @@ export const createCheck = (
   // note: no need to add a default for the value of single,
   // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
-  const getCheckValue = (value: Values): Values => checkPath === undefined ? value : _.get(value, checkPath)
+  const getCheckValue = (value: Values): Values => (checkPath === undefined ? value : _.get(value, checkPath))
   return async args => {
     const { change } = args
     if (!isModificationChange(change)) {

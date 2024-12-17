@@ -217,12 +217,13 @@ describe('createDependencyGraph', () => {
           customizations: {
             typeA: {
               requestsByAction: {},
-              recurseIntoTypes: {
-                typeAItems: {
+              recurseIntoPath: [
+                {
+                  typeName: 'typeAItems',
                   fieldPath: ['items'],
                   changeIdFields: ['name'],
                 },
-              },
+              ],
             },
             typeB: {
               requestsByAction: {},

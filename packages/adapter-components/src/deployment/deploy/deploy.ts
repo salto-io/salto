@@ -28,7 +28,7 @@ import { createDependencyGraph } from './graph'
 import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
-import { createChangesForSubResources } from './deploy_subresources'
+import { createChangesForSubResources } from './subresources'
 
 const log = logger(module)
 const { mapValuesAsync } = promises.object

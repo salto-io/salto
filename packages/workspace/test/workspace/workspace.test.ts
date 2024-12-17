@@ -2428,7 +2428,7 @@ salesforce.staticFile staticFileInstance {
       }
       return m
     }
-    it.only('should flush all data sources', async () => {
+    it('should flush all data sources', async () => {
       const mockFlush = jest.fn()
       const flushable = {
         flush: mockFlush,

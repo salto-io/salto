@@ -6,27 +6,26 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
-  TypeElement,
-  ObjectType,
+  AdapterOperations,
+  Change,
+  DeployResult,
+  Element,
+  ElemID,
+  ElemIdGetter,
+  FetchOptions,
+  FetchResult,
+  Field,
+  FixElementsFunc,
+  getChangeData,
   InstanceElement,
   isAdditionChange,
-  getChangeData,
-  Change,
-  ElemIdGetter,
-  FetchResult,
-  FixElementsFunc,
-  AdapterOperations,
-  DeployResult,
-  FetchOptions,
-  ReadOnlyElementsSource,
-  ElemID,
-  PartialFetchData,
-  Element,
-  isInstanceElement,
-  Field,
   isField,
+  isInstanceElement,
   isObjectType,
-  TypeReference,
+  ObjectType,
+  PartialFetchData,
+  ReadOnlyElementsSource,
+  TypeElement,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -40,18 +39,30 @@ import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salt
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values, promises, objects } from '@salto-io/lowerdash'
+import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient, { CustomListFuncDef } from './client/client'
 import * as constants from './constants'
 import {
+  APEX_CLASS_METADATA_TYPE,
+  ArtificialTypes,
+  CUSTOM_FIELD,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  FLOW_METADATA_TYPE,
+  LAST_MODIFIED_DATE,
+  OWNER_ID,
+  PROFILE_RELATED_METADATA_TYPES,
+  WAVE_DATAFLOW_METADATA_TYPE,
+} from './constants'
+import {
   apiName,
-  Types,
-  isMetadataObjectType,
   createInstanceElement,
-  isCustom,
-  MetadataMetaType,
   createMetadataTypeElements,
+  isCustom,
+  isMetadataObjectType,
+  MetadataMetaType,
   StandardSettingsMetaType,
+  Types,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -129,7 +140,7 @@ import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
 import { getConfigFromConfigChanges } from './config_change'
-import { Filter, FilterResult, FilterContext, FilterCreator } from './filter'
+import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
   addDefaults,
   apiNameSync,
@@ -142,34 +153,22 @@ import {
   isInstanceOfCustomObjectSync,
   isInstanceOfTypeSync,
   isMetadataInstanceElementSync,
+  isOrderedMapTypeOrRefType,
   listMetadataObjects,
   metadataTypeSync,
   queryClient,
 } from './filters/utils'
 import {
-  retrieveMetadataInstances,
-  fetchMetadataType,
   fetchMetadataInstances,
+  fetchMetadataType,
   retrieveMetadataInstanceForFetchWithChangesDetection,
+  retrieveMetadataInstances,
 } from './fetch'
-import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
+import { deployCustomObjectInstancesGroup, isCustomObjectInstanceChanges } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
-import {
-  APEX_CLASS_METADATA_TYPE,
-  ArtificialTypes,
-  CUSTOM_FIELD,
-  CUSTOM_OBJECT,
-  CUSTOM_OBJECT_ID_FIELD,
-  FLOW_METADATA_TYPE,
-  LAST_MODIFIED_DATE,
-  ORDERED_MAP_PREFIX,
-  OWNER_ID,
-  PROFILE_RELATED_METADATA_TYPES,
-  WAVE_DATAFLOW_METADATA_TYPE,
-} from './constants'
 import {
   buildFilePropsMetadataQuery,
   buildMetadataQuery,
@@ -452,9 +451,6 @@ type CreateFiltersRunnerParams = {
   fetchProfile: FetchProfile
   contextOverrides?: Partial<FilterContext>
 }
-
-export const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
-  typeRef.elemID.name.startsWith(ORDERED_MAP_PREFIX)
 
 const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
   Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)

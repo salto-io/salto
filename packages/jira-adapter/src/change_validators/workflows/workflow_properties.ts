@@ -12,9 +12,9 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   SeverityLevel,
+  Values,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { Values } from '@salto-io/adapter-api/src/values'
 import { isWorkflowInstance } from '../../filters/workflowV2/types'
 
 const { awu } = collections.asynciterable

@@ -17,9 +17,8 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { createSchemeGuard, getParent, hasValidParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, hasValidParent, naclCase, pathNaclCase, filter } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils } from '@salto-io/adapter-components'
-import { FilterResult } from '@salto-io/adapter-utils/src/filter'
 import _ from 'lodash'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
 import { JiraConfig } from '../../config/config'
@@ -232,7 +231,7 @@ export const fetchRequestTypeDetails = async ({
   fetchQuery: adapterElements.query.ElementQuery
   getElemIdFunc?: ElemIdGetter | undefined
   typeName: LayoutTypeName
-}): Promise<void | FilterResult> => {
+}): Promise<void | filter.FilterResult> => {
   if (client.isDataCenter || !config.fetch.enableJSM || !fetchQuery.isTypeMatch(typeName)) {
     return
   }

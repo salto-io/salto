@@ -18,9 +18,11 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
-import { SetId } from '@salto-io/lowerdash/src/collections/set'
+import { collections } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ORDER_TYPE } from '../constants'
+
+type SetId = collections.set.SetId
 
 const createDependencyChange = (objectTypeOrderKey: SetId, objectSchemaKey: SetId): DependencyChange[] => [
   dependencyChange('remove', objectTypeOrderKey, objectSchemaKey),

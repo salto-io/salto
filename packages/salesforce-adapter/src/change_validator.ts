@@ -52,6 +52,7 @@ import { buildFetchProfile } from './fetch_profile/fetch_profile'
 import { getLookUpName } from './transformers/reference_mapping'
 import layoutDuplicateFields from './change_validators/layout_duplicate_fields'
 import customApplications from './change_validators/custom_applications'
+import flowReferencedElements from './change_validators/flow_have_referenced_elements'
 
 const { createChangeValidator, getDefaultChangeValidators } = deployment.changeValidators
 
@@ -110,6 +111,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   orderedMaps: ({ fetchProfile }) => orderedMaps(fetchProfile),
   layoutDuplicateFields: () => layoutDuplicateFields,
   customApplications: () => customApplications,
+  flowReferencedElements: () => flowReferencedElements,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

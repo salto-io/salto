@@ -25,6 +25,7 @@ import {
   ElemID,
   TypeElement,
   Value,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
@@ -39,7 +40,7 @@ import {
   assertMetadataObjectType,
   Types,
 } from './transformers/transformer'
-import { apiNameSync, fullApiName } from './filters/utils'
+import { apiNameSync, fullApiName, setInternalId } from './filters/utils'
 import {
   API_NAME_SEPARATOR,
   CUSTOM_FIELD,
@@ -473,6 +474,20 @@ const quickDeployOrDeploy = async (
   return client.deploy(pkgData, { checkOnly }, createProgressReporterCallback())
 }
 
+const updateID = (change: Change, metaIds: Readonly<MetadataId[]>): Change => {
+  if (isAdditionOrModificationChange(change)) {
+    metaIds.forEach(metaId => {
+      if (
+        change.data.after.elemID.typeName === metaId.type &&
+        change.data.after.elemID.getFullNameParts().includes(metaId.fullName)
+      ) {
+        setInternalId(change.data.after, metaId.id)
+      }
+    })
+  }
+  return change
+}
+
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
   deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
@@ -608,6 +623,9 @@ export const deployMetadata = async (
     deployedComponentsElemIdsByType,
     checkOnly ?? false,
   )
+
+  changes.forEach(change => updateID(change, successfulFullNames))
+
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]

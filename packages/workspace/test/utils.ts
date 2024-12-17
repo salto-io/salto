@@ -12,9 +12,9 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
 import { StaticFilesSource, MissingStaticFile } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
-import { RemoteMap, RemoteMapEntry, CreateRemoteMapParams, RemoteMapCreator } from '../src/workspace/remote_map'
+import { RemoteMap } from '../src/workspace/remote_map'
 
-const { awu, toAsyncIterable } = collections.asynciterable
+const { awu } = collections.asynciterable
 const { isDefined } = values
 
 export class TestFuncImpl extends parser.FunctionExpression {}
@@ -43,55 +43,6 @@ export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFil
     .fn()
     .mockImplementation(filePath => staticFiles.find(f => f.filepath === filePath) !== undefined),
 })
-
-export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
-  const maps = {} as Record<string, Record<string, string>>
-  const creator = async <T, K extends string = string>(opts: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
-    if (maps[opts.namespace] === undefined) {
-      maps[opts.namespace] = {} as Record<string, string>
-    }
-    const get = async (key: K): Promise<T | undefined> => {
-      const value = maps[opts.namespace][key]
-      return value ? opts.deserialize(value) : undefined
-    }
-    return {
-      setAll: async (entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>): Promise<void> => {
-        for await (const entry of entries) {
-          maps[opts.namespace][entry.key] = await opts.serialize(entry.value)
-        }
-      },
-      delete: async (key: K) => {
-        delete maps[opts.namespace][key]
-      },
-      deleteAll: async (keys: collections.asynciterable.ThenableIterable<K>) => {
-        for await (const key of keys) {
-          delete maps[opts.namespace][key]
-        }
-      },
-      get,
-      getMany: async (keys: K[]): Promise<(T | undefined)[]> => Promise.all(keys.map(get)),
-      has: async (key: K): Promise<boolean> => key in maps[opts.namespace],
-      set: async (key: K, value: T): Promise<void> => {
-        maps[opts.namespace][key] = await opts.serialize(value)
-      },
-      clear: async (): Promise<void> => {
-        maps[opts.namespace] = {} as Record<K, string>
-      },
-      entries: (): AsyncIterable<RemoteMapEntry<T, K>> =>
-        awu(Object.entries(maps[opts.namespace])).map(async ([key, value]) => ({
-          key: key as K,
-          value: await opts.deserialize(value as string),
-        })),
-      keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(maps[opts.namespace]) as unknown as K[]),
-      values: (): AsyncIterable<T> =>
-        awu(Object.values(maps[opts.namespace])).map(async v => opts.deserialize(v as string)),
-      flush: (): Promise<boolean> => Promise.resolve(false),
-      close: (): Promise<void> => Promise.resolve(undefined),
-      isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(maps[opts.namespace])),
-    }
-  }
-  return { create: creator, close: async () => {} }
-}
 
 export const defaultContent = 'ZOMG'
 const defaultPath = 'path'

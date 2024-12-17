@@ -31,13 +31,14 @@ import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_fi
 import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/static_files'
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
-import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
 import {
   InMemoryRemoteMap,
   RemoteMap,
   CreateRemoteMapParams,
   inMemRemoteMapCreator,
 } from '../../../src/workspace/remote_map'
+import { mockStaticFilesSource } from '../../utils'
+import { InMemoryRemoteMap, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
@@ -147,7 +148,7 @@ describe.each([false, true])(
       createdMaps = {}
       mockDirStore = createMockDirStore([], true)
       mockedStaticFilesSource = mockStaticFilesSource()
-      mockCache = createParseResultCache('test', persistentMockCreateRemoteMap(), mockStaticFilesSource(), true)
+      mockCache = createParseResultCache('test', inMemRemoteMapCreator(), mockStaticFilesSource(), true)
       getChangeLocationsMock = getChangeLocations as jest.MockedFunction<typeof getChangeLocations>
       getChangeLocationsMock.mockImplementation(
         (change: DetailedChange) =>

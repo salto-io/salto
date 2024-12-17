@@ -27,9 +27,10 @@ import { DirectoryStore } from '../../../src/workspace/dir_store'
 import { NaclFile, naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 
-import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
+import { mockStaticFilesSource } from '../../utils'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 import { WORKSPACE_FLAGS } from '../../../src/flags'
+import { inMemRemoteMapCreator } from '../../common/helpers'
 
 const { awu } = collections.asynciterable
 
@@ -99,7 +100,7 @@ describe.each([false, true])(
           '',
           mockDirStore,
           mockedStaticFilesSource,
-          persistentMockCreateRemoteMap(),
+          inMemRemoteMapCreator(),
           true,
         )
         await naclFileSourceTest.load({})
@@ -327,7 +328,7 @@ describe.each([false, true])(
                 '',
                 mockDirStore,
                 mockedStaticFilesSource,
-                persistentMockCreateRemoteMap(),
+                inMemRemoteMapCreator(),
                 true,
               )
               await naclFileSourceWithFragments.load({})
@@ -560,13 +561,7 @@ describe.each([false, true])(
             await mockDirStore.set(fileA)
             await mockDirStore.set(fileB)
 
-            source = await naclFilesSource(
-              '',
-              mockDirStore,
-              mockedStaticFilesSource,
-              persistentMockCreateRemoteMap(),
-              true,
-            )
+            source = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
             await source.load({})
 
             // Prepare and apply changes

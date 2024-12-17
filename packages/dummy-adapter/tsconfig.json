@@ -11,6 +11,7 @@
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
     { "path": "../element-test-utils" },
+    { "path": "../local-workspace" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
     { "path": "../parser" },

@@ -631,6 +631,7 @@ describe('Convert maps filter', () => {
   describe('Convert inner field to map', () => {
     let lwcBefore: InstanceElement
     let lwcAfter: InstanceElement
+    let lwcSorted: InstanceElement
     let elements: Element[]
     type FilterType = FilterWith<'onFetch' | 'preDeploy'>
     let filter: FilterType
@@ -642,6 +643,18 @@ describe('Convert maps filter', () => {
             lwcResource: [
               { filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' },
               { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' },
+            ],
+          },
+        },
+        mockTypes.LightningComponentBundle,
+      )
+      lwcSorted = createInstanceElement(
+        {
+          fullName: 'lwc',
+          lwcResources: {
+            lwcResource: [
+              { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' },
+              { filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' },
             ],
           },
         },
@@ -678,7 +691,7 @@ describe('Convert maps filter', () => {
         await filter.preDeploy([toChange({ after: lwcDeploy })])
       })
       it('should return inner field back to list', async () => {
-        expect(lwcDeploy).toEqual(lwcBefore)
+        expect(lwcDeploy).toEqual(lwcSorted)
       })
     })
   })

@@ -521,7 +521,11 @@ const convertFieldsBackToLists = async (
   mapFieldDef: Record<string, MapDef>,
   elementType: string,
 ): Promise<void> => {
-  const toVals = (values: Values): Values[] => Object.values(values).flat()
+  const toVals = (values: Values): Values[] =>
+    Object.entries(values)
+      .sort(([key1, _val1], [key2, _val2]) => key1.localeCompare(key2))
+      .map(([_key, val]) => val)
+      .flat()
 
   const backToArrays = (baseElement: Element): Element => {
     const elementsToConvert = []

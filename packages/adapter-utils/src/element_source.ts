@@ -10,7 +10,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath, resolveTypeShallow } from './utils'
-import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from './element_adapter_rename'
 
 const { awu } = collections.asynciterable
 

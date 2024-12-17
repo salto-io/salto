@@ -24,7 +24,10 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
-import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../element_adapter_rename'
+import {
+  createAdapterReplacedID,
+  updateElementsWithAlternativeAccount,
+} from '../../../adapter-utils/src/element_adapter_rename'
 import { mergeSingleElement } from '../merger'
 import { serialize } from '../serializer'
 import { deserializeValidationErrors } from '../serializer/elements'

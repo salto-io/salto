@@ -31,7 +31,7 @@ import {
   UnresolvedReference,
   ContainerTypeName,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc } from './utils'
 
 const { awu } = collections.asynciterable
 

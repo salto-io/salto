@@ -64,7 +64,10 @@ import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
 import { buildStaticFilesCache } from './src/workspace/static_files/static_files_cache'
-import { updateElementsWithAlternativeAccount, createAdapterReplacedID } from './src/element_adapter_rename'
+import {
+  updateElementsWithAlternativeAccount,
+  createAdapterReplacedID,
+} from '../adapter-utils/src/element_adapter_rename'
 import { RemoteElementSource, ElementsSource } from './src/workspace/elements_source'
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
 import { State } from './src/workspace/state'

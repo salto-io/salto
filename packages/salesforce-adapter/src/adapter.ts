@@ -445,8 +445,6 @@ const getIncludedTypesFromElementsSource = async (
     .filter(metadataType => !isCustomObjectSync(metadataType))
     // custom types (CustomMetadata / CustomObject (non-standard) / CustomSettings)
     .filter(metadataType => !isCustomType(metadataType))
-    // settings types
-    .filter(metadataType => !metadataType.isSettings)
     .filter(type => metadataQuery.isTypeMatch(apiNameSync(type) ?? ''))
     .toArray()
 
@@ -648,13 +646,14 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
     progressReporter.reportProgress({ message: 'Fetching Metadata Settings types' })
     const standardSettingsMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? StandardSettingsMetaType : undefined
-    const settingsTypes = fetchProfile.isFeatureEnabled('retrieveSettings')
-      ? await this.fetchMetadataSettingsTypes({
-          instances: metadataInstancesElements,
-          knownTypes: hardCodedTypesMap,
-          standardSettingsMetaType,
-        })
-      : []
+    const settingsTypes =
+      fetchProfile.isFeatureEnabled('retrieveSettings') && !withChangesDetection
+        ? await this.fetchMetadataSettingsTypes({
+            instances: metadataInstancesElements,
+            knownTypes: hardCodedTypesMap,
+            standardSettingsMetaType,
+          })
+        : []
 
     const elements = [
       ...[metadataMetaType, standardSettingsMetaType].filter(isDefined),
@@ -921,7 +920,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   }
 
   @logDuration('fetching Metadata Settings types')
-  private async fetchMetadataSettingsTypes({
+  public async fetchMetadataSettingsTypes({
     instances,
     knownTypes,
     standardSettingsMetaType,

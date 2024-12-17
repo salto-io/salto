@@ -1098,11 +1098,6 @@ export const loadWorkspace = async (
     replaceAccountNameWithAdapter = true,
     includeHidden = true,
   }) => {
-    const elementsSource = await elementsImpl(includeHidden, env)
-    const accountElementsSource = filterElementsSource(elementsSource, account)
-    if (!replaceAccountNameWithAdapter) {
-      return accountElementsSource
-    }
     const envConfig = currentEnvsConf().find(e => e.name === env)
     if (envConfig === undefined) {
       log.error('Failed to find config for env %s')
@@ -1113,9 +1108,15 @@ export const loadWorkspace = async (
       log.error(
         'Failed to find adapter name for account %s in env %s. Account to service name is %s',
         account,
+        env,
         inspectValue(envConfig.accountToServiceName),
       )
       return undefined
+    }
+    const elementsSource = await elementsImpl(includeHidden, env)
+    const accountElementsSource = filterElementsSource(elementsSource, account)
+    if (!replaceAccountNameWithAdapter) {
+      return accountElementsSource
     }
     return createElemIDReplacedElementsSource(accountElementsSource, account, adapterName)
   }

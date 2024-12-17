@@ -41,6 +41,7 @@ import {
   DetailedChangeWithBaseChange,
   isElement,
   toChange,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from 'index'
 import {
@@ -421,6 +422,110 @@ describe('workspace', () => {
         const inactiveEnvElements = await awu(await (await newWorkspace.elements(false, 'inactive')).getAll()).toArray()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
+      })
+    })
+  })
+  describe('accountElements', () => {
+    const ACCOUNT1 = 'account1'
+    const ACCOUNT2 = 'account2'
+    const ADAPTER1 = 'adapter1'
+    const ADAPTER2 = 'adapter2'
+    let hiddenAccount1Element: Element
+    let account1Element: Element
+    let account2Element: Element
+    let workspace: Workspace
+
+    const elementsFromSource = async (source?: ReadOnlyElementsSource): Promise<Element[]> =>
+      source ? awu(await source.getAll()).toArray() : []
+    beforeEach(async () => {
+      hiddenAccount1Element = new ObjectType({
+        elemID: new ElemID(ACCOUNT1, 'hidden'),
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      })
+      account1Element = new ObjectType({
+        elemID: new ElemID(ACCOUNT1, 'test'),
+      })
+      account2Element = new ObjectType({
+        elemID: new ElemID(ACCOUNT2, 'test'),
+      })
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        mockWorkspaceConfigSource({
+          envs: [
+            {
+              name: 'default',
+              services: [ACCOUNT1, ACCOUNT2],
+              accountToServiceName: { [ACCOUNT1]: ADAPTER1, [ACCOUNT2]: ADAPTER2 },
+            },
+          ],
+        }),
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([account1Element, account2Element]),
+            state: createState([hiddenAccount1Element]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource([]),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('when includeHidden is false', () => {
+      it('should not include hidden elements', async () => {
+        const elements = (await elementsFromSource(
+          await workspace.accountElements({ account: ACCOUNT1, includeHidden: false }),
+        )) as Element[]
+        expect(elements.map(e => e.elemID.getFullName())).toEqual([`${ADAPTER1}.test`])
+      })
+    })
+    describe('when includeHidden is true', () => {
+      it('should include hidden elements', async () => {
+        const elements = (await elementsFromSource(
+          await workspace.accountElements({ account: ACCOUNT1, includeHidden: true }),
+        )) as Element[]
+        expect(elements.map(e => e.elemID.getFullName())).toEqual([`${ADAPTER1}.hidden`, `${ADAPTER1}.test`])
+      })
+    })
+    describe('when replaceAccountNameWithAdapter is false', () => {
+      it('should not replace account name with adapter name', async () => {
+        const elements = (await elementsFromSource(
+          await workspace.accountElements({
+            account: ACCOUNT1,
+            includeHidden: true,
+            replaceAccountNameWithAdapter: false,
+          }),
+        )) as Element[]
+        expect(elements.map(e => e.elemID.getFullName())).toEqual([`${ACCOUNT1}.hidden`, `${ACCOUNT1}.test`])
+      })
+    })
+    describe('when replaceAccountNameWithAdapter is true', () => {
+      it('should not replace account name with adapter name', async () => {
+        const elements = (await elementsFromSource(
+          await workspace.accountElements({
+            account: ACCOUNT1,
+            includeHidden: true,
+            replaceAccountNameWithAdapter: true,
+          }),
+        )) as Element[]
+        expect(elements.map(e => e.elemID.getFullName())).toEqual([`${ADAPTER1}.hidden`, `${ADAPTER1}.test`])
+      })
+    })
+    describe('when account does not exist in the Workspace', () => {
+      it('should return undefined', async () => {
+        expect(await workspace.accountElements({ account: 'nonExisting' })).toBeUndefined()
+      })
+    })
+    describe('when env does not exist in the Workspace', () => {
+      it('should return undefined', async () => {
+        expect(await workspace.accountElements({ account: ACCOUNT1, env: 'nonExisting' })).toBeUndefined()
       })
     })
   })

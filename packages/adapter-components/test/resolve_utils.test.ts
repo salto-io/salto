@@ -25,7 +25,7 @@ import {
   TemplateExpression,
 } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, ResolveValuesFunc } from '@salto-io/adapter-utils'
-import { templateExpressionToStaticFile } from '@salto-io/parser/src/utils'
+import { parserUtils } from '@salto-io/parser'
 import { resolveValues, resolveChangeElement, createChangeElementResolver } from '../src/resolve_utils'
 import { restoreValues } from '../src/restore_utils'
 
@@ -72,7 +72,7 @@ describe('resolve utils func', () => {
 
     const firstRef = new InstanceElement('first', refType, { from: 'Milano', to: 'Minsk', obj: { a: 1 } })
 
-    const templateFileValue = templateExpressionToStaticFile(
+    const templateFileValue = parserUtils.templateExpressionToStaticFile(
       new TemplateExpression({
         parts: [
           'Well, you made a long journey from ',

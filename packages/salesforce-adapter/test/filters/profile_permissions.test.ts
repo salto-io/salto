@@ -18,7 +18,7 @@ import {
   TypeReference,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { isDefined } from '@salto-io/lowerdash/src/values'
+import { values } from '@salto-io/lowerdash'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { ProfileInfo } from '../../src/client/types'
@@ -74,7 +74,7 @@ describe('Profile Permissions filter', () => {
       .filter(isInstanceOfTypeChangeSync(constants.PROFILE_METADATA_TYPE))
       .map(getChangeData)
       .map(instance => apiNameSync(instance))
-      .filter(isDefined)
+      .filter(values.isDefined)
 
   let filter: FilterWith<'preDeploy' | 'onDeploy'>
 

@@ -52,6 +52,7 @@ import {
   MockDeployProgressReporter,
   createMockProgressReporter,
 } from './utils'
+// eslint-disable-next-line no-restricted-imports
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'

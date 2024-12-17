@@ -17,7 +17,7 @@ import {
   Value,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { createSchemeGuard, getParent, hasValidParent, naclCase, pathNaclCase, filter } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParent, hasValidParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as adapterElements, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { setTypeDeploymentAnnotations, addAnnotationRecursively } from '../../utils'
@@ -37,6 +37,7 @@ import {
 } from './layout_types'
 import { ISSUE_LAYOUT_TYPE, ISSUE_VIEW_TYPE, JIRA, REQUEST_FORM_TYPE, REQUEST_TYPE_NAME } from '../../constants'
 import { DEFAULT_API_DEFINITIONS } from '../../config/api_config'
+import { FilterResult } from '../../filter'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -231,7 +232,7 @@ export const fetchRequestTypeDetails = async ({
   fetchQuery: adapterElements.query.ElementQuery
   getElemIdFunc?: ElemIdGetter | undefined
   typeName: LayoutTypeName
-}): Promise<void | filter.FilterResult> => {
+}): Promise<void | FilterResult> => {
   if (client.isDataCenter || !config.fetch.enableJSM || !fetchQuery.isTypeMatch(typeName)) {
     return
   }

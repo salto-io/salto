@@ -13,6 +13,7 @@ import realAdapter from './adapter'
 import { API_VERSION } from '../src/client/client'
 import { SalesforceConfig, UsernamePasswordCredentials } from '../src/types'
 import { testHelpers } from './jest_environment'
+// eslint-disable-next-line no-restricted-imports
 import { mockTypes } from '../test/mock_elements'
 import { createInstanceElement, MetadataInstanceElement } from '../src/transformers/transformer'
 import { nullProgressReporter } from './utils'

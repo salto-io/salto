@@ -18,7 +18,7 @@ import {
   isReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils/src/element_source'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/add_referencing_workbooks'
 import { LocalFilterOpts } from '../../src/filter'
 import { parsedDatasetType } from '../../src/type_parsers/analytics_parsers/parsed_dataset'

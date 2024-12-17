@@ -16,8 +16,7 @@ import {
   toChange,
   DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
-import { dumpElements, parse, SourceMap } from '@salto-io/parser/src/parser'
-import { SourcePos } from '@salto-io/parser/src/parser/internal/types'
+import { parser } from '@salto-io/parser'
 import { toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import {
   getNestedStaticFiles,
@@ -116,10 +115,14 @@ describe('getNestedStaticFiles', () => {
 })
 
 describe('getChangeLocations', () => {
-  const sourceMapForElement = async (elem: Element): Promise<SourceMap> =>
-    (await parse(Buffer.from(await dumpElements([elem])), 'file.nacl')).sourceMap
+  const sourceMapForElement = async (elem: Element): Promise<parser.SourceMap> =>
+    (await parser.parse(Buffer.from(await parser.dumpElements([elem])), 'file.nacl')).sourceMap
 
-  const locationForElement = (elemID: ElemID, sourceMap: SourceMap, member: 'start' | 'end' = 'start'): SourcePos => {
+  const locationForElement = (
+    elemID: ElemID,
+    sourceMap: parser.SourceMap,
+    member: 'start' | 'end' = 'start',
+  ): parser.SourceRange['start'] => {
     const pos = sourceMap.get(elemID.getFullName())?.[0][member]
     if (pos === undefined) {
       throw new Error('location is undefined')
@@ -133,7 +136,7 @@ describe('getChangeLocations', () => {
     it('should add the element at the end of the file', () => {
       const mockType = createMockType({})
       const change = toDetailedChangeFromBaseChange(toChange({ after: mockType }))
-      const result = getChangeLocations(change, new SourceMap())
+      const result = getChangeLocations(change, new parser.SourceMap())
       expect(result).toEqual([
         {
           ...change,
@@ -150,7 +153,7 @@ describe('getChangeLocations', () => {
       const noPath = createMockType({})
       noPath.path = undefined
       const change = toDetailedChangeFromBaseChange(toChange({ after: noPath }))
-      const result = getChangeLocations(change, new SourceMap())
+      const result = getChangeLocations(change, new parser.SourceMap())
       expect(result).toEqual([
         {
           ...change,
@@ -219,7 +222,7 @@ describe('getChangeLocations', () => {
         ...toDetailedChangeFromBaseChange(toChange({ after: mockType.fields.numArray })),
         path: ['file'],
       }
-      const result = getChangeLocations(change, new SourceMap())
+      const result = getChangeLocations(change, new parser.SourceMap())
       expect(result).toEqual([
         {
           ...change,

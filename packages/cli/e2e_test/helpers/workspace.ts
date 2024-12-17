@@ -25,6 +25,7 @@ import { collections } from '@salto-io/lowerdash'
 import { findElement } from '@salto-io/adapter-utils'
 import commandDefs from '../../src/commands'
 import cli from '../../src/cli'
+// eslint-disable-next-line no-restricted-imports
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode } from '../../src/types'
 import { validateWorkspace } from '../../src/workspace/workspace'

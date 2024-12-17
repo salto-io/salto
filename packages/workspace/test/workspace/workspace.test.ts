@@ -43,12 +43,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from 'index'
-import {
-  findElement,
-  applyDetailedChanges,
-  safeJsonStringify,
-  toDetailedChangeFromBaseChange,
-} from '@salto-io/adapter-utils'
+import { applyDetailedChanges, safeJsonStringify, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
@@ -2119,10 +2114,7 @@ salesforce.staticFile staticFileInstance {
       const baseChange = toChange({ before: lead, after: leadAfter })
       const changesWithBaseChange = [change1, change2].map(dc => ({ ...dc, baseChange }))
       const updateNaclFilesResult = await workspace.updateNaclFiles(changesWithBaseChange)
-      lead = findElement(
-        await awu(await (await workspace.elements()).getAll()).toArray(),
-        new ElemID('salesforce', 'lead'),
-      ) as ObjectType
+      lead = await (await workspace.elements()).get(new ElemID('salesforce', 'lead'))
       expect(updateNaclFilesResult).toEqual({
         naclFilesChangesCount: 2,
         stateOnlyChangesCount: 0,

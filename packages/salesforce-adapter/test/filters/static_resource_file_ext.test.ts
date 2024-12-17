@@ -5,12 +5,14 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, isStaticFile, ObjectType, StaticFile } from '@salto-io/adapter-api'
-import filterCreator, {
-  CONTENT_TYPE,
-  STATIC_RESOURCE_METADATA_TYPE_ID,
-} from '../../src/filters/static_resource_file_ext'
-import { INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD } from '../../src/constants'
+import { ElemID, InstanceElement, isStaticFile, ObjectType, StaticFile } from '@salto-io/adapter-api'
+import filterCreator, { CONTENT_TYPE } from '../../src/filters/static_resource_file_ext'
+import {
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_CONTENT_FIELD,
+  SALESFORCE,
+  STATIC_RESOURCE_METADATA_TYPE,
+} from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
@@ -21,7 +23,7 @@ describe('Static Resource File Extension Filter', () => {
   const baseStaticResourceInstance = new InstanceElement(
     'testStaticResourceInstance',
     new ObjectType({
-      elemID: STATIC_RESOURCE_METADATA_TYPE_ID,
+      elemID: new ElemID(SALESFORCE, STATIC_RESOURCE_METADATA_TYPE),
     }),
     {
       [INSTANCE_FULL_NAME_FIELD]: 'testStaticResourceInstance',

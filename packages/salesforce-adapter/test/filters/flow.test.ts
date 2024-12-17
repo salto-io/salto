@@ -5,13 +5,20 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ObjectType, BuiltinTypes, CORE_ANNOTATIONS, getRestriction, createRestriction } from '@salto-io/adapter-api'
-import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
+import {
+  ObjectType,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  getRestriction,
+  createRestriction,
+  ElemID,
+} from '@salto-io/adapter-api'
+import { FLOW_METADATA_VALUE_METADATA_TYPE, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import filterCreator from '../../src/filters/flow'
 import { defaultFilterContext } from '../utils'
 
 describe('flow filter', () => {
   const filter = filterCreator({ config: defaultFilterContext })
-  const elemID = FLOW_METADATA_TYPE_ID
   const values = [
     'ObjectType',
     'TriggerType',
@@ -21,7 +28,10 @@ describe('flow filter', () => {
     'EventType',
   ]
   const mockFlow = new ObjectType({
-    elemID,
+    elemID: new ElemID(SALESFORCE, FLOW_METADATA_VALUE_METADATA_TYPE),
+    annotations: {
+      [METADATA_TYPE]: FLOW_METADATA_VALUE_METADATA_TYPE,
+    },
     fields: {
       name: {
         refType: BuiltinTypes.STRING,

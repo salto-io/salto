@@ -5,8 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { InstanceElement, Element, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { findElements as findElementsByID, findElement } from '@salto-io/adapter-utils'
+import { InstanceElement, Element, ElemID, ObjectType, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo } from '@salto-io/jsforce-types'
 import { logger } from '@salto-io/logging'
@@ -14,6 +13,7 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
+import { findObjectType } from '../src/filters/utils'
 import {
   WORKFLOW_ALERTS_FIELD,
   WORKFLOW_FIELD_UPDATES_FIELD,
@@ -22,7 +22,6 @@ import {
   WORKFLOW_FIELD_TO_TYPE,
 } from '../src/filters/workflow'
 import {
-  SALESFORCE,
   INSTANCE_FULL_NAME_FIELD,
   WORKFLOW_METADATA_TYPE,
   WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -168,8 +167,8 @@ describe('workflow filter', () => {
 
     const verifySubInstance = (subTypeName: string, subName: string, subDescription: string): void => {
       const subElemId = new ElemID('salesforce', subTypeName, 'instance', subName)
-      const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
-      expect(subInstance.value.description).toEqual(subDescription)
+      const subInstance = fetchResult.filter(isInstanceElement).find(element => element.elemID.isEqual(subElemId))
+      expect(subInstance?.value.description).toEqual(subDescription)
     }
 
     beforeAll(async () => {
@@ -180,7 +179,7 @@ describe('workflow filter', () => {
       ])
       const rawWorkflowInstance = await getMetadataInstance(
         client,
-        findElement(rawWorkflowTypes, new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)) as ObjectType,
+        findObjectType(rawWorkflowTypes, WORKFLOW_METADATA_TYPE) as ObjectType,
         baseCustomObject,
       )
       expect(rawWorkflowInstance).toBeDefined()

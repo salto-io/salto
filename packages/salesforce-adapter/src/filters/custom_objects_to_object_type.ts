@@ -36,14 +36,7 @@ import {
   toServiceIdsString,
   OBJECT_SERVICE_ID,
 } from '@salto-io/adapter-api'
-import {
-  findObjectType,
-  transformValues,
-  getParents,
-  pathNaclCase,
-  naclCase,
-  inspectValue,
-} from '@salto-io/adapter-utils'
+import { transformValues, getParents, pathNaclCase, naclCase, inspectValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   API_NAME,
@@ -132,6 +125,7 @@ import {
   toCustomProperties,
   isInstanceOfTypeChangeSync,
   apiNameSync,
+  findObjectType,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -867,7 +861,7 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
   }
 
   const getAllTypesFromInstance = async (): Promise<TypeMap> => {
-    const customObjectType = findObjectType(elements, CUSTOM_OBJECT_TYPE_ID)
+    const customObjectType = findObjectType(elements, CUSTOM_OBJECT)
     if (_.isUndefined(customObjectType)) {
       return {}
     }

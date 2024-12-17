@@ -20,9 +20,10 @@ import {
   Values,
   Element,
   TypeMap,
+  isInstanceElement,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { findElement } from '@salto-io/adapter-utils'
 import commandDefs from '../../src/commands'
 import cli from '../../src/cli'
 // eslint-disable-next-line no-restricted-imports
@@ -274,7 +275,10 @@ const findInstance = (
   adapter: string,
   typeName: string,
   name: string,
-): InstanceElement => findElement(elements, new ElemID(adapter, typeName, 'instance', name)) as InstanceElement
+): InstanceElement =>
+  elements
+    .filter(isInstanceElement)
+    .find(inst => inst.elemID.isEqual(new ElemID(adapter, typeName, 'instance', name))) as InstanceElement
 
 export const verifyInstance = async (
   elements: AsyncIterable<Element>,
@@ -295,7 +299,9 @@ export const verifyObject = async (
   expectedAnnotations: Values,
   expectedFieldAnnotations: Record<string, Values>,
 ): Promise<ObjectType> => {
-  const object = findElement(await awu(elements).toArray(), new ElemID(adapter, typeName)) as ObjectType
+  const object = elements
+    .filter(isObjectType)
+    .find(obj => obj.elemID.isEqual(new ElemID(adapter, typeName))) as ObjectType
   Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
     expect(object.annotationRefTypes[key].elemID).toEqual(value.elemID),
   )

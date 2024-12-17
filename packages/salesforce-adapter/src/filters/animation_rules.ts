@@ -5,13 +5,11 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import wu from 'wu'
-import { Element, ElemID, ObjectType, InstanceElement, getRestriction } from '@salto-io/adapter-api'
-import { findObjectType, findInstances } from '@salto-io/adapter-utils'
+import { Element, InstanceElement, getRestriction } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { SALESFORCE } from '../constants'
+import { findObjectType, isInstanceOfTypeSync } from './utils'
+import { ANIMATION_RULE_METADATA_TYPE } from '../constants'
 
-export const ANIMATION_RULE_TYPE_ID = new ElemID(SALESFORCE, 'AnimationRule')
 export const ANIMATION_FREQUENCY = 'animationFrequency'
 export const RECORD_TYPE_CONTEXT = 'recordTypeContext'
 
@@ -45,7 +43,7 @@ const filterCreator: FilterCreator = () => ({
       }
     }
 
-    const animationRuleType = findObjectType(elements, ANIMATION_RULE_TYPE_ID) as ObjectType
+    const animationRuleType = findObjectType(elements, ANIMATION_RULE_METADATA_TYPE)
     const getValues = (fieldName: string): ReadonlyArray<string> => {
       const field = animationRuleType?.fields[fieldName]
       return field === undefined ? [] : ((getRestriction(field).values ?? []) as ReadonlyArray<string>)
@@ -53,7 +51,7 @@ const filterCreator: FilterCreator = () => ({
     const animationFrequencyValues = getValues(ANIMATION_FREQUENCY)
     const recordTypeContextValues = getValues(RECORD_TYPE_CONTEXT)
 
-    wu(findInstances(elements, ANIMATION_RULE_TYPE_ID)).forEach(animationRule => {
+    elements.filter(isInstanceOfTypeSync(ANIMATION_RULE_METADATA_TYPE)).forEach(animationRule => {
       transformShortValues(animationRule, ANIMATION_FREQUENCY, animationFrequencyValues)
       transformShortValues(animationRule, RECORD_TYPE_CONTEXT, recordTypeContextValues)
     })

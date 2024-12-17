@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
-import multipleDefaultsValidator from '../../src/change_validators/multiple_defaults'
+import multipleDefaultsValidator from '../../src/change_validators/default_rules'
 import { createField } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
@@ -345,65 +345,229 @@ describe('multiple defaults change validator', () => {
       })
 
       describe('ProfileRecordTypeVisibility', () => {
-        const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
+        const createAfterInstance = (
+          beforeInstance: InstanceElement,
+          changedDefaultValue: boolean = true,
+        ): InstanceElement => {
           const afterInstance = beforeInstance.clone()
-          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default = true
+          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.default = changedDefaultValue
           return afterInstance
         }
-        it('should have error for ProfileRecordTypeVisibility', async () => {
-          const beforeInstance = createInstanceElement(
-            {
-              fullName: 'ProfileInstance',
-              recordTypeVisibilities: {
-                test1: {
-                  testRecordType1: {
-                    default: false,
+        describe('when there is more than one default', () => {
+          it('should have error for ProfileRecordTypeVisibility', async () => {
+            const beforeInstance = createInstanceElement(
+              {
+                fullName: 'ProfileInstance',
+                recordTypeVisibilities: {
+                  test1: {
+                    testRecordType1: {
+                      default: false,
+                    },
+                    testRecordType2: {
+                      default: true,
+                    },
                   },
-                  testRecordType2: {
-                    default: true,
-                  },
-                },
-                test2: {
-                  testRecordType3: {
-                    default: false,
+                  test2: {
+                    testRecordType3: {
+                      default: false,
+                    },
                   },
                 },
               },
-            },
-            type,
-          )
+              type,
+            )
 
-          const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
-          expect(changeErrors).toHaveLength(1)
-          const [changeError] = changeErrors
-          expect(changeError.elemID).toEqual(afterInstance.elemID)
-          expect(changeError.severity).toEqual('Error')
+            const afterInstance = createAfterInstance(beforeInstance)
+            const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+            expect(changeErrors).toHaveLength(1)
+            const [changeError] = changeErrors
+            expect(changeError.elemID).toEqual(afterInstance.elemID)
+            expect(changeError.severity).toEqual('Error')
+          })
         })
-
-        it('should not have error for <= 1 default values in ProfileRecordTypeVisibility', async () => {
-          const beforeInstance = createInstanceElement(
-            {
-              fullName: 'ProfileInstance',
-              recordTypeVisibilities: {
-                test1: {
-                  testRecordType1: {
-                    default: false,
+        describe('when there is one default', () => {
+          describe('when the default is visible', () => {
+            it('should have no errors', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: false,
+                        visible: true,
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: true,
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: false,
+                        visible: false,
+                      },
+                    },
                   },
                 },
-                test2: {
-                  testRecordType2: {
-                    default: true,
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, true)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(0)
+            })
+          })
+          describe('when the default is not visible', () => {
+            it('should have an error', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test1.testRecordType1',
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test1.testRecordType2',
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test2.testRecordType3',
+                      },
+                    },
                   },
                 },
-              },
-            },
-            type,
-          )
-
-          const afterInstance = createAfterInstance(beforeInstance)
-          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
-          expect(changeErrors).toHaveLength(0)
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, true)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(1)
+              const [changeError] = changeErrors
+              expect(changeError.elemID).toEqual(
+                afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test1', 'testRecordType1', 'visible'),
+              )
+              expect(changeError.severity).toEqual('Error')
+            })
+          })
+          describe('when one profile has multiple records with errors', () => {
+            it('should have multiple errors', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test1.testRecordType1',
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test1.testRecordType2',
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: true,
+                        visible: false,
+                        recordType: 'test2.testRecordType3',
+                      },
+                    },
+                  },
+                },
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, true)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(2)
+              expect(changeErrors[0].elemID).toEqual(
+                afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test1', 'testRecordType1', 'visible'),
+              )
+              expect(changeErrors[0].severity).toEqual('Error')
+              expect(changeErrors[1].elemID).toEqual(
+                afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test2', 'testRecordType3', 'visible'),
+              )
+              expect(changeErrors[1].severity).toEqual('Error')
+            })
+          })
+        })
+        describe('when there are no defaults', () => {
+          describe('when there is visible entry', () => {
+            it('should have an error', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: true,
+                        visible: true,
+                        recordType: 'test1.testRecordType1',
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test1.testRecordType2',
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: false,
+                        visible: false,
+                        recordType: 'test2.testRecordType3',
+                      },
+                    },
+                  },
+                },
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, false)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(1)
+              const [changeError] = changeErrors
+              expect(changeError.elemID).toEqual(afterInstance.elemID.createNestedID('recordTypeVisibilities', 'test1'))
+              expect(changeError.severity).toEqual('Error')
+            })
+          })
+          describe('when there is no visible entry', () => {
+            it('should have no errors', async () => {
+              const beforeInstance = createInstanceElement(
+                {
+                  fullName: 'ProfileInstance',
+                  recordTypeVisibilities: {
+                    test1: {
+                      testRecordType1: {
+                        default: true,
+                        visible: false,
+                      },
+                      testRecordType2: {
+                        default: false,
+                        visible: false,
+                      },
+                    },
+                    test2: {
+                      testRecordType3: {
+                        default: false,
+                        visible: false,
+                      },
+                    },
+                  },
+                },
+                type,
+              )
+              const afterInstance = createAfterInstance(beforeInstance, false)
+              const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+              expect(changeErrors).toHaveLength(0)
+            })
+          })
         })
       })
 

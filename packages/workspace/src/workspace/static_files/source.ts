@@ -66,6 +66,9 @@ export class LazyStaticFile extends AbsoluteStaticFile {
     if (this.resolvedContent === undefined) {
       this.resolvedContent = this.getContentFunc()
     }
+    if ((await this.resolvedContent) === undefined) {
+      log.warn('Missing content on lazy static file: %s', this.filepath)
+    }
     return this.resolvedContent
   }
 }

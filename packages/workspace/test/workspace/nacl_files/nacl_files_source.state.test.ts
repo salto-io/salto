@@ -30,7 +30,7 @@ import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { mockStaticFilesSource } from '../../utils'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
 import { WORKSPACE_FLAGS } from '../../../src/flags'
-import { inMemRemoteMapCreator } from '../../common/helpers'
+import { inMemRemoteMapCreator } from '../../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 

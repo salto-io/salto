@@ -108,7 +108,6 @@ import {
   mockCredentialsSource,
 } from '../common/workspace'
 import { mockStaticFilesSource } from '../utils'
-import { inMemRemoteMapCreator } from '../common/helpers'
 
 const { awu } = collections.asynciterable
 
@@ -2421,13 +2420,13 @@ salesforce.staticFile staticFileInstance {
     const mapCreator = inMemRemoteMapCreator()
     const mapCreatorWrapper = async (params: CreateRemoteMapParams<Value>): Promise<RemoteMap<Value>> => {
       const m = await mapCreator.create(params)
-      return {
-        ...m,
-        flush: async () => {
-          await m.flush()
-          mapFlushCounter[params.namespace] = (mapFlushCounter[params.namespace] ?? 0) + 1
-        },
-      } as unknown as RemoteMap<Value>
+      const originalFlush = m.flush.bind(m)
+      m.flush = async (): Promise<boolean> => {
+        await originalFlush()
+        mapFlushCounter[params.namespace] = (mapFlushCounter[params.namespace] ?? 0) + 1
+        return true
+      }
+      return m
     }
     it.only('should flush all data sources', async () => {
       const mockFlush = jest.fn()
@@ -4489,13 +4488,11 @@ describe('getElementFileNames', () => {
   })
   it('should return the correct elements to file names mapping', async () => {
     const res = await workspace.getElementFileNames()
-    expect(new Set(Array.from(res.entries()))).toEqual(
-      new Set([
-        ['salesforce.text', ['envs/default/firstFile.nacl']],
-        ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
-        ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
-      ]),
-    )
+    expect(res).toContainAllEntries([
+      ['salesforce.text', ['envs/default/firstFile.nacl']],
+      ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
+      ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
+    ])
   })
 
   it('should return the correct elements to file names mapping of inactive env', async () => {

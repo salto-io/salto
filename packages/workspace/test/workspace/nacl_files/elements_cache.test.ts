@@ -7,7 +7,7 @@
  */
 
 import { ElementMergeManager, createMergeManager, Flushable } from '../../../src/workspace/nacl_files/elements_cache'
-import { inMemRemoteMapCreator } from '../../common/helpers'
+import { inMemRemoteMapCreator } from '../../../src/workspace/remote_map'
 
 const NAMESPACE = 'TEST_NAMESPACE'
 

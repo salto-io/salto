@@ -38,7 +38,6 @@ import {
   inMemRemoteMapCreator,
 } from '../../../src/workspace/remote_map'
 import { mockStaticFilesSource } from '../../utils'
-import { InMemoryRemoteMap, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'

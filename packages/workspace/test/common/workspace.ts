@@ -16,7 +16,7 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { naclFilesSource } from '../../src/workspace/nacl_files'
 import { Path } from '../../src/workspace/path_index'
-import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
+import { InMemoryRemoteMap, inMemRemoteMapCreator, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import {
@@ -29,7 +29,6 @@ import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_sour
 import { mockStaticFilesSource } from '../utils'
 import { createMockNaclFileSource } from './nacl_file_source'
 import { mockDirStore } from './nacl_file_store'
-import { inMemRemoteMapCreator } from './helpers'
 
 const services = ['salesforce']
 export const mockWorkspaceConfigSource = (

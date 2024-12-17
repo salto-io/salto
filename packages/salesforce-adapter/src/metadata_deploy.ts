@@ -189,6 +189,7 @@ export const addChangeToPackage = async (
 type MetadataId = {
   type: string
   fullName: string
+  id: string
 }
 
 const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: string): MetadataId | undefined => {
@@ -197,7 +198,7 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
       ? message.problem.match(/No.*named: (?<fullName>.*) found/)
       : undefined
   const fullName = match?.groups?.fullName
-  return fullName === undefined ? undefined : { type: message.componentType, fullName }
+  return fullName === undefined ? undefined : { type: message.componentType, fullName, id: message.id }
 }
 
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
@@ -364,6 +365,7 @@ const processDeployResponse = (
     .map(success => ({
       type: success.componentType,
       fullName: success.fullName,
+      id: success.id,
     }))
     .concat(unFoundDeleteNames)
 

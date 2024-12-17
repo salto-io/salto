@@ -78,7 +78,7 @@ const getMetadata = async (
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
 ): Promise<RemoteMap<FileCacheMetadata>> =>
-  remoteMapCreator({
+  remoteMapCreator.create({
     namespace: getRemoteMapCacheNamespace(cacheName, 'metadata'),
     serialize: async (val: FileCacheMetadata) => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
@@ -90,7 +90,7 @@ const getErrors = async (
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
 ): Promise<RemoteMap<parser.ParseError[]>> =>
-  remoteMapCreator({
+  remoteMapCreator.create({
     namespace: getRemoteMapCacheNamespace(cacheName, 'errors'),
     serialize: async (errors: parser.ParseError[]) => safeJsonStringify(errors ?? []),
     deserialize: data => JSON.parse(data),
@@ -104,7 +104,7 @@ const getCacheSources = async (
   persistent: boolean,
 ): Promise<CacheSources> => ({
   metadata: await getMetadata(cacheName, remoteMapCreator, persistent),
-  elements: await remoteMapCreator({
+  elements: await remoteMapCreator.create({
     namespace: getRemoteMapCacheNamespace(cacheName, 'elements'),
     serialize: async (elements: Element[]) => serialize(elements ?? [], 'keepRef'),
     deserialize: async data =>
@@ -113,14 +113,14 @@ const getCacheSources = async (
       ),
     persistent,
   }),
-  sourceMap: await remoteMapCreator({
+  sourceMap: await remoteMapCreator.create({
     namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
     serialize: async (sourceMap: parser.SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
     deserialize: async data => new parser.SourceMap(JSON.parse(data)),
     persistent,
   }),
   errors: await getErrors(cacheName, remoteMapCreator, persistent),
-  staticFiles: await remoteMapCreator({
+  staticFiles: await remoteMapCreator.create({
     namespace: getRemoteMapCacheNamespace(cacheName, 'staticFiles'),
     serialize: async (val: string[]) => safeJsonStringify(val ?? []),
     deserialize: data => JSON.parse(data),
@@ -271,7 +271,7 @@ export const createParseResultCache = (
       await awu(Object.values(await cacheSources)).forEach(source => source.flush())
 
       // clear deprecated referenced index
-      const referencedIndex = await remoteMapCreator({
+      const referencedIndex = await remoteMapCreator.create({
         namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
         serialize: async (val: string[]) => safeJsonStringify(val ?? []),
         deserialize: data => JSON.parse(data),

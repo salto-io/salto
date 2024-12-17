@@ -32,16 +32,16 @@ describe('Static Files Cache', () => {
   })
 
   describe('new cache', () => {
-    let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator>
+    let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator['create']>
 
     beforeEach(() => {
       // We keep a cache to simulate the fact that remote maps
       // with the same namespace point to the same entries.
       const remoteMaps = new DefaultMap(() => new remoteMap.InMemoryRemoteMap())
-      remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(async opts =>
+      remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator['create']>().mockImplementation(async opts =>
         remoteMaps.get(opts.namespace),
       )
-      staticFilesCache = buildStaticFilesCache('test-env', remoteMapCreator, true)
+      staticFilesCache = buildStaticFilesCache('test-env', { create: remoteMapCreator, close: async () => {} }, true)
     })
     it('should handle unknown file paths', async () => {
       expect(await staticFilesCache.get(baseMetaData.filepath)).toBeUndefined()
@@ -88,15 +88,15 @@ describe('Static Files Cache', () => {
   })
 
   describe('remote map options', () => {
-    let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator>
+    let remoteMapCreator: jest.MockedFunction<remoteMap.RemoteMapCreator['create']>
     beforeEach(() => {
-      remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator>().mockImplementation(
+      remoteMapCreator = mockFunction<remoteMap.RemoteMapCreator['create']>().mockImplementation(
         async () => new remoteMap.InMemoryRemoteMap(),
       )
     })
 
     it('should respect the persistent parameter', async () => {
-      const cache = buildStaticFilesCache('test-env', remoteMapCreator, false)
+      const cache = buildStaticFilesCache('test-env', { create: remoteMapCreator, close: async () => {} }, false)
       await cache.get('bla')
       expect(remoteMapCreator).toHaveBeenCalledTimes(1)
       expect(remoteMapCreator).toHaveBeenCalledWith(expect.objectContaining({ persistent: false }))

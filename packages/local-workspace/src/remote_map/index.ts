@@ -7,7 +7,7 @@
  */
 export {
   createRemoteMapCreator,
-  createReadOnlyRemoteMapCreator,
+  createReadOnlyRemoteMap,
   closeAllRemoteMaps,
   closeRemoteMapsOfLocation,
   cleanDatabases,

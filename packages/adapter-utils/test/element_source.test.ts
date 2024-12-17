@@ -17,7 +17,11 @@ import {
   TypeReference,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements, buildLazyShallowTypeResolverElementsSource } from '../src/element_source'
+import {
+  buildElementsSourceFromElements,
+  buildLazyShallowTypeResolverElementsSource,
+  filterElementsSource,
+} from '../src/element_source'
 import * as utilsModule from '../src/utils'
 
 const { toArrayAsync } = collections.asynciterable
@@ -235,6 +239,22 @@ describe('elementSource', () => {
       expect(resolvedElement).toEqual(await elementsSource.get(objectType.elemID))
       const callsOnTheObjectType = resolveTypeShallowSpy.mock.calls.filter(args => args[0] === objectType)
       expect(callsOnTheObjectType).toHaveLength(1)
+    })
+  })
+  describe('filterElementsSource', () => {
+    const ACCOUNT1 = 'account1'
+    const ACCOUNT2 = 'account2'
+    let account1Element: Element
+    let account2Element: Element
+    let anotherAccount2Element: Element
+    beforeEach(() => {
+      account1Element = new ObjectType({ elemID: new ElemID(ACCOUNT1, 'type1') })
+      account2Element = new ObjectType({ elemID: new ElemID(ACCOUNT2, 'type1') })
+      anotherAccount2Element = new ObjectType({ elemID: new ElemID(ACCOUNT2, 'type2') })
+    })
+    it('should return only elements from the specified account', async () => {
+      const filteredElementsSource = filterElementsSource(buildElementsSourceFromElements([account1Element, account2Element, anotherAccount2Element]), ACCOUNT2)
+      expect(await toArrayAsync(await filteredElementsSource.getAll())).toEqual([account2Element, anotherAccount2Element])
     })
   })
 })

@@ -8,6 +8,7 @@
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyFunctionToChangeDataSync } from '@salto-io/adapter-utils'
+import { Progress } from '@salto-io/adapter-api'
 import {
   PlanItem,
   Plan,
@@ -140,18 +141,18 @@ const deployPlan = async (
     }
   }
 
-  const errorAction = (itemName: string, details: string): void => {
+  const errorAction = (itemName: string, details: string | Progress): void => {
     const action = actions[itemName]
     if (action !== undefined) {
-      errorOutputLine(formatItemError(itemName, details), output)
+      errorOutputLine(formatItemError(itemName, _.isString(details) ? details : details.message), output)
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
     }
   }
 
-  const cancelAction = (itemName: string, parentItemName: string): void => {
-    outputLine(formatCancelAction(itemName, parentItemName), output)
+  const cancelAction = (itemName: string, details: string | Progress): void => {
+    outputLine(formatCancelAction(itemName, _.isString(details) ? details : details.message), output)
   }
 
   const startAction = (itemName: string, item: PlanItem): void => {
@@ -168,7 +169,7 @@ const deployPlan = async (
     outputLine(formatActionStart(item), output)
   }
 
-  const updateAction = (item: PlanItem, status: ItemStatus, details?: string): void => {
+  const updateAction = (item: PlanItem, status: ItemStatus, details?: string | Progress): void => {
     const itemName = item.groupKey
     if (itemName) {
       if (status === 'started') {
@@ -190,7 +191,7 @@ const deployPlan = async (
   const result = await deploy(
     workspace,
     actionPlan,
-    (item: PlanItem, step: ItemStatus, details?: string) => updateAction(item, step, details),
+    (item: PlanItem, step: ItemStatus, details?: string | Progress) => updateAction(item, step, details),
     accounts,
     checkOnly,
   )

@@ -14,24 +14,42 @@ import {
   isAdditionOrModificationChange,
   InstanceElement,
 } from '@salto-io/adapter-api'
-import { getElementPrettyName, getInstancesFromElementSource, getParentElemID } from '@salto-io/adapter-utils'
+import {
+  getElementPrettyName,
+  getInstancesFromElementSource,
+  getParentElemID,
+  resolvePath,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { APP_GROUP_ASSIGNMENT_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
+import { USER_SCHEMA_CUSTOM_PATH } from '../filters/expression_language'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
 
+/* Finds attributes in the `profile` field of an AppGroupAssignment instance that are not defined in the associated AppUserSchema.
+ * Missing properties are attributes present in the `profile` but absent in the schema's custom properties.
+ */
 const getMissingProperties = (
   appGroupInstance: InstanceElement,
   appUserSchemaInstance: InstanceElement | undefined,
 ): { instance: InstanceElement; missingProperties: string[] } | undefined => {
+  if (appUserSchemaInstance === undefined) {
+    log.trace(
+      `Cannot get custom properties for ${appGroupInstance.elemID.getFullName()} since its app user schema is undefined`,
+    )
+    return undefined
+  }
   const { profile } = appGroupInstance.value
   if (profile === undefined || !_.isObject(profile)) {
     log.trace(`profile field is undefined or not an object in instance ${appGroupInstance.elemID.getFullName()}`)
     return undefined
   }
   const profileKeys = Object.keys(profile)
-  const properties = appUserSchemaInstance?.value.definitions.custom.properties
+  const properties = resolvePath(
+    appUserSchemaInstance,
+    appUserSchemaInstance.elemID.createNestedID(...USER_SCHEMA_CUSTOM_PATH),
+  )
   if (properties === undefined || !_.isObject(properties)) {
     log.trace(
       `properties field is undefined or not an object in instance ${appUserSchemaInstance?.elemID.getFullName()}`,
@@ -51,25 +69,31 @@ const getMissingProperties = (
 /*
  * Ensures that only ApplicationGroupAssignments with attributes defined in the appUserSchema are deployed.
  */
-export const appGroupAssignmentProfileValidator: ChangeValidator = async (changes, elementSource) => {
+export const appGroupAssignmentProfileAttributesValidator: ChangeValidator = async (changes, elementSource) => {
+  const appGroupAssignmentChanges = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionOrModificationChange)
+    .filter(change => getChangeData(change).elemID.typeName === APP_GROUP_ASSIGNMENT_TYPE_NAME)
+
+  if (appGroupAssignmentChanges.length === 0) {
+    return []
+  }
+
   if (elementSource === undefined) {
-    log.error('Failed to run appGroupAssignmentProfileValidator because element source is undefined')
+    log.error('Failed to run appGroupAssignmentProfileAttributesValidator because element source is undefined')
     return []
   }
   const appUserSchemas = await getInstancesFromElementSource(elementSource, [APP_USER_SCHEMA_TYPE_NAME])
   const appUserSchemaByAppName = _.keyBy(appUserSchemas, instance => getParentElemID(instance).getFullName())
 
-  return changes
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === APP_GROUP_ASSIGNMENT_TYPE_NAME)
+  return appGroupAssignmentChanges
     .map(getChangeData)
     .map(instance => getMissingProperties(instance, appUserSchemaByAppName[getParentElemID(instance).getFullName()]))
     .filter(isDefined)
     .map(({ instance, missingProperties }) => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Cannot deploy group assignments with missing profile attributes',
-      detailedMessage: `The following profile attributes [${missingProperties.join(',')}] are missing in ${getElementPrettyName(appUserSchemaByAppName[getParentElemID(instance).getFullName()])}. Please add them to the app user schema or remove them from this instance`,
+      message: 'Cannot deploy application group assignments due to extra profile attributes.',
+      detailedMessage: `The following profile attributes appear in this group assignment but are not defined in the related AppUserSchema: [${missingProperties.join(',')}]. Please add these attributes to the Application User Schema ${getElementPrettyName(appUserSchemaByAppName[getParentElemID(instance).getFullName()])} or remove them from this group assignment.`,
     }))
 }

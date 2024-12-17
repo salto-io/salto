@@ -25,8 +25,9 @@ import { APP_GROUP_ASSIGNMENT_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../co
 const log = logger(module)
 
 /*
- * Add dependency from ApplicationGroupAssignment change to AppUserSchema change.
- * AppUserSchema change must be deployed before its ApplicationGroupAssignment changes
+ * Ensure AppUserSchema changes are deployed before ApplicationGroupAssignment changes.
+ * This guarantees that any new properties added to the schema are available
+ * before being referenced in group assignments.
  */
 export const addAppGroupToAppUserSchemaDependency: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
@@ -62,7 +63,11 @@ export const addAppGroupToAppUserSchemaDependency: DependencyChanger = async cha
         }
         return dependencyChange('add', appGroupChange.key, appUserSchemaChange.key)
       } catch (err) {
-        log.error('Failed to add dependency from ApplicationGroupAssignment to AppUserSchema: %s', err)
+        log.error(
+          'Failed to add dependency from ApplicationGroupAssignment %s to AppUserSchema: %o',
+          getChangeData(appGroupChange.change).elemID.getFullName(),
+          err,
+        )
         return undefined
       }
     })

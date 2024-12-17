@@ -44,7 +44,7 @@ const BEHAVIOR_REGEX = /(security\.behaviors\.contains\(.+?\))/g // pattern: sec
 const USER_SCHEMA_PREFIX = 'user.'
 const USER_SCHEMA_IE_PREFIX = 'user.profile.'
 const BEHAVIOR_EXPRESSION_PREFIX = 'security.behaviors.contains'
-const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties']
+export const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties']
 const USER_SCHEMA_BASE_PATH = ['definitions', 'base', 'properties']
 
 type ExpressionLanguageDef = {

@@ -49,7 +49,7 @@ const changeValidatorNames = [
   'appWithGroupPush',
   'groupPushToApplicationUniqueness',
   'appGroupAssignment',
-  'appGroupAssignmentProfile',
+  'appGroupAssignmentProfileAttributes',
   'appUrls',
   'profileMappingRemoval',
   'brandRemoval',

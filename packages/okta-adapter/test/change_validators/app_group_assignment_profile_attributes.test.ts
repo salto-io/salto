@@ -21,9 +21,9 @@ import {
   APP_GROUP_ASSIGNMENT_TYPE_NAME,
   APP_USER_SCHEMA_TYPE_NAME,
 } from '../../src/constants'
-import { appGroupAssignmentProfileValidator } from '../../src/change_validators/app_group_assignments_profile'
+import { appGroupAssignmentProfileAttributesValidator } from '../../src/change_validators/app_group_assignments_profile_attributes'
 
-describe('appGroupAssignmentProfileValidator', () => {
+describe('appGroupAssignmentProfileAttributesValidator', () => {
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const app1 = new InstanceElement('app1', appType, {
     id: '1',
@@ -84,13 +84,15 @@ describe('appGroupAssignmentProfileValidator', () => {
       )
     })
     it('should return error', async () => {
-      expect(await appGroupAssignmentProfileValidator([toChange({ after: appGroupInst })], elementSource)).toEqual([
+      expect(
+        await appGroupAssignmentProfileAttributesValidator([toChange({ after: appGroupInst })], elementSource),
+      ).toEqual([
         {
           elemID: appGroupInst.elemID,
           severity: 'Error',
-          message: 'Cannot deploy group assignments with missing profile attributes',
+          message: 'Cannot deploy application group assignments due to extra profile attributes.',
           detailedMessage:
-            'The following profile attributes [b,c] are missing in app1UserSchema_alias. Please add them to the app user schema or remove them from this instance',
+            'The following profile attributes appear in this group assignment but are not defined in the related AppUserSchema: [b,c]. Please add these attributes to the Application User Schema app1UserSchema_alias or remove them from this group assignment.',
         },
       ])
     })
@@ -114,7 +116,9 @@ describe('appGroupAssignmentProfileValidator', () => {
       )
     })
     it('should not return error', async () => {
-      expect(await appGroupAssignmentProfileValidator([toChange({ after: appGroupInst })], elementSource)).toEqual([])
+      expect(
+        await appGroupAssignmentProfileAttributesValidator([toChange({ after: appGroupInst })], elementSource),
+      ).toEqual([])
     })
   })
   describe('when appUserSchema is not found', () => {
@@ -137,7 +141,9 @@ describe('appGroupAssignmentProfileValidator', () => {
       elementSource = buildElementsSourceFromElements([])
     })
     it('should not return error', async () => {
-      expect(await appGroupAssignmentProfileValidator([toChange({ after: appGroupInst })], elementSource)).toEqual([])
+      expect(
+        await appGroupAssignmentProfileAttributesValidator([toChange({ after: appGroupInst })], elementSource),
+      ).toEqual([])
     })
   })
 })

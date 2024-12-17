@@ -46,7 +46,7 @@ import {
 import { OktaUserConfig, ChangeValidatorName } from '../user_config'
 import { OktaOptions } from '../definitions/types'
 import { BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
-import { appGroupAssignmentProfileValidator } from './app_group_assignments_profile'
+import { appGroupAssignmentProfileAttributesValidator } from './app_group_assignments_profile_attributes'
 
 const { createCheckDeploymentBasedOnDefinitionsValidator, getDefaultChangeValidators, createChangeValidator } =
   deployment.changeValidators
@@ -89,7 +89,7 @@ export default ({
     appWithGroupPush: appWithGroupPushValidator,
     groupPushToApplicationUniqueness: groupPushToApplicationUniquenessValidator,
     appGroupAssignment: appGroupAssignmentValidator,
-    appGroupAssignmentProfile: appGroupAssignmentProfileValidator,
+    appGroupAssignmentProfileAttributes: appGroupAssignmentProfileAttributesValidator,
     appUrls: appUrlsValidator,
     profileMappingRemoval: profileMappingRemovalValidator,
     brandRemoval: brandRemovalValidator,

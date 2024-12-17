@@ -14,54 +14,51 @@ import {
   ReferenceInfo,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { WeakReferencesHandler } from './weak_references_handler'
-import { APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../constants'
+import { APP_GROUP_ASSIGNMENT_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, OKTA } from '../constants'
+import { USER_SCHEMA_CUSTOM_PATH } from '../filters/expression_language'
 
-const { awu } = collections.asynciterable
-
-const log = logger(module)
-
-const markInstancesAsStrongReference = async (instance: InstanceElement): Promise<ReferenceInfo[]> => {
+const markInstancesAsStrongReference = (instance: InstanceElement): ReferenceInfo[] => {
   const { profile } = instance.value
-  if (profile === undefined || !_.isObject(profile)) {
-    log.trace(
-      `profile field is undefined or not an object in instance ${instance.elemID.getFullName()}, hence not adding references`,
-    )
+  if (profile === undefined || !_.isPlainObject(profile)) {
     return []
   }
   const parent = getParent(instance)
 
-  return awu(Object.keys(profile))
-    .map(async key => ({
+  /**
+   * We always creates references to custom properties, even for attribute to base properties,
+   * since we don't have the element source and we assume that base properties are not changeable.
+   * we assumes that the element ID for the AppUserSchema matches the App element ID.
+   */
+  return Object.keys(profile)
+    .map(key => ({
       source: instance.elemID,
       target: ElemID.fromFullNameParts([
         OKTA,
         APP_USER_SCHEMA_TYPE_NAME,
         'instance',
         parent.elemID.name,
-        'definitions',
-        'custom',
-        'properties',
+        ...USER_SCHEMA_CUSTOM_PATH,
         key,
       ]),
+      sourceScope: 'value' as const,
       type: 'strong' as const,
     }))
     .filter(values.isDefined)
-    .toArray()
 }
 
 /**
- * Marks each instance of ApplicationGroupAssignment as a strong reference to appUserSchema custom field.
+ * Marks each instance of ApplicationGroupAssignment as a strong reference to the AppUserSchema custom field.
+ * This is achieved using a custom reference mechanism rather than being explicitly written in the nacl, since
+ * the source reference is determined by the key, not the value, and we avoid introducing an additional field.
  */
 const getAppUserSchemaCustomFieldsReferences: GetCustomReferencesFunc = async elements =>
-  awu(elements)
+  elements
     .filter(isInstanceElement)
-    .filter(instance => instance.elemID.typeName === 'ApplicationGroupAssignment')
+    .filter(instance => instance.elemID.typeName === APP_GROUP_ASSIGNMENT_TYPE_NAME)
     .flatMap(markInstancesAsStrongReference)
-    .toArray()
 
 export const groupAssignmentToAppUserSchemaHandler: WeakReferencesHandler = {
   findWeakReferences: getAppUserSchemaCustomFieldsReferences,

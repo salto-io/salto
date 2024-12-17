@@ -17,7 +17,7 @@ import {
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
-import { getParents, validatePlainObject } from '@salto-io/adapter-utils'
+import { getParents, naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -47,6 +47,7 @@ import {
   ERROR_PAGE_TYPE_NAME,
   AUTHORIZATION_SERVER,
   GROUP_RULE_TYPE_NAME,
+  ROLE_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -60,6 +61,7 @@ import { isCustomApp } from '../fetch/types/application'
 import { addBrandIdToRequest } from './types/email_domain'
 import { isSystemScope } from './types/authorization_servers'
 import { isActiveGroupRuleChange } from './types/group_rules'
+import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole } from './types/roles'
 
 const log = logger(module)
 
@@ -1316,6 +1318,95 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
         },
       },
     },
+    [ROLE_TYPE_NAME]: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/iam/roles', method: 'post' },
+                transformation: {
+                  adjust: adjustRoleAdditionChange,
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/iam/roles/{id}', method: 'put' },
+                transformation: { omit: ['permissions'] },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/iam/roles/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+      recurseIntoPath: [
+        {
+          fieldPath: ['permissions'],
+          typeName: 'Permission',
+          changeIdFields: ['label'],
+          onActions: ['add', 'modify'],
+        },
+      ],
+    },
+    Permission: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/iam/roles/{parent_id}/permissions/{label}', method: 'post' },
+                transformation: { omit: ['label'] },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/iam/roles/{parent_id}/permissions/{label}', method: 'put' },
+                transformation: { omit: ['label'] },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change, changeGroup, sharedContext }) => {
+                    if (isPermissionChangeOfAddedRole(change, changeGroup)) {
+                      // only make request for permission that their "conditions" were not deployed yet
+                      if (sharedContext[naclCase(getChangeData(change).value.label)]) {
+                        log.debug('deploying permission condition for %s', getChangeData(change).elemID.getFullName())
+                        return true
+                      }
+                      return false
+                    }
+                    return true
+                  },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/iam/roles/{parent_id}/permissions/{label}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change, changeGroup }) => {
+        if (isAdditionChange(change) && isPermissionChangeOfAddedRole(change, changeGroup)) {
+          return ['modify']
+        }
+        return [change.action]
+      },
+    },
   }
 
   return _.merge(standardRequestDefinitions, customDefinitions)
@@ -1340,5 +1431,10 @@ export const createDeployDefinitions = (): DeployApiDefinitions => ({
     },
     customizations: createCustomizations(),
   },
-  dependencies: [],
+  dependencies: [
+    {
+      first: { type: ROLE_TYPE_NAME, action: 'add' },
+      second: { type: 'Permission', action: 'modify' },
+    },
+  ],
 })

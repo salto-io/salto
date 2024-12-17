@@ -25,6 +25,7 @@ import {
   PASSWORD_RULE_TYPE_NAME,
   AUTHORIZATION_POLICY,
   AUTHORIZATION_POLICY_RULE,
+  ROLE_TYPE_NAME,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -418,5 +419,24 @@ export const mockDefaultValues: Record<string, Values> = {
         refreshTokenWindowMinutes: 10080,
       },
     },
+  },
+  [ROLE_TYPE_NAME]: {
+    description: 'deploy',
+    permissions: [
+      {
+        label: 'okta.groups.manage',
+      },
+      {
+        label: 'okta.users.groupMembership.manage',
+      },
+      {
+        label: 'okta.users.userprofile.manage',
+        conditions: {
+          include: {
+            'okta_ResourceAttribute_User_Profile@fdd': ['profileUrl', 'zipCode', 'city'],
+          },
+        },
+      },
+    ],
   },
 }

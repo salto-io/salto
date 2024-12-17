@@ -17,7 +17,7 @@ const { RECORDS_PATH } = elementUtils
  * Source for standard roles definitions:
  * https://developer.okta.com/docs/concepts/role-assignment/#standard-role-types
  */
-const ROLE_TYPE_TO_LABEL: Record<string, string> = {
+export const ROLE_TYPE_TO_LABEL: Record<string, string> = {
   API_ACCESS_MANAGEMENT_ADMIN: 'API Access Management Administrator',
   APP_ADMIN: 'Application Administrator',
   GROUP_MEMBERSHIP_ADMIN: 'Group Membership Administrator',

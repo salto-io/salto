@@ -12,19 +12,24 @@ import {
   isInstanceChange,
   SeverityLevel,
 } from '@salto-io/adapter-api'
+import { FIELD_TYPE_NAME } from '../filters/fields/constants'
 
-const SEARCHER_KEY = 'com.atlassian.jira.plugin.system.customfieldtypes:exacttextsearcher'
-const TYPE = 'com.atlassian.jira.plugin.system.customfieldtypes:textfield'
+export const EXACT_TEXT_SEARCHER_KEY = 'com.atlassian.jira.plugin.system.customfieldtypes:exacttextsearcher'
+export const TEXT_FIELD_TYPE = 'com.atlassian.jira.plugin.system.customfieldtypes:textfield'
 
 export const fieldValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === 'Field')
-    .filter(change => change.data.after.value.searcherKey === SEARCHER_KEY && change.data.after.value.type === TYPE)
-    .map(change => ({
-      elemID: getChangeData(change).elemID,
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
+    .filter(
+      instance => instance.value.searcherKey === EXACT_TEXT_SEARCHER_KEY && instance.value.type === TEXT_FIELD_TYPE,
+    )
+    .map(instance => ({
+      elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'SearcherKey is invalid for the field type',
-      detailedMessage: 'SearcherKey is invalid for the field type.',
+      detailedMessage:
+        'This field was created using JIT and cannot be deployed. To resolve this issue, edit the NaCl file, and in the searchKey field, replace "exacttextsearcher" with "textsearcher".',
     }))

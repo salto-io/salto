@@ -5,59 +5,52 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { fieldValidator } from '../../src/change_validators/field'
-import { JIRA } from '../../src/constants'
-
-const EXACT_TEXT_SEARCHER_KEY = 'com.atlassian.jira.plugin.system.customfieldtypes:exacttextsearcher'
-const TEXT_FIELD_TYPE = 'com.atlassian.jira.plugin.system.customfieldtypes:textfield'
+import { toChange, InstanceElement, Change } from '@salto-io/adapter-api'
+import { EXACT_TEXT_SEARCHER_KEY, fieldValidator, TEXT_FIELD_TYPE } from '../../src/change_validators/field'
+import { FIELD_TYPE } from '../../src/constants'
+import { createEmptyType } from '../utils'
 
 describe('fieldValidator', () => {
-  let type: ObjectType
-  let instance: InstanceElement
-  let afterInstance: InstanceElement
+  let validInstance: InstanceElement
+  let invalidAfterInstance: InstanceElement
+  let changes: Change[]
 
   beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID(JIRA, 'Field') })
-    instance = new InstanceElement('instance', type, {
+    validInstance = new InstanceElement('instance', createEmptyType(FIELD_TYPE), {
       type: TEXT_FIELD_TYPE,
       searcherKey: 'com.atlassian.jira.plugin.system.customfieldtypes:textsearcher',
     })
-    afterInstance = instance.clone()
-    afterInstance.value.searcherKey = EXACT_TEXT_SEARCHER_KEY
+    invalidAfterInstance = validInstance.clone()
+    invalidAfterInstance.value.searcherKey = EXACT_TEXT_SEARCHER_KEY
+    changes = [
+      toChange({
+        after: validInstance,
+      }),
+      toChange({
+        after: invalidAfterInstance,
+      }),
+      toChange({
+        before: validInstance,
+        after: invalidAfterInstance,
+      }),
+    ]
   })
 
-  it('should return error if created an instance with an invalid searcher key for this type', async () => {
-    expect(
-      await fieldValidator([
-        toChange({
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([
+  it('Should return an error for adding/modifying an instance with an invalid searcherKey for this type', async () => {
+    expect(await fieldValidator(changes)).toEqual([
       {
-        elemID: instance.elemID,
+        elemID: invalidAfterInstance.elemID,
         severity: 'Error',
         message: 'SearcherKey is invalid for the field type',
-        detailedMessage: 'SearcherKey is invalid for the field type.',
+        detailedMessage:
+          'This field was created using JIT and cannot be deployed. To resolve this issue, edit the NaCl file, and in the searchKey field, replace "exacttextsearcher" with "textsearcher".',
       },
-    ])
-  })
-
-  it('should return an error if changed to the exact text searcher key', async () => {
-    expect(
-      await fieldValidator([
-        toChange({
-          before: instance,
-          after: afterInstance,
-        }),
-      ]),
-    ).toEqual([
       {
-        elemID: instance.elemID,
+        elemID: invalidAfterInstance.elemID,
         severity: 'Error',
         message: 'SearcherKey is invalid for the field type',
-        detailedMessage: 'SearcherKey is invalid for the field type.',
+        detailedMessage:
+          'This field was created using JIT and cannot be deployed. To resolve this issue, edit the NaCl file, and in the searchKey field, replace "exacttextsearcher" with "textsearcher".',
       },
     ])
   })

@@ -4487,14 +4487,12 @@ describe('getElementFileNames', () => {
     })
   })
   it('should return the correct elements to file names mapping', async () => {
-    const res = await workspace.getElementFileNames()
-    expect(new Set(Array.from(res.entries()))).toEqual(
-      new Set([
-        ['salesforce.text', ['envs/default/firstFile.nacl']],
-        ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
-        ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
-      ]),
-    )
+    const result = await workspace.getElementFileNames()
+    expect(Array.from(result.entries())).toIncludeSameMembers([
+      ['salesforce.text', ['envs/default/firstFile.nacl']],
+      ['salesforce.lead', ['envs/default/firstFile.nacl', 'envs/default/secondFile.nacl']],
+      ['salesforce.hearing', ['envs/default/redHerringFile.nacl']],
+    ])
   })
 
   it('should return the correct elements to file names mapping of inactive env', async () => {

@@ -13,10 +13,10 @@ module.exports = deepMerge(require('../../jest.base.config.js'), {
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   coverageThreshold: {
     global: {
-      branches: 82.7,
+      branches: 84.1,
       functions: 92.3,
-      lines: 97.1,
-      statements: 96.9,
+      lines: 97.16,
+      statements: 96.92,
     },
   },
   setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],

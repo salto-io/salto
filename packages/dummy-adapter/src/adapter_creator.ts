@@ -86,7 +86,7 @@ const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({
         {
           severity: 'Error',
           message: 'Failed loadElementsFromFolder in Dummy project',
-          detailedMessage: error instanceof Error ? error.message : String(error),
+          detailedMessage: inspectValue(error),
         },
       ],
     }
@@ -115,7 +115,7 @@ const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ bas
         {
           severity: 'Error',
           message: 'Failed dumpElementsToFolder in Dummy project',
-          detailedMessage: error instanceof Error ? error.message : String(error),
+          detailedMessage: inspectValue(error),
         },
       ],
     }
@@ -137,7 +137,7 @@ const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
         {
           severity: 'Error',
           message: 'Failed initializing Dummy project',
-          detailedMessage: error instanceof Error ? error.message : String(error),
+          detailedMessage: inspectValue(error),
         },
       ],
     }
@@ -158,7 +158,7 @@ const isInitializedFolder: AdapterFormat['isInitializedFolder'] = async ({ baseD
         {
           severity: 'Error',
           message: 'Failed checking if dummy project is initialized',
-          detailedMessage: error instanceof Error ? error.message : String(error),
+          detailedMessage: inspectValue(error),
         },
       ],
     }

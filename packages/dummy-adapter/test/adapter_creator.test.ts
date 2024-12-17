@@ -195,7 +195,7 @@ describe('adapter creator', () => {
         it('should return errors', () => {
           expect(initFolderResult.errors).toEqual([
             {
-              detailedMessage: 'oh no!',
+              detailedMessage: expect.any(String),
               message: 'Failed initializing Dummy project',
               severity: 'Error',
             },
@@ -242,7 +242,7 @@ describe('adapter creator', () => {
         expect(isInitializedFolderResult.result).toEqual(false)
         expect(isInitializedFolderResult.errors).toEqual([
           {
-            detailedMessage: '',
+            detailedMessage: expect.any(String),
             message: 'Failed checking if dummy project is initialized',
             severity: 'Error',
           },

@@ -253,8 +253,14 @@ describe('elementSource', () => {
       anotherAccount2Element = new ObjectType({ elemID: new ElemID(ACCOUNT2, 'type2') })
     })
     it('should return only elements from the specified account', async () => {
-      const filteredElementsSource = filterElementsSource(buildElementsSourceFromElements([account1Element, account2Element, anotherAccount2Element]), ACCOUNT2)
-      expect(await toArrayAsync(await filteredElementsSource.getAll())).toEqual([account2Element, anotherAccount2Element])
+      const filteredElementsSource = filterElementsSource(
+        buildElementsSourceFromElements([account1Element, account2Element, anotherAccount2Element]),
+        ACCOUNT2,
+      )
+      expect(await toArrayAsync(await filteredElementsSource.getAll())).toEqual([
+        account2Element,
+        anotherAccount2Element,
+      ])
     })
   })
 })

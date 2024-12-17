@@ -16,14 +16,23 @@ import { Values, AccountInfo } from '@salto-io/adapter-api'
 import { mkdirp, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
-  CommandsMetadataService,
-  CommandActionExecutor,
-  CLIConfigurationService,
-  NodeConsoleLogger,
-  ActionResult,
-  ActionResultUtils,
-  SdkProperties,
-} from '@salto-io/suitecloud-cli'
+  CommandsMetadataService as LegacyCommandsMetadataService,
+  CommandActionExecutor as LegacyCommandActionExecutor,
+  CLIConfigurationService as LegacyCLIConfigurationService,
+  NodeConsoleLogger as LegacyNodeConsoleLogger,
+  ActionResult as LegacyActionResult,
+  ActionResultUtils as LegacyActionResultUtils,
+  SdkProperties as LegacySdkProperties,
+} from '@salto-io/suitecloud-cli-legacy'
+import {
+  CommandsMetadataService as NewCommandsMetadataService,
+  CommandActionExecutor as NewCommandActionExecutor,
+  CLIConfigurationService as NewCLIConfigurationService,
+  NodeConsoleLogger as NewNodeConsoleLogger,
+  ActionResult as NewActionResult,
+  ActionResultUtils as NewActionResultUtils,
+  SdkProperties as NewSdkProperties,
+} from '@salto-io/suitecloud-cli-new'
 import Bottleneck from 'bottleneck'
 import osPath from 'path'
 import os from 'os'
@@ -57,7 +66,7 @@ import {
   getFailedObjectsMap,
   getFailedObjects,
 } from './errors'
-import { SdfCredentials } from './credentials'
+import { isSdfOAuthCredentials, SdfCredentials, SdfOAuthCredentials, SdfTokenBasedCredentials } from './credentials'
 import {
   CustomizationInfo,
   CustomTypeInfo,
@@ -146,6 +155,7 @@ export type SdfClientOpts = {
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
   SAVE_TOKEN: 'account:savetoken',
+  SETUP_OAUTH: 'account:setup:ci',
   MANAGE_AUTH: 'account:manageauth',
   IMPORT_OBJECTS: 'object:import',
   LIST_OBJECTS: 'object:list',
@@ -180,6 +190,10 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
 
+export type CommandActionExecutor = LegacyCommandActionExecutor | NewCommandActionExecutor
+
+type ActionResult = LegacyActionResult | NewActionResult
+
 type Project = {
   projectPath: string
   executor: CommandActionExecutor
@@ -203,12 +217,25 @@ export default class SdfClient {
   private readonly globalLimiter: Bottleneck
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
+  private readonly getErrorMessagesString: (actionResult: ActionResult) => string
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
   private readonly instanceLimiter: InstanceLimiterFunc
 
   constructor({ credentials, config, globalLimiter, instanceLimiter }: SdfClientOpts) {
+    const { SdkProperties, baseCommandExecutor, getErrorMessagesString } = isSdfOAuthCredentials(credentials)
+      ? {
+          SdkProperties: NewSdkProperties,
+          baseCommandExecutor: SdfClient.initNewCommandActionExecutor(baseExecutionPath),
+          getErrorMessagesString: NewActionResultUtils.getErrorMessagesString,
+        }
+      : {
+          SdkProperties: LegacySdkProperties,
+          baseCommandExecutor: SdfClient.initLegacyCommandActionExecutor(baseExecutionPath),
+          getErrorMessagesString: LegacyActionResultUtils.getErrorMessagesString,
+        }
+
     this.globalLimiter = globalLimiter
     this.credentials = credentials
     this.fetchAllTypesAtOnce = config?.fetchAllTypesAtOnce ?? DEFAULT_FETCH_ALL_TYPES_AT_ONCE
@@ -217,7 +244,8 @@ export default class SdfClient {
     this.sdfConcurrencyLimit = config?.sdfConcurrencyLimit ?? DEFAULT_CONCURRENCY
     this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: this.sdfConcurrencyLimit })
     this.setupAccountLock = new AsyncLock()
-    this.baseCommandExecutor = SdfClient.initCommandActionExecutor(baseExecutionPath)
+    this.baseCommandExecutor = baseCommandExecutor
+    this.getErrorMessagesString = getErrorMessagesString
     const commandTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
@@ -243,12 +271,21 @@ export default class SdfClient {
     return this.credentials
   }
 
-  public static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
-    return new CommandActionExecutor({
+  public static initLegacyCommandActionExecutor(executionPath: string): LegacyCommandActionExecutor {
+    return new LegacyCommandActionExecutor({
       executionPath,
-      cliConfigurationService: new CLIConfigurationService(),
-      commandsMetadataService: new CommandsMetadataService(),
-      log: NodeConsoleLogger,
+      cliConfigurationService: new LegacyCLIConfigurationService(),
+      commandsMetadataService: new LegacyCommandsMetadataService(),
+      log: LegacyNodeConsoleLogger,
+    })
+  }
+
+  public static initNewCommandActionExecutor(executionPath: string): NewCommandActionExecutor {
+    return new NewCommandActionExecutor({
+      executionPath,
+      cliConfigurationService: new NewCLIConfigurationService(),
+      commandsMetadataService: new NewCommandsMetadataService(),
+      log: NewNodeConsoleLogger,
     })
   }
 
@@ -274,7 +311,7 @@ export default class SdfClient {
       runInInteractiveMode: false,
       arguments: args,
     })
-    SdfClient.verifySuccessfulAction(actionResult, COMMANDS.CREATE_PROJECT)
+    this.verifySuccessfulAction(actionResult, COMMANDS.CREATE_PROJECT)
     if (suiteAppId !== undefined) {
       // When creating a SuiteApp project, the folder name will always be the suiteAppId
       // (regardless the what we pass in the projectname) so we want to
@@ -315,10 +352,10 @@ export default class SdfClient {
     throw new FeaturesDeployError(errorMessage, errorIds)
   }
 
-  private static verifySuccessfulAction(actionResult: ActionResult, commandName: string): void {
+  private verifySuccessfulAction(actionResult: ActionResult, commandName: string): void {
     if (!actionResult.isSuccess()) {
       log.error(`SDF command ${commandName} has failed.`)
-      throw Error(ActionResultUtils.getErrorMessagesString(actionResult))
+      throw Error(this.getErrorMessagesString(actionResult))
     }
     if ([COMMANDS.DEPLOY_PROJECT, COMMANDS.VALIDATE_PROJECT].includes(commandName)) {
       SdfClient.verifySuccessfulDeploy(actionResult.data)
@@ -339,7 +376,7 @@ export default class SdfClient {
         }),
       ),
     )
-    SdfClient.verifySuccessfulAction(actionResult, commandName)
+    this.verifySuccessfulAction(actionResult, commandName)
     return actionResult
   }
 
@@ -349,24 +386,60 @@ export default class SdfClient {
     await this.setupAccountLock.acquire('authIdManipulation', fn)
   }
 
-  protected async setupAccount(projectCommandActionExecutor: CommandActionExecutor, authId: string): Promise<void> {
+  protected async setupAccountViaTokenBased(
+    credentials: SdfTokenBasedCredentials,
+    projectPath: string,
+    authId: string,
+  ): Promise<LegacyCommandActionExecutor> {
+    const executor = SdfClient.initLegacyCommandActionExecutor(projectPath)
     const setupCommandArguments = {
       authid: authId,
-      account: this.credentials.accountId,
-      tokenid: this.credentials.tokenId,
-      tokensecret: this.credentials.tokenSecret,
+      account: credentials.accountId,
+      tokenid: credentials.tokenId,
+      tokensecret: credentials.tokenSecret,
     }
     const safeArguments: Values = _.mapValues(setupCommandArguments, safeQuoteArgument)
     await this.withAuthIdsLock(async () => {
-      log.debug(`Setting up account using authId: ${authId}`)
+      log.debug(`Setting up account via token-based using authId: ${authId}`)
       try {
-        await this.executeProjectAction(COMMANDS.SAVE_TOKEN, safeArguments, projectCommandActionExecutor)
+        await this.executeProjectAction(COMMANDS.SAVE_TOKEN, safeArguments, executor)
       } catch (e) {
-        log.warn(`Failed to setup account using authId: ${authId}`, e)
-        log.debug(`Retrying to setup account using authId: ${authId}`)
-        await this.executeProjectAction(COMMANDS.SAVE_TOKEN, setupCommandArguments, projectCommandActionExecutor)
+        log.warn(`Failed to setup account via token-based using authId: ${authId}`, e)
+        log.debug(`Retrying to setup account via token-based using authId: ${authId}`)
+        await this.executeProjectAction(COMMANDS.SAVE_TOKEN, setupCommandArguments, executor)
       }
     })
+    return executor
+  }
+
+  protected async setupAccountViaOAuth(
+    credentials: SdfOAuthCredentials,
+    projectPath: string,
+    authId: string,
+  ): Promise<NewCommandActionExecutor> {
+    const executor = SdfClient.initNewCommandActionExecutor(projectPath)
+    const privateKeyPath = osPath.resolve(baseExecutionPath, `${authId}.pem`)
+    const setupCommandArguments = {
+      authid: authId,
+      account: credentials.accountId,
+      certificateid: credentials.certificateId,
+      privatekeypath: privateKeyPath,
+    }
+    const safeArguments: Values = _.mapValues(setupCommandArguments, safeQuoteArgument)
+    await this.withAuthIdsLock(async () => {
+      log.debug(`Setting up account via oauth using authId: ${authId}`)
+      try {
+        await writeFile(privateKeyPath, credentials.privateKey)
+        await this.executeProjectAction(COMMANDS.SETUP_OAUTH, safeArguments, executor)
+      } catch (e) {
+        log.warn(`Failed to setup account via oauth using authId: ${authId}`, e)
+        log.debug(`Retrying to setup account via oauth using authId: ${authId}`)
+        await this.executeProjectAction(COMMANDS.SETUP_OAUTH, setupCommandArguments, executor)
+      } finally {
+        await rm(privateKeyPath)
+      }
+    })
+    return executor
   }
 
   private async initProject(suiteAppId?: string): Promise<Project> {
@@ -374,8 +447,9 @@ export default class SdfClient {
     const projectName = `sdf-${authId}`
     await this.createProject(projectName, suiteAppId)
     const projectPath = osPath.resolve(baseExecutionPath, projectName)
-    const executor = SdfClient.initCommandActionExecutor(projectPath)
-    await this.setupAccount(executor, authId)
+    const executor = isSdfOAuthCredentials(this.credentials)
+      ? await this.setupAccountViaOAuth(this.credentials, projectPath, authId)
+      : await this.setupAccountViaTokenBased(this.credentials, projectPath, authId)
     return { projectPath, executor, authId, type: suiteAppId !== undefined ? 'SuiteApp' : 'AccountCustomization' }
   }
 

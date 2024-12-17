@@ -8,4 +8,5 @@
 export { default } from './src/adapter'
 export { adapter } from './src/adapter_creator'
 export { Credentials, toCredentialsAccountId } from './src/client/credentials'
-export { SDK_VERSION as NETSUITE_SDF_VERSION } from '@salto-io/suitecloud-cli'
+export { SDK_VERSION as NETSUITE_SDF_VERSION } from '@salto-io/suitecloud-cli-new'
+export { netsuiteSupportedTypes } from './src/types'

@@ -15,10 +15,9 @@ import path from 'path'
 import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
-  createReadOnlyRemoteMapCreator,
+  createReadOnlyRemoteMap,
   RocksDBValue,
   TMP_DB_DIR,
-  closeRemoteMapsOfLocation,
   cleanDatabases,
   closeAllRemoteMaps,
 } from '../../src/remote_map/remote_map'
@@ -117,17 +116,23 @@ const createMap = async (
   namespace: string,
   persistent = true,
   location = DB_LOCATION,
-): Promise<rm.RemoteMap<Element>> =>
-  createRemoteMapCreator(location)({
-    namespace,
-    batchInterval: 1000,
-    serialize: elem => serialize([elem]),
-    deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
-    persistent,
-  })
+): Promise<{ remoteMap: rm.RemoteMap<Element>; close: () => Promise<void> }> => {
+  const { create, close } = createRemoteMapCreator(location)
+  return {
+    close,
+    remoteMap: await create({
+      namespace,
+      batchInterval: 1000,
+      serialize: elem => serialize([elem]),
+      deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
+      persistent,
+    }),
+  }
+}
 
 const createReadOnlyMap = async (namespace: string, location = DB_LOCATION): Promise<rm.RemoteMap<Element>> =>
-  createReadOnlyRemoteMapCreator(location)({
+  createReadOnlyRemoteMap({
+    location,
     namespace,
     deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
   })
@@ -145,7 +150,7 @@ describe('test operations on remote db', () => {
   let remoteMap: rm.RemoteMap<Element>
   let readOnlyRemoteMap: rm.RemoteMap<Element>
   let expectedElementFromMap: Element
-
+  let closeMethod: () => Promise<void>
   const filterFn = (key: string): boolean => key.includes('a')
 
   beforeEach(async () => {
@@ -153,17 +158,21 @@ describe('test operations on remote db', () => {
     sortedElements = _.sortBy(elements, e => e.elemID.getFullName()).map(e => e.elemID.getFullName())
     filteredSortedElements = sortedElements.filter(filterFn)
     const namespace = 'namespace'
-    remoteMap = await createMap(namespace)
+    const result = await createMap(namespace)
+    remoteMap = result.remoteMap
+    closeMethod = result.close
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     await remoteMap.flush()
     // eslint-disable-next-line prefer-destructuring
     expectedElementFromMap = (await deserialize(await serialize([elements[0]])))[0]
-    await closeRemoteMapsOfLocation(DB_LOCATION)
-    remoteMap = await createMap(namespace)
+    await result.close()
+    const anotherResult = await createMap(namespace)
+    closeMethod = anotherResult.close
+    remoteMap = anotherResult.remoteMap
     readOnlyRemoteMap = await createReadOnlyMap(namespace)
   })
   afterEach(async () => {
-    await closeRemoteMapsOfLocation(DB_LOCATION)
+    await closeMethod()
   })
 
   describe('get', () => {
@@ -387,7 +396,7 @@ describe('test operations on remote db', () => {
   })
   describe('isEmpty', () => {
     it('should return true if the remote map is empty', async () => {
-      const emptyRemoteMap = await createMap('test')
+      const emptyRemoteMap = (await createMap('test')).remoteMap
       const res = await emptyRemoteMap.isEmpty()
       expect(res).toEqual(true)
     })
@@ -929,11 +938,11 @@ describe('tmp db deletion', () => {
     expect(readdirSync(TMP_DIR)).toHaveLength(1)
 
     // Creating a new map should delete the old tmp db, and create a new one
-    await createMap('new_map', true, DB_LOCATION_TMP)
+    const { close } = await createMap('new_map', true, DB_LOCATION_TMP)
     expect(readdirSync(TMP_DIR)).toHaveLength(1)
 
     // Closing the map should remove the newly created tmp db
-    await closeRemoteMapsOfLocation(DB_LOCATION_TMP)
+    await close()
     expect(readdirSync(TMP_DIR)).toHaveLength(0)
   })
 })
@@ -941,22 +950,21 @@ describe('tmp db deletion', () => {
 describe('non persistent mode', () => {
   const DB_LOCATION_TMP = path.join(DB_LOCATION, 'tmp')
   it('should throw an error if flush is called', async () => {
-    await expect(async () => (await createMap(DB_LOCATION, false)).flush()).rejects.toThrow()
+    await expect(async () => (await createMap(DB_LOCATION, false)).remoteMap.flush()).rejects.toThrow()
   })
 
   it('should destroy the tmp storage dirs after the connection is closed', async () => {
     const tmpDir = path.join(DB_LOCATION_TMP, TMP_DB_DIR)
-    await createMap(DB_LOCATION_TMP, false, DB_LOCATION_TMP)
+    const { close } = await createMap(DB_LOCATION_TMP, false, DB_LOCATION_TMP)
     expect(readdirSync(tmpDir)).not.toEqual([])
-    await closeRemoteMapsOfLocation(DB_LOCATION_TMP)
+    await close()
     expect(readdirSync(tmpDir)).toEqual([])
   })
 })
 
 describe('full integration', () => {
-  let remoteMap: rm.RemoteMap<Element>
   it('creates keys and values, flushes', async () => {
-    remoteMap = await createMap('integration')
+    const { remoteMap, close } = await createMap('integration')
     const elements = generateElements()
     await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
     await remoteMap.setAll(createAsyncIterable(elements.slice(1, elements.length)))
@@ -969,7 +977,7 @@ describe('full integration', () => {
     expect(_.uniq(res.map(elem => elem.elemID.getFullName()))).toEqual(
       elements.map(elem => elem.elemID.getFullName()).sort(),
     )
-    await closeRemoteMapsOfLocation(DB_LOCATION)
+    await close()
     const db = rocksdb(DB_LOCATION)
     await promisify(db.open.bind(db))()
     const ids: string[] = []

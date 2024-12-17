@@ -127,7 +127,7 @@ export const buildAdaptersConfigSource = async ({
 
   let elementsSource = buildElementsSourceFromElements(updatedConfigTypes, [naclSource])
 
-  const validationErrorsMap = await remoteMapCreator<ValidationError[]>({
+  const validationErrorsMap = await remoteMapCreator.create<ValidationError[]>({
     namespace: VALIDATION_ERRORS_NAMESPACE,
     serialize: validationErrors => serialize(validationErrors, 'keepRef'),
     deserialize: async data => deserializeValidationErrors(data),

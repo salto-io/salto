@@ -58,7 +58,7 @@ export const buildStateData = async (
   persistent: boolean,
 ): Promise<StateData> => ({
   elements: new RemoteElementSource(
-    await remoteMapCreator<Element>({
+    await remoteMapCreator.create<Element>({
       namespace: createStateNamespace(envName, 'elements'),
       serialize: elem => serialize([elem], 'replaceRefWithValue', file => staticFilesSource.persistStaticFile(file)),
       deserialize: elem =>
@@ -73,25 +73,25 @@ export const buildStateData = async (
       persistent,
     }),
   ),
-  pathIndex: await remoteMapCreator<Path[]>({
+  pathIndex: await remoteMapCreator.create<Path[]>({
     namespace: createStateNamespace(envName, 'path_index'),
     serialize: async paths => safeJsonStringify(paths),
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  topLevelPathIndex: await remoteMapCreator<Path[]>({
+  topLevelPathIndex: await remoteMapCreator.create<Path[]>({
     namespace: createStateNamespace(envName, 'top_level_path_index'),
     serialize: async paths => safeJsonStringify(paths),
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  accounts: await remoteMapCreator<string[], 'account_names'>({
+  accounts: await remoteMapCreator.create<string[], 'account_names'>({
     namespace: createStateNamespace(envName, 'accounts'),
     serialize: async data => safeJsonStringify(data),
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  saltoMetadata: await remoteMapCreator<string, 'hash'>({
+  saltoMetadata: await remoteMapCreator.create<string, 'hash'>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: async data => data,
     deserialize: async data => data,
@@ -100,7 +100,7 @@ export const buildStateData = async (
   staticFilesSource,
   deprecated: {
     // TODO remove once all workspaces are converted to the new state format (cf. the 'accounts' member)
-    accountsUpdateDate: await remoteMapCreator<Date>({
+    accountsUpdateDate: await remoteMapCreator.create<Date>({
       namespace: createStateNamespace(envName, 'service_update_date'),
       serialize: async date => date.toISOString(),
       deserialize: async data => new Date(data),

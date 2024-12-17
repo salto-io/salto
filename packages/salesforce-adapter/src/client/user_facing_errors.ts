@@ -37,6 +37,8 @@ export const ERROR_HTTP_502_MESSAGE =
 
 export const INVALID_GRANT_MESSAGE = 'Salesforce user is inactive, please re-authenticate'
 
+export const EXPIRED_PASSWORD_MESSAGE = 'Your password is expired. Please login to your Salesforce account to renew it.'
+
 export const INSUFFICIENT_ACCESS_MESSAGE =
   "You have no permissions to perform this action. Make sure the profile attached to your user has 'Modify All Data' and 'Modify Metadata Through Metadata API Functions' enabled."
 
@@ -61,6 +63,7 @@ export type ErrorMappers = {
   [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: ErrorMapper<SalesforceError>
   [INVALID_GRANT]: ErrorMapper<Error>
   [ENOTFOUND]: ErrorMapper<DNSException>
+  [SALESFORCE_ERRORS.EXPIRED_PASSWORD]: ErrorMapper<SalesforceError>
   [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: ErrorMapper<Error>
 }
 
@@ -93,6 +96,11 @@ export const ERROR_MAPPERS: ErrorMappers = {
         `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.` +
           ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
       ),
+  },
+  [SALESFORCE_ERRORS.EXPIRED_PASSWORD]: {
+    test: (error: Error): error is SalesforceError =>
+      isSalesforceError(error) && error[ERROR_PROPERTIES.ERROR_CODE] === SALESFORCE_ERRORS.EXPIRED_PASSWORD,
+    map: (error: Error): string => withSalesforceError(error.message, EXPIRED_PASSWORD_MESSAGE),
   },
   [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: {
     test: (error: Error): error is SalesforceError =>

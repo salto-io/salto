@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { logger } from '@salto-io/logging'
 import {
   Adapter,
   BuiltinTypes,
@@ -15,7 +16,8 @@ import {
   AdapterOperationsContext,
   AdapterOperations,
 } from '@salto-io/adapter-api'
-import { SdkDownloadService } from '@salto-io/suitecloud-cli'
+import { SdkDownloadService as LegacySdkDownloadService } from '@salto-io/suitecloud-cli-legacy'
+import { SdkDownloadService as NewSdkDownloadService } from '@salto-io/suitecloud-cli-new'
 import { combineCustomReferenceGetters } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import Bottleneck from 'bottleneck'
@@ -23,13 +25,25 @@ import { DEFAULT_CONCURRENCY } from './config/constants'
 import { configType } from './config/types'
 import { netsuiteConfigFromConfig, instanceLimiterCreator } from './config/config_creator'
 import { NETSUITE } from './constants'
-import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
+import {
+  Credentials,
+  isSdfCredentialsOnly,
+  isSuiteAppCredentials,
+  SdfOAuthCredentials,
+  SdfTokenBasedCredentials,
+  SuiteAppCredentials,
+  toCredentialsAccountId,
+} from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 import loadElementsFromFolder from './sdf_folder_loader'
 import { customReferenceHandlers } from './custom_references'
+
+const log = logger(module)
+
+type AllCredentials = SdfTokenBasedCredentials & SdfOAuthCredentials & SuiteAppCredentials
 
 const configID = new ElemID(NETSUITE)
 
@@ -43,11 +57,19 @@ export const defaultCredentialsType = new ObjectType({
     },
     tokenId: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Token ID' },
+      annotations: { message: 'SDF Token ID (for TBA)' },
     },
     tokenSecret: {
       refType: BuiltinTypes.STRING,
-      annotations: { message: 'SDF Token Secret' },
+      annotations: { message: 'SDF Token Secret (for TBA)' },
+    },
+    certificateId: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'SDF Certificate ID (for OAuth 2.0)' },
+    },
+    privateKey: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'SDF Private Key (for OAuth 2.0)' },
     },
     suiteAppTokenId: {
       refType: BuiltinTypes.STRING,
@@ -72,6 +94,30 @@ export const defaultCredentialsType = new ObjectType({
   annotations: {},
 })
 
+const throwOnInvalidAccountId = (credentials: Credentials): void => {
+  const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
+  if (!isValidAccountIdFormat) {
+    throw new Error(
+      `received an invalid accountId value: (${credentials.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`,
+    )
+  }
+}
+
+const throwOnSdfCredentialsMismatch = (credentials: AllCredentials): void => {
+  if (credentials.tokenId !== undefined && credentials.certificateId !== undefined) {
+    throw new Error('Expected to have one of tokenId and certificateId, but received both')
+  }
+  if (credentials.tokenId === undefined && credentials.certificateId === undefined) {
+    throw new Error('Expected to have one of tokenId and certificateId, but received none')
+  }
+  if (credentials.tokenId !== undefined && credentials.tokenSecret === undefined) {
+    throw new Error('Expected to have tokenSecret when tokenId is specified, but received none')
+  }
+  if (credentials.certificateId !== undefined && credentials.privateKey === undefined) {
+    throw new Error('Expected to have privateKey when certificateId is specified, but received none')
+  }
+}
+
 const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
   if (isSdfCredentialsOnly(credentials)) {
     return
@@ -93,25 +139,19 @@ const throwOnMissingSuiteAppLoginCreds = (credentials: Credentials): void => {
 }
 
 const netsuiteCredentialsFromCredentials = (credsInstance: Readonly<InstanceElement>): Credentials => {
-  const throwOnInvalidAccountId = (credentials: Credentials): void => {
-    const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
-    if (!isValidAccountIdFormat) {
-      throw new Error(
-        `received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`,
-      )
-    }
-  }
-
-  const credentials = {
+  const credentials: AllCredentials = {
     accountId: toCredentialsAccountId(credsInstance.value.accountId),
-    tokenId: credsInstance.value.tokenId,
-    tokenSecret: credsInstance.value.tokenSecret,
+    tokenId: credsInstance.value.tokenId === '' ? undefined : credsInstance.value.tokenId,
+    tokenSecret: credsInstance.value.tokenSecret === '' ? undefined : credsInstance.value.tokenSecret,
+    certificateId: credsInstance.value.certificateId === '' ? undefined : credsInstance.value.certificateId,
+    privateKey: credsInstance.value.privateKey === '' ? undefined : credsInstance.value.privateKey,
     suiteAppTokenId: credsInstance.value.suiteAppTokenId === '' ? undefined : credsInstance.value.suiteAppTokenId,
     suiteAppTokenSecret:
       credsInstance.value.suiteAppTokenSecret === '' ? undefined : credsInstance.value.suiteAppTokenSecret,
     suiteAppActivationKey: credsInstance.value.suiteAppActivationKey,
   }
   throwOnInvalidAccountId(credentials)
+  throwOnSdfCredentialsMismatch(credentials)
   throwOnMissingSuiteAppLoginCreds(credentials)
   return credentials
 }
@@ -171,11 +211,18 @@ export const adapter: Adapter = {
   configType,
   install: async (): Promise<AdapterInstallResult> => {
     try {
-      const result = await SdkDownloadService.download()
-      if (result.success) {
-        return { ...result, installedVersions: [result.installedVersion] }
+      const legacyResult = await LegacySdkDownloadService.download()
+      log.info('Legacy SDF installation result: %o', legacyResult)
+      if (!legacyResult.success) {
+        return legacyResult
       }
-      return result
+      const newResult = await NewSdkDownloadService.download()
+      log.info('New SDF installation result: %o', newResult)
+      if (!newResult.success) {
+        return newResult
+      }
+      const installedVersions = [legacyResult.installedVersion, newResult.installedVersion]
+      return { ...newResult, installedVersions }
     } catch (err) {
       return { success: false, errors: [err.message ?? err] }
     }

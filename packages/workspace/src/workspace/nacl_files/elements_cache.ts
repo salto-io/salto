@@ -196,7 +196,7 @@ export const createMergeManager = async (
   if (Object.keys(fullNamespace).includes(fullNamespace)) {
     return namespaceToManager[fullNamespace]
   }
-  const hashes = await mapCreator<string>({
+  const hashes = await mapCreator.create<string>({
     namespace: fullNamespace,
     persistent,
     serialize: async s => s,

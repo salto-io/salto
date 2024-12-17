@@ -99,6 +99,34 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
   }
 }
 
+const createInstanceChangeErrorSingleDefaultNoVisible = (
+  fieldPath: string,
+  field: string,
+  instance: InstanceElement,
+): ChangeError => {
+  const elementId = instance.elemID.createNestedID(fieldPath, field, 'visible')
+  return {
+    elemID: elementId,
+    severity: 'Error',
+    message: 'Default entry must be visible',
+    detailedMessage: `An entry that is set as default must also be set as visible\nThus the following entry must be visible ${elementId.getFullName()}`,
+  }
+}
+
+const createInstanceChangeErrorNoDefault = (
+  fieldPath: string,
+  field: string,
+  instance: InstanceElement,
+): ChangeError => {
+  const elementId = instance.elemID.createNestedID(fieldPath, field)
+  return {
+    elemID: elementId,
+    severity: 'Error',
+    message: 'recordTypeVisibility segment must have one default entry',
+    detailedMessage: `Must have default entry if there are visible entries\nThus the following segment must have one default entry (or no visible entries at all) ${elementId.getFullName()}`,
+  }
+}
+
 const createFieldChangeError = (field: Field, contexts: string[]): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
@@ -131,16 +159,46 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
     value: Value,
     fieldType: TypeElement,
     valueName: string,
-  ): Promise<string[] | undefined> => {
+  ): Promise<{ defaults: string[] | undefined; count: number }> => {
     const defaultObjects = getDefaultObjectsList(value, fieldType)
     if (!_.isArray(defaultObjects)) {
-      return undefined
+      return { defaults: undefined, count: 0 }
     }
     const contexts = defaultObjects
       .filter(val => val.default)
       .map(obj => obj[valueName])
       .map(formatContext)
-    return contexts.length > 1 ? contexts : undefined
+    return { defaults: contexts, count: contexts.length }
+  }
+
+  const findNotVisibleDefault = (value: Value, fieldType: TypeElement): string | undefined => {
+    const defaultObjects = getDefaultObjectsList(value, fieldType)
+    if (!_.isArray(defaultObjects)) {
+      return undefined
+    }
+    const corruptedEntry = defaultObjects.reduce<string | undefined>((res, curr) => {
+      if (res !== undefined) {
+        return res
+      }
+      const defaultField = _.get(curr, 'default')
+      const visibleField = _.get(curr, 'visible')
+      if (defaultField) {
+        if (visibleField) {
+          return ''
+        }
+        return curr.recordType
+      }
+      return undefined
+    }, undefined)
+    return corruptedEntry !== '' ? corruptedEntry : undefined
+  }
+
+  const isVisibleNoDefaultError = (value: Value, fieldType: TypeElement): boolean => {
+    const defaultObjects = getDefaultObjectsList(value, fieldType)
+    if (!_.isArray(defaultObjects)) {
+      return true
+    }
+    return defaultObjects.some(rec => _.get(rec, 'visible'))
   }
 
   const createChangeErrorFromContext = (
@@ -168,12 +226,34 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
       if (_.isPlainObject(value) && FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].nested) {
         return awu(Object.entries(value)).flatMap(async ([_key, innerValue]) => {
           const startLevelType = isMapType(fieldType) ? fieldType.getInnerTypeSync() : fieldType
-          const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
-          return createChangeErrorFromContext(field, defaultsContexts, after)
+          const { defaults: defaultsContexts, count: defaultsCount } = await findMultipleDefaults(
+            innerValue,
+            startLevelType,
+            valueName,
+          )
+          if (defaultsContexts === undefined) {
+            return []
+          }
+          if (defaultsCount > 1) {
+            return [createInstanceChangeError(field, defaultsContexts, after)]
+          }
+          if (defaultsCount === 1) {
+            const singleDefaultIsValid = findNotVisibleDefault(innerValue, startLevelType)
+            if (singleDefaultIsValid !== undefined) {
+              return [createInstanceChangeErrorSingleDefaultNoVisible(fieldPath, singleDefaultIsValid, after)]
+            }
+            return []
+          }
+          const hasNoDefaultError = isVisibleNoDefaultError(innerValue, startLevelType)
+          return hasNoDefaultError ? [createInstanceChangeErrorNoDefault(fieldPath, _key, after)] : []
         })
       }
-      const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)
-      return createChangeErrorFromContext(field, defaultsContexts, after)
+      const { defaults: defaultsContexts, count: defaultsCount } = await findMultipleDefaults(
+        value,
+        fieldType,
+        valueName,
+      )
+      return defaultsCount > 1 ? createChangeErrorFromContext(field, defaultsContexts, after) : []
     })
     .toArray()
 

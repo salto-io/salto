@@ -524,6 +524,9 @@ describe('SalesforceAdapter CRUD', () => {
                 message.includes('View deployments [in Salesforce](https://url.com/lightning/setup/DeployStatus/home)'),
             )
           })
+          it('should report the deployment asyncTaskId', () => {
+            expect(progressReporter.getReportedAsyncTaskIds()).toHaveLength(1)
+          })
         })
 
         describe('when the received hash is not corresponding with the calculated hash', () => {

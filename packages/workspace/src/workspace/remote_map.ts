@@ -46,6 +46,7 @@ export interface CreateRemoteMapParams<T> {
 
 export interface CreateReadOnlyRemoteMapParams<T> {
   namespace: string
+  location: string
   deserialize: (s: string) => Promise<T>
 }
 
@@ -81,13 +82,10 @@ export type RemoteMap<T, K extends string = string> = {
 
 export type ReadOnlyRemoteMap<T> = Pick<RemoteMap<T>, 'get' | 'entries' | 'values' | 'has'>
 
-export type RemoteMapCreator = <T, K extends string = string>(
-  opts: CreateRemoteMapParams<T>,
-) => Promise<RemoteMap<T, K>>
-
-export type ReadOnlyRemoteMapCreator = <T, K extends string = string>(
-  opts: CreateReadOnlyRemoteMapParams<T>,
-) => Promise<RemoteMap<T, K>>
+export type RemoteMapCreator = {
+  close: () => Promise<void>
+  create: <T, K extends string = string>(opts: CreateRemoteMapParams<T>) => Promise<RemoteMap<T, K>>
+}
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
   private data: Map<K, T>
   constructor(data: RemoteMapEntry<T, K>[] = []) {
@@ -185,3 +183,17 @@ export const mapRemoteMapResult = <T, R>(
   values: () => awu(source.values()).map(func),
   has: id => source.has(id),
 })
+
+export const inMemRemoteMapCreator = (): RemoteMapCreator => {
+  const maps = new Map<string, RemoteMap<unknown>>()
+  return {
+    close: async () => {},
+    create: async <T, K extends string = string>(opts: CreateRemoteMapParams<T>) => {
+      const map = maps.get(opts.namespace) ?? new InMemoryRemoteMap<T, K>()
+      if (!maps.has(opts.namespace)) {
+        maps.set(opts.namespace, map)
+      }
+      return map as RemoteMap<T, K>
+    },
+  }
+}

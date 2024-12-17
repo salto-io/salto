@@ -5,7 +5,8 @@
     "baseUrl": ".",
     "resolveJsonModule": true,
     "paths": {
-      "@salto-io/suitecloud-cli": ["../netsuite-adapter/types/suitecloud-cli"]
+      "@salto-io/suitecloud-cli-new": ["../netsuite-adapter/types/suitecloud-cli-new"],
+      "@salto-io/suitecloud-cli-legacy": ["../netsuite-adapter/types/suitecloud-cli-legacy"]
     }
   },
   "include": ["src/**/*", "test/**/*", "types/**/*", "e2e_test/**/*", "index.ts"],

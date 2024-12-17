@@ -18,6 +18,21 @@ describe('filtersFilter', () => {
   })
   it('should replace user field on pre deploy', async () => {
     const instance = new InstanceElement('instance', createEmptyType('Filter'), {
+      sharePermissions: [
+        {
+          type: 'user',
+          user: {
+            id: 'someone',
+          },
+        },
+        {
+          type: 'user',
+          user: {
+            id: 'someone2',
+          },
+        },
+      ],
+
       editPermissions: [
         {
           type: 'user',
@@ -34,13 +49,51 @@ describe('filtersFilter', () => {
       ],
     })
     await filter.preDeploy?.([toChange({ after: instance })])
-    expect(instance.value).toEqual({
-      editPermissions: [
+    expect(instance.value.editPermissions).toEqual([
+      {
+        type: 'user',
+        user: {
+          accountId: {
+            id: 'noOne',
+          },
+        },
+      },
+      {
+        type: 'user',
+        user: {
+          accountId: {
+            id: 'noOne2',
+          },
+        },
+      },
+    ])
+    expect(instance.value.sharePermissions).toEqual([
+      {
+        type: 'user',
+        user: {
+          accountId: {
+            id: 'someone',
+          },
+        },
+      },
+      {
+        type: 'user',
+        user: {
+          accountId: {
+            id: 'someone2',
+          },
+        },
+      },
+    ])
+  })
+  it('should return user field after deploy', async () => {
+    const instance = new InstanceElement('instance', createEmptyType('Filter'), {
+      sharePermissions: [
         {
           type: 'user',
           user: {
             accountId: {
-              id: 'noOne',
+              id: 'someone',
             },
           },
         },
@@ -48,15 +101,11 @@ describe('filtersFilter', () => {
           type: 'user',
           user: {
             accountId: {
-              id: 'noOne2',
+              id: 'someone2',
             },
           },
         },
       ],
-    })
-  })
-  it('should return user field after deploy', async () => {
-    const instance = new InstanceElement('instance', createEmptyType('Filter'), {
       editPermissions: [
         {
           type: 'user',
@@ -77,22 +126,34 @@ describe('filtersFilter', () => {
       ],
     })
     await filter.onDeploy?.([toChange({ after: instance })])
-    expect(instance.value).toEqual({
-      editPermissions: [
-        {
-          type: 'user',
-          user: {
-            id: 'noOne',
-          },
+    expect(instance.value.editPermissions).toEqual([
+      {
+        type: 'user',
+        user: {
+          id: 'noOne',
         },
-        {
-          type: 'user',
-          user: {
-            id: 'noOne2',
-          },
+      },
+      {
+        type: 'user',
+        user: {
+          id: 'noOne2',
         },
-      ],
-    })
+      },
+    ])
+    expect(instance.value.sharePermissions).toEqual([
+      {
+        type: 'user',
+        user: {
+          id: 'someone',
+        },
+      },
+      {
+        type: 'user',
+        user: {
+          id: 'someone2',
+        },
+      },
+    ])
   })
 
   it('should do nothing if not a filter type', async () => {

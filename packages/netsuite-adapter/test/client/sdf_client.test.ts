@@ -6,10 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import { readFile, writeFile, mkdirp, rm, rename } from '@salto-io/file'
+import * as fileUtils from '@salto-io/file'
 import osPath from 'path'
-import { buildNetsuiteQuery, notQuery } from '../../src/config/query'
-import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
+import { buildNetsuiteQuery, NetsuiteQuery, notQuery } from '../../src/config/query'
+import mockClient, { DUMMY_OAUTH_CREDENTIALS, DUMMY_TOKEN_BASED_CREDENTIALS } from './sdf_client'
 import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
 import SdfClient, { COMMANDS, MINUTE_IN_MILLISECONDS } from '../../src/client/sdf_client'
 import {
@@ -44,23 +44,6 @@ import {
   readFileMockFunction,
   statMockFunction,
 } from './mocks'
-import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
-
-const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
-  undefined,
-  {
-    manifestDependencies: {
-      optionalFeatures: [],
-      requiredFeatures: [],
-      excludedFeatures: [],
-      includedObjects: [],
-      excludedObjects: [],
-      includedFiles: [],
-      excludedFiles: [],
-    },
-  },
-  new Graph(),
-]
 
 jest.mock('readdirp', () => ({
   promise: jest.fn().mockImplementation(() => OBJECTS_DIR_FILES.map(path => ({ path }))),
@@ -75,11 +58,6 @@ jest.mock('@salto-io/file', () => ({
   stat: jest.fn().mockImplementation(path => statMockFunction(path)),
   exists: jest.fn().mockResolvedValue(true),
 }))
-const readFileMock = readFile as unknown as jest.Mock
-const writeFileMock = writeFile as jest.Mock
-const renameMock = rename as unknown as jest.Mock
-const mkdirpMock = mkdirp as jest.Mock
-const rmMock = rm as jest.Mock
 
 jest.mock('@salto-io/lowerdash', () => ({
   ...jest.requireActual<{}>('@salto-io/lowerdash'),
@@ -91,7 +69,7 @@ jest.mock('@salto-io/lowerdash', () => ({
 const mockExecuteAction = jest.fn()
 const mockSetCommandTimeout = jest.fn()
 
-jest.mock('@salto-io/suitecloud-cli', () => ({
+jest.mock('@salto-io/suitecloud-cli-legacy', () => ({
   ActionResultUtils: {
     getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
   },
@@ -108,38 +86,53 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
   },
 }))
 
+jest.mock('@salto-io/suitecloud-cli-new', () => ({
+  ActionResultUtils: {
+    getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
+  },
+  CLIConfigurationService: jest.fn(),
+  NodeConsoleLogger: jest.fn(),
+  CommandsMetadataService: jest.fn().mockImplementation(() => ({
+    initializeCommandsMetadata: jest.fn(),
+  })),
+  CommandActionExecutor: jest.fn().mockImplementation(() => ({
+    executeAction: mockExecuteAction,
+  })),
+  SdkProperties: {
+    setCommandTimeout: jest.fn((...args) => mockSetCommandTimeout(...args)),
+  },
+}))
+
+const mockLargeFoldersToExclude = jest.fn()
 jest.mock('../../src/client/file_cabinet_utils', () => ({
   ...jest.requireActual<{}>('../../src/client/file_cabinet_utils'),
-  largeFoldersToExclude: jest.fn().mockReturnValue([]),
+  largeFoldersToExclude: jest.fn().mockImplementation((...args) => mockLargeFoldersToExclude(...args)),
 }))
-const mockLargeFoldersToExclude = largeFoldersToExclude as jest.Mock
 
-describe('sdf client', () => {
+describe.each([
+  ['tokenBased', { withOAuth: false }],
+  ['oauth', { withOAuth: true }],
+])('sdf client - creds type: %s', (_text, { withOAuth }) => {
   const createProjectCommandMatcher = expect.objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
-  const saveTokenCommandMatcher = expect.objectContaining({
-    commandName: COMMANDS.SAVE_TOKEN,
-    arguments: expect.objectContaining({
-      account: DUMMY_CREDENTIALS.accountId,
-      tokenid: DUMMY_CREDENTIALS.tokenId,
-      tokensecret: DUMMY_CREDENTIALS.tokenSecret,
-      authid: expect.anything(),
-    }),
-  })
-
-  const instancesIds = [
-    { type: 'addressForm', scriptId: 'IdA' },
-    { type: 'advancedpdftemplate', scriptId: 'IdB' },
-  ]
-
-  const typeNames = instancesIds.map(instance => instance.type)
-
-  const typeNamesQuery = buildNetsuiteQuery({
-    types: [
-      ...instancesIds.map(instance => ({ name: instance.type, ids: ['.*'] })),
-      { name: CONFIG_FEATURES, ids: ['.*'] },
-    ],
-  })
-  const typeNamesQueries = { originFetchQuery: typeNamesQuery, updatedFetchQuery: typeNamesQuery }
+  const saveTokenCommandMatcher = withOAuth
+    ? expect.objectContaining({
+        commandName: COMMANDS.SETUP_OAUTH,
+        arguments: expect.objectContaining({
+          account: DUMMY_OAUTH_CREDENTIALS.accountId,
+          certificateid: DUMMY_OAUTH_CREDENTIALS.certificateId,
+          privatekeypath: expect.stringMatching(/^.*\.pem$/),
+          authid: expect.anything(),
+        }),
+      })
+    : expect.objectContaining({
+        commandName: COMMANDS.SAVE_TOKEN,
+        arguments: expect.objectContaining({
+          account: DUMMY_TOKEN_BASED_CREDENTIALS.accountId,
+          tokenid: DUMMY_TOKEN_BASED_CREDENTIALS.tokenId,
+          tokensecret: DUMMY_TOKEN_BASED_CREDENTIALS.tokenSecret,
+          authid: expect.anything(),
+        }),
+      })
 
   const importObjectsCommandMatcher = expect.objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
   const importConfigurationCommandMatcher = expect.objectContaining({ commandName: COMMANDS.IMPORT_CONFIGURATION })
@@ -169,24 +162,59 @@ describe('sdf client', () => {
     }),
   })
 
+  let readFileMock: jest.SpyInstance
+  let writeFileMock: jest.SpyInstance
+  let renameMock: jest.SpyInstance
+  let mkdirpMock: jest.SpyInstance
+  let rmMock: jest.SpyInstance
+
+  let instancesIds: { type: string; scriptId: string }[]
+  let typeNames: string[]
+  let typeNamesQueries: {
+    originFetchQuery: NetsuiteQuery
+    updatedFetchQuery: NetsuiteQuery
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
+    readFileMock = jest.spyOn(fileUtils, 'readFile')
+    writeFileMock = jest.spyOn(fileUtils, 'writeFile')
+    renameMock = jest.spyOn(fileUtils, 'rename')
+    mkdirpMock = jest.spyOn(fileUtils, 'mkdirp')
+    rmMock = jest.spyOn(fileUtils, 'rm')
+    mockLargeFoldersToExclude.mockReturnValue([])
+    instancesIds = [
+      { type: 'addressForm', scriptId: 'IdA' },
+      { type: 'advancedpdftemplate', scriptId: 'IdB' },
+    ]
+
+    typeNames = instancesIds.map(instance => instance.type)
+
+    const typeNamesQuery = buildNetsuiteQuery({
+      types: [
+        ...instancesIds.map(instance => ({ name: instance.type, ids: ['.*'] })),
+        { name: CONFIG_FEATURES, ids: ['.*'] },
+      ],
+    })
+    typeNamesQueries = { originFetchQuery: typeNamesQuery, updatedFetchQuery: typeNamesQuery }
   })
 
   it('should set command timeout when initializing client', () => {
-    mockClient()
+    mockClient({ withOAuth })
     expect(mockSetCommandTimeout).toHaveBeenCalledWith(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES * MINUTE_IN_MILLISECONDS)
   })
 
   describe('validateCredentials', () => {
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SAVE_TOKEN) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(SdfClient.validateCredentials(DUMMY_CREDENTIALS)).rejects.toThrow()
+      await expect(
+        SdfClient.validateCredentials(withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS),
+      ).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -194,25 +222,37 @@ describe('sdf client', () => {
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const { accountId } = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
+      const { accountId } = await SdfClient.validateCredentials(
+        withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS,
+      )
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
+      expect(accountId).toEqual(withOAuth ? DUMMY_OAUTH_CREDENTIALS.accountId : DUMMY_TOKEN_BASED_CREDENTIALS.accountId)
     })
 
     it('should quote strings with space', async () => {
-      const credentialsWithSpaces = expect.objectContaining({
-        commandName: COMMANDS.SAVE_TOKEN,
-        arguments: expect.objectContaining({
-          account: "'account with space'",
-          tokenid: DUMMY_CREDENTIALS.tokenId,
-          tokensecret: DUMMY_CREDENTIALS.tokenSecret,
-          authid: expect.anything(),
-        }),
-      })
+      const credentialsWithSpaces = withOAuth
+        ? expect.objectContaining({
+            commandName: COMMANDS.SETUP_OAUTH,
+            arguments: expect.objectContaining({
+              account: "'account with space'",
+              certificateid: DUMMY_OAUTH_CREDENTIALS.certificateId,
+              privatekeypath: expect.stringMatching(/^.*\.pem$/),
+              authid: expect.anything(),
+            }),
+          })
+        : expect.objectContaining({
+            commandName: COMMANDS.SAVE_TOKEN,
+            arguments: expect.objectContaining({
+              account: "'account with space'",
+              tokenid: DUMMY_TOKEN_BASED_CREDENTIALS.tokenId,
+              tokensecret: DUMMY_TOKEN_BASED_CREDENTIALS.tokenSecret,
+              authid: expect.anything(),
+            }),
+          })
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       const { accountId } = await SdfClient.validateCredentials({
-        ...DUMMY_CREDENTIALS,
+        ...(withOAuth ? DUMMY_OAUTH_CREDENTIALS : DUMMY_TOKEN_BASED_CREDENTIALS),
         accountId: 'account with space',
       })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -229,7 +269,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
+      await expect(mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -237,12 +277,12 @@ describe('sdf client', () => {
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SAVE_TOKEN) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
+      await expect(mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -252,7 +292,7 @@ describe('sdf client', () => {
     it('should retry to authenticate when SETUP_ACCOUNT has failed', async () => {
       let isFirstSetupTry = true
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SAVE_TOKEN && isFirstSetupTry) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN) && isFirstSetupTry) {
           isFirstSetupTry = false
           return Promise.resolve({ isSuccess: () => false })
         }
@@ -271,7 +311,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      await mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -300,7 +340,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ fetchAllTypesAtOnce: true })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: true } })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQueries)
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -337,7 +377,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ fetchAllTypesAtOnce: false })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: false } })
       await expect(client.getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
     })
 
@@ -367,7 +407,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ fetchAllTypesAtOnce: false })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: false } })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
@@ -428,7 +468,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const client = mockClient({ fetchAllTypesAtOnce: false })
+      const client = mockClient({ withOAuth, config: { fetchAllTypesAtOnce: false } })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
@@ -487,7 +527,10 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
+      const client = mockClient({
+        withOAuth,
+        config: { fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 },
+      })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
@@ -547,7 +590,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const client = mockClient({}, (_type: string, count: number) => count > 3)
+      const client = mockClient({ withOAuth, instanceLimiter: (_type: string, count: number) => count > 3 })
       await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
       const numberOfExecuteActions = 6
@@ -589,12 +632,12 @@ describe('sdf client', () => {
         failedToFetchAllAtOnce,
         failedTypes,
         instancesIds: currentInstanceIds,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      } = await mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(currentInstanceIds).toEqual([{ type: 'addressForm', instanceId: 'a' }])
       expect(readFileMock).toHaveBeenCalledTimes(4)
-      expect(rmMock).toHaveBeenCalledTimes(1)
+      expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 2 : 1)
       expect(customizationInfos).toHaveLength(3)
       expect(customizationInfos).toEqual([
         {
@@ -650,7 +693,10 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const { instancesIds: currentInstanceIds } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      const { instancesIds: currentInstanceIds } = await mockClient({ withOAuth }).getCustomObjects(
+        typeNames,
+        typeNamesQueries,
+      )
       expect(currentInstanceIds).toEqual([
         { type: 'customsegment', instanceId: 'cseg123' },
         { type: 'customrecordtype', instanceId: 'customrecord_cseg123' },
@@ -687,11 +733,14 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQueries)
+      } = await mockClient({ withOAuth, config: { installedSuiteApps: ['a.b.c'] } }).getCustomObjects(
+        typeNames,
+        typeNamesQueries,
+      )
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readFileMock).toHaveBeenCalledTimes(7)
-      expect(rmMock).toHaveBeenCalledTimes(2)
+      expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 4 : 2)
       expect(customizationInfos).toEqual([
         {
           typeName: 'addressForm',
@@ -840,7 +889,7 @@ describe('sdf client', () => {
       const query = buildNetsuiteQuery({
         types: [{ name: 'savedcsvimport' }, { name: 'advancedpdftemplate' }],
       })
-      const { failedTypes } = await mockClient().getCustomObjects(typeNames, {
+      const { failedTypes } = await mockClient({ withOAuth }).getCustomObjects(typeNames, {
         originFetchQuery: query,
         updatedFetchQuery: query,
       })
@@ -901,7 +950,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      const { failedTypes } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      const { failedTypes } = await mockClient({ withOAuth }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
@@ -936,7 +985,7 @@ describe('sdf client', () => {
       const query = buildNetsuiteQuery({
         types: [{ name: 'addressForm', ids: ['a'] }],
       })
-      await mockClient().getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
+      await mockClient({ withOAuth }).getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
       expect(mockExecuteAction).toHaveBeenCalledWith(
         expect.objectContaining({
           commandName: COMMANDS.LIST_OBJECTS,
@@ -969,7 +1018,7 @@ describe('sdf client', () => {
 
     it('should do nothing of no files are matched', async () => {
       const netsuiteQuery = buildNetsuiteQuery({ types: [] })
-      const { elements, failedToFetchAllAtOnce } = await mockClient().getCustomObjects(typeNames, {
+      const { elements, failedToFetchAllAtOnce } = await mockClient({ withOAuth }).getCustomObjects(typeNames, {
         originFetchQuery: netsuiteQuery,
         updatedFetchQuery: netsuiteQuery,
       })
@@ -980,14 +1029,16 @@ describe('sdf client', () => {
   })
 
   describe('importFileCabinetContent', () => {
-    const allFilesQuery = buildNetsuiteQuery({
-      fileCabinet: ['.*'],
-    })
+    let allFilesQuery: NetsuiteQuery
+
     const maxFileCabinetSizeInGB = 1
 
     let client: SdfClient
     beforeEach(() => {
-      client = mockClient()
+      allFilesQuery = buildNetsuiteQuery({
+        fileCabinet: ['.*'],
+      })
+      client = mockClient({ withOAuth })
     })
 
     it('should fail when CREATE_PROJECT has failed', async () => {
@@ -1019,7 +1070,7 @@ describe('sdf client', () => {
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SAVE_TOKEN) {
+        if (context.commandName === (withOAuth ? COMMANDS.SETUP_OAUTH : COMMANDS.SAVE_TOKEN)) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -1298,7 +1349,7 @@ describe('sdf client', () => {
         },
       ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
-      expect(rmMock).toHaveBeenCalledTimes(1)
+      expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 2 : 1)
     })
 
     it('should filter out paths under excluded large folders', async () => {
@@ -1353,12 +1404,30 @@ describe('sdf client', () => {
 
   describe('deploy', () => {
     let client: SdfClient
-    const testGraph = DEFAULT_DEPLOY_PARAMS[2]
+
+    let DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>]
+    let testGraph: Graph<SDFObjectNode>
     let customTypeInfo: CustomTypeInfo
     let testSDFNode: SDFObjectNode
-    beforeEach(() => {
-      client = mockClient()
-      testGraph.nodes.clear()
+
+    beforeEach(async () => {
+      client = mockClient({ withOAuth })
+      testGraph = new Graph()
+      DEFAULT_DEPLOY_PARAMS = [
+        undefined,
+        {
+          manifestDependencies: {
+            optionalFeatures: [],
+            requiredFeatures: [],
+            excludedFeatures: [],
+            includedObjects: [],
+            excludedObjects: [],
+            includedFiles: [],
+            excludedFiles: [],
+          },
+        },
+        testGraph,
+      ]
       customTypeInfo = {
         typeName: 'typeName',
         values: {
@@ -1372,6 +1441,7 @@ describe('sdf client', () => {
         customizationInfo: customTypeInfo,
       } as unknown as SDFObjectNode
     })
+
     describe('deployCustomObject', () => {
       it('should succeed for CustomTypeInfo', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
@@ -1385,7 +1455,7 @@ describe('sdf client', () => {
           } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>',
@@ -1401,7 +1471,6 @@ describe('sdf client', () => {
       })
 
       it('should succeed for CustomTypeInfo With SuiteAppId', async () => {
-        mockExecuteAction.mockClear()
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
         customTypeInfo.scriptId = scriptId
@@ -1414,7 +1483,7 @@ describe('sdf client', () => {
         ])
         await client.deploy('a.b.c', DEFAULT_DEPLOY_PARAMS[1], DEFAULT_DEPLOY_PARAMS[2])
         expect(renameMock).toHaveBeenCalled()
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>',
@@ -1449,7 +1518,7 @@ describe('sdf client', () => {
           } as unknown as SDFObjectNode),
         ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(4)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 5 : 4)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>',
@@ -1986,7 +2055,7 @@ File: ~/AccountConfiguration/features.xml`,
             `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`,
           ),
         )
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>',
@@ -1995,7 +2064,7 @@ File: ~/AccountConfiguration/features.xml`,
           expect.stringContaining('manifest.xml'),
           MOCK_MANIFEST_VALID_DEPENDENCIES,
         )
-        expect(rmMock).toHaveBeenCalledTimes(2)
+        expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 3 : 2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2034,7 +2103,7 @@ File: ~/AccountConfiguration/features.xml`,
             `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`,
           ),
         )
-        expect(writeFileMock).toHaveBeenCalledTimes(4)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 5 : 4)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>',
@@ -2044,7 +2113,7 @@ File: ~/AccountConfiguration/features.xml`,
           expect.stringContaining('manifest.xml'),
           MOCK_MANIFEST_VALID_DEPENDENCIES,
         )
-        expect(rmMock).toHaveBeenCalledTimes(2)
+        expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 3 : 2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2077,13 +2146,13 @@ File: ~/AccountConfiguration/features.xml`,
           data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'],
         })
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 4 : 3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(
           expect.stringContaining('manifest.xml'),
           MOCK_MANIFEST_VALID_DEPENDENCIES,
         )
-        expect(rmMock).toHaveBeenCalledTimes(2)
+        expect(rmMock).toHaveBeenCalledTimes(withOAuth ? 3 : 2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -2145,7 +2214,7 @@ File: ~/AccountConfiguration/features.xml`,
         } as unknown as SDFObjectNode),
       ])
       await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-      expect(writeFileMock).toHaveBeenCalledTimes(4)
+      expect(writeFileMock).toHaveBeenCalledTimes(withOAuth ? 5 : 4)
       expect(writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>',
@@ -2166,25 +2235,21 @@ File: ~/AccountConfiguration/features.xml`,
 
     describe('validate only', () => {
       const failObject = 'fail_object'
-      testGraph.addNodes([
-        new GraphNode('name2', {
-          serviceid: failObject,
-          changeType: 'addition',
-          customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
-        } as unknown as SDFObjectNode),
-        new GraphNode('name2', {
-          serviceid: 'successObject',
-          changeType: 'addition',
-          customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
-        } as unknown as SDFObjectNode),
-      ])
-      const deployParams: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
-        undefined,
-        { ...DEFAULT_DEPLOY_PARAMS[1], validateOnly: true },
-        testGraph,
-      ]
+      let deployParams: [undefined, SdfDeployParams, Graph<SDFObjectNode>]
       beforeEach(() => {
-        jest.clearAllMocks()
+        testGraph.addNodes([
+          new GraphNode('name2', {
+            serviceid: failObject,
+            changeType: 'addition',
+            customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
+          } as unknown as SDFObjectNode),
+          new GraphNode('name2', {
+            serviceid: 'successObject',
+            changeType: 'addition',
+            customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
+          } as unknown as SDFObjectNode),
+        ])
+        deployParams = [undefined, { ...DEFAULT_DEPLOY_PARAMS[1], validateOnly: true }, testGraph]
       })
       it('should validate without errors', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [''] })

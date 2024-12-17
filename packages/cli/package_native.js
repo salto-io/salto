@@ -50,8 +50,10 @@ const PREBUILT_REMOTE_URL = 'https://salto-cli-releases.s3.eu-central-1.amazonaw
 const PYTHON3_PATH = process.env.PYTHON3_PATH
 
 const resources = [
-  '../../node_modules/@salto-io/suitecloud-cli/src/metadata/*.json',
-  '../../node_modules/@salto-io/suitecloud-cli/src/templates/**',
+  '../../node_modules/@salto-io/suitecloud-cli-new/src/metadata/*.json',
+  '../../node_modules/@salto-io/suitecloud-cli-new/src/templates/**',
+  '../../node_modules/@salto-io/suitecloud-cli-legacy/src/metadata/*.json',
+  '../../node_modules/@salto-io/suitecloud-cli-legacy/src/templates/**',
   '../../node_modules/@salto-io/rocksdb/**',
 ]
 

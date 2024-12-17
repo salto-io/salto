@@ -29,7 +29,8 @@ import { FilterWith } from './mocks'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FIELD_ANNOTATIONS, ORDERED_MAP_PREFIX } from '../../src/constants'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
-import { isOrderedMapTypeOrRefType, salesforceAdapterResolveValues } from '../../src/adapter'
+import { salesforceAdapterResolveValues } from '../../src/adapter'
+import { isOrderedMapTypeOrRefType } from '../../src/filters/utils'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -630,6 +631,7 @@ describe('Convert maps filter', () => {
   describe('Convert inner field to map', () => {
     let lwcBefore: InstanceElement
     let lwcAfter: InstanceElement
+    let lwcSorted: InstanceElement
     let elements: Element[]
     type FilterType = FilterWith<'onFetch' | 'preDeploy'>
     let filter: FilterType
@@ -641,6 +643,18 @@ describe('Convert maps filter', () => {
             lwcResource: [
               { filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' },
               { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' },
+            ],
+          },
+        },
+        mockTypes.LightningComponentBundle,
+      )
+      lwcSorted = createInstanceElement(
+        {
+          fullName: 'lwc',
+          lwcResources: {
+            lwcResource: [
+              { filePath: 'lwc/dir/__mocks__/lwc.js', source: 'lwc.ts' },
+              { filePath: 'lwc/dir/lwc.js', source: 'lwc.ts' },
             ],
           },
         },
@@ -677,7 +691,7 @@ describe('Convert maps filter', () => {
         await filter.preDeploy([toChange({ after: lwcDeploy })])
       })
       it('should return inner field back to list', async () => {
-        expect(lwcDeploy).toEqual(lwcBefore)
+        expect(lwcDeploy).toEqual(lwcSorted)
       })
     })
   })
@@ -729,6 +743,13 @@ describe('Convert maps filter', () => {
     it('should convert field type to ordered map', async () => {
       const fieldType = await gvsType.fields.customValue.getType()
       expect(fieldType.elemID.typeName).toEqual(`${ORDERED_MAP_PREFIX}CustomValue`)
+    })
+
+    describe('when fetch is partial', () => {
+      it('should create correct OrderedMap types', async () => {
+        await filter.onFetch([gvsType])
+        expect(gvsType.fields.customValue.getTypeSync().elemID.name).toEqual(`${ORDERED_MAP_PREFIX}CustomValue`)
+      })
     })
 
     it('should convert instance value to map ', () => {
@@ -836,6 +857,14 @@ describe('Convert maps filter', () => {
         expect(myCustomObj.fields.myMultiselectPicklist.annotations.valueSet.values).toEqual({
           val1: { fullName: 'val1', default: true, label: 'value1' },
           val2: { fullName: 'val2', default: false, label: 'value2' },
+        })
+      })
+      describe('when fetch is partial', () => {
+        it('should create correct OrderedMap types', async () => {
+          await filter.onFetch([picklistType])
+          expect(picklistType.annotationRefTypes?.[FIELD_ANNOTATIONS.VALUE_SET]?.elemID.name).toEqual(
+            `${ORDERED_MAP_PREFIX}valueSet`,
+          )
         })
       })
     })

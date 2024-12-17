@@ -39,6 +39,7 @@ import {
   ERROR_MAPPERS,
   ErrorMappers,
   INSUFFICIENT_ACCESS_MESSAGE,
+  EXPIRED_PASSWORD_MESSAGE,
   INVALID_GRANT_MESSAGE,
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
@@ -478,6 +479,12 @@ describe('salesforce client', () => {
         errorProperties: {
           [ERROR_PROPERTIES.ERROR_CODE]: SALESFORCE_ERRORS.INSUFFICIENT_ACCESS,
         },
+      },
+      [SALESFORCE_ERRORS.EXPIRED_PASSWORD]: {
+        errorProperties: {
+          [ERROR_PROPERTIES.ERROR_CODE]: SALESFORCE_ERRORS.EXPIRED_PASSWORD,
+        },
+        expectedMessage: EXPIRED_PASSWORD_MESSAGE,
       },
     }
 

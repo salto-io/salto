@@ -11,7 +11,12 @@ import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { Element, ElemID, ServiceIds } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { Credentials, toCredentialsAccountId } from '../src/client/credentials'
+import {
+  Credentials,
+  SdfOAuthCredentials,
+  SdfTokenBasedCredentials,
+  toCredentialsAccountId,
+} from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
 import { NetsuiteConfig } from '../src/config/types'
@@ -27,19 +32,35 @@ type Opts = {
   elements?: Element[]
   credentials: Required<Credentials>
   withSuiteApp: boolean
+  withOAuth: boolean
 }
 
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string): ElemID =>
   new ElemID(adapterName, name)
 
 export const realAdapter = (
-  { adapterParams, credentials, withSuiteApp, elements = [] }: Opts,
+  { adapterParams, credentials, withSuiteApp, withOAuth, elements = [] }: Opts,
   config?: NetsuiteConfig,
 ): { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
-  const netsuiteCredentials = {
-    ...credentials,
-    accountId: toCredentialsAccountId(credentials.accountId),
-  }
+  const accountId = toCredentialsAccountId(credentials.accountId)
+  const netsuiteCredentials = withOAuth
+    ? {
+        accountId,
+        certificateId: (credentials as SdfOAuthCredentials).certificateId,
+        privateKey: (credentials as SdfOAuthCredentials).privateKey,
+        suiteAppTokenId: credentials.suiteAppTokenId,
+        suiteAppTokenSecret: credentials.suiteAppTokenSecret,
+        suiteAppActivationKey: credentials.suiteAppActivationKey,
+      }
+    : {
+        accountId,
+        tokenId: (credentials as SdfTokenBasedCredentials).tokenId,
+        tokenSecret: (credentials as SdfTokenBasedCredentials).tokenSecret,
+        suiteAppTokenId: credentials.suiteAppTokenId,
+        suiteAppTokenSecret: credentials.suiteAppTokenSecret,
+        suiteAppActivationKey: credentials.suiteAppActivationKey,
+      }
+
   const globalLimiter = new Bottleneck({ maxConcurrent: 4 })
   const client =
     (adapterParams && adapterParams.client) ||

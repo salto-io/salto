@@ -16,19 +16,18 @@ import {
   ConfigCreator,
   createRestriction,
   AdapterFormat,
+  Change,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, inspectValue } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, inspectValue, getDetailedChanges } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+import { initLocalWorkspace, loadLocalWorkspace } from '@salto-io/local-workspace'
 import { logger } from '@salto-io/logging'
+import { Workspace } from '@salto-io/workspace'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
-import {
-  GeneratorParams,
-  DUMMY_ADAPTER,
-  defaultParams,
-  changeErrorType,
-  fetchErrorType,
-  generateExtraElementsFromPaths,
-} from './generator'
+import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType, fetchErrorType } from './generator'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -66,9 +65,107 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
-const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir, elementsSource }) => ({
-  elements: await generateExtraElementsFromPaths([baseDir], elementsSource),
-})
+const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persistent: boolean }): Promise<Workspace> =>
+  loadLocalWorkspace({
+    path: baseDir,
+    persistent,
+    getConfigTypes: async () => [],
+    getCustomReferences: async elements => getCustomReferences(elements),
+  })
+
+const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => {
+  let workspace: Workspace | undefined
+  try {
+    workspace = await loadWorkspace({ baseDir, persistent: true })
+    const elements = await workspace.elements()
+    return { elements: await awu(await elements.getAll()).toArray() }
+  } catch (error) {
+    return {
+      elements: [],
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed loadElementsFromFolder in Dummy project',
+          detailedMessage: inspectValue(error),
+        },
+      ],
+    }
+  } finally {
+    await workspace?.close()
+  }
+}
+
+const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ baseDir, changes }) => {
+  let workspace: Workspace | undefined
+  try {
+    workspace = await loadWorkspace({ baseDir, persistent: true })
+    await workspace.updateNaclFiles(
+      changes.flatMap(c => getDetailedChanges(c)),
+      'isolated',
+    )
+    await workspace.flush()
+    return {
+      unappliedChanges: [] as Change[],
+      errors: [],
+    }
+  } catch (error) {
+    return {
+      unappliedChanges: [],
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed dumpElementsToFolder in Dummy project',
+          detailedMessage: inspectValue(error),
+        },
+      ],
+    }
+  } finally {
+    await workspace?.close()
+  }
+}
+
+const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
+  let workspace: Workspace | undefined
+  try {
+    workspace = await initLocalWorkspace(baseDir, 'dummy', [], async () => [])
+    return {
+      errors: [],
+    }
+  } catch (error) {
+    return {
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed initializing Dummy project',
+          detailedMessage: inspectValue(error),
+        },
+      ],
+    }
+  } finally {
+    await workspace?.close()
+  }
+}
+
+const isInitializedFolder: AdapterFormat['isInitializedFolder'] = async ({ baseDir }) => {
+  let workspace: Workspace | undefined
+  try {
+    workspace = await loadWorkspace({ baseDir, persistent: false })
+    return { result: true, errors: [] }
+  } catch (error) {
+    return {
+      result: false,
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed checking if dummy project is initialized',
+          detailedMessage: inspectValue(error),
+        },
+      ],
+    }
+  } finally {
+    await workspace?.close()
+  }
+}
 
 const objectFieldType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'objectFieldType'),
@@ -213,5 +310,8 @@ export const adapter: Adapter = {
   configCreator,
   adapterFormat: {
     loadElementsFromFolder,
+    dumpElementsToFolder,
+    initFolder,
+    isInitializedFolder,
   },
 }

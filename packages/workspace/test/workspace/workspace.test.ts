@@ -437,6 +437,7 @@ describe('workspace', () => {
 
     const elementsFromSource = async (source?: ReadOnlyElementsSource): Promise<Element[]> =>
       source ? awu(await source.getAll()).toArray() : []
+
     beforeEach(async () => {
       hiddenAccount1Element = new ObjectType({
         elemID: new ElemID(ACCOUNT1, 'hidden'),

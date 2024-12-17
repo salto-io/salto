@@ -5,10 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  updateElementsWithAlternativeAccount,
-  createAdapterReplacedID,
-} from '@salto-io/adapter-utils'
+import { updateElementsWithAlternativeAccount, createAdapterReplacedID } from '@salto-io/adapter-utils'
 import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
 import {

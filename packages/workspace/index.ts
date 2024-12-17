@@ -5,6 +5,10 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import {
+  updateElementsWithAlternativeAccount,
+  createAdapterReplacedID,
+} from '@salto-io/adapter-utils'
 import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
 import {
@@ -64,10 +68,6 @@ import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
 import { buildStaticFilesCache } from './src/workspace/static_files/static_files_cache'
-import {
-  updateElementsWithAlternativeAccount,
-  createAdapterReplacedID,
-} from '../adapter-utils/src/element_adapter_rename'
 import { RemoteElementSource, ElementsSource } from './src/workspace/elements_source'
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
 import { State } from './src/workspace/state'

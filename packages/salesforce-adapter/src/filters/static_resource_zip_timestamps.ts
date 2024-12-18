@@ -8,14 +8,18 @@
 import _ from 'lodash'
 import JSZip from 'jszip'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { Element, InstanceElement, isStaticFile, StaticFile } from '@salto-io/adapter-api'
-import { METADATA_CONTENT_FIELD, STATIC_RESOURCE_METADATA_TYPE } from '../constants'
+import { METADATA_CONTENT_FIELD, STATIC_RESOURCE_METADATA_TYPE, UNIX_TIME_ZERO_STRING } from '../constants'
 import { FilterCreator } from '../filter'
 import { isInstanceOfTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 
-const DATE = new Date('2024-05-13T00:00:00.000+01:00')
+const log = logger(module)
+
+const DATE = new Date(UNIX_TIME_ZERO_STRING)
+const ZIP_CONTENT_TYPE = 'application/zip'
 
 export type StaticResourceInstance = InstanceElement & {
   value: {
@@ -47,11 +51,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const zipStaticResources = elements
       .filter(isStaticResourceInstance)
-      .filter(inst => inst.value.contentType === 'application/zip')
+      .filter(inst => inst.value.contentType === ZIP_CONTENT_TYPE)
     await awu(zipStaticResources).forEach(async inst => {
       const staticFile = inst.value[METADATA_CONTENT_FIELD]
       const content = await staticFile.getContent()
       if (content === undefined) {
+        log.warn('StaticResource %s has no content', inst.elemID.getFullName())
         return
       }
 

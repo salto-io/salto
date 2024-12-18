@@ -173,7 +173,7 @@ const getLoginInputFlow = async (
     : // In this login option we ask the user to enter his credentials
       (credentialsType: ObjectType): Promise<InstanceElement> => getConfigWithHeader(credentialsType, output)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
-  const result = await verifyCredentials(newConfig)
+  const result = await verifyCredentials(newConfig, adapterCreators)
   if (!result.success) {
     throw result.error
   }
@@ -220,7 +220,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   const theAccountName = accountName ?? serviceType
   await validateAndSetEnv(workspace, input, output)
 
-  const supportedServiceAdapters = getSupportedServiceAdapterNames()
+  const supportedServiceAdapters = getSupportedServiceAdapterNames(adapterCreators)
   if (!supportedServiceAdapters.includes(serviceType)) {
     errorOutputLine(formatInvalidServiceInput(serviceType, supportedServiceAdapters), output)
     return CliExitCode.UserInputError
@@ -231,7 +231,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  await installAdapter(serviceType)
+  await installAdapter(serviceType, adapterCreators)
   if (login) {
     const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType], adapterCreators)[serviceType]
     try {
@@ -334,7 +334,7 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
     errorOutputLine(formatAccountNotConfigured(accountName), output)
     return CliExitCode.AppError
   }
-  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName]))[accountName]
+  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName], adapterCreators))[accountName]
   if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }

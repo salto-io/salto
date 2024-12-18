@@ -9,6 +9,7 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   fetch as apiFetch,
   FetchFunc,
@@ -93,6 +94,7 @@ const createFetchFromWorkspaceCommand =
       accounts,
       env,
       fromState,
+      adapterCreators,
     })
   }
 

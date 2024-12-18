@@ -142,33 +142,64 @@ const shouldElementBeIncluded =
 const getAccountToServiceNameMap = (workspace: Workspace, accounts: string[]): Record<string, string> =>
   Object.fromEntries(accounts.map(account => [account, workspace.getServiceFromAccountName(account)]))
 
+type previewArgs = {
+  workspace: Workspace
+  accounts?: string[]
+  checkOnly?: boolean
+  skipValidations?: boolean
+  topLevelFilters?: IDFilter[]
+  adapterCreators: Record<string, Adapter>
+}
+
 export const preview = async (
-  workspace: Workspace,
-  accounts = workspace.accounts(),
-  checkOnly = false,
-  skipValidations = false,
+  workspace: Workspace | previewArgs,
+  accounts?: string[],
+  checkOnly?: boolean,
+  skipValidations?: boolean,
   topLevelFilters?: IDFilter[],
-  adapterCreators?: Record<string, Adapter>,
 ): Promise<Plan> => {
   // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
-  const stateElements = workspace.state()
+  let actualWorkspace: Workspace
+  let actualAccounts: string[]
+  let actualCheckOnly = false
+  let actualSkipValidation = false
+  let actualTopLevelFilters: IDFilter[] | undefined
+  let actualAdapterCreator: Record<string, Adapter>
+  if ('adapterCreators' in workspace) {
+    actualWorkspace = workspace.workspace
+    actualAccounts = workspace.accounts ?? actualWorkspace.accounts()
+    actualCheckOnly = workspace.checkOnly ?? false
+    actualSkipValidation = workspace.skipValidations ?? false
+    actualTopLevelFilters = workspace.topLevelFilters
+    actualAdapterCreator = workspace.adapterCreators
+  } else {
+    actualWorkspace = workspace
+    actualAccounts = accounts ?? actualWorkspace.accounts()
+    actualCheckOnly = checkOnly ?? false
+    actualSkipValidation = skipValidations ?? false
+    actualTopLevelFilters = topLevelFilters
+    actualAdapterCreator = deprecatedAdapterCreators
+  }
+
+  const stateElements = actualWorkspace.state()
   const adapters = await getAdapters(
-    accounts,
-    await workspace.accountCredentials(accounts),
-    workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
-    getAccountToServiceNameMap(workspace, accounts),
+    actualAccounts,
+    await actualWorkspace.accountCredentials(actualAccounts),
+    actualWorkspace.accountConfig.bind(actualWorkspace),
+    await actualWorkspace.elements(),
+    getAccountToServiceNameMap(actualWorkspace, actualAccounts),
     {},
     actualAdapterCreator,
   )
   return getPlan({
     before: stateElements,
-    after: await workspace.elements(),
-    changeValidators: skipValidations ? {} : getChangeValidators(adapters, checkOnly, await workspace.errors()),
+    after: await actualWorkspace.elements(),
+    changeValidators: actualSkipValidation
+      ? {}
+      : getChangeValidators(adapters, actualCheckOnly, await actualWorkspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
-    topLevelFilters: [shouldElementBeIncluded(accounts), ...(topLevelFilters ?? [])],
+    topLevelFilters: [shouldElementBeIncluded(actualAccounts), ...(actualTopLevelFilters ?? [])],
     compareOptions: { compareByValue: true },
   })
 }

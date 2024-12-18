@@ -148,6 +148,7 @@ describe('api.ts', () => {
     }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
     install: undefined,
+    configCreator: undefined,
   }
 
   const mockEmptyAdapter = {
@@ -344,11 +345,15 @@ describe('api.ts', () => {
     })
 
     it('should return getPlan response', async () => {
-      const result = await api.preview(mockWorkspace({}), ACCOUNTS, undefined, undefined, undefined, mockAdapterCreator)
+      const result = await api.preview({
+        workspace: mockWorkspace({}),
+        accounts: ACCOUNTS,
+        adapterCreators: mockAdapterCreator,
+      })
       expect(result).toEqual(mockGetPlanResult)
     })
     it('should call getPlan with deploy change validators', async () => {
-      await api.preview(mockWorkspace({}), ACCOUNTS, undefined, undefined, undefined, mockAdapterCreator)
+      await api.preview({ workspace: mockWorkspace({}), accounts: ACCOUNTS, adapterCreators: mockAdapterCreator })
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           changeValidators: {
@@ -358,7 +363,12 @@ describe('api.ts', () => {
       )
     })
     it('should call getPlan with validation change validators', async () => {
-      await api.preview(mockWorkspace({}), ACCOUNTS, true, undefined, undefined, mockAdapterCreator)
+      await api.preview({
+        workspace: mockWorkspace({}),
+        accounts: ACCOUNTS,
+        checkOnly: true,
+        adapterCreators: mockAdapterCreator,
+      })
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           changeValidators: {
@@ -369,7 +379,14 @@ describe('api.ts', () => {
     })
     it('should call getPlan with given topLevelFilters', async () => {
       const topLevelFilters = [() => true]
-      await api.preview(mockWorkspace({}), ACCOUNTS, true, false, topLevelFilters, mockAdapterCreator)
+      await api.preview({
+        workspace: mockWorkspace({}),
+        accounts: ACCOUNTS,
+        checkOnly: true,
+        skipValidations: false,
+        topLevelFilters,
+        adapterCreators: mockAdapterCreator,
+      })
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           topLevelFilters: expect.arrayContaining(topLevelFilters),
@@ -380,7 +397,13 @@ describe('api.ts', () => {
       )
     })
     it('should call getPlan without change validators', async () => {
-      await api.preview(mockWorkspace({}), ACCOUNTS, false, true, undefined, mockAdapterCreator)
+      await api.preview({
+        workspace: mockWorkspace({}),
+        accounts: ACCOUNTS,
+        checkOnly: false,
+        skipValidations: true,
+        adapterCreators: mockAdapterCreator,
+      })
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           changeValidators: {},
@@ -739,7 +762,9 @@ describe('api.ts', () => {
           fields: mockConfigType.fields,
         })
         const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType, mockConfigInstance.value)
-        return expect(api.verifyCredentials(newConf)).rejects.toThrow('unknown adapter: unknownAccount')
+        return expect(api.verifyCredentials(newConf, mockAdapterCreator)).rejects.toThrow(
+          'unknown adapter: unknownAccount',
+        )
       })
       it('should call validateCredentials of adapterCreator', async () => {
         const newConf = mockConfigInstance.clone()
@@ -1275,7 +1300,7 @@ describe('api.ts', () => {
       )
     })
     it('should returns undefined when adapter configCreator is undefined', () => {
-      expect(getAdapterConfigOptionsType(mockService)).toBeUndefined()
+      expect(getAdapterConfigOptionsType(mockService, mockAdapterCreator)).toBeUndefined()
     })
   })
 
@@ -1550,7 +1575,11 @@ describe('api.ts', () => {
       delete (mockAdapterCreator.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
 
       await expect(
-        api.fixElements(ws, [workspace.createElementSelector(type.elemID.createNestedID('attr', 'a').getFullName())]),
+        api.fixElements(
+          ws,
+          [workspace.createElementSelector(type.elemID.createNestedID('attr', 'a').getFullName())],
+          mockAdapterCreator,
+        ),
       ).rejects.toThrow()
     })
     it('should return empty results when there are no elements to fix', async () => {

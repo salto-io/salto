@@ -34,6 +34,7 @@ import {
   isSaltoElementError,
   SaltoElementError,
 } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   Plan,
   PlanItem,
@@ -604,7 +605,7 @@ const formatConfiguredAccounts = (accountNames: ReadonlyArray<string>): string =
 export const getPrivateAdaptersNames = (): ReadonlyArray<string> => ['dummy']
 
 const formatAdditionalAccounts = (accounts: ReadonlyArray<string>): string => {
-  const formattedAccounts = getSupportedServiceAdapterNames()
+  const formattedAccounts = getSupportedServiceAdapterNames(adapterCreators)
     .filter(accountName => !accounts.includes(accountName) && !getPrivateAdaptersNames().includes(accountName))
     .map(accountName => indent(`- ${accountName}`, 1))
   if (formattedAccounts.length === 0) {

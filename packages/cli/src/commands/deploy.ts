@@ -9,6 +9,7 @@ import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyFunctionToChangeDataSync } from '@salto-io/adapter-utils'
 import { Progress } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   PlanItem,
   Plan,
@@ -263,7 +264,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     return CliExitCode.AppError
   }
 
-  const actionPlan = await preview(workspace, actualAccounts, checkOnly)
+  const actionPlan = await preview({ workspace, accounts: actualAccounts, checkOnly, adapterCreators })
   await printPlan(actionPlan, output, workspace, detailedPlan)
   const executingDeploy = !dryRun && (force || (await shouldDeploy(actionPlan, checkOnly)))
   if (!dryRun) {

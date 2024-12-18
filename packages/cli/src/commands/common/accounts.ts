@@ -8,6 +8,7 @@
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
 import { Tags, getSupportedServiceAdapterNames } from '@salto-io/core'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { KeyedOption } from '../../types'
 import { EnvArg } from './env'
 
@@ -26,7 +27,7 @@ export const ACCOUNTS_OPTION: KeyedOption<AccountsArg> = {
 export const getAdaptersTags = (adapters: string[]): Tags =>
   Object.fromEntries(
     adapters
-      .filter(adapter => getSupportedServiceAdapterNames().includes(adapter))
+      .filter(adapter => getSupportedServiceAdapterNames(adapterCreators).includes(adapter))
       .map(adapter => [`adapter-${adapter}`, true]),
   )
 

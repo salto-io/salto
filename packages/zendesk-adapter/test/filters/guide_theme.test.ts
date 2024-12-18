@@ -20,7 +20,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { staticFileToTemplateExpression } from '@salto-io/parser/src/utils'
+import { parserUtils } from '@salto-io/parser'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { BRAND_TYPE_NAME, GUIDE_THEME_TYPE_NAME, THEME_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { FilterCreator } from '../../src/filter'
@@ -252,7 +252,7 @@ describe('filterCreator', () => {
               content: Buffer.from('file2content'),
             }),
           )
-          const templateExpression = await staticFileToTemplateExpression(
+          const templateExpression = await parserUtils.staticFileToTemplateExpression(
             liveThemeWithId.value.root.files['fileWithReference_js@v'].content,
           )
           expect(templateExpression).toEqual({

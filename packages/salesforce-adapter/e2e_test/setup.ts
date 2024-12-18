@@ -13,6 +13,7 @@ import { CustomField, ProfileInfo } from '../src/client/types'
 import { createDeployPackage } from '../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'
+// eslint-disable-next-line no-restricted-imports
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
 import { removeMetadataIfAlreadyExists } from './utils'
 

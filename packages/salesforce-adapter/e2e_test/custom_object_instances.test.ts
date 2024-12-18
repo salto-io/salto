@@ -31,6 +31,7 @@ import { apiName, isInstanceOfCustomObject } from '../src/transformers/transform
 import customObjectsFromDescribeFilter from '../src/filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter from '../src/filters/custom_objects_to_object_type'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
+// eslint-disable-next-line no-restricted-imports
 import { createCustomSettingsObject } from '../test/utils'
 import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'

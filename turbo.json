@@ -3,32 +3,23 @@
   "tasks": {
     "build-ts": {
       "outputLogs": "new-only",
-      "outputs": [
-        "dist/**"
-      ],
-      "dependsOn": [
-        "^build-ts"
-      ]
+      "outputs": ["dist/**"],
+      "dependsOn": ["^build-ts"]
     },
     "lint": {
       "outputLogs": "new-only",
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.mjs", "../../eslint.config.mjs"],
       "outputs": []
     },
     "check-format": {
       "outputLogs": "new-only",
-      "outputs": [
-        ".check-format.cache"
-      ]
+      "outputs": [".check-format.cache"]
     },
     "test": {
-      "dependsOn": [ "^build-ts"],
+      "dependsOn": ["^build-ts"],
       "outputLogs": "new-only",
-      "env": [
-        "SALTO_DEPENDENCIES_HASH"
-      ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "env": ["SALTO_DEPENDENCIES_HASH"],
+      "outputs": ["coverage/**"]
     },
     "clean": {
       "cache": false

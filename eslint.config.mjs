@@ -200,7 +200,20 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          patterns: ['**/dist/**', 'src/*'],
+          patterns: [
+            {
+              group: ['src/*'],
+              message: 'Imports into src should be relative (start with ../ or ./)',
+            },
+            {
+              group: ['**/dist/**', '@salto-io/**/src/**'],
+              message: 'Must not import directly from an internal file of a package, import from the top level package instead',
+            },
+            {
+              group: ['**/test/**', '**/e2e_test/**'],
+              message: 'Test files are not distributed with the package, must not import from test files in the src folder',
+            },
+          ],
         },
       ],
 

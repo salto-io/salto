@@ -21,7 +21,6 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 
 import _ from 'lodash'
 import AsyncLock from 'async-lock'
@@ -241,8 +240,8 @@ export const createMergeManager = async (
     await hashes.set(mergedHashKey, postChangeHash)
 
     const getElementsToMerge = async (): Promise<{
-      src1ElementsToMerge: ThenableIterable<Element>
-      src2ElementsToMerge: ThenableIterable<Element>
+      src1ElementsToMerge: AsyncIterable<Element>
+      src2ElementsToMerge: AsyncIterable<Element>
       potentialDeletedIds: Set<string>
     }> => {
       const getChangeAndDeleteIds = (

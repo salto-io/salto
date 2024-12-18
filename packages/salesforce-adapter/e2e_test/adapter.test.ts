@@ -66,6 +66,7 @@ import {
   assertMetadataObjectType,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
+// eslint-disable-next-line no-restricted-imports
 import {
   findElements,
   findStandardFieldsObject,
@@ -77,6 +78,7 @@ import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, createDeployPackage } from '../src/transformers/xml_transformer'
 import { addDefaults } from '../src/filters/utils'
+// eslint-disable-next-line no-restricted-imports
 import { mockTypes, lwcJsResourceContent, lwcHtmlResourceContent, mockDefaultValues } from '../test/mock_elements'
 import {
   objectExists,

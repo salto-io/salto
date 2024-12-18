@@ -79,6 +79,7 @@ import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 import { OktaOptions } from '../src/definitions/types'
+// eslint-disable-next-line no-restricted-imports
 import { createFetchQuery } from '../test/utils'
 import './jest_matchers'
 

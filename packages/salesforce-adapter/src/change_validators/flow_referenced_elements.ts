@@ -33,12 +33,12 @@ const isFlowNode = (fields: FieldMap): boolean => 'locationX' in fields && 'loca
 const isFlowNodeName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
   isFlowNode(parent.fields) && path.name === 'name' && _.isString(value)
 
-const getFlowNodes = (element: InstanceElement): Set<string> => {
-  const flowNodes = new Set<string>()
+const getFlowNodes = (element: InstanceElement): Map<string, ElemID> => {
+  const flowNodes = new Map<string, ElemID>()
   const findFlowNodes: TransformFuncSync = ({ value, path, field }) => {
     if (!field || !path) return value
     if (isFlowNodeName(value, path, field.parent)) {
-      flowNodes.add(value)
+      flowNodes.set(value, path)
     }
     return value
   }
@@ -54,11 +54,11 @@ const getFlowNodes = (element: InstanceElement): Set<string> => {
 const isTargetReference = (value: unknown, path: ElemID): value is string =>
   path.name === 'targetReference' && _.isString(value)
 
-const getTargetReferences = (element: InstanceElement): Set<string> => {
-  const targetReferences = new Set<string>()
+const getTargetReferences = (element: InstanceElement): Map<string, ElemID> => {
+  const targetReferences = new Map<string, ElemID>()
   const findFlowConnectors: WalkOnFunc = ({ value, path }) => {
     if (isTargetReference(value, path)) {
-      targetReferences.add(value)
+      targetReferences.set(value, path)
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
@@ -67,69 +67,65 @@ const getTargetReferences = (element: InstanceElement): Set<string> => {
   return targetReferences
 }
 
-const hasMissingReferencedElements = (targetReferences: Set<string>, flowNodes: Set<string>): boolean =>
-  ![...targetReferences].every(targetReference => flowNodes.has(targetReference))
+const hasMissingReferencedElements = (targetReferences: string[], flowNodes: string[]): boolean =>
+  !targetReferences.every(targetReference => targetReference in flowNodes)
 
-const hasUnreferencedElements = (targetReferences: Set<string>, flowNodes: Set<string>): boolean =>
-  ![...flowNodes].every(flowNode => targetReferences.has(flowNode))
+const hasUnreferencedElements = (targetReferences: string[], flowNodes: string[]): boolean =>
+  !flowNodes.every(flowNode => flowNode in targetReferences)
 
 const hasFlowReferenceError = ({
   targetReferences,
   flowNodes,
 }: {
-  targetReferences: Set<string>
-  flowNodes: Set<string>
+  targetReferences: Map<string, ElemID>
+  flowNodes: Map<string, ElemID>
 }): boolean =>
-  hasMissingReferencedElements(targetReferences, flowNodes) || hasUnreferencedElements(targetReferences, flowNodes)
+  hasMissingReferencedElements(Array.from(targetReferences.keys()), Array.from(flowNodes.keys())) ||
+  hasUnreferencedElements(Array.from(targetReferences.keys()), Array.from(flowNodes.keys()))
 
-const getElemIDFlowNodesAndTargetReferences = (
+const getFlowNodesAndTargetReferences = (
   instance: InstanceElement,
-): { elemId: ElemID; targetReferences: Set<string>; flowNodes: Set<string> } => {
+): { targetReferences: Map<string, ElemID>; flowNodes: Map<string, ElemID> } => {
   const targetReferences = getTargetReferences(instance)
   const flowNodes = getFlowNodes(instance)
-  const elemId = instance.elemID
-  return { elemId, targetReferences, flowNodes }
+  return { targetReferences, flowNodes }
 }
 
-const createMissingReferencedElementChangeError = (targetReferences: string[], elemId: ElemID): ChangeError => {
-  const referenceList = targetReferences.map(ref => `- ${ref}`).join('\n')
-  return {
-    elemID: elemId,
-    severity: 'Error',
-    message: 'Flow instance has references to missing flow elements',
-    detailedMessage: `The following references are pointing to non existing flow elements:\n${referenceList}`,
-  }
-}
+const createMissingReferencedElementChangeError = (targetReference: string, elemId: ElemID): ChangeError => ({
+  elemID: elemId,
+  severity: 'Error',
+  message: 'Flow instance has references to missing flow nodes',
+  detailedMessage: `${targetReference} is referencing a non-existing flow node.\n`,
+})
 
-const createUnreferencedElementChangeError = (flowNodes: string[], elemId: ElemID): ChangeError => {
-  const nodeList = flowNodes.map(ref => `- ${ref}`).join('\n')
-  return {
-    elemID: elemId,
-    severity: 'Info',
-    message: 'Flow instance has elements that are never referenced',
-    detailedMessage: `The following elements has no references:\n${nodeList}`,
-  }
-}
+const createUnreferencedElementChangeError = (flowNode: string, elemId: ElemID): ChangeError => ({
+  elemID: elemId,
+  severity: 'Info',
+  message: 'Flow instance has flow nodes that are not referenced',
+  detailedMessage: `${flowNode} is not referenced anywhere in the flow.`,
+})
 
 const createChangeError = ({
-  elemId,
   targetReferences,
   flowNodes,
 }: {
-  elemId: ElemID
-  targetReferences: Set<string>
-  flowNodes: Set<string>
+  targetReferences: Map<string, ElemID>
+  flowNodes: Map<string, ElemID>
 }): ChangeError[] => {
   const errors: ChangeError[] = []
-  const isReferenceToMissingElement = (reference: string): boolean => !flowNodes.has(reference)
-  const missingReferencedElementsErrors: string[] = Array.from(targetReferences).filter(isReferenceToMissingElement)
-  const isUnreferencedElement = (reference: string): boolean => !targetReferences.has(reference)
-  const unreferencedElementsErrors: string[] = Array.from(flowNodes).filter(isUnreferencedElement)
+  const isReferenceToMissingElement = ([reference, _elemId]: [string, ElemID]): boolean => !flowNodes.has(reference)
+  const missingReferencedElementsErrors = Array.from(targetReferences).filter(isReferenceToMissingElement)
+  const isUnreferencedElement = ([reference, _elemId]: [string, ElemID]): boolean => !targetReferences.has(reference)
+  const unreferencedElementsErrors = Array.from(flowNodes).filter(isUnreferencedElement)
   if (missingReferencedElementsErrors.length > 0) {
-    errors.push(createMissingReferencedElementChangeError(missingReferencedElementsErrors, elemId))
+    missingReferencedElementsErrors.forEach(([targetReference, elemId]) =>
+      errors.push(createMissingReferencedElementChangeError(targetReference, elemId)),
+    )
   }
   if (unreferencedElementsErrors.length > 0) {
-    errors.push(createUnreferencedElementChangeError(unreferencedElementsErrors, elemId))
+    unreferencedElementsErrors.forEach(([flowNode, elemId]) =>
+      errors.push(createUnreferencedElementChangeError(flowNode, elemId)),
+    )
   }
   return errors
 }
@@ -140,7 +136,7 @@ const changeValidator: ChangeValidator = async changes =>
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-    .map(getElemIDFlowNodesAndTargetReferences)
+    .map(getFlowNodesAndTargetReferences)
     .filter(hasFlowReferenceError)
     .flatMap(createChangeError)
 

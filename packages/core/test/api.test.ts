@@ -41,7 +41,6 @@ import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { setPath } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { adapterCreators } from '@salto-io/adapter-creators'
 import * as api from '../src/api'
 import { getAdapterConfigOptionsType, getAdditionalReferences, getLoginStatuses } from '../src/api'
 import * as plan from '../src/core/plan/plan'
@@ -50,7 +49,7 @@ import * as adapters from '../src/core/adapters/adapters'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
-import { createElementSource } from './common/helpers'
+import { createElementSource, createMockAdapter } from './common/helpers'
 import { mockConfigInstance, mockConfigType, mockEmptyConfigType, mockWorkspace } from './common/workspace'
 import { DeployResult, FetchChange } from '../src/types'
 
@@ -124,6 +123,7 @@ jest.mock('../src/core/diff', () => ({
 }))
 
 describe('api.ts', () => {
+  const mockAdapterCreator: Record<string, Adapter> = {}
   const mockAdapterOps = {
     fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
     deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(({ changeGroup }) =>
@@ -132,7 +132,10 @@ describe('api.ts', () => {
     fixElements: mockFunction<FixElementsFunc>().mockResolvedValue({ fixedElements: [], errors: [] }),
   }
 
+  const mockNetsuiteAdapter = createMockAdapter('netsuite')
+
   const mockAdapter = {
+    ...createMockAdapter(mockService),
     operations: mockFunction<Adapter['operations']>().mockReturnValue({
       ...mockAdapterOps,
       deployModifiers: { changeValidator: mockFunction<ChangeValidator>().mockResolvedValue([]) },
@@ -144,6 +147,7 @@ describe('api.ts', () => {
       isProduction: false,
     }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
+    install: undefined,
   }
 
   const mockEmptyAdapter = {
@@ -185,10 +189,11 @@ describe('api.ts', () => {
     },
   }
 
-  adapterCreators[mockService] = mockAdapter
-  adapterCreators[emptyMockService] = mockEmptyAdapter
-  adapterCreators[mockServiceWithInstall] = mockAdapterWithInstall
-  adapterCreators[mockServiceWithConfigCreator] = mockAdapterWithConfigCreator
+  mockAdapterCreator[mockService] = mockAdapter
+  mockAdapterCreator[emptyMockService] = mockEmptyAdapter
+  mockAdapterCreator[mockServiceWithInstall] = mockAdapterWithInstall
+  mockAdapterCreator[mockServiceWithConfigCreator] = mockAdapterWithConfigCreator
+  mockAdapterCreator.netsuite = mockNetsuiteAdapter
 
   const typeWithHiddenField = new ObjectType({
     elemID: new ElemID(mockService, 'dummyHidden'),
@@ -248,7 +253,7 @@ describe('api.ts', () => {
           partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
         }))
         mockFetchChanges.mockClear()
-        await api.fetch(ws, undefined, ACCOUNTS)
+        await api.fetch(ws, undefined, ACCOUNTS, undefined, undefined, undefined, mockAdapterCreator)
       })
 
       it('should call fetch changes', () => {
@@ -296,7 +301,7 @@ describe('api.ts', () => {
           partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
         }))
         mockFetchChanges.mockClear()
-        await api.fetch(ws, undefined, [mockService])
+        await api.fetch(ws, undefined, [mockService], undefined, undefined, undefined, mockAdapterCreator)
       })
 
       it('should call fetch changes with first account only', () => {
@@ -317,7 +322,9 @@ describe('api.ts', () => {
       })
       it('should throw an error upon failure', async () => {
         mockFetchChanges.mockRejectedValueOnce(new Error('test'))
-        await expect(api.fetch(ws, undefined, [mockService])).rejects.toThrow(new Error('test'))
+        await expect(
+          api.fetch(ws, undefined, [mockService], undefined, undefined, undefined, mockAdapterCreator),
+        ).rejects.toThrow(new Error('test'))
       })
     })
   })
@@ -337,11 +344,11 @@ describe('api.ts', () => {
     })
 
     it('should return getPlan response', async () => {
-      const result = await api.preview(mockWorkspace({}), ACCOUNTS)
+      const result = await api.preview(mockWorkspace({}), ACCOUNTS, undefined, undefined, undefined, mockAdapterCreator)
       expect(result).toEqual(mockGetPlanResult)
     })
     it('should call getPlan with deploy change validators', async () => {
-      await api.preview(mockWorkspace({}), ACCOUNTS)
+      await api.preview(mockWorkspace({}), ACCOUNTS, undefined, undefined, undefined, mockAdapterCreator)
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           changeValidators: {
@@ -351,7 +358,7 @@ describe('api.ts', () => {
       )
     })
     it('should call getPlan with validation change validators', async () => {
-      await api.preview(mockWorkspace({}), ACCOUNTS, true)
+      await api.preview(mockWorkspace({}), ACCOUNTS, true, undefined, undefined, mockAdapterCreator)
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           changeValidators: {
@@ -362,7 +369,7 @@ describe('api.ts', () => {
     })
     it('should call getPlan with given topLevelFilters', async () => {
       const topLevelFilters = [() => true]
-      await api.preview(mockWorkspace({}), ACCOUNTS, true, false, topLevelFilters)
+      await api.preview(mockWorkspace({}), ACCOUNTS, true, false, topLevelFilters, mockAdapterCreator)
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           topLevelFilters: expect.arrayContaining(topLevelFilters),
@@ -373,7 +380,7 @@ describe('api.ts', () => {
       )
     })
     it('should call getPlan without change validators', async () => {
-      await api.preview(mockWorkspace({}), ACCOUNTS, false, true)
+      await api.preview(mockWorkspace({}), ACCOUNTS, false, true, undefined, mockAdapterCreator)
       expect(mockedGetPlan).toHaveBeenCalledWith(
         expect.objectContaining({
           changeValidators: {},
@@ -429,7 +436,7 @@ describe('api.ts', () => {
             ],
           },
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, undefined, mockAdapterCreator)
       })
 
       it('should call adapter deploy function', async () => {
@@ -486,7 +493,7 @@ describe('api.ts', () => {
         ])
 
         ws = mockWorkspace({ elements: [changedElement], stateElements: [origElement] })
-        result = await api.deploy(ws, actionPlan, jest.fn())
+        result = await api.deploy(ws, actionPlan, jest.fn(), undefined, undefined, mockAdapterCreator)
       })
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)
@@ -537,7 +544,7 @@ describe('api.ts', () => {
             { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, detailedMessage: 'detailed' },
           ],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, undefined, mockAdapterCreator)
       })
 
       it('should return errors for the failed part', () => {
@@ -606,7 +613,7 @@ describe('api.ts', () => {
           ),
           errors: [],
         }))
-        executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, true)
+        executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, true, mockAdapterCreator)
       })
 
       describe('when adapter does not implement the validate method', () => {
@@ -620,7 +627,7 @@ describe('api.ts', () => {
         let validateMock: jest.Mock
         beforeEach(async () => {
           validateMock = jest.fn()
-          adapterCreators[mockService].operations = mockFunction<Adapter['operations']>().mockReturnValue({
+          mockAdapterCreator[mockService].operations = mockFunction<Adapter['operations']>().mockReturnValue({
             fetch: jest.fn(),
             deploy: jest.fn(),
             validate: validateMock,
@@ -652,7 +659,7 @@ describe('api.ts', () => {
             isProduction: false,
           }),
         }
-        adapterCreators.test = adapter
+        mockAdapterCreator.test = adapter
 
         instance = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('test', 'type') }), { name: 'test' })
 
@@ -682,7 +689,7 @@ describe('api.ts', () => {
           }
         })
 
-        result = await api.deploy(mockWs, actionPlan, jest.fn(), ['test'])
+        result = await api.deploy(mockWs, actionPlan, jest.fn(), ['test'], undefined, mockAdapterCreator)
       })
 
       it('should call adapter deploy function', () => {
@@ -738,7 +745,7 @@ describe('api.ts', () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
 
-        await api.verifyCredentials(newConf)
+        await api.verifyCredentials(newConf, mockAdapterCreator)
 
         expect(mockAdapter.validateCredentials).toHaveBeenCalledTimes(1)
       })
@@ -747,7 +754,7 @@ describe('api.ts', () => {
     describe('addAdapter', () => {
       const serviceName = 'test'
       beforeAll(() => {
-        adapterCreators[serviceName] = {
+        mockAdapterCreator[serviceName] = {
           authenticationMethods: {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
           },
@@ -762,13 +769,13 @@ describe('api.ts', () => {
 
       it('should set adapter config', async () => {
         const wsp = mockWorkspace({})
-        await api.addAdapter(wsp, serviceName)
+        await api.addAdapter(wsp, serviceName, undefined, mockAdapterCreator)
         expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
       })
 
       it('should update workspace config if different account name provided', async () => {
         const wsp = mockWorkspace({})
-        await api.addAdapter(wsp, serviceName, `${serviceName}account`)
+        await api.addAdapter(wsp, serviceName, `${serviceName}account`, mockAdapterCreator)
         expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
         expect((wsp.updateAccountConfig as jest.Mock).call).toHaveLength(1)
       })
@@ -784,17 +791,17 @@ describe('api.ts', () => {
 
   describe('installAdapter', () => {
     it('should return the installed version', async () => {
-      const result = await api.installAdapter(mockServiceWithInstall)
+      const result = await api.installAdapter(mockServiceWithInstall, mockAdapterCreator)
       expect(result).toEqual({ success: true, installedVersion: '123' })
     })
 
     it('should throw an error if the adapter failed to install', async () => {
       mockAdapterWithInstall.install.mockResolvedValueOnce({ success: false, errors: ['ERROR'] })
-      return expect(api.installAdapter(mockServiceWithInstall)).rejects.toThrow()
+      return expect(api.installAdapter(mockServiceWithInstall, mockAdapterCreator)).rejects.toThrow()
     })
 
     it('should return undefined in case the adapter has no install method', async () => {
-      const result = await api.installAdapter(mockService)
+      const result = await api.installAdapter(mockService, mockAdapterCreator)
       expect(result).toBeUndefined()
     })
   })
@@ -912,6 +919,7 @@ describe('api.ts', () => {
           workspace: ows,
           accounts: ACCOUNTS,
           env: 'default',
+          adapterCreators: mockAdapterCreator,
         })
       })
 
@@ -932,6 +940,7 @@ describe('api.ts', () => {
           workspace: ows,
           accounts: [mockService],
           env: 'default',
+          adapterCreators: mockAdapterCreator,
         })
       })
 
@@ -952,6 +961,7 @@ describe('api.ts', () => {
           otherWorkspace: ws,
           workspace: ows,
           env: 'default',
+          adapterCreators: mockAdapterCreator,
         })
       })
 
@@ -1252,7 +1262,7 @@ describe('api.ts', () => {
           salto2: 'salto',
         },
       })
-      const statuses = await getLoginStatuses(ws)
+      const statuses = await getLoginStatuses(ws, undefined, mockAdapterCreator)
       expect(Object.keys(statuses).length).toEqual(2)
       expect(Object.keys(statuses)).toContain('salto1')
       expect(Object.keys(statuses)).toContain('salto2')
@@ -1260,7 +1270,9 @@ describe('api.ts', () => {
   })
   describe('getAdapterConfigOptionsType', () => {
     it('should returns adapter configCreator.optionsType when defined', () => {
-      expect(getAdapterConfigOptionsType(mockServiceWithConfigCreator)).toEqual(mockConfigOptionsObjectType)
+      expect(getAdapterConfigOptionsType(mockServiceWithConfigCreator, mockAdapterCreator)).toEqual(
+        mockConfigOptionsObjectType,
+      )
     })
     it('should returns undefined when adapter configCreator is undefined', () => {
       expect(getAdapterConfigOptionsType(mockService)).toBeUndefined()
@@ -1288,7 +1300,7 @@ describe('api.ts', () => {
           target: ElemID.fromFullName('salto1.test2'),
         },
       ])
-      const res = await getAdditionalReferences(ws, [change])
+      const res = await getAdditionalReferences(ws, [change], mockAdapterCreator)
 
       expect(res).toEqual([
         {
@@ -1344,7 +1356,7 @@ describe('api.ts', () => {
         }),
         getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
       }
-      adapterCreators.test = mockTestAdapter
+      mockAdapterCreator.test = mockTestAdapter
     })
     it('should return all the fixes', async () => {
       mockFixElements.mockImplementationOnce(async elements => {
@@ -1382,7 +1394,11 @@ describe('api.ts', () => {
       })
 
       mockFixElements.mockImplementationOnce(async () => ({ fixedElements: [], errors: [] }))
-      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
+      const res = await api.fixElements(
+        ws,
+        [workspace.createElementSelector(type.elemID.getFullName())],
+        mockAdapterCreator,
+      )
       const typeBefore = type.clone()
       const typeAfter = type.clone()
       const instBefore = instance.clone()
@@ -1486,7 +1502,11 @@ describe('api.ts', () => {
         ],
       }))
 
-      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
+      const res = await api.fixElements(
+        ws,
+        [workspace.createElementSelector(type.elemID.getFullName())],
+        mockAdapterCreator,
+      )
 
       expect(res).toEqual({
         errors: _.range(11).map(() => ({
@@ -1504,22 +1524,30 @@ describe('api.ts', () => {
     it('should return an empty array when failed', async () => {
       mockFixElements.mockRejectedValue(new Error())
 
-      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
+      const res = await api.fixElements(
+        ws,
+        [workspace.createElementSelector(type.elemID.getFullName())],
+        mockAdapterCreator,
+      )
 
       expect(res).toEqual({ changes: [], errors: [] })
       expect(mockFixElements).toHaveBeenCalledTimes(1)
     })
 
     it('should return an empty array when there is not a fixElements function', async () => {
-      delete (adapterCreators.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
+      delete (mockAdapterCreator.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
 
-      const res = await api.fixElements(ws, [workspace.createElementSelector(type.elemID.getFullName())])
+      const res = await api.fixElements(
+        ws,
+        [workspace.createElementSelector(type.elemID.getFullName())],
+        mockAdapterCreator,
+      )
 
       expect(res).toEqual({ changes: [], errors: [] })
     })
 
     it('should throw an error when the selector is not a top level', async () => {
-      delete (adapterCreators.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
+      delete (mockAdapterCreator.test as { fixElements?: (typeof mockAdapterOps)['fixElements'] }).fixElements
 
       await expect(
         api.fixElements(ws, [workspace.createElementSelector(type.elemID.createNestedID('attr', 'a').getFullName())]),
@@ -1529,6 +1557,7 @@ describe('api.ts', () => {
       const res = await api.fixElements(
         ws,
         [workspace.createElementSelector('test1.test2')], // this selector doesn't match any element in workspace
+        mockAdapterCreator,
       )
 
       expect(res).toEqual({ changes: [], errors: [] })

@@ -5,12 +5,10 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, ElemID, getRestriction } from '@salto-io/adapter-api'
-import { findObjectType } from '@salto-io/adapter-utils'
+import { Element, getRestriction } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { SALESFORCE } from '../constants'
-
-export const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'FlowMetadataValue')
+import { FLOW_METADATA_VALUE_METADATA_TYPE } from '../constants'
+import { findObjectType } from './utils'
 
 /**
  * Create filter that handles flow type/instances corner case.
@@ -24,7 +22,7 @@ const filterCreator: FilterCreator = () => ({
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     // fix flowMetadataValue - mark restriction values as not enforced, see: SALTO-93
-    const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)
+    const flowMetadataValue = findObjectType(elements, FLOW_METADATA_VALUE_METADATA_TYPE)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
       getRestriction(flowMetadataValue.fields.name).enforce_value = false
     }

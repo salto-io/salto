@@ -12,13 +12,13 @@ import {
   Element,
   ElemID,
   ReferenceExpression,
+  isObjectType,
 } from '@salto-io/adapter-api'
-import { findObjectType } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { JIRA } from '../src/constants'
 
 export const findType = (name: string, allElements: Element[]): ObjectType => {
-  const type = findObjectType(allElements, new ElemID(JIRA, name))
+  const type = allElements.filter(isObjectType).find(obj => obj.elemID.isEqual(new ElemID(JIRA, name)))
   if (type === undefined) {
     throw new Error(`${name} type was not found in received elements`)
   }

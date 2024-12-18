@@ -51,11 +51,7 @@ import {
   transformValues,
   resolvePath,
   TransformFunc,
-  findElement,
-  findElements,
-  findObjectType,
   safeJsonStringify,
-  findInstances,
   flattenElementStr,
   valuesDeepSome,
   filterByID,
@@ -2120,68 +2116,6 @@ describe('Test utils.ts', () => {
       expect(
         resolvePath(mockInstance, mockInstance.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON))?.reference,
       ).toBe(valueRef)
-    })
-  })
-
-  describe('findElement functions', () => {
-    /**   ElemIDs   * */
-    const primID = new ElemID('test', 'prim')
-
-    /**   primitives   * */
-    const primStr = new PrimitiveType({
-      elemID: primID,
-      primitive: PrimitiveTypes.STRING,
-      annotationRefsOrTypes: {},
-      annotations: {},
-    })
-
-    const primNum = new PrimitiveType({
-      elemID: primID,
-      primitive: PrimitiveTypes.NUMBER,
-      annotationRefsOrTypes: {},
-      annotations: {},
-    })
-
-    /**   object types   * */
-    const otID = new ElemID('test', 'obj')
-    const ot = new ObjectType({
-      elemID: otID,
-      fields: {
-        num_field: { refType: primNum },
-        str_field: { refType: primStr },
-      },
-      annotationRefsOrTypes: {},
-      annotations: {},
-    })
-    const otRef = createRefToElmWithValue(ot)
-    const instances = [new InstanceElement('1', otRef, {}), new InstanceElement('2', otRef, {})]
-    const elements = [primStr, primStr, ot, ...instances]
-    describe('findElements', () => {
-      it('should find all elements with the requested id', () => {
-        expect([...findElements(elements, primID)]).toEqual([primStr, primStr])
-      })
-    })
-    describe('findElement', () => {
-      it('should find any matching element', () => {
-        expect(findElement(elements, ot.elemID)).toBe(ot)
-        expect(findElement(elements, primID)).toBe(primStr)
-      })
-      it('should return undefined if there is no matching element', () => {
-        expect(findElement([], primID)).toBeUndefined()
-      })
-    })
-    describe('findObjectType', () => {
-      it('should find object type by ID', () => {
-        expect(findObjectType(elements, ot.elemID)).toBe(ot)
-      })
-      it('should not find non-object types', () => {
-        expect(findObjectType(elements, primID)).toBeUndefined()
-      })
-    })
-    describe('findInstances', () => {
-      it('should find all instances of a given type', () => {
-        expect([...findInstances(elements, ot.elemID)]).toEqual(instances)
-      })
     })
   })
 

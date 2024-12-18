@@ -31,7 +31,7 @@ import {
   ProgressReporter,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { findElement, naclCase } from '@salto-io/adapter-utils'
+import { naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from '@salto-io/jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -1512,7 +1512,7 @@ describe('Salesforce adapter E2E with real account', () => {
             ref: ReferenceExpression | string | undefined,
           ): Promise<string | undefined> => {
             if (isReferenceExpression(ref)) {
-              const elem = findElement(result, ref.elemID)
+              const elem = result.find(element => element.elemID.isEqual(ref.elemID))
               return elem
                 ? // adding fallback for partially-resolved elements
                   (await apiName(elem)) || elem.elemID.typeName

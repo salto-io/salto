@@ -743,6 +743,9 @@ export const listMetadataObjects = async (
 
 export const toListType = (type: TypeElement): ListType => (isListType(type) ? type : new ListType(type))
 
+export const findObjectType = (elements: Element[], metadataTypeName: string): ObjectType | undefined =>
+  elements.filter(isObjectType).find(obj => apiNameSync(obj) === metadataTypeName)
+
 // This function checks whether an element is an instance of a certain metadata type
 // note that for instances of custom objects this will check the specific type (i.e Lead)
 // if you want instances of all custom objects use isInstanceOfCustomObject

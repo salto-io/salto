@@ -5,9 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ElemID, isObjectType } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { naclCase, findObjectType } from '@salto-io/adapter-utils'
+import { naclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { ROLE_TYPE_NAME, OKTA } from '../constants'
 
@@ -39,7 +39,7 @@ const ROLE_ELEM_ID = new ElemID(OKTA, ROLE_TYPE_NAME)
 const filter: FilterCreator = () => ({
   name: 'standardRolesFilter',
   onFetch: async (elements: Element[]) => {
-    const roleObjectType = findObjectType(elements, ROLE_ELEM_ID)
+    const roleObjectType = elements.filter(isObjectType).find(obj => obj.elemID.isEqual(ROLE_ELEM_ID))
     if (roleObjectType === undefined) {
       return
     }

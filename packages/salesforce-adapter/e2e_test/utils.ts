@@ -6,10 +6,10 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import wu from 'wu'
 import {
   Value,
   ObjectType,
-  ElemID,
   InstanceElement,
   Element,
   isObjectType,
@@ -17,12 +17,11 @@ import {
   getChangeData,
   DeployResult,
 } from '@salto-io/adapter-api'
-import { filter, findElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { filter, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from '@salto-io/jsforce'
 import { SalesforceRecord } from '../src/client/types'
 import { FilterContext, FilterResult } from '../src/filter'
-import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { allFilters } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import {
@@ -142,7 +141,12 @@ export function createInstance(params: {
 export function createInstance({ value, typeElements, type }: CreateInstanceParams): InstanceElement {
   const objectType = isObjectType(type)
     ? type
-    : (findElement(typeElements as Iterable<Element>, new ElemID(SALESFORCE, type)) as ObjectType)
+    : wu(typeElements as Iterable<Element>)
+        .filter(isObjectType)
+        .find(obj => obj.elemID.typeName === type)
+  if (objectType === undefined) {
+    throw new Error(`type ${type} not found.`)
+  }
   return createInstanceElement(value, objectType)
 }
 

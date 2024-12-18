@@ -39,6 +39,7 @@ const getFlowElements = (element: InstanceElement): { flowElements: Set<string>;
   const findFlowElements: TransformFuncSync = ({ value, path, field }) => {
     if (!field || !path) return value
     if (isFlowElementName(value, path, field.parent)) {
+      if (flowElements.has(value)) duplicates.add(value)
       flowElements.add(value)
     }
     return value

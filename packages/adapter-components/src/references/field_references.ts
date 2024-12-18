@@ -372,7 +372,7 @@ export const generateLookupFunc = <
     if (!isRelativeSerializer(strategy)) {
       const serializedValue = await strategy.serialize({ ref, field, element, path })
       if (serializedValue === undefined) {
-        log.error('failed to serialize reference in to %s in path %s', ref.elemID.getFullName(), path?.getFullName())
+        log.error('failed to serialize reference to %s in path %s', ref.elemID.getFullName(), path?.getFullName())
       }
       return serializedValue
     }

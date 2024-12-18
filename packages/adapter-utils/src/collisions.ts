@@ -173,7 +173,6 @@ ${getInstancesMarkdownLinks(collideInstances)}
 Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
 ${createMarkdownLink({ text: 'Learn about additional ways to resolve this issue', url: 'https://help.salto.io/en/articles/6927157-salto-id-collisions' })}`,
   )
-  console.log(warningMessages[0])
   return warningMessages.map(warningMessage =>
     createWarningFromMsg({
       message: 'Some elements were not fetched due to Salto ID collisions',

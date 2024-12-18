@@ -28,17 +28,17 @@ import _ from 'lodash'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { FLOW_METADATA_TYPE } from '../constants'
 
-const isFlowElement = (fields: FieldMap): boolean => 'processMetadataValues' in fields
+const isFlowNode = (fields: FieldMap): boolean => 'locationX' in fields && 'locationY' in fields
 
-const isFlowElementName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
-  isFlowElement(parent.fields) && path.name === 'name' && _.isString(value)
+const isFlowNodeName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
+  isFlowNode(parent.fields) && path.name === 'name' && _.isString(value)
 
-const getFlowElements = (element: InstanceElement): Set<string> => {
-  const flowElements = new Set<string>()
-  const findFlowElements: TransformFuncSync = ({ value, path, field }) => {
+const getFlowNodes = (element: InstanceElement): Set<string> => {
+  const flowNodes = new Set<string>()
+  const findFlowNodes: TransformFuncSync = ({ value, path, field }) => {
     if (!field || !path) return value
-    if (isFlowElementName(value, path, field.parent)) {
-      flowElements.add(value)
+    if (isFlowNodeName(value, path, field.parent)) {
+      flowNodes.add(value)
     }
     return value
   }
@@ -46,9 +46,9 @@ const getFlowElements = (element: InstanceElement): Set<string> => {
     values: element.value,
     pathID: element.elemID,
     type: element.getTypeSync(),
-    transformFunc: findFlowElements,
+    transformFunc: findFlowNodes,
   })
-  return flowElements
+  return flowNodes
 }
 
 const isTargetReference = (value: unknown, path: ElemID): value is string =>
@@ -67,24 +67,28 @@ const getTargetReferences = (element: InstanceElement): Set<string> => {
   return targetReferences
 }
 
-const hasMissingReferencedElements = (targetReferences: Set<string>, flowElements: Set<string>): boolean =>
-  ![...targetReferences].every(targetReference => flowElements.has(targetReference))
+const hasMissingReferencedElements = (targetReferences: Set<string>, flowNodes: Set<string>): boolean =>
+  ![...targetReferences].every(targetReference => flowNodes.has(targetReference))
+
+const hasUnreferencedElements = (targetReferences: Set<string>, flowNodes: Set<string>): boolean =>
+  ![...flowNodes].every(flowNode => targetReferences.has(flowNode))
 
 const hasFlowReferenceError = ({
   targetReferences,
-  flowElements,
+  flowNodes,
 }: {
   targetReferences: Set<string>
-  flowElements: Set<string>
-}): boolean => hasMissingReferencedElements(targetReferences, flowElements)
+  flowNodes: Set<string>
+}): boolean =>
+  hasMissingReferencedElements(targetReferences, flowNodes) || hasUnreferencedElements(targetReferences, flowNodes)
 
-const getElemIDFlowElementsAndTargetReferences = (
+const getElemIDFlowNodesAndTargetReferences = (
   instance: InstanceElement,
-): { elemId: ElemID; targetReferences: Set<string>; flowElements: Set<string> } => {
+): { elemId: ElemID; targetReferences: Set<string>; flowNodes: Set<string> } => {
   const targetReferences = getTargetReferences(instance)
-  const flowElements = getFlowElements(instance)
+  const flowNodes = getFlowNodes(instance)
   const elemId = instance.elemID
-  return { elemId, targetReferences, flowElements }
+  return { elemId, targetReferences, flowNodes }
 }
 
 const createMissingReferencedElementChangeError = (targetReferences: string[], elemId: ElemID): ChangeError => {
@@ -97,20 +101,35 @@ const createMissingReferencedElementChangeError = (targetReferences: string[], e
   }
 }
 
+const createUnreferencedElementChangeError = (flowNodes: string[], elemId: ElemID): ChangeError => {
+  const nodeList = flowNodes.map(ref => `- ${ref}`).join('\n')
+  return {
+    elemID: elemId,
+    severity: 'Info',
+    message: 'Flow instance has elements that are never referenced',
+    detailedMessage: `The following elements has no references:\n${nodeList}`,
+  }
+}
+
 const createChangeError = ({
   elemId,
   targetReferences,
-  flowElements,
+  flowNodes,
 }: {
   elemId: ElemID
   targetReferences: Set<string>
-  flowElements: Set<string>
+  flowNodes: Set<string>
 }): ChangeError[] => {
   const errors: ChangeError[] = []
-  const isReferenceToMissingElement = (reference: string): boolean => !flowElements.has(reference)
+  const isReferenceToMissingElement = (reference: string): boolean => !flowNodes.has(reference)
   const missingReferencedElementsErrors: string[] = Array.from(targetReferences).filter(isReferenceToMissingElement)
+  const isUnreferencedElement = (reference: string): boolean => !targetReferences.has(reference)
+  const unreferencedElementsErrors: string[] = Array.from(flowNodes).filter(isUnreferencedElement)
   if (missingReferencedElementsErrors.length > 0) {
     errors.push(createMissingReferencedElementChangeError(missingReferencedElementsErrors, elemId))
+  }
+  if (unreferencedElementsErrors.length > 0) {
+    errors.push(createUnreferencedElementChangeError(unreferencedElementsErrors, elemId))
   }
   return errors
 }
@@ -121,7 +140,7 @@ const changeValidator: ChangeValidator = async changes =>
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-    .map(getElemIDFlowElementsAndTargetReferences)
+    .map(getElemIDFlowNodesAndTargetReferences)
     .filter(hasFlowReferenceError)
     .flatMap(createChangeError)
 

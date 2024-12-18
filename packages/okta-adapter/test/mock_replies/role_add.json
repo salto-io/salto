@@ -1,0 +1,53 @@
+[
+  {
+    "path": "/api/v1/iam/roles",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "id": "role-fakeid1",
+      "label": "test",
+      "description": "test",
+      "created": "2024-12-18T16:23:46.000Z",
+      "lastUpdated": "2024-12-18T16:23:46.000Z"
+    },
+    "body": {
+      "label": "test",
+      "description": "test",
+      "permissions": ["okta.users.userprofile.manage"]
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "799",
+      "x-rate-limit-reset": "1734539086"
+    }
+  },
+  {
+    "path": "/api/v1/iam/roles/role-fakeid1/permissions/okta.users.userprofile.manage",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "label": "okta.users.userprofile.manage",
+      "created": "2024-12-18T16:23:46.000Z",
+      "lastUpdated": "2024-12-18T16:23:46.000Z",
+      "conditions": {
+        "include": {
+          "okta:ResourceAttribute/User/Profile": ["profileUrl", "zipCode", "city"]
+        }
+      }
+    },
+    "body": {
+      "conditions": {
+        "include": {
+          "okta:ResourceAttribute/User/Profile": ["profileUrl", "zipCode", "city"]
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "798",
+      "x-rate-limit-reset": "1734539086"
+    }
+  }
+]

@@ -1335,7 +1335,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/iam/roles/{id}', method: 'put' },
-                transformation: { omit: ['permissions'] },
+                transformation: { omit: ['id', 'permissions'] },
               },
             },
           ],

@@ -40,7 +40,7 @@ import {
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
-import { assignPolicyIdsToApplication } from './types/application'
+import { assignPolicyIdsToApplication, isOktaDashboard } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
 import { isNotDeletedEmailDomain } from './types/email_domain'
 import { isDefaultDomain } from './types/domain'
@@ -420,7 +420,15 @@ const createCustomizations = ({
       topLevel: {
         isTopLevel: true,
         serviceUrl: { path: '/admin/app/{name}/instance/{id}/#tab-general' },
-        elemID: { parts: [{ fieldName: 'label' }] },
+        elemID: {
+          parts: [
+            { fieldName: 'label', condition: value => !isOktaDashboard(value) },
+            // "Okta Dashboard" is a special app that can only have one instance. We need to ensure its element ID is
+            // identical across all environments, so we hardcode it and not depend on its label, which can change.
+            // TODO(SALTO-7005): Remove fieldName from this definition.
+            { fieldName: '', condition: isOktaDashboard, custom: () => () => 'Okta Dashboard' },
+          ],
+        },
         allowEmptyArrays: true,
       },
       fieldCustomizations: {

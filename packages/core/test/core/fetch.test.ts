@@ -35,6 +35,7 @@ import {
   toServiceIdsString,
   ElemIdGetter,
   ServiceIds,
+  isElement,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -277,6 +278,20 @@ describe('fetch', () => {
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
         })
+        it('should return partiallyFetchedAccounts correctly', async () => {
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
+            elements: [newTypeBaseModified],
+            partialFetchData: { isPartial: true },
+          })
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            createInMemoryElementSource([]),
+            createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+            [],
+          )
+          expect(fetchChangesResult.partiallyFetchedAccounts).toEqual(new Set([newTypeDifferentAdapterID.adapter]))
+        })
       })
       describe('fetch is not partial', () => {
         it('should not ignore deletions', async () => {
@@ -371,6 +386,19 @@ describe('fetch', () => {
           expect(accountChange.data.before.resValue).toBe(6)
         }
       })
+      it('should return an empty partiallyFetchedAccounts correctly', async () => {
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
+          elements: [newTypeBaseModified],
+        })
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createInMemoryElementSource([newTypeBaseModifiedDifferentId, typeWithFieldDifferentID]),
+          createInMemoryElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          [],
+        )
+        expect(fetchChangesResult.partiallyFetchedAccounts).toEqual(new Set())
+      })
 
       describe('multiple adapters', () => {
         const adapters = {
@@ -402,6 +430,20 @@ describe('fetch', () => {
           expect(resultChanges.length).toBe(1)
           expect(resultChanges[0].change.action).toBe('remove')
           expect(getChangeData(resultChanges[0].change).elemID.adapter).toBe('dummy2')
+        })
+
+        it('should return partiallyFetchedAccounts correctly', async () => {
+          const fetchChangesResult = await fetchChanges(
+            adapters,
+            createInMemoryElementSource([
+              new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
+              new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
+            ]),
+            createInMemoryElementSource([]),
+            { dummy1AccountName: 'dummy1', dummy2: 'dummy2' },
+            [],
+          )
+          expect(fetchChangesResult.partiallyFetchedAccounts).toEqual(new Set(['dummy1AccountName']))
         })
       })
 
@@ -2093,6 +2135,8 @@ describe('fetch from workspace', () => {
     describe('with fromState true', () => {
       describe('With no errors and warnings', () => {
         beforeEach(async () => {
+          const modifiedExistingInstance = existingInstance.clone()
+          delete modifiedExistingInstance.value.complexField
           fetchRes = await fetchChangesFromWorkspace(
             mockWorkspace({
               elements: mergedElements,
@@ -2102,8 +2146,8 @@ describe('fetch from workspace', () => {
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
             ['salto'],
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, modifiedExistingInstance, existingSubType]),
+            createInMemoryElementSource([existingElement, modifiedExistingInstance, existingSubType]),
             configs,
             'default',
             true,
@@ -2133,8 +2177,21 @@ describe('fetch from workspace', () => {
         it('should create changes based on the current elements', () => {
           const changes = [...fetchRes.changes]
           const unmergedDiffElement = unmergedElements.filter(elem => elem.elemID.getFullName() === 'salto.obj')
-          const changesElements = changes.map(change => getChangeData(change.change))
+          const changesElements = changes.map(change => getChangeData(change.change)).filter(isElement)
           unmergedDiffElement.forEach(frag => expect(changesElements.filter(e => e.isEqual(frag))).toHaveLength(1))
+        })
+
+        it('should have correct change on addition of complexField value that contain static files', () => {
+          const changes = [...fetchRes.changes]
+          const nestedStaticFileChange = changes.find(c =>
+            c.change.id.isEqual(editStateExistingInstance.elemID.createNestedID('complexField')),
+          ) as FetchChange
+          expect(nestedStaticFileChange).toBeDefined()
+          const complexFieldValue = getChangeData(nestedStaticFileChange.change)
+          expect(complexFieldValue).toStrictEqual({
+            staticFileField: fileTwo,
+            staticFilesArr: [fileThree],
+          })
         })
 
         it('should return changes with static files content from otherWorkspace when hashes match', async () => {
@@ -2155,9 +2212,13 @@ describe('fetch from workspace', () => {
               change.change.id.createTopLevelParentID().parent.isEqual(editStateExistingInstance.elemID),
             )
             .map(change => getChangeData(change.change))
-          expect(modifyStaticVals).toHaveLength(3)
-          const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
-          expect(staticFileModifies).toHaveLength(3)
+          expect(modifyStaticVals).toIncludeSameMembers([
+            fileOne,
+            {
+              staticFileField: fileTwo,
+              staticFilesArr: [fileThree],
+            },
+          ])
         })
 
         it('should not have a change on the val and a error if there is a hashes mismatch (for both inner modify and a whole addition)', () => {

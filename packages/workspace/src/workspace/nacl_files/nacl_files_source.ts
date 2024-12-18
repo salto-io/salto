@@ -11,6 +11,7 @@ import { logger } from '@salto-io/logging'
 import {
   Change,
   DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   isAdditionChange,
@@ -85,7 +86,7 @@ export type SourceLoadParams = {
 }
 
 export type NaclFilesSource<Changes = ChangeSet<Change>> = Omit<ElementsSource, 'clear'> & {
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Changes>
+  updateNaclFiles: (changes: DetailedChangeWithBaseChange[], mode?: RoutingMode) => Promise<Changes>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -238,20 +239,20 @@ const createNaclFilesState = async (
   persistent: boolean,
   parsedNaclFiles?: ParsedNaclFileCache,
 ): Promise<NaclFilesState> => ({
-  elementsIndex: await remoteMapCreator<string[]>({
+  elementsIndex: await remoteMapCreator.create<string[]>({
     namespace: getRemoteMapNamespace('elements_index', sourceName),
     serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
-  mergeErrors: await remoteMapCreator<MergeError[]>({
+  mergeErrors: await remoteMapCreator.create<MergeError[]>({
     namespace: getRemoteMapNamespace('errors', sourceName),
     serialize: errors => serialize(errors, 'keepRef'),
     deserialize: async data => deserializeMergeErrors(data),
     persistent,
   }),
   mergedElements: new RemoteElementSource(
-    await remoteMapCreator<Element>({
+    await remoteMapCreator.create<Element>({
       namespace: getRemoteMapNamespace('merged', sourceName),
       serialize: async element => serialize([element], 'keepRef'),
       deserialize: async data => deserializeSingleElement(data, async sf => staticFilesSource.getStaticFile(sf)),
@@ -266,19 +267,19 @@ const createNaclFilesState = async (
       staticFilesSource,
       persistent,
     ),
-  searchableNamesIndex: await remoteMapCreator<boolean>({
+  searchableNamesIndex: await remoteMapCreator.create<boolean>({
     namespace: getRemoteMapNamespace('searchableNamesIndex', sourceName),
     serialize: async val => (val === true ? '1' : '0'),
     deserialize: async data => data !== '0',
     persistent,
   }),
-  staticFilesIndex: await remoteMapCreator<string[]>({
+  staticFilesIndex: await remoteMapCreator.create<string[]>({
     namespace: getRemoteMapNamespace('static_files_index', sourceName),
     serialize: async val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   }),
-  metadata: await remoteMapCreator<string>({
+  metadata: await remoteMapCreator.create<string>({
     namespace: getRemoteMapNamespace('metadata', sourceName),
     serialize: async val => val,
     deserialize: async data => data,
@@ -757,7 +758,7 @@ const buildNaclFilesSource = (
   }
 
   const getChangeLocationsForFiles = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
     naclFiles: string[],
   ): Promise<DetailedChangeWithSource[]> => {
     const { parsedNaclFiles } = await getState()
@@ -784,7 +785,7 @@ const buildNaclFilesSource = (
   }
 
   const getChangesWithLocationsSplitSourceMap = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
   ): Promise<DetailedChangeWithSource[]> => {
     // Create separate source maps for groups of files and then find the location for each group of files separately
     const currentState = await getState()
@@ -834,7 +835,7 @@ const buildNaclFilesSource = (
   }
 
   const getChangesWithLocationsUnifiedSourceMap = async (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
   ): Promise<DetailedChangeWithSource[]> => {
     // Create a unified source map for all files and find the locations for all changes together
     const naclFiles = _.uniq(
@@ -847,7 +848,9 @@ const buildNaclFilesSource = (
     return getChangeLocationsForFiles(changes, naclFiles)
   }
 
-  const groupChangesByFilename = (changes: DetailedChange[]): Promise<Record<string, DetailedChangeWithSource[]>> =>
+  const groupChangesByFilename = (
+    changes: DetailedChangeWithBaseChange[],
+  ): Promise<Record<string, DetailedChangeWithSource[]>> =>
     log.timeDebug(
       async () => {
         const changesWithLocation = getSaltoFlagBool(WORKSPACE_FLAGS.useSplitSourceMapInUpdate)
@@ -864,7 +867,7 @@ const buildNaclFilesSource = (
       changes.length,
     )
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+  const updateNaclFiles = async (changes: DetailedChangeWithBaseChange[]): Promise<ChangeSet<Change>> => {
     const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
@@ -987,7 +990,7 @@ const buildNaclFilesSource = (
       await currentState.metadata.flush()
 
       // clear deprecated referenced index
-      const referencedIndex = await remoteMapCreator<string[]>({
+      const referencedIndex = await remoteMapCreator.create<string[]>({
         namespace: getRemoteMapNamespace('referenced_index', sourceName),
         serialize: async val => safeJsonStringify(val),
         deserialize: data => JSON.parse(data),

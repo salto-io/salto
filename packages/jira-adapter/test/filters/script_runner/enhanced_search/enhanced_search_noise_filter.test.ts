@@ -28,6 +28,11 @@ describe('enhancedSearchNoiseFilter', () => {
     await filter.onFetch([instance])
     expect(instance.value.jql).toEqual('ENHANCED_SEARCH_ISSUE_TERMS')
   })
+  it('should replace noise in jql for older versions', async () => {
+    instance.value.description = 'Filter managed by ScriptRunner: issueFunction in linkedIssuesOf'
+    await filter.onFetch([instance])
+    expect(instance.value.jql).toEqual('ENHANCED_SEARCH_ISSUE_TERMS')
+  })
   it('should not replace noise in jql if there is no closing bracket', async () => {
     instance.value.jql = 'issue in (1, 2, 3'
     await filter.onFetch([instance])

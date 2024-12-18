@@ -34,6 +34,8 @@ import {
   isTypeReference,
   isVariableExpression,
   PlaceholderObjectType,
+  isField,
+  TypeElement,
 } from '@salto-io/adapter-api'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
@@ -191,53 +193,54 @@ export const serializeStream = async <T = Element>({
 
   const elemIdReplacer = (
     id: ElemID,
-  ): Omit<types.PickDataFields<ElemID>, 'nestingLevel' | 'name'> & { readonly nameParts: ReadonlyArray<string> } => ({
+  ): Pick<ElemID, 'adapter' | 'typeName' | 'idType'> & { readonly nameParts: ReadonlyArray<string> } => ({
     adapter: id.adapter,
     typeName: id.typeName,
     idType: id.idType,
     nameParts: _.get(id, 'nameParts'),
   })
 
-  const referenceExpressionReplacer = (e: ReferenceExpression): ReferenceExpression & SerializedClass => {
-    if (e.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(e)) {
-      return saltoClassReplacer(e.createWithValue(undefined))
-    }
-    // Replace ref with value in order to keep the result from changing between
-    // a fetch and a deploy.
-    if (isElement(e.value)) {
-      return saltoClassReplacer(new ReferenceExpression(e.value.elemID))
-    }
-    // eslint-disable-next-line no-use-before-define
-    return _.cloneDeepWith(e.value, replacer)
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resolveCircles = (v: any): any =>
+  const resolveCircles = (v: TypeElement): TypeElement =>
     isPrimitiveType(v)
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
       : new ObjectType({ elemID: v.elemID })
-  const referenceTypeReplacer = (e: TypeReference): TypeReference & SerializedClass => {
-    if (referenceSerializerMode === 'keepRef') {
-      if (isType(e.type) && !isContainerType(e.type)) {
-        return saltoClassReplacer(new TypeReference(e.elemID, resolveCircles(e.type)))
-      }
-    }
-    return saltoClassReplacer(new TypeReference(e.elemID))
-  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const replacer = (v: any, k: any): any => {
+  const replacerRootMarker = Symbol('root marker for replacer')
+  const replacer = (v: unknown, k: unknown): unknown => {
     if (k !== undefined) {
-      if (isType(v) && !isContainerType(v)) {
+      if (k !== replacerRootMarker && isType(v) && !isContainerType(v)) {
+        // If we encounter a type anywhere except at the root, we serialize a placeholder instead
+        // this shouldn't actually happen, but worth protecting against because if it does happen
+        // it will cause a cycle and make the subsequent JSON.stringify fail
         return saltoClassReplacer(resolveCircles(v))
       }
       if (isReferenceExpression(v)) {
-        return referenceExpressionReplacer(v)
+        if (v.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(v)) {
+          return saltoClassReplacer(_.cloneDeepWith(v.createWithValue(undefined), replacer))
+        }
+        // Replace ref with value in order to keep the result from changing between
+        // a fetch and a deploy.
+        if (isElement(v.value)) {
+          return saltoClassReplacer(_.cloneDeepWith(new ReferenceExpression(v.value.elemID), replacer))
+        }
+        return _.cloneDeepWith(v.value, replacer)
       }
       if (isTypeReference(v)) {
-        return referenceTypeReplacer(v)
+        if (referenceSerializerMode === 'keepRef') {
+          if (isType(v.type) && !isContainerType(v.type)) {
+            return saltoClassReplacer(_.cloneDeepWith(new TypeReference(v.elemID, resolveCircles(v.type)), replacer))
+          }
+        }
+        return saltoClassReplacer(_.cloneDeepWith(new TypeReference(v.elemID), replacer))
       }
       if (isStaticFile(v)) {
         return staticFileReplacer(v)
+      }
+      if (isField(v)) {
+        return _.cloneDeepWith(
+          _.pick(saltoClassReplacer(v), SALTO_CLASS_FIELD, 'elemID', 'annotations', 'refType'),
+          replacer,
+        )
       }
       if (isSaltoSerializable(v)) {
         return saltoClassReplacer(_.cloneDeepWith(v, replacer))
@@ -248,14 +251,9 @@ export const serializeStream = async <T = Element>({
     }
     return undefined
   }
-  const clonedElements = elements.map(element => {
-    if (isElement(element)) {
-      const clone = _.cloneDeepWith(element, replacer)
-      return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
-    }
-    const clone = _.cloneDeepWith({ element }, replacer)
-    return clone.element
-  })
+  const clonedElements = elements.map(element =>
+    isSaltoSerializable(element) ? replacer(element, replacerRootMarker) : _.cloneDeepWith(element, replacer),
+  )
 
   // Avoiding Promise.all to not reach Promise.all limit
   await awu(promises).forEach(promise => promise)

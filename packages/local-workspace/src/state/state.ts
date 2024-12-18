@@ -18,7 +18,7 @@ import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mkdirp, createGZipWriteStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig, flags } from '@salto-io/workspace'
+import { serialization, pathIndex, state, remoteMap, staticFiles, StateConfig } from '@salto-io/workspace'
 import { hash, collections, promises, serialize, types } from '@salto-io/lowerdash'
 import {
   ContentAndHash,
@@ -29,7 +29,6 @@ import {
   StateContentProvider,
 } from './content_providers'
 import { getLocalStoragePath } from '../app_config'
-import { LOCAL_WORKSPACE_FLAGS } from '../flags'
 
 const { awu } = collections.asynciterable
 const { serializeStream, deserializeParsed } = serialization
@@ -240,16 +239,12 @@ export const localState = (
     const accountToElementStreams = await promises.object.mapValuesAsync(elementsByAccount, accountElements =>
       serializeStream({
         elements: _.sortBy(accountElements, element => element.elemID.getFullName()),
-        streamSerializer: flags.getSaltoFlagBool(LOCAL_WORKSPACE_FLAGS.dumpStateWithLegacyFormat)
-          ? serialize.getSerializedStream
-          : elementsStreamSerializer,
+        streamSerializer: elementsStreamSerializer,
       }),
     )
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray(),
-      flags.getSaltoFlagBool(LOCAL_WORKSPACE_FLAGS.dumpStateWithLegacyFormat)
-        ? serialize.getSerializedStream
-        : pathIndicesStreamSerializer,
+      pathIndicesStreamSerializer,
     )
     async function* getStateStream(account: string): AsyncIterable<string> {
       async function* yieldWithEOL(streams: AsyncIterable<string>[]): AsyncIterable<string> {
@@ -258,23 +253,15 @@ export const localState = (
           yield EOL
         }
       }
-      yield* yieldWithEOL(
-        flags.getSaltoFlagBool(LOCAL_WORKSPACE_FLAGS.dumpStateWithLegacyFormat)
-          ? [
-              accountToElementStreams[account],
-              awu([safeJsonStringify({ [account]: account })]),
-              accountToPathIndex[account] || '[]',
-            ]
-          : [
-              awu(['[]']), // deprecated: serialized elements
-              awu(['{}']), // deprecated: update dates
-              awu(['[]']), // deprecated: path indices
-              awu(['""']), // deprecated: version
-              awu([safeJsonStringify({ [parsedStateKeys.accounts]: [account] })]),
-              accountToElementStreams[account],
-              accountToPathIndex[account] || safeJsonStringify({ [parsedStateKeys.pathIndices]: [] }),
-            ],
-      )
+      yield* yieldWithEOL([
+        awu(['[]']), // deprecated: serialized elements
+        awu(['{}']), // deprecated: update dates
+        awu(['[]']), // deprecated: path indices
+        awu(['""']), // deprecated: version
+        awu([safeJsonStringify({ [parsedStateKeys.accounts]: [account] })]),
+        accountToElementStreams[account],
+        accountToPathIndex[account] || safeJsonStringify({ [parsedStateKeys.pathIndices]: [] }),
+      ])
       log.debug(`finished dumping state text [#elements=${elements.length}]`)
     }
     return _.mapValues(accountToElementStreams, (_val, account) => {

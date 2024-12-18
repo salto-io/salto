@@ -9,7 +9,7 @@ import path from 'path'
 import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
-import { EnvironmentsSources, configSource as cs } from '@salto-io/workspace'
+import { remoteMap, EnvironmentsSources, configSource as cs } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import {
@@ -30,9 +30,7 @@ const { awu } = collections.asynciterable
 const { ENVS_PREFIX } = ws.nacl
 const { COMMON_ENV_PREFIX } = ws
 
-const mockRemoteMapCreator = async <T, K extends string = string>(
-  _opts: ws.remoteMap.CreateRemoteMapParams<T>,
-): Promise<ws.remoteMap.RemoteMap<T, K>> => new ws.remoteMap.InMemoryRemoteMap<T, K>()
+const mockRemoteMapCreator = remoteMap.inMemRemoteMapCreator()
 
 const mockConfigSource = (): jest.Mocked<cs.ConfigSource> => ({
   get: mockFunction<cs.ConfigSource['get']>(),
@@ -117,8 +115,7 @@ describe('local workspace', () => {
   describe('load elements  sources', () => {
     it('should build the appropriate nacl source', async () => {
       mockExists.mockResolvedValue(true)
-      const creator: ws.remoteMap.RemoteMapCreator = async <T, K extends string = string>() =>
-        new ws.remoteMap.InMemoryRemoteMap<T, K>()
+      const creator = remoteMap.inMemRemoteMapCreator()
       const elemSources = await loadLocalElementsSources({
         baseDir: '.',
         envs: ['env1', 'env2'],

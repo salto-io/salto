@@ -16,7 +16,7 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { naclFilesSource } from '../../src/workspace/nacl_files'
 import { Path } from '../../src/workspace/path_index'
-import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
+import { InMemoryRemoteMap, inMemRemoteMapCreator, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import {
@@ -26,7 +26,7 @@ import {
   WorkspaceGetCustomReferencesFunc,
 } from '../../src/workspace/workspace'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
-import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
+import { mockStaticFilesSource } from '../utils'
 import { createMockNaclFileSource } from './nacl_file_source'
 import { mockDirStore } from './nacl_file_store'
 
@@ -137,7 +137,7 @@ export const createWorkspace = async (
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   persistent = true,
 ): Promise<Workspace> => {
-  const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
+  const mapCreator = remoteMapCreator ?? inMemRemoteMapCreator()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
   return loadWorkspace(
     configSource || mockWorkspaceConfigSource(),

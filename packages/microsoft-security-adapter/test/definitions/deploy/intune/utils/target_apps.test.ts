@@ -7,7 +7,7 @@
  */
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { DeployRequestCondition } from '@salto-io/adapter-components/src/definitions/system/deploy'
+import { definitions } from '@salto-io/adapter-components'
 import { targetApps } from '../../../../../src/definitions/deploy/intune/utils'
 import { contextMock } from '../../../../mocks'
 import { APPLICATION_CONFIGURATION_MANAGED_APP_TYPE_NAME } from '../../../../../src/constants/intune'
@@ -59,7 +59,7 @@ describe('apps configuration definition utils', () => {
     })
 
     describe('condition', () => {
-      let condition: DeployRequestCondition | undefined
+      let condition: definitions.deploy.DeployRequestCondition | undefined
       beforeEach(() => {
         ;({ condition } = targetApps.createTargetAppsDeployDefinition({
           resourcePath: '/test',

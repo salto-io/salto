@@ -35,21 +35,25 @@ type DeletedDependency = {
   getDeletedTypeFullNameFromModificationChangeFunc: GetDeletedTypeFullNameFromModificationChangeFunc
 }
 
-const getFieldsFromMacro = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
-  const data = change.data[type]
-  const actions = data.value.actions ?? []
-  if (!isArray(actions)) {
+const getTicketFieldsFromField = (array: unknown): string[] => {
+  if (!isArray(array)) {
     return []
   }
-  return actions
-    .map(action => action.field)
+  return array
+    .map(obj => obj.field)
     .filter(field => isReferenceExpression(field))
     .filter(field => field.elemID.typeName === TICKET_FIELD_TYPE_NAME)
     .filter(ref => !ref.elemID.name.startsWith(MISSING_REF_PREFIX))
     .map(ref => ref.elemID.getFullName())
 }
 
-const getCategoryFromtrigger = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
+const getFieldsFromMacro = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
+  const data = change.data[type]
+  const actions = data.value.actions ?? []
+  return getTicketFieldsFromField(actions)
+}
+
+const getCategoryFromTrigger = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
   const data = change.data[type]
   const category = data.value.category_id
   if (!isReferenceExpression(category)) {
@@ -61,15 +65,34 @@ const getCategoryFromtrigger = (change: ModificationChange<InstanceElement>, typ
   return [category.elemID.getFullName()]
 }
 
-const dependencyTuple: Record<string, DeletedDependency> = {
-  [MACRO_TYPE_NAME]: {
-    typeName: TICKET_FIELD_TYPE_NAME,
-    getDeletedTypeFullNameFromModificationChangeFunc: getFieldsFromMacro,
-  },
-  [TRIGGER_TYPE_NAME]: {
-    typeName: TRIGGER_CATEGORY_TYPE_NAME,
-    getDeletedTypeFullNameFromModificationChangeFunc: getCategoryFromtrigger,
-  },
+const getFieldsFromTrigger = (change: ModificationChange<InstanceElement>, type: 'before' | 'after'): string[] => {
+  const data = change.data[type]
+  const conditions = data.value.conditions ?? {}
+  const conditionsAll = conditions.all ?? []
+  const conditionsAny = conditions.any ?? []
+
+  const conditionAllFields = getTicketFieldsFromField(conditionsAll)
+  const conditionAnyFields = getTicketFieldsFromField(conditionsAny)
+  return conditionAnyFields.concat(conditionAllFields)
+}
+
+const dependencyTuple: Record<string, DeletedDependency[]> = {
+  [MACRO_TYPE_NAME]: [
+    {
+      typeName: TICKET_FIELD_TYPE_NAME,
+      getDeletedTypeFullNameFromModificationChangeFunc: getFieldsFromMacro,
+    },
+  ],
+  [TRIGGER_TYPE_NAME]: [
+    {
+      typeName: TRIGGER_CATEGORY_TYPE_NAME,
+      getDeletedTypeFullNameFromModificationChangeFunc: getCategoryFromTrigger,
+    },
+    {
+      typeName: TICKET_FIELD_TYPE_NAME,
+      getDeletedTypeFullNameFromModificationChangeFunc: getFieldsFromTrigger,
+    },
+  ],
 }
 
 const getNameFromChange = (change: deployment.dependency.ChangeWithKey<Change<InstanceElement>>): string =>
@@ -137,13 +160,14 @@ export const modifiedAndDeletedDependencyChanger: DependencyChanger = async chan
     .filter((change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
       isInstanceChange(change.change),
     )
-  return Object.entries(dependencyTuple).flatMap(
-    ([modificationTypeName, { typeName: deletedTypeName, getDeletedTypeFullNameFromModificationChangeFunc }]) =>
+  return Object.entries(dependencyTuple).flatMap(([modificationTypeName, deletedDependencyArray]) =>
+    deletedDependencyArray.flatMap(({ typeName: deletedTypeName, getDeletedTypeFullNameFromModificationChangeFunc }) =>
       getDependencies({
         changes: potentialChanges,
         modificationTypeName,
         deletedTypeName,
         getDeletedTypeFullNameFromModificationChangeFunc,
       }),
+    ),
   )
 }

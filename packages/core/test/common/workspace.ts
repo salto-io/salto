@@ -6,10 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value } from '@salto-io/adapter-api'
-import { mockFunction } from '@salto-io/test-utils'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import * as workspace from '@salto-io/workspace'
 import { elementSource, errors as wsErrors, staticFiles } from '@salto-io/workspace'
 import { mockState } from './state'
+
+type AdaptersConfigSource = workspace.adaptersConfigSource.AdaptersConfigSource
 
 const mockService = 'salto'
 const emptyMockService = 'salto2'
@@ -148,4 +150,41 @@ export const mockWorkspace = ({
       hash?: string
     }) => (staticFilesSource ? staticFilesSource.getStaticFile({ filepath, encoding, isTemplate, hash }) : undefined),
   } as unknown as workspace.Workspace
+}
+
+export const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => {
+  const adapters: Record<string, InstanceElement> = {}
+
+  const getAdapter = async (adapterName: string): Promise<InstanceElement | undefined> => adapters[adapterName]
+  const setAdapter = async (
+    accountName: string,
+    _adapterName: string,
+    config: Readonly<InstanceElement> | Readonly<InstanceElement>[],
+  ): Promise<void> => {
+    if (!Array.isArray(config)) {
+      adapters[accountName] = config as InstanceElement
+    }
+  }
+
+  return {
+    getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>().mockImplementation(getAdapter),
+    setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>().mockImplementation(setAdapter),
+    getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
+    getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(
+      new workspace.errors.Errors({
+        parse: [],
+        validation: [],
+        merge: [],
+      }),
+    ),
+    getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
+    getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
+    setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
+    flush: mockFunction<AdaptersConfigSource['flush']>(),
+    getElements: mockFunction<AdaptersConfigSource['getElements']>(),
+    getParsedNaclFile: mockFunction<AdaptersConfigSource['getParsedNaclFile']>(),
+    getSourceMap: mockFunction<AdaptersConfigSource['getSourceMap']>(),
+    listNaclFiles: mockFunction<AdaptersConfigSource['listNaclFiles']>(),
+    isConfigFile: mockFunction<AdaptersConfigSource['isConfigFile']>(),
+  }
 }

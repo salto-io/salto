@@ -29,6 +29,21 @@ yarn build
 - Enable SDF in Your NetSuite Account (Admin Only) - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=section_4724921034.html
 - Setup Your Role (prefer Administrator) for SDF Development - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1539287603.html
 
+## Authenticate using OAuth 2.0
+
+1. Create certificate using the following command:
+
+```
+openssl req -new -x509 -newkey rsa:4096 -keyout private.pem -sigopt rsa_padding_mode:pss -sha256 -sigopt rsa_pss_saltlen:64 -out public.pem -nodes -days 730
+```
+
+2. Navigate in NetSuite UI to _Setup > Integration > OAuth 2.0 Client Credentials (M2M) Setup_
+3. Click "Create New"
+4. Select the **Entity** (employee) and **Role (must be Administrator)**
+5. Select "SuiteCloud Development Integration" in the **Application**
+6. Upload the public certificate you generated and click "Save"
+7. Copy the created **Certificate ID** and use it to connect your NetSuite to Salto, along with the content of the generated `private.pem` file.
+
 ### Limitations
 
 Deleting record of CustomTypes & FileCabinet is not supported.

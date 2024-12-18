@@ -30,8 +30,8 @@ import {
   isModificationChange,
   TypeReference,
   DEFAULT_SOURCE_SCOPE,
-  isElement,
   isAdditionOrModificationChange,
+  DetailedChangeWithBaseChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -207,6 +207,7 @@ export type Workspace = {
   // Remove this when no longer used, SALTO-1661
   serviceConfig: (name: string, defaultValue?: InstanceElement) => Promise<InstanceElement | undefined>
   accountConfigPaths: (name: string) => Promise<string[]>
+  close: () => Promise<void>
   // serviceConfigPaths is deprecated, kept for backwards compatibility.
   // use accountConfigPaths.
   // Remove this when no longer used, SALTO-1661
@@ -224,7 +225,7 @@ export type Workspace = {
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T): Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
   updateNaclFiles: (
-    changes: DetailedChange[],
+    changes: DetailedChangeWithBaseChange[],
     mode?: RoutingMode,
     stateOnly?: boolean,
   ) => Promise<UpdateNaclFilesResult>
@@ -518,7 +519,6 @@ export const loadWorkspace = async (
     return makeArray(Object.keys(envConf?.accountToServiceName || {}))
   }
   const state = (envName?: string): State => environmentsSources.sources[envName ?? currentEnv()].state as State
-
   let naclFilesSource = multiEnvSource(
     _.mapValues(environmentsSources.sources, e => e.naclFiles),
     environmentsSources.commonSourceName,
@@ -547,7 +547,7 @@ export const loadWorkspace = async (
               envName,
               {
                 merged: new RemoteElementSource(
-                  await remoteMapCreator<Element>({
+                  await remoteMapCreator.create<Element>({
                     namespace: getRemoteMapNamespace('merged', envName),
                     serialize: element => serialize([element], 'keepRef'),
                     // TODO: we might need to pass static file reviver to the deserialization func
@@ -566,61 +566,61 @@ export const loadWorkspace = async (
                     persistent,
                   }),
                 ),
-                errors: await remoteMapCreator<MergeError[]>({
+                errors: await remoteMapCreator.create<MergeError[]>({
                   namespace: getRemoteMapNamespace('errors', envName),
                   serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
                   deserialize: async data => deserializeMergeErrors(data),
                   persistent,
                 }),
-                validationErrors: await remoteMapCreator<ValidationError[]>({
+                validationErrors: await remoteMapCreator.create<ValidationError[]>({
                   namespace: getRemoteMapNamespace('validationErrors', envName),
                   serialize: validationErrors => serialize(validationErrors, 'keepRef'),
                   deserialize: async data => deserializeValidationErrors(data),
                   persistent,
                 }),
-                changedBy: await remoteMapCreator<ElemID[]>({
+                changedBy: await remoteMapCreator.create<ElemID[]>({
                   namespace: getRemoteMapNamespace('changedBy', envName),
                   serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
                   deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
                   persistent,
                 }),
-                changedAt: await remoteMapCreator<ElemID[]>({
+                changedAt: await remoteMapCreator.create<ElemID[]>({
                   namespace: getRemoteMapNamespace('changedAt', envName),
                   serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
                   deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
                   persistent,
                 }),
-                authorInformation: await remoteMapCreator<AuthorInformation>({
+                authorInformation: await remoteMapCreator.create<AuthorInformation>({
                   namespace: getRemoteMapNamespace('authorInformation', envName),
                   serialize: async val => safeJsonStringify(val),
                   deserialize: data => JSON.parse(data),
                   persistent,
                 }),
-                alias: await remoteMapCreator<string>({
+                alias: await remoteMapCreator.create<string>({
                   namespace: getRemoteMapNamespace('alias', envName),
                   serialize: async val => safeJsonStringify(val),
                   deserialize: data => JSON.parse(data),
                   persistent,
                 }),
-                referencedStaticFiles: await remoteMapCreator<string[]>({
+                referencedStaticFiles: await remoteMapCreator.create<string[]>({
                   namespace: getRemoteMapNamespace('referencedStaticFiles', envName),
                   serialize: async val => safeJsonStringify(val),
                   deserialize: data => JSON.parse(data),
                   persistent,
                 }),
-                referenceSources: await remoteMapCreator<ReferenceIndexEntry[]>({
+                referenceSources: await remoteMapCreator.create<ReferenceIndexEntry[]>({
                   namespace: getRemoteMapNamespace('referenceSources', envName),
                   serialize: serializeReferenceSourcesEntries,
                   deserialize: deserializeReferenceSourcesEntries,
                   persistent,
                 }),
-                referenceTargets: await remoteMapCreator<ReferenceTargetIndexValue>({
+                referenceTargets: await remoteMapCreator.create<ReferenceTargetIndexValue>({
                   namespace: getRemoteMapNamespace('referenceTargets', envName),
                   serialize: serializeReferenceTree,
                   deserialize: deserializeReferenceTree,
                   persistent,
                 }),
-                mapVersions: await remoteMapCreator<number>({
+                mapVersions: await remoteMapCreator.create<number>({
                   namespace: getRemoteMapNamespace('mapVersions', envName),
                   serialize: async val => val.toString(),
                   deserialize: async data => parseInt(data, 10),
@@ -632,9 +632,10 @@ export const loadWorkspace = async (
         )
         const sources: Record<string, ReadOnlyElementsSource> = {}
         await awu(envs()).forEach(async envName => {
-          sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource.getElementsSource(envName)
+          const naclSource = await naclFilesSource.getElementsSource(envName)
+          sources[MULTI_ENV_SOURCE_PREFIX + envName] = naclSource
           sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(state(envName), async element =>
-            getElementHiddenParts(element, state(envName), await states[envName].merged.get(element.elemID)),
+            getElementHiddenParts(element, state(envName), await naclSource.get(element.elemID)),
           )
         })
         const initializedState = {
@@ -752,23 +753,6 @@ export const loadWorkspace = async (
           }
         }
 
-        const workspaceChangedElements = Object.fromEntries(
-          await awu(wsChanges[envName]?.changes ?? [])
-            .map(async (change: Change): Promise<[string, Element | undefined]> => {
-              const workspaceElement = getChangeData(change)
-              const stateElement = await state(envName).get(workspaceElement.elemID)
-              const hiddenOnlyElement = isRemovalChange(change)
-                ? undefined
-                : await getElementHiddenParts(
-                    isElement(stateElement) ? stateElement : workspaceElement,
-                    state(envName),
-                    workspaceElement,
-                  )
-              return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
-            })
-            .toArray(),
-        )
-
         const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (src1RecElements, src2RecElements, src2) => {
           const src1ElementsToMerge = await awu(src1RecElements).toArray()
           const src1IDSet = new Set(src1ElementsToMerge.map(elemID => elemID.getFullName()))
@@ -789,7 +773,6 @@ export const loadWorkspace = async (
           src2Changes: await completeStateOnlyChanges(
             stateOnlyChanges[envName] ?? createEmptyChangeSet(await state(envName).getHash()),
           ),
-          src2Overrides: workspaceChangedElements,
           recoveryOverride: dropStateOnlyElementsRecovery,
           src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
           src2Prefix: STATE_SOURCE_PREFIX + envName,
@@ -964,7 +947,7 @@ export const loadWorkspace = async (
     stateOnly = false,
     validate = true,
   }: {
-    changes: DetailedChange[]
+    changes: DetailedChangeWithBaseChange[]
     mode?: RoutingMode
     validate?: boolean
     stateOnly?: boolean
@@ -1227,6 +1210,9 @@ export const loadWorkspace = async (
     uid: workspaceConfig.uid,
     elements: elementsImpl,
     state,
+    close: async () => {
+      await remoteMapCreator.close()
+    },
     envs,
     currentEnv,
     accounts,

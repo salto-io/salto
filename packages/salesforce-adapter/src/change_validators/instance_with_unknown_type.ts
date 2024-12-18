@@ -18,10 +18,11 @@ import {
 
 const createInstanceWithoutTypeError = (change: Change<InstanceElement>): ChangeError => {
   const instance = getChangeData(change)
+  const instanceType = instance.elemID.typeName
   return {
     elemID: instance.elemID,
     message: 'Instance of unknown type',
-    detailedMessage: `Cannot ${change.action} instance ${instance.elemID.getFullName()} because its type is unknown.`,
+    detailedMessage: `Cannot ${change.action} the instance ${instance.elemID.getFullName()} because the ${instanceType} type is not managed by Salto in the target environment. Ensure that ${instanceType} is enabled in Salesforce and is not excluded in Salto's Application Connection configuration. For guidance on including it, refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types`,
     severity: 'Error',
   }
 }

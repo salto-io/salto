@@ -11,8 +11,13 @@ import osPath from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { mkdirp, rm, writeFile } from '@salto-io/file'
 import Bottleneck from 'bottleneck'
-import { SdfCredentials, toCredentialsAccountId } from '../src/client/credentials'
-import SdfClient, { ALL_FEATURES, COMMANDS, safeQuoteArgument } from '../src/client/sdf_client'
+import {
+  SdfCredentials,
+  SdfOAuthCredentials,
+  SdfTokenBasedCredentials,
+  toCredentialsAccountId,
+} from '../src/client/credentials'
+import SdfClient, { ALL_FEATURES, CommandActionExecutor, COMMANDS, safeQuoteArgument } from '../src/client/sdf_client'
 import { DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST } from '../src/config/constants'
 import { FILE_CABINET_PATH_SEPARATOR } from '../src/constants'
 import { FILE_CABINET_DIR, OBJECTS_DIR, SRC_DIR } from '../src/client/sdf_parser'
@@ -23,20 +28,38 @@ export type ProjectInfo = {
 }
 type SDFExecutor = {
   createProject: (credentials: SdfCredentials) => Promise<ProjectInfo>
-  importObjects: (projectPath: string, objectIds: Array<{ type: string; scriptid: string }>) => Promise<void>
-  importFiles: (projectPath: string, filePaths: string[]) => Promise<void>
-  importFeatures: (projectPath: string) => Promise<void>
+  importObjects: (objectIds: Array<{ type: string; scriptid: string }>) => Promise<void>
+  importFiles: (filePaths: string[]) => Promise<void>
+  importFeatures: () => Promise<void>
   deleteProject: (projectInfo: ProjectInfo) => Promise<void>
 }
-export const createSdfExecutor = (): SDFExecutor => {
+
+function assertSDFOAuthCredentials(_credentials: SdfCredentials): asserts _credentials is SdfOAuthCredentials {}
+function assertSDFTokenBasedCredentials(
+  _credentials: SdfCredentials,
+): asserts _credentials is SdfTokenBasedCredentials {}
+
+export const createSdfExecutor = ({ withOAuth }: { withOAuth: boolean }): SDFExecutor => {
+  let baseCommandExecutor: CommandActionExecutor
+  let executor: CommandActionExecutor
+
   const baseExecutionPath = os.tmpdir()
-  const baseCommandExecutor = SdfClient.initCommandActionExecutor(baseExecutionPath)
   const limiter = new Bottleneck({ maxConcurrent: 4 })
 
   return {
     createProject: async credentials => {
       const authId = uuidv4()
       const projectName = `sdf-${authId}`
+      const projectPath = osPath.resolve(baseExecutionPath, projectName)
+
+      if (withOAuth) {
+        baseCommandExecutor = SdfClient.initNewCommandActionExecutor(baseExecutionPath)
+        executor = SdfClient.initNewCommandActionExecutor(projectPath)
+      } else {
+        baseCommandExecutor = SdfClient.initLegacyCommandActionExecutor(baseExecutionPath)
+        executor = SdfClient.initLegacyCommandActionExecutor(projectPath)
+      }
+
       await baseCommandExecutor.executeAction({
         commandName: COMMANDS.CREATE_PROJECT,
         runInInteractiveMode: false,
@@ -46,23 +69,43 @@ export const createSdfExecutor = (): SDFExecutor => {
           parentdirectory: osPath.join(baseExecutionPath, projectName),
         },
       })
-      const projectPath = osPath.resolve(baseExecutionPath, projectName)
-      const executor = SdfClient.initCommandActionExecutor(projectPath)
-      const setupCommandArguments = {
-        authid: authId,
-        account: toCredentialsAccountId(credentials.accountId),
-        tokenid: credentials.tokenId,
-        tokensecret: credentials.tokenSecret,
+
+      if (withOAuth) {
+        assertSDFOAuthCredentials(credentials)
+        const privateKeyPath = osPath.resolve(baseExecutionPath, `${authId}.pem`)
+        await writeFile(privateKeyPath, credentials.privateKey)
+        const setupCommandArguments = {
+          authid: authId,
+          account: toCredentialsAccountId(credentials.accountId),
+          certificateid: credentials.certificateId,
+          privatekeypath: privateKeyPath,
+        }
+        try {
+          await executor.executeAction({
+            commandName: COMMANDS.SETUP_OAUTH,
+            runInInteractiveMode: false,
+            arguments: _.mapValues(setupCommandArguments, safeQuoteArgument),
+          })
+        } finally {
+          await rm(privateKeyPath)
+        }
+      } else {
+        assertSDFTokenBasedCredentials(credentials)
+        const setupCommandArguments = {
+          authid: authId,
+          account: toCredentialsAccountId(credentials.accountId),
+          tokenid: credentials.tokenId,
+          tokensecret: credentials.tokenSecret,
+        }
+        await executor.executeAction({
+          commandName: COMMANDS.SAVE_TOKEN,
+          runInInteractiveMode: false,
+          arguments: _.mapValues(setupCommandArguments, safeQuoteArgument),
+        })
       }
-      await executor.executeAction({
-        commandName: COMMANDS.SAVE_TOKEN,
-        runInInteractiveMode: false,
-        arguments: _.mapValues(setupCommandArguments, safeQuoteArgument),
-      })
       return { projectPath, authId }
     },
-    importObjects: async (projectPath, objectIds) => {
-      const executor = SdfClient.initCommandActionExecutor(projectPath)
+    importObjects: async objectIds => {
       await Promise.all(
         objectIds.map(({ type, scriptid }) =>
           limiter.schedule(() =>
@@ -82,8 +125,7 @@ export const createSdfExecutor = (): SDFExecutor => {
         ),
       )
     },
-    importFiles: async (projectPath, filePaths) => {
-      const executor = SdfClient.initCommandActionExecutor(projectPath)
+    importFiles: async filePaths => {
       await limiter.schedule(() =>
         executor.executeAction({
           commandName: COMMANDS.IMPORT_FILES,
@@ -94,8 +136,7 @@ export const createSdfExecutor = (): SDFExecutor => {
         }),
       )
     },
-    importFeatures: async projectPath => {
-      const executor = SdfClient.initCommandActionExecutor(projectPath)
+    importFeatures: async () => {
       await limiter.schedule(() =>
         executor.executeAction({
           commandName: COMMANDS.IMPORT_CONFIGURATION,

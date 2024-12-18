@@ -21,13 +21,12 @@ import {
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { DASHBOARD_TYPE, FILTER_TYPE_NAME, JIRA } from '../constants'
+import { DASHBOARD_TYPE, FILTER_TYPE_NAME, JIRA, SHARE_PERMISSION_FIELDS } from '../constants'
 import { FilterCreator } from '../filter'
 import { setFieldDeploymentAnnotations } from '../utils'
 
 const log = logger(module)
 
-const SHARE_PERMISSION_FIELDS = ['sharePermissions', 'editPermissions']
 const SHARE_PERMISSION_TYPES = [DASHBOARD_TYPE, FILTER_TYPE_NAME]
 
 const transformType = (elements: Element[]): void => {

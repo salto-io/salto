@@ -28,7 +28,6 @@ import { getStateContentProvider, loadState, localState, parseStateContent } fro
 import * as stateFunctions from '../../src/state/state'
 import { getTopLevelElements } from '../common/elements'
 import { mockStaticFilesSource } from '../common/state'
-import { inMemRemoteMapCreator } from '../common/helpers'
 import { getHashFromHashes, StateContentProvider } from '../../src/state/content_providers'
 import * as contentProviders from '../../src/state/content_providers'
 import { getLocalStoragePath } from '../../src/app_config'
@@ -129,7 +128,7 @@ describe('localState', () => {
           elements: sfElements,
         }),
       })
-      mapCreator = inMemRemoteMapCreator()
+      mapCreator = remoteMap.inMemRemoteMapCreator()
       state = localState(pathPrefix, 'env', mapCreator, contentProvider)
       initialStateHash = await state.getHash()
     })
@@ -223,7 +222,7 @@ describe('localState', () => {
           await state.flush()
         })
         it('should update the cache remote maps', async () => {
-          const cachedMetadata = await mapCreator<string>({
+          const cachedMetadata = await mapCreator.create<string>({
             namespace: 'state-env-salto_metadata',
             serialize: async x => x,
             deserialize: async x => x,
@@ -330,7 +329,7 @@ describe('localState', () => {
     let contentProvider: jest.Mocked<StateContentProvider>
     beforeEach(() => {
       contentProvider = mockContentProvider({})
-      state = localState('empty', '', inMemRemoteMapCreator(), contentProvider)
+      state = localState('empty', '', remoteMap.inMemRemoteMapCreator(), contentProvider)
     })
 
     it('should return an undefined hash', async () => {
@@ -451,7 +450,7 @@ describe('localState', () => {
           elements: getTopLevelElements('noVersion'),
         }),
       })
-      state = localState('malformed', '', inMemRemoteMapCreator(), contentProvider)
+      state = localState('malformed', '', remoteMap.inMemRemoteMapCreator(), contentProvider)
     })
 
     afterEach(() => {
@@ -499,7 +498,7 @@ describe('localState', () => {
       state = localState(
         path.join(testDir.name(), 'empty'),
         '',
-        inMemRemoteMapCreator(),
+        remoteMap.inMemRemoteMapCreator(),
         contentProvider,
         overridingStateFilesSource,
       )
@@ -584,7 +583,7 @@ describe('loadState', () => {
         workspaceId: 'workspaceId',
         baseDir: 'baseDir',
         envName: 'env',
-        remoteMapCreator: inMemRemoteMapCreator(),
+        remoteMapCreator: remoteMap.inMemRemoteMapCreator(),
         staticFilesSource: mockStaticFilesSource(),
         persistent: false,
       })

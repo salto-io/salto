@@ -15,7 +15,12 @@
       "request": "launch",
       "name": "Debug Jest Tests",
       "cwd": "${workspaceFolder}",
-      "args": ["${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--config", "${workspaceRoot}/jest.config.js"],
+      "args": [
+        "${workspaceFolder}/../../node_modules/.bin/jest",
+        "--runInBand",
+        "--config",
+        "${workspaceFolder}/jest.config.js"
+      ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     }

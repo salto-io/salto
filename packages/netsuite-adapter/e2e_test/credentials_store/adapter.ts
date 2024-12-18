@@ -13,10 +13,14 @@ type Args = {
   accountId: string
   tokenId: string
   tokenSecret: string
+  certificateId: string
+  privateKey: string
   suiteAppTokenId: string
   suiteAppTokenSecret: string
   suiteAppActivationKey: string
 }
+
+const PRIVATE_KEY_PREFIX = '-----'
 
 const adapter: Adapter<Args, Credentials> = {
   name: 'netsuite',
@@ -33,6 +37,14 @@ const adapter: Adapter<Args, Credentials> = {
       type: 'string',
       demand: true,
     },
+    certificateId: {
+      type: 'string',
+      demand: true,
+    },
+    privateKey: {
+      type: 'string',
+      demand: true,
+    },
     suiteAppTokenId: {
       type: 'string',
       demand: true,
@@ -46,14 +58,21 @@ const adapter: Adapter<Args, Credentials> = {
       demand: true,
     },
   },
-  credentials: async args => ({
-    accountId: toCredentialsAccountId(args.accountId),
-    tokenId: args.tokenId,
-    tokenSecret: args.tokenSecret,
-    suiteAppTokenId: args.suiteAppTokenId,
-    suiteAppTokenSecret: args.suiteAppTokenSecret,
-    suiteAppActivationKey: args.suiteAppActivationKey,
-  }),
+  credentials: async args => {
+    if (args.privateKey.length === 0 || args.privateKey.startsWith(PRIVATE_KEY_PREFIX)) {
+      throw new Error(`specifiy privateKey without the '${PRIVATE_KEY_PREFIX}' prefix`)
+    }
+    return {
+      accountId: toCredentialsAccountId(args.accountId),
+      tokenId: args.tokenId,
+      tokenSecret: args.tokenSecret,
+      certificateId: args.certificateId,
+      privateKey: PRIVATE_KEY_PREFIX.concat(args.privateKey),
+      suiteAppTokenId: args.suiteAppTokenId,
+      suiteAppTokenSecret: args.suiteAppTokenSecret,
+      suiteAppActivationKey: args.suiteAppActivationKey,
+    }
+  },
   validateCredentials: credentials => NetsuiteClient.validateCredentials(credentials) as unknown as Promise<void>,
 }
 

@@ -7,9 +7,9 @@
  */
 import { Adapter, ElemID, GetCustomReferencesFunc, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import { mockAdaptersConfigSource } from '@salto-io/workspace/test/common/workspace'
 import { getCustomReferences } from '../../src/local-workspace/workspace'
 import { adapterCreators } from '../../src/core/adapters'
+import { mockAdaptersConfigSource } from '../common/workspace'
 
 describe('local workspace', () => {
   beforeEach(() => jest.clearAllMocks())

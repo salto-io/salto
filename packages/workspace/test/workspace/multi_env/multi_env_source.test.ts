@@ -9,7 +9,7 @@ import path from 'path'
 import {
   BuiltinTypes,
   Change,
-  DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   getChangeData,
@@ -33,13 +33,7 @@ import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
-import * as remoteMap from '../../../src/workspace/remote_map'
-import {
-  CreateRemoteMapParams,
-  InMemoryRemoteMap,
-  RemoteMap,
-  RemoteMapCreator,
-} from '../../../src/workspace/remote_map'
+import { inMemRemoteMapCreator, RemoteMap, RemoteMapCreator } from '../../../src/workspace/remote_map'
 import { createMockRemoteMap, mockStaticFilesSource } from '../../utils'
 import {
   AbsoluteStaticFile,
@@ -212,22 +206,7 @@ const sources = {
   [activePrefix]: envSource,
   [inactivePrefix]: inactiveSource,
 }
-const source = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
-
-type MockRemoteMapCreator = {
-  maps: Record<string, InMemoryRemoteMap<unknown>>
-  creator: RemoteMapCreator
-}
-const mockRemoteMaps = (): MockRemoteMapCreator => {
-  const maps: Record<string, InMemoryRemoteMap<unknown>> = {}
-  return {
-    maps,
-    creator: async <T, K extends string>({ namespace }: CreateRemoteMapParams<T>) => {
-      maps[namespace] = maps[namespace] ?? new InMemoryRemoteMap()
-      return maps[namespace] as unknown as RemoteMap<T, K>
-    },
-  }
-}
+const source = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), true)
 
 describe('multi env source', () => {
   let referencedByIndex: RemoteMap<ReferenceIndexEntry[]>
@@ -239,16 +218,6 @@ describe('multi env source', () => {
     const filePath = 'static1.nacl'
     const staticFile = new StaticFile({ filepath: filePath, content: Buffer.from('I am a little static file') })
     const setUp = async (sourceName: string, defaultFilePath?: string): Promise<NaclFilesSource> => {
-      const maps = new Map<string, remoteMap.RemoteMap<unknown>>()
-      const inMemRemoteMapCreator =
-        (): remoteMap.RemoteMapCreator =>
-        async <T, K extends string = string>(opts: remoteMap.CreateRemoteMapParams<T>) => {
-          const map = maps.get(opts.namespace) ?? new remoteMap.InMemoryRemoteMap<T, K>()
-          if (!maps.has(opts.namespace)) {
-            maps.set(opts.namespace, map)
-          }
-          return map as remoteMap.RemoteMap<T, K>
-        }
       const staticFilesCache = buildStaticFilesCache('test', inMemRemoteMapCreator(), true)
       const otherStaticFiles = defaultFilePath ? { [defaultFilePath]: Buffer.from('I am a little static file') } : {}
       const mockStaticFileDirStore = mockDirStore<Buffer>(undefined, undefined, otherStaticFiles)
@@ -265,7 +234,7 @@ describe('multi env source', () => {
         [commonPrefix]: commonStaticFileSource,
         [activePrefix]: envStaticFileSource,
       }
-      const src = multiEnvSource(realSources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      const src = multiEnvSource(realSources, commonPrefix, inMemRemoteMapCreator(), false)
       await src.load({})
       expect(
         await src.getStaticFile({
@@ -286,9 +255,9 @@ describe('multi env source', () => {
   })
 
   describe('load', () => {
-    let remoteMaps: MockRemoteMapCreator
+    let remoteMapCreator: RemoteMapCreator
     beforeEach(() => {
-      remoteMaps = mockRemoteMaps()
+      remoteMapCreator = inMemRemoteMapCreator()
     })
     describe('first load', () => {
       describe('with empty sources', () => {
@@ -305,7 +274,7 @@ describe('multi env source', () => {
               [activePrefix]: loadEnvSource,
             },
             commonPrefix,
-            remoteMaps.creator,
+            remoteMapCreator,
             true,
           )
           loadResult = await multiSource.load({})
@@ -324,7 +293,7 @@ describe('multi env source', () => {
         beforeEach(async () => {
           // We can re-use the sources here because the mock nacl sources don't behave correctly
           // and will "replay" the "load" result regardless of how many times they are loaded
-          multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
+          multiSource = multiEnvSource(sources, commonPrefix, remoteMapCreator, true)
           loadResult = await multiSource.load({})
         })
         it('should return merged addition changes for environment elements', () => {
@@ -360,7 +329,7 @@ describe('multi env source', () => {
         beforeEach(async () => {
           // We can re-use the sources here because the mock nacl sources don't behave correctly
           // and will "replay" the "load" result regardless of how many times they are loaded
-          multiSource = multiEnvSource(sources, commonPrefix, remoteMaps.creator, true)
+          multiSource = multiEnvSource(sources, commonPrefix, remoteMapCreator, true)
           loadResult = await multiSource.load({ ignoreFileChanges: true })
         })
 
@@ -387,7 +356,7 @@ describe('multi env source', () => {
               [commonPrefix]: firstLoadCommonSource,
             },
             commonPrefix,
-            remoteMaps.creator,
+            remoteMapCreator,
             true,
           )
           firstLoadResult = await firstLoadSource.load({})
@@ -417,7 +386,7 @@ describe('multi env source', () => {
               [commonPrefix]: secondLoadCommonSource,
             },
             commonPrefix,
-            remoteMaps.creator,
+            remoteMapCreator,
             true,
           )
           secondLoadResult = await secondLoadSource.load({})
@@ -455,11 +424,17 @@ describe('multi env source', () => {
   })
   describe('update', () => {
     it('should route an update to the proper sub source', async () => {
-      const changes: DetailedChange[] = [
+      const changes: DetailedChangeWithBaseChange[] = [
         {
           action: 'remove',
           data: {
             before: commonObject.fields.field,
+          },
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: commonObject.fields.field,
+            },
           },
           id: commonObject.fields.field.elemID,
         },
@@ -467,6 +442,12 @@ describe('multi env source', () => {
           action: 'remove',
           data: {
             before: envObject,
+          },
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: envObject,
+            },
           },
           id: envElemID,
         },
@@ -495,14 +476,19 @@ describe('multi env source', () => {
           [secondarySourceName]: mockSecondaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(currentElements).toHaveLength(2)
-      const detailedChange = { ...change, id: commonElemID, path: ['test'] } as DetailedChange
+      const detailedChange = {
+        ...change,
+        baseChange: change,
+        id: commonElemID,
+        path: ['test'],
+      } as DetailedChangeWithBaseChange
       const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, [detailedChange])
       expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
@@ -528,7 +514,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -542,12 +528,16 @@ describe('multi env source', () => {
       const detailedChange = {
         action: 'modify',
         data: { before: mergedSaltoObject, after: envFragment },
+        baseChange: {
+          action: 'modify',
+          data: { before: mergedSaltoObject, after: envFragment },
+        },
         path: ['bla'],
         id: objectElemID,
-      } as DetailedChange
+      } as DetailedChangeWithBaseChange
       const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, [detailedChange])
       expect(Object.keys(elementChanges).length).toEqual(1)
-      expect(elementChanges[primarySourceName].changes).toEqual([_.omit(detailedChange, ['path', 'id'])])
+      expect(elementChanges[primarySourceName].changes).toEqual([_.omit(detailedChange, ['path', 'id', 'baseChange'])])
       expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray())).toEqual(
         sortElemArray([envObject, envFragment]),
       )
@@ -585,7 +575,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -597,26 +587,40 @@ describe('multi env source', () => {
         {
           action: 'remove',
           data: { before: envObject },
+          baseChange: {
+            action: 'remove',
+            data: { before: envObject },
+          },
           path: ['bla1'],
           id: envElemID,
         },
         {
           action: 'modify',
           data: { before: mergedSaltoObject, after: newEnvFragment },
+          baseChange: {
+            action: 'modify',
+            data: { before: mergedSaltoObject as ObjectType, after: newEnvFragment },
+          },
           path: ['bla'],
           id: objectElemID,
         },
         {
           action: 'add',
           data: { after: commonObject },
+          baseChange: {
+            action: 'add',
+            data: { after: commonObject },
+          },
           path: ['bla1'],
           id: commonElemID,
         },
-      ] as DetailedChange[]
+      ] as DetailedChangeWithBaseChange[]
       const elementChanges = await multiEnvSourceWithMockSources.updateNaclFiles(primarySourceName, detailedChanges)
       const elements = await awu(await multiEnvSourceWithMockSources.getAll(primarySourceName)).toArray()
       expect(_.sortBy(elementChanges[primarySourceName].changes, c => getChangeData(c).elemID.getFullName())).toEqual(
-        _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc => _.omit(dc, ['path', 'id'])),
+        _.sortBy(detailedChanges, c => getChangeData(c).elemID.getFullName()).map(dc =>
+          _.omit(dc, ['path', 'id', 'baseChange']),
+        ),
       )
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })
@@ -627,12 +631,19 @@ describe('multi env source', () => {
       const fieldNumber = field.clone()
       fieldNumber.refType = new TypeReference(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER)
 
-      const changes: DetailedChange[] = [
+      const changes: DetailedChangeWithBaseChange[] = [
         {
           action: 'modify',
           data: {
             before: envObject,
             after: envObjectMeta,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: envObject,
+              after: envObjectMeta,
+            },
           },
           id: envObject.elemID,
           elemIDs: {
@@ -646,6 +657,13 @@ describe('multi env source', () => {
           data: {
             before: envObject,
             after: envObjectMeta,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: envObject,
+              after: envObjectMeta,
+            },
           },
           id: envObject.elemID,
           elemIDs: {
@@ -659,6 +677,13 @@ describe('multi env source', () => {
           data: {
             before: field,
             after: fieldNumber,
+          },
+          baseChange: {
+            action: 'modify',
+            data: {
+              before: field,
+              after: fieldNumber,
+            },
           },
           id: field.elemID,
           elemIDs: {
@@ -676,6 +701,12 @@ describe('multi env source', () => {
           id: envObject.elemID,
           elemIDs: { before: envObject.elemID },
           path: envObject.path,
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: envObject,
+            },
+          },
         },
         {
           action: 'add',
@@ -683,6 +714,12 @@ describe('multi env source', () => {
           id: envObject.elemID,
           elemIDs: { after: envObjectMeta.elemID },
           path: envObject.path,
+          baseChange: {
+            action: 'add',
+            data: {
+              after: envObjectMeta,
+            },
+          },
         },
         {
           action: 'add',
@@ -690,6 +727,12 @@ describe('multi env source', () => {
           id: envObject.elemID,
           elemIDs: { after: envObjectMeta.elemID },
           path: envObject.path,
+          baseChange: {
+            action: 'add',
+            data: {
+              after: envObjectMeta,
+            },
+          },
         },
         {
           action: 'remove',
@@ -697,6 +740,12 @@ describe('multi env source', () => {
           id: field.elemID,
           elemIDs: { before: field.elemID },
           path: field.path,
+          baseChange: {
+            action: 'remove',
+            data: {
+              before: field,
+            },
+          },
         },
         {
           action: 'add',
@@ -704,6 +753,12 @@ describe('multi env source', () => {
           id: fieldNumber.elemID,
           elemIDs: { after: fieldNumber.elemID },
           path: field.path,
+          baseChange: {
+            action: 'add',
+            data: {
+              after: fieldNumber,
+            },
+          },
         },
       ])
     })
@@ -727,7 +782,7 @@ describe('multi env source', () => {
   describe('isEmpty', () => {
     it('should return true when there are no sources', async () => {
       const srcs = {}
-      const src = multiEnvSource(srcs, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
+      const src = multiEnvSource(srcs, commonPrefix, inMemRemoteMapCreator(), true)
       await src.load({})
       expect(await src.isEmpty(activePrefix)).toBeTruthy()
     })
@@ -737,7 +792,7 @@ describe('multi env source', () => {
         [activePrefix]: emptySource,
         [inactivePrefix]: inactiveSource,
       }
-      const src = multiEnvSource(srcs, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
+      const src = multiEnvSource(srcs, commonPrefix, inMemRemoteMapCreator(), true)
       await src.load({})
       expect(await src.isEmpty(activePrefix)).toBeFalsy()
     })
@@ -746,7 +801,7 @@ describe('multi env source', () => {
         [commonPrefix]: emptySource,
         [inactivePrefix]: inactiveSource,
       }
-      const src = multiEnvSource(srcs, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), true)
+      const src = multiEnvSource(srcs, commonPrefix, inMemRemoteMapCreator(), true)
       await src.load({})
       expect(await src.isEmpty(activePrefix)).toBeTruthy()
     })
@@ -839,7 +894,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -873,7 +928,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -919,7 +974,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -957,7 +1012,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -1000,7 +1055,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -1030,7 +1085,7 @@ describe('multi env source', () => {
           [primarySourceName]: mockPrimaryNaclFileSource,
         },
         commonSourceName,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       await multiEnvSourceWithMockSources.load({})
@@ -1286,7 +1341,7 @@ describe('multi env source', () => {
 
   describe('non persistent multiEnvSource', () => {
     it('should not allow flush when the ws is non-persistent', async () => {
-      const nonPSource = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      const nonPSource = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), false)
       await expect(() => nonPSource.flush()).rejects.toThrow()
     })
   })
@@ -1301,7 +1356,7 @@ describe('multi env source', () => {
     it('should return the file it is present in the common source and the hashes match', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
-      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      const src = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), false)
       expect(
         await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
       ).toEqual(staticFile)
@@ -1309,7 +1364,7 @@ describe('multi env source', () => {
     it('should return the file it is present in the env source and the hashes match', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
-      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      const src = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), false)
       expect(
         await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
       ).toEqual(staticFile)
@@ -1317,7 +1372,7 @@ describe('multi env source', () => {
     it('should return missingStaticFile if the file is not present in any of the sources', async () => {
       commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
       envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
-      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      const src = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), false)
       expect(
         await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding, env: activePrefix }),
       ).toEqual(new MissingStaticFile(staticFile.filepath))
@@ -1326,7 +1381,7 @@ describe('multi env source', () => {
 
   describe('clear', () => {
     it('should clear the envSource', async () => {
-      const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+      const src = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), false)
       await src.clear()
       const postClearElements = await awu(await src.getAll('active')).toArray()
       expect(postClearElements).toEqual([])
@@ -1334,7 +1389,7 @@ describe('multi env source', () => {
   })
 
   describe('getFileEnvs', () => {
-    const src = multiEnvSource(sources, commonPrefix, () => Promise.resolve(new InMemoryRemoteMap()), false)
+    const src = multiEnvSource(sources, commonPrefix, inMemRemoteMapCreator(), false)
 
     it('should return a single env when the file is included in the env source', () => {
       expect(src.getFileEnvs('envs/active/env.nacl')).toEqual([{ envName: 'active' }])
@@ -1381,7 +1436,7 @@ describe('multi env source', () => {
           [activePrefix]: envSource,
         },
         commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
+        inMemRemoteMapCreator(),
         true,
       )
       const res = await src.getElementFileNames(activePrefix)

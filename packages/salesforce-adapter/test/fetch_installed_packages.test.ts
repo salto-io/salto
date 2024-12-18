@@ -6,13 +6,15 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { ObjectType, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
-import { makeArray } from '@salto-io/lowerdash/src/collections/array'
+import { collections } from '@salto-io/lowerdash'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import mockClient from './client'
 import { fetchMetadataInstances } from '../src/fetch'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 import { mockFileProperties, MockFilePropertiesInput } from './connection'
 import { mockTypes } from './mock_elements'
+
+const { makeArray } = collections.array
 
 describe('Test fetching installed package metadata', () => {
   type MockFetchArgs = {

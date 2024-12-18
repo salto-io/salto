@@ -52,13 +52,14 @@ import {
   MockDeployProgressReporter,
   createMockProgressReporter,
 } from './utils'
+// eslint-disable-next-line no-restricted-imports
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
-import {SalesforceDeployProgressReporter} from '../src/adapter_creator'
+import { SalesforceDeployProgressReporter } from '../src/adapter_creator'
 import {
   SalesforceArtifacts,
   INSTANCE_FULL_NAME_FIELD,
@@ -529,6 +530,9 @@ describe('SalesforceAdapter CRUD', () => {
                 message.includes('Elapsed Time:') &&
                 message.includes('View deployments [in Salesforce](https://url.com/lightning/setup/DeployStatus/home)'),
             )
+          })
+          it('should report the deployment asyncTaskId', () => {
+            expect(progressReporter.getReportedAsyncTaskIds()).toHaveLength(1)
           })
         })
 

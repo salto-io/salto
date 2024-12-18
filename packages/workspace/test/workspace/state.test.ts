@@ -80,10 +80,16 @@ describe('state', () => {
 
   describe('buildStateData', () => {
     it('should call staticFilesSource get when deserializing elements', async () => {
-      const remoteMapCreator = mockFunction<RemoteMapCreator>()
-      await buildStateData('env', remoteMapCreator, stateStaticFilesSource, false)
+      const remoteMapCreatorCreate = mockFunction<RemoteMapCreator['create']>()
+      const remoteMapCreatorClose = mockFunction<RemoteMapCreator['close']>()
+      await buildStateData(
+        'env',
+        { create: remoteMapCreatorCreate, close: remoteMapCreatorClose },
+        stateStaticFilesSource,
+        false,
+      )
 
-      const elementsDeserialize = remoteMapCreator.mock.calls.find(
+      const elementsDeserialize = remoteMapCreatorCreate.mock.calls.find(
         call => call[0].namespace === 'state-env-elements',
       )?.[0].deserialize
 
@@ -98,10 +104,16 @@ describe('state', () => {
     })
 
     it('should call staticFilesSource get when serializing elements', async () => {
-      const remoteMapCreator = mockFunction<RemoteMapCreator>()
-      await buildStateData('env', remoteMapCreator, stateStaticFilesSource, false)
+      const remoteMapCreatorCreate = mockFunction<RemoteMapCreator['create']>()
+      const remoteMapCreatorClose = mockFunction<RemoteMapCreator['close']>()
+      await buildStateData(
+        'env',
+        { create: remoteMapCreatorCreate, close: remoteMapCreatorClose },
+        stateStaticFilesSource,
+        false,
+      )
 
-      const elementsSerialize = remoteMapCreator.mock.calls.find(
+      const elementsSerialize = remoteMapCreatorCreate.mock.calls.find(
         call => call[0].namespace === 'state-env-elements',
       )?.[0].serialize
 

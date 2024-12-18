@@ -31,6 +31,7 @@ import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
 } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
+// eslint-disable-next-line no-restricted-imports
 import { findElements } from '../test/utils'
 import {
   getMetadataInstance,

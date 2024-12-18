@@ -16,7 +16,7 @@ import {
   Change,
   ChangeDataType,
   ChangeError,
-  DetailedChange,
+  DetailedChangeWithBaseChange,
   Element,
   ElemID,
   getChangeData,
@@ -28,6 +28,7 @@ import {
   isFieldChange,
   isRemovalChange,
   ObjectType,
+  Progress,
   ReferenceMapping,
   TopLevelElement,
 } from '@salto-io/adapter-api'
@@ -160,7 +161,7 @@ export const preview = async (
 export const deploy = async (
   workspace: Workspace,
   actionPlan: Plan,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string | Progress) => void,
   accounts = workspace.accounts(),
   checkOnly = false,
 ): Promise<DeployResult> => {
@@ -275,6 +276,7 @@ export const fetch: FetchFunc = async (
     configChanges,
     accountNameToConfigMessage,
     unmergedElements,
+    partiallyFetchedAccounts,
   } = await fetchChanges(
     accountToAdapter,
     await workspace.elements(),
@@ -299,6 +301,7 @@ export const fetch: FetchFunc = async (
     configChanges,
     updatedConfig,
     accountNameToConfigMessage,
+    partiallyFetchedAccounts,
   }
 }
 
@@ -330,6 +333,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges,
     accountNameToConfigMessage,
     unmergedElements,
+    partiallyFetchedAccounts,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
     fetchAccounts,
@@ -356,6 +360,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges,
     accountNameToConfigMessage,
     progressEmitter,
+    partiallyFetchedAccounts,
   }
 }
 
@@ -575,7 +580,7 @@ export const rename = async (
   workspace: Workspace,
   sourceElemId: ElemID,
   targetElemId: ElemID,
-): Promise<DetailedChange[]> => {
+): Promise<DetailedChangeWithBaseChange[]> => {
   await renameChecks(workspace, sourceElemId, targetElemId)
 
   const renameElementChanges = await renameElement(
@@ -677,7 +682,7 @@ export class SelectorsError extends Error {
 export const fixElements = async (
   workspace: Workspace,
   selectors: ElementSelector[],
-): Promise<{ errors: ChangeError[]; changes: DetailedChange[] }> => {
+): Promise<{ errors: ChangeError[]; changes: DetailedChangeWithBaseChange[] }> => {
   const accounts = workspace.accounts()
   const adapters = await getAdapters(
     accounts,

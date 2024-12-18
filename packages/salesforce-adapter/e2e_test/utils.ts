@@ -33,6 +33,7 @@ import {
   isInstanceOfCustomObject,
 } from '../src/transformers/transformer'
 import { fetchMetadataType } from '../src/fetch'
+// eslint-disable-next-line no-restricted-imports
 import { defaultFilterContext } from '../test/utils'
 import { SalesforceDeployProgressReporter } from '../src/adapter_creator'
 

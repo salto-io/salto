@@ -24,7 +24,7 @@ import {
   triggerOrderInstanceContainsAllTheInstancesValidator,
   brandCreationValidator,
   webhookAuthDataValidator,
-  targetAuthDataValidator,
+  targetValidator,
   phoneNumbersValidator,
   automationAllConditionsValidator,
   requiredAppOwnedParametersValidator,
@@ -80,6 +80,7 @@ import {
   emptyAutomationOrderValidator,
   viewCustomStatusConditionsValidator,
   businessHoursScheduleHolidayChangeValidator,
+  defaultSupportAddressValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZendeskConfig } from './config'
@@ -132,7 +133,7 @@ export default ({
     triggerOrderInstanceContainsAllTheInstances: triggerOrderInstanceContainsAllTheInstancesValidator,
     brandCreation: brandCreationValidator(client),
     webhookAuthData: webhookAuthDataValidator(client),
-    targetAuthData: targetAuthDataValidator(client, apiConfig),
+    targetAuthData: targetValidator(client, apiConfig),
     phoneNumbers: phoneNumbersValidator,
     automationAllConditions: automationAllConditionsValidator,
     macroActionsTicketFieldDeactivation: macroActionsTicketFieldDeactivationValidator,
@@ -189,6 +190,7 @@ export default ({
     orderChildrenParent: orderChildrenParentValidator,
     guideOrderDeletion: orderDeletionValidator,
     ticketFieldDeactivation: ticketFieldDeactivationValidator,
+    defaultSupportAddress: defaultSupportAddressValidator,
     // ******************************
     businessHoursScheduleHoliday: businessHoursScheduleHolidayChangeValidator,
   }

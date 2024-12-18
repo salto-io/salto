@@ -104,6 +104,7 @@ const OPTIONAL_FEATURES = [
   'genAiReferences',
   'networkReferences',
   'extendFetchTargets',
+  'addParentToInstancesWithinFolder',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -148,7 +149,7 @@ export type ChangeValidatorName =
   | 'customFieldType'
   | 'standardFieldLabel'
   | 'mapKeys'
-  | 'multipleDefaults'
+  | 'defaultRules'
   | 'picklistPromote'
   | 'cpqValidator'
   | 'recordTypeDeletion'
@@ -836,7 +837,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     customFieldType: { refType: BuiltinTypes.BOOLEAN },
     standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
     mapKeys: { refType: BuiltinTypes.BOOLEAN },
-    multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
+    defaultRules: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },

@@ -18,8 +18,8 @@ import {
   SeverityLevel,
   ChangeDataType,
   SaltoErrorType,
-  Progress,
   ProgressReporter,
+  Progress,
 } from '@salto-io/adapter-api'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { NodeSkippedError, WalkError } from '@salto-io/dag'
@@ -124,7 +124,7 @@ class WalkDeployError extends Error {
 export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, AdapterOperations>,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string | Progress) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
   checkOnly: boolean,
 ): Promise<DeployActionResult> => {
@@ -140,8 +140,8 @@ export const deployActions = async (
       })
       reportProgress(item, 'started')
       try {
-        const progressReporter: ProgressReporter = {
-          reportProgress: (progress: Progress) => reportProgress(item, 'started', progress.message),
+        const progressReporter = {
+          reportProgress: (progress: Progress) => reportProgress(item, 'started', progress),
         }
         const result = await deployAction(item, adapters, checkOnly, progressReporter)
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))

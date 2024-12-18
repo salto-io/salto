@@ -5,15 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import {
-  AdapterFailureInstallResult,
-  AdapterSuccessInstallResult,
-  ElemID,
-  InstanceElement,
-  isAdapterSuccessInstallResult,
-  ObjectType,
-} from '@salto-io/adapter-api'
-import * as cli from '@salto-io/suitecloud-cli'
+import { ElemID, InstanceElement, isAdapterSuccessInstallResult, ObjectType } from '@salto-io/adapter-api'
+import * as legacySuitecloud from '@salto-io/suitecloud-cli-legacy'
+import * as newSuitecloud from '@salto-io/suitecloud-cli-new'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Bottleneck from 'bottleneck'
 import { adapter } from '../src/adapter_creator'
@@ -28,14 +22,17 @@ import { emptyQueryParams, fullQueryParams, fullFetchConfig } from '../src/confi
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
 jest.mock('../src/adapter')
-jest.mock('@salto-io/suitecloud-cli')
-
-const mockDownload = cli.SdkDownloadService.download as jest.Mock
-mockDownload.mockResolvedValue({ success: true, installedVersion: '123' })
 
 describe('NetsuiteAdapter creator', () => {
+  let mockLegacyDownload: jest.SpyInstance
+  let mockNewDownload: jest.SpyInstance
+
   beforeEach(async () => {
     jest.clearAllMocks()
+    mockLegacyDownload = jest.spyOn(legacySuitecloud.SdkDownloadService, 'download')
+    mockLegacyDownload.mockResolvedValue({ success: true, installedVersion: '123' })
+    mockNewDownload = jest.spyOn(newSuitecloud.SdkDownloadService, 'download')
+    mockNewDownload.mockResolvedValue({ success: true, installedVersion: '456' })
   })
 
   const credentials = new InstanceElement(ElemID.CONFIG_NAME, adapter.authenticationMethods.basic.credentialsType, {
@@ -842,34 +839,69 @@ describe('NetsuiteAdapter creator', () => {
   })
 
   describe('install', () => {
+    const { install } = adapter as Required<typeof adapter>
+
     it('should have an install functions', () => {
-      expect(adapter.install).toBeDefined()
+      expect(install).toBeDefined()
     })
     it('when installation succeeds', async () => {
-      if (adapter.install) {
-        const res = await adapter.install()
-        expect(isAdapterSuccessInstallResult(res)).toBe(true)
-        expect((res as AdapterSuccessInstallResult).installedVersion).toEqual('123')
-        expect(mockDownload).toHaveBeenCalled()
-      }
+      const res = await install()
+      expect(isAdapterSuccessInstallResult(res)).toBe(true)
+      expect(res).toEqual({
+        success: true,
+        installedVersion: '456',
+        installedVersions: ['123', '456'],
+      })
+      expect(mockLegacyDownload).toHaveBeenCalled()
+      expect(mockNewDownload).toHaveBeenCalled()
     })
-    it('when installation fails with an expection', async () => {
-      mockDownload.mockImplementationOnce(() => {
+    it('when legacy installation fails with an expection', async () => {
+      mockLegacyDownload.mockImplementationOnce(() => {
         throw new Error('FAILED')
       })
-      if (adapter.install) {
-        const res = await adapter.install()
-        expect(isAdapterSuccessInstallResult(res)).toBe(false)
-        expect((res as AdapterFailureInstallResult).errors).toEqual(['FAILED'])
-      }
+      const res = await install()
+      expect(isAdapterSuccessInstallResult(res)).toBe(false)
+      expect(res).toEqual({
+        success: false,
+        errors: ['FAILED'],
+      })
+      expect(mockLegacyDownload).toHaveBeenCalled()
+      expect(mockNewDownload).not.toHaveBeenCalled()
     })
-    it('when installation fails with sdf errors in return value', async () => {
-      mockDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
-      if (adapter.install) {
-        const res = await adapter.install()
-        expect(isAdapterSuccessInstallResult(res)).toBe(false)
-        expect((res as AdapterFailureInstallResult).errors).toEqual(['FAILED'])
-      }
+    it('when new installation fails with an expection', async () => {
+      mockNewDownload.mockImplementationOnce(() => {
+        throw new Error('FAILED')
+      })
+      const res = await install()
+      expect(isAdapterSuccessInstallResult(res)).toBe(false)
+      expect(res).toEqual({
+        success: false,
+        errors: ['FAILED'],
+      })
+      expect(mockLegacyDownload).toHaveBeenCalled()
+      expect(mockNewDownload).toHaveBeenCalled()
+    })
+    it('when legacy installation fails with sdf errors in return value', async () => {
+      mockLegacyDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
+      const res = await install()
+      expect(isAdapterSuccessInstallResult(res)).toBe(false)
+      expect(res).toEqual({
+        success: false,
+        errors: ['FAILED'],
+      })
+      expect(mockLegacyDownload).toHaveBeenCalled()
+      expect(mockNewDownload).not.toHaveBeenCalled()
+    })
+    it('when new installation fails with sdf errors in return value', async () => {
+      mockNewDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
+      const res = await install()
+      expect(isAdapterSuccessInstallResult(res)).toBe(false)
+      expect(res).toEqual({
+        success: false,
+        errors: ['FAILED'],
+      })
+      expect(mockLegacyDownload).toHaveBeenCalled()
+      expect(mockNewDownload).toHaveBeenCalled()
     })
   })
 })

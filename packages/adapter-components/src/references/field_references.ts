@@ -370,7 +370,11 @@ export const generateLookupFunc = <
         element,
       }) ?? ReferenceSerializationStrategyLookup.fullValue
     if (!isRelativeSerializer(strategy)) {
-      return strategy.serialize({ ref, field, element, path })
+      const serializedValue = await strategy.serialize({ ref, field, element, path })
+      if (serializedValue === undefined) {
+        log.error('failed to serialize reference to %s in path %s', ref.elemID.getFullName(), path?.getFullName())
+      }
+      return serializedValue
     }
     return cloneDeepWithoutRefs(ref.value)
   }

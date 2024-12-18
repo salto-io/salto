@@ -17,20 +17,27 @@ import {
   createRefToElmWithValue,
   InstanceElement,
   isStaticFile,
+  DetailedChangeWithBaseChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
-import { detailedCompare, transformElement } from '@salto-io/adapter-utils'
+import { detailedCompare, toDetailedChangeFromBaseChange, transformElement } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/static_files'
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
-import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
-import { InMemoryRemoteMap, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
+import {
+  InMemoryRemoteMap,
+  RemoteMap,
+  CreateRemoteMapParams,
+  inMemRemoteMapCreator,
+} from '../../../src/workspace/remote_map'
+import { mockStaticFilesSource } from '../../utils'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
@@ -39,7 +46,7 @@ import { DetailedChangeWithSource, getChangeLocations } from '../../../src/works
 
 const { awu } = collections.asynciterable
 
-const createChange = (): DetailedChange => {
+const createChange = (): DetailedChangeWithBaseChange => {
   const newElemID = new ElemID('salesforce', 'new_elem')
   const newElem = new ObjectType({
     elemID: newElemID,
@@ -50,12 +57,10 @@ const createChange = (): DetailedChange => {
       },
     },
   })
-  const change = {
-    id: newElemID,
-    action: 'add',
-    data: { after: newElem },
+  const change: DetailedChangeWithBaseChange = {
+    ...toDetailedChangeFromBaseChange(toChange({ after: newElem })),
     path: ['new', 'file'],
-  } as DetailedChange
+  }
   return change
 }
 
@@ -102,34 +107,39 @@ describe.each([false, true])(
     let mockedStaticFilesSource: StaticFilesSource
 
     let createdMaps: Record<string, RemoteMap<Value>> = {}
-    const mockRemoteMapCreator = async <T, K extends string = string>({
-      namespace,
-    }: Pick<CreateRemoteMapParams<T>, 'namespace'>): Promise<RemoteMap<T, K>> => {
-      if (createdMaps[namespace] === undefined) {
-        const realMap = new InMemoryRemoteMap()
-        const getImpl = async (key: string): Promise<Value> => (key.endsWith('hash') ? 'HASH' : realMap.get(key))
-        createdMaps[namespace] = {
-          delete: mockFunction<RemoteMap<Value>['delete']>(),
-          get: mockFunction<RemoteMap<Value>['get']>().mockImplementation(getImpl),
-          getMany: mockFunction<RemoteMap<Value>['getMany']>().mockImplementation(async keys =>
-            Promise.all(keys.map(getImpl)),
-          ),
-          has: mockFunction<RemoteMap<Value>['has']>().mockImplementation(
-            async key => key.endsWith('hash') || realMap.has(key),
-          ),
-          set: mockFunction<RemoteMap<Value>['set']>().mockImplementation(realMap.set.bind(realMap)),
-          setAll: mockFunction<RemoteMap<Value>['setAll']>().mockImplementation(realMap.setAll.bind(realMap)),
-          deleteAll: mockFunction<RemoteMap<Value>['deleteAll']>().mockImplementation(realMap.deleteAll.bind(realMap)),
-          entries: mockFunction<RemoteMap<Value>['entries']>().mockImplementation(realMap.entries.bind(realMap)),
-          keys: mockFunction<RemoteMap<Value>['keys']>().mockImplementation(realMap.keys.bind(realMap)),
-          values: mockFunction<RemoteMap<Value>['values']>().mockImplementation(realMap.values.bind(realMap)),
-          flush: mockFunction<RemoteMap<Value>['flush']>().mockImplementation(realMap.flush.bind(realMap)),
-          clear: mockFunction<RemoteMap<Value>['clear']>().mockImplementation(realMap.clear.bind(realMap)),
-          close: mockFunction<RemoteMap<Value>['close']>().mockImplementation(realMap.close.bind(realMap)),
-          isEmpty: mockFunction<RemoteMap<Value>['isEmpty']>().mockImplementation(realMap.isEmpty.bind(realMap)),
+    const mockRemoteMapCreator = {
+      close: async () => {},
+      create: async <T, K extends string = string>({
+        namespace,
+      }: Pick<CreateRemoteMapParams<T>, 'namespace'>): Promise<RemoteMap<T, K>> => {
+        if (createdMaps[namespace] === undefined) {
+          const realMap = new InMemoryRemoteMap()
+          const getImpl = async (key: string): Promise<Value> => (key.endsWith('hash') ? 'HASH' : realMap.get(key))
+          createdMaps[namespace] = {
+            delete: mockFunction<RemoteMap<Value>['delete']>(),
+            get: mockFunction<RemoteMap<Value>['get']>().mockImplementation(getImpl),
+            getMany: mockFunction<RemoteMap<Value>['getMany']>().mockImplementation(async keys =>
+              Promise.all(keys.map(getImpl)),
+            ),
+            has: mockFunction<RemoteMap<Value>['has']>().mockImplementation(
+              async key => key.endsWith('hash') || realMap.has(key),
+            ),
+            set: mockFunction<RemoteMap<Value>['set']>().mockImplementation(realMap.set.bind(realMap)),
+            setAll: mockFunction<RemoteMap<Value>['setAll']>().mockImplementation(realMap.setAll.bind(realMap)),
+            deleteAll: mockFunction<RemoteMap<Value>['deleteAll']>().mockImplementation(
+              realMap.deleteAll.bind(realMap),
+            ),
+            entries: mockFunction<RemoteMap<Value>['entries']>().mockImplementation(realMap.entries.bind(realMap)),
+            keys: mockFunction<RemoteMap<Value>['keys']>().mockImplementation(realMap.keys.bind(realMap)),
+            values: mockFunction<RemoteMap<Value>['values']>().mockImplementation(realMap.values.bind(realMap)),
+            flush: mockFunction<RemoteMap<Value>['flush']>().mockImplementation(realMap.flush.bind(realMap)),
+            clear: mockFunction<RemoteMap<Value>['clear']>().mockImplementation(realMap.clear.bind(realMap)),
+            close: mockFunction<RemoteMap<Value>['close']>().mockImplementation(realMap.close.bind(realMap)),
+            isEmpty: mockFunction<RemoteMap<Value>['isEmpty']>().mockImplementation(realMap.isEmpty.bind(realMap)),
+          }
         }
-      }
-      return createdMaps[namespace] as RemoteMap<T, K>
+        return createdMaps[namespace] as RemoteMap<T, K>
+      },
     }
 
     beforeEach(async () => {
@@ -137,7 +147,7 @@ describe.each([false, true])(
       createdMaps = {}
       mockDirStore = createMockDirStore([], true)
       mockedStaticFilesSource = mockStaticFilesSource()
-      mockCache = createParseResultCache('test', persistentMockCreateRemoteMap(), mockStaticFilesSource(), true)
+      mockCache = createParseResultCache('test', inMemRemoteMapCreator(), mockStaticFilesSource(), true)
       getChangeLocationsMock = getChangeLocations as jest.MockedFunction<typeof getChangeLocations>
       getChangeLocationsMock.mockImplementation(
         (change: DetailedChange) =>
@@ -223,14 +233,17 @@ describe.each([false, true])(
       })
 
       it('should clear&flush referenced_index if it is not empty', async () => {
-        const wrappedRemoteMapCreator = async <T, K extends string = string>({
-          namespace,
-        }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
-          const remoteMapCreator = await mockRemoteMapCreator({ namespace })
-          if (deprecatedReferencedIndexes.includes(namespace)) {
-            ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(false)
-          }
-          return remoteMapCreator as RemoteMap<T, K>
+        const wrappedRemoteMapCreator = {
+          close: async () => {},
+          create: async <T, K extends string = string>({
+            namespace,
+          }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+            const remoteMapCreator = await mockRemoteMapCreator.create({ namespace })
+            if (deprecatedReferencedIndexes.includes(namespace)) {
+              ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(false)
+            }
+            return remoteMapCreator as RemoteMap<T, K>
+          },
         }
         const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, wrappedRemoteMapCreator, true)
         await naclSrc.load({})
@@ -242,14 +255,17 @@ describe.each([false, true])(
       })
 
       it('should not clear&flush referenced_index if it is empty', async () => {
-        const wrappedRemoteMapCreator = async <T, K extends string = string>({
-          namespace,
-        }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
-          const remoteMapCreator = await mockRemoteMapCreator({ namespace })
-          if (deprecatedReferencedIndexes.includes(namespace)) {
-            ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(true)
-          }
-          return remoteMapCreator as RemoteMap<T, K>
+        const wrappedRemoteMapCreator = {
+          close: async () => {},
+          create: async <T, K extends string = string>({
+            namespace,
+          }: CreateRemoteMapParams<T>): Promise<RemoteMap<T, K>> => {
+            const remoteMapCreator = await mockRemoteMapCreator.create({ namespace })
+            if (deprecatedReferencedIndexes.includes(namespace)) {
+              ;(remoteMapCreator.isEmpty as jest.Mock).mockResolvedValue(true)
+            }
+            return remoteMapCreator as RemoteMap<T, K>
+          },
         }
         const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, wrappedRemoteMapCreator, true)
         await naclSrc.load({})
@@ -264,13 +280,7 @@ describe.each([false, true])(
     describe('isEmpty', () => {
       it("should use store's isEmpty", async () => {
         mockDirStore.isEmpty = jest.fn().mockResolvedValue(Promise.resolve())
-        const naclSrc = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         await naclSrc.load({})
         await naclSrc.isEmpty()
         expect(mockDirStore.isEmpty as jest.Mock).toHaveBeenCalledTimes(1)
@@ -280,27 +290,13 @@ describe.each([false, true])(
     describe('load', () => {
       it('should list files', async () => {
         mockDirStore.list = jest.fn().mockResolvedValue(Promise.resolve([]))
-        await (
-          await naclFilesSource(
-            '',
-            mockDirStore,
-            mockedStaticFilesSource,
-            () => Promise.resolve(new InMemoryRemoteMap()),
-            true,
-          )
-        ).load({})
+        await (await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)).load({})
         expect(mockDirStore.list as jest.Mock).toHaveBeenCalled()
       })
       it('should not list files if ignoreFileChanges is set', async () => {
         mockDirStore.list = jest.fn().mockImplementation(async () => awu([]))
         await (
-          await naclFilesSource(
-            '',
-            mockDirStore,
-            mockedStaticFilesSource,
-            () => Promise.resolve(new InMemoryRemoteMap()),
-            true,
-          )
+          await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         ).load({ ignoreFileChanges: true })
         expect(mockDirStore.list as jest.Mock).not.toHaveBeenCalled()
       })
@@ -312,16 +308,19 @@ describe.each([false, true])(
             '',
             mockDirStore,
             mockedStaticFilesSource,
-            <T, K extends string>() => {
-              const origMap = new InMemoryRemoteMap<T, K>()
-              const wrappedMap = {
-                ...origMap,
-                get: (key: K) => {
-                  retrievedKeys.push(key)
-                  return origMap.get(key)
-                },
-              } as unknown as RemoteMap<T, K>
-              return Promise.resolve(wrappedMap)
+            {
+              close: async () => {},
+              create: <T, K extends string>() => {
+                const origMap = new InMemoryRemoteMap<T, K>()
+                const wrappedMap = {
+                  ...origMap,
+                  get: (key: K) => {
+                    retrievedKeys.push(key)
+                    return origMap.get(key)
+                  },
+                } as unknown as RemoteMap<T, K>
+                return Promise.resolve(wrappedMap)
+              },
             },
             true,
           )
@@ -409,13 +408,7 @@ describe.each([false, true])(
         mockDirStore.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(100))
         mockedStaticFilesSource.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(200))
         const totalSize = await (
-          await naclFilesSource(
-            '',
-            mockDirStore,
-            mockedStaticFilesSource,
-            () => Promise.resolve(new InMemoryRemoteMap()),
-            true,
-          )
+          await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         ).getTotalSize()
         expect(totalSize).toEqual(300)
         expect(mockDirStore.getTotalSize).toHaveBeenCalledTimes(1)
@@ -426,13 +419,7 @@ describe.each([false, true])(
     describe('parse optimization', () => {
       const change = createChange()
       it('should not parse file when updating single add changes in a new file', async () => {
-        const naclSrc = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        const naclSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         await naclSrc.load({})
         await naclSrc.updateNaclFiles([change])
         expect(mockParse).not.toHaveBeenCalled()
@@ -446,52 +433,68 @@ describe.each([false, true])(
       const sfile = new StaticFile({ filepath, hash: 'XI' })
       let src: NaclFilesSource
       beforeEach(async () => {
-        src = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        src = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         await src.load({})
       })
       it('should not parse file when updating single add changes in a new file', async () => {
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID }),
+        })
         const change = {
-          id: elemID,
+          id: elemID.createNestedID('attr', 'file'),
           action: 'remove',
           data: { before: sfile },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
       })
       it('should delete before file when path is changed', async () => {
+        const newFile = new StaticFile({ filepath: afterFilePath, hash: 'XI' })
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID, annotations: { file: newFile } }),
+        })
         const change = {
-          id: elemID,
+          id: elemID.createNestedID('attr', 'file'),
           action: 'modify',
-          data: { before: sfile, after: new StaticFile({ filepath: afterFilePath, hash: 'XI' }) },
+          data: { before: sfile, after: newFile },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
       })
       it('should delete before file when it is no longer a static file', async () => {
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID, annotations: { file: '' } }),
+        })
         const change = {
           id: elemID,
           action: 'modify',
           data: { before: sfile, after: '' },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
       })
       it('should not delete static file if the change is only in content and not in path', async () => {
+        const newFile = new StaticFile({ filepath, hash: 'XII' })
+        const baseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: sfile } }),
+          after: new ObjectType({ elemID, annotations: { file: newFile } }),
+        })
         const change = {
           id: elemID,
           action: 'modify',
-          data: { before: sfile, after: new StaticFile({ filepath, hash: 'XII' }) },
+          data: { before: sfile, after: newFile },
+          baseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([change])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
       })
@@ -537,12 +540,12 @@ describe.each([false, true])(
           action: 'add',
           id: newInstanceElement1.elemID,
           data: { after: newInstanceElement1 },
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         const detailedChange2 = {
           action: 'add',
           id: newInstanceElement2.elemID,
           data: { after: newInstanceElement2 },
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
 
         await src.updateNaclFiles([detailedChange1, detailedChange2])
 
@@ -550,7 +553,7 @@ describe.each([false, true])(
           id: newInstanceElement1.elemID.createNestedID('file'),
           action: 'remove',
           data: { before: sfile },
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([removal])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
       })
@@ -577,18 +580,30 @@ describe.each([false, true])(
               },
             }) as unknown as DetailedChangeWithSource[],
         )
+        const someFile = new StaticFile({ filepath, hash: 'XII' })
+        const anotherElemID = new ElemID('salesforce', 'new_elem2')
+        const additionBaseChange = toChange({
+          before: new ObjectType({ elemID: anotherElemID }),
+          after: new ObjectType({ elemID: anotherElemID, annotations: { file: someFile } }),
+        })
         const changeAdd = {
-          id: new ElemID('salesforce', 'new_elem2'),
+          id: anotherElemID.createNestedID('attr', 'file'),
           action: 'add',
-          data: { after: new StaticFile({ filepath, hash: 'XII' }) },
+          data: { after: someFile },
+          baseChange: additionBaseChange,
           path: ['new', 'file'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
+        const removalBaseChange = toChange({
+          before: new ObjectType({ elemID, annotations: { file: someFile } }),
+          after: new ObjectType({ elemID }),
+        })
         const changeDelete = {
-          id: elemID,
+          id: elemID.createNestedID('attr', 'file'),
           action: 'remove',
-          data: { before: new StaticFile({ filepath, hash: 'XII' }) },
+          data: { before: someFile },
+          baseChange: removalBaseChange,
           path: ['old', 'file2'],
-        } as DetailedChange
+        } as DetailedChangeWithBaseChange
         await src.updateNaclFiles([changeAdd, changeDelete])
         expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
       })
@@ -599,13 +614,7 @@ describe.each([false, true])(
       const mockFileData = { buffer: 'someData {}', filename: 'somefile.nacl' }
 
       beforeEach(async () => {
-        naclSource = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        naclSource = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
       })
 
       it('should return undefined if file doenst exist', async () => {
@@ -665,13 +674,7 @@ describe.each([false, true])(
     describe('list', () => {
       let src: NaclFilesSource
       beforeEach(async () => {
-        src = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        src = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         await src.load({})
         await src.updateNaclFiles([createChange()])
       })
@@ -684,13 +687,7 @@ describe.each([false, true])(
     describe('getSearchableNames', () => {
       let src: NaclFilesSource
       beforeEach(async () => {
-        src = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        src = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         await src.load({})
         await src.updateNaclFiles([createChange()])
       })
@@ -702,13 +699,7 @@ describe.each([false, true])(
 
     describe('non persistent naclFileSource', () => {
       it('should not allow flush when the ws is non-persistent', async () => {
-        const nonPSrc = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          false,
-        )
+        const nonPSrc = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), false)
         await expect(nonPSrc.flush()).rejects.toThrow()
       })
     })
@@ -723,13 +714,7 @@ describe.each([false, true])(
       })
       it('should return the file it is present and the hashes match', async () => {
         staticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
-        const src = await naclFilesSource(
-          '',
-          mockDirStore,
-          staticFileSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          false,
-        )
+        const src = await naclFilesSource('', mockDirStore, staticFileSource, inMemRemoteMapCreator(), false)
         expect(await src.getStaticFile({ filePath: staticFile.filepath, encoding: staticFile.encoding })).toEqual(
           staticFile,
         )
@@ -746,13 +731,7 @@ describe.each([false, true])(
         }),
       ])
       beforeEach(async () => {
-        src = await naclFilesSource(
-          '',
-          mockDirStore,
-          staticFileSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          false,
-        )
+        src = await naclFilesSource('', mockDirStore, staticFileSource, inMemRemoteMapCreator(), false)
       })
       it('should mark a path of a nacl file as included', () => {
         ;(mockDirStore.isPathIncluded as jest.Mock).mockReturnValue(true)
@@ -779,13 +758,7 @@ describe.each([false, true])(
     })
     describe('getElementFileNames', () => {
       it('should return correct result if there are files', async () => {
-        const src1 = await naclFilesSource(
-          '',
-          mockDirStore,
-          mockedStaticFilesSource,
-          () => Promise.resolve(new InMemoryRemoteMap()),
-          true,
-        )
+        const src1 = await naclFilesSource('', mockDirStore, mockedStaticFilesSource, inMemRemoteMapCreator(), true)
         await src1.load({})
         await src1.updateNaclFiles([createChange()])
         const res = await src1.getElementFileNames()

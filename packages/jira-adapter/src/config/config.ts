@@ -295,6 +295,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'enhancedSearchDeployment',
   'fieldContext',
   'emptyProjectScopedContext',
+  'filter',
 ]
 
 export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]

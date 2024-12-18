@@ -316,6 +316,7 @@ export const mockWorkspace = ({
     currentEnv: mockFunction<Workspace['currentEnv']>().mockImplementation(() => currentEnv),
     accounts: mockFunction<Workspace['accounts']>().mockReturnValue(accounts),
     services: mockFunction<Workspace['services']>().mockReturnValue(accounts),
+    close: mockFunction<Workspace['close']>().mockResolvedValue(),
     accountCredentials: mockFunction<Workspace['accountCredentials']>().mockResolvedValue({}),
     servicesCredentials: mockFunction<Workspace['servicesCredentials']>().mockResolvedValue({}),
     accountConfig: mockFunction<Workspace['accountConfig']>().mockResolvedValue(undefined),

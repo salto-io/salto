@@ -405,18 +405,26 @@ export const nullProgressReporter: SalesforceDeployProgressReporter = {
   reportMetadataProgress: () => {},
 }
 
-export type MockDeployProgressReporter = SalesforceDeployProgressReporter & { getReportedMessages: () => string[] }
+export type MockDeployProgressReporter = DeployProgressReporter & {
+  getReportedMessages: () => string[]
+  getReportedAsyncTaskIds: () => string[]
+}
 
 export const createMockProgressReporter = async (client: SalesforceClient): Promise<MockDeployProgressReporter> => {
   const reportedMessages: string[] = []
+  const reportedAsyncTaskIds: string[] = []
   const mockProgressReporter: ProgressReporter = {
     reportProgress: args => {
       reportedMessages.push(args.message)
+      if (args.asyncTaskId) {
+        reportedAsyncTaskIds.push(args.asyncTaskId)
+      }
     },
   }
   return {
     ...(await createDeployProgressReporter(mockProgressReporter, client)),
     getReportedMessages: () => reportedMessages,
+    getReportedAsyncTaskIds: () => reportedAsyncTaskIds,
   }
 }
 

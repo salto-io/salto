@@ -100,7 +100,10 @@ describe('adapters config', () => {
     configSource = await buildAdaptersConfigSource({
       naclSource: mockNaclFilesSource,
       ignoreFileChanges: false,
-      remoteMapCreator: mockFunction<RemoteMapCreator>().mockResolvedValue(validationErrorsMap),
+      remoteMapCreator: {
+        create: mockFunction<RemoteMapCreator['create']>().mockResolvedValue(validationErrorsMap),
+        close: mockFunction<RemoteMapCreator['close']>(),
+      },
       persistent: true,
       configTypes: [configType],
       configOverrides,
@@ -122,7 +125,7 @@ describe('adapters config', () => {
       configSource = await buildAdaptersConfigSource({
         naclSource: mockNaclFilesSource,
         ignoreFileChanges: true,
-        remoteMapCreator: jest.fn().mockResolvedValue(validationErrorsMap),
+        remoteMapCreator: { create: jest.fn().mockResolvedValue(validationErrorsMap), close: jest.fn() },
         persistent: true,
         configTypes: [configType],
         configOverrides: [],
@@ -143,7 +146,10 @@ describe('adapters config', () => {
       configSource = await buildAdaptersConfigSource({
         naclSource: mockNaclFilesSource,
         ignoreFileChanges: true,
-        remoteMapCreator: jest.fn().mockResolvedValue(validationErrorsMap),
+        remoteMapCreator: {
+          create: mockFunction<RemoteMapCreator['create']>().mockResolvedValue(validationErrorsMap),
+          close: mockFunction<RemoteMapCreator['close']>(),
+        },
         persistent: true,
         configTypes: [configType],
         configOverrides: [],

@@ -6,27 +6,26 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
-  TypeElement,
-  ObjectType,
+  AdapterOperations,
+  Change,
+  DeployResult,
+  Element,
+  ElemID,
+  ElemIdGetter,
+  FetchOptions,
+  FetchResult,
+  Field,
+  FixElementsFunc,
+  getChangeData,
   InstanceElement,
   isAdditionChange,
-  getChangeData,
-  Change,
-  ElemIdGetter,
-  FetchResult,
-  FixElementsFunc,
-  AdapterOperations,
-  DeployResult,
-  FetchOptions,
-  ReadOnlyElementsSource,
-  ElemID,
-  PartialFetchData,
-  Element,
-  isInstanceElement,
-  Field,
   isField,
+  isInstanceElement,
   isObjectType,
-  TypeReference,
+  ObjectType,
+  PartialFetchData,
+  ReadOnlyElementsSource,
+  TypeElement,
   CancelServiceAsyncTaskInput,
   CancelServiceAsyncTaskResult,
 } from '@salto-io/adapter-api'
@@ -42,18 +41,30 @@ import { resolveChangeElement, resolveValues, restoreChangeElement } from '@salt
 import { MetadataObject } from '@salto-io/jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values, promises, objects } from '@salto-io/lowerdash'
+import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient, { CustomListFuncDef } from './client/client'
 import * as constants from './constants'
 import {
+  APEX_CLASS_METADATA_TYPE,
+  ArtificialTypes,
+  CUSTOM_FIELD,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  FLOW_METADATA_TYPE,
+  LAST_MODIFIED_DATE,
+  OWNER_ID,
+  PROFILE_RELATED_METADATA_TYPES,
+  WAVE_DATAFLOW_METADATA_TYPE,
+} from './constants'
+import {
   apiName,
-  Types,
-  isMetadataObjectType,
   createInstanceElement,
-  isCustom,
-  MetadataMetaType,
   createMetadataTypeElements,
+  isCustom,
+  isMetadataObjectType,
+  MetadataMetaType,
   StandardSettingsMetaType,
+  Types,
 } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -95,6 +106,7 @@ import cpqReferencableFieldReferencesFilter from './filters/cpq/referencable_fie
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
+import staticResourceZipTimestamps from './filters/static_resource_zip_timestamps'
 import xmlAttributesFilter from './filters/xml_attributes'
 import profilePathsFilter from './filters/profile_paths'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
@@ -129,8 +141,9 @@ import mergeProfilesWithSourceValuesFilter from './filters/merge_profiles_with_s
 import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
+import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
 import { getConfigFromConfigChanges } from './config_change'
-import { Filter, FilterResult, FilterContext, FilterCreator } from './filter'
+import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
   addDefaults,
   apiNameSync,
@@ -143,34 +156,22 @@ import {
   isInstanceOfCustomObjectSync,
   isInstanceOfTypeSync,
   isMetadataInstanceElementSync,
+  isOrderedMapTypeOrRefType,
   listMetadataObjects,
   metadataTypeSync,
   queryClient,
 } from './filters/utils'
 import {
-  retrieveMetadataInstances,
-  fetchMetadataType,
   fetchMetadataInstances,
+  fetchMetadataType,
   retrieveMetadataInstanceForFetchWithChangesDetection,
+  retrieveMetadataInstances,
 } from './fetch'
-import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
+import { deployCustomObjectInstancesGroup, isCustomObjectInstanceChanges } from './custom_object_instances_deploy'
 import { getLookUpName, getLookupNameForDataInstances } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import nestedInstancesAuthorInformation from './filters/author_information/nested_instances'
 import { buildFetchProfile } from './fetch_profile/fetch_profile'
-import {
-  APEX_CLASS_METADATA_TYPE,
-  ArtificialTypes,
-  CUSTOM_FIELD,
-  CUSTOM_OBJECT,
-  CUSTOM_OBJECT_ID_FIELD,
-  FLOW_METADATA_TYPE,
-  LAST_MODIFIED_DATE,
-  ORDERED_MAP_PREFIX,
-  OWNER_ID,
-  PROFILE_RELATED_METADATA_TYPES,
-  WAVE_DATAFLOW_METADATA_TYPE,
-} from './constants'
 import {
   buildFilePropsMetadataQuery,
   buildMetadataQuery,
@@ -235,6 +236,7 @@ export const allFilters: Array<FilterCreator> = [
   topicsForObjectsFilter,
   globalValueSetFilter,
   staticResourceFileExtFilter,
+  staticResourceZipTimestamps,
   extendTriggersMetadataFilter,
   profilePathsFilter,
   territoryFilter,
@@ -289,6 +291,7 @@ export const allFilters: Array<FilterCreator> = [
   flowCoordinatesFilter,
   // createChangedAtSingletonInstanceFilter should run last
   changedAtSingletonFilter,
+  addParentToInstancesWithinFolderFilter,
 ]
 
 export interface SalesforceAdapterParams {
@@ -344,6 +347,7 @@ const METADATA_TO_RETRIEVE = [
   'CustomPermission',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
+  'DiscoveryAIModel',
   'Document', // contains encoded zip content, is under a folder
   'DocumentFolder',
   'EclairGeoData', // contains encoded zip content
@@ -444,8 +448,6 @@ const getIncludedTypesFromElementsSource = async (
     .filter(metadataType => !isCustomObjectSync(metadataType))
     // custom types (CustomMetadata / CustomObject (non-standard) / CustomSettings)
     .filter(metadataType => !isCustomType(metadataType))
-    // settings types
-    .filter(metadataType => !metadataType.isSettings)
     .filter(type => metadataQuery.isTypeMatch(apiNameSync(type) ?? ''))
     .toArray()
 
@@ -453,9 +455,6 @@ type CreateFiltersRunnerParams = {
   fetchProfile: FetchProfile
   contextOverrides?: Partial<FilterContext>
 }
-
-export const isOrderedMapTypeOrRefType = (typeRef: TypeElement | TypeReference): boolean =>
-  typeRef.elemID.name.startsWith(ORDERED_MAP_PREFIX)
 
 const isFieldWithOrderedMapAnnotation = (field: Field): boolean =>
   Object.values(field.getTypeSync().annotationRefTypes).some(isOrderedMapTypeOrRefType)
@@ -647,13 +646,14 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
     progressReporter.reportProgress({ message: 'Fetching Metadata Settings types' })
     const standardSettingsMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? StandardSettingsMetaType : undefined
-    const settingsTypes = fetchProfile.isFeatureEnabled('retrieveSettings')
-      ? await this.fetchMetadataSettingsTypes({
-          instances: metadataInstancesElements,
-          knownTypes: hardCodedTypesMap,
-          standardSettingsMetaType,
-        })
-      : []
+    const settingsTypes =
+      fetchProfile.isFeatureEnabled('retrieveSettings') && !withChangesDetection
+        ? await this.fetchMetadataSettingsTypes({
+            instances: metadataInstancesElements,
+            knownTypes: hardCodedTypesMap,
+            standardSettingsMetaType,
+          })
+        : []
 
     const elements = [
       ...[metadataMetaType, standardSettingsMetaType].filter(isDefined),
@@ -924,7 +924,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
   }
 
   @logDuration('fetching Metadata Settings types')
-  private async fetchMetadataSettingsTypes({
+  public async fetchMetadataSettingsTypes({
     instances,
     knownTypes,
     standardSettingsMetaType,

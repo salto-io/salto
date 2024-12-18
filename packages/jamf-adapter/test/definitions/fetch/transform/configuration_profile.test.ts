@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { adjustConfigurationProfile } from '../../../../src/definitions/fetch/transforms'
+import { SALTO_MASKED_VALUE } from '../../../../src/definitions/fetch/transforms/utils'
 
 describe('adjust configuration profile', () => {
   it('should throw an error if value is not a record', async () => {
@@ -72,6 +73,23 @@ describe('adjust configuration profile', () => {
         value: {
           general: {},
           self_service: { security: { field: 'do not delete me please' } },
+        },
+      })
+    })
+  })
+  describe('maskPayloadsPassword', () => {
+    it('should mask passwords within payloads', async () => {
+      const value = {
+        general: {
+          payloads:
+            '<?xml version="1.0" encoding="UTF-8"?><plist version="1"><dict><key>Password</key><string>1234</string></dict></plist>',
+        },
+      }
+      await expect(adjustConfigurationProfile({ value, context: {}, typeName: 'typeName' })).resolves.toEqual({
+        value: {
+          general: {
+            payloads: `<?xml version="1.0" encoding="UTF-8"?><plist version="1"><dict><key>Password</key><string>${SALTO_MASKED_VALUE}</string></dict></plist>`,
+          },
         },
       })
     })

@@ -13,8 +13,8 @@ import {
   OAuthRequestParameters,
   OauthAccessTokenResponse,
   Values,
+  ProgressReporter,
   DeployOptions,
-  CancelServiceAsyncTaskInput, ProgressReporter,
 } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { DeployResult } from '@salto-io/jsforce-types'
@@ -223,29 +223,26 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
-export type SalesforceDeployProgressReporter = ProgressReporter & {
+export type DeployProgressReporter = ProgressReporter & {
   reportMetadataProgress: (args: { result: DeployResult; suffix?: string }) => void
   reportDataProgress: (successInstances: number) => void
 }
 
 export type SalesforceAdapterDeployOptions = DeployOptions & {
-  progressReporter: SalesforceDeployProgressReporter
-}
-
-export type SalesforceAdapterCancelValidationOptions = CancelServiceAsyncTaskInput & {
-  progressReporter: SalesforceDeployProgressReporter
+  progressReporter: DeployProgressReporter
 }
 
 export const createDeployProgressReporter = async (
   progressReporter: ProgressReporter,
   client: SalesforceClient,
-): Promise<SalesforceDeployProgressReporter> => {
+): Promise<DeployProgressReporter> => {
+  let wasDeploymentIdReported = false
   let deployResult: DeployResult | undefined
   let suffix: string | undefined
   let deployedDataInstances = 0
   const baseUrl = await client.getUrl()
 
-  const linkToSalesforceDeployment = ({ id, checkOnly }: Pick<DeployResult, 'id' | 'checkOnly'>): string => {
+  const linkToSalesforceDeployment = ({ id, checkOnly }: DeployResult): string => {
     if (!baseUrl) {
       return ''
     }
@@ -281,6 +278,15 @@ export const createDeployProgressReporter = async (
     reportMetadataProgress: args => {
       deployResult = args.result
       suffix = args.suffix
+      if (!wasDeploymentIdReported && deployResult.id) {
+        wasDeploymentIdReported = true
+        const message = `Deployment with ID ${deployResult.id}  was created in Salesforce.`
+        log.debug(message)
+        progressReporter.reportProgress({
+          message,
+          asyncTaskId: deployResult.id,
+        })
+      }
       reportProgress()
     },
     reportDataProgress: successInstances => {
@@ -299,7 +305,7 @@ export const adapter: Adapter = {
       credentials,
       config: config[CLIENT_CONFIG],
     })
-    let salesforceDeployProgressReporterPromise: Promise<SalesforceDeployProgressReporter> | undefined
+    let deployProgressReporterPromise: Promise<DeployProgressReporter> | undefined
 
     const createSalesforceAdapter = (): SalesforceAdapter => {
       const { elementsSource, getElemIdFunc } = context
@@ -327,24 +333,24 @@ export const adapter: Adapter = {
 
       deploy: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        salesforceDeployProgressReporterPromise =
-          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        deployProgressReporterPromise =
+          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.deploy({
           ...opts,
-          progressReporter: await salesforceDeployProgressReporterPromise,
+          progressReporter: await deployProgressReporterPromise,
         })
       },
 
       validate: async opts => {
         const salesforceAdapter = createSalesforceAdapter()
-        salesforceDeployProgressReporterPromise =
-          salesforceDeployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
+        deployProgressReporterPromise =
+          deployProgressReporterPromise ?? createDeployProgressReporter(opts.progressReporter, client)
         return salesforceAdapter.validate({
           ...opts,
-          progressReporter: await salesforceDeployProgressReporterPromise,
+          progressReporter: await deployProgressReporterPromise,
         })
       },
-      cancelServiceAsyncTask: async opts => createSalesforceAdapter().cancelServiceAsyncTask(opts),
+
       deployModifiers: {
         changeValidator: createChangeValidator({
           config,

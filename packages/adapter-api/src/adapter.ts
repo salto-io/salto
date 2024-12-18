@@ -57,6 +57,7 @@ export type DeployResult<T extends ChangeDataType = ChangeDataType> = SaltoDeplo
 
 export type Progress = {
   message: string
+  asyncTaskId?: string
 }
 
 export type ProgressReporter = {
@@ -175,8 +176,17 @@ export type AdapterOperationsContext = {
   accountName?: string
 } & AdapterBaseContext
 
-export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
-export type AdapterFailureInstallResult = { success: false; errors: string[] }
+export type AdapterSuccessInstallResult = {
+  success: true
+  installedVersion: string
+  installedVersions: string[]
+}
+
+export type AdapterFailureInstallResult = {
+  success: false
+  errors: string[]
+}
+
 export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureInstallResult
 
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult): result is AdapterSuccessInstallResult =>

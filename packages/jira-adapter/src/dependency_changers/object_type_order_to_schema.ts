@@ -7,7 +7,6 @@
  */
 
 import {
-  DependencyChange,
   DependencyChanger,
   InstanceElement,
   RemovalChange,
@@ -18,13 +17,8 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
-import { SetId } from '@salto-io/lowerdash/src/collections/set'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ORDER_TYPE } from '../constants'
-
-const createDependencyChange = (objectTypeOrderKey: SetId, objectSchemaKey: SetId): DependencyChange[] => [
-  dependencyChange('remove', objectTypeOrderKey, objectSchemaKey),
-]
 
 /*
  * This dependency changer is used to remove a dependency from objectTypeOrder to its schema
@@ -56,12 +50,7 @@ export const objectTypeOrderToSchemaDependencyChanger: DependencyChanger = async
   return objectTypeOrderChanges
     .filter(change => hasValidParent(getChangeData(change.change)))
     .flatMap(change => {
-      const objectTypeOrderChange = change as deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>
-      const parentObjectSchemaKey = fullNameToChangeKey[
-        getParent(getChangeData(change.change)).elemID.getFullName()
-      ] as SetId
-      return parentObjectSchemaKey === undefined
-        ? []
-        : createDependencyChange(objectTypeOrderChange.key, parentObjectSchemaKey)
+      const parentObjectSchemaKey = fullNameToChangeKey[getParent(getChangeData(change.change)).elemID.getFullName()]
+      return parentObjectSchemaKey === undefined ? [] : dependencyChange('remove', change.key, parentObjectSchemaKey)
     })
 }

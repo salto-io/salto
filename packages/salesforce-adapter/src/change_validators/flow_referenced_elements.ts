@@ -33,13 +33,11 @@ const isFlowElement = (fields: FieldMap): boolean => 'processMetadataValues' in 
 const isFlowElementName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
   isFlowElement(parent.fields) && path.name === 'name' && _.isString(value)
 
-const getFlowElements = (element: InstanceElement): { flowElements: Set<string>; duplicates: Set<string> } => {
+const getFlowElements = (element: InstanceElement): Set<string> => {
   const flowElements = new Set<string>()
-  const duplicates = new Set<string>()
   const findFlowElements: TransformFuncSync = ({ value, path, field }) => {
     if (!field || !path) return value
     if (isFlowElementName(value, path, field.parent)) {
-      if (flowElements.has(value)) duplicates.add(value)
       flowElements.add(value)
     }
     return value
@@ -50,7 +48,7 @@ const getFlowElements = (element: InstanceElement): { flowElements: Set<string>;
     type: element.getTypeSync(),
     transformFunc: findFlowElements,
   })
-  return { flowElements, duplicates }
+  return flowElements
 }
 
 const isTargetReference = (value: unknown, path: ElemID): value is string =>
@@ -75,20 +73,18 @@ const hasMissingReferencedElements = (targetReferences: Set<string>, flowElement
 const hasFlowReferenceError = ({
   targetReferences,
   flowElements,
-  duplicates,
 }: {
   targetReferences: Set<string>
   flowElements: Set<string>
-  duplicates: Set<string>
-}): boolean => hasMissingReferencedElements(targetReferences, flowElements) || duplicates.size > 0
+}): boolean => hasMissingReferencedElements(targetReferences, flowElements)
 
-const getElemIDFlowElementsTargetReferencesAndDuplicates = (
+const getElemIDFlowElementsAndTargetReferences = (
   instance: InstanceElement,
-): { elemId: ElemID; targetReferences: Set<string>; flowElements: Set<string>; duplicates: Set<string> } => {
+): { elemId: ElemID; targetReferences: Set<string>; flowElements: Set<string> } => {
   const targetReferences = getTargetReferences(instance)
-  const { flowElements, duplicates } = getFlowElements(instance)
+  const flowElements = getFlowElements(instance)
   const elemId = instance.elemID
-  return { elemId, targetReferences, flowElements, duplicates }
+  return { elemId, targetReferences, flowElements }
 }
 
 const createMissingReferencedElementChangeError = (targetReferences: string[], elemId: ElemID): ChangeError => {
@@ -101,37 +97,20 @@ const createMissingReferencedElementChangeError = (targetReferences: string[], e
   }
 }
 
-const createDuplicateFlowElementChangeError = (duplicates: Set<string>, elemId: ElemID): ChangeError => {
-  const duplicateList = Array.from(duplicates)
-    .map(dup => `- ${dup}`)
-    .join('\n')
-  return {
-    elemID: elemId,
-    severity: 'Error',
-    message: 'Flow instance has conflicting flow element definitions',
-    detailedMessage: `The following flow elements have multiple definitions:\n${duplicateList}`,
-  }
-}
-
 const createChangeError = ({
   elemId,
   targetReferences,
   flowElements,
-  duplicates,
 }: {
   elemId: ElemID
   targetReferences: Set<string>
   flowElements: Set<string>
-  duplicates: Set<string>
 }): ChangeError[] => {
   const errors: ChangeError[] = []
   const isReferenceToMissingElement = (reference: string): boolean => !flowElements.has(reference)
   const missingReferencedElementsErrors: string[] = Array.from(targetReferences).filter(isReferenceToMissingElement)
   if (missingReferencedElementsErrors.length > 0) {
     errors.push(createMissingReferencedElementChangeError(missingReferencedElementsErrors, elemId))
-  }
-  if (duplicates.size > 0) {
-    errors.push(createDuplicateFlowElementChangeError(duplicates, elemId))
   }
   return errors
 }
@@ -142,7 +121,7 @@ const changeValidator: ChangeValidator = async changes =>
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-    .map(getElemIDFlowElementsTargetReferencesAndDuplicates)
+    .map(getElemIDFlowElementsAndTargetReferences)
     .filter(hasFlowReferenceError)
     .flatMap(createChangeError)
 

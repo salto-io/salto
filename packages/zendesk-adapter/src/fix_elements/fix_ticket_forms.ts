@@ -50,15 +50,12 @@ const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): 
   return customStatusesEnabled.enabled
 }
 
-const invalidChild = (child: Child): boolean => {
-  return (
-    _.isObject(child.required_on_statuses) &&
-    child.required_on_statuses.type === SOME_STATUSES &&
-    child.required_on_statuses.custom_statuses !== undefined &&
-    !_.isEmpty(child.required_on_statuses.custom_statuses) &&
-    child.required_on_statuses.statuses !== undefined
-  )
-}
+const invalidChild = (child: Child): boolean =>
+  _.isObject(child.required_on_statuses) &&
+  child.required_on_statuses.type === SOME_STATUSES &&
+  child.required_on_statuses.custom_statuses !== undefined &&
+  !_.isEmpty(child.required_on_statuses.custom_statuses) &&
+  child.required_on_statuses.statuses !== undefined
 
 const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceValue is InvalidTicketForm =>
   _.isArray(instanceValue.agent_conditions) &&

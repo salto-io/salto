@@ -158,8 +158,9 @@ export const getDefaultAdapterConfig = async (
 const getMergedDefaultAdapterConfig = async (
   adapter: string,
   accountName: string,
+  adapterCreators: Record<string, Adapter>,
 ): Promise<InstanceElement | undefined> => {
-  const defaultConfig = await getDefaultAdapterConfig(adapter, accountName) // todoe
+  const defaultConfig = await getDefaultAdapterConfig({ adapterName: adapter, accountName, adapterCreators })
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
@@ -278,11 +279,18 @@ export const getAdaptersCreatorConfigs = async (
   accountToServiceName: Record<string, string>,
   elemIdGetters: Record<string, ElemIdGetter> = {},
   resolveTypes = false,
-): Promise<Record<string, AdapterOperationsContext>> =>
-  Object.fromEntries(
+  adapterCreators?: Record<string, Adapter>,
+): Promise<Record<string, AdapterOperationsContext>> => {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  return Object.fromEntries(
     await Promise.all(
       accounts.map(async account => {
-        const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account], account)
+        const defaultConfig = await getMergedDefaultAdapterConfig(
+          accountToServiceName[account],
+          account,
+          actualAdapterCreator,
+        )
         const adapterElementSource = createElemIDReplacedElementsSource(
           filterElementsSource(elementsSource, account),
           account,
@@ -306,6 +314,7 @@ export const getAdaptersCreatorConfigs = async (
       }),
     ),
   )
+}
 
 export const getAdapters = async (
   adapters: ReadonlyArray<string>,
@@ -326,6 +335,8 @@ export const getAdapters = async (
       workspaceElementsSource,
       accountToServiceName,
       elemIdGetters,
+      undefined,
+      actualAdapterCreator,
     ),
     accountToServiceName,
     actualAdapterCreator,

@@ -93,6 +93,7 @@ const getAdapterAndContext = async ({
     elementsSource: elementSource.createInMemoryElementSource(resolvedElements),
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
+    adapterCreators,
   })
   const adapterContext = adaptersCreatorConfigs[accountName]
   return { adapter, adapterContext, resolvedElements }

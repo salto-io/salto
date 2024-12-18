@@ -14,57 +14,58 @@ import {
   InstanceElement,
   ChangeError,
   ElemID,
+  ObjectType,
+  FieldMap,
 } from '@salto-io/adapter-api'
-import { WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from '@salto-io/adapter-utils'
+import {
+  TransformFuncSync,
+  transformValuesSync,
+  WALK_NEXT_STEP,
+  walkOnElement,
+  WalkOnFunc,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { FLOW_METADATA_TYPE } from '../constants'
 
-type FlowConnector = {
-  targetReference: string
+const isFlowElement = (fields: FieldMap): boolean => 'processMetadataValues' in fields
+
+const isFlowElementName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
+  isFlowElement(parent.fields) && path.name === 'name' && _.isString(value)
+
+const getFlowElements = (element: InstanceElement): { flowElements: Set<string>; duplicates: Set<string> } => {
+  const flowElements = new Set<string>()
+  const duplicates = new Set<string>()
+  const findFlowElements: TransformFuncSync = ({ value, path, field }) => {
+    if (!field || !path) return value
+    if (isFlowElementName(value, path, field.parent)) {
+      flowElements.add(value)
+    }
+    return value
+  }
+  transformValuesSync({
+    values: element.value,
+    pathID: element.elemID,
+    type: element.getTypeSync(),
+    transformFunc: findFlowElements,
+  })
+  return { flowElements, duplicates }
 }
 
-type FlowElement = {
-  name: string
-}
-
-const isFlowConnector = (value: unknown): value is FlowConnector =>
-  _.isObject(value) && _.isString(_.get(value, 'targetReference'))
-
-const hasProcessMetadataValues = (instance: InstanceElement): boolean => {
-  const { processMetadataValues } = instance.getTypeSync().fields
-  return _.isArray(processMetadataValues)
-}
-
-const isFlowElement = (value: unknown): value is FlowElement => _.isObject(value) && _.isString(_.get(value, 'name'))
+const isTargetReference = (value: unknown, path: ElemID): value is string =>
+  path.name === 'targetReference' && _.isString(value)
 
 const getTargetReferences = (element: InstanceElement): Set<string> => {
   const targetReferences = new Set<string>()
-  const findFlowConnectors: WalkOnFunc = ({ value }) => {
-    if (hasProcessMetadataValues(value) && isFlowConnector(value)) {
-      targetReferences.add(value.targetReference)
+  const findFlowConnectors: WalkOnFunc = ({ value, path }) => {
+    if (isTargetReference(value, path)) {
+      targetReferences.add(value)
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
   }
   walkOnElement({ element, func: findFlowConnectors })
   return targetReferences
-}
-
-const getFlowElements = (element: InstanceElement): { flowElements: Set<string>; duplicates: Set<string> } => {
-  const flowElements = new Set<string>()
-  const duplicates = new Set<string>()
-  const findFlowElements: WalkOnFunc = ({ value }) => {
-    if (isFlowElement(value)) {
-      if (flowElements.has(value.name)) {
-        duplicates.add(value.name)
-      }
-      flowElements.add(value.name)
-    }
-    return WALK_NEXT_STEP.RECURSE
-  }
-  walkOnElement({ element, func: findFlowElements })
-  return { flowElements, duplicates }
 }
 
 const hasMissingReferencedElements = (targetReferences: Set<string>, flowElements: Set<string>): boolean =>
@@ -123,15 +124,18 @@ const createChangeError = ({
   duplicates: Set<string>
 }): ChangeError[] => {
   const errors: ChangeError[] = []
-  const isReferenceToMissingElement = (reference: string): boolean => flowElements.has(reference)
+  const isReferenceToMissingElement = (reference: string): boolean => !flowElements.has(reference)
   const missingReferencedElementsErrors: string[] = Array.from(targetReferences).filter(isReferenceToMissingElement)
-  errors.concat(createMissingReferencedElementChangeError(missingReferencedElementsErrors, elemId))
-  errors.concat(createDuplicateFlowElementChangeError(duplicates, elemId))
+  if (missingReferencedElementsErrors.length > 0) {
+    errors.push(createMissingReferencedElementChangeError(missingReferencedElementsErrors, elemId))
+  }
+  if (duplicates.size > 0) {
+    errors.push(createDuplicateFlowElementChangeError(duplicates, elemId))
+  }
   return errors
 }
 
-const changeValidator: ChangeValidator = async changes => {
-  const changeErrors: ChangeError[] = []
+const changeValidator: ChangeValidator = async changes =>
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -139,8 +143,6 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
     .map(getElemIDFlowElementsTargetReferencesAndDuplicates)
     .filter(hasFlowReferenceError)
-    .map(createChangeError)
-  return changeErrors
-}
+    .flatMap(createChangeError)
 
 export default changeValidator

@@ -19,8 +19,12 @@ export type NodeType<AdditionalAction extends string> = {
   typeActionChanges: Change<InstanceElement>[]
 }
 
+type ChangesByAction<AdditionalAction extends string> = Partial<
+  Record<ActionName | AdditionalAction, Change<InstanceElement>[]>
+>
+
 const getRelevantActions = <AdditionalAction extends string>(
-  changesByAction?: Partial<Record<ActionName | AdditionalAction, Change<InstanceElement>[]>>,
+  changesByAction?: ChangesByAction<AdditionalAction>,
   action?: ActionName | AdditionalAction,
 ): (ActionName | AdditionalAction)[] => {
   if (action !== undefined) {
@@ -37,24 +41,18 @@ const isStandardAction = <AdditionalAction extends string = never>(
   action: AdditionalAction | ActionName,
 ): action is ActionName => action === 'add' || action === 'remove' || action === 'modify'
 
-/**
- * define the dependencies when deploying a change group, based on the existing changes.
- * dependencies can be controlled at the type + action level
- */
-export const createDependencyGraph = <ClientOptions extends string, AdditionalAction extends string>({
-  defQuery,
-  dependencies,
-  changes,
-  ...changeContext
-}: {
-  defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>
-  dependencies?: ChangeDependency<AdditionalAction>[]
-  changes: Change<InstanceElement>[]
-} & Omit<ChangeAndContext, 'change'>): DAG<NodeType<AdditionalAction>> => {
-  const changesByTypeAndAction: Record<
-    string,
-    Partial<Record<ActionName | AdditionalAction, Change<InstanceElement>[]>>
-  > = {}
+const isStandardDependentAction = <AdditionalAction extends string = never>(
+  sourceAction: AdditionalAction | ActionName,
+  targetAction: AdditionalAction | ActionName,
+): boolean =>
+  isStandardAction(sourceAction) && isStandardAction(targetAction) && isDependentAction(sourceAction, targetAction)
+
+const groupChangesByTypeAndAction = <ClientOptions extends string, AdditionalAction extends string = never>(
+  changes: Change<InstanceElement>[],
+  defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>,
+  changeContext: Omit<ChangeAndContext, 'change'>,
+): Record<string, ChangesByAction<AdditionalAction>> => {
+  const changesByTypeAndAction: Record<string, ChangesByAction<AdditionalAction>> = {}
   changes.forEach(c => {
     const { typeName } = getChangeData(c).elemID
     const actions = (defQuery.query(typeName)?.toActionNames ?? toDefaultActionNames)({
@@ -73,6 +71,24 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       }
     })
   })
+  return changesByTypeAndAction
+}
+
+/**
+ * define the dependencies when deploying a change group, based on the existing changes.
+ * dependencies can be controlled at the type + action level
+ */
+export const createDependencyGraph = <ClientOptions extends string, AdditionalAction extends string>({
+  defQuery,
+  dependencies,
+  changes,
+  ...changeContext
+}: {
+  defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>
+  dependencies?: ChangeDependency<AdditionalAction>[]
+  changes: Change<InstanceElement>[]
+} & Omit<ChangeAndContext, 'change'>): DAG<NodeType<AdditionalAction>> => {
+  const changesByTypeAndAction = groupChangesByTypeAndAction(changes, defQuery, changeContext)
 
   const graph = new DAG<NodeType<AdditionalAction>>()
   Object.entries(changesByTypeAndAction).forEach(([typeName, mapping]) => {
@@ -114,11 +130,7 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
       )[]
       typeActions.forEach(typeAction => {
         recurseIntoActions.forEach(recurseIntoAction => {
-          if (
-            isStandardAction(typeAction) &&
-            isStandardAction(recurseIntoAction) &&
-            isDependentAction(typeAction, recurseIntoAction)
-          ) {
+          if (isStandardDependentAction(typeAction, recurseIntoAction)) {
             graph.addEdge(toNodeID(recurseIntoTypeName, recurseIntoAction), toNodeID(typeName, typeAction))
           }
         })

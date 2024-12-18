@@ -133,6 +133,27 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     defQuery.query(getFailedChangeID(elemID).typeName)?.failIfChangeHasErrors !== false &&
     !_.isEmpty(errors[getFailedChangeID(elemID).getFullName()]?.filter(e => e.severity === 'Error'))
 
+  const handleChangeFailure = (change: Change<InstanceElement>, err: Error): void => {
+    const { elemID } = getChangeData(change)
+    log.error('Deployment of %s (action %s) failed: %o', elemID, change.action, err)
+    const failedElemID = getFailedChangeID(elemID)
+    errors[failedElemID.getFullName()] ??= []
+    if (isSaltoError(err)) {
+      errors[failedElemID.getFullName()].push({
+        ...err,
+        elemID: failedElemID,
+      })
+    } else {
+      const message = `${err}`
+      errors[failedElemID.getFullName()].push({
+        message,
+        detailedMessage: message,
+        severity: 'Error',
+        elemID: failedElemID,
+      })
+    }
+  }
+
   await graph.walkAsync(async nodeID => {
     const { typeName, action, typeActionChanges } = graph.getData(nodeID)
 
@@ -169,23 +190,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
             })
             return change
           } catch (err) {
-            log.error('Deployment of %s (action %s) failed: %o', elemID, change.action, err)
-            const failedElemID = getFailedChangeID(getChangeData(change).elemID)
-            errors[failedElemID.getFullName()] ??= []
-            if (isSaltoError(err)) {
-              errors[failedElemID.getFullName()].push({
-                ...err,
-                elemID: failedElemID,
-              })
-            } else {
-              const message = `${err}`
-              errors[failedElemID.getFullName()].push({
-                message,
-                detailedMessage: message,
-                severity: 'Error',
-                elemID: failedElemID,
-              })
-            }
+            handleChangeFailure(change, err)
             return undefined
           }
         }),

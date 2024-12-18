@@ -25,7 +25,6 @@ import {
   ElemID,
   TypeElement,
   Value,
-  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DeployResult as SFDeployResult, DeployMessage } from '@salto-io/jsforce'
@@ -474,20 +473,6 @@ const quickDeployOrDeploy = async (
   return client.deploy(pkgData, { checkOnly }, createProgressReporterCallback())
 }
 
-const updateID = (change: Change, metaIds: Readonly<MetadataId[]>): Change => {
-  if (isAdditionOrModificationChange(change)) {
-    metaIds.forEach(metaId => {
-      if (
-        change.data.after.elemID.typeName === metaId.type &&
-        change.data.after.elemID.getFullNameParts().includes(metaId.fullName)
-      ) {
-        setInternalId(change.data.after, metaId.id)
-      }
-    })
-  }
-  return change
-}
-
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
   deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
@@ -624,14 +609,19 @@ export const deployMetadata = async (
     checkOnly ?? false,
   )
 
-  changes.forEach(change => updateID(change, successfulFullNames))
-
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
-    return successfulFullNames.some(successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName))
+    const metadataId = successfulFullNames.find(successfulId =>
+      changeDeployedIds[successfulId.type]?.has(successfulId.fullName),
+    )
+    if (metadataId) {
+      setInternalId(getChangeData(change), metadataId.id)
+      return true
+    }
+    return false
   }
 
   const postDeployRetrieveZipContent = sfDeployRes.details?.[0]?.retrieveResult?.zipFile

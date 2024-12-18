@@ -66,7 +66,7 @@ const addMissingIds = async (client: SalesforceClient, typeName: string, element
     const id = allIds[await apiName(element)]
     if (id === undefined) {
       errorElements.push(element)
-    } else if (id !== '') {
+    } else {
       setInternalId(element, id)
     }
   })

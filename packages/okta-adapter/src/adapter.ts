@@ -213,6 +213,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     this.paginator = paginator
 
+    const sharedContext = {}
     this.createFiltersRunner = usersPromise =>
       filterRunner(
         {
@@ -226,7 +227,7 @@ export default class OktaAdapter implements AdapterOperations {
           paginator: this.paginator,
           baseUrl: this.client.baseUrl,
           isOAuthLogin,
-          sharedContext: {},
+          sharedContext,
         },
         filterCreators,
         objects.concatObjects,
@@ -380,7 +381,6 @@ export default class OktaAdapter implements AdapterOperations {
         ],
       }
     }
-
     const getLookUpName = getLookUpNameCreator({
       enableMissingReferences: this.userConfig.fetch.enableMissingReferences,
       isUserTypeIncluded: this.fetchQuery.isTypeMatch(USER_TYPE_NAME),

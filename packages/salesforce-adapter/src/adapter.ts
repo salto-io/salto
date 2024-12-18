@@ -104,6 +104,7 @@ import cpqReferencableFieldReferencesFilter from './filters/cpq/referencable_fie
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
+import staticResourceZipTimestamps from './filters/static_resource_zip_timestamps'
 import xmlAttributesFilter from './filters/xml_attributes'
 import profilePathsFilter from './filters/profile_paths'
 import replaceFieldValuesFilter from './filters/replace_instance_field_values'
@@ -233,6 +234,7 @@ export const allFilters: Array<FilterCreator> = [
   topicsForObjectsFilter,
   globalValueSetFilter,
   staticResourceFileExtFilter,
+  staticResourceZipTimestamps,
   extendTriggersMetadataFilter,
   profilePathsFilter,
   territoryFilter,

@@ -171,9 +171,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
           } catch (err) {
             log.error('Deployment of %s (action %s) failed: %o', elemID, change.action, err)
             const failedElemID = getFailedChangeID(getChangeData(change).elemID)
-            if (errors[failedElemID.getFullName()] === undefined) {
-              errors[failedElemID.getFullName()] = []
-            }
+            errors[failedElemID.getFullName()] ??= []
             if (isSaltoError(err)) {
               errors[failedElemID.getFullName()].push({
                 ...err,
@@ -195,16 +193,15 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     )
       .filter(values.isDefined)
       .filter(change => {
-        const isSubResourceChange =
-          subResourceChangeIDToOriginChangeID[getChangeData(change).elemID.getFullName()] !== undefined
+        const { elemID } = getChangeData(change)
+        const isSubResourceChange = subResourceChangeIDToOriginChangeID[elemID.getFullName()] !== undefined
         if (isSubResourceChange) {
           log.debug(
             'Skipping subresource change %s, only top-level changes are marked as applied',
-            getChangeData(change).elemID.getFullName(),
+            elemID.getFullName(),
           )
           return false
         }
-        const { elemID } = getChangeData(change)
         if (shouldFailChange(elemID)) {
           log.error('Not marking change %s as successful due to partial failure', elemID.getFullName())
           return false

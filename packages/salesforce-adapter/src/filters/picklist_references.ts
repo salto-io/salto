@@ -122,7 +122,7 @@ const createReferencesForRecordType = (
       if (ref) {
         _.set(value, 'fullName', ref)
       } else {
-        log.warn('Failed to resolve picklist value %s in field %s', value.fullName, field.elemID.getFullName())
+        log.trace('Failed to resolve picklist value %s in field %s', value.fullName, field.elemID.getFullName())
       }
     })
   })

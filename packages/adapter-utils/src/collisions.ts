@@ -86,6 +86,22 @@ const logInstancesWithCollidingElemID = async (
     })
   })
 }
+// after SALTO-7088 is done, this function will replace logInstancesWithCollidingElemID
+const logInstancesWithCollidingElemIDV2 = (elemIDtoInstances: Record<string, InstanceElement[]>): void => {
+  Object.entries(elemIDtoInstances).forEach(([elemID, collideInstances]) => {
+    if (collideInstances.length <= 1) {
+      log.error('Collide instances length is less than or equal to 1 for elemID %s', elemID)
+      return
+    }
+    const type = collideInstances[0].elemID.typeName
+    const instancesCount = collideInstances.length
+    log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
+    const relevantInstanceValues = collideInstances.map(instance => _.pickBy(instance.value, val => val != null))
+    const relevantInstanceValuesStr = relevantInstanceValues.map(instValues => inspectValue(instValues)).join('\n')
+    log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
+  ${relevantInstanceValuesStr}`)
+  })
+}
 
 const getCollisionMessages = async ({
   elemIDtoInstances,
@@ -117,6 +133,66 @@ ${getInstancesDetailsMsg(instanceDetails, baseUrl, maxBreakdownDetailsElements)}
     }),
   )
   return collisionMessages
+}
+
+const createMarkdownLinkOrText = ({ text, url }: { text: string; url?: string }): string =>
+  url !== undefined ? `[${text}](${url})` : text
+
+const getInstancesMarkdownLinks = (instances: InstanceElement[]): string =>
+  instances
+    .map(instance =>
+      createMarkdownLinkOrText({
+        text: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
+        url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+      }),
+    )
+    .join(', ')
+
+const createWarningMessages = ({
+  elemIDtoInstances,
+  adapterName,
+  addChildrenMessage,
+}: {
+  elemIDtoInstances: Record<string, InstanceElement[]>
+  adapterName: string
+  addChildrenMessage?: boolean
+}): string[] =>
+  Object.entries(elemIDtoInstances).map(
+    ([
+      elemId,
+      collideInstances,
+    ]) => `${collideInstances.length} ${adapterName} elements ${addChildrenMessage ? 'and their child elements ' : ''}were not fetched, as they were mapped to a single ID ${elemId}:
+${getInstancesMarkdownLinks(collideInstances)}
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+${createMarkdownLinkOrText({ text: 'Learn about additional ways to resolve this issue', url: 'https://help.salto.io/en/articles/6927157-salto-id-collisions' })}`,
+  )
+
+// after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings
+export const getAndLogCollisionWarningsV2 = ({
+  instances,
+  addChildrenMessage,
+}: {
+  instances: InstanceElement[]
+  addChildrenMessage?: boolean
+}): SaltoError[] => {
+  if (instances.length === 0) {
+    return []
+  }
+  const adapterName = instances[0].elemID.adapter
+  const elemIDtoInstances = _.groupBy(instances, instance => instance.elemID.getFullName())
+  logInstancesWithCollidingElemIDV2(elemIDtoInstances)
+  const warningMessages = createWarningMessages({
+    elemIDtoInstances,
+    adapterName,
+    addChildrenMessage,
+  })
+  return warningMessages.map(warningMessage =>
+    createWarningFromMsg({
+      message: 'Some elements were not fetched due to Salto ID collisions',
+      detailedMessage: warningMessage,
+    }),
+  )
 }
 
 export const getAndLogCollisionWarnings = async ({

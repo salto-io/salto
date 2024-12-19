@@ -10,6 +10,7 @@ import {
   BuiltinTypes,
   Element,
   ElemID,
+  GLOBAL_ADAPTER,
   InstanceElement,
   ObjectType,
   PlaceholderObjectType,
@@ -17,7 +18,12 @@ import {
   TypeReference,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { buildElementsSourceFromElements, buildLazyShallowTypeResolverElementsSource } from '../src/element_source'
+import {
+  buildElementsSourceFromElements,
+  buildLazyShallowTypeResolverElementsSource,
+  createElemIDReplacedElementsSource,
+  filterElementsSource,
+} from '../src/element_source'
 import * as utilsModule from '../src/utils'
 
 const { toArrayAsync } = collections.asynciterable
@@ -235,6 +241,44 @@ describe('elementSource', () => {
       expect(resolvedElement).toEqual(await elementsSource.get(objectType.elemID))
       const callsOnTheObjectType = resolveTypeShallowSpy.mock.calls.filter(args => args[0] === objectType)
       expect(callsOnTheObjectType).toHaveLength(1)
+    })
+  })
+  describe('filterElementsSource', () => {
+    const ACCOUNT1 = 'account1'
+    const ACCOUNT2 = 'account2'
+    let account1Element: Element
+    let account2Element: Element
+    let anotherAccount2Element: Element
+    let globalElement: Element
+    beforeEach(() => {
+      account1Element = new ObjectType({ elemID: new ElemID(ACCOUNT1, 'type1') })
+      account2Element = new ObjectType({ elemID: new ElemID(ACCOUNT2, 'type1') })
+      anotherAccount2Element = new ObjectType({ elemID: new ElemID(ACCOUNT2, 'type2') })
+      globalElement = new ObjectType({ elemID: new ElemID(GLOBAL_ADAPTER, 'globalType') })
+    })
+    it('should return only elements from the specified account and the global adapter', async () => {
+      const filteredElementsSource = filterElementsSource(
+        buildElementsSourceFromElements([account1Element, account2Element, anotherAccount2Element, globalElement]),
+        ACCOUNT2,
+      )
+      expect(await toArrayAsync(await filteredElementsSource.getAll())).toEqual([
+        account2Element,
+        anotherAccount2Element,
+        globalElement,
+      ])
+    })
+  })
+  describe('createElemIDReplacedElementsSource', () => {
+    it('should return the original elements source when the account name is the adapter name', async () => {
+      const source = buildElementsSourceFromElements([new ObjectType({ elemID: new ElemID('adapter', 'type1') })])
+      expect(createElemIDReplacedElementsSource(source, 'adapter', 'adapter')).toBe(source)
+    })
+    it('should return a new elements source with replaced elemIDs when the account name is different from the adapter name', async () => {
+      const source = buildElementsSourceFromElements([new ObjectType({ elemID: new ElemID('account', 'type1') })])
+      const replacedSource = createElemIDReplacedElementsSource(source, 'account', 'adapter')
+      const replacedElements = await toArrayAsync(await replacedSource.getAll())
+      expect(replacedElements).toHaveLength(1)
+      expect(replacedElements[0].elemID.getFullName()).toEqual('adapter.type1')
     })
   })
 })

@@ -16,17 +16,22 @@ import {
   AdapterAuthentication,
   Element,
   ReadOnlyElementsSource,
-  GLOBAL_ADAPTER,
   ObjectType,
   isInstanceElement,
   isType,
   TypeElement,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, getSubtypes, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  createDefaultInstanceFromType,
+  createElemIDReplacedElementsSource,
+  filterElementsSource,
+  getSubtypes,
+  resolvePath,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
-  createAdapterReplacedID,
   expressions,
   merger,
   updateElementsWithAlternativeAccount,
@@ -123,44 +128,6 @@ const getMergedDefaultAdapterConfig = async (
 ): Promise<InstanceElement | undefined> => {
   const defaultConfig = await getDefaultAdapterConfig(adapter, accountName)
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
-}
-
-export const createElemIDReplacedElementsSource = (
-  elementsSource: ReadOnlyElementsSource,
-  account: string,
-  adapter: string,
-): ReadOnlyElementsSource =>
-  account === adapter
-    ? elementsSource
-    : {
-        getAll: async () =>
-          awu(await elementsSource.getAll()).map(async element => {
-            const ret = element.clone()
-            await updateElementsWithAlternativeAccount([ret], adapter, account, elementsSource)
-            return ret
-          }),
-        get: async id => {
-          const element = (await elementsSource.get(createAdapterReplacedID(id, account)))?.clone()
-          if (element) {
-            await updateElementsWithAlternativeAccount([element], adapter, account, elementsSource)
-          }
-          return element
-        },
-        list: async () => awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
-        has: async id => {
-          const transformedId = createAdapterReplacedID(id, account)
-          return elementsSource.has(transformedId)
-        },
-      }
-
-const filterElementsSource = (elementsSource: ReadOnlyElementsSource, adapterName: string): ReadOnlyElementsSource => {
-  const isRelevantID = (elemID: ElemID): boolean => elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER
-  return {
-    getAll: async () => awu(await elementsSource.getAll()).filter(elem => isRelevantID(elem.elemID)),
-    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
-    list: async () => awu(await elementsSource.list()).filter(isRelevantID),
-    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
-  }
 }
 
 export const createResolvedTypesElementsSource = (elementsSource: ReadOnlyElementsSource): ReadOnlyElementsSource => {

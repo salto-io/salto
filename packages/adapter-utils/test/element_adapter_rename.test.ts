@@ -19,12 +19,12 @@ import {
   TypeReference,
   UnresolvedReference,
 } from '@salto-io/adapter-api'
-import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import {
   buildContainerTypeId,
   createAdapterReplacedID,
   updateElementsWithAlternativeAccount,
-} from '../../src/element_adapter_rename'
+} from '../src/element_adapter_rename'
+import { buildElementsSourceFromElements } from '../src/element_source'
 
 describe('buildContainerTypeId', () => {
   it.each([
@@ -164,7 +164,7 @@ describe('rename adapter in elements', () => {
         [objectToChange, instanceToChange, unresolvedReferenceInstanceToChange],
         newServiceName,
         serviceName,
-        createInMemoryElementSource(),
+        buildElementsSourceFromElements([]),
       )
     })
 

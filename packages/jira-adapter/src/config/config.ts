@@ -296,6 +296,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'fieldContext',
   'emptyProjectScopedContext',
   'filter',
+  'outboundTransition',
 ]
 
 export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]

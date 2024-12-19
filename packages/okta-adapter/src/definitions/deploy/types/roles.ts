@@ -30,7 +30,7 @@ const log = logger(module)
 export const adjustRoleAdditionChange: definitions.AdjustFunction<
   definitions.deploy.ChangeAndExtendedContext
 > = async ({ value, context }) => {
-  const { sharedContext } = context
+  const { sharedContext, change } = context
   validatePlainObject(value, ROLE_TYPE_NAME)
   const permissions = _.get(value, 'permissions')
   if (!_.isArray(permissions)) {
@@ -40,7 +40,7 @@ export const adjustRoleAdditionChange: definitions.AdjustFunction<
   const mappedPermissions = permissions.map(permission => {
     if (_.isPlainObject(permission?.conditions)) {
       // naclCase permission.label because the label includes dots
-      _.set(sharedContext, naclCase(permission.label), true)
+      _.set(sharedContext, [getChangeData(change).elemID.getFullName(), naclCase(permission.label)], true)
     }
     return permission.label
   })
@@ -61,3 +61,24 @@ export const isPermissionChangeOfAddedRole = (
   const parentChange = changeGroup.changes.find(c => getChangeData(c).elemID.getFullName() === parentName)
   return parentChange !== undefined && isAdditionChange(parentChange)
 }
+
+/**
+ * Condition to determine if we should update the role permission.
+ * role permission should be updated on Role modification changes, or on Role addition changes that contains permissions with conditions.
+ */
+export const shouldUpdateRolePermission: definitions.deploy.DeployRequestCondition['custom'] =
+  () =>
+  ({ change, changeGroup, sharedContext }) => {
+    const inst = getChangeData(change)
+    const parent = getParents(inst)[0]
+    const parentName = isReferenceExpression(parent) ? parent.elemID.getFullName() : undefined
+    if (parentName !== undefined && isPermissionChangeOfAddedRole(change, changeGroup)) {
+      // only make request for permission that their "conditions" were not deployed yet
+      if (_.get(sharedContext, [parentName, naclCase(inst.value.label)]) !== undefined) {
+        log.debug('deploying permission condition for %s', getChangeData(change).elemID.getFullName())
+        return true
+      }
+      return false
+    }
+    return true
+  }

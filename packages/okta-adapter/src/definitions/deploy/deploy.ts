@@ -17,7 +17,7 @@ import {
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
-import { getParents, naclCase, validatePlainObject } from '@salto-io/adapter-utils'
+import { getParents, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -61,7 +61,7 @@ import { isCustomApp } from '../fetch/types/application'
 import { addBrandIdToRequest } from './types/email_domain'
 import { isSystemScope } from './types/authorization_servers'
 import { isActiveGroupRuleChange } from './types/group_rules'
-import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole } from './types/roles'
+import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole, shouldUpdateRolePermission } from './types/roles'
 
 const log = logger(module)
 
@@ -1375,19 +1375,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: { omit: ['label'] },
               },
               condition: {
-                custom:
-                  () =>
-                  ({ change, changeGroup, sharedContext }) => {
-                    if (isPermissionChangeOfAddedRole(change, changeGroup)) {
-                      // only make request for permission that their "conditions" were not deployed yet
-                      if (sharedContext[naclCase(getChangeData(change).value.label)]) {
-                        log.debug('deploying permission condition for %s', getChangeData(change).elemID.getFullName())
-                        return true
-                      }
-                      return false
-                    }
-                    return true
-                  },
+                custom: shouldUpdateRolePermission,
               },
             },
           ],

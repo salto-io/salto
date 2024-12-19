@@ -371,6 +371,16 @@ const createCustomizations = ({
             },
           },
         },
+        AppProvisioning: {
+          typeName: 'AppProvisioning',
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+        },
         ...(usePrivateAPI
           ? {
               GroupPush: {

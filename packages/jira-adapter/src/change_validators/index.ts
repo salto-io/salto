@@ -25,7 +25,7 @@ import { inboundTransitionChangeValidator } from './workflowsV2/inbound_transiti
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
-import { boardColumnConfigValidator } from './board_culomn_config'
+import { boardColumnConfigValidator } from './boards/board_column_config'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automation/automations'
 import { lockedFieldsValidator } from './locked_fields'

@@ -74,7 +74,7 @@ export const shouldUpdateRolePermission: definitions.deploy.DeployRequestConditi
     const parentName = isReferenceExpression(parent) ? parent.elemID.getFullName() : undefined
     if (parentName !== undefined && isPermissionChangeOfAddedRole(change, changeGroup)) {
       // only make request for permission that their "conditions" were not deployed yet
-      if (_.get(sharedContext, [parentName, naclCase(inst.value.label)]) !== undefined) {
+      if (_.get(sharedContext, [parentName, naclCase(inst.value.label)]) === true) {
         log.debug('deploying permission condition for %s', getChangeData(change).elemID.getFullName())
         return true
       }

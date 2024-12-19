@@ -24,9 +24,10 @@ import {
   getField,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FIELD_ANNOTATIONS, LABEL } from '../constants'
+import { FIELD_ANNOTATIONS, LABEL, PROFILE_METADATA_TYPE } from '../constants'
+import { isInstanceOfTypeSync } from '../filters/utils'
 import { isFieldOfCustomObject } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -34,11 +35,12 @@ const { awu } = collections.asynciterable
 type FieldDef = {
   name: string
   nested?: boolean
+  types?: types.NonEmptyArray<string>
 }
 
 const FIELD_NAME_TO_INNER_CONTEXT_FIELD: Record<string, FieldDef> = {
   applicationVisibilities: { name: 'application' },
-  recordTypeVisibilities: { name: 'recordType', nested: true },
+  recordTypeVisibilities: { name: 'recordType', nested: true, types: [PROFILE_METADATA_TYPE] },
 
   // TODO(SALTO-4990): Remove once picklistsAsMaps FF is deployed and removed.
   standardValue: { name: 'label' },
@@ -237,15 +239,19 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
           if (defaultsCount > 1) {
             return [createInstanceChangeError(field, defaultsContexts, after)]
           }
-          if (defaultsCount === 1) {
-            const singleDefaultIsValid = findNotVisibleDefault(innerValue, startLevelType)
-            if (singleDefaultIsValid !== undefined) {
-              return [createInstanceChangeErrorSingleDefaultNoVisible(fieldPath, singleDefaultIsValid, after)]
+          const typesToCheck = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].types
+          if (typesToCheck !== undefined && typesToCheck.some(type => isInstanceOfTypeSync(type)(after))) {
+            if (defaultsCount === 1) {
+              const singleDefaultIsValid = findNotVisibleDefault(innerValue, startLevelType)
+              if (singleDefaultIsValid !== undefined) {
+                return [createInstanceChangeErrorSingleDefaultNoVisible(fieldPath, singleDefaultIsValid, after)]
+              }
+              return []
             }
-            return []
+            const hasNoDefaultError = isVisibleNoDefaultError(innerValue, startLevelType)
+            return hasNoDefaultError ? [createInstanceChangeErrorNoDefault(fieldPath, _key, after)] : []
           }
-          const hasNoDefaultError = isVisibleNoDefaultError(innerValue, startLevelType)
-          return hasNoDefaultError ? [createInstanceChangeErrorNoDefault(fieldPath, _key, after)] : []
+          return []
         })
       }
       const { defaults: defaultsContexts, count: defaultsCount } = await findMultipleDefaults(

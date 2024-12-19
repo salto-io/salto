@@ -406,12 +406,7 @@ const replaceFormulasWithTemplates = ({
     if (!_.isString(value)) {
       return value
     }
-    try {
-      // Checks if this is a JSON string
-      JSON.parse(value)
-    } catch {
-      return value
-    }
+
     return extractTemplate(value, [ID_KEY_IN_JSON_REGEX], expression => {
       if (!ID_KEY_IN_JSON_REGEX.test(expression)) {
         return expression

@@ -41,7 +41,7 @@ const getMissingProperties = (
     return undefined
   }
   const { profile } = appGroupInstance.value
-  if (profile === undefined || !_.isObject(profile)) {
+  if (profile === undefined || !_.isPlainObject(profile)) {
     log.trace(`profile field is undefined or not an object in instance ${appGroupInstance.elemID.getFullName()}`)
     return undefined
   }
@@ -93,7 +93,7 @@ export const appGroupAssignmentProfileAttributesValidator: ChangeValidator = asy
     .map(({ instance, missingProperties }) => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Cannot deploy application group assignments due to extra profile attributes.',
-      detailedMessage: `The following profile attributes appear in this group assignment but are not defined in the related AppUserSchema: [${missingProperties.join(',')}]. Please add these attributes to the Application User Schema ${getElementPrettyName(appUserSchemaByAppName[getParentElemID(instance).getFullName()])} or remove them from this group assignment.`,
+      message: 'This element contains properties that are not defined in the application schema.',
+      detailedMessage: `The following profile attributes are not defined in the related application schema: [${missingProperties.join(',')}]. Please add these attributes to the Application User Schema ${getElementPrettyName(appUserSchemaByAppName[getParentElemID(instance).getFullName()])} or remove them from this group assignment.`,
     }))
 }

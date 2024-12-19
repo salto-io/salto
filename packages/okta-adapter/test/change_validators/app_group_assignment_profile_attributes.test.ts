@@ -90,9 +90,9 @@ describe('appGroupAssignmentProfileAttributesValidator', () => {
         {
           elemID: appGroupInst.elemID,
           severity: 'Error',
-          message: 'Cannot deploy application group assignments due to extra profile attributes.',
+          message: 'This element contains properties that are not defined in the application schema.',
           detailedMessage:
-            'The following profile attributes appear in this group assignment but are not defined in the related AppUserSchema: [b,c]. Please add these attributes to the Application User Schema app1UserSchema_alias or remove them from this group assignment.',
+            'The following profile attributes are not defined in the related application schema: [b,c]. Please add these attributes to the Application User Schema app1UserSchema_alias or remove them from this group assignment.',
         },
       ])
     })

@@ -76,6 +76,7 @@ describe('groupAssignmentToAppUserSchemaHandler', () => {
           source: appGroupInst.elemID,
           target: appUserSchema1.elemID.createNestedID('definitions', 'custom', 'properties', 'a'),
           type: 'strong',
+          sourceScope: 'value',
         },
       ])
     })

@@ -7,7 +7,6 @@
  */
 
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import {
   DependencyChanger,
   InstanceElement,
@@ -21,8 +20,6 @@ import { deployment } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import { getParent, hasValidParent } from '@salto-io/adapter-utils'
 import { APP_GROUP_ASSIGNMENT_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
-
-const log = logger(module)
 
 /*
  * Ensure AppUserSchema changes are deployed before ApplicationGroupAssignment changes.
@@ -54,22 +51,14 @@ export const addAppGroupToAppUserSchemaDependency: DependencyChanger = async cha
   }
 
   return appGroupChanges
+    .filter(appGroupChange => hasValidParent(getChangeData(appGroupChange.change)))
     .map(appGroupChange => {
-      try {
-        const parentApp = getParent(getChangeData(appGroupChange.change))
-        const appUserSchemaChange = appUserSchemaChangesByAppName[parentApp.elemID.getFullName()]
-        if (appUserSchemaChange === undefined) {
-          return undefined
-        }
-        return dependencyChange('add', appGroupChange.key, appUserSchemaChange.key)
-      } catch (err) {
-        log.error(
-          'Failed to add dependency from ApplicationGroupAssignment %s to AppUserSchema: %o',
-          getChangeData(appGroupChange.change).elemID.getFullName(),
-          err,
-        )
+      const parentApp = getParent(getChangeData(appGroupChange.change))
+      const appUserSchemaChange = appUserSchemaChangesByAppName[parentApp.elemID.getFullName()]
+      if (appUserSchemaChange === undefined) {
         return undefined
       }
+      return dependencyChange('add', appGroupChange.key, appUserSchemaChange.key)
     })
     .filter(values.isDefined)
 }

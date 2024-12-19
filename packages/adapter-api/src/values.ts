@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import path from 'path'
 import { inspect } from 'util'
 import { hash as hashUtils } from '@salto-io/lowerdash'
@@ -13,6 +14,8 @@ import { hash as hashUtils } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement, isVariable } from './elements'
+
+const log = logger(module)
 
 export type PrimitiveValue = string | boolean | number | null | undefined
 
@@ -72,7 +75,11 @@ export class StaticFile {
   }
 
   async getContent(): Promise<Buffer | undefined> {
-    return this.internalContent
+    const content = this.internalContent
+    if (content === undefined) {
+      log.warn('Missing content on static file: %s', this.filepath)
+    }
+    return content
   }
 
   public isEqual(other: StaticFile): boolean {

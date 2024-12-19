@@ -497,6 +497,8 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(mockQueryResult({})),
   },
   identity: mockFunction<Connection['identity']>().mockImplementation(async () => mockIdentity('')),
-  request: mockFunction<Connection['request']>().mockImplementation(async req => mockRestResponses[req]),
+  request: mockFunction<Connection['request']>().mockImplementation(
+    async req => mockRestResponses[_.isString(req) ? req : req.url],
+  ),
   instanceUrl: MOCK_INSTANCE_URL,
 })

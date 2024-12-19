@@ -1523,4 +1523,30 @@ describe('salesforce client', () => {
       })
     })
   })
+  describe('cancelMetadataValidateOrDeployTask', () => {
+    it('should cancel the validation/deployment and poll until the operation is done', async () => {
+      const dodoScope = nock('http://dodo22')
+        .patch(/.*/, /.*/)
+        .reply(200, {
+          deployResult: {
+            status: 'Canceling',
+          },
+        })
+        .patch(/.*/, /.*/)
+        .reply(200, {
+          deployResult: {
+            status: 'Canceled',
+          },
+        })
+      const { errors } = await client.cancelMetadataValidateOrDeployTask({ taskId: '123' })
+      expect(errors).toBeEmpty()
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should throw when canceling the validation/deployment fails', async () => {
+      const dodoScope = nock('http://dodo22').patch(/.*/, /.*/).reply(500)
+      const { errors } = await client.cancelMetadataValidateOrDeployTask({ taskId: '123' })
+      expect(errors).toHaveLength(1)
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+  })
 })

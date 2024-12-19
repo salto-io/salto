@@ -94,15 +94,15 @@ const getFlowNodesAndTargetReferences = (
 const createMissingReferencedElementChangeError = (targetReference: string, elemId: ElemID): ChangeError => ({
   elemID: elemId,
   severity: 'Error',
-  message: 'Flow instance has references to missing flow nodes',
-  detailedMessage: `${targetReference} is referencing a non-existing flow node.\n`,
+  message: 'Reference to missing Flow Element',
+  detailedMessage: `The Flow Element "${targetReference}" does not exist.`,
 })
 
 const createUnreferencedElementChangeError = (flowNode: string, elemId: ElemID): ChangeError => ({
   elemID: elemId,
   severity: 'Info',
-  message: 'Flow instance has flow nodes that are not referenced',
-  detailedMessage: `${flowNode} is not referenced anywhere in the flow.`,
+  message: 'Unused Flow Element',
+  detailedMessage: `The Flow Element “${flowNode}” isn’t being used in the Flow.`,
 })
 
 const createChangeError = ({

@@ -20,9 +20,9 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import multipleDefaultsValidator from '../../src/change_validators/default_rules'
 import { createField } from '../utils'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
-describe('multiple defaults change validator', () => {
+describe('default rules change validator', () => {
   const runChangeValidatorOnUpdate = (
     before: Field | InstanceElement,
     after: Field | InstanceElement,
@@ -615,6 +615,76 @@ describe('multiple defaults change validator', () => {
           changeErrors.forEach(error => {
             expect(error.severity).toEqual('Error')
           })
+        })
+      })
+    })
+    describe('PermissionSet', () => {
+      describe('has no defaults', () => {
+        const createAfterInstance = (
+          beforeInstance: InstanceElement,
+          changedDefaultValue: boolean = true,
+        ): InstanceElement => {
+          const afterInstance = beforeInstance.clone()
+          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.visible = changedDefaultValue
+          return afterInstance
+        }
+        const type = new ObjectType({
+          elemID: new ElemID(SALESFORCE, PERMISSION_SET_METADATA_TYPE),
+          fields: {
+            applicationVisibilities: {
+              refType: new MapType(
+                new ObjectType({
+                  elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
+                  fields: { default: { refType: BuiltinTypes.BOOLEAN } },
+                  annotations: {
+                    [METADATA_TYPE]: 'ProfileApplicationVisibility',
+                  },
+                }),
+              ),
+            },
+            recordTypeVisibilities: {
+              refType: new MapType(
+                new MapType(
+                  new ObjectType({
+                    elemID: new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility'),
+                    fields: { default: { refType: BuiltinTypes.BOOLEAN } },
+                    annotations: {
+                      [METADATA_TYPE]: 'ProfileRecordTypeVisibility',
+                    },
+                  }),
+                ),
+              ),
+            },
+          },
+          annotations: {
+            [METADATA_TYPE]: PERMISSION_SET_METADATA_TYPE,
+          },
+        })
+        it('should not raise errors', async () => {
+          const beforeInstance = createInstanceElement(
+            {
+              fullName: 'ProfileInstance',
+              recordTypeVisibilities: {
+                test1: {
+                  testRecordType1: {
+                    visible: false,
+                  },
+                  testRecordType2: {
+                    visible: false,
+                  },
+                },
+                test2: {
+                  testRecordType3: {
+                    visible: true,
+                  },
+                },
+              },
+            },
+            type,
+          )
+          const afterInstance = createAfterInstance(beforeInstance)
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+          expect(changeErrors).toHaveLength(0)
         })
       })
     })

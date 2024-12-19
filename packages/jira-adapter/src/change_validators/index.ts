@@ -74,6 +74,7 @@ import { optionValueValidator } from './field_contexts/option_value'
 import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_search_deployment'
 import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
 import { fieldValidator } from './field'
+import { outboundTransitionValidator } from './workflowsV2/outbound_transition'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -156,6 +157,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     enhancedSearchDeployment: enhancedSearchDeploymentValidator,
     emptyProjectScopedContext: emptyProjectScopedContextValidator,
     field: fieldValidator,
+    outboundTransition: outboundTransitionValidator,
   }
 
   return createChangeValidator({

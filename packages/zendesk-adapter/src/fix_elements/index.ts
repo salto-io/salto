@@ -14,6 +14,7 @@ import { FixElementsArgs } from './types'
 import { removeDupUsersHandler } from './remove_dup_users'
 import { mergeListsHandler } from './merge_lists'
 import { deployArticlesAsDraftHandler } from './deploy_articles_as_drafts'
+import { fixTicketFormsHandler } from './fix_ticket_forms'
 
 export const createFixElementFunctions = (args: FixElementsArgs): Record<string, FixElementsFunc> => ({
   ..._.mapValues(customReferenceHandlers, handler => handler.removeWeakReferences(args)),
@@ -22,4 +23,5 @@ export const createFixElementFunctions = (args: FixElementsArgs): Record<string,
   // removingDupes needs to be after fallbackUsers
   removeDupUsers: removeDupUsersHandler(args),
   deployArticlesAsDraft: deployArticlesAsDraftHandler(args),
+  fixTicketForms: fixTicketFormsHandler(args),
 })

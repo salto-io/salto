@@ -64,12 +64,29 @@ export type ActionDependency<AdditionalAction extends string> = {
   second: ActionName | AdditionalAction
 }
 
+export type RecurseIntoPath = {
+  fieldPath: string[]
+  // the type name in the specified path, the type should have its own deploy definition
+  typeName: string
+  changeIdFields: string[]
+  // when provided, only changes matching the condition will recurse into specified path
+  condition?: DeployRequestCondition
+  // when missing, all actions are used. currently only standard actions are supported
+  onActions?: ActionName[]
+}
+
 export type InstanceDeployApiDefinitions<AdditionalAction extends string, ClientOptions extends string> = {
   // a sorted list of requests to make in order to deploy a change of this type
   requestsByAction: DefaultWithCustomizations<
     DeployableRequestDefinition<ClientOptions>[],
     ActionName | AdditionalAction
   >
+
+  // when provided, changes will be calculated from the data at the specified path,
+  // and deployed according to the definition of the provided type.
+  // this is mainly used for deploying array fields, where each array item must be deployed separately.
+  // note: the data is not removed from the main change, but can be excluded using the main change's deploy definition.
+  recurseIntoPath?: RecurseIntoPath[]
 
   // how many changes of this type can be deployed in parallel
   // default = unlimited (max concurrency)

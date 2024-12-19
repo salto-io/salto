@@ -8,7 +8,7 @@
 
 import _ from 'lodash'
 import { definitions } from '@salto-io/adapter-components'
-import { getParents, naclCase, safeJsonStringify, validatePlainObject } from '@salto-io/adapter-utils'
+import { getParents, safeJsonStringify, validatePlainObject } from '@salto-io/adapter-utils'
 import {
   Change,
   ChangeGroup,
@@ -39,8 +39,7 @@ export const adjustRoleAdditionChange: definitions.AdjustFunction<
   }
   const mappedPermissions = permissions.map(permission => {
     if (_.isPlainObject(permission?.conditions)) {
-      // naclCase permission.label because the label includes dots
-      _.set(sharedContext, [getChangeData(change).elemID.getFullName(), naclCase(permission.label)], true)
+      _.set(sharedContext, [getChangeData(change).elemID.getFullName(), permission.label], true)
     }
     return permission.label
   })
@@ -74,7 +73,7 @@ export const shouldUpdateRolePermission: definitions.deploy.DeployRequestConditi
     const parentName = isReferenceExpression(parent) ? parent.elemID.getFullName() : undefined
     if (parentName !== undefined && isPermissionChangeOfAddedRole(change, changeGroup)) {
       // only make request for permission that their "conditions" were not deployed yet
-      if (_.get(sharedContext, [parentName, naclCase(inst.value.label)]) === true) {
+      if (_.get(sharedContext, [parentName, inst.value.label]) === true) {
         log.debug('deploying permission condition for %s', getChangeData(change).elemID.getFullName())
         return true
       }

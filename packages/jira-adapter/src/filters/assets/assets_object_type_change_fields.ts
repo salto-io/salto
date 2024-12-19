@@ -17,7 +17,7 @@ const log = logger(module)
 const filter: FilterCreator = ({ config }) => ({
   name: 'assetsObjectTypeChangeFields',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+    if (!config.fetch.enableJSM) {
       return
     }
     elements

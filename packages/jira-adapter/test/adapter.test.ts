@@ -728,7 +728,6 @@ describe('adapter', () => {
       config.value.fetch.convertUsersIds = false
       config.value.fetch.enableScriptRunnerAddon = true
       config.value.fetch.enableJSM = true
-      config.value.fetch.enableJSMPremium = true
 
       srAdapter = adapterCreator.operations({
         elementsSource,

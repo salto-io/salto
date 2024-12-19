@@ -26,6 +26,7 @@ import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
 import { boardColumnConfigValidator } from './boards/board_column_config'
+import { kanbanBoardBacklogValidator } from './boards/kanban_board_backlog'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automation/automations'
 import { lockedFieldsValidator } from './locked_fields'
@@ -156,6 +157,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     enhancedSearchDeployment: enhancedSearchDeploymentValidator,
     emptyProjectScopedContext: emptyProjectScopedContextValidator,
     field: fieldValidator,
+    kanbanBoardBacklog: kanbanBoardBacklogValidator,
   }
 
   return createChangeValidator({

@@ -25,14 +25,13 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME } from '../../constants'
+import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, KANBAN_TYPE } from '../../constants'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
 
-const KANBAN_TYPE = 'kanban'
 export const COLUMNS_CONFIG_FIELD = 'columnConfig'
 
 const log = logger(module)
@@ -76,11 +75,12 @@ const getColumnsName = async (id: string, client: JiraClient): Promise<string[] 
   return response.data[COLUMNS_CONFIG_FIELD].columns.map(({ name }) => name)
 }
 
-const convertColumn = (column: Values): Values => ({
+const convertColumn = (column: Values, isKanPlanColumn: boolean): Values => ({
   name: column.name,
   mappedStatuses: (column.statuses ?? []).map((id: string) => ({ id })),
   min: column.min ?? '',
   max: column.max ?? '',
+  isKanPlanColumn,
 })
 
 export const deployColumns = async (
@@ -105,7 +105,7 @@ export const deployColumns = async (
   }
 
   const instance = getChangeData(resolvedChange)
-
+  const isKanban = instance.value.type === KANBAN_TYPE
   await client.putPrivate({
     url: '/rest/greenhopper/1.0/rapidviewconfig/columns',
     data: {
@@ -116,19 +116,20 @@ export const deployColumns = async (
             : 'none_',
       },
       rapidViewId: instance.value.id,
-      mappedColumns: instance.value[COLUMNS_CONFIG_FIELD].columns.map(convertColumn),
+      mappedColumns: instance.value[COLUMNS_CONFIG_FIELD].columns.map(
+        // first column in kanban is always system backlog, enforced by a CV
+        (column: Values, index: number) => convertColumn(column, index === 0 && isKanban),
+      ),
     },
   })
 
   const columnsToUpdate = instance.value[COLUMNS_CONFIG_FIELD].columns.map(({ name }: Values) => name)
 
   const updatedColumns = await getColumnsName(instance.value.id, client)
-  if (instance.value.type === KANBAN_TYPE) {
+  if (isKanban) {
     log.info(
       `Columns of ${getChangeData(change).elemID.getFullName()} are ${updatedColumns?.join(', ')}, and the columnsToUpdate are ${columnsToUpdate.join(', ')}`,
     )
-    // In Kanban boards, the first column is always backlog, which is non-editable.
-    updatedColumns?.shift()
   }
 
   if (updatedColumns !== undefined && !_.isEqual(columnsToUpdate, updatedColumns)) {
@@ -143,41 +144,7 @@ export const deployColumns = async (
   }
 }
 
-const removeRedundantColumns = async (instance: InstanceElement, client: JiraClient): Promise<void> => {
-  if (instance.value.type !== KANBAN_TYPE) {
-    return
-  }
-
-  log.info(
-    `Removing first column from ${instance.elemID.getFullName()} with ${instance.value[COLUMNS_CONFIG_FIELD].columns.map((col: Values) => col.name).join(', ')}`,
-  )
-  // In Kanban boards, the first column is always backlog, which is non-editable.
-  // Not removing it will make us create another backlog column.
-  instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
-
-  // In some rare cases, we get from the API two Backlog columns.
-  // So we need to check if it's a redundant columns or it was really
-  // added by the user.
-  if (instance.value[COLUMNS_CONFIG_FIELD].columns[0]?.name !== 'Backlog') {
-    return
-  }
-
-  log.info(`${instance.elemID.getFullName()} has two backlog columns`)
-  const columnsName = await getColumnsName(instance.value.id, client)
-
-  if (columnsName === undefined) {
-    return
-  }
-
-  if (columnsName[1] !== 'Backlog') {
-    log.info(`${instance.elemID.getFullName()} removing second backlog column`)
-    instance.value[COLUMNS_CONFIG_FIELD].columns.shift()
-  } else {
-    log.info(`${instance.elemID.getFullName()} leaving second backlog column`)
-  }
-}
-
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'boardColumnsFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)
@@ -193,8 +160,6 @@ const filter: FilterCreator = ({ config, client }) => ({
             column.statuses = column.statuses.map((status: Values) => status.id)
           }
         })
-
-        await removeRedundantColumns(instance, client)
       })
 
     if (!config.client.usePrivateAPI) {

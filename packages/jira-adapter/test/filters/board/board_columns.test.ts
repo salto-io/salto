@@ -6,8 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { MockInterface } from '@salto-io/test-utils'
+import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
@@ -20,12 +19,10 @@ describe('boardColumnsFilter', () => {
   let type: ObjectType
   let columnConfigType: ObjectType
   let config: JiraConfig
-  let connection: MockInterface<clientUtils.APIConnection>
 
   beforeEach(async () => {
-    const { client, paginator, connection: conn } = mockClient()
+    const { client, paginator } = mockClient()
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    connection = conn
 
     filter = boardColumnsFilter(
       getFilterParams({
@@ -82,21 +79,7 @@ describe('boardColumnsFilter', () => {
       expect(instance.value.config[COLUMNS_CONFIG_FIELD]).toBeUndefined()
     })
 
-    it('should remove first column if kanban', async () => {
-      await filter.onFetch([instance])
-      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
-        columns: [
-          {
-            name: 'someColumn',
-            statuses: ['1'],
-          },
-        ],
-        constraintType: 'issueCount',
-      })
-    })
-
-    it('should not remove first column if scrum', async () => {
-      instance.value.type = 'scrum'
+    it('should not remove first column if kanban', async () => {
       await filter.onFetch([instance])
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
@@ -112,57 +95,8 @@ describe('boardColumnsFilter', () => {
       })
     })
 
-    it('should remove second redundant backlog column', async () => {
-      instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
-      connection.get.mockResolvedValue({
-        status: 200,
-        data: {
-          [COLUMNS_CONFIG_FIELD]: {
-            columns: [
-              {
-                name: 'Backlog',
-              },
-              {
-                name: 'someColumn',
-              },
-            ],
-          },
-        },
-      })
-
-      await filter.onFetch([instance])
-      expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
-        columns: [
-          {
-            name: 'someColumn',
-            statuses: ['1'],
-          },
-        ],
-        constraintType: 'issueCount',
-      })
-    })
-
-    it('should not remove second backlog column if it is returned from the config request', async () => {
-      instance.value.config[COLUMNS_CONFIG_FIELD].columns.splice(1, 0, { name: 'Backlog' })
-      connection.get.mockResolvedValue({
-        status: 200,
-        data: {
-          [COLUMNS_CONFIG_FIELD]: {
-            columns: [
-              {
-                name: 'Backlog',
-              },
-              {
-                name: 'Backlog',
-              },
-              {
-                name: 'someColumn',
-              },
-            ],
-          },
-        },
-      })
-
+    it('should not remove first column if scrum', async () => {
+      instance.value.type = 'scrum'
       await filter.onFetch([instance])
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [

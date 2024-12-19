@@ -406,7 +406,7 @@ const replaceFormulasWithTemplates = ({
     if (!_.isString(value)) {
       return value
     }
-
+    // we assume that the value that will be caught here is a json with zendesk placeholders
     return extractTemplate(value, [ID_KEY_IN_JSON_REGEX], expression => {
       if (!ID_KEY_IN_JSON_REGEX.test(expression)) {
         return expression

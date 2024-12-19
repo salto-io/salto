@@ -28,6 +28,10 @@ type InvalidTicketForm = {
   }[]
 }
 
+type InvalidTicketFormInstance = InstanceElement & {
+  value: InvalidTicketForm
+}
+
 const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): Promise<boolean> => {
   if (elementSource === undefined) {
     log.error('Returning that customStatuses is disabled since no element source was provided')
@@ -57,9 +61,9 @@ const invalidChild = (child: Child): boolean =>
   !_.isEmpty(child.required_on_statuses.custom_statuses) &&
   child.required_on_statuses.statuses !== undefined
 
-const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceValue is InvalidTicketForm =>
-  _.isArray(instanceValue.agent_conditions) &&
-  instanceValue.agent_conditions.some(
+const isInvalidTicketForm = (instance: InstanceElement): instance is InvalidTicketFormInstance =>
+  _.isArray(instance.value.agent_conditions) &&
+  instance.value.agent_conditions.some(
     condition => _.isArray(condition.child_fields) && condition.child_fields.some(invalidChild),
   )
 
@@ -67,7 +71,7 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   const clonedInst = inst.clone()
   // it is true because if we get to returnValidInstance function its after we got true from isInvalidTicketForm so
   // custom_statuses is enabled
-  if (isInvalidTicketForm(clonedInst.value)) {
+  if (isInvalidTicketForm(clonedInst)) {
     clonedInst.value.agent_conditions.forEach(condition =>
       condition.child_fields.forEach(child => {
         if (invalidChild(child)) {
@@ -103,8 +107,7 @@ export const fixTicketFormsHandler: FixElementsHandler =
       }
     }
 
-    const invalidTicketForms = elements.filter(isInstanceElement).filter(inst => isInvalidTicketForm(inst.value))
-    const fixedTicketForms = invalidTicketForms.map(returnValidInstance)
+    const fixedTicketForms = elements.filter(isInstanceElement).filter(isInvalidTicketForm).map(returnValidInstance)
     const errors = fixedTicketForms.map(toError)
 
     return {

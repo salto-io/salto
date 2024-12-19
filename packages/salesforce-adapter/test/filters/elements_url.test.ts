@@ -8,12 +8,14 @@
 
 import {
   BuiltinTypes,
+  Change,
   CORE_ANNOTATIONS,
   ElemID,
   Field,
   InstanceElement,
   ObjectType,
   ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import mockClient from '../client'
@@ -29,6 +31,9 @@ describe('elements url filter', () => {
   let client: SalesforceClient
   let connection: MockInterface<Connection>
   let standardObject: ObjectType
+  let beforeStandardObject: ObjectType
+  let afterStandardObject: ObjectType
+  let change: Change
   const mockQueryAll: jest.Mock = jest.fn()
   SalesforceClient.prototype.queryAll = mockQueryAll
 
@@ -39,12 +44,25 @@ describe('elements url filter', () => {
       elemID: new ElemID('salesforce', 'Account'),
       annotations: { apiName: 'Account', metadataType: 'CustomObject' },
     })
+    beforeStandardObject = new ObjectType({
+      elemID: new ElemID('salesforce', 'Account'),
+      annotations: { apiName: 'Account', metadataType: 'CustomObject' },
+    })
+    afterStandardObject = new ObjectType({
+      elemID: new ElemID('salesforce', 'Account'),
+      annotations: { apiName: 'Account', metadataType: 'CustomObject' },
+    })
+    change = toChange({ before: beforeStandardObject, after: afterStandardObject })
   })
 
   it('should add object type its service url', async () => {
     connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
     await filter.onFetch?.([standardObject])
     expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view',
+    )
+    await filter.onDeploy?.([change])
+    expect(afterStandardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
       'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/Details/view',
     )
   })
@@ -55,6 +73,14 @@ describe('elements url filter', () => {
     standardObject.fields.standardField = field
     await filter.onFetch?.([standardObject])
     expect(field.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view',
+    )
+    const changeField = new Field(afterStandardObject, 'standardField', BuiltinTypes.NUMBER, {
+      apiName: 'standardField',
+    })
+    afterStandardObject.fields.standardField = changeField
+    await filter.onDeploy?.([change])
+    expect(changeField.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
       'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/standardField/view',
     )
   })
@@ -70,6 +96,18 @@ describe('elements url filter', () => {
     )
     await filter.onFetch?.([instance])
     expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
+    )
+    const instanceForChange = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      new ObjectType({
+        elemID: new ElemID('salesforce', 'BusinessHoursSettings'),
+        annotations: { metadataType: 'BusinessHoursSettings' },
+      }),
+    )
+    change = toChange({ before: undefined, after: instanceForChange })
+    await filter.onDeploy?.([change])
+    expect(instanceForChange.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
       'https://salto5-dev-ed.lightning.force.com/lightning/setup/BusinessHours/home',
     )
   })
@@ -94,6 +132,27 @@ describe('elements url filter', () => {
     expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
       'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view',
     )
+
+    const instanceForChange = new InstanceElement(
+      'testLayout',
+      new ObjectType({
+        elemID: new ElemID('salesforce', 'Layout'),
+        annotations: { metadataType: 'Layout' },
+      }),
+      { internalId: 'someId' },
+      [],
+      {
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(afterStandardObject.elemID)],
+      },
+    )
+
+    await filter.onDeploy?.([
+      toChange({ before: undefined, after: instanceForChange }),
+      toChange({ before: undefined, after: afterStandardObject }),
+    ])
+    expect(instanceForChange.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe(
+      'https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view',
+    )
   })
 
   it('there is no instance url should not add the service url', async () => {
@@ -101,6 +160,8 @@ describe('elements url filter', () => {
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([standardObject])
     expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    await filter.onDeploy?.([toChange({ before: undefined, after: afterStandardObject })])
+    expect(afterStandardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })
 
   it('when instance url is an invalid salesforce url should not add the service url', async () => {
@@ -108,6 +169,8 @@ describe('elements url filter', () => {
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([standardObject])
     expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    await filter.onDeploy?.([toChange({ before: undefined, after: afterStandardObject })])
+    expect(afterStandardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })
 
   it('should not service url for unknown element', async () => {
@@ -117,6 +180,8 @@ describe('elements url filter', () => {
     })
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([element])
+    expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    await filter.onDeploy?.([toChange({ before: undefined, after: element })])
     expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })
 
@@ -150,6 +215,8 @@ describe('elements url filter', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
+      const resOnDeploy = await filter.onDeploy?.([toChange({ before: undefined, after: afterStandardObject })]) // ask tamir what should happen if ondeploy throws an error
+      expect(resOnDeploy).toBe(undefined)
     })
   })
 })

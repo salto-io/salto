@@ -17,13 +17,7 @@ import {
   ObjectType,
   FieldMap,
 } from '@salto-io/adapter-api'
-import {
-  TransformFuncSync,
-  transformValuesSync,
-  WALK_NEXT_STEP,
-  walkOnElement,
-  WalkOnFunc,
-} from '@salto-io/adapter-utils'
+import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isInstanceOfTypeSync } from '../filters/utils'
 import { FLOW_METADATA_TYPE } from '../constants'
@@ -33,12 +27,21 @@ const isFlowNode = (fields: FieldMap): boolean => 'locationX' in fields && 'loca
 const isFlowNodeName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
   isFlowNode(parent.fields) && path.name === 'name' && _.isString(value)
 
-const getFlowNodes = (element: InstanceElement): Map<string, ElemID> => {
+const isTargetReference = (value: unknown, path: ElemID): value is string =>
+  path.name === 'targetReference' && _.isString(value)
+
+const getFlowNodesAndTargetReferences = (
+  element: InstanceElement,
+): { targetReferences: Map<string, ElemID>; flowNodes: Map<string, ElemID> } => {
   const flowNodes = new Map<string, ElemID>()
-  const findFlowNodes: TransformFuncSync = ({ value, path, field }) => {
+  const targetReferences = new Map<string, ElemID>()
+  const findFlowNodesAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
     if (!field || !path) return value
     if (isFlowNodeName(value, path, field.parent)) {
       flowNodes.set(value, path)
+    }
+    if (isTargetReference(value, path)) {
+      targetReferences.set(value, path)
     }
     return value
   }
@@ -46,25 +49,9 @@ const getFlowNodes = (element: InstanceElement): Map<string, ElemID> => {
     values: element.value,
     pathID: element.elemID,
     type: element.getTypeSync(),
-    transformFunc: findFlowNodes,
+    transformFunc: findFlowNodesAndTargetReferences,
   })
-  return flowNodes
-}
-
-const isTargetReference = (value: unknown, path: ElemID): value is string =>
-  path.name === 'targetReference' && _.isString(value)
-
-const getTargetReferences = (element: InstanceElement): Map<string, ElemID> => {
-  const targetReferences = new Map<string, ElemID>()
-  const findFlowConnectors: WalkOnFunc = ({ value, path }) => {
-    if (isTargetReference(value, path)) {
-      targetReferences.set(value, path)
-      return WALK_NEXT_STEP.SKIP
-    }
-    return WALK_NEXT_STEP.RECURSE
-  }
-  walkOnElement({ element, func: findFlowConnectors })
-  return targetReferences
+  return { flowNodes, targetReferences }
 }
 
 const hasMissingReferencedElements = (targetReferences: string[], flowNodes: string[]): boolean =>
@@ -82,14 +69,6 @@ const hasFlowReferenceError = ({
 }): boolean =>
   hasMissingReferencedElements(Array.from(targetReferences.keys()), Array.from(flowNodes.keys())) ||
   hasUnreferencedElements(Array.from(targetReferences.keys()), Array.from(flowNodes.keys()))
-
-const getFlowNodesAndTargetReferences = (
-  instance: InstanceElement,
-): { targetReferences: Map<string, ElemID>; flowNodes: Map<string, ElemID> } => {
-  const targetReferences = getTargetReferences(instance)
-  const flowNodes = getFlowNodes(instance)
-  return { targetReferences, flowNodes }
-}
 
 const createMissingReferencedElementChangeError = (targetReference: string, elemId: ElemID): ChangeError => ({
   elemID: elemId,

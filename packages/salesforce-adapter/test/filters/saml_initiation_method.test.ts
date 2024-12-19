@@ -13,17 +13,19 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   createRestriction,
+  ElemID,
 } from '@salto-io/adapter-api'
-import filterCreator, {
-  CANVAS_METADATA_TYPE_ID,
-  SAML_INIT_METHOD_FIELD_NAME,
-} from '../../src/filters/saml_initiation_method'
+import filterCreator, { SAML_INIT_METHOD_FIELD_NAME } from '../../src/filters/saml_initiation_method'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
+import { CANVAS_METADATA_TYPE, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 describe('saml initiation method filter', () => {
   const mockType = new ObjectType({
-    elemID: CANVAS_METADATA_TYPE_ID,
+    elemID: new ElemID(SALESFORCE, CANVAS_METADATA_TYPE),
+    annotations: {
+      [METADATA_TYPE]: CANVAS_METADATA_TYPE,
+    },
     fields: {
       [SAML_INIT_METHOD_FIELD_NAME]: {
         refType: BuiltinTypes.STRING,

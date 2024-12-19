@@ -43,14 +43,9 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { ReferenceIndexEntry } from 'index'
-import {
-  findElement,
-  applyDetailedChanges,
-  safeJsonStringify,
-  toDetailedChangeFromBaseChange,
-} from '@salto-io/adapter-utils'
+import { applyDetailedChanges, safeJsonStringify, toDetailedChangeFromBaseChange } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import { MockInterface } from '@salto-io/test-utils'
+import { makeResolvablePromise, MockInterface, Resolvable } from '@salto-io/test-utils'
 import { parser } from '@salto-io/parser'
 import { InvalidValueValidationError, ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
@@ -2119,10 +2114,7 @@ salesforce.staticFile staticFileInstance {
       const baseChange = toChange({ before: lead, after: leadAfter })
       const changesWithBaseChange = [change1, change2].map(dc => ({ ...dc, baseChange }))
       const updateNaclFilesResult = await workspace.updateNaclFiles(changesWithBaseChange)
-      lead = findElement(
-        await awu(await (await workspace.elements()).getAll()).toArray(),
-        new ElemID('salesforce', 'lead'),
-      ) as ObjectType
+      lead = await (await workspace.elements()).get(new ElemID('salesforce', 'lead'))
       expect(updateNaclFilesResult).toEqual({
         naclFilesChangesCount: 2,
         stateOnlyChangesCount: 0,
@@ -3126,20 +3118,65 @@ salesforce.staticFile staticFileInstance {
     })
   })
   describe('close', () => {
+    let mockCreate: jest.Mock
+    let mockClose: jest.Mock
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      mockCreate = jest.fn()
+      mockClose = jest.fn()
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined, undefined, {
+        create: mockCreate,
+        close: mockClose,
+      })
+    })
+
     it('should close the remoteMapCreator', async () => {
-      const mockClose = jest.fn()
-      const workspace = await createWorkspace(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        { create: inMemRemoteMapCreator().create, close: mockClose },
-      )
       await workspace.close()
       expect(mockClose).toHaveBeenCalledTimes(1)
+    })
+
+    describe('waiting for workspaceState', () => {
+      let buildWorkspaceState: Resolvable<undefined>
+
+      beforeEach(() => {
+        const remoteMapCreator = inMemRemoteMapCreator()
+        buildWorkspaceState = makeResolvablePromise(undefined)
+        mockCreate.mockImplementation(async opts => {
+          await buildWorkspaceState.promise
+          return remoteMapCreator.create(opts)
+        })
+      })
+
+      describe('when workspaceState is not build', () => {
+        it('should close the remoteMapCreator', async () => {
+          const closeWorkspacePromise = workspace.close()
+          expect(mockClose).toHaveBeenCalled()
+
+          await closeWorkspacePromise
+          expect(mockClose).toHaveBeenCalledTimes(1)
+
+          expect(mockCreate).not.toHaveBeenCalled()
+        })
+      })
+
+      describe('when workspaceState is being built', () => {
+        it('should wait for workspaceState before closing the remoteMapCreator', async () => {
+          const elementsPromise = workspace.elements()
+
+          const closeWorkspacePromise = workspace.close()
+          expect(mockClose).not.toHaveBeenCalled()
+
+          buildWorkspaceState.resolve()
+
+          await closeWorkspacePromise
+          expect(mockClose).toHaveBeenCalledTimes(1)
+
+          expect(mockCreate).toHaveBeenCalled()
+
+          await elementsPromise
+        })
+      })
     })
   })
   describe('renameEnvironment', () => {

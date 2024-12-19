@@ -5,20 +5,19 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { Element, ElemID, InstanceElement, isStaticFile, StaticFile } from '@salto-io/adapter-api'
-import { findInstances } from '@salto-io/adapter-utils'
+import { Element, InstanceElement, isStaticFile, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import mime from 'mime-types'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { SALESFORCE, METADATA_CONTENT_FIELD } from '../constants'
+import { METADATA_CONTENT_FIELD, STATIC_RESOURCE_METADATA_TYPE } from '../constants'
+import { isInstanceOfTypeSync } from './utils'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const STATIC_RESOURCE_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'StaticResource')
 export const CONTENT_TYPE = 'contentType'
 const RESOURCE_SUFFIX_LENGTH = 'resource'.length
 
@@ -69,8 +68,7 @@ const filterCreator: FilterCreator = () => ({
    * from '.resource' to the correct extension based on the CONTENT_TYPE field
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const staticResourceInstances = findInstances(elements, STATIC_RESOURCE_METADATA_TYPE_ID)
-    await awu(staticResourceInstances).forEach(modifyFileExtension)
+    await awu(elements.filter(isInstanceOfTypeSync(STATIC_RESOURCE_METADATA_TYPE))).forEach(modifyFileExtension)
   },
 })
 

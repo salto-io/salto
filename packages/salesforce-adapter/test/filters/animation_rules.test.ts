@@ -13,20 +13,20 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   createRestriction,
+  ElemID,
 } from '@salto-io/adapter-api'
-import { findElement } from '@salto-io/adapter-utils'
-import filterCreator, {
-  ANIMATION_FREQUENCY,
-  ANIMATION_RULE_TYPE_ID,
-  RECORD_TYPE_CONTEXT,
-} from '../../src/filters/animation_rules'
+import filterCreator, { ANIMATION_FREQUENCY, RECORD_TYPE_CONTEXT } from '../../src/filters/animation_rules'
 import * as constants from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
+import { isInstanceOfTypeSync } from '../../src/filters/utils'
 
 describe('animation rules filter', () => {
   const animationRuleType = new ObjectType({
-    elemID: ANIMATION_RULE_TYPE_ID,
+    elemID: new ElemID(constants.SALESFORCE, constants.ANIMATION_RULE_METADATA_TYPE),
+    annotations: {
+      [constants.METADATA_TYPE]: constants.ANIMATION_RULE_METADATA_TYPE,
+    },
     fields: {
       [ANIMATION_FREQUENCY]: {
         refType: BuiltinTypes.STRING,
@@ -66,12 +66,15 @@ describe('animation rules filter', () => {
   describe('on fetch', () => {
     it('should rename instances', async () => {
       await filter.onFetch(testElements)
-      const animationRuleInstance = findElement(testElements, mockAnimationRuleInstance.elemID) as InstanceElement
-      expect(animationRuleInstance.value[ANIMATION_FREQUENCY]).toEqual('always')
-      expect(animationRuleInstance.value[RECORD_TYPE_CONTEXT]).toEqual('Custom')
+      const animationRuleInstance = testElements.find(isInstanceOfTypeSync(constants.ANIMATION_RULE_METADATA_TYPE))
+      expect(animationRuleInstance?.value[ANIMATION_FREQUENCY]).toEqual('always')
+      expect(animationRuleInstance?.value[RECORD_TYPE_CONTEXT]).toEqual('Custom')
     })
     it('should not rename if value is not short', async () => {
-      const animationRuleInstance = findElement(testElements, mockAnimationRuleInstance.elemID) as InstanceElement
+      const animationRuleInstance = testElements.find(
+        isInstanceOfTypeSync(constants.ANIMATION_RULE_METADATA_TYPE),
+      ) as InstanceElement
+      expect(animationRuleInstance).toBeDefined()
       animationRuleInstance.value[ANIMATION_FREQUENCY] = 'often'
       animationRuleInstance.value[RECORD_TYPE_CONTEXT] = 'Master'
       await filter.onFetch(testElements)

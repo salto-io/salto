@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { Element, ObjectType, BuiltinTypes, ElemID, Change, toChange, getChangeData } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
 import { FIELD_TYPE_NAMES, SALESFORCE, CURRENCY_CODE_TYPE_NAME } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
@@ -115,19 +115,19 @@ describe('currencyIsoCode filter', () => {
       })
 
       it('should modify the currency code fields', () => {
-        const modifiedElement = [...findElementsByID(elements, targetElemID)]
-        expect(modifiedElement).toHaveLength(1)
-        expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
-        const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
+        const modifiedElements = elements.filter(element => element.elemID.isEqual(targetElemID))
+        expect(modifiedElements).toHaveLength(1)
+        expect(modifiedElements[0]).toBeInstanceOf(ObjectType)
+        const { annotations } = (modifiedElements[0] as ObjectType).fields.CurrencyIsoCode
         expect(annotations).not.toHaveProperty('valueSet')
         expect(annotations).toHaveProperty('valueSetName')
       })
 
       it('should not modify other picklist fields', () => {
-        const modifiedElement = [...findElementsByID(elements, targetElemID)]
-        expect(modifiedElement).toHaveLength(1)
-        expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
-        const { annotations } = (modifiedElement[0] as ObjectType).fields.Priority
+        const modifiedElements = elements.filter(element => element.elemID.isEqual(targetElemID))
+        expect(modifiedElements).toHaveLength(1)
+        expect(modifiedElements[0]).toBeInstanceOf(ObjectType)
+        const { annotations } = (modifiedElements[0] as ObjectType).fields.Priority
         expect(annotations).toHaveProperty('valueSet')
         expect(annotations).not.toHaveProperty('valueSetName')
       })
@@ -144,7 +144,7 @@ describe('currencyIsoCode filter', () => {
         await filter.onFetch(elements)
       })
       it('should not modify the picklist', () => {
-        const modifiedElement = [...findElementsByID(elements, targetElemID)]
+        const modifiedElement = elements.filter(element => element.elemID.isEqual(targetElemID))
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
         const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode
@@ -162,7 +162,7 @@ describe('currencyIsoCode filter', () => {
         await filter.onFetch(elements)
       })
       it('should transform the currency iso code as usual', () => {
-        const modifiedElement = [...findElementsByID(elements, targetElemID)]
+        const modifiedElement = elements.filter(element => element.elemID.isEqual(targetElemID))
         expect(modifiedElement).toHaveLength(1)
         expect(modifiedElement[0]).toBeInstanceOf(ObjectType)
         const { annotations } = (modifiedElement[0] as ObjectType).fields.CurrencyIsoCode

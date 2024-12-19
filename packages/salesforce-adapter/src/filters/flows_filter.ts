@@ -19,7 +19,7 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
-import { findObjectType, inspectValue, resolveTypeShallow } from '@salto-io/adapter-utils'
+import { inspectValue, resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, FilterCreator } from '../filter'
 import {
@@ -36,6 +36,7 @@ import SalesforceClient from '../client/client'
 import { FetchElements, FetchProfile } from '../types'
 import {
   apiNameSync,
+  findObjectType,
   isDeactivatedFlowChangeOnly,
   isInstanceOfTypeChangeSync,
   isInstanceOfTypeSync,
@@ -47,10 +48,6 @@ const { isDefined } = lowerdashValues
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
-
-const FLOW_DEFINITION_METADATA_TYPE_ID = new ElemID(SALESFORCE, FLOW_DEFINITION_METADATA_TYPE)
-
-const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, FLOW_METADATA_TYPE)
 
 const DEFAULT_CHUNK_SIZE = 500
 
@@ -192,7 +189,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return {}
     }
     // Hide the FlowDefinition type and its instances
-    const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE_ID)
+    const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE)
     const flowDefinitions = elements.filter(isInstanceOfTypeSync(FLOW_DEFINITION_METADATA_TYPE))
     if (flowDefinitionType !== undefined) {
       flowDefinitionType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
@@ -201,7 +198,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       flowDefinition.annotations[CORE_ANNOTATIONS.HIDDEN] = true
     })
 
-    const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)
+    const flowType = findObjectType(elements, FLOW_METADATA_TYPE)
     if (!config.fetchProfile.metadataQuery.isTypeMatch(FLOW_METADATA_TYPE) || flowType === undefined) {
       return {}
     }
@@ -217,7 +214,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (deactivatedFlowOnlyChanges.length === 0) {
       return
     }
-    const flowDefinitionType = await config.elementsSource.get(FLOW_DEFINITION_METADATA_TYPE_ID)
+    const flowDefinitionType = await config.elementsSource.get(new ElemID(SALESFORCE, FLOW_DEFINITION_METADATA_TYPE))
     if (!isObjectType(flowDefinitionType)) {
       log.error(
         'Failed to deactivate flows since the FlowDefinition metadata type does not exist in the elements source',

@@ -23,7 +23,7 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import { DescribeValueTypeResult } from '@salto-io/jsforce'
-import { buildElementsSourceFromElements, findElements as findElementsByID } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import { MockInterface } from '@salto-io/test-utils'
 import * as constants from '../src/constants'
@@ -40,7 +40,7 @@ export const findElements = (elements: ReadonlyArray<Element>, ...name: Readonly
     name.length === 1
       ? new ElemID(constants.SALESFORCE, name[0])
       : new ElemID(constants.SALESFORCE, name[0], 'instance', ...name.slice(1))
-  return [...findElementsByID(elements, expectedElemId)]
+  return elements.filter(element => element.elemID.isEqual(expectedElemId))
 }
 
 export const createField = (

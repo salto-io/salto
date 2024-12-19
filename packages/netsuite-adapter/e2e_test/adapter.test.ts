@@ -37,7 +37,7 @@ import {
   ProgressReporter,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { emptyQueryParams, fullFetchConfig, fullQueryParams } from '../src/config/config_creator'
@@ -99,6 +99,9 @@ const logging = (message: string): void => {
 const nullProgressReporter: ProgressReporter = {
   reportProgress: () => {},
 }
+
+const findElement = (elements: Element[], elemID: ElemID): Element | undefined =>
+  elements.find(elem => elem.elemID.isEqual(elemID))
 
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter

@@ -14,6 +14,7 @@ import {
   CATEGORY_TYPE_NAME,
   CLASS_TYPE_NAME,
   DEPARTMENT_TYPE_NAME,
+  DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME,
   MAC_APPLICATION_TYPE_NAME,
   MOBILE_DEVICE_CONFIGURATION_PROFILE_TYPE_NAME,
   OS_X_CONFIGURATION_PROFILE_TYPE_NAME,
@@ -45,6 +46,11 @@ const createCustomizations = (userConfig: UserConfig): Record<string, InstanceDe
       add: adjustPolicyOnDeploy,
       modify: adjustPolicyOnDeploy,
     }),
+    [DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME]: createClassicApiDefinitionsForType(
+      userConfig,
+      DISK_ENCRYPTION_CONFIGURATION_TYPE_NAME,
+      'diskencryptionconfigurations',
+    ),
     [OS_X_CONFIGURATION_PROFILE_TYPE_NAME]: createClassicApiDefinitionsForType(
       userConfig,
       OS_X_CONFIGURATION_PROFILE_TYPE_NAME,

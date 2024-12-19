@@ -17,7 +17,7 @@ import {
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { BOARD_TYPE_NAME } from '../constants'
+import { BOARD_TYPE_NAME } from '../../constants'
 
 type BoardColumn = {
   name: string

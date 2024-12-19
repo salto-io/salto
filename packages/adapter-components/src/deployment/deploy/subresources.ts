@@ -23,7 +23,7 @@ import {
   isObjectType,
   getDeepInnerTypeSync,
 } from '@salto-io/adapter-api'
-import { inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeDataSync, inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { types, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createCheck } from './requester'
@@ -153,8 +153,11 @@ export const createChangesForSubResources = async <TOptions extends APIDefinitio
           return []
         }
 
-        const checkFunc = createCheck(condition, fieldPath)
-        if (!(await checkFunc({ change, ...context, errors: {} }))) {
+        const clonedChangeInPath = applyFunctionToChangeDataSync(change, inst =>
+          _.assign(inst.clone(), { value: _.get(inst.value, fieldPath) }),
+        )
+        const checkFunc = createCheck(condition)
+        if (!(await checkFunc({ change: clonedChangeInPath, ...context, errors: {} }))) {
           log.trace(
             'skipping recurse into %s in type %s for change %s because the condition was not met',
             typeName,

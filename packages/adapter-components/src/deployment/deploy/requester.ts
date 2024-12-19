@@ -68,7 +68,6 @@ const createExtractor = (transformationDef?: TransformDefinition<ChangeAndExtend
 
 export const createCheck = (
   conditionDef?: DeployRequestCondition,
-  checkPath?: string[],
 ): ((args: ChangeAndExtendedContext) => Promise<boolean>) => {
   const { custom, transformForCheck, skipIfIdentical } = conditionDef ?? {}
   if (custom !== undefined) {
@@ -80,7 +79,6 @@ export const createCheck = (
   // note: no need to add a default for the value of single,
   // since the comparison will return the same value when working with two arrays vs two individual items
   const transform = createValueTransformer(transformForCheck)
-  const getCheckValue = (value: Values): Values => (checkPath === undefined ? value : _.get(value, checkPath))
   return async args => {
     const { change } = args
     if (!isModificationChange(change)) {
@@ -88,8 +86,8 @@ export const createCheck = (
     }
     const { typeName } = change.data.after.elemID
     return !isEqualValues(
-      await transform({ value: getCheckValue(change.data.before.value), typeName, context: args }),
-      await transform({ value: getCheckValue(change.data.after.value), typeName, context: args }),
+      await transform({ value: change.data.before.value, typeName, context: args }),
+      await transform({ value: change.data.after.value, typeName, context: args }),
     )
   }
 }

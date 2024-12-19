@@ -69,8 +69,6 @@ const isInvalidTicketForm = (instance: InstanceElement): instance is InvalidTick
 
 const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   const clonedInst = inst.clone()
-  // it is true because if we get to returnValidInstance function its after we got true from isInvalidTicketForm so
-  // custom_statuses is enabled
   if (isInvalidTicketForm(clonedInst)) {
     clonedInst.value.agent_conditions.forEach(condition =>
       condition.child_fields.forEach(child => {

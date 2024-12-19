@@ -66,7 +66,9 @@ const createExtractor = (transformationDef?: TransformDefinition<ChangeAndExtend
   }
 }
 
-const createCheck = (conditionDef?: DeployRequestCondition): ((args: ChangeAndExtendedContext) => Promise<boolean>) => {
+export const createCheck = (
+  conditionDef?: DeployRequestCondition,
+): ((args: ChangeAndExtendedContext) => Promise<boolean>) => {
   const { custom, transformForCheck, skipIfIdentical } = conditionDef ?? {}
   if (custom !== undefined) {
     return async input => custom({ skipIfIdentical, transformForCheck })(input)

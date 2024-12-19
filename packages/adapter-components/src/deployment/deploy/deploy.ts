@@ -19,7 +19,7 @@ import {
   createSaltoElementErrorFromError,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { types, values } from '@salto-io/lowerdash'
+import { types, values, promises } from '@salto-io/lowerdash'
 import { APIDefinitionsOptions, ApiDefinitions, queryWithDefault } from '../../definitions'
 import { ChangeAndContext } from '../../definitions/system/deploy'
 import { getRequester } from './requester'
@@ -28,8 +28,10 @@ import { createDependencyGraph } from './graph'
 import { ChangeAndExtendedContext, DeployChangeInput } from '../../definitions/system/deploy/types'
 import { ChangeElementResolver } from '../../resolve_utils'
 import { ResolveAdditionalActionType } from '../../definitions/system/api'
+import { createChangesForSubResources } from './subresources'
 
 const log = logger(module)
+const { mapValuesAsync } = promises.object
 
 export type ConvertError = (elemID: ElemID, error: Error) => Error | SaltoElementError | undefined
 
@@ -95,7 +97,28 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   const defQuery = queryWithDefault(definitions.deploy.instances)
   const { dependencies } = definitions.deploy
 
-  const graph = createDependencyGraph({ defQuery, dependencies, changes, ...changeContext })
+  const changesByID = _.keyBy(changes, change => getChangeData(change).elemID.getFullName())
+  const subResourceChangesByChangeID = await mapValuesAsync(changesByID, async change =>
+    createChangesForSubResources({ change, definitions, context: changeContext }),
+  )
+  const subResourceChangeIDToOriginChangeID = _.mapValues(
+    Object.fromEntries(
+      Object.entries(subResourceChangesByChangeID).flatMap(([originChangeID, subResourceChanges]) =>
+        subResourceChanges.map(subResourceChange => [
+          getChangeData(subResourceChange).elemID.getFullName(),
+          changesByID[originChangeID],
+        ]),
+      ),
+    ),
+    change => getChangeData(change).elemID,
+  )
+
+  const graph = createDependencyGraph({
+    defQuery,
+    dependencies,
+    changes: changes.concat(Object.values(subResourceChangesByChangeID).flat()),
+    ...changeContext,
+  })
 
   const errors: Record<string, SaltoElementError[]> = {}
   const appliedChanges: Change<InstanceElement>[] = []
@@ -103,9 +126,33 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   const deploySingleChange =
     deployChangeFunc ?? createSingleChangeDeployer({ convertError, definitions, changeResolver })
 
+  const getFailedChangeID = (elemID: ElemID): ElemID =>
+    subResourceChangeIDToOriginChangeID[elemID.getFullName()] ?? elemID
+
   const shouldFailChange = (elemID: ElemID): boolean =>
-    defQuery.query(elemID.typeName)?.failIfChangeHasErrors !== false &&
-    !_.isEmpty(errors[elemID.getFullName()]?.filter(e => e.severity === 'Error'))
+    defQuery.query(getFailedChangeID(elemID).typeName)?.failIfChangeHasErrors !== false &&
+    !_.isEmpty(errors[getFailedChangeID(elemID).getFullName()]?.filter(e => e.severity === 'Error'))
+
+  const handleChangeFailure = (change: Change<InstanceElement>, err: Error): void => {
+    const { elemID } = getChangeData(change)
+    log.error('Deployment of %s (action %s) failed: %o', elemID, change.action, err)
+    const failedElemID = getFailedChangeID(elemID)
+    errors[failedElemID.getFullName()] ??= []
+    if (isSaltoError(err)) {
+      errors[failedElemID.getFullName()].push({
+        ...err,
+        elemID: failedElemID,
+      })
+    } else {
+      const message = `${err}`
+      errors[failedElemID.getFullName()].push({
+        message,
+        detailedMessage: message,
+        severity: 'Error',
+        elemID: failedElemID,
+      })
+    }
+  }
 
   await graph.walkAsync(async nodeID => {
     const { typeName, action, typeActionChanges } = graph.getData(nodeID)
@@ -143,24 +190,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
             })
             return change
           } catch (err) {
-            if (errors[elemID.getFullName()] === undefined) {
-              errors[elemID.getFullName()] = []
-            }
-            log.error('Deployment of %s (action %s) failed: %o', elemID.getFullName(), change.action, err)
-            if (isSaltoError(err)) {
-              errors[elemID.getFullName()].push({
-                ...err,
-                elemID,
-              })
-            } else {
-              const message = `${err}`
-              errors[elemID.getFullName()].push({
-                message,
-                detailedMessage: message,
-                severity: 'Error',
-                elemID: getChangeData(change).elemID,
-              })
-            }
+            handleChangeFailure(change, err)
             return undefined
           }
         }),
@@ -169,6 +199,14 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
       .filter(values.isDefined)
       .filter(change => {
         const { elemID } = getChangeData(change)
+        const isSubResourceChange = subResourceChangeIDToOriginChangeID[elemID.getFullName()] !== undefined
+        if (isSubResourceChange) {
+          log.debug(
+            'Skipping subresource change %s, only top-level changes are marked as applied',
+            elemID.getFullName(),
+          )
+          return false
+        }
         if (shouldFailChange(elemID)) {
           log.error('Not marking change %s as successful due to partial failure', elemID.getFullName())
           return false
@@ -181,7 +219,10 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
   return {
     errors: Object.values(errors).flat(),
     // TODO SALTO-5557 decide if change should be marked as applied if one of the actions failed
-    appliedChanges: _.uniqBy(appliedChanges, changeId),
+    appliedChanges: _.uniqBy(
+      appliedChanges.filter(change => !shouldFailChange(getChangeData(change).elemID)),
+      changeId,
+    ),
   }
 }
 

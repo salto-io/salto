@@ -9,7 +9,11 @@ import _ from 'lodash'
 import { Change, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { DAG } from '@salto-io/dag'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { DeployApiDefinitions, InstanceDeployApiDefinitions } from '../../../src/definitions/system/deploy'
+import {
+  ChangeDependency,
+  DeployApiDefinitions,
+  InstanceDeployApiDefinitions,
+} from '../../../src/definitions/system/deploy'
 import { NodeType, createDependencyGraph } from '../../../src/deployment/deploy/graph'
 import { queryWithDefault } from '../../../src/definitions'
 
@@ -193,6 +197,102 @@ describe('createDependencyGraph', () => {
       }).rejects.toThrow(
         'At least one error encountered during walk:\nError: Circular dependencies exist among these items: typeA/add->[typeC/remove], typeB/add->[typeA/add], typeB/modify->[typeA/add], typeB/remove->[typeA/add], typeC/remove->[typeB/add,typeB/modify,typeB/remove], typeC/modify->[typeB/add,typeB/modify,typeB/remove]',
       )
+    })
+  })
+
+  describe('with sub resource changes', () => {
+    let subResourceChanges: Change<InstanceElement>[]
+    beforeEach(() => {
+      const typeAItemsType = new ObjectType({ elemID: new ElemID('adapter', 'typeAItems') })
+      subResourceChanges = [
+        toChange({ after: new InstanceElement('addItemA', typeAItemsType, { a: 'addition' }) }),
+        toChange({
+          before: new InstanceElement('modItemA', typeAItemsType, { a: 'before' }),
+          after: new InstanceElement('modItemA', typeAItemsType, { a: 'after' }),
+        }),
+        toChange({ before: new InstanceElement('removeItemA', typeAItemsType, { a: 'before' }) }),
+      ]
+      deployDef = {
+        instances: {
+          customizations: {
+            typeA: {
+              requestsByAction: {},
+              recurseIntoPath: [
+                {
+                  typeName: 'typeAItems',
+                  fieldPath: ['items'],
+                  changeIdFields: ['name'],
+                },
+              ],
+            },
+            typeB: {
+              requestsByAction: {},
+            },
+            someOtherType: {
+              requestsByAction: {},
+            },
+            typeAItems: {
+              requestsByAction: {},
+            },
+          },
+        },
+      }
+    })
+    describe('without action or dependency customizations', () => {
+      let graph: DAG<NodeType<never>>
+
+      beforeEach(() => {
+        graph = createDependencyGraph({
+          defQuery: queryWithDefault<InstanceDeployApiDefinitions<never, 'main'>>(
+            (deployDef as DeployApiDefinitions<never, 'main'>).instances,
+          ),
+          changeGroup: { changes, groupID: 'abc' },
+          changes: changes.concat(subResourceChanges),
+          elementSource: buildElementsSourceFromElements([]),
+          sharedContext: {},
+        })
+      })
+
+      it('should create dependencies from change to its sub resource changes for dependent actions', () => {
+        expect(_.sortBy(graph.edges(), e => [e[1], e[0]])).toEqual([
+          ['typeAItems/add', 'typeA/add'],
+          ['typeAItems/add', 'typeA/modify'],
+          ['typeAItems/remove', 'typeA/modify'],
+          ['typeAItems/remove', 'typeA/remove'],
+        ])
+      })
+    })
+    describe('with additional action and dependency customizations', () => {
+      let graph: DAG<NodeType<never>>
+      beforeEach(() => {
+        if (!deployDef.instances.customizations) {
+          deployDef.instances.customizations = {}
+        }
+        deployDef.instances.customizations.typeAItems.actionDependencies = [{ first: 'add', second: 'remove' }]
+        deployDef.dependencies = [
+          { first: { type: 'typeA', action: 'modify' }, second: { type: 'typeAItems', action: 'modify' } },
+        ]
+        graph = createDependencyGraph({
+          defQuery: queryWithDefault<InstanceDeployApiDefinitions<never, 'main'>>(
+            (deployDef as DeployApiDefinitions<never, 'main'>).instances,
+          ),
+          changeGroup: { changes, groupID: 'abc' },
+          changes: changes.concat(subResourceChanges),
+          dependencies: deployDef.dependencies as ChangeDependency<never>[],
+          elementSource: buildElementsSourceFromElements([]),
+          sharedContext: {},
+        })
+      })
+      it('should create additional dependencies based on the dependencies and action dependencies', () => {
+        expect(_.sortBy(graph.edges(), e => [e[1], e[0]])).toEqual([
+          ['typeAItems/add', 'typeA/add'],
+          ['typeAItems/add', 'typeA/modify'],
+          ['typeAItems/modify', 'typeA/modify'],
+          ['typeAItems/remove', 'typeA/modify'],
+          ['typeAItems/remove', 'typeA/remove'],
+          ['typeAItems/remove', 'typeAItems/add'],
+        ])
+      })
     })
   })
 })

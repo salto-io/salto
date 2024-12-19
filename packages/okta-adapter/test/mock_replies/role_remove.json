@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/api/v1/iam/roles/role-fakeid1",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "797",
+      "x-rate-limit-reset": "1734538712"
+    }
+  }
+]

@@ -436,6 +436,13 @@ const createChangesForDeploy = async (
       removePoweredByOkta: true,
     },
   })
+  const role = createInstance({
+    typeName: ROLE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      label: createName('role'),
+    },
+  })
   const identityProvider = createInstance({
     typeName: IDENTITY_PROVIDER_TYPE_NAME,
     types,
@@ -540,6 +547,7 @@ const createChangesForDeploy = async (
     toChange({ after: app }),
     toChange({ after: appGroupAssignment }),
     toChange({ after: brand }),
+    toChange({ after: role }),
     toChange({ after: identityProvider }),
     toChange({ after: authServerPolicyA }),
     toChange({ after: authServerPolicyB }),

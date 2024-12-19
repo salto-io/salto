@@ -1,0 +1,62 @@
+[
+  {
+    "path": "/api/v1/iam/roles/role-fakeid1",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "role-fakeid1",
+      "label": "test",
+      "description": "test2",
+      "created": "2024-12-18T16:23:46.000Z",
+      "lastUpdated": "2024-12-18T17:51:37.000Z"
+    },
+    "body": {
+      "label": "test",
+      "description": "test2"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "799",
+      "x-rate-limit-reset": "1734544357"
+    }
+  },
+  {
+    "path": "/api/v1/iam/roles/role-fakeid1/permissions/okta.users.userprofile.manage",
+    "scope": "",
+    "method": "DELETE",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "797",
+      "x-rate-limit-reset": "1734544357"
+    }
+  },
+  {
+    "path": "/api/v1/iam/roles/role-fakeid1/permissions/okta.users.groupMembership.manage",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "798",
+      "x-rate-limit-reset": "1734544357"
+    }
+  },
+  {
+    "path": "/api/v1/iam/roles/role-fakeid1/permissions/okta.groups.manage",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {},
+    "reqHeaders": {
+      "x-rate-limit-limit": "800",
+      "x-rate-limit-remaining": "796",
+      "x-rate-limit-reset": "1734544357"
+    }
+  }
+]

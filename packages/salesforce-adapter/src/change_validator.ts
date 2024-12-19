@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import { buildLazyShallowTypeResolverElementsSource, GetLookupNameFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
@@ -70,6 +70,8 @@ export const defaultChangeValidatorsValidateConfig: Record<string, boolean> = {
   dataChange: false,
 }
 
+const nopValidator = async (): Promise<ReadonlyArray<ChangeError>> => []
+
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
@@ -110,6 +112,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   orderedMaps: ({ fetchProfile }) => orderedMaps(fetchProfile),
   layoutDuplicateFields: () => layoutDuplicateFields,
   customApplications: () => customApplications,
+  multipleDefaults: () => nopValidator,
   ..._.mapValues(getDefaultChangeValidators(), validator => () => validator),
 }
 

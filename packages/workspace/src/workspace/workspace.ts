@@ -880,7 +880,7 @@ export const loadWorkspace = async (
     }, 'buildWorkspaceState')
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
-    if (_.isUndefined(workspaceState)) {
+    if (workspaceState === undefined) {
       workspaceState = buildWorkspaceState({})
     }
     return workspaceState
@@ -1211,6 +1211,12 @@ export const loadWorkspace = async (
     elements: elementsImpl,
     state,
     close: async () => {
+      if (workspaceState !== undefined) {
+        // in case that `workspaceState` is currently being built, we'd like to wait until it finishes.
+        log.debug('waiting for workspaceState to finish building before closing the workspace')
+        await workspaceState
+      }
+      log.debug('closing the workspace')
       await remoteMapCreator.close()
     },
     envs,

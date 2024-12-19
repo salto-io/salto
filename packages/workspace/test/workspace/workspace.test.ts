@@ -3130,6 +3130,39 @@ salesforce.staticFile staticFileInstance {
         close: mockClose,
       })
     })
+    describe('when loadWorkspace fails', () => {
+      it('should call close', async () => {
+        const noWorkspaceConfig = {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({ envs: [] })),
+          setWorkspaceConfig: jest.fn(),
+          getAdapter: jest.fn(),
+          setAdapter: jest.fn(),
+        }
+        await expect(
+          createWorkspace(undefined, undefined, noWorkspaceConfig, undefined, undefined, undefined, undefined, {
+            create: mockCreate,
+            close: mockClose,
+          }),
+        ).rejects.toThrow(new Error('Workspace with no environments is illegal'))
+        expect(mockClose).toHaveBeenCalledTimes(1)
+      })
+      it('should call close, and throw the original error, if close throws as well', async () => {
+        const noWorkspaceConfig = {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({ envs: [] })),
+          setWorkspaceConfig: jest.fn(),
+          getAdapter: jest.fn(),
+          setAdapter: jest.fn(),
+        }
+        mockClose.mockRejectedValue(new Error('oh no1!'))
+        await expect(
+          createWorkspace(undefined, undefined, noWorkspaceConfig, undefined, undefined, undefined, undefined, {
+            create: mockCreate,
+            close: mockClose,
+          }),
+        ).rejects.toThrow(new Error('Workspace with no environments is illegal'))
+        expect(mockClose).toHaveBeenCalledTimes(1)
+      })
+    })
 
     it('should close the remoteMapCreator', async () => {
       await workspace.close()

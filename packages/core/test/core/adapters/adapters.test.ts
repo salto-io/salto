@@ -55,6 +55,7 @@ jest.mock('@salto-io/adapter-utils', () => ({
 
 describe('adapters.ts', () => {
   const sfMockAdapterName = 'salesforce'
+  const dummyMockAdapterName = 'dummy'
 
   const credentialsType = new ObjectType({ elemID: new ElemID(sfMockAdapterName) })
 
@@ -73,12 +74,15 @@ describe('adapters.ts', () => {
   const mockAdapterCreator: Record<string, Adapter> = {}
   let sfMockAdapter: ReturnType<typeof createMockAdapter>
   let otherMockAdapter: ReturnType<typeof createMockAdapter>
+  let dummyMockAdapter: ReturnType<typeof createMockAdapter>
 
   beforeEach(() => {
     resolveSpy = jest.spyOn(expressions, 'resolve')
     sfMockAdapter = createMockAdapter(sfMockAdapterName)
     otherMockAdapter = createMockAdapter('mockAdapter')
+    dummyMockAdapter = createMockAdapter(dummyMockAdapterName)
     mockAdapterCreator[sfMockAdapterName] = sfMockAdapter
+    mockAdapterCreator[dummyMockAdapterName] = dummyMockAdapter
     mockAdapterCreator.mockAdapter = otherMockAdapter
     jest.clearAllMocks()
   })
@@ -87,12 +91,14 @@ describe('adapters.ts', () => {
     let credentials: Record<string, AdapterAuthentication>
 
     it('should return config for defined adapter', () => {
-      credentials = getAdaptersCredentialsTypes(accounts, mockAdapterCreator)
+      credentials = getAdaptersCredentialsTypes({ names: accounts, adapterCreators: mockAdapterCreator })
       expect(credentials.salesforce).toEqual(authenticationMethods)
     })
 
     it('should throw error for non defined adapter', () => {
-      expect(() => getAdaptersCredentialsTypes(accounts.concat('fake'), mockAdapterCreator)).toThrow()
+      expect(() =>
+        getAdaptersCredentialsTypes({ names: accounts.concat('fake'), adapterCreators: mockAdapterCreator }),
+      ).toThrow()
     })
   })
 
@@ -194,6 +200,9 @@ describe('adapters.ts', () => {
         async () => undefined,
         buildElementsSourceFromElements([]),
         { [serviceName]: serviceName },
+        undefined,
+        undefined,
+        mockAdapterCreator,
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -212,6 +221,9 @@ describe('adapters.ts', () => {
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([]),
         { [serviceName]: serviceName },
+        undefined,
+        undefined,
+        mockAdapterCreator,
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -232,6 +244,9 @@ describe('adapters.ts', () => {
           async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
           buildElementsSourceFromElements([objectType, d1Type]),
           { [serviceName]: serviceName, d1: 'dummy' },
+          undefined,
+          undefined,
+          mockAdapterCreator,
         )
       })
 

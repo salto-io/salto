@@ -39,21 +39,30 @@ const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource
 const log = logger(module)
 
+type getAdaptersCredentialsTypesArgs = { names?: ReadonlyArray<string>; adapterCreators: Record<string, Adapter> }
+
 export const getAdaptersCredentialsTypes = (
-  names?: ReadonlyArray<string>,
-  adapterCreators?: Record<string, Adapter>,
+  names?: getAdaptersCredentialsTypesArgs,
 ): Record<string, AdapterAuthentication> => {
   // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  let actualNames: ReadonlyArray<string> | undefined
+  let actualAdapterCreator: Record<string, Adapter>
+  if (names && 'adapterCreators' in names) {
+    actualNames = names.names
+    actualAdapterCreator = names.adapterCreators
+  } else {
+    actualNames = names
+    actualAdapterCreator = deprecatedAdapterCreators
+  }
   let relevantAdapterCreators: Record<string, Adapter>
-  if (names === undefined) {
+  if (actualNames === undefined) {
     relevantAdapterCreators = actualAdapterCreator
   } else {
-    const nonExistingAdapters = names.filter(name => !Object.keys(actualAdapterCreator).includes(name))
+    const nonExistingAdapters = actualNames.filter(name => !Object.keys(actualAdapterCreator).includes(name))
     if (!_.isEmpty(nonExistingAdapters)) {
       throw new Error(`No adapter available for ${nonExistingAdapters}`)
     }
-    relevantAdapterCreators = _.pick(actualAdapterCreator, names)
+    relevantAdapterCreators = _.pick(actualAdapterCreator, actualNames)
   }
   return _.mapValues(relevantAdapterCreators, creator => creator.authenticationMethods)
 }

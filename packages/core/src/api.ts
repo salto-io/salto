@@ -641,7 +641,7 @@ export const getLoginStatuses = async (
   )
   const relevantServices = _.uniq(Object.values(accountToServiceMap))
   const logins = await mapValuesAsync(
-    getAdaptersCredentialsTypes(relevantServices, actualAdapterCreator),
+    getAdaptersCredentialsTypes({ names: relevantServices, adapterCreators: actualAdapterCreator }),
     async (configTypeOptions, adapter) => ({
       configTypeOptions,
       isLoggedIn: !!creds[adapter],

@@ -233,7 +233,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 
   await installAdapter(serviceType, adapterCreators)
   if (login) {
-    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType], adapterCreators)[serviceType]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes({ names: [serviceType], adapterCreators })[serviceType]
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, theAccountName, loginParameters)
     } catch (e) {

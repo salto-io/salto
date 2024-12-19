@@ -169,7 +169,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
 ${instancesLinks}
 ${usuallyThisHappens}
 ${learnMore}`
-      const errors = await getAndLogCollisionWarningsV2({
+      const errors = getAndLogCollisionWarningsV2({
         instances: [instance, instance.clone()],
       })
       expect(errors).toHaveLength(1)
@@ -186,7 +186,7 @@ ${learnMore}`
 ${instancesLinks}
 ${usuallyThisHappens}
 ${learnMore}`
-      const errors = await getAndLogCollisionWarningsV2({
+      const errors = getAndLogCollisionWarningsV2({
         instances: [instance, instance.clone()],
         addChildrenMessage: true,
       })
@@ -205,7 +205,25 @@ ${learnMore}`
 ${instancesLinks}
 ${usuallyThisHappens}
 ${learnMore}`
-      const errors = await getAndLogCollisionWarningsV2({
+      const errors = getAndLogCollisionWarningsV2({
+        instances: [instance, instance.clone()],
+      })
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toEqual({
+        severity: 'Warning',
+        message: COLLISION_MESSAGE,
+        detailedMessage,
+      })
+    })
+
+    it('should not create links when serviceUrl is not defined', async () => {
+      instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = undefined
+      const instancesLinks = 'aliasName, aliasName\n'
+      const detailedMessage = `${prefix('2')}${wereNotFetched(instance.elemID.getFullName())}
+${instancesLinks}
+${usuallyThisHappens}
+${learnMore}`
+      const errors = getAndLogCollisionWarningsV2({
         instances: [instance, instance.clone()],
       })
       expect(errors).toHaveLength(1)
@@ -216,12 +234,12 @@ ${learnMore}`
       })
     })
     it('should return no errors when there are no collided instances', async () => {
-      const errors = await getAndLogCollisionWarningsV2({
+      const errors = getAndLogCollisionWarningsV2({
         instances: [],
       })
       expect(errors).toHaveLength(0)
     })
-    it('should return a message each duplicated elemID', async () => {
+    it('should return a message for each duplicated elemID', async () => {
       const firstInstancesLinks = '[aliasName](someUrl), [aliasName](someUrl), [aliasName](someUrl)\n'
       const firstDetailedMessage = `${prefix('3')}${wereNotFetched(instance.elemID.getFullName())}
 ${firstInstancesLinks}
@@ -233,7 +251,7 @@ ${secondInstancesLinks}
 ${usuallyThisHappens}
 ${learnMore}`
 
-      const errors = await getAndLogCollisionWarningsV2({
+      const errors = getAndLogCollisionWarningsV2({
         instances: [instance, instance.clone(), instance.clone(), differentInstance, differentInstance.clone()],
       })
       expect(errors).toHaveLength(2)

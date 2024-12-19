@@ -145,6 +145,7 @@ describe('adapter', () => {
           'jamf.department',
           'jamf.department.instance.farkash_first_department2@s',
           'jamf.department.instance.farkash_first_department@s',
+          'jamf.disk_encryption_configuration',
           'jamf.mac_application',
           'jamf.mobile_device_configuration_profile',
           'jamf.os_x_configuration_profile',

@@ -711,6 +711,26 @@ describe('workflowScheme', () => {
         },
       ])
     })
+
+    it('should update the id after addition', async () => {
+      const instance = new InstanceElement('instance', workflowSchemeType, {
+        name: 'name',
+        items: [
+          {
+            issueType: 1234,
+            workflow: 'workflow name',
+          },
+        ],
+      })
+
+      deployChangeMock.mockResolvedValueOnce({
+        id: '1',
+      })
+
+      await filter.deploy?.([toChange({ after: instance })])
+
+      expect(instance.value.id).toBe('1')
+    })
   })
 
   describe('onDeploy', () => {

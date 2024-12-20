@@ -14,6 +14,7 @@ import {
   Field,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isInstanceChange,
   isInstanceElement,
   isModificationChange,
@@ -270,8 +271,9 @@ export const deployWorkflowScheme = async (
     fieldsToIgnore: ['items'],
     elementsSource,
   })
-
-  if (isModificationChange(resolvedChange) && !Array.isArray(response) && response?.draft) {
+  if (isAdditionChange(resolvedChange)) {
+    getChangeData(change).value.id = getChangeData(resolvedChange).value.id
+  } else if (isModificationChange(resolvedChange) && !Array.isArray(response) && response?.draft) {
     try {
       await publishDraft(resolvedChange, client, config, statusMigrations)
     } catch (err) {

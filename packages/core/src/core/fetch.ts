@@ -50,6 +50,7 @@ import {
   Value,
   Values,
   isRemovalChange,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -372,7 +373,31 @@ const toFetchChanges = (
       }
 
       const elemId = ElemID.fromFullName(id)
+
+      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
+      const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
+        changeList => changeList.map(change => change.change),
+      )
       const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
+      const wsChangeIds = new Set(wsChanges.map(change => change.id.getFullName()))
+      // Service-to-workspace change were only computed for elements that have pending changes, because no pending
+      // changes means that service-to-workspace changes are identical to service-to-state changes. Since this
+      // function's output should include all changes, we need to copy the service-to-workspace changes that were not
+      // computed before. We are copying references to the changes, so this is still memory efficient.
+      if (pendingChanges.length === 0) {
+        serviceChanges
+          .filter(change => !wsChangeIds.has(change.id.getFullName()))
+          .forEach(change => {
+            if (!isAdditionChange(change) && isReferenceExpression(change.data.before)) {
+              // Reference expressions may resolve to different values in the workspace compared to the state,even when
+              // there are no pending changes. We clear resolved values here to force callers to resolve the references
+              // again with the correct element source.
+              change.data.before.value = undefined
+            }
+            wsChanges.push(change)
+          })
+      }
+
       if (!types.isNonEmptyArray(wsChanges)) {
         // If we get here it means there is a difference between the account and the state
         // but there is no difference between the account and the workspace. this can happen
@@ -383,13 +408,8 @@ const toFetchChanges = (
         return undefined
       }
 
-      // Find all changes that relate to the current ID and mark them as handled
-      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
+      // Mark all changes that relate to the current ID as handled
       relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
-
-      const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
-        changeList => changeList.map(change => change.change),
-      )
 
       if (!types.isNonEmptyArray(serviceChanges)) {
         // If nothing changed in the account, we don't want to do anything
@@ -853,7 +873,7 @@ export const calcFetchChanges = async ({
       'calculate service-state changes',
     )
 
-    // We only care about conflicts with changes from the service, so for the next two comparisons
+    // We only care about conflicts with changes from the service, so for the next comparison
     // we only need to check elements for which we have service changes
     const serviceChangesTopLevelIDs = new Set(
       wu(serviceChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
@@ -872,13 +892,21 @@ export const calcFetchChanges = async ({
       'calculate pending changes',
     )
 
+    // Workspace and service changes are only interesting for the elements that have pending changes -
+    // otherwise the diff will be the same as the service-to-state diff, so we avoid recalculating it by only checking
+    // elements that have pending changes.
+    const pendingChangesTopLevelIDs = new Set(
+      wu(pendingChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
+    )
+    const pendingChangeIdsFilter: IDFilter = id => pendingChangesTopLevelIDs.has(id.getFullName())
+
     // Changes from the service that are not in the nacls
     const { changesTree: workspaceToServiceChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
+          [accountFetchFilter, partialFetchFilter, pendingChangeIdsFilter],
           'service',
         ),
       'calculate service-workspace changes',

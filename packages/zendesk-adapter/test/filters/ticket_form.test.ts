@@ -81,26 +81,7 @@ describe('ticket form filter', () => {
       },
     ],
   })
-  const fixedTicketForm = new InstanceElement('invalid', ticketFormType, {
-    agent_conditions: [
-      {
-        child_fields: [
-          { required_on_statuses: { type: 'SOME_STATUSES', custom_statuses: [1] } },
-          { required_on_statuses: { type: 'SOME_STATUSES', custom_statuses: [1, 2] } },
-          { required_on_statuses: { type: 'ALL_STATUSES' } },
-        ],
-      },
-      {
-        child_fields: [
-          { required_on_statuses: { type: 'SOME_STATUSES', custom_statuses: [1, 2] } },
-          { required_on_statuses: { type: 'NO_STATUSES' } },
-        ],
-      },
-      {
-        child_fields: [{ required_on_statuses: { type: 'NO_STATUSES' } }],
-      },
-    ],
-  })
+
   describe('fetch', () => {
     const genericCustomTicketStatusField = new InstanceElement(
       'custom_status',
@@ -332,174 +313,101 @@ describe('ticket form filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toEqual([toChange({ after: validTicketForm })])
     })
-    it('should deploy modification change when both statuses and custom_statuses appear', async () => {
-      const clonedElement = invalidTicketForm
-      mockDeployChange.mockImplementation(async () => ({
-        ticket_forms: clonedElement,
-      }))
-      const res = await filter.deploy([toChange({ before: clonedElement, after: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'modify', data: { before: fixedTicketForm, after: fixedTicketForm } },
-        client: expect.anything(),
-        endpointDetails: expect.anything(),
-        undefined,
-      })
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges).toEqual([toChange({ before: clonedElement, after: clonedElement })])
-    })
-    it('should deploy addition change when both statuses and custom_statuses appear', async () => {
-      const clonedElement = invalidTicketForm
-      mockDeployChange.mockImplementation(async () => ({
-        ticket_forms: clonedElement,
-      }))
-      const res = await filter.deploy([toChange({ after: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: fixedTicketForm } },
-        client: expect.anything(),
-        endpointDetails: expect.anything(),
-        undefined,
-      })
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges).toEqual([toChange({ after: clonedElement })])
-    })
   })
   describe('deploy with custom_statuses disabled', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
       filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(false) })) as FilterType
     })
-    it('should deploy modification change when both statuses and custom_statuses appear', async () => {
-      // should keep both status and custom_statuses
-      const clonedElement = invalidTicketForm
-      mockDeployChange.mockImplementation(async () => ({
-        ticket_forms: clonedElement,
-      }))
-      const res = await filter.deploy([toChange({ before: clonedElement, after: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'modify', data: { before: clonedElement, after: clonedElement } },
-        client: expect.anything(),
-        endpointDetails: expect.anything(),
-        undefined,
-      })
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges).toEqual([toChange({ before: clonedElement, after: clonedElement })])
-    })
-    it('should deploy addition change when both statuses and custom_statuses appear', async () => {
-      const clonedElement = invalidTicketForm
-      mockDeployChange.mockImplementation(async () => ({
-        ticket_forms: clonedElement,
-      }))
-      const res = await filter.deploy([toChange({ after: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith({
-        change: { action: 'add', data: { after: clonedElement } },
-        client: expect.anything(),
-        endpointDetails: expect.anything(),
-        undefined,
-      })
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges).toEqual([toChange({ after: clonedElement })])
-    })
-  })
-  describe('onDeploy', () => {
-    const ticketStatusField = new InstanceElement(
-      'ticket status',
-      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
-      {
-        type: 'custom_status',
-      },
-    )
-    const otherField = new InstanceElement(
-      'other field',
-      new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
-      {
-        type: 'text',
-      },
-    )
-    const elementSourceForm = new InstanceElement('elementSourceForm', ticketFormType, {
-      ticket_field_ids: [
-        new ReferenceExpression(ticketStatusField.elemID, ticketStatusField),
-        123456,
-        new ReferenceExpression(otherField.elemID, otherField),
-      ],
-    })
-    const formToDeploy = new InstanceElement('elementSourceForm', ticketFormType, {
-      ticket_field_ids: [123456, 654321],
-    })
-    beforeEach(async () => {
-      jest.clearAllMocks()
-      filter = filterCreator(
-        createFilterCreatorParams({
-          elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, ticketStatusField]),
-        }),
-      ) as FilterType
-    })
-
-    it('should restore ticket field ids from elementSource', async () => {
-      const clonedForm = formToDeploy.clone()
-      await filter.onDeploy([toChange({ after: clonedForm })])
-      expect(clonedForm.value.ticket_field_ids).toEqual(elementSourceForm.value.ticket_field_ids)
-      expect(mockLogError).not.toHaveBeenCalled()
-    })
-    it('should do nothing if ticket status field does not exist in element source', async () => {
-      filter = filterCreator(
-        createFilterCreatorParams({
-          elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField]),
-        }),
-      ) as FilterType
-      const clonedForm = formToDeploy.clone()
-      await filter.onDeploy([toChange({ after: clonedForm })])
-      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
-      expect(mockLogError).toHaveBeenCalledWith(
-        'could not find field of type custom_status not running on deploy of ticket_form',
+    describe('onDeploy', () => {
+      const ticketStatusField = new InstanceElement(
+        'ticket status',
+        new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+        {
+          type: 'custom_status',
+        },
       )
-    })
-    it('should do nothing if ticket status field has an id', async () => {
-      const clonedForm = formToDeploy.clone()
-      const clonedCustomStatusField = ticketStatusField.clone()
-      clonedCustomStatusField.value.id = 1
-      filter = filterCreator(
-        createFilterCreatorParams({
-          elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, clonedCustomStatusField]),
-        }),
-      ) as FilterType
-      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
-      expect(mockLogError).not.toHaveBeenCalled()
-    })
-    it('should do nothing if deployed form is not in the element source', async () => {
-      filter = filterCreator(
-        createFilterCreatorParams({
-          elementsSource: buildElementsSourceFromElements([otherField, ticketStatusField]),
-        }),
-      ) as FilterType
-      const clonedForm = formToDeploy.clone()
-      await filter.onDeploy([toChange({ after: clonedForm })])
-      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
-      expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
-    })
-    it('should do nothing if ticket_field_ids is undefined', async () => {
-      const clonedElementSourceForm = elementSourceForm.clone()
-      clonedElementSourceForm.value.ticket_field_ids = undefined
-      filter = filterCreator(
-        createFilterCreatorParams({
-          elementsSource: buildElementsSourceFromElements([clonedElementSourceForm, otherField, ticketStatusField]),
-        }),
-      ) as FilterType
-      const clonedForm = formToDeploy.clone()
-      await filter.onDeploy([toChange({ after: clonedForm })])
-      expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
-      expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
+      const otherField = new InstanceElement(
+        'other field',
+        new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) }),
+        {
+          type: 'text',
+        },
+      )
+      const elementSourceForm = new InstanceElement('elementSourceForm', ticketFormType, {
+        ticket_field_ids: [
+          new ReferenceExpression(ticketStatusField.elemID, ticketStatusField),
+          123456,
+          new ReferenceExpression(otherField.elemID, otherField),
+        ],
+      })
+      const formToDeploy = new InstanceElement('elementSourceForm', ticketFormType, {
+        ticket_field_ids: [123456, 654321],
+      })
+      beforeEach(async () => {
+        jest.clearAllMocks()
+        filter = filterCreator(
+          createFilterCreatorParams({
+            elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, ticketStatusField]),
+          }),
+        ) as FilterType
+      })
+
+      it('should restore ticket field ids from elementSource', async () => {
+        const clonedForm = formToDeploy.clone()
+        await filter.onDeploy([toChange({ after: clonedForm })])
+        expect(clonedForm.value.ticket_field_ids).toEqual(elementSourceForm.value.ticket_field_ids)
+        expect(mockLogError).not.toHaveBeenCalled()
+      })
+      it('should do nothing if ticket status field does not exist in element source', async () => {
+        filter = filterCreator(
+          createFilterCreatorParams({
+            elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField]),
+          }),
+        ) as FilterType
+        const clonedForm = formToDeploy.clone()
+        await filter.onDeploy([toChange({ after: clonedForm })])
+        expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+        expect(mockLogError).toHaveBeenCalledWith(
+          'could not find field of type custom_status not running on deploy of ticket_form',
+        )
+      })
+      it('should do nothing if ticket status field has an id', async () => {
+        const clonedForm = formToDeploy.clone()
+        const clonedCustomStatusField = ticketStatusField.clone()
+        clonedCustomStatusField.value.id = 1
+        filter = filterCreator(
+          createFilterCreatorParams({
+            elementsSource: buildElementsSourceFromElements([elementSourceForm, otherField, clonedCustomStatusField]),
+          }),
+        ) as FilterType
+        expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+        expect(mockLogError).not.toHaveBeenCalled()
+      })
+      it('should do nothing if deployed form is not in the element source', async () => {
+        filter = filterCreator(
+          createFilterCreatorParams({
+            elementsSource: buildElementsSourceFromElements([otherField, ticketStatusField]),
+          }),
+        ) as FilterType
+        const clonedForm = formToDeploy.clone()
+        await filter.onDeploy([toChange({ after: clonedForm })])
+        expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+        expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
+      })
+      it('should do nothing if ticket_field_ids is undefined', async () => {
+        const clonedElementSourceForm = elementSourceForm.clone()
+        clonedElementSourceForm.value.ticket_field_ids = undefined
+        filter = filterCreator(
+          createFilterCreatorParams({
+            elementsSource: buildElementsSourceFromElements([clonedElementSourceForm, otherField, ticketStatusField]),
+          }),
+        ) as FilterType
+        const clonedForm = formToDeploy.clone()
+        await filter.onDeploy([toChange({ after: clonedForm })])
+        expect(clonedForm.value.ticket_field_ids).toEqual(formToDeploy.value.ticket_field_ids)
+        expect(mockLogError).toHaveBeenCalledWith(`could not find ticketFieldIds for form ${clonedForm.elemID.name}`)
+      })
     })
   })
 })

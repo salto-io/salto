@@ -206,6 +206,7 @@ describe('boardDeploymentFilter', () => {
             mappedColumns: [
               {
                 name: 'someColumn',
+                isKanPlanColumn: false,
                 mappedStatuses: [{ id: '4' }],
                 min: 2,
                 max: 4,
@@ -362,6 +363,7 @@ describe('boardDeploymentFilter', () => {
             rapidViewId: '1',
             mappedColumns: [
               {
+                isKanPlanColumn: false,
                 name: 'someColumn2',
                 mappedStatuses: [],
                 min: '',
@@ -384,7 +386,7 @@ describe('boardDeploymentFilter', () => {
             [COLUMNS_CONFIG_FIELD]: {
               columns: [
                 {
-                  name: 'backlog',
+                  name: 'Backlog',
                 },
                 {
                   name: 'someColumn2',
@@ -396,6 +398,9 @@ describe('boardDeploymentFilter', () => {
 
         instance.value[COLUMNS_CONFIG_FIELD] = {
           columns: [
+            {
+              name: 'Backlog',
+            },
             {
               name: 'someColumn2',
             },
@@ -415,6 +420,14 @@ describe('boardDeploymentFilter', () => {
             rapidViewId: '1',
             mappedColumns: [
               {
+                isKanPlanColumn: true,
+                name: 'Backlog',
+                mappedStatuses: [],
+                min: '',
+                max: '',
+              },
+              {
+                isKanPlanColumn: false,
                 name: 'someColumn2',
                 mappedStatuses: [],
                 min: '',
@@ -489,6 +502,7 @@ describe('boardDeploymentFilter', () => {
             mappedColumns: [
               {
                 name: 'someColumn2',
+                isKanPlanColumn: false,
                 mappedStatuses: [],
                 min: '',
                 max: '',
@@ -501,6 +515,82 @@ describe('boardDeploymentFilter', () => {
         )
 
         expect(connection.put).toHaveBeenCalledTimes(3)
+      })
+      it('should properly deploy second Backlog column', async () => {
+        connection.get.mockResolvedValue({
+          status: 200,
+          data: {
+            [COLUMNS_CONFIG_FIELD]: {
+              columns: [
+                {
+                  name: 'Backlog',
+                },
+                {
+                  name: 'someColumn2',
+                },
+                {
+                  name: 'Backlog',
+                },
+              ],
+            },
+          },
+        })
+
+        instance.value[COLUMNS_CONFIG_FIELD] = {
+          columns: [
+            {
+              name: 'Backlog',
+            },
+            {
+              name: 'someColumn2',
+            },
+            {
+              name: 'Backlog',
+            },
+          ],
+        }
+
+        instance.value.type = 'kanban'
+
+        await filter.deploy([change])
+
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          {
+            currentStatisticsField: {
+              id: 'none_',
+            },
+            rapidViewId: '1',
+            mappedColumns: [
+              {
+                isKanPlanColumn: true,
+                name: 'Backlog',
+                mappedStatuses: [],
+                min: '',
+                max: '',
+              },
+              {
+                isKanPlanColumn: false,
+                name: 'someColumn2',
+                mappedStatuses: [],
+                min: '',
+                max: '',
+              },
+              {
+                isKanPlanColumn: false,
+                name: 'Backlog',
+                mappedStatuses: [],
+                min: '',
+                max: '',
+              },
+            ],
+          },
+          {
+            headers: PRIVATE_API_HEADERS,
+          },
+        )
+
+        expect(connection.put).toHaveBeenCalledOnce()
       })
 
       it('should throw if deploy columns does not change the columns', async () => {

@@ -6,9 +6,9 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { toChange, InstanceElement } from '@salto-io/adapter-api'
-import { boardColumnConfigValidator } from '../../src/change_validators/board_culomn_config'
-import { BOARD_TYPE_NAME } from '../../src/constants'
-import { createEmptyType } from '../utils'
+import { boardColumnConfigValidator } from '../../../src/change_validators/boards/board_column_config'
+import { BOARD_TYPE_NAME } from '../../../src/constants'
+import { createEmptyType } from '../../utils'
 
 describe('boardColumnConfigValidator', () => {
   let instance: InstanceElement

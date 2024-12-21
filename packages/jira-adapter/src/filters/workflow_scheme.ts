@@ -14,6 +14,7 @@ import {
   Field,
   getChangeData,
   InstanceElement,
+  isAdditionChange,
   isInstanceChange,
   isInstanceElement,
   isModificationChange,
@@ -30,6 +31,7 @@ import {
   client as clientUtils,
   config as configUtils,
   resolveValues,
+  resolveChangeElement,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -253,27 +255,27 @@ export const deployWorkflowScheme = async (
   config: JiraConfig,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<void> => {
-  const instance = getChangeData(change)
-
   if (isRemovalOrModificationChange(change)) {
     // For some reason sometime the id is changed after publishing the draft
     await updateSchemeId(change, client, paginator, config)
   }
-
-  const { statusMigrations } = (await resolveValues(instance, getLookUpName, elementsSource)).value
-  delete instance.value.statusMigrations
+  const resolvedChange = await resolveChangeElement(change, getLookUpName, resolveValues, elementsSource)
+  const resolvedInstance = getChangeData(resolvedChange)
+  const { statusMigrations } = resolvedInstance.value
+  delete resolvedInstance.value.statusMigrations
 
   const response = await defaultDeployChange({
-    change,
+    change: resolvedChange,
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: ['items'],
     elementsSource,
   })
-
-  if (isModificationChange(change) && !Array.isArray(response) && response?.draft) {
+  if (isAdditionChange(resolvedChange)) {
+    getChangeData(change).value.id = getChangeData(resolvedChange).value.id
+  } else if (isModificationChange(resolvedChange) && !Array.isArray(response) && response?.draft) {
     try {
-      await publishDraft(change, client, config, statusMigrations)
+      await publishDraft(resolvedChange, client, config, statusMigrations)
     } catch (err) {
       if (shouldThrowError(err)) {
         throw err
@@ -285,13 +287,9 @@ export const deployWorkflowScheme = async (
           elementsSource,
         )
         handleDeploymentError(err)
-        log.warn(
-          `failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${err.message}`,
-        )
+        log.warn(`failed to publish draft for workflow scheme ${resolvedInstance.elemID.name}, error: ${err.message}`)
       } catch {
-        log.warn(
-          `failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `,
-        )
+        log.warn(`failed to reformat the workflow scheme ${resolvedInstance.elemID.getFullName()} migration error `)
       }
     }
   }

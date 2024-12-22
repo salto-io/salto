@@ -244,7 +244,7 @@ describe('Standard Value Sets filter', () => {
         )
         const elements = [mockSVSType.clone(), objectType]
         await filter.onFetch(elements)
-        const field = objectType.fields.state as Field
+        const field = objectType.fields.state
         expect(field).toSatisfy(isField)
         expect(field.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
           new ReferenceExpression(svsInstanceFromSource.elemID, svsInstanceFromSource),

@@ -112,7 +112,7 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
         const id = toNodeID(typeName, n)
         if (!graph.has(id)) {
           graph.addNode(id, [], {
-            action: n as ActionName | AdditionalAction,
+            action: n,
             typeActionChanges: [],
             typeName,
           })

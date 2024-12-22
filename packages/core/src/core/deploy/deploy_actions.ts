@@ -133,7 +133,7 @@ export const deployActions = async (
   const accumulatedNonFatalErrors: DeployError[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
-      const item = deployPlan.getItem(itemId) as PlanItem
+      const item = deployPlan.getItem(itemId)
       log.debug('Deploy item %s', item.groupKey)
       wu(item.detailedChanges()).forEach(detailedChange => {
         log.debug('Deploy change %s (action=%s)', detailedChange.id.getFullName(), detailedChange.action)
@@ -185,7 +185,7 @@ export const deployActions = async (
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
       error.handlerErrors.forEach((nodeError: Error, key: PlanItemId) => {
-        const item = deployPlan.getItem(key) as PlanItem
+        const item = deployPlan.getItem(key)
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
           const message = `Element was not deployed, as it depends on ${nodeError.causingNode} which failed to deploy`
@@ -212,7 +212,7 @@ export const deployActions = async (
       })
       if (error.circularDependencyError) {
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
-          const item = deployPlan.getItem(id) as PlanItem
+          const item = deployPlan.getItem(id)
           reportProgress(item, 'error', error.circularDependencyError.message)
           deployErrors.push({
             groupId: item.groupKey,

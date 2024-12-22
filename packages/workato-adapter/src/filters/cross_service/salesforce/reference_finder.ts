@@ -6,15 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  InstanceElement,
-  ElemID,
-  ReferenceExpression,
-  isObjectType,
-  ObjectType,
-  Field,
-  Values,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ReferenceExpression, isObjectType, Field, Values } from '@salto-io/adapter-api'
 import { DependencyDirection } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import {
@@ -101,10 +93,7 @@ export const addSalesforceRecipeReferences = async (
     | undefined => {
     const refObjectFragments = indexedElements.CustomObject?.[objectName] ?? indexedElements[objectName]?.[objectName]
     if (!_.isEmpty(refObjectFragments) && refObjectFragments.every(isObjectType)) {
-      const fields: Record<string, Field> = Object.assign(
-        {},
-        ...(refObjectFragments as ObjectType[]).map(fragment => fragment.fields),
-      )
+      const fields: Record<string, Field> = Object.assign({}, ...refObjectFragments.map(fragment => fragment.fields))
       const label = refObjectFragments.map(ref => ref.annotations[SALESFORCE_LABEL_ANNOTATION]).find(_.isString)
       return {
         id: refObjectFragments[0].elemID,

@@ -10,10 +10,7 @@ import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
-import dashboardLayoutFilter, {
-  getDashboardLayoutsAsync,
-  InstanceToResponse,
-} from '../../../src/filters/dashboard/dashboard_layout'
+import dashboardLayoutFilter, { getDashboardLayoutsAsync } from '../../../src/filters/dashboard/dashboard_layout'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
@@ -69,7 +66,7 @@ describe('dashboardLayoutFilter', () => {
 
   describe('async get', () => {
     it('should return the dashboard layout', async () => {
-      const response = getDashboardLayoutsAsync(client, config, elements) as InstanceToResponse[]
+      const response = getDashboardLayoutsAsync(client, config, elements)
 
       expect(response).toHaveLength(1)
       expect(response[0].instance).toBe(instance)
@@ -88,12 +85,12 @@ describe('dashboardLayoutFilter', () => {
     })
 
     it('should return empty list if there is no Dashboard instances in the elements', async () => {
-      const response = getDashboardLayoutsAsync(client, config, [dashboardType]) as InstanceToResponse[]
+      const response = getDashboardLayoutsAsync(client, config, [dashboardType])
       expect(response).toHaveLength(0)
     })
     it('should return undefined if the request threw an error', async () => {
       connection.get.mockRejectedValue(new Error('error'))
-      const response = getDashboardLayoutsAsync(client, config, elements) as InstanceToResponse[]
+      const response = getDashboardLayoutsAsync(client, config, elements)
       expect(response).toHaveLength(1)
       expect(await response[0].PromiseResponse).toBeUndefined()
     })

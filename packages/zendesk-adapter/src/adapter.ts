@@ -495,7 +495,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   }) => Promise<Required<Filter>>
 
   public constructor({
-    filterCreators = DEFAULT_FILTERS as FilterCreator[],
+    filterCreators = DEFAULT_FILTERS,
     client,
     credentials,
     getElemIdFunc,

@@ -30,8 +30,8 @@ describe('extendTriggersMetadata filter', () => {
   const TRIGGER_API_NAME = 'TestTrigger'
   const TRIGGER_ID = '01qQy000000EmuPIAS'
 
-  const PARENT_OBJECT_API_NAME = 'TestObject__c' as const
-  const PARENT_OBJECT_ID = '01IQy000000zEWgMAM' as const
+  const PARENT_OBJECT_API_NAME = 'TestObject__c'
+  const PARENT_OBJECT_ID = '01IQy000000zEWgMAM'
 
   type TableEnumOrId = typeof PARENT_OBJECT_API_NAME | typeof PARENT_OBJECT_ID
   type TriggerRecord = SalesforceRecord & {

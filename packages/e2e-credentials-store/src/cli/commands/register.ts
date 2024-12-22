@@ -52,7 +52,7 @@ const commandModule = ({ adapters, pool, asyncHandler, stderr }: Opts): CommandM
         }),
       })
     })
-    return y as Argv<{}>
+    return y
   },
   handler: () => undefined,
 })

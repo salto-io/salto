@@ -223,7 +223,7 @@ const getRecordsBySaltoIds = async (
           strings.capitalizeFirstLetter(innerField.name),
           await formatValueForWhere(innerField, instance.value[field.name]?.[innerField.name]),
         ]),
-      ) as Promise<[string, string][]>
+      )
     }
     return [[await apiName(field, true), await formatValueForWhere(field, instance.value[field.name])]]
   }
@@ -868,7 +868,7 @@ const deployRulesAndConditionsGroup = async (
   const instanceIdToMandatoryFields: Record<string, SalesforceRecord> = {}
   if (mandatoryFieldsForUpdate.length > 0) {
     const fieldsQuery = rulesWithAllConditionsMetDeployResult.appliedChanges
-      .map(change => getChangeData(change) as InstanceElement)
+      .map(change => getChangeData(change))
       .map(instance => instance.value[CUSTOM_OBJECT_ID_FIELD])
       .map(internalId => [
         {

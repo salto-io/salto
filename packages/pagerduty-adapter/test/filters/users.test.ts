@@ -81,7 +81,7 @@ describe('users filter', () => {
       filter = usersFilter({
         elementSource: buildElementsSourceFromElements([]),
         fetchQuery: fetchUtils.query.createMockQuery(),
-        config: DEFAULT_CONFIG as UserConfig,
+        config: DEFAULT_CONFIG,
         definitions: {} as def.ApiDefinitions<Options>,
         sharedContext: {},
       })

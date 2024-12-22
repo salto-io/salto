@@ -236,7 +236,7 @@ const filter: FilterCreator = ({ client, config }) => ({
               })
             }),
           deployLevels: (levelsChanges: Change<InstanceElement>[]) =>
-            deployChanges(levelsChanges as Change<InstanceElement>[], async change => {
+            deployChanges(levelsChanges, async change => {
               try {
                 await defaultDeployChange({
                   change,

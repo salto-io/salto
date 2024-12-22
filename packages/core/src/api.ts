@@ -12,7 +12,7 @@ import {
   AdapterFailureInstallResult,
   AdapterOperations,
   AdapterSuccessInstallResult,
-  CancelServiceAsyncTaskInput,
+  CancelServiceAsyncTaskInput, CancelServiceAsyncTaskResult,
   Change,
   ChangeDataType,
   ChangeError,
@@ -739,7 +739,7 @@ export const cancelServiceAsyncTask = async ({
   workspace: Workspace
   account: string
   input: CancelServiceAsyncTaskInput
-}): Promise<void> => {
+}): Promise<CancelServiceAsyncTaskResult> => {
   const accounts = [account]
   const adaptersMap = await getAdapters(
     accounts,
@@ -755,5 +755,5 @@ export const cancelServiceAsyncTask = async ({
   if (adapter.cancelServiceAsyncTask === undefined) {
     throw new Error(`cancelServiceAsyncTask is not supported for account ${account}`)
   }
-  await adapter.cancelServiceAsyncTask(input)
+  return adapter.cancelServiceAsyncTask(input)
 }

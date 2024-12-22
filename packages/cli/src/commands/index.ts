@@ -14,6 +14,7 @@ import initDef from './init'
 import restoreDef from './restore'
 import elementGroupDef from './element'
 import workspaceGroupDef from './workspace'
+import cancelAsyncTaskDef from './cancel_async_task'
 
 // The order of the builders determines order of appearance in help text
 export default [
@@ -27,4 +28,5 @@ export default [
   restoreDef,
   elementGroupDef,
   workspaceGroupDef,
+  cancelAsyncTaskDef,
 ]

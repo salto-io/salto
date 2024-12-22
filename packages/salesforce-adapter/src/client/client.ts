@@ -1019,7 +1019,7 @@ export default class SalesforceClient implements ISalesforceClient {
   }
 
   @mapToUserFriendlyErrorMessages
-  @logDecorator()
+  @logDecorator(['taskId'])
   @requiresLogin()
   public async cancelMetadataValidateOrDeployTask({
     taskId,

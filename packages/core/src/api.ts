@@ -604,24 +604,48 @@ export const installAdapter = async (
 }
 
 export const addAdapter = async (
-  workspace: Workspace,
-  adapterName: string,
+  workspace:
+    | Workspace
+    | {
+        workspace: Workspace
+        adapterName: string
+        accountName?: string
+        adapterCreators: Record<string, Adapter>
+      },
+  adapterName?: string,
   accountName?: string,
-  adapterCreators?: Record<string, Adapter>,
 ): Promise<AdapterAuthentication> => {
   // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
-  const adapter = getAdapterCreator(adapterName, actualAdapterCreator)
-  await workspace.addAccount(adapterName, accountName)
-  const adapterAccountName = accountName ?? adapterName
-  if (_.isUndefined(await workspace.accountConfig(adapterAccountName))) {
+  let actualWorkspace: Workspace
+  let actualAdapterName: string
+  let actualAccountName: string | undefined
+  let actualAdapterCreator: Record<string, Adapter>
+
+  if ('adapterCreators' in workspace) {
+    actualWorkspace = workspace.workspace
+    actualAdapterName = workspace.adapterName
+    actualAccountName = workspace.accountName
+    actualAdapterCreator = workspace.adapterCreators
+  } else {
+    if (adapterName === undefined) {
+      throw new Error('adapterName should not be undefined if workspace is a workspace')
+    }
+    actualWorkspace = workspace
+    actualAdapterName = adapterName
+    actualAccountName = accountName
+    actualAdapterCreator = deprecatedAdapterCreators
+  }
+  const adapter = getAdapterCreator(actualAdapterName, actualAdapterCreator)
+  await actualWorkspace.addAccount(actualAdapterName, actualAccountName)
+  const adapterAccountName = actualAccountName ?? actualAdapterName
+  if (_.isUndefined(await actualWorkspace.accountConfig(adapterAccountName))) {
     const defaultConfig = await getDefaultAdapterConfig({
-      adapterName,
+      adapterName: actualAdapterName,
       accountName: adapterAccountName,
       adapterCreators: actualAdapterCreator,
     })
     if (!_.isUndefined(defaultConfig)) {
-      await workspace.updateAccountConfig(adapterName, defaultConfig, adapterAccountName)
+      await actualWorkspace.updateAccountConfig(actualAdapterName, defaultConfig, adapterAccountName)
     }
   }
   return adapter.authenticationMethods

@@ -794,13 +794,18 @@ describe('api.ts', () => {
 
       it('should set adapter config', async () => {
         const wsp = mockWorkspace({})
-        await api.addAdapter(wsp, serviceName, undefined, mockAdapterCreator)
+        await api.addAdapter({ workspace: wsp, adapterName: serviceName, adapterCreators: mockAdapterCreator })
         expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
       })
 
       it('should update workspace config if different account name provided', async () => {
         const wsp = mockWorkspace({})
-        await api.addAdapter(wsp, serviceName, `${serviceName}account`, mockAdapterCreator)
+        await api.addAdapter({
+          workspace: wsp,
+          adapterName: serviceName,
+          accountName: `${serviceName}account`,
+          adapterCreators: mockAdapterCreator,
+        })
         expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
         expect((wsp.updateAccountConfig as jest.Mock).call).toHaveLength(1)
       })

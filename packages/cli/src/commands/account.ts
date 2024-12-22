@@ -242,7 +242,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     }
   }
 
-  await addAdapter(workspace, serviceType, theAccountName)
+  await addAdapter({ workspace, adapterName: serviceType, accountName: theAccountName, adapterCreators })
   await workspace.flush()
   outputLine(formatAccountAdded(serviceType), output)
   return CliExitCode.Success

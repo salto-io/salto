@@ -16,6 +16,9 @@ export const createKanbanBoardValues = (name: string, allElements: Element[]): V
   columnConfig: {
     columns: [
       {
+        name: 'Backlog',
+      },
+      {
         name: 'first',
       },
       {

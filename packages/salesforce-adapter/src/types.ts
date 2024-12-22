@@ -142,48 +142,49 @@ export type OptionalFeatures = {
   [key in (typeof OPTIONAL_FEATURES)[number]]?: boolean
 }
 
-export type ChangeValidatorName =
-  | 'managedPackage'
-  | 'picklistStandardField'
-  | 'customObjectInstances'
-  | 'customFieldType'
-  | 'standardFieldLabel'
-  | 'mapKeys'
-  | 'defaultRules'
-  | 'picklistPromote'
-  | 'cpqValidator'
-  | 'recordTypeDeletion'
-  | 'flowsValidator'
-  | 'fullNameChangedValidator'
-  | 'invalidListViewFilterScope'
-  | 'caseAssignmentRulesValidator'
-  | 'omitData'
-  | 'unknownUser'
-  | 'animationRuleRecordType'
-  | 'currencyIsoCodes'
-  | 'dataChange'
-  | 'duplicateRulesSortOrder'
-  | 'lastLayoutRemoval'
-  | 'accountSettings'
-  | 'unknownPicklistValues'
-  | 'installedPackages'
-  | 'dataCategoryGroup'
-  | 'standardFieldOrObjectAdditionsOrDeletions'
-  | 'deletedNonQueryableFields'
-  | 'instanceWithUnknownType'
-  | 'artificialTypes'
-  | 'metadataTypes'
-  | 'taskOrEventFieldsModifications'
-  | 'newFieldsAndObjectsFLS'
-  | 'elementApiVersion'
-  | 'cpqBillingStartDate'
-  | 'cpqBillingTriggers'
-  | 'managedApexComponent'
-  | 'orderedMaps'
-  | 'layoutDuplicateFields'
-  | 'customApplications'
-
-type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+const CHANGE_VALIDATORS = [
+  'managedPackage',
+  'picklistStandardField',
+  'customObjectInstances',
+  'customFieldType',
+  'standardFieldLabel',
+  'mapKeys',
+  'defaultRules',
+  'picklistPromote',
+  'cpqValidator',
+  'recordTypeDeletion',
+  'flowsValidator',
+  'fullNameChangedValidator',
+  'invalidListViewFilterScope',
+  'caseAssignmentRulesValidator',
+  'omitData',
+  'unknownUser',
+  'animationRuleRecordType',
+  'currencyIsoCodes',
+  'dataChange',
+  'duplicateRulesSortOrder',
+  'lastLayoutRemoval',
+  'accountSettings',
+  'unknownPicklistValues',
+  'installedPackages',
+  'dataCategoryGroup',
+  'standardFieldOrObjectAdditionsOrDeletions',
+  'deletedNonQueryableFields',
+  'instanceWithUnknownType',
+  'artificialTypes',
+  'metadataTypes',
+  'taskOrEventFieldsModifications',
+  'newFieldsAndObjectsFLS',
+  'elementApiVersion',
+  'cpqBillingStartDate',
+  'cpqBillingTriggers',
+  'managedApexComponent',
+  'orderedMaps',
+  'layoutDuplicateFields',
+  'customApplications',
+] as const
+const DEPRECATED_CHANGE_VALIDATORS = ['multipleDefaults'] as const
+export type ChangeValidatorName = (typeof CHANGE_VALIDATORS)[number]
 
 type ObjectIdSettings = {
   objectsRegex: string
@@ -828,51 +829,13 @@ const optionalFeaturesType = new ObjectType({
   },
 })
 
-const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+const changeValidatorConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
-  fields: {
-    managedPackage: { refType: BuiltinTypes.BOOLEAN },
-    picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
-    customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
-    customFieldType: { refType: BuiltinTypes.BOOLEAN },
-    standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-    mapKeys: { refType: BuiltinTypes.BOOLEAN },
-    defaultRules: { refType: BuiltinTypes.BOOLEAN },
-    picklistPromote: { refType: BuiltinTypes.BOOLEAN },
-    cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-    recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    flowsValidator: { refType: BuiltinTypes.BOOLEAN },
-    fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
-    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
-    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
-    omitData: { refType: BuiltinTypes.BOOLEAN },
-    dataChange: { refType: BuiltinTypes.BOOLEAN },
-    unknownUser: { refType: BuiltinTypes.BOOLEAN },
-    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
-    currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
-    duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
-    lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
-    accountSettings: { refType: BuiltinTypes.BOOLEAN },
-    unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
-    dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
-    installedPackages: { refType: BuiltinTypes.BOOLEAN },
-    standardFieldOrObjectAdditionsOrDeletions: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
-    deletedNonQueryableFields: { refType: BuiltinTypes.BOOLEAN },
-    instanceWithUnknownType: { refType: BuiltinTypes.BOOLEAN },
-    artificialTypes: { refType: BuiltinTypes.BOOLEAN },
-    metadataTypes: { refType: BuiltinTypes.BOOLEAN },
-    taskOrEventFieldsModifications: { refType: BuiltinTypes.BOOLEAN },
-    newFieldsAndObjectsFLS: { refType: BuiltinTypes.BOOLEAN },
-    elementApiVersion: { refType: BuiltinTypes.BOOLEAN },
-    cpqBillingStartDate: { refType: BuiltinTypes.BOOLEAN },
-    cpqBillingTriggers: { refType: BuiltinTypes.BOOLEAN },
-    managedApexComponent: { refType: BuiltinTypes.BOOLEAN },
-    orderedMaps: { refType: BuiltinTypes.BOOLEAN },
-    layoutDuplicateFields: { refType: BuiltinTypes.BOOLEAN },
-    customApplications: { refType: BuiltinTypes.BOOLEAN },
-  },
+  fields: Object.fromEntries(
+    (CHANGE_VALIDATORS as readonly string[])
+      .concat(DEPRECATED_CHANGE_VALIDATORS)
+      .map(name => [name, { refType: BuiltinTypes.BOOLEAN }]),
+  ),
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

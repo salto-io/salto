@@ -21,7 +21,7 @@ describe('buildGroupGraph', () => {
   })
 
   const getGroupNodes = (): Group<string>[] =>
-    [...subject.evaluationOrder()].map(groupId => subject.getData(groupId) as Group<string>)
+    [...subject.evaluationOrder()].map(groupId => subject.getData(groupId))
 
   const compareGroup = (group: Group<string>, key: string, items: { key: string; data: string }[]): void => {
     expect(group.groupKey).toBe(key)

@@ -282,7 +282,7 @@ const updateAllReferences = ({
     const topLevelInstance = nameToInstance[ref.path.createTopLevelParentID().parent.getFullName()]
     if (topLevelInstance !== undefined) {
       // update the path so it would match the new instance
-      const updatedPath = createUpdatedPath(ref.path, topLevelInstance as InstanceElement)
+      const updatedPath = createUpdatedPath(ref.path, topLevelInstance)
       const oldValue = resolvePath(topLevelInstance, updatedPath)
       if (isTemplateExpression(oldValue)) {
         // update only the relevant parts

@@ -12,7 +12,6 @@ import {
   createRefToElmWithValue,
   ElemID,
   Field,
-  FieldMap,
   InstanceElement,
   isListType,
   isMapType,
@@ -253,19 +252,19 @@ describe('mapped lists', () => {
   it('should modify ObjectTypes fields', async () => {
     const workflowcustomfields = workflow.innerTypes.workflow_workflowcustomfields
     expect(workflowcustomfields).toBeDefined()
-    const { workflowcustomfield } = workflowcustomfields?.fields as FieldMap
+    const workflowcustomfield = workflowcustomfields?.fields?.workflowcustomfield
     expect(isMapType(await workflowcustomfield.getType())).toBeTruthy()
     expect(workflowcustomfield.annotations).toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
 
     const workflowstates = workflow.innerTypes.workflow_workflowstates
     expect(workflowstates).toBeDefined()
-    const { workflowstate } = workflowstates?.fields as FieldMap
+    const workflowstate = workflowstates?.fields.workflowstate
     expect(isMapType(await workflowstate.getType())).toBeTruthy()
     expect(workflowstate.annotations).toEqual({ [LIST_MAPPED_BY_FIELD]: SCRIPT_ID })
 
     const workflowstateObject = workflow.innerTypes.workflow_workflowstates_workflowstate
     expect(workflowstateObject).toBeDefined()
-    const { workflowactions } = workflowstateObject?.fields as FieldMap
+    const workflowactions = workflowstateObject?.fields.workflowactions
     expect(isMapType(await workflowactions.getType())).toBeTruthy()
     expect(workflowactions.annotations).toEqual({ [LIST_MAPPED_BY_FIELD]: 'triggertype' })
 
@@ -288,7 +287,7 @@ describe('mapped lists', () => {
   it('should not modify ObjectTypes fields when types has no field to map by', async () => {
     const highlightings = kpiscorecard.innerTypes.kpiscorecard_highlightings
     expect(highlightings).toBeDefined()
-    const { highlighting } = highlightings?.fields as FieldMap
+    const highlighting = highlightings?.fields?.highlighting
     expect(isListType(await highlighting.getType())).toBeTruthy()
     expect(highlighting.annotations[LIST_MAPPED_BY_FIELD]).toBeUndefined()
   })

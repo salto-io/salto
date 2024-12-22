@@ -191,7 +191,7 @@ describe('Workflow filter', () => {
 
         it('should replace the field values with the inner instances with relative fullName', () => {
           const workflowChange = changes[0]
-          const workflowInChange = getChangeData(workflowChange) as InstanceElement
+          const workflowInChange = getChangeData(workflowChange)
           expect(workflowInChange.value[WORKFLOW_RULES_FIELD]).toEqual([{ ...innerInstance.value, fullName: 'MyRule' }])
         })
       })

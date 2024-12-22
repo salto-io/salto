@@ -47,6 +47,7 @@ export const convertOptionsToList = (options: Values): Values[] =>
     .value()
 
 export const getOptionsFromContext = (context: InstanceElement): Values[] => [
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   ...(Object.values(context.value.options ?? {}) as Values[]).flatMap((option: Values) =>
     convertOptionsToList(option.cascadingOptions).map(cascadingOption => ({
       ...cascadingOption,

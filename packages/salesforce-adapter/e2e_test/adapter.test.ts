@@ -845,7 +845,7 @@ describe('Salesforce adapter E2E with real account', () => {
         .filter(isInstanceElement)
         .filter(async e => (await metadataType(e)) === PROFILE_METADATA_TYPE)
         .filter(async e => (await apiName(e)) === constants.ADMIN_PROFILE)
-        .toArray()) as InstanceElement[]
+        .toArray())
       expect(adminProfile.value.tabVisibilities).toBeUndefined()
     })
 

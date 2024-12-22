@@ -46,7 +46,7 @@ export class TreeMap<T> implements Map<string, T[]> {
     src.value.push(...target.value)
     _.entries(target.children).forEach(([key, value]) => {
       if (key in src.children) {
-        TreeMap.mergeEntries(src.children[key] as TreeMapEntry<S>, value)
+        TreeMap.mergeEntries(src.children[key], value)
       } else {
         src.children[key] = value
       }

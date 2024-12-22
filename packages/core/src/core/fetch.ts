@@ -1352,7 +1352,7 @@ export const generateServiceIdToStateElemId = async (
               await getFieldServiceId(objectServiceId, field, elementsSource),
               field.elemID,
             ]),
-          )) as [string, ElemID][]
+          ))
           return [...fieldPairs, [objectServiceId, elem.elemID]]
         }
         return [[await getInstanceServiceId(elem as InstanceElement, elementsSource), elem.elemID]]

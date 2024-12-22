@@ -63,7 +63,7 @@ export const resolveConfig = (c: Config): ResolvedConfig => ({
   namespaceFilter:
     typeof c.namespaceFilter === 'string'
       ? stringToNamespaceFilter(c.namespaceFilter)
-      : (c.namespaceFilter as NamespaceFilter),
+      : (c.namespaceFilter),
 })
 
 function timeMethod<T>(

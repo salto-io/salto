@@ -145,7 +145,7 @@ describe('Convert maps filter', () => {
           expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
         })
         it('should convert instance values to maps', () => {
-          expect((instances[0] as InstanceElement).value).toEqual({
+          expect((instances[0]).value).toEqual({
             applicationVisibilities: {
               app1: { application: 'app1', default: true, visible: false },
               app2: { application: 'app2', default: true, visible: false },
@@ -243,18 +243,18 @@ describe('Convert maps filter', () => {
           const fieldType = await profileObj.fields.applicationVisibilities.getType()
           expect(isMapType(fieldType)).toBeTruthy()
           expect(isListType(await (fieldType as MapType).getInnerType())).toBeTruthy()
-          expect(Array.isArray((instances[1] as InstanceElement).value.applicationVisibilities.sameApp)).toBeTruthy()
-          expect(Array.isArray((instances[0] as InstanceElement).value.applicationVisibilities.app1)).toBeTruthy()
+          expect(Array.isArray((instances[1]).value.applicationVisibilities.sameApp)).toBeTruthy()
+          expect(Array.isArray((instances[0]).value.applicationVisibilities.app1)).toBeTruthy()
           expect(
-            Array.isArray((instances[1] as InstanceElement).value.fieldPermissions.Account.AccountNumber),
+            Array.isArray((instances[1]).value.fieldPermissions.Account.AccountNumber),
           ).toBeTruthy()
           expect(
-            Array.isArray((instances[0] as InstanceElement).value.fieldPermissions.Contact.HasOptedOutOfEmail),
+            Array.isArray((instances[0]).value.fieldPermissions.Contact.HasOptedOutOfEmail),
           ).toBeTruthy()
         })
 
         it('should not fail even if there are unexpected API_NAME_SEPARATORs in the indexed value', () => {
-          const inst = instances[1] as InstanceElement
+          const inst = instances[1]
           expect(inst.value.layoutAssignments).toEqual({
             'Account_Account_Layout@bs': [{ layout: 'Account-Account Layout' }],
             too: [
@@ -313,7 +313,7 @@ describe('Convert maps filter', () => {
         })
 
         it('should convert instance values to maps while dropping invalid keys', () => {
-          expect((instances[0] as InstanceElement).value).toEqual({
+          expect((instances[0]).value).toEqual({
             applicationVisibilities: {
               app1: { application: 'app1', default: true, visible: false },
               app2: { application: 'app2', default: true, visible: false },
@@ -505,7 +505,7 @@ describe('Convert maps filter', () => {
           expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
         })
         it('should convert instance values to maps', () => {
-          expect((instances[0] as InstanceElement).value).toEqual({
+          expect((instances[0]).value).toEqual({
             applicationVisibilities: {
               app1: { application: 'app1', default: true, visible: false },
               app2: { application: 'app2', default: true, visible: false },

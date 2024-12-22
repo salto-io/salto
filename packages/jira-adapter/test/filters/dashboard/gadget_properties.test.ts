@@ -126,7 +126,7 @@ describe('gadgetPropertiesFilter', () => {
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
 
-      const propertiesType = elements[1] as ObjectType
+      const propertiesType = elements[1]
 
       expect(propertiesType.fields.key.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,

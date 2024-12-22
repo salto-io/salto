@@ -187,7 +187,7 @@ export const consumeWords: Consumer<string[]> = context => {
   const labels: ConsumerReturnType<string>[] = []
   while (context.lexer.peek()?.type === TOKEN_TYPES.WORD || context.lexer.peek()?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
     if (context.lexer.peek()?.type === TOKEN_TYPES.DOUBLE_QUOTES) {
-      labels.push(consumeSimpleString(context) as ConsumerReturnType<string>)
+      labels.push(consumeSimpleString(context))
     } else {
       labels.push(consumeWord(context))
     }

@@ -470,7 +470,7 @@ const buildNaclFilesState = async ({
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
     mergeFunc: elements => mergeElements(elements),
-  })) as Change[]
+  }))
   const postChangeHash = await currentState.parsedNaclFiles.getHash()
   await Promise.all([
     updateIndex(currentState.elementsIndex, elementsIndexAdditions, elementsIndexDeletions),

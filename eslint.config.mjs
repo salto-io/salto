@@ -184,7 +184,6 @@ export default [
       '@typescript-eslint/explicit-module-boundary-types': ['off'],
       '@typescript-eslint/return-await': ['error', 'in-try-catch'],
       '@typescript-eslint/no-floating-promises': ['error'],
-
       '@typescript-eslint/no-misused-promises': 'error',
 
       'jest/valid-describe': ['off'],
@@ -207,11 +206,13 @@ export default [
             },
             {
               group: ['**/dist/**', '@salto-io/**/src/**'],
-              message: 'Must not import directly from an internal file of a package, import from the top level package instead',
+              message:
+                'Must not import directly from an internal file of a package, import from the top level package instead',
             },
             {
               group: ['**/test/**', '**/e2e_test/**'],
-              message: 'Test files are not distributed with the package, must not import from test files in the src folder',
+              message:
+                'Test files are not distributed with the package, must not import from test files in the src folder',
             },
           ],
         },
@@ -236,6 +237,7 @@ export default [
 
       'no-unused-expressions': ['error'],
       '@typescript-eslint/await-thenable': ['error'],
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
     },
   },
   {

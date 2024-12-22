@@ -1289,7 +1289,7 @@ describe('Custom Object Instances filter', () => {
           ((await filter.onFetch(elements)) ?? {
             configSuggestions: [],
             errors: [],
-          }) as FilterResult
+          })
         ).configSuggestions ?? []
     })
 

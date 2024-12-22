@@ -173,7 +173,7 @@ describe('SalesforceAdapter CRUD', () => {
           connection.metadata.deploy.mockReturnValueOnce(
             mockDeployResult({
               success: true,
-              componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+              componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: 'new_id' }],
             }),
           )
           result = await createElement(adapter, instance)
@@ -194,6 +194,9 @@ describe('SalesforceAdapter CRUD', () => {
             name: 'Flow',
             members: instanceName,
           })
+        })
+        it('should add internal_id', async () => {
+          expect(result.value[constants.INTERNAL_ID_FIELD]).toBeDefined()
         })
       })
 
@@ -1486,6 +1489,7 @@ describe('SalesforceAdapter CRUD', () => {
             SalesforceArtifacts.PostDeployRetrieveZip,
           ])
         })
+        it('should update internal id for none profile instances', async () => {})
       })
 
       describe('when the result from Salesforce contains codeCoverageWarnings', () => {

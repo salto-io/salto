@@ -34,7 +34,7 @@ const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> =
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
-  profilesAndPermissionSets: false,
+  profilesAndPermissionSets: true,
   managedElements: true,
   formulaRefs: false,
 }

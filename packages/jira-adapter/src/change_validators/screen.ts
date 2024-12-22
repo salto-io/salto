@@ -26,6 +26,7 @@ export const screenValidator: ChangeValidator = async changes =>
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === 'Screen')
     .map(async instance => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const usedFields = (Object.values(instance.value.tabs ?? {}) as Values[]).flatMap(tab => tab.fields ?? [])
 
       const duplicateFields = _(usedFields)

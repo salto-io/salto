@@ -126,7 +126,7 @@ describe('filterInvalidChanges', () => {
 
   it('should have onUpdate change errors when all changes are invalid', async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const saltoOffice = afterElements[2]
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     const planResult = await getPlan({
       before: createElementSource(allElements),
@@ -142,7 +142,7 @@ describe('filterInvalidChanges', () => {
 
   it('should have onUpdate change errors when only some field addition are invalid', async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2] as ObjectType
+    const saltoOffice = afterElements[2]
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan({
@@ -214,7 +214,7 @@ describe('filterInvalidChanges', () => {
 
   it('should have onUpdate change errors when only some field removals are invalid', async () => {
     const beforeElements = mock.getAllElements()
-    const saltoOffice = beforeElements[2] as ObjectType
+    const saltoOffice = beforeElements[2]
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan({
@@ -236,10 +236,10 @@ describe('filterInvalidChanges', () => {
 
   it('should have onUpdate change errors when having invalid field modification', async () => {
     const beforeElements = mock.getAllElements()
-    const beforeSaltoOffice = beforeElements[2] as ObjectType
+    const beforeSaltoOffice = beforeElements[2]
     beforeSaltoOffice.fields.invalid = new Field(beforeSaltoOffice, 'invalid', BuiltinTypes.STRING)
     const afterElements = mock.getAllElements()
-    const afterSaltoOffice = afterElements[2] as ObjectType
+    const afterSaltoOffice = afterElements[2]
     afterSaltoOffice.fields.invalid = new Field(afterSaltoOffice, 'invalid', BuiltinTypes.STRING, {
       label: 'dummy annotation',
     })
@@ -257,7 +257,7 @@ describe('filterInvalidChanges', () => {
 
   it('should have onUpdate change errors when modifying values inside an instance', async () => {
     const afterElements = mock.getAllElements()
-    const saltoEmployeeInstance = afterElements[4] as InstanceElement
+    const saltoEmployeeInstance = afterElements[4]
     saltoEmployeeInstance.value.office.seats.invalid = 'anotherSeat'
     const seatsId = saltoEmployeeInstance.elemID.createNestedID('office', 'seats')
     const mockMapValueChangeValidator = mockFunction<ChangeValidator>().mockImplementation(async changes =>

@@ -6,15 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import _ from 'lodash'
-import {
-  InstanceElement,
-  ElemID,
-  ReferenceExpression,
-  isObjectType,
-  Field,
-  Values,
-  ObjectType,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ReferenceExpression, isObjectType, Field, Values } from '@salto-io/adapter-api'
 import { DependencyDirection } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import {
@@ -61,10 +53,7 @@ export const addZuoraRecipeReferences = async (
       return undefined
     }
 
-    const fields: Record<string, Field> = Object.assign(
-      {},
-      ...(refObjectFragments as ObjectType[]).map(fragment => fragment.fields),
-    )
+    const fields: Record<string, Field> = Object.assign({}, ...refObjectFragments.map(fragment => fragment.fields))
 
     return {
       id: refObjectFragments[0].elemID,

@@ -190,7 +190,7 @@ export const wrapAdditions = (nestedAdditions: DetailedAddition[], commonElement
     id: wrapperElement.elemID,
     path: refAddition.path,
     data: {
-      after: wrapperElement as Element,
+      after: wrapperElement,
     },
   } as DetailedAddition
 }

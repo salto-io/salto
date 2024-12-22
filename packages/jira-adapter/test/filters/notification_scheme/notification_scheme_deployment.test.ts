@@ -186,7 +186,7 @@ describe('notificationSchemeDeploymentFilter', () => {
       await filter.preDeploy(changes) // preDeploy sets the mappings
       await filter.onDeploy(changes)
       expect(changes).toHaveLength(1)
-      const afterInstance = changes[0].data.after as InstanceElement
+      const afterInstance = changes[0].data.after
       expect(afterInstance.value.notificationSchemeEvents[0].event?.id).toBeUndefined()
       expect(afterInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.notificationType).toBeUndefined()
@@ -210,7 +210,7 @@ describe('notificationSchemeDeploymentFilter', () => {
       const changes = [change]
       await filterWithDc.preDeploy(changes) // preDeploy sets the mappings
       await filterWithDc.onDeploy(changes)
-      const afterInstance = changes[0].data.after as InstanceElement
+      const afterInstance = changes[0].data.after
       expect(afterInstance.value.notificationSchemeEvents[0].eventType).toEqual(2)
       expect(afterInstance.value.notificationSchemeEvents[0].notifications[0]?.type).toEqual('EmailAddress')
     })

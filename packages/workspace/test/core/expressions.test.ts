@@ -473,7 +473,7 @@ describe('Test Salto Expressions', () => {
         ).toArray()) as [InstanceElement]
         const resolvedRef = resolvedElems[0].value.test as ReferenceExpression
         const resolvedValue = resolvedRef.topLevelParent as InstanceElement
-        const resolvedValueType = (await resolvedValue.getType()) as ObjectType
+        const resolvedValueType = await resolvedValue.getType()
         expect(resolvedValueType).toEqual(refTargetInstObj)
       })
 

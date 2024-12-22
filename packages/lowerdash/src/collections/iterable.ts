@@ -32,7 +32,7 @@ export const toIndexedIterable = <T>(iterable: Iterable<T>): IndexedIterable<T> 
       return r
     }
     index += 1
-    return { done: r.done, value: [index, r.value as T] }
+    return { done: r.done, value: [index, r.value] }
   }
 
   const iterator = iterable[Symbol.iterator]()

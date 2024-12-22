@@ -299,7 +299,7 @@ const buildDiagramMaps = async ({
   })
   workflow.value.statuses?.forEach(status => {
     if (typeof status.id === 'string') {
-      statusIdToStepId[status.id as string] = statusIdToStatus[status.id as string].id
+      statusIdToStepId[status.id] = statusIdToStatus[status.id].id
     }
   })
   const [initialStepId] = layout.statuses
@@ -316,7 +316,7 @@ const insertWorkflowDiagramFields = (
 ): void => {
   workflow.value.statuses?.forEach(status => {
     if (typeof status.id === 'string') {
-      status.location = { x: statusIdToStatus[status.id as string].x, y: statusIdToStatus[status.id as string].y }
+      status.location = { x: statusIdToStatus[status.id].x, y: statusIdToStatus[status.id].y }
     }
   })
   workflow.value.diagramInitialEntry = {

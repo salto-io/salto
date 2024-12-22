@@ -228,7 +228,7 @@ describe('CustomMetadata filter', () => {
         initialChange = toChange({ after: initialInstance })
         const changes = [initialChange]
         await filter.preDeploy(changes)
-        afterPreDeployInstance = getChangeData(changes[0]) as MetadataInstanceElement
+        afterPreDeployInstance = getChangeData(changes[0])
         const onDeployChanges = [toChange({ after: afterPreDeployInstance })]
         await filter.onDeploy(onDeployChanges)
         // eslint-disable-next-line prefer-destructuring

@@ -743,7 +743,7 @@ describe('NodeMap', () => {
         describe('the error\'s "errors" property', () => {
           let errors: ReadonlyMap<NodeId, Error>
           beforeEach(() => {
-            errors = (error as WalkError).handlerErrors
+            errors = error.handlerErrors
           })
 
           it('should contain the id of the errored node with the error', () => {
@@ -801,7 +801,7 @@ describe('NodeMap', () => {
         describe('the error\'s "errors" property', () => {
           let errors: ReadonlyMap<NodeId, Error>
           beforeEach(() => {
-            errors = (error as WalkError).handlerErrors
+            errors = error.handlerErrors
           })
 
           it('should contain the id of the errored node with the error', () => {
@@ -1033,7 +1033,7 @@ describe('NodeMap', () => {
         describe('the error\'s "errors" property', () => {
           let errors: ReadonlyMap<NodeId, Error>
           beforeEach(() => {
-            errors = (error as WalkError).handlerErrors
+            errors = error.handlerErrors
           })
 
           it('should contain the id of the errored node with the error', () => {

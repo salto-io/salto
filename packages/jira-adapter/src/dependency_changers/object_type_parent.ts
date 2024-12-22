@@ -15,11 +15,9 @@ import {
   isInstanceChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { deployment } from '@salto-io/adapter-components'
 import { OBJECT_TYPE_TYPE } from '../constants'
 
-type SetId = collections.set.SetId
 type RemovalInstanceChangeWithKey = deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>
 
 /*
@@ -39,9 +37,8 @@ export const objectTypeParentDependencyChanger: DependencyChanger = async change
   return objectTypeChanges
     .filter(({ change }) => getChangeData(change).value.parentObjectTypeId?.elemID?.typeName === OBJECT_TYPE_TYPE)
     .flatMap(({ change, key }) => {
-      const parentObjectTypeKey = fullNameToChangeKey[
-        getChangeData(change).value.parentObjectTypeId.elemID.getFullName()
-      ] as SetId
+      const parentObjectTypeKey =
+        fullNameToChangeKey[getChangeData(change).value.parentObjectTypeId.elemID.getFullName()]
 
       return parentObjectTypeKey === undefined
         ? []

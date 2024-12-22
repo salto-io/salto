@@ -124,7 +124,7 @@ const createMap = async (
       namespace,
       batchInterval: 1000,
       serialize: elem => serialize([elem]),
-      deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
+      deserialize: async elemStr => (await deserialize(elemStr))[0],
       persistent,
     }),
   }
@@ -134,7 +134,7 @@ const createReadOnlyMap = async (namespace: string, location = DB_LOCATION): Pro
   createReadOnlyRemoteMap({
     location,
     namespace,
-    deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
+    deserialize: async elemStr => (await deserialize(elemStr))[0],
   })
 
 async function* createAsyncIterable(iterable: Element[]): AsyncGenerator<rm.RemoteMapEntry<Element, string>> {
@@ -887,7 +887,7 @@ describe('test operations on remote db', () => {
     const res = await awu(remoteMap.values()).toArray()
     const elemToFieldNameMapping = (elem: Element): string | undefined =>
       isObjectType(elem)
-        ? Object.values((elem as ObjectType).fields)
+        ? Object.values(elem.fields)
             .map(field => field.name)
             .sort()
             .toString()

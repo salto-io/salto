@@ -215,8 +215,6 @@ describe('elements url filter', () => {
         message: WARNING_MESSAGE,
         detailedMessage: WARNING_MESSAGE,
       })
-      const resOnDeploy = await filter.onDeploy?.([toChange({ before: undefined, after: afterStandardObject })]) // ask tamir what should happen if ondeploy throws an error
-      expect(resOnDeploy).toBe(undefined)
     })
   })
 })

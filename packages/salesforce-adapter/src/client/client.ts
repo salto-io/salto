@@ -1024,7 +1024,7 @@ export default class SalesforceClient implements ISalesforceClient {
   public async cancelMetadataValidateOrDeployTask({
     taskId,
   }: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
-    const checkStatus = async (): Promise<CancelServiceAsyncTaskResult> => {
+    const cancelSalesforceDeployment = async (): Promise<CancelServiceAsyncTaskResult> => {
       try {
         const cancelDeployResult = await this.conn.request({
           method: 'PATCH',
@@ -1048,7 +1048,7 @@ export default class SalesforceClient implements ISalesforceClient {
         }
         if (cancelDeployResult.deployResult.status === 'Canceling') {
           await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
-          await checkStatus()
+          await cancelSalesforceDeployment()
         }
         return { errors: [] }
       } catch (e) {
@@ -1064,7 +1064,7 @@ export default class SalesforceClient implements ISalesforceClient {
         }
       }
     }
-    return checkStatus()
+    return cancelSalesforceDeployment()
   }
 
   @mapToUserFriendlyErrorMessages

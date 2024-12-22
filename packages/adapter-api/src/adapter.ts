@@ -75,7 +75,7 @@ export type DeployOptions = {
 }
 
 export type CancelServiceAsyncTaskInput = {
-  readonly taskId: string
+  taskId: string
 }
 
 export type CancelServiceAsyncTaskResult = {

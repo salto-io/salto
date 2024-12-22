@@ -20,9 +20,9 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import multipleDefaultsValidator from '../../src/change_validators/default_rules'
 import { createField } from '../utils'
-import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
-describe('multiple defaults change validator', () => {
+describe('default rules change validator', () => {
   const runChangeValidatorOnUpdate = (
     before: Field | InstanceElement,
     after: Field | InstanceElement,
@@ -615,6 +615,62 @@ describe('multiple defaults change validator', () => {
           changeErrors.forEach(error => {
             expect(error.severity).toEqual('Error')
           })
+        })
+      })
+    })
+    describe('PermissionSet', () => {
+      describe('has no defaults', () => {
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
+        beforeEach(() => {
+          const type = new ObjectType({
+            elemID: new ElemID(SALESFORCE, PERMISSION_SET_METADATA_TYPE),
+            fields: {
+              recordTypeVisibilities: {
+                refType: new MapType(
+                  new MapType(
+                    new ObjectType({
+                      elemID: new ElemID(SALESFORCE, 'PermissionSetRecordTypeVisibility'),
+                      fields: { default: { refType: BuiltinTypes.BOOLEAN } },
+                      annotations: {
+                        [METADATA_TYPE]: 'PermissionSetRecordTypeVisibility',
+                      },
+                    }),
+                  ),
+                ),
+              },
+            },
+            annotations: {
+              [METADATA_TYPE]: PERMISSION_SET_METADATA_TYPE,
+            },
+          })
+          beforeInstance = createInstanceElement(
+            {
+              fullName: 'PermissionSetInstance',
+              recordTypeVisibilities: {
+                test1: {
+                  testRecordType1: {
+                    visible: false,
+                  },
+                  testRecordType2: {
+                    visible: false,
+                  },
+                },
+                test2: {
+                  testRecordType3: {
+                    visible: true,
+                  },
+                },
+              },
+            },
+            type,
+          )
+          afterInstance = beforeInstance.clone()
+          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.visible = true
+        })
+        it('should not create errors', async () => {
+          const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
+          expect(changeErrors).toBeEmpty()
         })
       })
     })

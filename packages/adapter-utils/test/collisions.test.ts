@@ -13,11 +13,7 @@ import {
   SaltoError,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import {
-  getAndLogCollisionWarnings,
-  getInstancesWithCollidingElemID,
-  getAndLogCollisionWarningsV2,
-} from '../src/collisions'
+import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID, getCollisionWarnings } from '../src/collisions'
 
 const COLLISION_MESSAGE = 'Some elements were not fetched due to Salto ID collisions'
 
@@ -43,7 +39,10 @@ describe('collisions', () => {
         [CORE_ANNOTATIONS.ALIAS]: 'aliasName',
       },
     )
-    collidedInstance = new InstanceElement('test', instType, { title: 'test', val: 'val' })
+    collidedInstance = new InstanceElement('test', instType, { title: 'test', val: 'val' }, undefined, {
+      [CORE_ANNOTATIONS.SERVICE_URL]: 'QuackUrl',
+      [CORE_ANNOTATIONS.ALIAS]: 'QuackAliasName',
+    })
     differentInstance = new InstanceElement('test1', instType, { title: 'test1' }, undefined, {
       [CORE_ANNOTATIONS.SERVICE_URL]: 'anotherUrl',
       [CORE_ANNOTATIONS.ALIAS]: 'anotherAliasName',
@@ -155,22 +154,15 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
     })
   })
   describe('getAndLogCollisionWarningsV2', () => {
-    const prefix = (x: string): string => `${x} salto elements `
-    const andTheirChildElements = 'and their child elements '
-    const wereNotFetched = (elemID: string): string => `were not fetched, as they were mapped to a single ID ${elemID}:`
-    const usuallyThisHappens =
-      'Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.'
-    const learnMore =
-      '[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)'
-
     it('should return the correct warning messages', async () => {
-      const instancesLinks = '[aliasName](someUrl), [aliasName](someUrl)\n'
-      const detailedMessage = `${prefix('2')}${wereNotFetched(instance.elemID.getFullName())}
-${instancesLinks}
-${usuallyThisHappens}
-${learnMore}`
-      const errors = getAndLogCollisionWarningsV2({
-        instances: [instance, instance.clone()],
+      const detailedMessage = `2 salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
+[aliasName](someUrl), [QuackAliasName](QuackUrl)
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)`
+
+      const errors = getCollisionWarnings({
+        instances: [instance, collidedInstance],
       })
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
@@ -181,13 +173,14 @@ ${learnMore}`
     })
 
     it('should add children message when addChildrenMessage is true', async () => {
-      const instancesLinks = '[aliasName](someUrl), [aliasName](someUrl)\n'
-      const detailedMessage = `${prefix('2')}${andTheirChildElements}${wereNotFetched(instance.elemID.getFullName())}
-${instancesLinks}
-${usuallyThisHappens}
-${learnMore}`
-      const errors = getAndLogCollisionWarningsV2({
-        instances: [instance, instance.clone()],
+      const detailedMessage = `2 salto elements and their child elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
+[aliasName](someUrl), [QuackAliasName](QuackUrl)
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)`
+
+      const errors = getCollisionWarnings({
+        instances: [instance, collidedInstance],
         addChildrenMessage: true,
       })
       expect(errors).toHaveLength(1)
@@ -200,13 +193,14 @@ ${learnMore}`
 
     it('should use the elemID name when alias is not defined', async () => {
       instance.annotations[CORE_ANNOTATIONS.ALIAS] = undefined
-      const instancesLinks = '[test](someUrl), [test](someUrl)\n'
-      const detailedMessage = `${prefix('2')}${wereNotFetched(instance.elemID.getFullName())}
-${instancesLinks}
-${usuallyThisHappens}
-${learnMore}`
-      const errors = getAndLogCollisionWarningsV2({
-        instances: [instance, instance.clone()],
+      const detailedMessage = `2 salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
+[test](someUrl), [QuackAliasName](QuackUrl)
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)`
+
+      const errors = getCollisionWarnings({
+        instances: [instance, collidedInstance],
       })
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
@@ -218,13 +212,16 @@ ${learnMore}`
 
     it('should not create links when serviceUrl is not defined', async () => {
       instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = undefined
-      const instancesLinks = 'aliasName, aliasName\n'
-      const detailedMessage = `${prefix('2')}${wereNotFetched(instance.elemID.getFullName())}
-${instancesLinks}
-${usuallyThisHappens}
-${learnMore}`
-      const errors = getAndLogCollisionWarningsV2({
-        instances: [instance, instance.clone()],
+      collidedInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = undefined
+
+      const detailedMessage = `2 salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
+aliasName, QuackAliasName
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)`
+
+      const errors = getCollisionWarnings({
+        instances: [instance, collidedInstance],
       })
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
@@ -234,25 +231,26 @@ ${learnMore}`
       })
     })
     it('should return no errors when there are no collided instances', async () => {
-      const errors = getAndLogCollisionWarningsV2({
-        instances: [],
+      const errors = getCollisionWarnings({
+        instances: [instance, differentInstance],
       })
       expect(errors).toHaveLength(0)
     })
     it('should return a message for each duplicated elemID', async () => {
-      const firstInstancesLinks = '[aliasName](someUrl), [aliasName](someUrl), [aliasName](someUrl)\n'
-      const firstDetailedMessage = `${prefix('3')}${wereNotFetched(instance.elemID.getFullName())}
-${firstInstancesLinks}
-${usuallyThisHappens}
-${learnMore}`
-      const secondInstancesLinks = '[anotherAliasName](anotherUrl), [anotherAliasName](anotherUrl)\n'
-      const secondDetailedMessage = `${prefix('2')}${wereNotFetched(differentInstance.elemID.getFullName())}
-${secondInstancesLinks}
-${usuallyThisHappens}
-${learnMore}`
+      const firstDetailedMessage = `3 salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test:
+[aliasName](someUrl), [aliasName](someUrl), [QuackAliasName](QuackUrl)
 
-      const errors = getAndLogCollisionWarningsV2({
-        instances: [instance, instance.clone(), instance.clone(), differentInstance, differentInstance.clone()],
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)`
+
+      const secondDetailedMessage = `2 salto elements were not fetched, as they were mapped to a single ID salto.obj.instance.test1:
+[anotherAliasName](anotherUrl), [anotherAliasName](anotherUrl)
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+[Learn about additional ways to resolve this issue](https://help.salto.io/en/articles/6927157-salto-id-collisions)`
+
+      const errors = getCollisionWarnings({
+        instances: [instance, instance.clone(), collidedInstance.clone(), differentInstance, differentInstance.clone()],
       })
       expect(errors).toHaveLength(2)
       expect(errors[0]).toEqual({

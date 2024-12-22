@@ -86,22 +86,6 @@ const logInstancesWithCollidingElemID = async (
     })
   })
 }
-// after SALTO-7088 is done, this function will replace logInstancesWithCollidingElemID
-const logInstancesWithCollidingElemIDV2 = (elemIDtoInstances: Record<string, InstanceElement[]>): void => {
-  Object.entries(elemIDtoInstances).forEach(([elemID, collideInstances]) => {
-    if (collideInstances.length <= 1) {
-      log.error('Collide instances length is less than or equal to 1 for elemID %s', elemID)
-      return
-    }
-    const type = collideInstances[0].elemID.typeName
-    const instancesCount = collideInstances.length
-    log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
-    const relevantInstanceValues = collideInstances.map(instance => _.pickBy(instance.value, val => val != null))
-    const relevantInstanceValuesStr = relevantInstanceValues.map(instValues => inspectValue(instValues)).join('\n')
-    log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
-  ${relevantInstanceValuesStr}`)
-  })
-}
 
 const getCollisionMessages = async ({
   elemIDtoInstances,
@@ -169,7 +153,7 @@ ${createMarkdownLinkOrText({ text: 'Learn about additional ways to resolve this 
   )
 
 // after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings
-export const getAndLogCollisionWarningsV2 = ({
+export const getCollisionWarnings = ({
   instances,
   addChildrenMessage,
 }: {
@@ -180,8 +164,10 @@ export const getAndLogCollisionWarningsV2 = ({
     return []
   }
   const adapterName = instances[0].elemID.adapter
-  const elemIDtoInstances = _.groupBy(instances, instance => instance.elemID.getFullName())
-  logInstancesWithCollidingElemIDV2(elemIDtoInstances)
+  const elemIDtoInstances = _.pickBy(
+    _.groupBy(instances, instance => instance.elemID.getFullName()),
+    collideInstances => collideInstances.length > 1,
+  )
   const warningMessages = createWarningMessages({
     elemIDtoInstances,
     adapterName,

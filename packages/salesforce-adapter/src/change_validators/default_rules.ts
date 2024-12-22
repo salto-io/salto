@@ -240,7 +240,7 @@ const getInstancesMultipleDefaultsErrors = async (after: InstanceElement): Promi
             return [createInstanceChangeError(field, defaultsContexts, after)]
           }
           const typesToCheck = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldPath].types
-          if (typesToCheck !== undefined && typesToCheck.some(type => isInstanceOfTypeSync(type)(after))) {
+          if (typesToCheck !== undefined && isInstanceOfTypeSync(...typesToCheck)(after)) {
             if (defaultsCount === 1) {
               const singleDefaultIsValid = findNotVisibleDefault(innerValue, startLevelType)
               if (singleDefaultIsValid !== undefined) {

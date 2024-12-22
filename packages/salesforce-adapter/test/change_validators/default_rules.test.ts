@@ -620,50 +620,33 @@ describe('default rules change validator', () => {
     })
     describe('PermissionSet', () => {
       describe('has no defaults', () => {
-        const createAfterInstance = (
-          beforeInstance: InstanceElement,
-          changedDefaultValue: boolean = true,
-        ): InstanceElement => {
-          const afterInstance = beforeInstance.clone()
-          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.visible = changedDefaultValue
-          return afterInstance
-        }
-        const type = new ObjectType({
-          elemID: new ElemID(SALESFORCE, PERMISSION_SET_METADATA_TYPE),
-          fields: {
-            applicationVisibilities: {
-              refType: new MapType(
-                new ObjectType({
-                  elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
-                  fields: { default: { refType: BuiltinTypes.BOOLEAN } },
-                  annotations: {
-                    [METADATA_TYPE]: 'ProfileApplicationVisibility',
-                  },
-                }),
-              ),
-            },
-            recordTypeVisibilities: {
-              refType: new MapType(
-                new MapType(
-                  new ObjectType({
-                    elemID: new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility'),
-                    fields: { default: { refType: BuiltinTypes.BOOLEAN } },
-                    annotations: {
-                      [METADATA_TYPE]: 'ProfileRecordTypeVisibility',
-                    },
-                  }),
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
+        beforeEach(() => {
+          const type = new ObjectType({
+            elemID: new ElemID(SALESFORCE, PERMISSION_SET_METADATA_TYPE),
+            fields: {
+              recordTypeVisibilities: {
+                refType: new MapType(
+                  new MapType(
+                    new ObjectType({
+                      elemID: new ElemID(SALESFORCE, 'PermissionSetRecordTypeVisibility'),
+                      fields: { default: { refType: BuiltinTypes.BOOLEAN } },
+                      annotations: {
+                        [METADATA_TYPE]: 'PermissionSetRecordTypeVisibility',
+                      },
+                    }),
+                  ),
                 ),
-              ),
+              },
             },
-          },
-          annotations: {
-            [METADATA_TYPE]: PERMISSION_SET_METADATA_TYPE,
-          },
-        })
-        it('should not raise errors', async () => {
-          const beforeInstance = createInstanceElement(
+            annotations: {
+              [METADATA_TYPE]: PERMISSION_SET_METADATA_TYPE,
+            },
+          })
+          beforeInstance = createInstanceElement(
             {
-              fullName: 'ProfileInstance',
+              fullName: 'PermissionSetInstance',
               recordTypeVisibilities: {
                 test1: {
                   testRecordType1: {
@@ -682,9 +665,12 @@ describe('default rules change validator', () => {
             },
             type,
           )
-          const afterInstance = createAfterInstance(beforeInstance)
+          afterInstance = beforeInstance.clone()
+          afterInstance.value.recordTypeVisibilities.test1.testRecordType1.visible = true
+        })
+        it('should not create errors', async () => {
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
-          expect(changeErrors).toHaveLength(0)
+          expect(changeErrors).toBeEmpty()
         })
       })
     })

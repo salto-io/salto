@@ -34,7 +34,7 @@ import {
 import { fetchMetadataType } from '../src/fetch'
 // eslint-disable-next-line no-restricted-imports
 import { defaultFilterContext } from '../test/utils'
-import { SalesforceDeployProgressReporter } from '../src/adapter_creator'
+import { DeployProgressReporter } from '../src/adapter_creator'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -188,7 +188,7 @@ export const removeElementIfAlreadyExists = async (
   }
 }
 
-export const nullProgressReporter: SalesforceDeployProgressReporter = {
+export const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => {},
   reportMetadataProgress: () => {},
   reportDataProgress: () => {},

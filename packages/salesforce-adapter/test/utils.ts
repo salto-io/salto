@@ -32,7 +32,7 @@ import { annotationsFileName, customFieldsFileName, standardFieldsFileName } fro
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 import { CustomReferencesSettings, LastChangeDateOfTypesWithNestedInstances, OptionalFeatures } from '../src/types'
-import { createDeployProgressReporter, SalesforceDeployProgressReporter } from '../src/adapter_creator'
+import { createDeployProgressReporter, DeployProgressReporter } from '../src/adapter_creator'
 import { SalesforceClient } from '../index'
 
 export const findElements = (elements: ReadonlyArray<Element>, ...name: ReadonlyArray<string>): Element[] => {
@@ -399,7 +399,7 @@ export const emptyLastChangeDateOfTypesWithNestedInstances = (): LastChangeDateO
   CustomLabels: '2023-11-06T00:00:00.000Z',
 })
 
-export const nullProgressReporter: SalesforceDeployProgressReporter = {
+export const nullProgressReporter: DeployProgressReporter = {
   reportProgress: () => {},
   reportDataProgress: () => {},
   reportMetadataProgress: () => {},

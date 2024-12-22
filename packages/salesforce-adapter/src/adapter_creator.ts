@@ -145,7 +145,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
         'Enabled validators configuration must be an object if it is defined',
       )
     }
-    Object.entries(validators as {}).forEach(([key, value]) => {
+    Object.entries(validators).forEach(([key, value]) => {
       if (!_.isBoolean(value)) {
         throw new ConfigValidationError(['validators', key], 'Value must be true or false')
       }

@@ -1420,31 +1420,25 @@ describe('SalesforceAdapter CRUD', () => {
   describe('Update operation', () => {
     let result: DeployResult
     describe('for an instance element', () => {
-      let beforeInstance: InstanceElement
-      let afterInstance: InstanceElement
-
-      beforeEach(() => {
-        beforeInstance = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
-        afterInstance = createInstanceElement(
-          {
-            ...mockDefaultValues.Profile,
-            description: 'Updated profile description',
-          },
-          mockTypes.Profile,
-        )
-      })
-
-      describe('when the request succeeds', () => {
-        const DEPLOYMENT_ID = 'testDeploymentId'
+      describe('for non profile instances', () => {
         beforeEach(async () => {
+          const DEPLOYMENT_ID = 'testDeploymentId'
+          const beforeInstanceNoProfile = createInstanceElement(mockDefaultValues.ApexPage, mockTypes.ApexPage)
+          const afterInstanceNoProfile = createInstanceElement(
+            {
+              ...mockDefaultValues.ApexPage,
+              description: 'Updated ApexPage description',
+            },
+            mockTypes.ApexPage,
+          )
           connection.metadata.deploy.mockReturnValueOnce(
             mockDeployResult({
               id: DEPLOYMENT_ID,
               success: true,
               componentSuccess: [
                 {
-                  fullName: mockDefaultValues.Profile.fullName,
-                  componentType: constants.PROFILE_METADATA_TYPE,
+                  fullName: mockDefaultValues.ApexPage.fullName,
+                  componentType: constants.APEX_PAGE_METADATA_TYPE,
                   id: 'new_id',
                 },
               ],
@@ -1453,267 +1447,317 @@ describe('SalesforceAdapter CRUD', () => {
           )
           result = await adapter.deploy({
             changeGroup: {
-              groupID: afterInstance.elemID.getFullName(),
+              groupID: afterInstanceNoProfile.elemID.getFullName(),
               changes: [
                 {
                   action: 'modify',
-                  data: { before: beforeInstance, after: afterInstance },
+                  data: { before: beforeInstanceNoProfile, after: afterInstanceNoProfile },
                 },
               ],
             },
             progressReporter: nullProgressReporter,
           })
         })
-        it('should return an InstanceElement', () => {
-          expect(result.appliedChanges).toHaveLength(1)
-          expect(getChangeData(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
+        it('should update internal id for non profile instances', async () => {
+          const a = _.get(getChangeData(result.appliedChanges[0]), 'value')[constants.INTERNAL_ID_FIELD]
+          expect(a).not.toBe('ApexPageId')
+          expect(a).toBe('new_id')
         })
-
-        it('should call the connection methods correctly', async () => {
-          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
-          const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
-          expect(manifest?.types).toEqual({
-            name: constants.PROFILE_METADATA_TYPE,
-            members: mockDefaultValues.Profile.fullName,
-          })
-        })
-        it('should return deployment URL containing the deployment ID in the extra properties', async () => {
-          const receivedUrl = (result.extraProperties?.groups ?? [])[0].url
-          expect(receivedUrl).toContain(DEPLOYMENT_ID)
-        })
-        it('should return correct artifacts', () => {
-          const groups = result.extraProperties?.groups ?? []
-          expect(groups).toHaveLength(1)
-          const artifactNames = makeArray(groups[0].artifacts).map(artifact => artifact.name)
-          expect(artifactNames).toIncludeSameMembers([
-            SalesforceArtifacts.DeployPackageXml,
-            SalesforceArtifacts.PostDeployRetrieveZip,
-          ])
-        })
-        it('should update internal id for non profile instances', async () => {})
       })
+      describe('for general instance element', () => {
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
 
-      describe('when the result from Salesforce contains codeCoverageWarnings', () => {
-        beforeEach(async () => {
-          connection.metadata.deploy.mockReturnValueOnce(
-            mockDeployResult({
-              id: 'DeploymentWithCodeCoverageWarnings',
-              success: true,
-              componentSuccess: [
-                {
-                  fullName: mockDefaultValues.Profile.fullName,
-                  componentType: constants.PROFILE_METADATA_TYPE,
-                },
-              ],
-              runTestResult: {
-                codeCoverageWarnings: [
+        beforeEach(() => {
+          beforeInstance = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
+          afterInstance = createInstanceElement(
+            {
+              ...mockDefaultValues.Profile,
+              description: 'Updated profile description',
+            },
+            mockTypes.Profile,
+          )
+        })
+
+        describe('when the request succeeds', () => {
+          const DEPLOYMENT_ID = 'testDeploymentId'
+          beforeEach(async () => {
+            connection.metadata.deploy.mockReturnValueOnce(
+              mockDeployResult({
+                id: DEPLOYMENT_ID,
+                success: true,
+                componentSuccess: [
                   {
-                    id: '1',
-                    message: 'Code Coverage Went Down',
+                    fullName: mockDefaultValues.Profile.fullName,
+                    componentType: constants.PROFILE_METADATA_TYPE,
+                  },
+                ],
+                retrieveResult: await mockRetrieveResult({}),
+              }),
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: afterInstance.elemID.getFullName(),
+                changes: [
+                  {
+                    action: 'modify',
+                    data: { before: beforeInstance, after: afterInstance },
                   },
                 ],
               },
-            }),
-          )
-          result = await adapter.deploy({
-            changeGroup: {
-              groupID: afterInstance.elemID.getFullName(),
-              changes: [
-                {
-                  action: 'modify',
-                  data: { before: beforeInstance, after: afterInstance },
-                },
-              ],
-            },
-            progressReporter: nullProgressReporter,
+              progressReporter: nullProgressReporter,
+            })
           })
-        })
-        it('should produce a deploy error', () => {
-          expect(result.errors).toHaveLength(1)
-        })
-      })
-
-      describe('when the DeployResult contains errorMessage', () => {
-        beforeEach(async () => {
-          connection.metadata.deploy.mockReturnValue(
-            mockDeployResult({
-              id: 'DeploymentWithErrorMessageErrors',
-              success: false,
-              errorMessage: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
-              componentSuccess: [
-                {
-                  fullName: mockDefaultValues.Profile.fullName,
-                  componentType: constants.PROFILE_METADATA_TYPE,
-                },
-              ],
-            }),
-          )
-          result = await adapter.deploy({
-            changeGroup: {
-              groupID: afterInstance.elemID.getFullName(),
-              changes: [
-                {
-                  action: 'modify',
-                  data: { before: beforeInstance, after: afterInstance },
-                },
-              ],
-            },
-            progressReporter: nullProgressReporter,
+          it('should return an InstanceElement', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            expect(getChangeData(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
           })
-        })
-        it('should produce a deploy error', () => {
-          expect(result.errors).toEqual([
-            expect.objectContaining({
-              message: expect.stringContaining('UNKNOWN_EXCEPTION'),
-              detailedMessage: expect.stringContaining('UNKNOWN_EXCEPTION'),
-            }),
-            expect.objectContaining({
-              elemID: afterInstance.elemID,
-              message: expect.stringContaining('rollbackOnError'),
-              detailedMessage: expect.stringContaining('rollbackOnError'),
-            }),
-          ])
-        })
-      })
 
-      describe('when the request fails because fullNames are not the same', () => {
-        beforeEach(async () => {
-          afterInstance = beforeInstance.clone()
-          afterInstance.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
-          result = await adapter.deploy({
-            changeGroup: {
-              groupID: afterInstance.elemID.getFullName(),
-              changes: [
-                {
-                  action: 'modify',
-                  data: { before: beforeInstance, after: afterInstance },
-                },
-              ],
-            },
-            progressReporter: nullProgressReporter,
+          it('should call the connection methods correctly', async () => {
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+            expect(manifest?.types).toEqual({
+              name: constants.PROFILE_METADATA_TYPE,
+              members: mockDefaultValues.Profile.fullName,
+            })
+          })
+          it('should return deployment URL containing the deployment ID in the extra properties', async () => {
+            const receivedUrl = (result.extraProperties?.groups ?? [])[0].url
+            expect(receivedUrl).toContain(DEPLOYMENT_ID)
+          })
+          it('should return correct artifacts', () => {
+            const groups = result.extraProperties?.groups ?? []
+            expect(groups).toHaveLength(1)
+            const artifactNames = makeArray(groups[0].artifacts).map(artifact => artifact.name)
+            expect(artifactNames).toIncludeSameMembers([
+              SalesforceArtifacts.DeployPackageXml,
+              SalesforceArtifacts.PostDeployRetrieveZip,
+            ])
           })
         })
 
-        it('should return an error', () => {
-          expect(result.errors).toHaveLength(1)
+        describe('when the result from Salesforce contains codeCoverageWarnings', () => {
+          beforeEach(async () => {
+            connection.metadata.deploy.mockReturnValueOnce(
+              mockDeployResult({
+                id: 'DeploymentWithCodeCoverageWarnings',
+                success: true,
+                componentSuccess: [
+                  {
+                    fullName: mockDefaultValues.Profile.fullName,
+                    componentType: constants.PROFILE_METADATA_TYPE,
+                  },
+                ],
+                runTestResult: {
+                  codeCoverageWarnings: [
+                    {
+                      id: '1',
+                      message: 'Code Coverage Went Down',
+                    },
+                  ],
+                },
+              }),
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: afterInstance.elemID.getFullName(),
+                changes: [
+                  {
+                    action: 'modify',
+                    data: { before: beforeInstance, after: afterInstance },
+                  },
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          })
+          it('should produce a deploy error', () => {
+            expect(result.errors).toHaveLength(1)
+          })
         })
 
-        it('should return empty applied changes', () => {
-          expect(result.appliedChanges).toHaveLength(0)
+        describe('when the DeployResult contains errorMessage', () => {
+          beforeEach(async () => {
+            connection.metadata.deploy.mockReturnValue(
+              mockDeployResult({
+                id: 'DeploymentWithErrorMessageErrors',
+                success: false,
+                errorMessage: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
+                componentSuccess: [
+                  {
+                    fullName: mockDefaultValues.Profile.fullName,
+                    componentType: constants.PROFILE_METADATA_TYPE,
+                  },
+                ],
+              }),
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: afterInstance.elemID.getFullName(),
+                changes: [
+                  {
+                    action: 'modify',
+                    data: { before: beforeInstance, after: afterInstance },
+                  },
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          })
+          it('should produce a deploy error', () => {
+            expect(result.errors).toEqual([
+              expect.objectContaining({
+                message: expect.stringContaining('UNKNOWN_EXCEPTION'),
+                detailedMessage: expect.stringContaining('UNKNOWN_EXCEPTION'),
+              }),
+              expect.objectContaining({
+                elemID: afterInstance.elemID,
+                message: expect.stringContaining('rollbackOnError'),
+                detailedMessage: expect.stringContaining('rollbackOnError'),
+              }),
+            ])
+          })
         })
 
-        it('should not call the connection', () => {
-          expect(connection.metadata.deploy).not.toHaveBeenCalled()
-        })
-      })
+        describe('when the request fails because fullNames are not the same', () => {
+          beforeEach(async () => {
+            afterInstance = beforeInstance.clone()
+            afterInstance.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: afterInstance.elemID.getFullName(),
+                changes: [
+                  {
+                    action: 'modify',
+                    data: { before: beforeInstance, after: afterInstance },
+                  },
+                ],
+              },
+              progressReporter: nullProgressReporter,
+            })
+          })
 
-      describe('delete metadata objects inside of instances upon update', () => {
-        describe('objects names are nested', () => {
-          const assignmentRuleFieldName = 'assignmentRule'
-          const oldAssignmentRules = createInstanceElement(
-            {
+          it('should return an error', () => {
+            expect(result.errors).toHaveLength(1)
+          })
+
+          it('should return empty applied changes', () => {
+            expect(result.appliedChanges).toHaveLength(0)
+          })
+
+          it('should not call the connection', () => {
+            expect(connection.metadata.deploy).not.toHaveBeenCalled()
+          })
+        })
+
+        describe('delete metadata objects inside of instances upon update', () => {
+          describe('objects names are nested', () => {
+            const assignmentRuleFieldName = 'assignmentRule'
+            const oldAssignmentRules = createInstanceElement(
+              {
+                [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
+                [assignmentRuleFieldName]: [
+                  { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
+                  { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
+                ],
+              },
+              mockTypes.AssignmentRules,
+            )
+
+            beforeEach(async () => {
+              const newAssignmentRules = oldAssignmentRules.clone()
+              // Remove one of the rules
+              newAssignmentRules.value[assignmentRuleFieldName].pop()
+              await adapter.deploy({
+                changeGroup: {
+                  groupID: oldAssignmentRules.elemID.getFullName(),
+                  changes: [
+                    {
+                      action: 'modify',
+                      data: {
+                        before: oldAssignmentRules,
+                        after: newAssignmentRules,
+                      },
+                    },
+                  ],
+                },
+                progressReporter: nullProgressReporter,
+              })
+            })
+
+            it('should delete on remove metadata objects with field names', async () => {
+              expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+              const { deleteManifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+              expect(deleteManifest).toBeDefined()
+              expect(deleteManifest?.types).toEqual({
+                name: 'AssignmentRule',
+                members: `${instanceName}.Val2`,
+              })
+            })
+          })
+
+          describe('objects names are absolute', () => {
+            const customLabelsFieldName = 'labels'
+            const mockCustomLabelsObjectType = new ObjectType({
+              elemID: mockElemID,
+              fields: {
+                [constants.INSTANCE_FULL_NAME_FIELD]: {
+                  refType: BuiltinTypes.SERVICE_ID,
+                },
+                [customLabelsFieldName]: {
+                  refType: new ObjectType({
+                    elemID: mockElemID,
+                    fields: {
+                      [constants.INSTANCE_FULL_NAME_FIELD]: {
+                        refType: BuiltinTypes.SERVICE_ID,
+                      },
+                    },
+                    annotations: {
+                      [constants.METADATA_TYPE]: 'CustomLabel',
+                    },
+                  }),
+                },
+              },
+              annotationRefsOrTypes: {},
+              annotations: {
+                [constants.METADATA_TYPE]: 'CustomLabels',
+              },
+            })
+            const oldCustomLabels = new InstanceElement(instanceName, mockCustomLabelsObjectType, {
               [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
-              [assignmentRuleFieldName]: [
+              [customLabelsFieldName]: [
                 { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
                 { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
               ],
-            },
-            mockTypes.AssignmentRules,
-          )
+            })
+            const newCustomLabels = new InstanceElement(instanceName, mockCustomLabelsObjectType, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
+              [customLabelsFieldName]: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' }],
+            })
 
-          beforeEach(async () => {
-            const newAssignmentRules = oldAssignmentRules.clone()
-            // Remove one of the rules
-            newAssignmentRules.value[assignmentRuleFieldName].pop()
-            await adapter.deploy({
-              changeGroup: {
-                groupID: oldAssignmentRules.elemID.getFullName(),
-                changes: [
-                  {
-                    action: 'modify',
-                    data: {
-                      before: oldAssignmentRules,
-                      after: newAssignmentRules,
+            beforeEach(async () => {
+              await adapter.deploy({
+                changeGroup: {
+                  groupID: oldCustomLabels.elemID.getFullName(),
+                  changes: [
+                    {
+                      action: 'modify',
+                      data: { before: oldCustomLabels, after: newCustomLabels },
                     },
-                  },
-                ],
-              },
-              progressReporter: nullProgressReporter,
+                  ],
+                },
+                progressReporter: nullProgressReporter,
+              })
             })
-          })
 
-          it('should delete on remove metadata objects with field names', async () => {
-            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
-            const { deleteManifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
-            expect(deleteManifest).toBeDefined()
-            expect(deleteManifest?.types).toEqual({
-              name: 'AssignmentRule',
-              members: `${instanceName}.Val2`,
-            })
-          })
-        })
-
-        describe('objects names are absolute', () => {
-          const customLabelsFieldName = 'labels'
-          const mockCustomLabelsObjectType = new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: {
-                refType: BuiltinTypes.SERVICE_ID,
-              },
-              [customLabelsFieldName]: {
-                refType: new ObjectType({
-                  elemID: mockElemID,
-                  fields: {
-                    [constants.INSTANCE_FULL_NAME_FIELD]: {
-                      refType: BuiltinTypes.SERVICE_ID,
-                    },
-                  },
-                  annotations: {
-                    [constants.METADATA_TYPE]: 'CustomLabel',
-                  },
-                }),
-              },
-            },
-            annotationRefsOrTypes: {},
-            annotations: {
-              [constants.METADATA_TYPE]: 'CustomLabels',
-            },
-          })
-          const oldCustomLabels = new InstanceElement(instanceName, mockCustomLabelsObjectType, {
-            [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
-            [customLabelsFieldName]: [
-              { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' },
-              { [constants.INSTANCE_FULL_NAME_FIELD]: 'Val2' },
-            ],
-          })
-          const newCustomLabels = new InstanceElement(instanceName, mockCustomLabelsObjectType, {
-            [constants.INSTANCE_FULL_NAME_FIELD]: instanceName,
-            [customLabelsFieldName]: [{ [constants.INSTANCE_FULL_NAME_FIELD]: 'Val1' }],
-          })
-
-          beforeEach(async () => {
-            await adapter.deploy({
-              changeGroup: {
-                groupID: oldCustomLabels.elemID.getFullName(),
-                changes: [
-                  {
-                    action: 'modify',
-                    data: { before: oldCustomLabels, after: newCustomLabels },
-                  },
-                ],
-              },
-              progressReporter: nullProgressReporter,
-            })
-          })
-
-          it('should call delete on remove metadata objects with object names', async () => {
-            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
-            const { deleteManifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
-            expect(deleteManifest).toBeDefined()
-            expect(deleteManifest?.types).toEqual({
-              name: 'CustomLabel',
-              members: 'Val2',
+            it('should call delete on remove metadata objects with object names', async () => {
+              expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+              const { deleteManifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+              expect(deleteManifest).toBeDefined()
+              expect(deleteManifest?.types).toEqual({
+                name: 'CustomLabel',
+                members: 'Val2',
+              })
             })
           })
         })

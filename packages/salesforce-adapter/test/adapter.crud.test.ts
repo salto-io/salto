@@ -1441,6 +1441,7 @@ describe('SalesforceAdapter CRUD', () => {
                 {
                   fullName: mockDefaultValues.Profile.fullName,
                   componentType: constants.PROFILE_METADATA_TYPE,
+                  id: 'new_id',
                 },
               ],
               retrieveResult: await mockRetrieveResult({}),
@@ -1485,7 +1486,7 @@ describe('SalesforceAdapter CRUD', () => {
             SalesforceArtifacts.PostDeployRetrieveZip,
           ])
         })
-        it('should update internal id for none profile instances', async () => {})
+        it('should update internal id for non profile instances', async () => {})
       })
 
       describe('when the result from Salesforce contains codeCoverageWarnings', () => {

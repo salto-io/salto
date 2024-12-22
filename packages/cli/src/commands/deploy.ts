@@ -189,13 +189,15 @@ const deployPlan = async (
     .flatMap(item => Array.from(item.changes()))
     .map(change => applyFunctionToChangeDataSync(change, element => element.clone()))
 
-  const result = await deploy(
+  const result = await deploy({
     workspace,
     actionPlan,
-    (item: PlanItem, step: ItemStatus, details?: string | Progress) => updateAction(item, step, details),
+    reportProgress: (item: PlanItem, step: ItemStatus, details?: string | Progress) =>
+      updateAction(item, step, details),
     accounts,
     checkOnly,
-  )
+    adapterCreators,
+  })
 
   const summary = summarizeDeployChanges(requestedChanges, result.appliedChanges ?? [])
   const nonErroredActions = Object.keys(actions).filter(

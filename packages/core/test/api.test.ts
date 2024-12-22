@@ -459,7 +459,13 @@ describe('api.ts', () => {
             ],
           },
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, undefined, mockAdapterCreator)
+        result = await api.deploy({
+          workspace: ws,
+          actionPlan,
+          reportProgress: jest.fn(),
+          accounts: ACCOUNTS,
+          adapterCreators: mockAdapterCreator,
+        })
       })
 
       it('should call adapter deploy function', async () => {
@@ -516,7 +522,12 @@ describe('api.ts', () => {
         ])
 
         ws = mockWorkspace({ elements: [changedElement], stateElements: [origElement] })
-        result = await api.deploy(ws, actionPlan, jest.fn(), undefined, undefined, mockAdapterCreator)
+        result = await api.deploy({
+          workspace: ws,
+          actionPlan,
+          reportProgress: jest.fn(),
+          adapterCreators: mockAdapterCreator,
+        })
       })
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)
@@ -567,7 +578,13 @@ describe('api.ts', () => {
             { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, detailedMessage: 'detailed' },
           ],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, undefined, mockAdapterCreator)
+        result = await api.deploy({
+          workspace: ws,
+          actionPlan,
+          reportProgress: jest.fn(),
+          accounts: ACCOUNTS,
+          adapterCreators: mockAdapterCreator,
+        })
       })
 
       it('should return errors for the failed part', () => {
@@ -636,7 +653,15 @@ describe('api.ts', () => {
           ),
           errors: [],
         }))
-        executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, true, mockAdapterCreator)
+        executeDeploy = () =>
+          api.deploy({
+            workspace: ws,
+            actionPlan,
+            reportProgress: jest.fn(),
+            accounts: ACCOUNTS,
+            checkOnly: true,
+            adapterCreators: mockAdapterCreator,
+          })
       })
 
       describe('when adapter does not implement the validate method', () => {
@@ -712,7 +737,13 @@ describe('api.ts', () => {
           }
         })
 
-        result = await api.deploy(mockWs, actionPlan, jest.fn(), ['test'], undefined, mockAdapterCreator)
+        result = await api.deploy({
+          workspace: mockWs,
+          actionPlan,
+          reportProgress: jest.fn(),
+          accounts: ['test'],
+          adapterCreators: mockAdapterCreator,
+        })
       })
 
       it('should call adapter deploy function', () => {

@@ -29,6 +29,7 @@ import {
   ChangeError,
   ChangeDataType,
   DetailedChangeWithBaseChange,
+  Adapter,
 } from '@salto-io/adapter-api'
 import {
   Plan,
@@ -774,27 +775,39 @@ export const preview = (): Plan => {
 }
 
 export const deploy: typeof coreDeploy = async (
-  workspace: Workspace,
-  actionPlan: Plan,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  _accounts = workspace.accounts(),
+  workspace:
+    | Workspace
+    | {
+        workspace: Workspace
+        actionPlan: Plan
+        reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void
+        accounts?: string[]
+        checkOnly?: boolean
+        adapterCreators: Record<string, Adapter>
+      },
+  _actionPlan?: Plan,
+  _reportProgress?: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  _accounts?: string[],
   _checkOnly = false,
 ): Promise<DeployResult> => {
+  if (!('adapterCreators' in workspace)) {
+    throw new Error('invalid params for mock')
+  }
   let numOfChangesReported = 0
-  wu(actionPlan.itemsByEvalOrder()).forEach(change => {
+  wu(workspace.actionPlan.itemsByEvalOrder()).forEach(change => {
     numOfChangesReported += 1
     if (numOfChangesReported / 3 === 1) {
-      reportProgress(change, 'started')
-      reportProgress(change, 'error', '')
+      workspace.reportProgress(change, 'started')
+      workspace.reportProgress(change, 'error', '')
       return
     }
     if (numOfChangesReported / 2 === 1) {
-      reportProgress(change, 'started')
-      reportProgress(change, 'finished')
+      workspace.reportProgress(change, 'started')
+      workspace.reportProgress(change, 'finished')
       return
     }
-    reportProgress(change, 'started')
-    reportProgress(change, 'cancelled', '')
+    workspace.reportProgress(change, 'started')
+    workspace.reportProgress(change, 'cancelled', '')
   })
 
   return {

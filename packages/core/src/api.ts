@@ -204,24 +204,58 @@ export const preview = async (
   })
 }
 
+type ReportProgress = (item: PlanItem, status: ItemStatus, details?: string | Progress) => void
+
 export const deploy = async (
-  workspace: Workspace,
-  actionPlan: Plan,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string | Progress) => void,
-  accounts = workspace.accounts(),
+  workspace:
+    | Workspace
+    | {
+        workspace: Workspace
+        actionPlan: Plan
+        reportProgress: ReportProgress
+        accounts?: string[]
+        checkOnly?: boolean
+        adapterCreators: Record<string, Adapter>
+      },
+  actionPlan?: Plan,
+  reportProgress?: ReportProgress,
+  accounts?: string[],
   checkOnly = false,
-  adapterCreators?: Record<string, Adapter>,
 ): Promise<DeployResult> => {
   // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  let actualWorkspace: Workspace
+  let actualActionPlan: Plan
+  let actualReportProgress: ReportProgress
+  let actualAccounts: string[]
+  let actualCheckOnly: boolean
+  let actualAdapterCreator: Record<string, Adapter>
+
+  if ('adapterCreators' in workspace) {
+    actualWorkspace = workspace.workspace
+    actualActionPlan = workspace.actionPlan
+    actualReportProgress = workspace.reportProgress
+    actualAccounts = workspace.accounts ?? actualWorkspace.accounts()
+    actualCheckOnly = workspace.checkOnly ?? false
+    actualAdapterCreator = workspace.adapterCreators
+  } else {
+    if (actionPlan === undefined || reportProgress === undefined) {
+      throw new Error('actionPlan and reportProgress should not be undefined if workspace is a workspace')
+    }
+    actualWorkspace = workspace
+    actualActionPlan = actionPlan
+    actualReportProgress = reportProgress
+    actualAccounts = accounts ?? actualWorkspace.accounts()
+    actualCheckOnly = checkOnly ?? false
+    actualAdapterCreator = deprecatedAdapterCreators
+  }
   const changedElements = elementSource.createInMemoryElementSource()
-  const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
+  const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await actualWorkspace.elements()])
   const adapters = await getAdapters(
-    accounts,
-    await workspace.accountCredentials(accounts),
-    workspace.accountConfig.bind(workspace),
+    actualAccounts,
+    await actualWorkspace.accountCredentials(actualAccounts),
+    actualWorkspace.accountConfig.bind(actualWorkspace),
     adaptersElementSource,
-    getAccountToServiceNameMap(workspace, accounts),
+    getAccountToServiceNameMap(actualWorkspace, actualAccounts),
     {},
     actualAdapterCreator,
   )
@@ -232,11 +266,11 @@ export const deploy = async (
       const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
         const changeElem = getChangeData(change)
         // Because this function is called after we updated the state, the top level is already update with the field
-        return isField(changeElem) ? workspace.state().get(changeElem.parent.elemID) : changeElem
+        return isField(changeElem) ? actualWorkspace.state().get(changeElem.parent.elemID) : changeElem
       }
 
       const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChange(change))
-      await workspace.state().updateStateFromChanges({ changes: detailedChanges })
+      await actualWorkspace.state().updateStateFromChanges({ changes: detailedChanges })
 
       const updatedElements = await awu(appliedChanges)
         .filter(change => isAdditionOrModificationChange(change) || isFieldChange(change))
@@ -246,18 +280,18 @@ export const deploy = async (
     }, 'postDeployAction')
 
   const { errors, appliedChanges, extraProperties } = await deployActions(
-    actionPlan,
+    actualActionPlan,
     adapters,
-    reportProgress,
+    actualReportProgress,
     postDeployAction,
-    checkOnly,
+    actualCheckOnly,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable
   // with the value of a reference.
   const changes = await awu(
-    await getDetailedChanges(await workspace.elements(), changedElements, [id => changedElements.has(id)]),
+    await getDetailedChanges(await actualWorkspace.elements(), changedElements, [id => changedElements.has(id)]),
   )
     .map(change => ({ change, serviceChanges: [change] }))
     .toArray()

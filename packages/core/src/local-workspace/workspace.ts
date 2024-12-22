@@ -63,7 +63,6 @@ export const getCustomReferencesFunc = (adapterCreators: Record<string, Adapter>
     accountToServiceName: Record<string, string>,
     adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
   ): Promise<ReferenceInfo[]> {
-    // for backward compatibility SAAS-7006
     const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
       const serviceName = accountToServiceName[account] ?? account
       try {

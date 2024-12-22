@@ -60,7 +60,6 @@ const getAdapter = ({
 type GetAdapterAndContextArgs = {
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
-  adapterCreators: Record<string, Adapter>
 } & GetAdapterArgs
 
 type GetAdapterAndContextResult = {
@@ -207,8 +206,9 @@ const filterHiddenChanges = async (
 type CalculatePatchArgs = {
   fromDir: string
   toDir: string
-  adapterCreators?: Record<string, Adapter>
-} & GetAdapterAndContextArgs
+} & Omit<GetAdapterAndContextArgs, 'adapterCreators'> & {
+    adapterCreators?: Record<string, Adapter>
+  }
 
 export const calculatePatch = async ({
   workspace,
@@ -285,8 +285,9 @@ export const calculatePatch = async ({
 
 type SyncWorkspaceToFolderArgs = {
   baseDir: string
-  adapterCreators?: Record<string, Adapter>
-} & GetAdapterAndContextArgs
+} & Omit<GetAdapterAndContextArgs, 'adapterCreators'> & {
+    adapterCreators?: Record<string, Adapter>
+  }
 
 export type SyncWorkspaceToFolderResult = {
   errors: ReadonlyArray<SaltoError>

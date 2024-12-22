@@ -91,13 +91,17 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
+  adapterCreators?: Record<string, Adapter>
 }
 
 export async function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<Workspace> {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = args.adapterCreators ?? deprecatedAdapterCreators
   return localWorkspaceLoad({
     ...args,
     getConfigTypes: getAdapterConfigsPerAccount,
     getCustomReferences,
+    adapterCreators: actualAdapterCreator,
   })
 }
 

@@ -9,6 +9,7 @@ import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
+import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import {
   Workspace,
@@ -231,6 +232,7 @@ type LoadLocalWorkspaceArgs = {
   ignoreFileChanges?: boolean
   getConfigTypes: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
   getCustomReferences: WorkspaceGetCustomReferencesFunc
+  adapterCreators?: Record<string, Adapter>
 }
 
 export async function loadLocalWorkspace({
@@ -242,7 +244,10 @@ export async function loadLocalWorkspace({
   ignoreFileChanges = false,
   getConfigTypes,
   getCustomReferences,
+  adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
@@ -257,7 +262,7 @@ export async function loadLocalWorkspace({
       baseDir,
       remoteMapCreator,
       persistent,
-      await getConfigTypes(workspaceConfig.envs),
+      await getConfigTypes(workspaceConfig.envs, actualAdapterCreator),
       configOverrides,
     )
     const envNames = workspaceConfig.envs.map(e => e.name)

@@ -73,6 +73,7 @@ export const fixerNames = [
   'removeDupUsers',
   'orderElements',
   'deployArticlesAsDraft',
+  'fixTicketForms',
 ] as const
 
 type FixerNames = (typeof fixerNames)[number]

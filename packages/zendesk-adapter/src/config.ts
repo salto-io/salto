@@ -2812,6 +2812,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     removeDupUsers: true,
     orderElements: true,
     deployArticlesAsDraft: false,
+    fixTicketForms: true,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -3130,6 +3131,7 @@ const fixerConfigType = createMatchingObjectType<Partial<ZendeskFixElementsConfi
     removeDupUsers: { refType: BuiltinTypes.BOOLEAN },
     orderElements: { refType: BuiltinTypes.BOOLEAN },
     deployArticlesAsDraft: { refType: BuiltinTypes.BOOLEAN },
+    fixTicketForms: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

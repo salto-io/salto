@@ -31,7 +31,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.198.0",
     "@salto-io/adapter-api": "0.4.8",
-    "@salto-io/adapter-creators": "0.4.8",
     "@salto-io/adapter-utils": "0.4.8",
     "@salto-io/aws-utils": "0.4.8",
     "@salto-io/file": "0.4.8",

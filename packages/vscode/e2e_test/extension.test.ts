@@ -10,7 +10,7 @@ import tmp from 'tmp-promise'
 import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
 import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
-import { adapterCreators } from '@salto-io/core/src/core/adapters'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable

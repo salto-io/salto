@@ -9,7 +9,6 @@ import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import {
   Workspace,
@@ -232,7 +231,7 @@ type LoadLocalWorkspaceArgs = {
   ignoreFileChanges?: boolean
   getConfigTypes: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
   getCustomReferences: WorkspaceGetCustomReferencesFunc
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }
 
 export async function loadLocalWorkspace({
@@ -246,8 +245,6 @@ export async function loadLocalWorkspace({
   getCustomReferences,
   adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
@@ -257,16 +254,16 @@ export async function loadLocalWorkspace({
   const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
-  try {
-    const adaptersConfig = await buildLocalAdaptersConfigSource(
-      baseDir,
-      remoteMapCreator,
-      persistent,
-      await getConfigTypes(workspaceConfig.envs, actualAdapterCreator),
-      configOverrides,
-    )
-    const envNames = workspaceConfig.envs.map(e => e.name)
-    const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
+
+  const adaptersConfig = await buildLocalAdaptersConfigSource(
+    baseDir,
+    remoteMapCreator,
+    persistent,
+    await getConfigTypes(workspaceConfig.envs, adapterCreators),
+    configOverrides,
+  )
+  const envNames = workspaceConfig.envs.map(e => e.name)
+  const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
     const elemSources = await loadLocalElementsSources({
       baseDir,

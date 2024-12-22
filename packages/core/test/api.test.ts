@@ -1544,7 +1544,7 @@ describe('api.ts', () => {
     const ADAPTER_NAME = 'test'
 
     let ws: workspace.Workspace
-    let mockCancelValidate: jest.MockedFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>
+    let mockCancelServiceAsyncTask: jest.MockedFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>
 
     beforeEach(() => {
       ws = mockWorkspace({
@@ -1559,12 +1559,12 @@ describe('api.ts', () => {
     })
     describe('when the adapter supports cancelServiceAsyncTask', () => {
       beforeEach(() => {
-        mockCancelValidate = mockFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>()
+        mockCancelServiceAsyncTask = mockFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>()
         adapterCreators[ADAPTER_NAME] = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue({
             fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
             deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
-            cancelServiceAsyncTask: mockCancelValidate,
+            cancelServiceAsyncTask: mockCancelServiceAsyncTask,
           }),
           authenticationMethods: { basic: { credentialsType: mockConfigType } },
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
@@ -1577,8 +1577,8 @@ describe('api.ts', () => {
 
       it('should invoke cancelServiceAsyncTask on the adapter', async () => {
         await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
-        expect(mockCancelValidate).toHaveBeenCalledTimes(1)
-        expect(mockCancelValidate).toHaveBeenCalledWith(input)
+        expect(mockCancelServiceAsyncTask).toHaveBeenCalledTimes(1)
+        expect(mockCancelServiceAsyncTask).toHaveBeenCalledWith(input)
       })
     })
     describe('when the adapter does not support cancelServiceAsyncTask', () => {

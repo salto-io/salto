@@ -178,25 +178,91 @@ describe('SalesforceAdapter CRUD', () => {
           )
           result = await createElement(adapter, instance)
         })
+        describe('when the shouldPopulateInternalIdAfterDeploy feature is enabled', () => {
+          beforeEach(async () => {
+            ;({ connection, adapter, client } = mockAdapter({
+              adapterParams: {
+                config: {
+                  fetch: {
+                    optionalFeatures: { shouldPopulateInternalIdAfterDeploy: true },
+                    data: {
+                      includeObjects: ['Test'],
+                      saltoIDSettings: {
+                        defaultIdFields: ['Name'],
+                      },
+                    },
+                  },
+                },
+              },
+            }))
+            connection.metadata.deploy.mockReturnValueOnce(
+              mockDeployResult({
+                success: true,
+                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: 'new_id' }],
+              }),
+            )
+            result = await createElement(adapter, instance)
+          })
+          it('Should add new instance with internal id', async () => {
+            expect(result).toBeInstanceOf(InstanceElement)
+            expect(result.elemID).toEqual(instance.elemID)
+            expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)
+            expect(result.value.token).toBeDefined()
+            expect(result.value.token).toBe('instanceTest')
+            expect(result.value.Token).toBeUndefined()
 
-        it('Should add new instance', async () => {
-          expect(result).toBeInstanceOf(InstanceElement)
-          expect(result.elemID).toEqual(instance.elemID)
-          expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)
-          expect(result.value.token).toBeDefined()
-          expect(result.value.token).toBe('instanceTest')
-          expect(result.value.Token).toBeUndefined()
-
-          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
-          const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
-          expect(manifest).toBeDefined()
-          expect(manifest?.types).toEqual({
-            name: 'Flow',
-            members: instanceName,
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+            expect(manifest).toBeDefined()
+            expect(manifest?.types).toEqual({
+              name: 'Flow',
+              members: instanceName,
+            })
+            expect(result.value[constants.INTERNAL_ID_FIELD]).toBeDefined()
           })
         })
-        it('should add internal_id', async () => {
-          expect(result.value[constants.INTERNAL_ID_FIELD]).toBeDefined()
+        describe('when the shouldPopulateInternalIdAfterDeploy feature is disabled', () => {
+          beforeEach(async () => {
+            ;({ connection, adapter, client } = mockAdapter({
+              adapterParams: {
+                config: {
+                  fetch: {
+                    optionalFeatures: { shouldPopulateInternalIdAfterDeploy: false },
+                    data: {
+                      includeObjects: ['Test'],
+                      saltoIDSettings: {
+                        defaultIdFields: ['Name'],
+                      },
+                    },
+                  },
+                },
+              },
+            }))
+            connection.metadata.deploy.mockReturnValueOnce(
+              mockDeployResult({
+                success: true,
+                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: 'new_id' }],
+              }),
+            )
+            result = await createElement(adapter, instance)
+          })
+          it('Should add new instance without internal id', async () => {
+            expect(result).toBeInstanceOf(InstanceElement)
+            expect(result.elemID).toEqual(instance.elemID)
+            expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(instanceName)
+            expect(result.value.token).toBeDefined()
+            expect(result.value.token).toBe('instanceTest')
+            expect(result.value.Token).toBeUndefined()
+
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
+            expect(manifest).toBeDefined()
+            expect(manifest?.types).toEqual({
+              name: 'Flow',
+              members: instanceName,
+            })
+            expect(result.value[constants.INTERNAL_ID_FIELD]).toBeUndefined()
+          })
         })
       })
 

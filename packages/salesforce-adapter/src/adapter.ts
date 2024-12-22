@@ -772,6 +772,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         this.client,
         this.nestedMetadataTypes,
         progressReporter,
+        fetchProfile,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,

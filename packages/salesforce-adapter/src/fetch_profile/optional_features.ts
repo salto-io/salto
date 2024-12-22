@@ -21,6 +21,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   networkReferences: false,
   extendFetchTargets: false,
   addParentToInstancesWithinFolder: false,
+  shouldPopulateInternalIdAfterDeploy: true,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

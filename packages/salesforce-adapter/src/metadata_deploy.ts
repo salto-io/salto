@@ -51,7 +51,7 @@ import {
 } from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
-import { QuickDeployParams } from './types'
+import { FetchProfile, QuickDeployParams } from './types'
 import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
 import { DeployProgressReporter } from './adapter_creator'
 
@@ -500,6 +500,7 @@ export const deployMetadata = async (
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
   progressReporter: DeployProgressReporter,
+  fetchProfile: FetchProfile,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
@@ -618,7 +619,9 @@ export const deployMetadata = async (
       changeDeployedIds[successfulId.type]?.has(successfulId.fullName),
     )
     if (metadataId) {
-      setInternalId(getChangeData(change), metadataId.id)
+      if (fetchProfile.isFeatureEnabled('shouldPopulateInternalIdAfterDeploy')) {
+        setInternalId(getChangeData(change), metadataId.id)
+      }
       return true
     }
     return false

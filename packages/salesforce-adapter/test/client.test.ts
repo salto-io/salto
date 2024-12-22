@@ -1532,11 +1532,9 @@ describe('salesforce client', () => {
             status: 'Canceling',
           },
         })
-        .patch(/.*/, /.*/)
+        .post(/.*/, /.*/)
         .reply(200, {
-          deployResult: {
-            status: 'Canceled',
-          },
+          'a:Envelope': { 'a:Body': { a: { result: { done: 'true' } } } },
         })
       const { errors } = await client.cancelMetadataValidateOrDeployTask({ taskId: '123' })
       expect(errors).toBeEmpty()

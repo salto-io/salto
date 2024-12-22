@@ -1024,47 +1024,49 @@ export default class SalesforceClient implements ISalesforceClient {
   public async cancelMetadataValidateOrDeployTask({
     taskId,
   }: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
-    const cancelSalesforceDeployment = async (): Promise<CancelServiceAsyncTaskResult> => {
-      try {
-        const cancelDeployResult = await this.conn.request({
-          method: 'PATCH',
-          url: `/services/data/v${API_VERSION}/metadata/deployRequest/${taskId}`,
-          body: inspectValue({
-            deployResult: {
-              status: 'Canceling',
-            },
-          }),
-        })
-        if (!isCancelDeployResult(cancelDeployResult)) {
-          return {
-            errors: [
-              {
-                message: `Failed to cancel async deployment with id ${taskId}`,
-                detailedMessage: 'Salesforce cancelDeployResult value does not contain status',
-                severity: 'Error',
-              },
-            ],
-          }
-        }
-        if (cancelDeployResult.deployResult.status === 'Canceling') {
-          await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
-          await cancelSalesforceDeployment()
-        }
-        return { errors: [] }
-      } catch (e) {
-        log.error('Failed to cancel deployment with id %s: %s', taskId, inspectValue(e))
+    try {
+      const cancelDeployResult = await this.conn.request({
+        method: 'PATCH',
+        url: `/services/data/v${API_VERSION}/metadata/deployRequest/${taskId}`,
+        body: inspectValue({
+          deployResult: {
+            status: 'Canceling',
+          },
+        }),
+      })
+      if (!isCancelDeployResult(cancelDeployResult)) {
         return {
           errors: [
             {
               message: `Failed to cancel async deployment with id ${taskId}`,
-              detailedMessage: e.message,
+              detailedMessage: 'Salesforce cancelDeployResult value does not contain status',
               severity: 'Error',
             },
           ],
         }
       }
+      const waitUntilCanceled = async (): Promise<CancelServiceAsyncTaskResult> => {
+        const deployStatus = await this.conn.metadata.checkDeployStatus(taskId)
+        log.trace('waitUntilCanceled deployStatus: %s', inspectValue(deployStatus))
+        if (deployStatus.done) {
+          return { errors: [] }
+        }
+        await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
+        return waitUntilCanceled()
+      }
+      return await waitUntilCanceled()
+    } catch (e) {
+      log.error('Failed to cancel deployment with id %s: %s', taskId, inspectValue(e))
+      return {
+        errors: [
+          {
+            message: `Failed to cancel async deployment with id ${taskId}`,
+            detailedMessage: e.message,
+            severity: 'Error',
+          },
+        ],
+      }
     }
-    return cancelSalesforceDeployment()
   }
 
   @mapToUserFriendlyErrorMessages

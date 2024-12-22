@@ -248,8 +248,10 @@ describe('workflowScheme', () => {
       instanceBefore.value.description = 'desc'
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
+      const noMigrationInstance = instance.clone()
+      delete noMigrationInstance.value.statusMigrations
       expect(deployChangeMock).toHaveBeenCalledWith({
-        change: toChange({ before: instanceBefore, after: instance }),
+        change: toChange({ before: instanceBefore, after: noMigrationInstance }),
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
@@ -271,8 +273,6 @@ describe('workflowScheme', () => {
       )
 
       expect(connection.get).toHaveBeenCalledWith('taskUrl', undefined)
-
-      expect(instance.value.statusMigrations).toBeUndefined()
     })
 
     it('should update the id if changed', async () => {
@@ -321,9 +321,10 @@ describe('workflowScheme', () => {
       const instanceBefore = instance.clone()
       instanceBefore.value.description = 'desc'
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
-
+      const noMigrationInstance = instance.clone()
+      delete noMigrationInstance.value.statusMigrations
       expect(deployChangeMock).toHaveBeenCalledWith({
-        change: toChange({ before: instanceBefore, after: instance }),
+        change: toChange({ before: instanceBefore, after: noMigrationInstance }),
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
@@ -338,7 +339,6 @@ describe('workflowScheme', () => {
         responseType: undefined,
       })
 
-      expect(instance.value.statusMigrations).toBeUndefined()
       expect(instance.value.id).toBe('2')
     })
 
@@ -375,10 +375,12 @@ describe('workflowScheme', () => {
 
       const instanceBefore = instance.clone()
       instanceBefore.value.description = 'desc'
+      const noMigrationInstance = instance.clone()
+      delete noMigrationInstance.value.statusMigrations
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith({
-        change: toChange({ before: instanceBefore, after: instance }),
+        change: toChange({ before: instanceBefore, after: noMigrationInstance }),
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
@@ -389,7 +391,6 @@ describe('workflowScheme', () => {
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/api/3/workflowscheme', undefined)
 
-      expect(instance.value.statusMigrations).toBeUndefined()
       expect(instance.value.id).toBe('1')
     })
 
@@ -433,17 +434,18 @@ describe('workflowScheme', () => {
 
       const instanceBefore = instance.clone()
       instanceBefore.value.description = 'desc'
+      const noMigrationInstance = instance.clone()
+      delete noMigrationInstance.value.statusMigrations
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
       expect(deployChangeMock).toHaveBeenCalledWith({
-        change: toChange({ before: instanceBefore, after: instance }),
+        change: toChange({ before: instanceBefore, after: noMigrationInstance }),
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
         elementsSource,
       })
 
-      expect(instance.value.statusMigrations).toBeUndefined()
       expect(instance.value.id).toBe('1')
     })
 
@@ -678,6 +680,56 @@ describe('workflowScheme', () => {
       expect(logErrorSpy).toHaveBeenCalledWith(
         'failed to publish draft for workflow scheme workflowSchemeInstance, error: Failed to publish draft with error: . Issue type with name issueInstance is missing the mappings required for statuses with names ID 7',
       )
+    })
+
+    it('should not delete the statusMigration field', async () => {
+      const instance = new InstanceElement('instance', workflowSchemeType, {
+        id: '1',
+        items: [
+          {
+            issueType: 1234,
+            workflow: 'workflow name',
+          },
+        ],
+        statusMigrations: [
+          {
+            issueTypeId: '1',
+            statusId: '2',
+            newStatusId: '3',
+          },
+        ],
+      })
+
+      const instanceBefore = instance.clone()
+      instanceBefore.value.description = 'desc'
+      await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
+      expect(instance.value.statusMigrations).toEqual([
+        {
+          issueTypeId: '1',
+          statusId: '2',
+          newStatusId: '3',
+        },
+      ])
+    })
+
+    it('should update the id after addition', async () => {
+      const instance = new InstanceElement('instance', workflowSchemeType, {
+        name: 'name',
+        items: [
+          {
+            issueType: 1234,
+            workflow: 'workflow name',
+          },
+        ],
+      })
+
+      deployChangeMock.mockResolvedValueOnce({
+        id: '1',
+      })
+
+      await filter.deploy?.([toChange({ after: instance })])
+
+      expect(instance.value.id).toBe('1')
     })
   })
 

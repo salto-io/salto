@@ -820,6 +820,7 @@ export const mockDefaultValues = {
     apiVersion: API_VERSION,
     content: '<apex:page>Created by e2e test for profile test!</apex:page>',
     label: 'ApexPageForProfile',
+    internalId: 'ApexPageId',
   },
   AuraDefinitionBundle: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestAuraDefinitionBundle',

@@ -17,14 +17,19 @@ export type CancelAsyncTaskInput = {
 }
 export const action: WorkspaceCommandAction<CancelAsyncTaskInput> = async ({ input, workspace, output }) => {
   const { taskId, account } = input
-  const result = await cancelServiceAsyncTask({ workspace, account, input: { taskId } })
-  const errors = result.errors.filter(e => e.severity === 'Error')
-  if (errors.length > 0) {
-    errorOutputLine(`Failed to cancel async task ${taskId} with Errors: ${inspectValue(errors)}`, output)
+  try {
+    const result = await cancelServiceAsyncTask({ workspace, account, input: { taskId } })
+    const errors = result.errors.filter(e => e.severity === 'Error')
+    if (errors.length > 0) {
+      errorOutputLine(`Failed to cancel async task ${taskId} with Errors: ${inspectValue(errors)}`, output)
+      return CliExitCode.AppError
+    }
+    outputLine(`Async task ${taskId} was cancelled successfully`, output)
+    return CliExitCode.Success
+  } catch (e) {
+    errorOutputLine(`Failed to cancel async task ${taskId}: ${e.message}`, output)
     return CliExitCode.AppError
   }
-  outputLine(`Async task ${taskId} was cancelled successfully`, output)
-  return CliExitCode.Success
 }
 
 const cancelAsyncTaskDef = createWorkspaceCommand<CancelAsyncTaskInput>({

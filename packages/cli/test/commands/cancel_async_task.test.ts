@@ -42,6 +42,16 @@ describe('cancelAsyncTask command', () => {
       expect(result).toBe(CliExitCode.AppError)
     })
   })
+  describe('when cancelServiceAsyncTask throws error', () => {
+    beforeEach(() => {
+      mockedCore.cancelServiceAsyncTask.mockRejectedValue(new Error('Not Supported'))
+    })
+    it('should output error', async () => {
+      const result = await action(commandArgs)
+      expect(mockedOutputer.errorOutputLine).toHaveBeenCalled()
+      expect(result).toBe(CliExitCode.AppError)
+    })
+  })
   describe('when cancelServiceAsyncTask returns no errors', () => {
     beforeEach(() => {
       mockedCore.cancelServiceAsyncTask.mockResolvedValue({ errors: [] })

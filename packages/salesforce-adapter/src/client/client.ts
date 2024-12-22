@@ -1025,6 +1025,11 @@ export default class SalesforceClient implements ISalesforceClient {
     taskId,
   }: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
     try {
+      const deploymentStatus = await this.conn.metadata.checkDeployStatus(taskId)
+      if (deploymentStatus.done) {
+        log.debug('Deployment with id %s is already done, no need to cancel', taskId)
+        return { errors: [] }
+      }
       const cancelDeployResult = await this.conn.request({
         method: 'PATCH',
         url: `/services/data/v${API_VERSION}/metadata/deployRequest/${taskId}`,

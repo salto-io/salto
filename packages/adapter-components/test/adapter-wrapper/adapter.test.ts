@@ -17,7 +17,8 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  ObjectType, ProgressReporter,
+  ObjectType,
+  ProgressReporter,
   toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'

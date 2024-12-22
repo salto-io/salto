@@ -104,6 +104,7 @@ const OPTIONAL_FEATURES = [
   'genAiReferences',
   'networkReferences',
   'extendFetchTargets',
+  'shouldPopulateInternalIdAfterDeploy',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

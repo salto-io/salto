@@ -187,12 +187,12 @@ describe('deploySpaceAndPermissions', () => {
           deployResult: { appliedChanges: [modificationChange], errors: [] },
           leftoverChanges: [notSpaceChange],
         })
-        expect((getChangeData(modificationChange)).value.permissionInternalIdMap).toEqual({
+        expect(getChangeData(modificationChange).value.permissionInternalIdMap).toEqual({
           group_to_stay: '1',
           user_be_removed: '2',
           user_be_added: 'superInternalId',
         })
-        expect((getChangeData(modificationChange)).value.permissions).toEqual([
+        expect(getChangeData(modificationChange).value.permissions).toEqual([
           {
             type: 'group',
             principalId: 'here',
@@ -293,12 +293,12 @@ describe('deploySpaceAndPermissions', () => {
           deployResult: { appliedChanges: [additionChange], errors: [] },
           leftoverChanges: [notSpaceChange],
         })
-        expect((getChangeData(additionChange)).value.permissionInternalIdMap).toEqual({
+        expect(getChangeData(additionChange).value.permissionInternalIdMap).toEqual({
           group_key_target: 'addedDefaultPermissionInternalId',
           user_be_added: 'superInternalId',
           user_anotherKey_remove: 'removeDefaultPermissionInternalId',
         })
-        expect((getChangeData(additionChange)).value.permissions).toEqual([
+        expect(getChangeData(additionChange).value.permissions).toEqual([
           {
             type: 'group',
             principalId: 'here',

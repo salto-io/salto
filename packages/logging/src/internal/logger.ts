@@ -61,9 +61,7 @@ type ResolvedConfig = Omit<Config, 'namespaceFilter'> & {
 export const resolveConfig = (c: Config): ResolvedConfig => ({
   ...c,
   namespaceFilter:
-    typeof c.namespaceFilter === 'string'
-      ? stringToNamespaceFilter(c.namespaceFilter)
-      : (c.namespaceFilter),
+    typeof c.namespaceFilter === 'string' ? stringToNamespaceFilter(c.namespaceFilter) : c.namespaceFilter,
 })
 
 function timeMethod<T>(

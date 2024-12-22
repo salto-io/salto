@@ -1286,10 +1286,10 @@ describe('Custom Object Instances filter', () => {
       ]
       changeSuggestions =
         (
-          ((await filter.onFetch(elements)) ?? {
+          (await filter.onFetch(elements)) ?? {
             configSuggestions: [],
             errors: [],
-          })
+          }
         ).configSuggestions ?? []
     })
 

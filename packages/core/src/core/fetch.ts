@@ -1347,12 +1347,12 @@ export const generateServiceIdToStateElemId = async (
       .flatMap(async elem => {
         if (isObjectType(elem)) {
           const objectServiceId = await getObjectServiceId(elem, elementsSource)
-          const fieldPairs = (await Promise.all(
+          const fieldPairs = await Promise.all(
             Object.values(elem.fields).map(async field => [
               await getFieldServiceId(objectServiceId, field, elementsSource),
               field.elemID,
             ]),
-          ))
+          )
           return [...fieldPairs, [objectServiceId, elem.elemID]]
         }
         return [[await getInstanceServiceId(elem as InstanceElement, elementsSource), elem.elemID]]

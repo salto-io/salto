@@ -5027,7 +5027,7 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const defaultElements = createEnvElements() as InstanceElement[]
       defaultElements[3].value = {
-        ...(defaultElements[3]).value,
+        ...defaultElements[3].value,
         f3: new ReferenceExpression(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)

@@ -464,13 +464,13 @@ const buildNaclFilesState = async ({
       )
     })
     .filter(values.isDefined)
-  const changes = (await buildNewMergedElementsAndErrors({
+  const changes = await buildNewMergedElementsAndErrors({
     afterElements: awu(newElementsToMerge).concat(unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
     mergeFunc: elements => mergeElements(elements),
-  }))
+  })
   const postChangeHash = await currentState.parsedNaclFiles.getHash()
   await Promise.all([
     updateIndex(currentState.elementsIndex, elementsIndexAdditions, elementsIndexDeletions),

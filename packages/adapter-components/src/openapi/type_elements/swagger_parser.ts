@@ -114,7 +114,7 @@ const toSchemaV3 = (def?: V3Def): undefined | OpenAPIV3.SchemaObject | OpenAPIV3
   if (def?.content) {
     const mediaType = _.first(Object.values(def.content))
     if (isDefined(mediaType) && _.isObjectLike(mediaType)) {
-      return (mediaType).schema
+      return mediaType.schema
     }
   }
   return undefined

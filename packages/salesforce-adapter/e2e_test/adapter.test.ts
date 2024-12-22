@@ -841,11 +841,11 @@ describe('Salesforce adapter E2E with real account', () => {
 
     // This test should be removed and replace with an appropriate one as soon as SALTO-551 is done
     it('should not fetch tabVisibilities from profile', async () => {
-      const [adminProfile] = (await awu(result)
+      const [adminProfile] = await awu(result)
         .filter(isInstanceElement)
         .filter(async e => (await metadataType(e)) === PROFILE_METADATA_TYPE)
         .filter(async e => (await apiName(e)) === constants.ADMIN_PROFILE)
-        .toArray())
+        .toArray()
       expect(adminProfile.value.tabVisibilities).toBeUndefined()
     })
 

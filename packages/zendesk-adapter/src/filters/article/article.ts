@@ -144,7 +144,7 @@ const haveAttachmentsBeenAdded = (
             _.isEqual(afterAttachment.elemID, beforeAttachment.elemID)) ||
           (isAttachmentWithId(beforeAttachment) &&
             isAttachmentWithId(afterAttachment) &&
-            _.isEqual((afterAttachment).id, (beforeAttachment).id)),
+            _.isEqual(afterAttachment.id, beforeAttachment.id)),
       )
   if (!_.isArray(addedAttachments)) {
     return false

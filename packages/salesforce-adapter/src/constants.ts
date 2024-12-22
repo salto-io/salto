@@ -76,6 +76,12 @@ export enum FIELD_TYPE_NAMES {
   FILE = 'File',
 }
 
+// Flow element type name
+export const FLOW_NODE = 'FlowNode'
+
+// FlowStart field name
+export const TARGET_REFERENCE = 'targetReference'
+
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',

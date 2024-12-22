@@ -8,40 +8,51 @@
 
 import { BuiltinTypes, Change, ListType, toChange } from '@salto-io/adapter-api'
 import flowReferencedElements from '../../src/change_validators/flow_referenced_elements'
-import { createInstanceElement, createMetadataObjectType } from '../../src/transformers/transformer'
+import {
+  createInstanceElement,
+  createMetadataObjectType,
+  MetadataInstanceElement,
+  MetadataObjectType,
+} from '../../src/transformers/transformer'
+import { TARGET_REFERENCE } from '../../src/constants'
 
 describe('flowReferencedElements change validator', () => {
   let flowChange: Change
-  const FlowConnector = createMetadataObjectType({
-    annotations: {
-      metadataType: 'FlowConnector',
-    },
-    fields: {
-      targetReference: { refType: BuiltinTypes.STRING },
-    },
-  })
-  const FlowNode = createMetadataObjectType({
-    annotations: {
-      metadataType: 'FlowNode',
-    },
-    fields: {
-      name: { refType: BuiltinTypes.STRING },
-      locationX: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
-      locationY: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
-      connector: { refType: FlowConnector, annotations: { required: false } },
-    },
-  })
-  const Flow = createMetadataObjectType({
-    annotations: {
-      metadataType: 'Flow',
-    },
-    fields: {
-      start: { refType: FlowNode },
-      actionCalls: { refType: new ListType(FlowNode), annotations: { required: false } },
-      assignments: { refType: new ListType(FlowNode), annotations: { required: false } },
-      decisions: { refType: new ListType(FlowNode), annotations: { required: false } },
-      recordCreates: { refType: new ListType(FlowNode), annotations: { required: false } },
-    },
+  let FlowConnector: MetadataObjectType
+  let FlowNode: MetadataObjectType
+  let Flow: MetadataObjectType
+  beforeEach(() => {
+    FlowConnector = createMetadataObjectType({
+      annotations: {
+        metadataType: 'FlowConnector',
+      },
+      fields: {
+        targetReference: { refType: BuiltinTypes.STRING },
+      },
+    })
+    FlowNode = createMetadataObjectType({
+      annotations: {
+        metadataType: 'FlowNode',
+      },
+      fields: {
+        name: { refType: BuiltinTypes.STRING },
+        locationX: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
+        locationY: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
+        connector: { refType: FlowConnector, annotations: { required: false } },
+      },
+    })
+    Flow = createMetadataObjectType({
+      annotations: {
+        metadataType: 'Flow',
+      },
+      fields: {
+        start: { refType: FlowNode },
+        actionCalls: { refType: new ListType(FlowNode), annotations: { required: false } },
+        assignments: { refType: new ListType(FlowNode), annotations: { required: false } },
+        decisions: { refType: new ListType(FlowNode), annotations: { required: false } },
+        recordCreates: { refType: new ListType(FlowNode), annotations: { required: false } },
+      },
+    })
   })
   describe('when all flow elements are existing and referenced', () => {
     beforeEach(() => {
@@ -81,12 +92,13 @@ describe('flowReferencedElements change validator', () => {
     })
     it('should not return any errors', async () => {
       const errors = await flowReferencedElements([flowChange])
-      expect(errors).toHaveLength(0)
+      expect(errors).toBeEmpty()
     })
   })
   describe('when there are references to missing flow elements', () => {
+    let flow: MetadataInstanceElement
     beforeEach(() => {
-      const flow = createInstanceElement(
+      flow = createInstanceElement(
         {
           fullName: 'TestFlow',
           start: {
@@ -100,15 +112,20 @@ describe('flowReferencedElements change validator', () => {
     it('should not return any errors', async () => {
       const errors = await flowReferencedElements([flowChange])
       expect(errors).toHaveLength(1)
-      const [error] = errors
-      expect(error.severity).toEqual('Error')
-      expect(error.message).toEqual('Reference to missing Flow Element')
-      expect(error.detailedMessage).toEqual(`The Flow Element "${'ActionCall'}" does not exist.`)
+      expect(errors).toEqual([
+        {
+          severity: 'Error',
+          message: 'Reference to missing Flow Element',
+          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          elemID: flow.elemID.createNestedID('start', 'connector', TARGET_REFERENCE),
+        },
+      ])
     })
   })
   describe('when there are flow elements that are  not referenced', () => {
+    let flow: MetadataInstanceElement
     beforeEach(() => {
-      const flow = createInstanceElement(
+      flow = createInstanceElement(
         {
           fullName: 'TestFlow',
           actionCalls: [
@@ -124,15 +141,20 @@ describe('flowReferencedElements change validator', () => {
     it('should not return any errors', async () => {
       const errors = await flowReferencedElements([flowChange])
       expect(errors).toHaveLength(1)
-      const [error] = errors
-      expect(error.severity).toEqual('Info')
-      expect(error.message).toEqual('Unused Flow Element')
-      expect(error.detailedMessage).toEqual(`The Flow Element “${'ActionCall'}” isn’t being used in the Flow.`)
+      expect(errors).toEqual([
+        {
+          severity: 'Info',
+          message: 'Unused Flow Element',
+          detailedMessage: `The Flow Element "${'ActionCall'}" isn’t being used in the Flow.`,
+          elemID: flow.elemID.createNestedID('actionCalls', '0', 'name'),
+        },
+      ])
     })
   })
   describe('when there are multiple errors in one flow', () => {
+    let flow: MetadataInstanceElement
     beforeEach(() => {
-      const flow = createInstanceElement(
+      flow = createInstanceElement(
         {
           fullName: 'TestFlow',
           start: {
@@ -155,9 +177,28 @@ describe('flowReferencedElements change validator', () => {
       )
       flowChange = toChange({ after: flow })
     })
-    it('should create change error per error', async () => {
+    it('should create change error per issue', async () => {
       const errors = await flowReferencedElements([flowChange])
-      expect(errors).toHaveLength(3)
+      expect(errors).toEqual([
+        {
+          severity: 'Info',
+          message: 'Unused Flow Element',
+          detailedMessage: `The Flow Element "${'Assignment'}" isn’t being used in the Flow.`,
+          elemID: flow.elemID.createNestedID('assignments', '0', 'name'),
+        },
+        {
+          severity: 'Error',
+          message: 'Reference to missing Flow Element',
+          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          elemID: flow.elemID.createNestedID('start', 'connector', TARGET_REFERENCE),
+        },
+        {
+          severity: 'Error',
+          message: 'Reference to missing Flow Element',
+          detailedMessage: `The Flow Element "${'RecordCreate'}" does not exist.`,
+          elemID: flow.elemID.createNestedID('decisions', '0', 'connector', TARGET_REFERENCE),
+        },
+      ])
     })
   })
 })

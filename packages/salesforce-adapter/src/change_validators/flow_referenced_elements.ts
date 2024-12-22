@@ -14,34 +14,33 @@ import {
   InstanceElement,
   ChangeError,
   ElemID,
-  ObjectType,
   FieldMap,
 } from '@salto-io/adapter-api'
 import { TransformFuncSync, transformValuesSync } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isInstanceOfTypeSync } from '../filters/utils'
-import { FLOW_METADATA_TYPE } from '../constants'
+import { FLOW_METADATA_TYPE, FLOW_NODE, TARGET_REFERENCE } from '../constants'
+
+type ReferenceToElemId = {
+  referenceOrName: string
+  elemId: ElemID
+  kind?: string
+}
 
 const isFlowNode = (fields: FieldMap): boolean => 'locationX' in fields && 'locationY' in fields
 
-const isFlowNodeName = (value: unknown, path: ElemID, parent: ObjectType): value is string =>
-  isFlowNode(parent.fields) && path.name === 'name' && _.isString(value)
-
-const isTargetReference = (value: unknown, path: ElemID): value is string =>
-  path.name === 'targetReference' && _.isString(value)
-
 const getFlowNodesAndTargetReferences = (
   element: InstanceElement,
-): { targetReferences: Map<string, ElemID>; flowNodes: Map<string, ElemID> } => {
-  const flowNodes = new Map<string, ElemID>()
-  const targetReferences = new Map<string, ElemID>()
+): { targetReferences: ReferenceToElemId[]; flowNodes: ReferenceToElemId[] } => {
+  const flowNodes: ReferenceToElemId[] = []
+  const targetReferences: ReferenceToElemId[] = []
   const findFlowNodesAndTargetReferences: TransformFuncSync = ({ value, path, field }) => {
-    if (!field || !path) return value
-    if (isFlowNodeName(value, path, field.parent)) {
-      flowNodes.set(value, path)
+    if (_.isUndefined(field) || _.isUndefined(path)) return value
+    if (isFlowNode(field.parent.fields) && path.name === 'name' && _.isString(value)) {
+      flowNodes.push({ referenceOrName: value, elemId: path, kind: FLOW_NODE })
     }
-    if (isTargetReference(value, path)) {
-      targetReferences.set(value, path)
+    if (path.name === 'targetReference' && _.isString(value)) {
+      targetReferences.push({ referenceOrName: value, elemId: path, kind: TARGET_REFERENCE })
     }
     return value
   }
@@ -54,60 +53,37 @@ const getFlowNodesAndTargetReferences = (
   return { flowNodes, targetReferences }
 }
 
-const hasMissingReferencedElements = (targetReferences: string[], flowNodes: string[]): boolean =>
-  !targetReferences.every(targetReference => targetReference in flowNodes)
-
-const hasUnreferencedElements = (targetReferences: string[], flowNodes: string[]): boolean =>
-  !flowNodes.every(flowNode => flowNode in targetReferences)
-
-const hasFlowReferenceError = ({
+const getSymmetricDifference = ({
   targetReferences,
   flowNodes,
 }: {
-  targetReferences: Map<string, ElemID>
-  flowNodes: Map<string, ElemID>
-}): boolean =>
-  hasMissingReferencedElements(Array.from(targetReferences.keys()), Array.from(flowNodes.keys())) ||
-  hasUnreferencedElements(Array.from(targetReferences.keys()), Array.from(flowNodes.keys()))
+  targetReferences: ReferenceToElemId[]
+  flowNodes: ReferenceToElemId[]
+}): ReferenceToElemId[] => _.xorBy(flowNodes, targetReferences, 'referenceOrName')
 
-const createMissingReferencedElementChangeError = (targetReference: string, elemId: ElemID): ChangeError => ({
-  elemID: elemId,
+const createMissingReferencedElementChangeError = (targetReference: ReferenceToElemId): ChangeError => ({
+  elemID: targetReference.elemId,
   severity: 'Error',
   message: 'Reference to missing Flow Element',
-  detailedMessage: `The Flow Element "${targetReference}" does not exist.`,
+  detailedMessage: `The Flow Element "${targetReference.referenceOrName}" does not exist.`,
 })
 
-const createUnreferencedElementChangeError = (flowNode: string, elemId: ElemID): ChangeError => ({
-  elemID: elemId,
+const createUnreferencedElementChangeError = (flowNode: ReferenceToElemId): ChangeError => ({
+  elemID: flowNode.elemId,
   severity: 'Info',
   message: 'Unused Flow Element',
-  detailedMessage: `The Flow Element “${flowNode}” isn’t being used in the Flow.`,
+  detailedMessage: `The Flow Element "${flowNode.referenceOrName}" isn’t being used in the Flow.`,
 })
 
-const createChangeError = ({
-  targetReferences,
-  flowNodes,
-}: {
-  targetReferences: Map<string, ElemID>
-  flowNodes: Map<string, ElemID>
-}): ChangeError[] => {
-  const errors: ChangeError[] = []
-  const isReferenceToMissingElement = ([reference, _elemId]: [string, ElemID]): boolean => !flowNodes.has(reference)
-  const missingReferencedElementsErrors = Array.from(targetReferences).filter(isReferenceToMissingElement)
-  const isUnreferencedElement = ([reference, _elemId]: [string, ElemID]): boolean => !targetReferences.has(reference)
-  const unreferencedElementsErrors = Array.from(flowNodes).filter(isUnreferencedElement)
-  if (missingReferencedElementsErrors.length > 0) {
-    missingReferencedElementsErrors.forEach(([targetReference, elemId]) =>
-      errors.push(createMissingReferencedElementChangeError(targetReference, elemId)),
-    )
-  }
-  if (unreferencedElementsErrors.length > 0) {
-    unreferencedElementsErrors.forEach(([flowNode, elemId]) =>
-      errors.push(createUnreferencedElementChangeError(flowNode, elemId)),
-    )
-  }
-  return errors
-}
+const createChangeError = (symmetricDifference: ReferenceToElemId[]): ChangeError[] =>
+  symmetricDifference.map(referenceToElemId => {
+    switch (referenceToElemId.kind) {
+      case TARGET_REFERENCE:
+        return createMissingReferencedElementChangeError(referenceToElemId)
+      default:
+        return createUnreferencedElementChangeError(referenceToElemId)
+    }
+  })
 
 const changeValidator: ChangeValidator = async changes =>
   changes
@@ -116,7 +92,7 @@ const changeValidator: ChangeValidator = async changes =>
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
     .map(getFlowNodesAndTargetReferences)
-    .filter(hasFlowReferenceError)
+    .map(getSymmetricDifference)
     .flatMap(createChangeError)
 
 export default changeValidator

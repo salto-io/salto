@@ -7,12 +7,27 @@
  */
 import { cancelServiceAsyncTask } from '@salto-io/core'
 import { inspectValue } from '@salto-io/adapter-utils'
-import { createWorkspaceCommand } from '../command_builder'
+import { createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { errorOutputLine, outputLine } from '../outputer'
 import { CliExitCode } from '../types'
 
+export type CancelAsyncTaskInput = {
+  taskId: string
+  account: string
+}
+export const action: WorkspaceCommandAction<CancelAsyncTaskInput> = async ({ input, workspace, output }) => {
+  const { taskId, account } = input
+  const result = await cancelServiceAsyncTask({ workspace, account, input: { taskId } })
+  const errors = result.errors.filter(e => e.severity === 'Error')
+  if (errors.length > 0) {
+    errorOutputLine(`Failed to cancel async task ${taskId} with Errors: ${inspectValue(errors)}`, output)
+    return CliExitCode.AppError
+  }
+  outputLine(`Async task ${taskId} was cancelled successfully`, output)
+  return CliExitCode.Success
+}
 
-const cancelAsyncTaskDef = createWorkspaceCommand<{taskId: string; account: string}>({
+const cancelAsyncTaskDef = createWorkspaceCommand<CancelAsyncTaskInput>({
   properties: {
     name: 'cancelAsyncTask',
     description: 'Cancel an async task',
@@ -23,7 +38,7 @@ const cancelAsyncTaskDef = createWorkspaceCommand<{taskId: string; account: stri
         alias: 'a',
         required: true,
         type: 'string',
-      }
+      },
     ],
     positionalOptions: [
       {
@@ -34,17 +49,7 @@ const cancelAsyncTaskDef = createWorkspaceCommand<{taskId: string; account: stri
       },
     ],
   },
-  action: async ({ input, workspace, output }) => {
-    const { taskId, account } = input
-    const result =  await cancelServiceAsyncTask({workspace, account, input: {taskId}})
-    const errors = result.errors.filter(e => e.severity === 'Error')
-    if (errors.length > 0) {
-      errorOutputLine(`Failed to cancel async task ${taskId} with Errors: ${inspectValue(errors)}`, output)
-      return CliExitCode.AppError
-    }
-    outputLine(`Async task ${taskId} was cancelled successfully`, output)
-    return CliExitCode.Success
-  }
+  action,
 })
 
 export default cancelAsyncTaskDef

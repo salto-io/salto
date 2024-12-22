@@ -17,8 +17,11 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { BOARD_TYPE_NAME, KANBAN_TYPE } from '../../constants'
 
 const BACKLOG = 'Backlog'
-type BoardColumn = {
+export type BoardColumn = {
   name: string
+  min?: number
+  max?: number
+  statuses?: string[]
 }
 
 type BoardColumnConfig = {

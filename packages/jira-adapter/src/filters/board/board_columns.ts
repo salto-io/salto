@@ -11,7 +11,6 @@ import {
   Element,
   getChangeData,
   InstanceElement,
-  isAdditionChange,
   isInstanceElement,
   isModificationChange,
   ModificationChange,
@@ -29,6 +28,7 @@ import { BOARD_COLUMN_CONFIG_TYPE, BOARD_TYPE_NAME, KANBAN_TYPE } from '../../co
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
+import { BoardColumn } from '../../change_validators/boards/kanban_board_backlog'
 
 const { awu } = collections.asynciterable
 
@@ -75,7 +75,7 @@ const getColumnsName = async (id: string, client: JiraClient): Promise<string[] 
   return response.data[COLUMNS_CONFIG_FIELD].columns.map(({ name }) => name)
 }
 
-const convertColumn = (column: Values, isKanPlanColumn: boolean): Values => ({
+const convertColumn = (column: BoardColumn, isKanPlanColumn: boolean): Values => ({
   name: column.name,
   mappedStatuses: (column.statuses ?? []).map((id: string) => ({ id })),
   min: column.min ?? '',
@@ -100,10 +100,6 @@ export const deployColumns = async (
     return
   }
 
-  if (isAdditionChange(resolvedChange) && resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD] === undefined) {
-    return
-  }
-
   const instance = getChangeData(resolvedChange)
   const isKanban = instance.value.type === KANBAN_TYPE
   await client.putPrivate({
@@ -118,7 +114,7 @@ export const deployColumns = async (
       rapidViewId: instance.value.id,
       mappedColumns: instance.value[COLUMNS_CONFIG_FIELD].columns.map(
         // first column in kanban is always system backlog, enforced by a CV
-        (column: Values, index: number) => convertColumn(column, index === 0 && isKanban),
+        (column: BoardColumn, index: number) => convertColumn(column, index === 0 && isKanban),
       ),
     },
   })

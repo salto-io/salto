@@ -79,7 +79,7 @@ describe('boardColumnsFilter', () => {
       expect(instance.value.config[COLUMNS_CONFIG_FIELD]).toBeUndefined()
     })
 
-    it('should not remove first column if kanban', async () => {
+    it('should not remove columns', async () => {
       await filter.onFetch([instance])
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({
         columns: [
@@ -95,7 +95,7 @@ describe('boardColumnsFilter', () => {
       })
     })
 
-    it('should not remove first column if scrum', async () => {
+    it('should not remove columns if scrum', async () => {
       instance.value.type = 'scrum'
       await filter.onFetch([instance])
       expect(instance.value[COLUMNS_CONFIG_FIELD]).toEqual({

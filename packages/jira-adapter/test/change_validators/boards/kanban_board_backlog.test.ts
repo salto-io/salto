@@ -17,9 +17,10 @@ describe('kanbanBoardBacklogValidator', () => {
   let instance: InstanceElement
   let instance2: InstanceElement
   let noErrorInstance: InstanceElement
+  const boardType = createEmptyType(BOARD_TYPE_NAME)
 
   beforeEach(() => {
-    instance = new InstanceElement('instance', createEmptyType(BOARD_TYPE_NAME), {
+    instance = new InstanceElement('instance', boardType, {
       type: 'kanban',
       columnConfig: {
         columns: [
@@ -32,7 +33,7 @@ describe('kanbanBoardBacklogValidator', () => {
         ],
       },
     })
-    instance2 = new InstanceElement('instance2', createEmptyType(BOARD_TYPE_NAME), {
+    instance2 = new InstanceElement('instance2', boardType, {
       type: 'scrum',
       columnConfig: {
         columns: [
@@ -42,7 +43,7 @@ describe('kanbanBoardBacklogValidator', () => {
         ],
       },
     })
-    noErrorInstance = new InstanceElement('noErrorInstance', createEmptyType(BOARD_TYPE_NAME), {
+    noErrorInstance = new InstanceElement('noErrorInstance', boardType, {
       type: 'kanban',
       columnConfig: {
         columns: [
@@ -129,6 +130,16 @@ describe('kanbanBoardBacklogValidator', () => {
     ).toEqual([])
   })
   it('it should return several errors if they exist', async () => {
+    const faultInstance = new InstanceElement('faultInstance', boardType, {
+      type: 'kanban',
+      columnConfig: {
+        columns: [
+          {
+            name: 'column1',
+          },
+        ],
+      },
+    })
     expect(
       await kanbanBoardBacklogValidator([
         toChange({
@@ -141,10 +152,19 @@ describe('kanbanBoardBacklogValidator', () => {
         toChange({
           after: noErrorInstance,
         }),
+        toChange({
+          after: faultInstance,
+        }),
       ]),
     ).toEqual([
       {
         elemID: instance.elemID,
+        severity: 'Error',
+        message: ERROR_TITLE,
+        detailedMessage: ERROR_MESSAGE,
+      },
+      {
+        elemID: faultInstance.elemID,
         severity: 'Error',
         message: ERROR_TITLE,
         detailedMessage: ERROR_MESSAGE,

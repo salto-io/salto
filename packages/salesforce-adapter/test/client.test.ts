@@ -1544,7 +1544,7 @@ describe('salesforce client', () => {
       expect(errors).toBeEmpty()
       expect(dodoScope.isDone()).toBeTrue()
     })
-    it('should throw when canceling the validation/deployment fails', async () => {
+    it('should return error when canceling the validation/deployment fails', async () => {
       const dodoScope = nock('http://dodo22')
         .post(/.*/, /.*/)
         .reply(200, {

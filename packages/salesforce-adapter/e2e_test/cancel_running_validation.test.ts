@@ -21,7 +21,7 @@ const log = logger(module)
 
 /**
  * In this scenario we run a validation that executes a very long-running test (LongRunningTest).
- * As soon as the validation starts, we cancel it.
+ * As soon as the validation is created in Salesforce, we cancel it.
  */
 describe('Salesforce cancel running validation', () => {
   jest.setTimeout(1000000)

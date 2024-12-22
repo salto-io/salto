@@ -252,59 +252,68 @@ export async function loadLocalWorkspace({
   const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
-  const adaptersConfig = await buildLocalAdaptersConfigSource(
-    baseDir,
-    remoteMapCreator,
-    persistent,
-    await getConfigTypes(workspaceConfig.envs),
-    configOverrides,
-  )
-  const envNames = workspaceConfig.envs.map(e => e.name)
-  const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
+  try {
+    const adaptersConfig = await buildLocalAdaptersConfigSource(
+      baseDir,
+      remoteMapCreator,
+      persistent,
+      await getConfigTypes(workspaceConfig.envs),
+      configOverrides,
+    )
+    const envNames = workspaceConfig.envs.map(e => e.name)
+    const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
-  const elemSources = await loadLocalElementsSources({
-    baseDir,
-    envs: envNames,
-    remoteMapCreator,
-    stateStaticFilesSource,
-    persistent,
-    workspaceConfig,
-  })
-  const ws = await loadWorkspace(
-    workspaceConfigSrc,
-    adaptersConfig,
-    credentials,
-    elemSources,
-    remoteMapCreator,
-    ignoreFileChanges,
-    persistent,
-    undefined,
-    getCustomReferences,
-  )
+    const elemSources = await loadLocalElementsSources({
+      baseDir,
+      envs: envNames,
+      remoteMapCreator,
+      stateStaticFilesSource,
+      persistent,
+      workspaceConfig,
+    })
+    const ws = await loadWorkspace(
+      workspaceConfigSrc,
+      adaptersConfig,
+      credentials,
+      elemSources,
+      remoteMapCreator,
+      ignoreFileChanges,
+      persistent,
+      undefined,
+      getCustomReferences,
+    )
 
-  return {
-    ...ws,
-    renameEnvironment: async (envName: string, newEnvName: string): Promise<void> =>
-      ws.renameEnvironment(envName, newEnvName, getBaseDirFromEnvName(newEnvName)),
-    demoteAll: async (): Promise<void> => {
-      const envSources = Object.values(
-        _.pickBy(elemSources.sources, (_src, key) => key !== elemSources.commonSourceName),
-      )
-      const allEnvSourcesEmpty = envSources.length === 1 && (await envSources[0].naclFiles.isEmpty())
-      if (allEnvSourcesEmpty) {
-        const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
-        const currentEnv = ws.currentEnv()
-        return commonSource.rename(getBaseDirFromEnvName(currentEnv))
-      }
-      return ws.demoteAll()
-    },
-    clear: async (clearArgs: Omit<WorkspaceComponents, 'accountConfig'>) => {
-      await ws.clear(clearArgs)
-      const envsDir = path.join(baseDir, ENVS_PREFIX)
-      if (await isEmptyDir.notFoundAsUndefined(envsDir)) {
-        await rm(envsDir)
-      }
-    },
+    return {
+      ...ws,
+      renameEnvironment: async (envName: string, newEnvName: string): Promise<void> =>
+        ws.renameEnvironment(envName, newEnvName, getBaseDirFromEnvName(newEnvName)),
+      demoteAll: async (): Promise<void> => {
+        const envSources = Object.values(
+          _.pickBy(elemSources.sources, (_src, key) => key !== elemSources.commonSourceName),
+        )
+        const allEnvSourcesEmpty = envSources.length === 1 && (await envSources[0].naclFiles.isEmpty())
+        if (allEnvSourcesEmpty) {
+          const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
+          const currentEnv = ws.currentEnv()
+          return commonSource.rename(getBaseDirFromEnvName(currentEnv))
+        }
+        return ws.demoteAll()
+      },
+      clear: async (clearArgs: Omit<WorkspaceComponents, 'accountConfig'>) => {
+        await ws.clear(clearArgs)
+        const envsDir = path.join(baseDir, ENVS_PREFIX)
+        if (await isEmptyDir.notFoundAsUndefined(envsDir)) {
+          await rm(envsDir)
+        }
+      },
+    }
+  } catch (e) {
+    try {
+      await remoteMapCreator.close()
+    } catch (closeError) {
+      log.error('remoteMapCreator close threw an error: %o. Ignoring it, and rethrowing the original error', closeError)
+    }
+    throw e
   }
 }
 
@@ -329,28 +338,38 @@ export const initLocalWorkspace = async (
 
   const workspaceConfigSrc = await workspaceConfigSource(baseDir, localStorage)
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
-  const persistentMode = true
+  try {
+    const persistentMode = true
 
-  const adaptersConfig = await buildLocalAdaptersConfigSource(baseDir, remoteMapCreator, persistentMode, configTypes)
-  const credentials = credentialsSource(localStorage)
+    const adaptersConfig = await buildLocalAdaptersConfigSource(baseDir, remoteMapCreator, persistentMode, configTypes)
+    const credentials = credentialsSource(localStorage)
 
-  const elemSources = await loadLocalElementsSources({
-    baseDir: path.resolve(baseDir),
-    envs: [envName],
-    remoteMapCreator,
-    stateStaticFilesSource,
-    persistent: persistentMode,
-    workspaceConfig: { uid },
-  })
+    const elemSources = await loadLocalElementsSources({
+      baseDir: path.resolve(baseDir),
+      envs: [envName],
+      remoteMapCreator,
+      stateStaticFilesSource,
+      persistent: persistentMode,
+      workspaceConfig: { uid },
+    })
 
-  return initWorkspace(
-    uid,
-    envName,
-    workspaceConfigSrc,
-    adaptersConfig,
-    credentials,
-    elemSources,
-    remoteMapCreator,
-    getCustomReferences,
-  )
+    const workspace = await initWorkspace(
+      uid,
+      envName,
+      workspaceConfigSrc,
+      adaptersConfig,
+      credentials,
+      elemSources,
+      remoteMapCreator,
+      getCustomReferences,
+    )
+    return workspace
+  } catch (e) {
+    try {
+      await remoteMapCreator.close()
+    } catch (closeError) {
+      log.error('remoteMapCreator close threw an error: %o. Ignoring it, and rethrowing the original error', closeError)
+    }
+    throw e
+  }
 }

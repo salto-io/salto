@@ -71,6 +71,7 @@ import {
   EMAIL_CUSTOMIZATION_TYPE_NAME,
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  ROLE_TYPE_NAME,
 } from '../src/constants'
 import * as logoModule from '../src/logo'
 
@@ -564,6 +565,7 @@ describe('adapter', () => {
     let scopeType: ObjectType
     let authServerType: ObjectType
     let authServerInstance: InstanceElement
+    let roleType: ObjectType
     const emailTemplateType = new ObjectType({
       elemID: new ElemID(OKTA, EMAIL_TEMPLATE_TYPE_NAME),
       fields: {
@@ -655,6 +657,14 @@ describe('adapter', () => {
         default: true,
         issuerMode: 'ORG_URL',
         audiences: ['api://default'],
+      })
+      roleType = new ObjectType({
+        elemID: new ElemID(OKTA, ROLE_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
       })
     })
 
@@ -3418,6 +3428,89 @@ describe('adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('scope-fakeid')
+      })
+    })
+    describe('deploy roles', () => {
+      it('should successfully add a role', async () => {
+        loadMockReplies('role_add.json')
+        const role = new InstanceElement('role', roleType, {
+          label: 'test',
+          description: 'test',
+          permissions: [
+            {
+              label: 'okta.users.userprofile.manage',
+              conditions: {
+                include: {
+                  'okta_ResourceAttribute_User_Profile@fdd': ['profileUrl', 'zipCode', 'city'],
+                },
+              },
+            },
+          ],
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: role.elemID.getFullName(),
+            changes: [toChange({ after: role })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('role-fakeid1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify a role', async () => {
+        loadMockReplies('role_modify.json')
+        const role = new InstanceElement('role', roleType, {
+          id: 'role-fakeid1',
+          label: 'test',
+          description: 'test2',
+          permissions: [
+            {
+              label: 'okta.users.userprofile.manage',
+              conditions: {
+                include: {
+                  'okta_ResourceAttribute_User_Profile@fdd': ['profileUrl', 'zipCode', 'city'],
+                },
+              },
+            },
+          ],
+        })
+        const updatedRole = role.clone()
+        updatedRole.value.permissions = [
+          {
+            label: 'okta.groups.manage',
+          },
+          { label: 'okta.users.groupMembership.manage' },
+        ]
+        updatedRole.value.description = 'test2'
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: role.elemID.getFullName(),
+            changes: [toChange({ before: role, after: updatedRole })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+      })
+      it('should successfully remove a role', async () => {
+        loadMockReplies('role_remove.json')
+        const role = new InstanceElement('role', roleType, {
+          id: 'role-fakeid1',
+          label: 'test',
+          permissions: [{ label: 'okta.users.userprofile.manage' }],
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: role.elemID.getFullName(),
+            changes: [toChange({ before: role })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
       })
     })
   })

@@ -8,120 +8,28 @@
 import {
   Change,
   DeployResult,
-  ElemID,
   Element,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isInstanceChange,
   isInstanceElement,
   isModificationChange,
   ModificationChange,
-  ReadOnlyElementsSource,
   ReferenceExpression,
   toChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _, { remove } from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData, inspectValue } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FETCH_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import {
-  ACCOUNT_FEATURES_TYPE_NAME,
-  TICKET_FIELD_TYPE_NAME,
-  TICKET_FORM_TYPE_NAME,
-  TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME,
-  ZENDESK,
-} from '../constants'
+import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
-const SOME_STATUSES = 'SOME_STATUSES'
 const log = logger(module)
-
-type Child = {
-  required_on_statuses: {
-    type: string
-    statuses?: string[] // question mark to ba able to delete it later on
-    custom_statuses: number[]
-  }
-}
-
-type InvalidTicketForm = {
-  agent_conditions: {
-    child_fields: Child[]
-  }[]
-}
-
-const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): Promise<boolean> => {
-  if (elementSource === undefined) {
-    log.error('Returning that customStatuses is disabled since no element source was provided')
-    return false
-  }
-
-  const accountFeatures = await elementSource.get(
-    new ElemID(ZENDESK, ACCOUNT_FEATURES_TYPE_NAME, 'instance', ElemID.CONFIG_NAME),
-  )
-
-  if (!isInstanceElement(accountFeatures)) {
-    log.warn('Returning that customStatuses is disabled since accountFeatures is not an instance')
-    return false
-  }
-  const customStatusesEnabled = accountFeatures.value.custom_statuses_enabled
-  if (customStatusesEnabled === undefined) {
-    log.warn('Returning that customStatuses is disabled since custom_statuses_enabled does not exist')
-    return false
-  }
-  return customStatusesEnabled.enabled
-}
-
-/**
- * checks if both statuses and custom_statuses are defined and if custom_statuses is enabled
- */
-const isInvalidTicketForm = (
-  instanceValue: Record<string, unknown>,
-  hasCustomStatusesEnabled: boolean,
-): instanceValue is InvalidTicketForm =>
-  hasCustomStatusesEnabled &&
-  _.isArray(instanceValue.agent_conditions) &&
-  instanceValue.agent_conditions.some(
-    condition =>
-      _.isArray(condition.child_fields) &&
-      condition.child_fields.some(
-        (child: Child) =>
-          _.isObject(child.required_on_statuses) &&
-          child.required_on_statuses.type === SOME_STATUSES &&
-          child.required_on_statuses.custom_statuses !== undefined &&
-          !_.isEmpty(child.required_on_statuses.custom_statuses),
-      ),
-  )
-
-const invalidTicketFormChange = (change: Change<InstanceElement>, hasCustomStatusesEnabled: boolean): boolean =>
-  isAdditionOrModificationChange(change) &&
-  isInstanceChange(change) &&
-  isInvalidTicketForm(getChangeData(change).value, hasCustomStatusesEnabled)
-
-const returnValidInstance = (inst: InstanceElement): InstanceElement => {
-  const clonedInst = inst.clone()
-  // it is true because if we get to returnValidInstance function its after we got true from isInvalidTicketForm so
-  // custom_statuses is enabled
-  if (isInvalidTicketForm(clonedInst.value, true)) {
-    clonedInst.value.agent_conditions.forEach(condition =>
-      condition.child_fields.forEach(child => {
-        if (
-          child.required_on_statuses.type === SOME_STATUSES &&
-          child.required_on_statuses.custom_statuses !== undefined &&
-          !_.isEmpty(child.required_on_statuses.custom_statuses)
-        ) {
-          delete child.required_on_statuses.statuses
-        }
-      }),
-    )
-  }
-  return clonedInst
-}
 
 // this function returns an instance that contains the removed field. This is because zendesk does not allow removing
 // field and condition at the same time
@@ -214,19 +122,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         },
       }
     }
-    const hasCustomStatusesEnabled = await isCustomStatusesEnabled(elementsSource)
 
-    const [invalidModificationAndAdditionChanges, otherTicketFormChanges] = _.partition(ticketFormChanges, change =>
-      invalidTicketFormChange(change, hasCustomStatusesEnabled),
-    )
-
-    const fixedTicketFormChanges = await awu(invalidModificationAndAdditionChanges)
-      .map(change => applyFunctionToChangeData(change, returnValidInstance))
-      .toArray()
-
-    const allChanges = fixedTicketFormChanges.concat(otherTicketFormChanges)
-
-    const tempDeployResult = await deployChanges(allChanges, async change => {
+    const tempDeployResult = await deployChanges(ticketFormChanges, async change => {
       if (isModificationChange(change)) {
         const newAfter = getChangeWithoutRemovedFields(change)
         const intermediateChange =

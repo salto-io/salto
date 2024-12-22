@@ -469,7 +469,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         annotations: {
           _required: true,
           [constants.IS_ATTRIBUTE]: true,
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customreport[0-9a-z_]*' }),
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^[0-9a-z_]+' }),
         },
       },
       definition: {

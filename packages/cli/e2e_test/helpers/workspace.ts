@@ -199,6 +199,7 @@ export const runDeploy = async ({
     args: [
       'deploy',
       '-f',
+      // to be changed at https://salto-io.atlassian.net/browse/SALTO-7121
       '-C',
       'salesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
       '-C',

@@ -7,8 +7,9 @@
  */
 
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Element, InstanceElement, isInstanceElement, TypeElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { apiNameSync, buildElementsSourceForFetch, isInstanceOfTypeSync, addElementParentReference } from './utils'
 import { CUSTOM_OBJECT, FLOW_METADATA_TYPE } from '../constants'
@@ -18,11 +19,6 @@ const { toArrayAsync } = collections.asynciterable
 const log = logger(module)
 
 type RecordsIndex = Record<string, InstanceElement>
-
-const isRecordTriggeredFlow = (flow: InstanceElement): boolean => {
-  const flowStart: TypeElement = flow.getTypeSync()
-  return isDefined(flowStart) && isDefined(flowStart.fields.object)
-}
 
 const createFlowRecordIndex = (elements: Element[]): RecordsIndex => {
   const recordsIndex: RecordsIndex = {}
@@ -47,12 +43,15 @@ const filter: FilterCreator = ({ config }) => ({
     const count: number = elements
       .filter(isInstanceElement)
       .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-      .filter(isRecordTriggeredFlow)
       .reduce((acc, instance) => {
-        const parent = recordsIndex[apiNameSync(instance.getTypeSync().fields.object) ?? '']
-        if (isDefined(parent)) {
-          addElementParentReference(instance, parent)
-          return acc + 1
+        const flowStart = instance.getTypeSync().fields.start.getTypeSync() as ObjectType
+        const flowStartObject = flowStart.fields.object
+        if (isDefined(flowStartObject)) {
+          const parent = recordsIndex[apiNameSync(flowStartObject) ?? '']
+          if (isDefined(parent)) {
+            addElementParentReference(instance, parent)
+            return acc + 1
+          }
         }
         return acc
       }, 0)

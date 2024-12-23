@@ -201,4 +201,46 @@ describe('flowReferencedElements change validator', () => {
       ])
     })
   })
+  describe('when there are multiple missing references to the same element in one flow', () => {
+    let flow: MetadataInstanceElement
+    beforeEach(() => {
+      flow = createInstanceElement(
+        {
+          fullName: 'TestFlow',
+          start: {
+            connector: { targetReference: 'Assignment' },
+          },
+          assignments: [
+            {
+              name: 'Assignment',
+              connector: { targetReference: 'ActionCall' },
+            },
+          ],
+          decisions: [
+            {
+              name: 'Decision',
+              connector: { targetReference: 'ActionCall' },
+            },
+          ],
+        },
+        Flow,
+      )
+      flowChange = toChange({ after: flow })
+    })
+    it('should create change error per reference', async () => {
+      const errors = await flowReferencedElements([flowChange])
+      expect(errors[1]).toEqual({
+        severity: 'Error',
+        message: 'Reference to missing Flow Element',
+        detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+        elemID: flow.elemID.createNestedID('assignments', '0', 'connector', TARGET_REFERENCE),
+      })
+      expect(errors[2]).toEqual({
+        severity: 'Error',
+        message: 'Reference to missing Flow Element',
+        detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+        elemID: flow.elemID.createNestedID('decisions', '0', 'connector', TARGET_REFERENCE),
+      })
+    })
+  })
 })

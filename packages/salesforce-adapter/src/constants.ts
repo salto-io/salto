@@ -82,6 +82,13 @@ export const FLOW_NODE = 'FlowNode'
 // FlowStart field name
 export const TARGET_REFERENCE = 'targetReference'
 
+// FlowNode field names
+export enum FLOW_NODE_FIELD_NAMES {
+  NAME = 'name',
+  LOCATION_X = 'locationX',
+  LOCATION_Y = 'locationY',
+}
+
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',

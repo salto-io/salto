@@ -9,25 +9,28 @@
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Element, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { apiNameSync, buildElementsSourceForFetch, isInstanceOfTypeSync, addElementParentReference } from './utils'
-import { CUSTOM_OBJECT, FLOW_METADATA_TYPE } from '../constants'
+import {
+  apiNameSync,
+  buildElementsSourceForFetch,
+  isInstanceOfTypeSync,
+  addElementParentReference,
+  isCustomObjectSync,
+} from './utils'
+import { FLOW_METADATA_TYPE } from '../constants'
 
 const { isDefined } = lowerDashValues
 const { toArrayAsync } = collections.asynciterable
 const log = logger(module)
 
-type RecordsIndex = Record<string, InstanceElement>
+type RecordsIndex = Record<string, ObjectType>
 
 const createFlowRecordIndex = (elements: Element[]): RecordsIndex => {
   const recordsIndex: RecordsIndex = {}
-  elements
-    .filter(isInstanceElement)
-    .filter(isInstanceOfTypeSync(CUSTOM_OBJECT))
-    .forEach(instance => {
-      recordsIndex[apiNameSync(instance) ?? ''] = instance
-    })
+  elements.filter(isCustomObjectSync).forEach(customObject => {
+    recordsIndex[apiNameSync(customObject) ?? ''] = customObject
+  })
   return recordsIndex
 }
 
@@ -43,13 +46,13 @@ const filter: FilterCreator = ({ config }) => ({
     const count: number = elements
       .filter(isInstanceElement)
       .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-      .reduce((acc, instance) => {
-        const flowStart = instance.getTypeSync().fields.start.getTypeSync() as ObjectType
-        const flowStartObject = flowStart.fields.object
+      .reduce((acc, flow) => {
+        const flowStart = _.get(flow.value, 'start')
+        const flowStartObject = flowStart.object
         if (isDefined(flowStartObject)) {
-          const parent = recordsIndex[apiNameSync(flowStartObject) ?? '']
+          const parent = recordsIndex[flowStartObject]
           if (isDefined(parent)) {
-            addElementParentReference(instance, parent)
+            addElementParentReference(flow, parent)
             return acc + 1
           }
         }

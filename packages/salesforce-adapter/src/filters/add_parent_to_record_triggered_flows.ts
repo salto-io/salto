@@ -56,7 +56,7 @@ const filter: FilterCreator = ({ config }) => ({
         }
         return acc
       }, 0)
-    log.debug('addParentToInstancesWithinFolderFilter created %d references in total', count)
+    log.debug('addParentToRecordTriggeredFlows created %d references in total', count)
   },
 })
 

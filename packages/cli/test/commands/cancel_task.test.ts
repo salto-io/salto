@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import * as core from '@salto-io/core'
-import { action, CancelAsyncTaskInput } from '../../src/commands/cancel_async_task'
+import { action, CancelTaskInput } from '../../src/commands/cancel_task'
 import { mockCliArgs, mockCliCommandArgs, mockWorkspace } from '../mocks'
 import { CliExitCode } from '../../src/types'
 import * as outputer from '../../src/outputer'
@@ -21,11 +21,11 @@ const mockedCore = jest.mocked(core)
 jest.mock('../../src/outputer')
 const mockedOutputer = jest.mocked(outputer)
 
-describe('cancelAsyncTask command', () => {
-  let commandArgs: WorkspaceCommandArgs<CancelAsyncTaskInput>
+describe('cancel-task command', () => {
+  let commandArgs: WorkspaceCommandArgs<CancelTaskInput>
   beforeEach(() => {
     commandArgs = {
-      ...mockCliCommandArgs('cancelAsyncTask', mockCliArgs()),
+      ...mockCliCommandArgs('cancel-task', mockCliArgs()),
       workspace: mockWorkspace({}),
       input: { taskId: 'taskId', account: 'account' },
     }

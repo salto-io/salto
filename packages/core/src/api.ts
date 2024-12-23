@@ -28,9 +28,11 @@ import {
   isField,
   isFieldChange,
   isRemovalChange,
+  isSaltoError,
   ObjectType,
   Progress,
   ReferenceMapping,
+  SaltoError,
   TopLevelElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -732,6 +734,41 @@ export const fixElements = async (
   return { errors: fixes.errors, changes }
 }
 
+const initAccountAdapter = async (account: string, workspace: Workspace): Promise<AdapterOperations | SaltoError> => {
+  if (!workspace.accounts().includes(account)) {
+    return {
+      severity: 'Error',
+      message: 'Account Not Found',
+      detailedMessage: `The account ${account} does not exist in the workspace`,
+    }
+  }
+  const accounts = [account]
+  try {
+    const adaptersMap = await getAdapters(
+      accounts,
+      await workspace.accountCredentials(accounts),
+      workspace.accountConfig.bind(workspace),
+      await workspace.elements(),
+      getAccountToServiceNameMap(workspace, accounts),
+    )
+    const adapter = adaptersMap[account]
+    if (adapter === undefined) {
+      return {
+        severity: 'Error',
+        message: 'Adapter Not Found',
+        detailedMessage: `No adapter found for account ${account}`,
+      }
+    }
+    return adapter
+  } catch (e) {
+    return {
+      severity: 'Error',
+      message: 'Failed to Initialize Adapter',
+      detailedMessage: `Failed to initialize adapter for account ${account}: ${e.message}`,
+    }
+  }
+}
+
 export const cancelServiceAsyncTask = async ({
   workspace,
   account,
@@ -741,20 +778,22 @@ export const cancelServiceAsyncTask = async ({
   account: string
   input: CancelServiceAsyncTaskInput
 }): Promise<CancelServiceAsyncTaskResult> => {
-  const accounts = [account]
-  const adaptersMap = await getAdapters(
-    accounts,
-    await workspace.accountCredentials(accounts),
-    workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
-    getAccountToServiceNameMap(workspace, accounts),
-  )
-  const adapter = adaptersMap[account]
-  if (adapter === undefined) {
-    throw new Error(`No adapter found for account ${account}`)
+  const adapter = await initAccountAdapter(account, workspace)
+  if (isSaltoError(adapter)) {
+    return {
+      errors: [adapter],
+    }
   }
   if (adapter.cancelServiceAsyncTask === undefined) {
-    throw new Error(`cancelServiceAsyncTask is not supported for account ${account}`)
+    return {
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Operation Not Supported',
+          detailedMessage: `cancelServiceAsyncTask is not supported for account ${account}`,
+        },
+      ],
+    }
   }
   return adapter.cancelServiceAsyncTask(input)
 }

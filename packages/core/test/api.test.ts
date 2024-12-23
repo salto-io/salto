@@ -1597,15 +1597,29 @@ describe('api.ts', () => {
         }
       })
 
-      it('should throw Error', async () => {
-        await expect(api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })).rejects.toThrow()
+      it('should return an error', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        expect(errors).toHaveLength(1)
+        expect(errors[0].message).toEqual('Operation Not Supported')
       })
     })
     describe('when invoked with non existing account', () => {
-      it('should throw an error', async () => {
-        await expect(
-          api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' }),
-        ).rejects.toThrow()
+      it('should return an error', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' })
+        expect(errors).toHaveLength(1)
+        expect(errors[0].message).toEqual('Account Not Found')
+      })
+    })
+    describe('when initAdapters throws error', () => {
+      beforeEach(() => {
+        jest.spyOn(adapters, 'initAdapters').mockImplementation(() => {
+          throw new Error('Credential Error')
+        })
+      })
+      it('should return error', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        expect(errors).toHaveLength(1)
+        expect(errors[0].message).toEqual('Failed to Initialize Adapter')
       })
     })
   })

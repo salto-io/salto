@@ -11,11 +11,11 @@ import { createWorkspaceCommand, WorkspaceCommandAction } from '../command_build
 import { errorOutputLine, outputLine } from '../outputer'
 import { CliExitCode } from '../types'
 
-export type CancelAsyncTaskInput = {
+export type CancelTaskInput = {
   taskId: string
   account: string
 }
-export const action: WorkspaceCommandAction<CancelAsyncTaskInput> = async ({ input, workspace, output }) => {
+export const action: WorkspaceCommandAction<CancelTaskInput> = async ({ input, workspace, output }) => {
   const { taskId, account } = input
   try {
     const result = await cancelServiceAsyncTask({ workspace, account, input: { taskId } })
@@ -32,9 +32,9 @@ export const action: WorkspaceCommandAction<CancelAsyncTaskInput> = async ({ inp
   }
 }
 
-const cancelAsyncTaskDef = createWorkspaceCommand<CancelAsyncTaskInput>({
+const cancelTaskDef = createWorkspaceCommand<CancelTaskInput>({
   properties: {
-    name: 'cancelAsyncTask',
+    name: 'cancel-task',
     description: 'Cancel an async task',
     keyedOptions: [
       {
@@ -57,4 +57,4 @@ const cancelAsyncTaskDef = createWorkspaceCommand<CancelAsyncTaskInput>({
   action,
 })
 
-export default cancelAsyncTaskDef
+export default cancelTaskDef

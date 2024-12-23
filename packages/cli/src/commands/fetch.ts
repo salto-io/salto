@@ -87,11 +87,25 @@ const createFetchFromWorkspaceCommand =
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
     }
+    // for backward compatibility SAAS-7006
+    let actualWorkspace: Workspace
+    let actualProgressEmitter: EventEmitter<FetchProgressEvents> | undefined
+    let actualAccounts: string[] | undefined
+
+    if ('adapterCreators' in workspace) {
+      actualWorkspace = workspace.workspace
+      actualProgressEmitter = workspace.progressEmitter
+      actualAccounts = workspace.accounts
+    } else {
+      actualWorkspace = workspace
+      actualProgressEmitter = progressEmitter
+      actualAccounts = accounts
+    }
     return fetchFromWorkspaceFunc({
-      workspace,
+      workspace: actualWorkspace,
       otherWorkspace,
-      progressEmitter,
-      accounts,
+      progressEmitter: actualProgressEmitter,
+      accounts: actualAccounts,
       env,
       fromState,
       adapterCreators,
@@ -177,14 +191,15 @@ export const fetchCommand = async ({
     throw new Error('The state only flag can only be used in default mode')
   }
 
-  const fetchResult = await fetch(
+  const fetchResult = await fetch({
     workspace,
-    fetchProgress,
+    progressEmitter: fetchProgress,
     accounts,
-    regenerateSaltoIds,
+    ignoreStateElemIdMapping: regenerateSaltoIds,
     withChangesDetection,
-    regenerateSaltoIdsForSelectors,
-  )
+    ignoreStateElemIdMappingForSelectors: regenerateSaltoIdsForSelectors,
+    adapterCreators,
+  })
 
   // A few merge errors might have occurred,
   // but since it's fetch flow, we omitted the elements

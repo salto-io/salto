@@ -307,14 +307,23 @@ export const deploy = async (
 
 export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
 
+type FetchFuncParams = {
+  workspace: Workspace
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+  accounts?: string[]
+  ignoreStateElemIdMapping?: boolean
+  withChangesDetection?: boolean
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[]
+  adapterCreators: Record<string, Adapter>
+}
+
 export type FetchFunc = (
-  workspace: Workspace,
+  workspace: Workspace | FetchFuncParams,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
   withChangesDetection?: boolean,
   ignoreStateElemIdMappingForSelectors?: ElementSelector[],
-  adapterCreators?: Record<string, Adapter>,
 ) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {
@@ -336,26 +345,48 @@ export const fetch: FetchFunc = async (
   ignoreStateElemIdMapping,
   withChangesDetection,
   ignoreStateElemIdMappingForSelectors,
-  adapterCreators,
 ) => {
   log.debug('fetch starting..')
   // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
-  const fetchAccounts = accounts ?? workspace.accounts()
-  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
+  let actualWorkspace: Workspace
+  let actualProgressEmitter: EventEmitter<FetchProgressEvents> | undefined
+  let actualAccounts: string[] | undefined
+  let actualIgnoreStateElemIdMapping: boolean | undefined
+  let actualWithChangesDetection: boolean | undefined
+  let actualIgnoreStateElemIdMappingForSelectors: ElementSelector[] | undefined
+  let actualAdapterCreator: Record<string, Adapter>
+  if ('adapterCreators' in workspace) {
+    actualWorkspace = workspace.workspace
+    actualProgressEmitter = workspace.progressEmitter
+    actualAccounts = workspace.accounts
+    actualIgnoreStateElemIdMapping = workspace.ignoreStateElemIdMapping
+    actualWithChangesDetection = workspace.withChangesDetection
+    actualIgnoreStateElemIdMappingForSelectors = workspace.ignoreStateElemIdMappingForSelectors
+    actualAdapterCreator = workspace.adapterCreators
+  } else {
+    actualWorkspace = workspace
+    actualProgressEmitter = progressEmitter
+    actualAccounts = accounts
+    actualIgnoreStateElemIdMapping = ignoreStateElemIdMapping
+    actualWithChangesDetection = withChangesDetection
+    actualIgnoreStateElemIdMappingForSelectors = ignoreStateElemIdMappingForSelectors
+    actualAdapterCreator = deprecatedAdapterCreators
+  }
+  const fetchAccounts = actualAccounts ?? actualWorkspace.accounts()
+  const accountToServiceNameMap = getAccountToServiceNameMap(actualWorkspace, actualWorkspace.accounts())
   const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
-    workspace,
+    workspace: actualWorkspace,
     fetchAccounts,
     accountToServiceNameMap,
-    elementsSource: await workspace.elements(),
-    ignoreStateElemIdMapping,
-    ignoreStateElemIdMappingForSelectors,
+    elementsSource: await actualWorkspace.elements(),
+    ignoreStateElemIdMapping: actualIgnoreStateElemIdMapping,
+    ignoreStateElemIdMappingForSelectors: actualIgnoreStateElemIdMappingForSelectors,
     adapterCreators: actualAdapterCreator,
   })
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap, actualAdapterCreator)
 
-  if (progressEmitter) {
-    progressEmitter.emit('adaptersDidInitialize')
+  if (actualProgressEmitter) {
+    actualProgressEmitter.emit('adaptersDidInitialize')
   }
   const {
     changes,
@@ -370,15 +401,15 @@ export const fetch: FetchFunc = async (
     partiallyFetchedAccounts,
   } = await fetchChanges(
     accountToAdapter,
-    await workspace.elements(),
-    workspace.state(),
+    await actualWorkspace.elements(),
+    actualWorkspace.state(),
     accountToServiceNameMap,
     currentConfigs,
-    progressEmitter,
-    withChangesDetection,
+    actualProgressEmitter,
+    actualWithChangesDetection,
   )
   log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-  await workspace.state().updateStateFromChanges({
+  await actualWorkspace.state().updateStateFromChanges({
     changes: serviceToStateChanges,
     unmergedElements,
     fetchAccounts,

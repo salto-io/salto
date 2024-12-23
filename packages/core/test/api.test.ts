@@ -254,7 +254,11 @@ describe('api.ts', () => {
           partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
         }))
         mockFetchChanges.mockClear()
-        await api.fetch(ws, undefined, ACCOUNTS, undefined, undefined, undefined, mockAdapterCreator)
+        await api.fetch({
+          workspace: ws,
+          accounts: ACCOUNTS,
+          adapterCreators: mockAdapterCreator,
+        })
       })
 
       it('should call fetch changes', () => {
@@ -302,7 +306,7 @@ describe('api.ts', () => {
           partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
         }))
         mockFetchChanges.mockClear()
-        await api.fetch(ws, undefined, [mockService], undefined, undefined, undefined, mockAdapterCreator)
+        await api.fetch({ workspace: ws, accounts: [mockService], adapterCreators: mockAdapterCreator })
       })
 
       it('should call fetch changes with first account only', () => {
@@ -324,7 +328,11 @@ describe('api.ts', () => {
       it('should throw an error upon failure', async () => {
         mockFetchChanges.mockRejectedValueOnce(new Error('test'))
         await expect(
-          api.fetch(ws, undefined, [mockService], undefined, undefined, undefined, mockAdapterCreator),
+          api.fetch({
+            workspace: ws,
+            accounts: [mockService],
+            adapterCreators: mockAdapterCreator,
+          }),
         ).rejects.toThrow(new Error('test'))
       })
     })

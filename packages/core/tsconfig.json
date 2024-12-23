@@ -17,6 +17,6 @@
     { "path": "../lowerdash" },
     { "path": "../test-utils" },
     { "path": "../workspace" },
-    { "path": "../local-workspace" },
+    { "path": "../local-workspace" }
   ]
 }

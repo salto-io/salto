@@ -1559,7 +1559,9 @@ describe('api.ts', () => {
     })
     describe('when the adapter supports cancelServiceAsyncTask', () => {
       beforeEach(() => {
-        mockCancelServiceAsyncTask = mockFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>()
+        mockCancelServiceAsyncTask = mockFunction<
+          Required<AdapterOperations>['cancelServiceAsyncTask']
+        >().mockResolvedValue({ errors: [] })
         adapterCreators[ADAPTER_NAME] = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue({
             fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
@@ -1575,10 +1577,21 @@ describe('api.ts', () => {
         }
       })
 
+      describe('when the adapter cancelServiceAsyncTask throws an error', () => {
+        beforeEach(() => {
+          mockCancelServiceAsyncTask.mockRejectedValue(new Error('Adapter runtime Error'))
+        })
+        it('should return an error', async () => {
+          const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toEqual('Failed to Cancel Task')
+        })
+      })
       it('should invoke cancelServiceAsyncTask on the adapter', async () => {
-        await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
         expect(mockCancelServiceAsyncTask).toHaveBeenCalledTimes(1)
         expect(mockCancelServiceAsyncTask).toHaveBeenCalledWith(input)
+        expect(errors).toHaveLength(0)
       })
     })
     describe('when the adapter does not support cancelServiceAsyncTask', () => {

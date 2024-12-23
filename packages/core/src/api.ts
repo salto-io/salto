@@ -795,5 +795,17 @@ export const cancelServiceAsyncTask = async ({
       ],
     }
   }
-  return adapter.cancelServiceAsyncTask(input)
+  try {
+    return await adapter.cancelServiceAsyncTask(input)
+  } catch (e) {
+    return {
+      errors: [
+        {
+          severity: 'Error',
+          message: 'Failed to Cancel Task',
+          detailedMessage: `Failed to cancel task ${input.taskId}: ${e.message}`,
+        },
+      ],
+    }
+  }
 }

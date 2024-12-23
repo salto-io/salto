@@ -336,8 +336,7 @@ const filter: FilterCreator = ({ definitions }) => ({
         return
       }
       logDuplicatePriorities(policies)
-      const type =
-        priorityTypeNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policyTypeName as PolicyTypeWithPriority]]
+      const type = priorityTypeNameToPriorityType[POLICY_NAME_TO_PRIORITY_NAME[policyTypeName]]
       const priorityInstance = createPolicyPriorityInstance({
         policies,
         type,

@@ -57,7 +57,7 @@ export const rootObjectTypeToObjectSchemaDependencyChanger: DependencyChanger = 
     return []
   }
   return objectTypeChanges.flatMap(change => {
-    const objectTypeChange = change as deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>>
+    const objectTypeChange = change
     return objectSchemaChanges
       .map(objectSchemaChange => createDependencyChange(objectTypeChange, objectSchemaChange))
       .flat()

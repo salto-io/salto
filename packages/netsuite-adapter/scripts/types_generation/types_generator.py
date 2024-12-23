@@ -708,7 +708,7 @@ type_name_to_special_script_id_prefix = {
     'emailtemplate': 'standardemailtemplate|standardpaymentlinktransactionemailtemplate|^custemailtmpl[0-9a-z_]+', # The standardemailtemplate scriptid appeared to a certain customer's account & standardpaymentlinktransactionemailtemplate appeared when fetching from 2021.2 release preview
     'role': '^customrole[0-9a-z_]*', # https://salto-io.atlassian.net/browse/SALTO-7054
     'savedsearch': '^customsearch[0-9a-z_]*', # https://salto-io.atlassian.net/browse/SALTO-7054
-    'reportdefinition': '^customreport[0-9a-z_]*', # https://salto-io.atlassian.net/browse/SALTO-7054
+    'reportdefinition': '^[0-9a-z_]+', # https://salto-io.atlassian.net/browse/SALTO-7054 & https://salto-io.atlassian.net/browse/SALTO-7108
 }
 
 fields_to_create = {

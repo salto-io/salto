@@ -711,7 +711,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
       : (new PrimitiveType({
           elemID: fullElem.elemID,
           primitive: fullElem.primitive,
-          annotationRefsOrTypes: diffAnnoTypes as ReferenceMap,
+          annotationRefsOrTypes: diffAnnoTypes,
           annotations: diffAnno,
           path: fullElem.path,
         }) as unknown as T)

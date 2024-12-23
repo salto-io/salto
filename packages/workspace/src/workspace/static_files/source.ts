@@ -245,8 +245,7 @@ export const buildStaticFilesSource = (
       await staticFilesCache.rename(name)
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
-    clone: (): StaticFilesSource =>
-      buildStaticFilesSource(staticFilesDirStore.clone() as DirectoryStore<Buffer>, staticFilesCache.clone()),
+    clone: (): StaticFilesSource => buildStaticFilesSource(staticFilesDirStore.clone(), staticFilesCache.clone()),
     delete: async (staticFile: StaticFile): Promise<void> => staticFilesDirStore.delete(staticFile.filepath),
     isPathIncluded: filePath => staticFilesDirStore.isPathIncluded(filePath),
   }

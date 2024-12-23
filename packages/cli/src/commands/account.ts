@@ -21,7 +21,6 @@ import {
   getLoginStatuses,
   getSupportedServiceAdapterNames,
   installAdapter,
-  LoginStatus,
   verifyCredentials,
   updateCredentials,
 } from '@salto-io/core'
@@ -334,7 +333,7 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
     errorOutputLine(formatAccountNotConfigured(accountName), output)
     return CliExitCode.AppError
   }
-  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName]))[accountName] as LoginStatus
+  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName]))[accountName]
   if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }

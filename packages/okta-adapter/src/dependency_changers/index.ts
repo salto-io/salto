@@ -15,6 +15,7 @@ import { changeDependenciesFromPoliciesAndRulesToPriority } from './policy_and_r
 import { defaultMultifactorEnrollmentPolicyDependency } from './default_multi_factor_enrollment_policy'
 import { addAuthenticatorToMfaPolicyDependency } from './authenticator_to_mfa_policy'
 import { addDependenciesFromPolicyToPriorPolicy } from './order_policies_by_priority'
+import { addAppGroupToAppUserSchemaDependency } from './app_group_assignment_to_app_schema'
 
 const { awu } = collections.asynciterable
 
@@ -22,6 +23,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   deployment.dependency.removeStandaloneFieldDependency,
   changeDependenciesFromAppUserSchemaToApp,
   addAppGroupToAppDependency,
+  addAppGroupToAppUserSchemaDependency,
   removeProfileMappingAfterDeps,
   changeDependenciesFromPoliciesAndRulesToPriority,
   defaultMultifactorEnrollmentPolicyDependency,

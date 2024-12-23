@@ -42,11 +42,13 @@ const getDefaultOptions = (
 } => {
   if (instance.value.defaultValue.optionIds !== undefined) {
     const optionsSet = new Set(instance.value.defaultValue?.optionIds)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     const referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[]).filter(
       (option: Values) => optionsSet.has(option.id),
     )
     return { referencedDefaultOptions }
   }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   const referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[]).filter(
     (option: Values) => instance.value.defaultValue.optionId === option.id,
   )

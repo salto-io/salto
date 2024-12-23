@@ -938,13 +938,41 @@ const createCustomizations = ({
   },
   Role: {
     requests: [{ endpoint: { path: '/api/v1/iam/roles' }, transformation: { root: 'roles' } }],
-    resource: { directFetch: true },
+    resource: {
+      directFetch: true,
+      recurseInto: {
+        permissions: {
+          typeName: 'Permission',
+          context: { args: { id: { root: 'id' } } },
+        },
+      },
+    },
     element: {
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'label' }] },
       },
-      fieldCustomizations: { id: { hide: true }, _links: { omit: true } },
+      fieldCustomizations: {
+        id: { hide: true },
+        _links: { omit: true },
+        permissions: { fieldType: 'list<Permission>', sort: { properties: [{ path: 'label' }] } },
+      },
+    },
+  },
+  Permission: {
+    requests: [
+      {
+        endpoint: { path: '/api/v1/iam/roles/{id}/permissions' },
+        transformation: { root: 'permissions' },
+      },
+    ],
+    resource: { directFetch: false, serviceIDFields: ['label'] },
+    element: {
+      fieldCustomizations: {
+        created: { omit: true },
+        lastUpdated: { omit: true },
+        _links: { omit: true },
+      },
     },
   },
   ResourceSet: {

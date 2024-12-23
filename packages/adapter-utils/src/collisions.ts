@@ -119,6 +119,68 @@ ${getInstancesDetailsMsg(instanceDetails, baseUrl, maxBreakdownDetailsElements)}
   return collisionMessages
 }
 
+const createMarkdownLinkOrText = ({ text, url }: { text: string; url?: string }): string =>
+  url !== undefined ? `[${text}](${url})` : text
+
+const getInstancesMarkdownLinks = (instances: InstanceElement[]): string =>
+  instances
+    .map(instance =>
+      createMarkdownLinkOrText({
+        text: instance.annotations[CORE_ANNOTATIONS.ALIAS] ?? instance.elemID.name,
+        url: instance.annotations[CORE_ANNOTATIONS.SERVICE_URL],
+      }),
+    )
+    .join(', ')
+
+const createWarningMessages = ({
+  elemIDtoInstances,
+  adapterName,
+  addChildrenMessage,
+}: {
+  elemIDtoInstances: Record<string, InstanceElement[]>
+  adapterName: string
+  addChildrenMessage?: boolean
+}): string[] =>
+  Object.entries(elemIDtoInstances).map(
+    ([
+      elemId,
+      collideInstances,
+    ]) => `${collideInstances.length} ${adapterName} elements ${addChildrenMessage ? 'and their child elements ' : ''}were not fetched, as they were mapped to a single ID ${elemId}:
+${getInstancesMarkdownLinks(collideInstances)}
+
+Usually, this happens because of duplicate configuration names in the service. Make sure these element names are unique, and try fetching again.
+${createMarkdownLinkOrText({ text: 'Learn about additional ways to resolve this issue', url: 'https://help.salto.io/en/articles/6927157-salto-id-collisions' })}`,
+  )
+
+// after SALTO-7088 is done, this function will replace getAndLogCollisionWarnings
+export const getCollisionWarnings = ({
+  instances,
+  addChildrenMessage,
+}: {
+  instances: InstanceElement[]
+  addChildrenMessage?: boolean
+}): SaltoError[] => {
+  if (instances.length === 0) {
+    return []
+  }
+  const adapterName = instances[0].elemID.adapter
+  const elemIDtoInstances = _.pickBy(
+    _.groupBy(instances, instance => instance.elemID.getFullName()),
+    collideInstances => collideInstances.length > 1,
+  )
+  const warningMessages = createWarningMessages({
+    elemIDtoInstances,
+    adapterName,
+    addChildrenMessage,
+  })
+  return warningMessages.map(warningMessage =>
+    createWarningFromMsg({
+      message: 'Some elements were not fetched due to Salto ID collisions',
+      detailedMessage: warningMessage,
+    }),
+  )
+}
+
 export const getAndLogCollisionWarnings = async ({
   instances,
   getTypeName,

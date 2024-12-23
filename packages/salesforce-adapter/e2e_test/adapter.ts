@@ -30,7 +30,7 @@ const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceCo
   const client = (adapterParams && adapterParams.client) || new SalesforceClient({ credentials, config: clientConfig })
   const adapter = new SalesforceAdapter({
     client,
-    config: config ?? {},
+    config: _.merge({}, config, { fetch: { optionalFeatures: { shouldPopulateInternalIdAfterDeploy: false } } }),
     elementsSource: buildElementsSourceFromElements([]),
     ...(adapterParams || { getElemIdFunc: mockGetElemIdFunc }),
   })

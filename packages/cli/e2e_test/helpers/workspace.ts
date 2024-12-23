@@ -196,7 +196,14 @@ export const runDeploy = async ({
 }): Promise<void> => {
   const cliOutput = mockCliOutput()
   const result = await runCommand({
-    args: ['deploy', '-f'],
+    args: [
+      'deploy',
+      '-f',
+      '-C',
+      'salesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+      '-C',
+      'e2esalesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+    ],
     workspacePath,
     cliOutput,
   })

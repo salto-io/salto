@@ -104,6 +104,7 @@ type ReferenceSerializationStrategyName =
   | 'customLabel'
   | 'fromDataInstance'
   | 'recordField'
+  | 'assignToReferenceField'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategy
@@ -161,6 +162,16 @@ export const ReferenceSerializationStrategyLookup: Record<
       `Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}`,
     lookup: (val, context) => {
       if (context !== undefined && _.isString(val) && val.startsWith('Record.')) {
+        return [context, val.split(API_NAME_SEPARATOR)[1]].join(API_NAME_SEPARATOR)
+      }
+      return val
+    },
+  },
+  assignToReferenceField: {
+    serialize: async ({ ref, path }) =>
+      `$Record${API_NAME_SEPARATOR}${await safeApiName({ ref, path, relative: true })}`,
+    lookup: (val, context) => {
+      if (context !== undefined && _.isString(val) && val.startsWith('$Record.')) {
         return [context, val.split(API_NAME_SEPARATOR)[1]].join(API_NAME_SEPARATOR)
       }
       return val
@@ -254,6 +265,11 @@ const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
     target: { type: 'EmailTemplate' },
   },
 ]
+
+const FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
+  src: { field: 'assignToReference', parentTypes: ['Flow'] },
+  target: { parentContext: 'instanceParent', type: 'CustomField' },
+}
 
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.

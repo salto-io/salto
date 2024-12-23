@@ -20,12 +20,16 @@ import { WorkflowV2Transition } from '../../../src/filters/workflowV2/types'
 
 describe('inboundTransitionChangeValidator', () => {
   let changes: ReadonlyArray<Change<ChangeDataType>>
+  let workflowGlobalInstanceBefore: InstanceElement
+  let workflowGlobalInstanceAfter: InstanceElement
   let workflowInstanceBefore: InstanceElement
   let workflowInstanceAfter: InstanceElement
   let transition1: WorkflowV2Transition
   let validTransition1: WorkflowV2Transition
   let invalidTransition: WorkflowV2Transition
   let validTransition2: WorkflowV2Transition
+  let globalTransition: WorkflowV2Transition
+  let duplicatedGlobalTransition: WorkflowV2Transition
   let fromStatusReference1: ReferenceExpression
   let fromStatusReference2: ReferenceExpression
   let fromStatusReference3: ReferenceExpression
@@ -54,6 +58,8 @@ describe('inboundTransitionChangeValidator', () => {
     fromStatusReference3 = new ReferenceExpression(status3.elemID, status3)
     fromStatusReference4 = new ReferenceExpression(status4.elemID, status4)
 
+    workflowGlobalInstanceBefore = createSkeletonWorkflowV2Instance('workflowGlobalInstanceBefore')
+    workflowGlobalInstanceAfter = createSkeletonWorkflowV2Instance('workflowGlobalInstanceAfter')
     workflowInstanceBefore = createSkeletonWorkflowV2Instance('workflowInstanceBefore')
     workflowInstanceAfter = createSkeletonWorkflowV2Instance('workflowInstanceAfter')
     transition1 = createSkeletonWorkflowV2Transition('transition1')
@@ -86,32 +92,67 @@ describe('inboundTransitionChangeValidator', () => {
         fromStatusReference: fromStatusReference4,
       },
     ]
+    globalTransition = createSkeletonWorkflowV2Transition('globalTransition')
+    duplicatedGlobalTransition = createSkeletonWorkflowV2Transition('globalTransition')
+    globalTransition.type = 'GLOBAL'
+    duplicatedGlobalTransition.type = 'GLOBAL'
+    globalTransition.toStatusReference = fromStatusReference1
+    duplicatedGlobalTransition.toStatusReference = fromStatusReference1
+
+    workflowGlobalInstanceBefore.value.transitions = { globalTransition }
+    workflowGlobalInstanceAfter.value.transitions = { globalTransition, duplicatedGlobalTransition }
     workflowInstanceBefore.value.transitions = { transition1 }
     workflowInstanceAfter.value.transitions = { transition1, validTransition1, validTransition2, invalidTransition }
   })
 
-  it('should return an error when theres an addition with duplicate outbound transition name from the same reference', async () => {
+  it('should return an error when theres an addition with a duplicated outbound transition name from the same reference', async () => {
     changes = [toChange({ after: workflowInstanceAfter })]
     expect(await outboundTransitionValidator(changes)).toEqual([
       {
         elemID: workflowInstanceAfter.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Duplicate outbound workflow transition name from a status',
+        message: 'Duplicate workflow transition name',
         detailedMessage:
-          'Every outbound workflow transition from a status must have a unique name. To fix this, change the new transition name to a unique name.',
+          'Every workflow transition (outbound or global) must have a unique name. To fix this, change the new transition name to a unique name.',
       },
     ])
   })
 
-  it('should return an error when theres a modification with duplicate outbound transition name from the same reference', async () => {
+  it('should return an error when theres a modification with a duplicated outbound transition name from the same reference', async () => {
     changes = [toChange({ before: workflowInstanceBefore, after: workflowInstanceAfter })]
     expect(await outboundTransitionValidator(changes)).toEqual([
       {
         elemID: workflowInstanceAfter.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Duplicate outbound workflow transition name from a status',
+        message: 'Duplicate workflow transition name',
         detailedMessage:
-          'Every outbound workflow transition from a status must have a unique name. To fix this, change the new transition name to a unique name.',
+          'Every workflow transition (outbound or global) must have a unique name. To fix this, change the new transition name to a unique name.',
+      },
+    ])
+  })
+
+  it('should return an error when theres an addition with a duplicated global transition name', async () => {
+    changes = [toChange({ after: workflowGlobalInstanceAfter })]
+    expect(await outboundTransitionValidator(changes)).toEqual([
+      {
+        elemID: workflowGlobalInstanceAfter.elemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'Duplicate workflow transition name',
+        detailedMessage:
+          'Every workflow transition (outbound or global) must have a unique name. To fix this, change the new transition name to a unique name.',
+      },
+    ])
+  })
+
+  it('should return an error when theres a modification with a duplicated global transition name', async () => {
+    changes = [toChange({ before: workflowGlobalInstanceBefore, after: workflowGlobalInstanceAfter })]
+    expect(await outboundTransitionValidator(changes)).toEqual([
+      {
+        elemID: workflowGlobalInstanceAfter.elemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'Duplicate workflow transition name',
+        detailedMessage:
+          'Every workflow transition (outbound or global) must have a unique name. To fix this, change the new transition name to a unique name.',
       },
     ])
   })

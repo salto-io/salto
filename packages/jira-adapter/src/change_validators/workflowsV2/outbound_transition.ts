@@ -19,40 +19,53 @@ import { isWorkflowV2Instance, WorkflowTransitionLinks, WorkflowV2Instance } fro
 
 let fromStatusReference: string | ReferenceExpression | undefined
 let transitionName: string
-let links: WorkflowTransitionLinks[]
+let transitionType: string
 let fromStatusReferenceName: string | undefined
 const { isDefined } = values
 const { awu } = collections.asynciterable
 
-const validateDuplicateTransitions = (instance: WorkflowV2Instance): boolean => {
+const addTransitionToMap = (
+  map: Map<string | ReferenceExpression, Set<string>>,
+  key: string | ReferenceExpression,
+  name: string,
+): boolean => {
+  if (map.has(key) && map.get(key)?.has(name)) {
+    return false
+  }
+  if (!map.has(key)) {
+    map.set(key, new Set<string>())
+  }
+  map.get(key)?.add(name)
+  return true
+}
+
+const handleLinkTransitions = (
+  map: Map<string | ReferenceExpression, Set<string>>,
+  transitionLinks: WorkflowTransitionLinks[],
+): boolean =>
+  transitionLinks.every(link => {
+    fromStatusReference = link?.fromStatusReference
+    fromStatusReferenceName = isReferenceExpression(fromStatusReference)
+      ? fromStatusReference.elemID.getFullName()
+      : undefined
+
+    return fromStatusReferenceName ? addTransitionToMap(map, fromStatusReferenceName, transitionName) : true
+  })
+
+const isValidTransitions = (instance: WorkflowV2Instance): boolean => {
   const transitionMap = new Map<string | ReferenceExpression, Set<string>>()
   const transitions = Object.values(instance.value.transitions)
 
-  const validChanges = transitions.every(transition => {
+  return transitions.every(transition => {
     transitionName = transition.name
-    links = transition.links || []
-    return links.every(link => {
-      fromStatusReference = link?.fromStatusReference
-      fromStatusReferenceName = isReferenceExpression(fromStatusReference)
-        ? fromStatusReference.elemID.getFullName()
-        : undefined
-      if (fromStatusReferenceName) {
-        if (
-          transitionMap.has(fromStatusReferenceName) &&
-          transitionMap.get(fromStatusReferenceName)?.has(transitionName)
-        ) {
-          return false
-        }
-        if (!transitionMap.has(fromStatusReferenceName)) {
-          transitionMap.set(fromStatusReferenceName, new Set<string>())
-        }
-        transitionMap.get(fromStatusReferenceName)?.add(transitionName)
-      }
-      return true
-    })
-  })
+    transitionType = transition.type
 
-  return validChanges
+    if (transitionType === 'GLOBAL') {
+      return addTransitionToMap(transitionMap, transitionType, transitionName)
+    }
+    const links = transition.links || []
+    return handleLinkTransitions(transitionMap, links)
+  })
 }
 
 export const outboundTransitionValidator: ChangeValidator = async changes =>
@@ -61,17 +74,16 @@ export const outboundTransitionValidator: ChangeValidator = async changes =>
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isWorkflowV2Instance)
-    .map(instance => {
-      const isValidChanges = validateDuplicateTransitions(instance)
-      return isValidChanges
+    .map(instance =>
+      isValidTransitions(instance)
         ? undefined
         : {
             elemID: instance.elemID,
             severity: 'Error' as SeverityLevel,
-            message: 'Duplicate outbound workflow transition name from a status',
+            message: 'Duplicate workflow transition name',
             detailedMessage:
-              'Every outbound workflow transition from a status must have a unique name. To fix this, change the new transition name to a unique name.',
-          }
-    })
+              'Every workflow transition (outbound or global) must have a unique name. To fix this, change the new transition name to a unique name.',
+          },
+    )
     .filter(isDefined)
     .toArray()

@@ -78,29 +78,26 @@ export type CacheChangeSetUpdate = {
   currentErrors: RemoteMap<SaltoError[]>
 }
 
-const getElementsToMergeFromChanges = async (
+const getElementsToMergeFromChanges = (
   srcChanges: ChangeSet<Change<Element>>,
   idsExistingOnSecondSourceChanges: Set<string>,
   otherSrcChanges: ReadOnlyElementsSource,
-): Promise<Element[]> => {
-  const elementsToMerge: (Element | undefined)[] = []
-  await Promise.all(
-    srcChanges.changes.map(async change => {
-      const element = getChangeData(change)
-      const id = element.elemID
-      if (isAdditionOrModificationChange(change)) {
-        elementsToMerge.push(element)
+): AsyncIterable<Element> =>
+  awu(srcChanges.changes).flatMap(async change => {
+    const elementsToMerge: Element[] = []
+    const element = getChangeData(change)
+    const id = element.elemID
+    if (isAdditionOrModificationChange(change)) {
+      elementsToMerge.push(element)
+    }
+    if (!idsExistingOnSecondSourceChanges.has(id.getFullName())) {
+      const unmodifiedFragment = await otherSrcChanges.get(id)
+      if (unmodifiedFragment !== undefined) {
+        elementsToMerge.push(unmodifiedFragment)
       }
-      if (!idsExistingOnSecondSourceChanges.has(id.getFullName())) {
-        const unmodifiedFragment = await otherSrcChanges.get(id)
-        if (unmodifiedFragment !== undefined) {
-          elementsToMerge.push(unmodifiedFragment)
-        }
-      }
-    }),
-  )
-  return elementsToMerge.filter(values.isDefined)
-}
+    }
+    return elementsToMerge
+  })
 
 const calculateMergedChanges = async (
   newMergedElementsResult: MergeResult,
@@ -276,8 +273,8 @@ export const createMergeManager = async (
         const { changeIds: src2ChangeIDs, potentialDeletedIds: deleted2 } = getChangeAndDeleteIds(src2Changes)
         deleted1.forEach(d => potentialDeletedIds.add(d))
         deleted2.forEach(d => potentialDeletedIds.add(d))
-        const src1ElementsToMerge = awu(await getElementsToMergeFromChanges(src1Changes, src2ChangeIDs, src2))
-        const src2ElementsToMerge = awu(await getElementsToMergeFromChanges(src2Changes, src1ChangeIDs, src1))
+        const src1ElementsToMerge = getElementsToMergeFromChanges(src1Changes, src2ChangeIDs, src2)
+        const src2ElementsToMerge = getElementsToMergeFromChanges(src2Changes, src1ChangeIDs, src1)
         return { src1ElementsToMerge, src2ElementsToMerge, potentialDeletedIds }
       }
       log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)

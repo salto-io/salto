@@ -21,6 +21,9 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { parserUtils } from '@salto-io/parser'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, elementsSource, allowEmpty = true) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
@@ -52,9 +55,17 @@ export const resolveValues: ResolveValuesFunc = async (element, getLookUpName, e
               isReferenceExpression(part) ? resolveReferenceExpression(part) : part,
             ),
           )
+        else {
+          log.warn(`Template static file is undefined with path ${value.filepath}`)
+          return undefined
+        }
         return templateExpression
       }
       const content = await value.getContent()
+      if (content === undefined) {
+        log.warn(`Static file content is undefined with path ${value.filepath}`)
+        return undefined
+      }
       return value.encoding === 'binary' ? content : content?.toString(value.encoding)
     }
     return value

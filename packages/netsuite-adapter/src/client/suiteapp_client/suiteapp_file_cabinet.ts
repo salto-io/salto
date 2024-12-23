@@ -168,7 +168,12 @@ export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
 
 export const getContent = async (content: unknown): Promise<Buffer> => {
   if (isStaticFile(content)) {
-    return (await content.getContent()) ?? Buffer.from('')
+    const buffer = await content.getContent()
+    if (buffer === undefined) {
+      log.warn('Static file content is undefined')
+      return Buffer.from('')
+    }
+    return buffer
   }
   if (typeof content === 'string') {
     return Buffer.from(content)

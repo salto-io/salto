@@ -14,6 +14,7 @@ import {
   isReferenceExpression,
   ElemID,
   isInstanceElement,
+  isElement,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
@@ -185,10 +186,13 @@ const customObjectSubInstanceResolver: UrlResolver = async (element, baseUrl, el
   const internalId = getInternalId(element)
   const [parentRef] = getParents(element)
 
-  if (instanceUri === undefined || internalId === undefined || !isReferenceExpression(parentRef)) {
+  if (instanceUri === undefined || internalId === undefined) {
     return undefined
   }
-  const parent = await elementIDResolver(parentRef.elemID)
+  const parent = isReferenceExpression(parentRef) ? await elementIDResolver(parentRef.elemID) : parentRef
+  if (!isElement(parent)) {
+    return undefined
+  }
   const parentIdentifier = getTypeIdentifier(parent)
   if (parentIdentifier !== undefined) {
     return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`)

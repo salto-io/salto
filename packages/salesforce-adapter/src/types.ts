@@ -104,7 +104,6 @@ const OPTIONAL_FEATURES = [
   'genAiReferences',
   'networkReferences',
   'extendFetchTargets',
-  'shouldPopulateInternalIdAfterDeploy',
   'addParentToInstancesWithinFolder',
   'shouldPopulateInternalIdAfterDeploy',
 ] as const

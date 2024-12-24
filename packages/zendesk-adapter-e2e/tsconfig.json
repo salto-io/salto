@@ -9,6 +9,7 @@
   "include": ["src/**/*", "src/**/*.json", "test/**/*", "test/**/*.json", "e2e_test/**/*", "index.ts"],
   "references": [
     { "path": "../adapter-api" },
+    { "path": "../core" },
     { "path": "../zendesk-adapter" },
     { "path": "../adapter-components" },
     { "path": "../adapter-utils" },

@@ -9,7 +9,7 @@
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Element, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import {
   apiNameSync,
@@ -24,15 +24,16 @@ const { isDefined } = lowerDashValues
 const { toArrayAsync } = collections.asynciterable
 const log = logger(module)
 
-type RecordsIndex = Record<string, ObjectType>
-
-const createFlowRecordIndex = (elements: Element[]): RecordsIndex => {
-  const recordsIndex: RecordsIndex = {}
-  elements.filter(isCustomObjectSync).forEach(customObject => {
-    recordsIndex[apiNameSync(customObject) ?? ''] = customObject
-  })
-  return recordsIndex
+type RecordTriggeredFlowInstance = InstanceElement & {
+  value: {
+    start: {
+      object: string
+    }
+  }
 }
+
+const isRecordTriggeredFlowInstance = (element: Element): element is RecordTriggeredFlowInstance =>
+  isInstanceOfTypeSync(FLOW_METADATA_TYPE)(element) && _.isString(_.get(element.value, ['start', 'object']))
 
 const filter: FilterCreator = ({ config }) => ({
   name: 'addParentToRecordTriggeredFlows',
@@ -40,25 +41,24 @@ const filter: FilterCreator = ({ config }) => ({
     if (!config.fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows')) {
       return
     }
-    const recordsIndex = createFlowRecordIndex(
-      await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll()),
+    const customObjectByName = _.keyBy(
+      (await toArrayAsync(await buildElementsSourceForFetch(elements, config).getAll())).filter(isCustomObjectSync),
+      objectType => apiNameSync(objectType) ?? '',
     )
-    const count: number = elements
-      .filter(isInstanceElement)
-      .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
-      .reduce((acc, flow) => {
-        const flowStart = _.get(flow.value, 'start')
-        const flowStartObject = flowStart.object
-        if (isDefined(flowStartObject)) {
-          const parent = recordsIndex[flowStartObject]
-          if (isDefined(parent)) {
-            addElementParentReference(flow, parent)
-            return acc + 1
-          }
-        }
-        return acc
-      }, 0)
-    log.debug('addParentToRecordTriggeredFlows created %d references in total', count)
+    const createdReferencesCount: number = elements.filter(isRecordTriggeredFlowInstance).reduce((acc, flow) => {
+      const parent = customObjectByName[flow.value.start.object]
+      if (isDefined(parent)) {
+        addElementParentReference(flow, parent)
+        return acc + 1
+      }
+      log.warn(
+        'could not add parent reference to instance %s, the object %s is missing from the workspace',
+        flow,
+        flow.value.start.object,
+      )
+      return acc
+    }, 0)
+    log.debug('filter created %d references in total', createdReferencesCount)
   },
 })
 

@@ -11,6 +11,7 @@ import {
   AdapterOperations,
   AdditionChange,
   BuiltinTypes,
+  CancelServiceAsyncTaskInput,
   Change,
   ChangeDataType,
   ChangeValidator,
@@ -1532,6 +1533,107 @@ describe('api.ts', () => {
 
       expect(res).toEqual({ changes: [], errors: [] })
       expect(mockFixElements).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('cancelServiceAsyncTask', () => {
+    const input: CancelServiceAsyncTaskInput = {
+      taskId: '123',
+    }
+    const ACCOUNT_NAME = 'test1'
+    const ADAPTER_NAME = 'test'
+
+    let ws: workspace.Workspace
+    let mockCancelServiceAsyncTask: jest.MockedFunction<Required<AdapterOperations>['cancelServiceAsyncTask']>
+
+    beforeEach(() => {
+      ws = mockWorkspace({
+        accounts: [ACCOUNT_NAME],
+        accountToServiceName: {
+          [ACCOUNT_NAME]: ADAPTER_NAME,
+        },
+      })
+      ;(ws.accountCredentials as jest.MockedFunction<workspace.Workspace['accountCredentials']>).mockResolvedValue({
+        [ACCOUNT_NAME]: mockConfigInstance,
+      })
+    })
+    describe('when the adapter supports cancelServiceAsyncTask', () => {
+      beforeEach(() => {
+        mockCancelServiceAsyncTask = mockFunction<
+          Required<AdapterOperations>['cancelServiceAsyncTask']
+        >().mockResolvedValue({ errors: [] })
+        adapterCreators[ADAPTER_NAME] = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+            deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+            cancelServiceAsyncTask: mockCancelServiceAsyncTask,
+          }),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
+        }
+      })
+
+      describe('when the adapter cancelServiceAsyncTask throws an error', () => {
+        beforeEach(() => {
+          mockCancelServiceAsyncTask.mockRejectedValue(new Error('Adapter runtime Error'))
+        })
+        it('should return an error', async () => {
+          const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toEqual('Failed to Cancel Task')
+        })
+      })
+      it('should invoke cancelServiceAsyncTask on the adapter', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        expect(mockCancelServiceAsyncTask).toHaveBeenCalledTimes(1)
+        expect(mockCancelServiceAsyncTask).toHaveBeenCalledWith(input)
+        expect(errors).toHaveLength(0)
+      })
+    })
+    describe('when the adapter does not support cancelServiceAsyncTask', () => {
+      beforeEach(() => {
+        adapterCreators[ADAPTER_NAME] = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+            deploy: mockFunction<AdapterOperations['deploy']>().mockResolvedValue({ appliedChanges: [], errors: [] }),
+          }),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({
+            accountId: '',
+            accountType: 'Sandbox',
+            isProduction: false,
+          }),
+        }
+      })
+
+      it('should return an error', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        expect(errors).toHaveLength(1)
+        expect(errors[0].message).toEqual('Operation Not Supported')
+      })
+    })
+    describe('when invoked with non existing account', () => {
+      it('should return an error', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: 'non-existing-account' })
+        expect(errors).toHaveLength(1)
+        expect(errors[0].message).toEqual('Account Not Found')
+      })
+    })
+    describe('when initAdapters throws error', () => {
+      beforeEach(() => {
+        jest.spyOn(adapters, 'initAdapters').mockImplementation(() => {
+          throw new Error('Credential Error')
+        })
+      })
+      it('should return error', async () => {
+        const { errors } = await api.cancelServiceAsyncTask({ workspace: ws, input, account: ACCOUNT_NAME })
+        expect(errors).toHaveLength(1)
+        expect(errors[0].message).toEqual('Failed to Initialize Adapter')
+      })
     })
   })
 })

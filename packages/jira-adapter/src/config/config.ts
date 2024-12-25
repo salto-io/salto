@@ -297,7 +297,7 @@ const CHANGE_VALIDATOR_NAMES = [
   'emptyProjectScopedContext',
   'filter',
   'kanbanBoardBacklog',
-  'outboundTransition',
+  'globalTransition',
 ]
 
 export type ChangeValidatorName = (typeof CHANGE_VALIDATOR_NAMES)[number]

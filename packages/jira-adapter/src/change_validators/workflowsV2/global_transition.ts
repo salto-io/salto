@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import {
   ChangeValidator,
@@ -18,22 +19,15 @@ import { isWorkflowV2Instance, WorkflowV2Instance } from '../../filters/workflow
 const { isDefined } = values
 
 const getInvalidGlobalTransitions = (instance: WorkflowV2Instance): string[] => {
-  const globalTransitionsSet = new Set<string>()
-  const invalidGlobalTransitionsSet = new Set<string>()
-  const transitions = Object.values(instance.value.transitions)
+  const globalTransitionsGroupByName = _.groupBy(
+    Object.values(instance.value.transitions).filter(t => t.type === 'GLOBAL'),
+    'name',
+  )
+  const invalidTransitionsNames = Object.entries(globalTransitionsGroupByName)
+    .filter(([_name, transitions]) => transitions.length > 1)
+    .map(([name, _transitions]) => name)
 
-  transitions.forEach(transition => {
-    const transitionType = transition.type
-    if (transitionType === 'GLOBAL') {
-      const transitionName = transition.name
-      if (globalTransitionsSet.has(transitionName)) {
-        invalidGlobalTransitionsSet.add(transitionName)
-      }
-      globalTransitionsSet.add(transitionName)
-    }
-  })
-
-  return Array.from(invalidGlobalTransitionsSet)
+  return invalidTransitionsNames
 }
 
 export const globalTransitionValidator: ChangeValidator = async changes =>
@@ -44,7 +38,7 @@ export const globalTransitionValidator: ChangeValidator = async changes =>
     .filter(isWorkflowV2Instance)
     .map(instance => {
       const invalidGlobalTransitions = getInvalidGlobalTransitions(instance)
-      const isInvalidGlobalTransitions = invalidGlobalTransitions.length > 0
+      const isInvalidGlobalTransitions = !_.isEmpty(invalidGlobalTransitions)
       return isInvalidGlobalTransitions
         ? {
             elemID: instance.elemID,

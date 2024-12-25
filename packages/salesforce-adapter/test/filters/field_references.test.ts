@@ -50,9 +50,10 @@ import {
 } from '../../src/constants'
 import { metadataType, apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
-import { defaultFilterContext } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from './mocks'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 
@@ -803,6 +804,61 @@ describe('Serialization Strategies', () => {
       // Make sure serialization works on the created reference
       expect(
         await ReferenceSerializationStrategyLookup.recordField.serialize({ ref: createdReference, element: instance }),
+      ).toEqual(RESOLVED_VALUE)
+    })
+  })
+  describe('assignToReferenceField', () => {
+    const RESOLVED_VALUE = '$Record.TestCustomField__c'
+    let filter: FilterWith<'onFetch'>
+    let targetType: ObjectType
+    let flowInstance: InstanceElement
+    let targetInstance: InstanceElement
+    beforeEach(() => {
+      targetType = createCustomObjectType('TestType__c', {
+        fields: {
+          TestCustomField__c: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [API_NAME]: 'TestType__c.TestCustomField__c' },
+          },
+        },
+      })
+      targetInstance = createInstanceElement(
+        { fullName: 'TargetInstance', TestCustomField__c: 'custom field value' },
+        targetType,
+      )
+      flowInstance = createInstanceElement(
+        {
+          fullName: 'TestFlow',
+          assignments: [
+            {
+              assignToReference: RESOLVED_VALUE,
+            },
+          ],
+        },
+        mockTypes.Flow,
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(targetType.elemID, targetType),
+        },
+      )
+      filter = filterCreator({
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
+          }),
+        },
+      }) as FilterWith<'onFetch'>
+    })
+    it('should create reference to the CustomField and deserialize it to the original value', async () => {
+      await filter.onFetch([flowInstance, mockTypes.Flow, targetType, targetInstance])
+      const createdReference = flowInstance.value.assignments[0].assignToReference as ReferenceExpression
+      expect(createdReference).toBeInstanceOf(ReferenceExpression)
+      expect(
+        await ReferenceSerializationStrategyLookup.assignToReferenceField.serialize({
+          ref: createdReference,
+          element: flowInstance,
+        }),
       ).toEqual(RESOLVED_VALUE)
     })
   })

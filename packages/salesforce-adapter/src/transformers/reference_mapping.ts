@@ -64,6 +64,7 @@ import {
   CPQ_QUOTE,
   CPQ_CONSTRAINT_FIELD,
   CUSTOM_LABEL_METADATA_TYPE,
+  FLOW_FIELD_TYPE_NAMES,
 } from '../constants'
 import { instanceInternalId } from '../filters/utils'
 import { FetchProfile } from '../types'
@@ -270,18 +271,17 @@ const FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
   src: {
     field: 'assignToReference',
     parentTypes: [
-      'FlowAssignmentItem',
-      'FlowStageStepOutputParameter',
-      'FlowSubflowOutputAssignment',
-      'FlowTransformValueAction',
-      'FlowScreenFieldOutputParameter',
-      'FlowWaitEventOutputParameter',
-      'FlowStageStepExitActionOutputParameter',
-      'FlowApexPluginCallOutputParameter',
-      'FlowActionCallOutputParameter',
-      'FlowAssignmentItem',
-      'FlowOutputFieldAssignment',
-      'FlowStageStepEntryActionOutputParameter',
+      FLOW_FIELD_TYPE_NAMES.FLOW_ASSIGNMENT_ITEM,
+      FLOW_FIELD_TYPE_NAMES.FLOW_STAGE_STEP_OUTPUT_PARAMETER,
+      FLOW_FIELD_TYPE_NAMES.FLOW_SUBFLOW_OUTPUT_ASSIGNMENT,
+      FLOW_FIELD_TYPE_NAMES.FLOW_TRANSFORM_VALUE_ACTION,
+      FLOW_FIELD_TYPE_NAMES.FLOW_SCREEN_FIELD_OUTPUT_PARAMETER,
+      FLOW_FIELD_TYPE_NAMES.FLOW_WAIT_EVENT_OUTPUT_PARAMETER,
+      FLOW_FIELD_TYPE_NAMES.FLOW_STAGE_STEP_EXIT_ACTION_OUTPUT_PARAMETER,
+      FLOW_FIELD_TYPE_NAMES.FLOW_APEX_PLUGIN_CALL_OUTPUT_PARAMETER,
+      FLOW_FIELD_TYPE_NAMES.FLOW_ACTION_CALL_OUTPUT_PARAMETER,
+      FLOW_FIELD_TYPE_NAMES.FLOW_OUTPUT_FIELD_ASSIGNMENT,
+      FLOW_FIELD_TYPE_NAMES.FLOW_STAGE_STEP_ENTRY_ACTION_OUTPUT_PARAMETER,
     ],
   },
   serializationStrategy: 'assignToReferenceField',

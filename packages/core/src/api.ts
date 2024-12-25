@@ -53,6 +53,7 @@ import {
   detailedCompare,
   getDetailedChanges as getDetailedChangesFromChange,
   inspectValue,
+  resolveTypeShallow,
 } from '@salto-io/adapter-utils'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
@@ -714,6 +715,9 @@ export const fixElements = async (
     .map(id => workspace.getValue(id))
     .filter(values.isDefined)
     .toArray()
+
+  const elementsSource = await workspace.elements()
+  await awu(elements).forEach(element => resolveTypeShallow(element, elementsSource))
 
   log.debug(
     'about to fixElements: %o, found by selectors: %o',

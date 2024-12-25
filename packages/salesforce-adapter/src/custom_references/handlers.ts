@@ -20,23 +20,27 @@ import {
 import { profilesAndPermissionSetsHandler } from './profiles_and_permission_sets'
 import { managedElementsHandler } from './managed_elements'
 import { formulaRefsHandler } from './formula_refs'
+import { omitNonExistingFieldsHandler } from './omit_non_existing_fields'
 
 const handlers: Record<CustomReferencesHandlers, WeakReferencesHandler> = {
   profilesAndPermissionSets: profilesAndPermissionSetsHandler,
   managedElements: managedElementsHandler,
   formulaRefs: formulaRefsHandler,
+  omitNonExistingFields: omitNonExistingFieldsHandler,
 }
 
 const defaultCustomReferencesConfiguration: Required<CustomReferencesSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
   formulaRefs: false,
+  omitNonExistingFields: false,
 }
 
 const defaultFixElementsConfiguration: Required<FixElementsSettings> = {
   profilesAndPermissionSets: true,
   managedElements: true,
   formulaRefs: false,
+  omitNonExistingFields: true,
 }
 
 export const customReferencesConfiguration = (

@@ -1924,6 +1924,13 @@ Update object -- customrecord_flo_customization.custrecord_flo_description (cust
 Update object -- customrecord_flo_customization.custrecord_sp_personal_data (customrecordcustomfield)
 Update object -- customrecord_flo_customization.custrecord_flo_help (customrecordcustomfield)
 Update object -- customrecord_flo_customization.custrecord_flo_custz_link (customrecordcustomfield)
+Validate for circular dependencies -- Success
+
+WARNING -- One or more potential issues were found during custom object validation. (customrecord_flo_customization)
+File: ~/Objects/customrecord_flo_customization.xml
+
+WARNING -- One or more potential issues were found during custom object validation. (customrecord_flo_customization)
+File: ~/Objects/customrecord_flo_customization.xml
 *** ERROR ***
 
 An error occurred during custom object update.

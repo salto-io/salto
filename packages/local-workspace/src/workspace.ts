@@ -254,16 +254,16 @@ export async function loadLocalWorkspace({
   const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
-
-  const adaptersConfig = await buildLocalAdaptersConfigSource(
-    baseDir,
-    remoteMapCreator,
-    persistent,
-    await getConfigTypes(workspaceConfig.envs, adapterCreators),
-    configOverrides,
-  )
-  const envNames = workspaceConfig.envs.map(e => e.name)
-  const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
+  try {
+    const adaptersConfig = await buildLocalAdaptersConfigSource(
+      baseDir,
+      remoteMapCreator,
+      persistent,
+      await getConfigTypes(workspaceConfig.envs, adapterCreators),
+      configOverrides,
+    )
+    const envNames = workspaceConfig.envs.map(e => e.name)
+    const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
     const elemSources = await loadLocalElementsSources({
       baseDir,

@@ -286,7 +286,12 @@ describe('local workspace', () => {
         it('should call close', async () => {
           mockLoad.mockRejectedValue(new Error('oh no!'))
           await expect(
-            loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+            loadLocalWorkspace({
+              path: '.',
+              getConfigTypes: async () => [],
+              getCustomReferences: async () => [],
+              adapterCreators: mockAdapterCreator,
+            }),
           ).rejects.toThrow(new Error('oh no!'))
           expect(mockClose).toHaveBeenCalledTimes(1)
         })
@@ -294,7 +299,12 @@ describe('local workspace', () => {
           mockLoad.mockRejectedValue(new Error('oh no!'))
           mockClose.mockRejectedValue(new Error('Close Failed!'))
           await expect(
-            loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+            loadLocalWorkspace({
+              path: '.',
+              getConfigTypes: async () => [],
+              getCustomReferences: async () => [],
+              adapterCreators: mockAdapterCreator,
+            }),
           ).rejects.toThrow(new Error('oh no!'))
           expect(mockClose).toHaveBeenCalledTimes(1)
         })

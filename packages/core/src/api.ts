@@ -917,7 +917,11 @@ export const fixElements = async (
   return { errors: fixes.errors, changes }
 }
 
-const initAccountAdapter = async (account: string, workspace: Workspace): Promise<AdapterOperations | SaltoError> => {
+const initAccountAdapter = async (
+  account: string,
+  workspace: Workspace,
+  adapterCreators: Record<string, Adapter>,
+): Promise<AdapterOperations | SaltoError> => {
   if (!workspace.accounts().includes(account)) {
     return {
       severity: 'Error',
@@ -933,6 +937,8 @@ const initAccountAdapter = async (account: string, workspace: Workspace): Promis
       workspace.accountConfig.bind(workspace),
       await workspace.elements(),
       getAccountToServiceNameMap(workspace, accounts),
+      undefined,
+      adapterCreators,
     )
     const adapter = adaptersMap[account]
     if (adapter === undefined) {
@@ -956,12 +962,16 @@ export const cancelServiceAsyncTask = async ({
   workspace,
   account,
   input,
+  adapterCreators,
 }: {
   workspace: Workspace
   account: string
   input: CancelServiceAsyncTaskInput
+  adapterCreators?: Record<string, Adapter>
 }): Promise<CancelServiceAsyncTaskResult> => {
-  const adapter = await initAccountAdapter(account, workspace)
+  // for backward compatibility SAAS-7006
+  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  const adapter = await initAccountAdapter(account, workspace, actualAdapterCreator)
   if (isSaltoError(adapter)) {
     return {
       errors: [adapter],

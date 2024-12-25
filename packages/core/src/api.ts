@@ -151,36 +151,53 @@ type previewArgs = {
   topLevelFilters?: IDFilter[]
   adapterCreators: Record<string, Adapter>
 }
+const getPreviewArgs: (
+  workspaceOrParams: Workspace | previewArgs,
+  accounts?: string[],
+  checkOnly?: boolean,
+  skipValidations?: boolean,
+  topLevelFilters?: IDFilter[],
+) => previewArgs = (workspaceOrParams, accounts, checkOnly, skipValidations, topLevelFilters) => {
+  if ('adapterCreators' in workspaceOrParams) {
+    return workspaceOrParams
+  }
+  return {
+    workspace: workspaceOrParams,
+    accounts,
+    checkOnly,
+    skipValidations,
+    topLevelFilters,
+    adapterCreators: allAdapterCreators,
+  }
+}
 
-export const preview = async (
+// As a transitionary step, we support both a workspace input and an argument object
+export function preview(args: previewArgs): Promise<Plan>
+// @deprecated
+export function preview(
   workspace: Workspace | previewArgs,
   accounts?: string[],
   checkOnly?: boolean,
   skipValidations?: boolean,
   topLevelFilters?: IDFilter[],
-): Promise<Plan> => {
+): Promise<Plan>
+
+export async function preview(
+  workspace: Workspace | previewArgs,
+  accounts?: string[],
+  checkOnly?: boolean,
+  skipValidations?: boolean,
+  topLevelFilters?: IDFilter[],
+): Promise<Plan> {
   // for backward compatibility
-  let actualWorkspace: Workspace
-  let actualAccounts: string[]
-  let actualCheckOnly = false
-  let actualSkipValidation = false
-  let actualTopLevelFilters: IDFilter[] | undefined
-  let actualAdapterCreator: Record<string, Adapter>
-  if ('adapterCreators' in workspace) {
-    actualWorkspace = workspace.workspace
-    actualAccounts = workspace.accounts ?? actualWorkspace.accounts()
-    actualCheckOnly = workspace.checkOnly ?? false
-    actualSkipValidation = workspace.skipValidations ?? false
-    actualTopLevelFilters = workspace.topLevelFilters
-    actualAdapterCreator = workspace.adapterCreators
-  } else {
-    actualWorkspace = workspace
-    actualAccounts = accounts ?? actualWorkspace.accounts()
-    actualCheckOnly = checkOnly ?? false
-    actualSkipValidation = skipValidations ?? false
-    actualTopLevelFilters = topLevelFilters
-    actualAdapterCreator = allAdapterCreators
-  }
+  const {
+    workspace: actualWorkspace,
+    accounts: actualAccounts = actualWorkspace.accounts(),
+    checkOnly: actualCheckOnly = false,
+    skipValidations: actualSkipValidation = false,
+    topLevelFilters: actualTopLevelFilters,
+    adapterCreators,
+  } = getPreviewArgs(workspace, accounts, checkOnly, skipValidations, topLevelFilters)
 
   const stateElements = actualWorkspace.state()
   const adapters = await getAdapters(
@@ -190,7 +207,7 @@ export const preview = async (
     await actualWorkspace.elements(),
     getAccountToServiceNameMap(actualWorkspace, actualAccounts),
     {},
-    actualAdapterCreator,
+    adapterCreators,
   )
   return getPlan({
     before: stateElements,
@@ -206,49 +223,74 @@ export const preview = async (
 }
 
 type ReportProgress = (item: PlanItem, status: ItemStatus, details?: string | Progress) => void
+export type DeployParams = {
+  workspace: Workspace
+  actionPlan: Plan
+  reportProgress: ReportProgress
+  accounts?: string[]
+  checkOnly?: boolean
+  adapterCreators: Record<string, Adapter>
+}
 
-export const deploy = async (
-  workspace:
-    | Workspace
-    | {
-        workspace: Workspace
-        actionPlan: Plan
-        reportProgress: ReportProgress
-        accounts?: string[]
-        checkOnly?: boolean
-        adapterCreators: Record<string, Adapter>
-      },
+export type CompatibleDeployFunc = (
+  workspace: Workspace | DeployParams,
+  actionPlan?: Plan,
+  reportProgress?: ReportProgress,
+  accounts?: string[],
+  checkOnly?: boolean,
+) => Promise<DeployResult>
+
+const getDeployArgs: (
+  workspaceOrParams: Workspace | DeployParams,
+  actionPlan?: Plan,
+  reportProgress?: ReportProgress,
+  accounts?: string[],
+  checkOnly?: boolean,
+) => DeployParams = (workspaceOrParams, actionPlan, reportProgress, accounts, checkOnly) => {
+  if ('adapterCreators' in workspaceOrParams) {
+    return workspaceOrParams
+  }
+  if (actionPlan === undefined || reportProgress === undefined) {
+    throw new Error('actionPlan and reportProgress should not be undefined if workspace is a workspace')
+  }
+  return {
+    workspace: workspaceOrParams,
+    accounts,
+    checkOnly,
+    actionPlan,
+    reportProgress,
+    adapterCreators: allAdapterCreators,
+  }
+}
+
+// As a transitionary step, we support both a workspace input and an argument object
+export function deploy(args: DeployParams): Promise<DeployResult>
+// @deprecated
+export function deploy(
+  workspace: Workspace,
+  actionPlan?: Plan,
+  reportProgress?: ReportProgress,
+  accounts?: string[],
+  checkOnly?: boolean,
+): Promise<DeployResult>
+
+export async function deploy(
+  workspace: Workspace | DeployParams,
   actionPlan?: Plan,
   reportProgress?: ReportProgress,
   accounts?: string[],
   checkOnly = false,
-): Promise<DeployResult> => {
+): Promise<DeployResult> {
   // for backward compatibility
-  let actualWorkspace: Workspace
-  let actualActionPlan: Plan
-  let actualReportProgress: ReportProgress
-  let actualAccounts: string[]
-  let actualCheckOnly: boolean
-  let actualAdapterCreator: Record<string, Adapter>
+  const {
+    workspace: actualWorkspace,
+    actionPlan: actualActionPlan,
+    reportProgress: actualReportProgress,
+    accounts: actualAccounts = actualWorkspace.accounts(),
+    checkOnly: actualCheckOnly = false,
+    adapterCreators,
+  } = getDeployArgs(workspace, actionPlan, reportProgress, accounts, checkOnly)
 
-  if ('adapterCreators' in workspace) {
-    actualWorkspace = workspace.workspace
-    actualActionPlan = workspace.actionPlan
-    actualReportProgress = workspace.reportProgress
-    actualAccounts = workspace.accounts ?? actualWorkspace.accounts()
-    actualCheckOnly = workspace.checkOnly ?? false
-    actualAdapterCreator = workspace.adapterCreators
-  } else {
-    if (actionPlan === undefined || reportProgress === undefined) {
-      throw new Error('actionPlan and reportProgress should not be undefined if workspace is a workspace')
-    }
-    actualWorkspace = workspace
-    actualActionPlan = actionPlan
-    actualReportProgress = reportProgress
-    actualAccounts = accounts ?? actualWorkspace.accounts()
-    actualCheckOnly = checkOnly ?? false
-    actualAdapterCreator = allAdapterCreators
-  }
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await actualWorkspace.elements()])
   const adapters = await getAdapters(
@@ -258,7 +300,7 @@ export const deploy = async (
     adaptersElementSource,
     getAccountToServiceNameMap(actualWorkspace, actualAccounts),
     {},
-    actualAdapterCreator,
+    adapterCreators,
   )
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> =>
@@ -695,46 +737,62 @@ export const installAdapter = async (
   throw new AdapterInstallError(adapterName, installResult)
 }
 
-export const addAdapter = async (
-  workspace:
-    | Workspace
-    | {
-        workspace: Workspace
-        adapterName: string
-        accountName?: string
-        adapterCreators: Record<string, Adapter>
-      },
+type addAdapterParams = {
+  workspace: Workspace
+  adapterName: string
+  accountName?: string
+  adapterCreators: Record<string, Adapter>
+}
+
+const getAddAdapterArgs: (
+  workspaceOrParams: Workspace | addAdapterParams,
   adapterName?: string,
   accountName?: string,
-): Promise<AdapterAuthentication> => {
-  // for backward compatibility
-  let actualWorkspace: Workspace
-  let actualAdapterName: string
-  let actualAccountName: string | undefined
-  let actualAdapterCreator: Record<string, Adapter>
-
-  if ('adapterCreators' in workspace) {
-    actualWorkspace = workspace.workspace
-    actualAdapterName = workspace.adapterName
-    actualAccountName = workspace.accountName
-    actualAdapterCreator = workspace.adapterCreators
-  } else {
-    if (adapterName === undefined) {
-      throw new Error('adapterName should not be undefined if workspace is a workspace')
-    }
-    actualWorkspace = workspace
-    actualAdapterName = adapterName
-    actualAccountName = accountName
-    actualAdapterCreator = allAdapterCreators
+) => addAdapterParams = (workspaceOrParams, adapterName, accountName) => {
+  if ('adapterCreators' in workspaceOrParams) {
+    return workspaceOrParams
   }
-  const adapter = getAdapterCreator(actualAdapterName, actualAdapterCreator)
+  if (adapterName === undefined) {
+    throw new Error('adapterName is undefined when workspace is a workspace')
+  }
+  return {
+    workspace: workspaceOrParams,
+    adapterName,
+    accountName,
+    adapterCreators: allAdapterCreators,
+  }
+}
+
+// As a transitionary step, we support both a workspace input and an argument object
+export function addAdapter(args: addAdapterParams): Promise<AdapterAuthentication>
+// @deprecated
+export function addAdapter(
+  workspace: Workspace,
+  adapterName?: string,
+  accountName?: string,
+): Promise<AdapterAuthentication>
+
+export async function addAdapter(
+  workspace: Workspace | addAdapterParams,
+  adapterName?: string,
+  accountName?: string,
+): Promise<AdapterAuthentication> {
+  // for backward compatibility
+  const {
+    workspace: actualWorkspace,
+    adapterName: actualAdapterName,
+    accountName: actualAccountName,
+    adapterCreators,
+  } = getAddAdapterArgs(workspace, adapterName, accountName)
+
+  const adapter = getAdapterCreator(actualAdapterName, adapterCreators)
   await actualWorkspace.addAccount(actualAdapterName, actualAccountName)
   const adapterAccountName = actualAccountName ?? actualAdapterName
   if (_.isUndefined(await actualWorkspace.accountConfig(adapterAccountName))) {
     const defaultConfig = await getDefaultAdapterConfig({
       adapterName: actualAdapterName,
       accountName: adapterAccountName,
-      adapterCreators: actualAdapterCreator,
+      adapterCreators,
     })
     if (!_.isUndefined(defaultConfig)) {
       await actualWorkspace.updateAccountConfig(actualAdapterName, defaultConfig, adapterAccountName)

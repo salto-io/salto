@@ -90,7 +90,6 @@ export const getCustomReferences = async (
   accountToServiceName: Record<string, string>,
   adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
 ): Promise<ReferenceInfo[]> => {
-  // for backward compatibility
   const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
     const serviceName = accountToServiceName[account] ?? account
     try {
@@ -132,42 +131,56 @@ export async function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<
   })
 }
 
-export const initLocalWorkspace = async (
-  baseDir:
-    | string
-    | {
-        baseDir: string
-        envName?: string
-        stateStaticFilesSource?: staticFiles.StateStaticFilesSource
-        adapterCreators: Record<string, Adapter>
-      },
+type InitLocalWorkspaceParams = {
+  baseDir: string
+  envName?: string
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource
+  adapterCreators: Record<string, Adapter>
+}
+
+const getInitLocalWorkspace: (
+  baseDirOrParams: string | InitLocalWorkspaceParams,
+  envName?: string,
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+) => InitLocalWorkspaceParams = (baseDirOrParams, envName, stateStaticFilesSource) => {
+  if (!_.isString(baseDirOrParams)) {
+    return baseDirOrParams
+  }
+  return {
+    baseDir: baseDirOrParams,
+    envName,
+    stateStaticFilesSource,
+    adapterCreators: allAdapterCreators,
+  }
+}
+
+// As a transitionary step, we support both a string input and an argument object
+export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
+// @deprecated
+export function initLocalWorkspace(
+  baseDir: string,
+  envName?: string,
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+): Promise<Workspace>
+
+export async function initLocalWorkspace(
+  baseDir: string | InitLocalWorkspaceParams,
   envName = 'default',
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> => {
+): Promise<Workspace> {
   // for backward compatibility
-  let actualBaseDir: string
-  let actualEnvName: string | undefined
-  let actualStateStaticFilesSource: staticFiles.StateStaticFilesSource | undefined
-  let actualAdapterCreator: Record<string, Adapter>
-  if (_.isString(baseDir)) {
-    actualBaseDir = baseDir
-    actualEnvName = envName
-    actualStateStaticFilesSource = stateStaticFilesSource
-    actualAdapterCreator = allAdapterCreators
-  } else {
-    actualBaseDir = baseDir.baseDir
-    actualEnvName = baseDir.envName
-    actualStateStaticFilesSource = baseDir.stateStaticFilesSource
-    actualAdapterCreator = baseDir.adapterCreators
-  }
-  if (!actualEnvName) {
-    actualEnvName = 'default'
-  }
+  const {
+    baseDir: actualBaseDir,
+    envName: actualEnvName = 'default',
+    stateStaticFilesSource: actualStateStaticFilesSource,
+    adapterCreators,
+  } = getInitLocalWorkspace(baseDir, envName, stateStaticFilesSource)
+
   return localInitLocalWorkspace(
     actualBaseDir,
     actualEnvName,
-    Object.values(getAdaptersConfigTypesMap(actualAdapterCreator)).flat(),
-    getCustomReferencesFunc(actualAdapterCreator),
+    Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
+    getCustomReferencesFunc(adapterCreators),
     actualStateStaticFilesSource,
   )
 }

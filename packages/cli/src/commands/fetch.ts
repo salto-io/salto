@@ -72,6 +72,21 @@ export type FetchCommandArgs = {
   withChangesDetection?: boolean
 }
 
+const getInitLocalWorkspace: (
+  workspaceOrParams: Workspace | FetchFuncParams,
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  accounts?: string[],
+) => Omit<FetchFuncParams, 'adapterCreators'> = (workspaceOrParams, progressEmitter, accounts) => {
+  if ('adapterCreators' in workspaceOrParams) {
+    return workspaceOrParams
+  }
+  return {
+    workspace: workspaceOrParams,
+    progressEmitter,
+    accounts,
+  }
+}
+
 const createFetchFromWorkspaceCommand =
   (
     fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
@@ -90,19 +105,12 @@ const createFetchFromWorkspaceCommand =
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
     }
     // for backward compatibility
-    let actualWorkspace: Workspace
-    let actualProgressEmitter: EventEmitter<FetchProgressEvents> | undefined
-    let actualAccounts: string[] | undefined
+    const {
+      workspace: actualWorkspace,
+      progressEmitter: actualProgressEmitter,
+      accounts: actualAccounts,
+    } = getInitLocalWorkspace(workspace, progressEmitter, accounts)
 
-    if ('adapterCreators' in workspace) {
-      actualWorkspace = workspace.workspace
-      actualProgressEmitter = workspace.progressEmitter
-      actualAccounts = workspace.accounts
-    } else {
-      actualWorkspace = workspace
-      actualProgressEmitter = progressEmitter
-      actualAccounts = accounts
-    }
     return fetchFromWorkspaceFunc({
       workspace: actualWorkspace,
       otherWorkspace,

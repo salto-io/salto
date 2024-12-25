@@ -29,7 +29,6 @@ import {
   ChangeError,
   ChangeDataType,
   DetailedChangeWithBaseChange,
-  Adapter,
 } from '@salto-io/adapter-api'
 import {
   Plan,
@@ -37,8 +36,9 @@ import {
   DeployResult,
   Telemetry,
   CommandConfig,
-  deploy as coreDeploy,
   ItemStatus,
+  DeployParams,
+  CompatibleDeployFunc,
 } from '@salto-io/core'
 import {
   Workspace,
@@ -774,17 +774,8 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
-export const deploy: typeof coreDeploy = async (
-  workspace:
-    | Workspace
-    | {
-        workspace: Workspace
-        actionPlan: Plan
-        reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void
-        accounts?: string[]
-        checkOnly?: boolean
-        adapterCreators: Record<string, Adapter>
-      },
+export const deploy: CompatibleDeployFunc = async (
+  workspace: Workspace | DeployParams,
   _actionPlan?: Plan,
   _reportProgress?: (item: PlanItem, status: ItemStatus, details?: string) => void,
   _accounts?: string[],

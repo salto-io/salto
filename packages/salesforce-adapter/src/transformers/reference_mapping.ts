@@ -267,9 +267,25 @@ const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
 ]
 
 const FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
-  src: { field: 'assignToReference', parentTypes: ['Flow'] },
+  src: {
+    field: 'assignToReference',
+    parentTypes: [
+      'FlowAssignmentItem',
+      'FlowStageStepOutputParameter',
+      'FlowSubflowOutputAssignment',
+      'FlowTransformValueAction',
+      'FlowScreenFieldOutputParameter',
+      'FlowWaitEventOutputParameter',
+      'FlowStageStepExitActionOutputParameter',
+      'FlowApexPluginCallOutputParameter',
+      'FlowActionCallOutputParameter',
+      'FlowAssignmentItem',
+      'FlowOutputFieldAssignment',
+      'FlowStageStepEntryActionOutputParameter',
+    ],
+  },
   serializationStrategy: 'assignToReferenceField',
-  target: { parentContext: 'instanceParent', type: 'CustomField' },
+  target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
 }
 
 /**

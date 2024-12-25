@@ -52,3 +52,4 @@ export const getDiffInstance = (change: Change<InstanceElement>): InstanceElemen
 
   return diffInstance
 }
+

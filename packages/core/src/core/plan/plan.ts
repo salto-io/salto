@@ -9,11 +9,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   Element,
-  isObjectType,
-  isInstanceElement,
   ChangeDataType,
-  isField,
-  isPrimitiveType,
   ChangeValidator,
   Change,
   ChangeError,
@@ -21,20 +17,18 @@ import {
   ChangeGroupIdFunction,
   ReadOnlyElementsSource,
   ElemID,
-  isVariable,
-  Value,
-  isReferenceExpression,
-  compareSpecialValues,
-  BuiltinTypesByFullName,
   isAdditionChange,
   isModificationChange,
   isRemovalChange,
   changeId,
-  isTemplateExpression,
-  areReferencesEqual,
   CompareOptions,
-  compareElementIDs,
   getChangeData,
+  Value,
+  isReferenceExpression,
+  areReferencesEqual,
+  compareSpecialValues,
+  isTemplateExpression,
+  isObjectType, isPrimitiveType, isInstanceElement, isField, isVariable, BuiltinTypesByFullName, compareElementIDs,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -223,18 +217,17 @@ const isEqualsNode = async (
   return _.isEqual(node1, node2)
 }
 
-const addDifferentElements =
+const calculateDiff =
   (
     before: ReadOnlyElementsSource,
     after: ReadOnlyElementsSource,
     topLevelFilters: IDFilter[],
     numElements: number,
     compareOptions?: CompareOptions,
-  ): PlanTransformer =>
-  graph =>
+  ): Promise<DiffNode<ChangeDataType>[]> =>
     log.timeDebug(
       async () => {
-        const outputGraph = graph.clone()
+        const changes: DiffNode<ChangeDataType>[] = []
         const sieve = new Set<string>()
 
         const toChange = (beforeElem?: ChangeDataType, afterElem?: ChangeDataType): DiffNode<ChangeDataType> => {
@@ -267,7 +260,7 @@ const addDifferentElements =
 
         const addElemToOutputGraph = (beforeElem?: ChangeDataType, afterElem?: ChangeDataType): void => {
           const change = toChange(beforeElem, afterElem)
-          outputGraph.addNode(changeId(change), [], change)
+          changes.push(change)
         }
 
         const addNodeIfDifferent = async (beforeNode?: ChangeDataType, afterNode?: ChangeDataType): Promise<void> => {
@@ -326,14 +319,37 @@ const addDifferentElements =
           (topLevelFilters.length === 0
             ? await source.getAll()
             : awu(await source.list())
-                .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
-                .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
+              .filter(async id => _.every(await Promise.all(topLevelFilters.map(filter => filter(id)))))
+              .map(id => source.get(id))) as AsyncIterable<ChangeDataType>
 
         const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => compareElementIDs(e1.elemID, e2.elemID)
 
         await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after), cmp))
           .map(handleSpecialIds)
           .forEach(addElementsNodes)
+        return changes
+      },
+      'add nodes to graph with for %d elements',
+      numElements,
+    )
+
+
+const addDifferentElements =
+  (
+    before: ReadOnlyElementsSource,
+    after: ReadOnlyElementsSource,
+    topLevelFilters: IDFilter[],
+    numElements: number,
+    compareOptions?: CompareOptions,
+  ): PlanTransformer =>
+  graph =>
+    log.timeDebug(
+      async () => {
+        const outputGraph = graph.clone()
+        const changes = await calculateDiff(before, after, topLevelFilters, numElements, compareOptions)
+        changes.forEach(change => {
+          outputGraph.addNode(changeId(change), [], change)
+        })
         return outputGraph
       },
       'add nodes to graph with for %d elements',

@@ -226,6 +226,8 @@ export const allFilters: Array<FilterCreator> = [
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
   flowFilter,
+  elementsUrlFilter,
+  // customObjectInstanceReferencesFilter should run after elementsUrlFilter
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
   cpqCustomScriptFilter,
@@ -240,7 +242,6 @@ export const allFilters: Array<FilterCreator> = [
   extendTriggersMetadataFilter,
   profilePathsFilter,
   territoryFilter,
-  elementsUrlFilter,
   nestedInstancesAuthorInformation,
   customObjectAuthorFilter,
   dataInstancesAuthorFilter,

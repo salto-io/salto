@@ -24,7 +24,8 @@ import {
   loadLocalWorkspace as localWorkspaceLoad,
   initLocalWorkspace as localInitLocalWorkspace,
 } from '@salto-io/local-workspace'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { getAdaptersConfigTypesMap } from '../core/adapters'
 
 const { awu } = collections.asynciterable
@@ -34,8 +35,8 @@ export const getAdapterConfigsPerAccount = async (
   envs: EnvConfig[],
   adapterCreators?: Record<string, Adapter>,
 ): Promise<ObjectType[]> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const configTypesByAccount = getAdaptersConfigTypesMap(actualAdapterCreator)
   const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
   const differentlyNamedAccounts = Object.fromEntries(
@@ -83,17 +84,17 @@ export const getCustomReferencesFunc = (adapterCreators: Record<string, Adapter>
     return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
   }
 
-// for backward compatibility SAAS-7006 - should be deleted!
+// for backward compatibility - should be deleted!
 export const getCustomReferences = async (
   elements: Element[],
   accountToServiceName: Record<string, string>,
   adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
 ): Promise<ReferenceInfo[]> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
     const serviceName = accountToServiceName[account] ?? account
     try {
-      const refFunc = deprecatedAdapterCreators[serviceName]?.getCustomReferences
+      const refFunc = allAdapterCreators[serviceName]?.getCustomReferences
       if (refFunc !== undefined) {
         return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
       }
@@ -121,8 +122,8 @@ type LoadLocalWorkspaceArgs = {
 }
 
 export async function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<Workspace> {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = args.adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = args.adapterCreators ?? allAdapterCreators
   return localWorkspaceLoad({
     ...args,
     getConfigTypes: getAdapterConfigsPerAccount,
@@ -143,7 +144,7 @@ export const initLocalWorkspace = async (
   envName = 'default',
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
 ): Promise<Workspace> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   let actualBaseDir: string
   let actualEnvName: string | undefined
   let actualStateStaticFilesSource: staticFiles.StateStaticFilesSource | undefined
@@ -152,7 +153,7 @@ export const initLocalWorkspace = async (
     actualBaseDir = baseDir
     actualEnvName = envName
     actualStateStaticFilesSource = stateStaticFilesSource
-    actualAdapterCreator = deprecatedAdapterCreators
+    actualAdapterCreator = allAdapterCreators
   } else {
     actualBaseDir = baseDir.baseDir
     actualEnvName = baseDir.envName

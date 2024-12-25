@@ -33,7 +33,8 @@ import {
   elementSource as workspaceElementSource,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 
 const { awu } = collections.asynciterable
 const { buildContainerType } = workspaceElementSource
@@ -44,7 +45,7 @@ type getAdaptersCredentialsTypesArgs = { names?: ReadonlyArray<string>; adapterC
 export const getAdaptersCredentialsTypes = (
   names?: getAdaptersCredentialsTypesArgs,
 ): Record<string, AdapterAuthentication> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   let actualNames: ReadonlyArray<string> | undefined
   let actualAdapterCreator: Record<string, Adapter>
   if (names && 'adapterCreators' in names) {
@@ -52,7 +53,7 @@ export const getAdaptersCredentialsTypes = (
     actualAdapterCreator = names.adapterCreators
   } else {
     actualNames = names
-    actualAdapterCreator = deprecatedAdapterCreators
+    actualAdapterCreator = allAdapterCreators
   }
   let relevantAdapterCreators: Record<string, Adapter>
   if (actualNames === undefined) {
@@ -73,8 +74,8 @@ export const initAdapters = (
   adapterCreators?: Record<string, Adapter>,
 ): Record<string, AdapterOperations> =>
   _.mapValues(config, (context, account) => {
-    // for backward compatibility SAAS-7006
-    const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+    // for backward compatibility
+    const actualAdapterCreator = adapterCreators ?? allAdapterCreators
     if (!context.credentials) {
       throw new Error(`${account} is not logged in.\n\nPlease login and try again.`)
     }
@@ -102,8 +103,8 @@ const getAdapterConfigFromType = async (
 }
 
 export const getAdaptersConfigTypesMap = (adapterCreators?: Record<string, Adapter>): Record<string, ObjectType[]> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   return Object.fromEntries(
     Object.entries(
       _.mapValues(actualAdapterCreator, adapterCreator =>
@@ -127,7 +128,7 @@ export const getDefaultAdapterConfig = async (
   accountName?: string,
   options?: InstanceElement,
 ): Promise<InstanceElement[] | undefined> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   let actualAdapterName: string
   let actualAccountName: string | undefined
   let actualOptions: InstanceElement | undefined
@@ -136,7 +137,7 @@ export const getDefaultAdapterConfig = async (
     actualAdapterName = adapterName
     actualAccountName = accountName
     actualOptions = options
-    actualAdapterCreator = deprecatedAdapterCreators
+    actualAdapterCreator = allAdapterCreators
   } else {
     actualAdapterName = adapterName.adapterName
     actualAccountName = adapterName.accountName
@@ -290,8 +291,8 @@ export const getAdaptersCreatorConfigs = async (
   resolveTypes = false,
   adapterCreators?: Record<string, Adapter>,
 ): Promise<Record<string, AdapterOperationsContext>> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   return Object.fromEntries(
     await Promise.all(
       accounts.map(async account => {
@@ -334,8 +335,8 @@ export const getAdapters = async (
   elemIdGetters: Record<string, ElemIdGetter> = {},
   adapterCreators?: Record<string, Adapter>,
 ): Promise<Record<string, AdapterOperations>> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   return initAdapters(
     await getAdaptersCreatorConfigs(
       adapters,

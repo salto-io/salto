@@ -19,7 +19,8 @@ import {
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { FetchResult } from '../types'
 import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
 import { getPlan } from './plan'
@@ -114,8 +115,8 @@ export const isInitializedFolder = async ({
   adapterName,
   adapterCreators,
 }: IsInitializedFolderArgs): Promise<IsInitializedFolderResult> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const adapter = actualAdapterCreator[adapterName]
   if (adapter.adapterFormat?.isInitializedFolder === undefined) {
     return {
@@ -148,8 +149,8 @@ export const initFolder = async ({
   adapterName,
   adapterCreators,
 }: InitFolderArgs): Promise<InitFolderResult> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const adapter = actualAdapterCreator[adapterName]
   const adapterInitFolder = adapter.adapterFormat?.initFolder
   if (adapterInitFolder === undefined) {
@@ -219,8 +220,8 @@ export const calculatePatch = async ({
   ignoreStateElemIdMappingForSelectors,
   adapterCreators,
 }: CalculatePatchArgs): Promise<FetchResult> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const { adapter, adapterContext } = await getAdapterAndContext({
     workspace,
     accountName,
@@ -303,8 +304,8 @@ export const syncWorkspaceToFolder = ({
 }: SyncWorkspaceToFolderArgs): Promise<SyncWorkspaceToFolderResult> =>
   log.time(
     async () => {
-      // for backward compatibility SAAS-7006
-      const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+      // for backward compatibility
+      const actualAdapterCreator = adapterCreators ?? allAdapterCreators
       const {
         resolvedElements: workspaceElements,
         adapter,
@@ -404,8 +405,8 @@ export const updateElementFolder = ({
 }: UpdateElementFolderArgs): Promise<UpdateElementFolderResult> =>
   log.time(
     async () => {
-      // for backward compatibility SAAS-7006
-      const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+      // for backward compatibility
+      const actualAdapterCreator = adapterCreators ?? allAdapterCreators
       const { adapter, adapterContext } = await getAdapterAndContext({
         workspace,
         accountName,

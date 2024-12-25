@@ -11,7 +11,8 @@ import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { cleanDatabases } from '@salto-io/local-workspace'
 import { Adapter } from '@salto-io/adapter-api'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { getDefaultAdapterConfig } from './adapters'
 
 const { awu } = collections.asynciterable
@@ -23,8 +24,8 @@ export const cleanWorkspace = async (
   cleanArgs: WorkspaceComponents,
   adapterCreators?: Record<string, Adapter>,
 ): Promise<void> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   await workspace.clear(_.omit(cleanArgs, 'accountConfig'))
   if (cleanArgs.accountConfig === true) {
     await awu(workspace.accounts()).forEach(async account => {

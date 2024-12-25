@@ -8,7 +8,8 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import {
   AdapterOperations,
   AdapterOperationsContext,
@@ -1465,8 +1466,8 @@ export const getFetchAdapterAndServicesSetup = async ({
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const elemIDGetters = await createElemIdGetters({
     workspace,
     accountToServiceNameMap,

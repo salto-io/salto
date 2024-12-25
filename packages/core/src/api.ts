@@ -54,7 +54,8 @@ import {
   getDetailedChanges as getDetailedChangesFromChange,
   inspectValue,
 } from '@salto-io/adapter-utils'
-import { adapterCreators as deprecatedAdapterCreators } from '@salto-io/adapter-creators'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { deployActions, ItemStatus } from './core/deploy'
 import {
   getAdapterDependencyChangers,
@@ -106,8 +107,8 @@ export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
   adapterCreators?: Record<string, Adapter>,
 ): Promise<VerifyCredentialsResult> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const adapterCreator = getAdapterFromLoginConfig(loginConfig, actualAdapterCreator)
   if (adapterCreator) {
     try {
@@ -158,7 +159,7 @@ export const preview = async (
   skipValidations?: boolean,
   topLevelFilters?: IDFilter[],
 ): Promise<Plan> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   let actualWorkspace: Workspace
   let actualAccounts: string[]
   let actualCheckOnly = false
@@ -178,7 +179,7 @@ export const preview = async (
     actualCheckOnly = checkOnly ?? false
     actualSkipValidation = skipValidations ?? false
     actualTopLevelFilters = topLevelFilters
-    actualAdapterCreator = deprecatedAdapterCreators
+    actualAdapterCreator = allAdapterCreators
   }
 
   const stateElements = actualWorkspace.state()
@@ -222,7 +223,7 @@ export const deploy = async (
   accounts?: string[],
   checkOnly = false,
 ): Promise<DeployResult> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   let actualWorkspace: Workspace
   let actualActionPlan: Plan
   let actualReportProgress: ReportProgress
@@ -246,7 +247,7 @@ export const deploy = async (
     actualReportProgress = reportProgress
     actualAccounts = accounts ?? actualWorkspace.accounts()
     actualCheckOnly = checkOnly ?? false
-    actualAdapterCreator = deprecatedAdapterCreators
+    actualAdapterCreator = allAdapterCreators
   }
   const changedElements = elementSource.createInMemoryElementSource()
   const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await actualWorkspace.elements()])
@@ -307,7 +308,7 @@ export const deploy = async (
 
 export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
 
-type FetchFuncParams = {
+export type FetchFuncParams = {
   workspace: Workspace
   progressEmitter?: EventEmitter<FetchProgressEvents>
   accounts?: string[]
@@ -338,40 +339,66 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
-export const fetch: FetchFunc = async (
-  workspace,
+const getFetchArgs: (...args: Parameters<FetchFunc>) => FetchFuncParams = (
+  workspaceOrParams,
   progressEmitter,
   accounts,
   ignoreStateElemIdMapping,
   withChangesDetection,
   ignoreStateElemIdMappingForSelectors,
 ) => {
-  log.debug('fetch starting..')
-  // for backward compatibility SAAS-7006
-  let actualWorkspace: Workspace
-  let actualProgressEmitter: EventEmitter<FetchProgressEvents> | undefined
-  let actualAccounts: string[] | undefined
-  let actualIgnoreStateElemIdMapping: boolean | undefined
-  let actualWithChangesDetection: boolean | undefined
-  let actualIgnoreStateElemIdMappingForSelectors: ElementSelector[] | undefined
-  let actualAdapterCreator: Record<string, Adapter>
-  if ('adapterCreators' in workspace) {
-    actualWorkspace = workspace.workspace
-    actualProgressEmitter = workspace.progressEmitter
-    actualAccounts = workspace.accounts
-    actualIgnoreStateElemIdMapping = workspace.ignoreStateElemIdMapping
-    actualWithChangesDetection = workspace.withChangesDetection
-    actualIgnoreStateElemIdMappingForSelectors = workspace.ignoreStateElemIdMappingForSelectors
-    actualAdapterCreator = workspace.adapterCreators
-  } else {
-    actualWorkspace = workspace
-    actualProgressEmitter = progressEmitter
-    actualAccounts = accounts
-    actualIgnoreStateElemIdMapping = ignoreStateElemIdMapping
-    actualWithChangesDetection = withChangesDetection
-    actualIgnoreStateElemIdMappingForSelectors = ignoreStateElemIdMappingForSelectors
-    actualAdapterCreator = deprecatedAdapterCreators
+  if ('adapterCreators' in workspaceOrParams) {
+    return workspaceOrParams
   }
+  return {
+    workspace: workspaceOrParams,
+    progressEmitter,
+    accounts,
+    ignoreStateElemIdMapping,
+    withChangesDetection,
+    ignoreStateElemIdMappingForSelectors,
+    adapterCreators: allAdapterCreators,
+  }
+}
+
+// As a transitionary step, we support both a workspace input and an argument object
+export function fetch(workspace: FetchFuncParams): Promise<FetchResult>
+// @deprecated
+export function fetch(
+  workspace: Workspace,
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  accounts?: string[],
+  ignoreStateElemIdMapping?: boolean,
+  withChangesDetection?: boolean,
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
+): Promise<FetchResult>
+
+export async function fetch(
+  workspace: Workspace | FetchFuncParams,
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  accounts?: string[],
+  ignoreStateElemIdMapping?: boolean,
+  withChangesDetection?: boolean,
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
+): Promise<FetchResult> {
+  log.debug('fetch starting..')
+  // for backward compatibility
+  const {
+    workspace: actualWorkspace,
+    progressEmitter: actualProgressEmitter,
+    accounts: actualAccounts,
+    ignoreStateElemIdMapping: actualIgnoreStateElemIdMapping,
+    withChangesDetection: actualWithChangesDetection,
+    ignoreStateElemIdMappingForSelectors: actualIgnoreStateElemIdMappingForSelectors,
+    adapterCreators,
+  } = getFetchArgs(
+    workspace,
+    progressEmitter,
+    accounts,
+    ignoreStateElemIdMapping,
+    withChangesDetection,
+    ignoreStateElemIdMappingForSelectors,
+  )
   const fetchAccounts = actualAccounts ?? actualWorkspace.accounts()
   const accountToServiceNameMap = getAccountToServiceNameMap(actualWorkspace, actualWorkspace.accounts())
   const { currentConfigs, adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup({
@@ -381,9 +408,9 @@ export const fetch: FetchFunc = async (
     elementsSource: await actualWorkspace.elements(),
     ignoreStateElemIdMapping: actualIgnoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors: actualIgnoreStateElemIdMappingForSelectors,
-    adapterCreators: actualAdapterCreator,
+    adapterCreators,
   })
-  const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap, actualAdapterCreator)
+  const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap, adapterCreators)
 
   if (actualProgressEmitter) {
     actualProgressEmitter.emit('adaptersDidInitialize')
@@ -438,8 +465,8 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   adapterCreators,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const fetchAccounts = services ?? accounts ?? workspace.accounts()
 
   const { currentConfigs } = await getFetchAdapterAndServicesSetup({
@@ -655,8 +682,8 @@ export const installAdapter = async (
   adapterName: string,
   adapterCreators?: Record<string, Adapter>,
 ): Promise<AdapterSuccessInstallResult | undefined> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const adapter = getAdapterCreator(adapterName, actualAdapterCreator)
   if (adapter.install === undefined) {
     return undefined
@@ -680,7 +707,7 @@ export const addAdapter = async (
   adapterName?: string,
   accountName?: string,
 ): Promise<AdapterAuthentication> => {
-  // for backward compatibility SAAS-7006
+  // for backward compatibility
   let actualWorkspace: Workspace
   let actualAdapterName: string
   let actualAccountName: string | undefined
@@ -698,7 +725,7 @@ export const addAdapter = async (
     actualWorkspace = workspace
     actualAdapterName = adapterName
     actualAccountName = accountName
-    actualAdapterCreator = deprecatedAdapterCreators
+    actualAdapterCreator = allAdapterCreators
   }
   const adapter = getAdapterCreator(actualAdapterName, actualAdapterCreator)
   await actualWorkspace.addAccount(actualAdapterName, actualAccountName)
@@ -722,8 +749,8 @@ export const getLoginStatuses = async (
   accounts = workspace.accounts(),
   adapterCreators?: Record<string, Adapter>,
 ): Promise<Record<string, LoginStatus>> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const creds = await workspace.accountCredentials(accounts)
   const accountToServiceMap = Object.fromEntries(
     accounts.map(account => [account, workspace.getServiceFromAccountName(account)]),
@@ -740,8 +767,8 @@ export const getLoginStatuses = async (
 }
 
 export const getSupportedServiceAdapterNames = (adapterCreators?: Record<string, Adapter>): string[] => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   return Object.keys(actualAdapterCreator)
 }
 
@@ -771,8 +798,8 @@ export const getAdapterConfigOptionsType = (
   adapterName: string,
   adapterCreators?: Record<string, Adapter>,
 ): ObjectType | undefined => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   return actualAdapterCreator[adapterName]?.configCreator?.optionsType
 }
 
@@ -784,8 +811,8 @@ export const getAdditionalReferences = async (
   changes: Change[],
   adapterCreators?: Record<string, Adapter>,
 ): Promise<ReferenceMapping[]> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
   log.debug('accountToServiceMap: %s', inspectValue(accountToService))
   const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
@@ -865,8 +892,8 @@ export const fixElements = async (
   selectors: ElementSelector[],
   adapterCreators?: Record<string, Adapter>,
 ): Promise<{ errors: ChangeError[]; changes: DetailedChangeWithBaseChange[] }> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const accounts = workspace.accounts()
   const adapters = await getAdapters(
     accounts,
@@ -969,8 +996,8 @@ export const cancelServiceAsyncTask = async ({
   input: CancelServiceAsyncTaskInput
   adapterCreators?: Record<string, Adapter>
 }): Promise<CancelServiceAsyncTaskResult> => {
-  // for backward compatibility SAAS-7006
-  const actualAdapterCreator = adapterCreators ?? deprecatedAdapterCreators
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const adapter = await initAccountAdapter(account, workspace, actualAdapterCreator)
   if (isSaltoError(adapter)) {
     return {

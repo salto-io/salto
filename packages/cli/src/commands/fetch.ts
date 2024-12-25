@@ -20,6 +20,8 @@ import {
   FetchFromWorkspaceFunc,
   loadLocalWorkspace,
   fetchFromWorkspace,
+  FetchFuncParams,
+  FetchResult,
 } from '@salto-io/core'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
@@ -59,7 +61,7 @@ export type FetchCommandArgs = {
   mode: nacl.RoutingMode
   cliTelemetry: CliTelemetry
   output: CliOutput
-  fetch: FetchFunc
+  fetch: FetchFunc | ((workspace: FetchFuncParams) => Promise<FetchResult>)
   getApprovedChanges: ApproveChangesFunc
   shouldUpdateConfig: ShouldUpdateConfigFunc
   shouldCalcTotalSize: boolean
@@ -87,7 +89,7 @@ const createFetchFromWorkspaceCommand =
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
     }
-    // for backward compatibility SAAS-7006
+    // for backward compatibility
     let actualWorkspace: Workspace
     let actualProgressEmitter: EventEmitter<FetchProgressEvents> | undefined
     let actualAccounts: string[] | undefined

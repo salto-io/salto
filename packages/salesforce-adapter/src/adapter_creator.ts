@@ -369,6 +369,10 @@ export const adapter: Adapter = {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.fixElements(elements)
       },
+      cancelServiceAsyncTask: async input => {
+        const salesforceAdapter = createSalesforceAdapter()
+        return salesforceAdapter.cancelServiceAsyncTask(input)
+      },
     }
   },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),

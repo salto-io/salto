@@ -171,7 +171,7 @@ const ALL = 'ALL'
 export const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
 
 // e.g. *** ERREUR ***
-const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
+const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$', 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -1016,7 +1016,10 @@ export default class SdfClient {
     const allDeployedObjects = getGroupItemFromRegex(error.message, deployedObjectRegex, OBJECT_ID)
     if (allDeployedObjects.length > 0) {
       const errorMessages = sliceMessagesByRegex(messages, deployedObjectRegex, false)
-      const message = errorMessages.length > 0 ? errorMessages.join(os.EOL) : error.message
+      const joinedErrorMessage = errorMessages.length > 0 ? errorMessages.join(os.EOL) : undefined
+      const messageAfterFatalError = joinedErrorMessage?.split(fatalErrorMessageRegex).slice(-1)[0]?.trimStart()
+
+      const message = messageAfterFatalError ?? joinedErrorMessage ?? error.message
       // the last object in the error message is the one that failed the deploy
       const errorsMap = new Map([[allDeployedObjects.slice(-1)[0], [{ message }]]])
       return new ObjectsDeployError(error.message, errorsMap)

@@ -26,6 +26,8 @@ import {
   PartialFetchData,
   ReadOnlyElementsSource,
   TypeElement,
+  CancelServiceAsyncTaskInput,
+  CancelServiceAsyncTaskResult,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -224,6 +226,8 @@ export const allFilters: Array<FilterCreator> = [
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
   flowFilter,
+  elementsUrlFilter,
+  // customObjectInstanceReferencesFilter should run after elementsUrlFilter
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
   cpqCustomScriptFilter,
@@ -238,7 +242,6 @@ export const allFilters: Array<FilterCreator> = [
   extendTriggersMetadataFilter,
   profilePathsFilter,
   territoryFilter,
-  elementsUrlFilter,
   nestedInstancesAuthorInformation,
   customObjectAuthorFilter,
   dataInstancesAuthorFilter,
@@ -812,6 +815,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
+  }
+
+  async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
+    return this.client.cancelMetadataValidateOrDeployTask(input)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

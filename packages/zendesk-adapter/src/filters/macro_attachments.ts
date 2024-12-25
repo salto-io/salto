@@ -113,6 +113,9 @@ const addAttachment = async (client: ZendeskClient, instance: InstanceElement): 
   const fileContent = isStaticFile(instance.value.content)
     ? await instance.value.content.getContent()
     : instance.value.content
+  if (isStaticFile(instance.value.content) && fileContent === undefined) {
+    log.warn(`Attachment content is undefined for staticFile with path ${instance.value.content.filepath}`)
+  }
   form.append('attachment', fileContent, instance.value.filename)
   form.append('filename', instance.value.filename)
   try {

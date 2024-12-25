@@ -1523,4 +1523,48 @@ describe('salesforce client', () => {
       })
     })
   })
+  describe('cancelMetadataValidateOrDeployTask', () => {
+    it('should cancel the validation/deployment and poll until the operation is done', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*/)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: { done: 'false' } } } },
+        })
+        .patch(/.*/, /.*/)
+        .reply(200, {
+          deployResult: {
+            status: 'Canceling',
+          },
+        })
+        .post(/.*/, /.*/)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: { done: 'true' } } } },
+        })
+      const { errors } = await client.cancelMetadataValidateOrDeployTask({ taskId: '123' })
+      expect(errors).toBeEmpty()
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should return error when canceling the validation/deployment fails', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*/)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: { done: 'false' } } } },
+        })
+        .patch(/.*/, /.*/)
+        .reply(500)
+      const { errors } = await client.cancelMetadataValidateOrDeployTask({ taskId: '123' })
+      expect(errors).toHaveLength(1)
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+    it('should not attempt to cancel a deployment that is already done', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/, /.*/)
+        .reply(200, {
+          'a:Envelope': { 'a:Body': { a: { result: { done: 'true' } } } },
+        })
+      const { errors } = await client.cancelMetadataValidateOrDeployTask({ taskId: '123' })
+      expect(errors).toBeEmpty()
+      expect(dodoScope.isDone()).toBeTrue()
+    })
+  })
 })

@@ -9,7 +9,7 @@ import path from 'path'
 import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
-import { remoteMap, EnvironmentsSources, configSource as cs } from '@salto-io/workspace'
+import { remoteMap, EnvironmentsSources, configSource as cs, errors } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import {
@@ -57,9 +57,10 @@ jest.mock('@salto-io/workspace', () => ({
   loadWorkspace: jest.fn(),
 }))
 jest.mock('../src/dir_store')
+const mockClose = jest.fn()
 jest.mock('../src/remote_map', () => ({
   ...jest.requireActual<{}>('../src/remote_map'),
-  createRemoteMapCreator: () => mockRemoteMapCreator,
+  createRemoteMapCreator: () => ({ create: mockRemoteMapCreator.create, close: mockClose }),
 }))
 describe('local workspace', () => {
   const mockExists = file.exists as jest.Mock
@@ -147,6 +148,12 @@ describe('local workspace', () => {
       )
     })
 
+    it('should throw error for invalid name', async () => {
+      mockExists.mockResolvedValue(false)
+      await expect(initLocalWorkspace('/fake/tmp/', 'long'.repeat(100), [], async () => [])).rejects.toThrow(
+        errors.InvalidEnvNameError,
+      )
+    })
     it('should call initWorkspace with correct input', async () => {
       const envName = 'env-name'
       mockExists.mockResolvedValue(false)
@@ -160,6 +167,22 @@ describe('local workspace', () => {
       const uuid = mockInit.mock.calls[0][0]
       expect(dirStoresBaseDirs).toContain(uuid)
       expect(dirStoresBaseDirs).toContain(path.join(uuid, CREDENTIALS_CONFIG_PATH))
+    })
+    describe('when initLocalWorkspace throws an error', () => {
+      const envName = 'env-name'
+      it('should call close', async () => {
+        mockExists.mockResolvedValue(false)
+        mockInit.mockRejectedValue(new Error('oh no!'))
+        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        expect(mockClose).toHaveBeenCalledTimes(1)
+      })
+      it('should call close, and throw the original error, if close throws as well', async () => {
+        mockExists.mockResolvedValue(false)
+        mockInit.mockRejectedValue(new Error('oh no!'))
+        mockClose.mockRejectedValue('close error!')
+        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        expect(mockClose).toHaveBeenCalledTimes(1)
+      })
     })
   })
 
@@ -230,6 +253,23 @@ describe('local workspace', () => {
             undefined,
             expect.anything(),
           )
+        })
+      })
+      describe('when loadLocalWorkspace throws an error', () => {
+        it('should call close', async () => {
+          mockLoad.mockRejectedValue(new Error('oh no!'))
+          await expect(
+            loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+          ).rejects.toThrow(new Error('oh no!'))
+          expect(mockClose).toHaveBeenCalledTimes(1)
+        })
+        it('should call close, and throw the original error, if close throws as well', async () => {
+          mockLoad.mockRejectedValue(new Error('oh no!'))
+          mockClose.mockRejectedValue(new Error('Close Failed!'))
+          await expect(
+            loadLocalWorkspace({ path: '.', getConfigTypes: async () => [], getCustomReferences: async () => [] }),
+          ).rejects.toThrow(new Error('oh no!'))
+          expect(mockClose).toHaveBeenCalledTimes(1)
         })
       })
     })

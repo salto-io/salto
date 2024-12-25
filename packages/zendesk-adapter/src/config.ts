@@ -65,7 +65,7 @@ export const FIX_ELEMENTS_CONFIG = 'fixElements'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
-const DEFAULT_REQUEST_TIMEOUT = 5000 // Roughly p95 of observed request times
+const DEFAULT_REQUEST_TIMEOUT = 10000 // Roughly p98 of observed request times
 
 export const DEFAULT_TIMEOUT_OPTS = {
   ...clientUtils.DEFAULT_TIMEOUT_OPTS,

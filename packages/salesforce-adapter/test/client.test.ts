@@ -13,7 +13,7 @@ import { Values } from '@salto-io/adapter-api'
 import { collections, types, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { QueryResult } from '@salto-io/jsforce'
+import { QueryResult, DeployMessage } from '@salto-io/jsforce'
 import SalesforceClient, {
   API_VERSION,
   ApiLimitsTooLowError,
@@ -31,6 +31,7 @@ import {
   ErrorProperty,
   INVALID_GRANT,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  SALESFORCE_DEPLOY_PROBLEMS,
   SALESFORCE_ERRORS,
 } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
@@ -43,6 +44,12 @@ import {
   INVALID_GRANT_MESSAGE,
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
+  DeployProblemMappers,
+  DEPLOY_PROBLEM_MAPPER,
+  SCHEDULABLE_CLASS_MESSAGE,
+  MAX_METADATA_DEPLOY_LIMIT_MESSAGE,
+  INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE,
+  getUserFriendlyDeployMessage,
 } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
@@ -521,6 +528,58 @@ describe('salesforce client', () => {
       })
       it('should be mapped to user friendly message', async () => {
         await expect(testClient.listMetadataTypes()).rejects.toThrow(INVALID_GRANT_MESSAGE)
+      })
+    })
+  })
+
+  describe('when deploy problem is mappable', () => {
+    type TestInput = {
+      expectedMessage: string
+      problem: string
+    }
+
+    const mappableDeployProblemToTestInputs: Record<
+      keyof DeployProblemMappers,
+      types.NonEmptyArray<TestInput> | TestInput
+    > = {
+      [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: {
+        expectedMessage: SCHEDULABLE_CLASS_MESSAGE,
+        problem: SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
+      },
+      [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: {
+        expectedMessage: MAX_METADATA_DEPLOY_LIMIT_MESSAGE,
+        problem: SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT,
+      },
+      [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: {
+        expectedMessage: INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE,
+        problem: SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME,
+      },
+    }
+
+    describe.each(Object.keys(DEPLOY_PROBLEM_MAPPER))('%p', mappableDeployProblem => {
+      const testInputs = mappableDeployProblemToTestInputs[mappableDeployProblem as keyof DeployProblemMappers]
+      const withTestName = (testInput: TestInput): TestInput & { name: string } => ({
+        name: isDefined(testInput.problem) ? safeJsonStringify(testInput.problem) : 'should replace problem message',
+        ...testInput,
+      })
+
+      it.each(makeArray(testInputs).map(withTestName))('$name', ({ expectedMessage, problem }) => {
+        const deployMessage: DeployMessage = {
+          changed: true,
+          columnNumber: 1,
+          componentType: 'TestType',
+          created: false,
+          createdDate: '01.01.2000',
+          deleted: false,
+          fileName: 'TestFile',
+          fullName: 'Test',
+          id: 'TestId',
+          lineNumber: 1,
+          problem,
+          problemType: 'TestType',
+          success: false,
+        }
+        expect(getUserFriendlyDeployMessage(deployMessage).problem).toContain(expectedMessage)
       })
     })
   })

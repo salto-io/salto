@@ -16,6 +16,7 @@ import {
   ERROR_PROPERTIES,
   INVALID_GRANT,
   isSalesforceError,
+  SALESFORCE_DEPLOY_PROBLEMS,
   SALESFORCE_ERRORS,
   SalesforceError,
 } from '../constants'
@@ -109,40 +110,6 @@ export const ERROR_MAPPERS: ErrorMappers = {
   },
 }
 
-// Deploy Errors Mapping
-
-const SCHEDULABLE_CLASS = 'This schedulable class has jobs pending or in progress'
-const MAX_METADATA_DEPLOY_LIMIT = 'Maximum size of request reached. Maximum size of request is 52428800 bytes.'
-
-const MAPPABLE_SALESFORCE_PROBLEMS = [SCHEDULABLE_CLASS, MAX_METADATA_DEPLOY_LIMIT] as const
-
-export type MappableSalesforceProblem = (typeof MAPPABLE_SALESFORCE_PROBLEMS)[number]
-
-const isMappableSalesforceProblem = (problem: string): problem is MappableSalesforceProblem =>
-  (MAPPABLE_SALESFORCE_PROBLEMS as ReadonlyArray<string>).includes(problem)
-
-export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<MappableSalesforceProblem, string> = {
-  [SCHEDULABLE_CLASS]: withSalesforceError(
-    SCHEDULABLE_CLASS,
-    'This deployment contains a scheduled Apex class (or a class related to one).' +
-      ' By default, Salesforce does not allow changes to scheduled apex.' +
-      ' Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1',
-  ),
-  [MAX_METADATA_DEPLOY_LIMIT]: withSalesforceError(
-    MAX_METADATA_DEPLOY_LIMIT,
-    'The metadata deployment exceeded the maximum allowed size of 50MB.' +
-      ' To avoid this issue, please split your deployment to smaller chunks.' +
-      ' For more info you may refer to: https://help.salto.io/en/articles/8263355-the-metadata-deployment-exceeded-the-maximum-allowed-size-of-50mb',
-  ),
-}
-
-export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => ({
-  ...deployMessage,
-  problem: isMappableSalesforceProblem(deployMessage.problem)
-    ? MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[deployMessage.problem]
-    : deployMessage.problem,
-})
-
 export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async original => {
   try {
     return await Promise.resolve(original.call())
@@ -168,3 +135,66 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async or
     throw e
   }
 })
+
+// Deploy Problems Mapping
+
+type DeployProblemMapper = {
+  test: (problem: string) => boolean
+  map: (problem: DeployMessage) => string
+}
+
+export type DeployProblemMappers = {
+  [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: DeployProblemMapper
+  [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: DeployProblemMapper
+  [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: DeployProblemMapper
+}
+
+export const SCHEDULABLE_CLASS_MESSAGE =
+  'This deployment contains a scheduled Apex class (or a class related to one).' +
+  ' By default, Salesforce does not allow changes to scheduled apex.' +
+  ' Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1'
+
+export const MAX_METADATA_DEPLOY_LIMIT_MESSAGE =
+  'The metadata deployment exceeded the maximum allowed size of 50MB.' +
+  ' To avoid this issue, please split your deployment to smaller chunks.' +
+  ' For more info you may refer to: https://help.salto.io/en/articles/8263355-the-metadata-deployment-exceeded-the-maximum-allowed-size-of-50mb'
+
+export const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
+  ' This issue could be caused by unmanaged Dashboards in your environment.\n' +
+  ' To prevent this, ensure Dashboards are managed.\n' +
+  ' For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
+
+export const DEPLOY_PROBLEM_MAPPER: DeployProblemMappers = {
+  [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: {
+    test: (problem: string) => problem === SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
+    map: (deployMessage: DeployMessage) => withSalesforceError(deployMessage.problem, SCHEDULABLE_CLASS_MESSAGE),
+  },
+  [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: {
+    test: (problem: string) => problem === SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT,
+    map: (deployMessage: DeployMessage) =>
+      withSalesforceError(deployMessage.problem, MAX_METADATA_DEPLOY_LIMIT_MESSAGE),
+  },
+  [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: {
+    test: (problem: string) => problem.includes(SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME),
+    map: (deployMessage: DeployMessage) => `${deployMessage.problem}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
+  },
+}
+
+export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => {
+  const { problem } = deployMessage
+  const userFriendlyMessageByMapperName = _.mapValues(
+    _.pickBy(DEPLOY_PROBLEM_MAPPER, mapper => mapper.test(problem)),
+    mapper => mapper.map(deployMessage),
+  )
+  const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
+  if (_.isEmpty(matchedMapperNames)) {
+    return deployMessage
+  }
+  if (matchedMapperNames.length > 1) {
+    log.error('The error %o matched on more than one mapper. Matcher mappers: %o', problem, matchedMapperNames)
+    return deployMessage
+  }
+  const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
+  log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, problem)
+  return { ...deployMessage, problem: userFriendlyMessage }
+}

@@ -56,7 +56,6 @@ import {
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete, mockRetrieveResult } from './connection'
-import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
 import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
@@ -296,7 +295,7 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when the request fails with mappable problem', () => {
-        const MAPPABLE_PROBLEM: MappableSalesforceProblem = 'This schedulable class has jobs pending or in progress'
+        const MAPPABLE_PROBLEM: string = 'This schedulable class has jobs pending or in progress'
         let result: DeployResult
         beforeEach(async () => {
           const newInst = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
@@ -325,10 +324,8 @@ describe('SalesforceAdapter CRUD', () => {
 
         it('should return an error with user friendly message', () => {
           expect(result.errors).toHaveLength(1)
-          expect(result.errors[0].message).toContain(MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM])
-          expect(result.errors[0].detailedMessage).toContain(
-            MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM],
-          )
+          expect(result.errors[0].message).toContain(constants.SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS)
+          expect(result.errors[0].detailedMessage).toContain(constants.SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS)
         })
       })
 

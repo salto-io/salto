@@ -157,6 +157,10 @@ const deployPlan = async (
   }
 
   const startAction = (itemName: string, item: PlanItem): void => {
+    if (actions[itemName]) {
+      return
+    }
+
     const startTime = new Date()
     const intervalId = setInterval(() => {
       outputLine(formatActionInProgress(itemName, item.action, startTime), output)

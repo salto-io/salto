@@ -7,53 +7,59 @@
  */
 
 import { PARENT_ID_FIELD_NAME } from '../../../../../src/constants'
-import { adjustParentWithAppRolesWrapped } from '../../../../../src/definitions/deploy/entra/utils'
+import { omitParentIdFromPathAdjustCreator } from '../../../../../src/definitions/deploy/shared/utils'
 import { contextMock } from '../../../../mocks'
 
 const PARENT_TYPE_NAME = 'parentTypeName'
 
-describe(`${adjustParentWithAppRolesWrapped.name}`, () => {
+describe(`${omitParentIdFromPathAdjustCreator.name}`, () => {
   it('should throw an error if the value is not an object', async () => {
-    const appRolesParent = 'not an object'
+    const value = 'not an object'
+    const adjust = omitParentIdFromPathAdjustCreator('someField')
     await expect(
-      adjustParentWithAppRolesWrapped({
-        value: appRolesParent,
+      adjust({
+        value,
         typeName: PARENT_TYPE_NAME,
         context: contextMock,
       }),
     ).rejects.toThrow()
   })
 
-  it('should not add an appRoles field if it is not defined', async () => {
-    const appRolesParent = {}
-    const result = await adjustParentWithAppRolesWrapped({
-      value: appRolesParent,
-      typeName: PARENT_TYPE_NAME,
-      context: contextMock,
-    })
-    expect(result.value).toEqual(appRolesParent)
-  })
-
-  it('should remove the parent_id field from each appRole', async () => {
-    const appRolesParent = {
-      appRoles: [
-        {
-          id: 'id1',
-          name: 'name1',
-          [PARENT_ID_FIELD_NAME]: 'parentId',
-        },
-        {
-          id: 'id2',
-          name: 'name2',
-        },
-      ],
+  it('should remove the parent_id field from each object in the specified path', async () => {
+    const value = {
+      firstLevel: {
+        secondLevel: [
+          {
+            id: 'id1',
+            name: 'name1',
+            [PARENT_ID_FIELD_NAME]: 'parentId',
+          },
+          {
+            id: 'id2',
+            name: 'name2',
+          },
+        ],
+      },
     }
-    const result = await adjustParentWithAppRolesWrapped({
-      value: appRolesParent,
+    const adjust = omitParentIdFromPathAdjustCreator('firstLevel', 'secondLevel')
+    const result = await adjust({
+      value,
       typeName: PARENT_TYPE_NAME,
       context: contextMock,
     })
-    expect(result.value.appRoles[0][PARENT_ID_FIELD_NAME]).toBeUndefined()
-    expect(result.value.appRoles[1][PARENT_ID_FIELD_NAME]).toBeUndefined()
+    expect(result.value).toEqual({
+      firstLevel: {
+        secondLevel: [
+          {
+            id: 'id1',
+            name: 'name1',
+          },
+          {
+            id: 'id2',
+            name: 'name2',
+          },
+        ],
+      },
+    })
   })
 })

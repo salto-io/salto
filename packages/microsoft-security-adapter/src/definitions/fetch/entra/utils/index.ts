@@ -8,5 +8,5 @@
 
 export { createDefinitionForAppRoleAssignment } from './app_role_assignment'
 export { adjustEntitiesWithExpandedMembers } from './adjust_expanded_members'
-export { addParentIdToAppRoles } from './app_role'
+export { addParentIdToStandaloneFields } from '../../shared/utils/parent_id'
 export { adjustApplication } from './application'

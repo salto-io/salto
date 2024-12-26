@@ -16,7 +16,7 @@ import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shar
 import {
   adjustEntitiesWithExpandedMembers,
   createDefinitionForAppRoleAssignment,
-  addParentIdToAppRoles,
+  addParentIdToStandaloneFields,
   adjustApplication,
 } from './utils'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
@@ -41,6 +41,7 @@ const {
     DOMAIN_TYPE_NAME,
     PERMISSION_GRANT_POLICY_TYPE_NAME,
     APP_ROLE_TYPE_NAME,
+    OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
   },
   SERVICE_BASE_URL,
   SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
@@ -59,13 +60,23 @@ const {
   CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_FIELD_NAME,
   DOMAIN_NAME_REFERENCES_FIELD_NAME,
   DOMAIN_NAME_REFERENCE_TYPE_NAME,
-  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
   AUTHENTICATION_STRENGTH_PATH,
+  APPLICATION_API_TYPE_NAME,
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+  OAUTH2_PERMISSION_SCOPES_FIELD_NAME,
 } = entraConstants
 
 const APP_ROLES_FIELD_CUSTOMIZATIONS = {
   standalone: {
     typeName: APP_ROLE_TYPE_NAME,
+    nestPathUnderParent: true,
+    referenceFromParent: false,
+  },
+}
+
+const OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS = {
+  standalone: {
+    typeName: OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
     nestPathUnderParent: true,
     referenceFromParent: false,
   },
@@ -265,6 +276,18 @@ const graphV1Customizations: FetchCustomizations = {
           hide: true,
         },
         [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        // This is a workaround for SALTO-7146
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS,
+      },
+    },
+  },
+  [APPLICATION_API_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS,
       },
     },
   },
@@ -285,7 +308,6 @@ const graphV1Customizations: FetchCustomizations = {
             'disabledByMicrosoftStatus',
             'homepage',
             'info',
-            'oauth2PermissionScopes',
             'keyCredentials',
             'passwordCredentials',
             'tokenEncryptionKeyId',
@@ -303,7 +325,11 @@ const graphV1Customizations: FetchCustomizations = {
             return {
               value: {
                 ...value,
-                [APP_ROLES_FIELD_NAME]: addParentIdToAppRoles(value),
+                [APP_ROLES_FIELD_NAME]: addParentIdToStandaloneFields({ fieldPath: [APP_ROLES_FIELD_NAME], value }),
+                [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: addParentIdToStandaloneFields({
+                  fieldPath: [OAUTH2_PERMISSION_SCOPES_FIELD_NAME],
+                  value,
+                }),
               },
             }
           },
@@ -349,6 +375,8 @@ const graphV1Customizations: FetchCustomizations = {
           },
         },
         [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        // This is a workaround for SALTO-7146
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS,
         [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
           standalone: {
             typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
@@ -375,6 +403,22 @@ const graphV1Customizations: FetchCustomizations = {
         elemID: {
           extendsParent: true,
           parts: [NAME_ID_FIELD, { fieldName: 'value' }],
+        },
+      },
+      fieldCustomizations: ID_FIELD_TO_HIDE,
+    },
+  },
+  [OAUTH2_PERMISSION_SCOPE_TYPE_NAME]: {
+    resource: {
+      directFetch: false,
+      serviceIDFields: [PARENT_ID_FIELD_NAME, 'id'],
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          extendsParent: true,
+          parts: [{ fieldName: 'value' }, { fieldName: 'type' }],
         },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,

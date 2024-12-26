@@ -24,7 +24,7 @@ import _ from 'lodash'
 import { PAGINATION } from '../../../src/definitions/requests/pagination'
 import { Options } from '../../../src/definitions/types'
 import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
-import { appRolesFilter } from '../../../src/filters'
+import { entraApplicationFilter } from '../../../src/filters'
 import { UserConfig } from '../../../src/config'
 
 const {
@@ -128,7 +128,7 @@ describe('app roles filter', () => {
         },
       },
     }
-    filter = appRolesFilter({
+    filter = entraApplicationFilter({
       definitions: mockDefinitions,
       elementSource: buildElementsSourceFromElements([]),
       config: mockConfig,
@@ -199,7 +199,7 @@ describe('app roles filter', () => {
   describe('deploy', () => {
     it('should return SaltoError if the deploy definitions are missing', async () => {
       const res = await (
-        appRolesFilter({
+        entraApplicationFilter({
           definitions: {
             ...mockDefinitions,
             deploy: undefined,
@@ -265,7 +265,7 @@ describe('app roles filter', () => {
           errors: [],
           appliedChanges: changes,
         }))
-        filter = appRolesFilter({
+        filter = entraApplicationFilter({
           definitions: mockDefinitions,
           elementSource: buildElementsSourceFromElements(elementsInElementSource),
           config: mockConfig,

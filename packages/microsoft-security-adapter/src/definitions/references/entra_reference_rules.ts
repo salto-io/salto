@@ -28,6 +28,8 @@ const {
     SERVICE_PRINCIPAL_TYPE_NAME,
     AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME,
     CONDITIONAL_ACCESS_POLICY_TYPE_NAME,
+    OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+    PERMISSION_GRANT_POLICY_TYPE_NAME,
   },
   ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME,
   APPLICATION_API_TYPE_NAME,
@@ -41,8 +43,9 @@ const {
   GROUP_LIFE_CYCLE_POLICY_FIELD_NAME,
   PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME,
   REQUIRED_RESOURCE_ACCESS_FIELD_NAME,
-  SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
   AUTHENTICATION_STRENGTH_PATH,
+  SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  DELEGATED_PERMISSION_IDS_FIELD_NAME,
 } = entraConstants
 
 const createMicrosoftAuthenticatorReferences = (): referenceUtils.FieldReferenceDefinition<
@@ -249,6 +252,25 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       parentTypes: [recursiveNestedTypeName(CONDITIONAL_ACCESS_POLICY_TYPE_NAME, ...AUTHENTICATION_STRENGTH_PATH)],
     },
     target: { type: AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: DELEGATED_PERMISSION_IDS_FIELD_NAME,
+      parentTypes: [recursiveNestedTypeName(APPLICATION_API_TYPE_NAME, PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME)],
+    },
+    target: { type: OAUTH2_PERMISSION_SCOPE_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: 'permissions',
+      parentTypes: [
+        recursiveNestedTypeName(PERMISSION_GRANT_POLICY_TYPE_NAME, 'includes'),
+        recursiveNestedTypeName(PERMISSION_GRANT_POLICY_TYPE_NAME, 'excludes'),
+      ],
+    },
+    target: { type: OAUTH2_PERMISSION_SCOPE_TYPE_NAME },
     serializationStrategy: 'id',
   },
 ]

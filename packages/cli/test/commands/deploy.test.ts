@@ -442,7 +442,7 @@ describe('deploy command', () => {
     })
   })
   describe('when there are deploy actions', () => {
-    const testDeployActionsVisability = async (userBooleanInput: boolean): Promise<void> => {
+    const testDeployActionsVisibility = async (userBooleanInput: boolean): Promise<void> => {
       mockGetUserBooleanInput.mockResolvedValueOnce(userBooleanInput)
       await action({
         ...cliCommandArgs,
@@ -482,10 +482,10 @@ describe('deploy command', () => {
       expect(mockedDeploy.shouldDeploy).toHaveBeenCalled()
     }
     it('should print deploy actions when deploy is done', async () => {
-      await testDeployActionsVisability(true)
+      await testDeployActionsVisibility(true)
     })
     it('should print deploy actions when deploy is canceled', async () => {
-      await testDeployActionsVisability(false)
+      await testDeployActionsVisibility(false)
     })
   })
   describe('Using environment variable', () => {

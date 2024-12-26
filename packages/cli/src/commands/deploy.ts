@@ -45,6 +45,7 @@ import {
   formatGroups,
   deployErrorsOutput,
   formatDeploymentSummary,
+  formatActionUpdate,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
@@ -142,22 +143,23 @@ const deployPlan = async (
     }
   }
 
-  const errorAction = (itemName: string, details: string | Progress): void => {
+  const errorAction = (itemName: string, details: string): void => {
     const action = actions[itemName]
     if (action !== undefined) {
-      errorOutputLine(formatItemError(itemName, _.isString(details) ? details : details.message), output)
+      errorOutputLine(formatItemError(itemName, details), output)
       if (action.intervalId) {
         clearInterval(action.intervalId)
       }
     }
   }
 
-  const cancelAction = (itemName: string, details: string | Progress): void => {
-    outputLine(formatCancelAction(itemName, _.isString(details) ? details : details.message), output)
+  const cancelAction = (itemName: string, details: string): void => {
+    outputLine(formatCancelAction(itemName, details), output)
   }
 
-  const startAction = (itemName: string, item: PlanItem): void => {
-    if (actions[itemName]) {
+  const startAction = (itemName: string, item: PlanItem, details?: string): void => {
+    if (actions[itemName] && details) {
+      outputLine(formatActionUpdate(itemName, details), output)
       return
     }
 
@@ -177,14 +179,15 @@ const deployPlan = async (
   const updateAction = (item: PlanItem, status: ItemStatus, details?: string | Progress): void => {
     const itemName = item.groupKey
     if (itemName) {
+      const detailsString = _.isString(details) ? details : details?.message
       if (status === 'started') {
-        startAction(itemName, item)
+        startAction(itemName, item, detailsString)
       } else if (actions[itemName] !== undefined && status === 'finished') {
         endAction(itemName)
-      } else if (actions[itemName] !== undefined && status === 'error' && details !== undefined) {
-        errorAction(itemName, details)
-      } else if (status === 'cancelled' && details) {
-        cancelAction(itemName, details)
+      } else if (actions[itemName] !== undefined && status === 'error' && detailsString !== undefined) {
+        errorAction(itemName, detailsString)
+      } else if (status === 'cancelled' && detailsString) {
+        cancelAction(itemName, detailsString)
       }
     }
   }

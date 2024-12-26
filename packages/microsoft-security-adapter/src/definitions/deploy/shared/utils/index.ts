@@ -9,4 +9,5 @@
 export { omitReadOnlyFields } from './read_only_fields'
 export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForDeploy } from './path_adjustment'
 export { createCustomConditionCheckChangesInFields } from './condition_changes_in_fields'
+export { omitParentIdFromPathAdjustCreator } from './parent_id'
 export { defaultAdjust, adjustWrapper } from './adjust_wrapper'

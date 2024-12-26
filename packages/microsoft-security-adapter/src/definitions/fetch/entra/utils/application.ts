@@ -6,13 +6,14 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdjustFunctionSingle } from '../../shared/types'
-import { addParentIdToAppRoles } from './app_role'
+import { addParentIdToStandaloneFields } from '../../shared/utils'
 import { entraConstants } from '../../../../constants'
 
-const { APP_ROLES_FIELD_NAME, IDENTIFIER_URIS_FIELD_NAME } = entraConstants
+const { APP_ROLES_FIELD_NAME, IDENTIFIER_URIS_FIELD_NAME, API_FIELD_NAME, OAUTH2_PERMISSION_SCOPES_FIELD_NAME } =
+  entraConstants
 
 /*
  * Adjust the Entra application object.
@@ -24,11 +25,22 @@ export const adjustApplication: AdjustFunctionSingle = async ({ value }) => {
   const identifierUris = _.get(value, IDENTIFIER_URIS_FIELD_NAME, [])
   validateArray(identifierUris, IDENTIFIER_URIS_FIELD_NAME)
 
+  const apiField = _.get(value, API_FIELD_NAME)
+
   return {
     value: {
       ...value,
       identifierUris: identifierUris.filter(uri => uri !== `api://${_.get(value, 'appId')}`),
-      [APP_ROLES_FIELD_NAME]: addParentIdToAppRoles(value),
+      [APP_ROLES_FIELD_NAME]: addParentIdToStandaloneFields({ fieldPath: [APP_ROLES_FIELD_NAME], value }),
+      ...(apiField && {
+        [API_FIELD_NAME]: {
+          ...apiField,
+          [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: addParentIdToStandaloneFields({
+            fieldPath: [API_FIELD_NAME, OAUTH2_PERMISSION_SCOPES_FIELD_NAME],
+            value,
+          }),
+        },
+      }),
     },
   }
 }

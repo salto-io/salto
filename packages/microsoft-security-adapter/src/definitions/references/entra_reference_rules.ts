@@ -8,7 +8,6 @@
 import { references as referenceUtils, fetch as fetchUtils } from '@salto-io/adapter-components'
 import { entraConstants } from '../../constants'
 import { ReferenceContextStrategies, CustomReferenceSerializationStrategyName } from '../types'
-import { SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME } from '../../constants/entra'
 
 const { recursiveNestedTypeName } = fetchUtils.element
 
@@ -38,6 +37,10 @@ const {
   ROLE_DEFINITION_TYPE_NAME,
   SERVICE_PRINCIPAL_TYPE_NAME,
   REQUIRED_RESOURCE_ACCESS_FIELD_NAME,
+  OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
+  SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
+  PERMISSION_GRANT_POLICY_TYPE_NAME,
+  DELEGATED_PERMISSION_IDS_FIELD_NAME,
 } = entraConstants
 
 const createMicrosoftAuthenticatorReferences = (): referenceUtils.FieldReferenceDefinition<
@@ -236,6 +239,25 @@ export const REFERENCE_RULES: referenceUtils.FieldReferenceDefinition<
       ],
     },
     target: { typeContext: 'resourceAccessType' },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: DELEGATED_PERMISSION_IDS_FIELD_NAME,
+      parentTypes: [recursiveNestedTypeName(APPLICATION_API_TYPE_NAME, PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME)],
+    },
+    target: { type: OAUTH2_PERMISSION_SCOPE_TYPE_NAME },
+    serializationStrategy: 'id',
+  },
+  {
+    src: {
+      field: 'permissions',
+      parentTypes: [
+        recursiveNestedTypeName(PERMISSION_GRANT_POLICY_TYPE_NAME, 'includes'),
+        recursiveNestedTypeName(PERMISSION_GRANT_POLICY_TYPE_NAME, 'excludes'),
+      ],
+    },
+    target: { type: OAUTH2_PERMISSION_SCOPE_TYPE_NAME },
     serializationStrategy: 'id',
   },
 ]

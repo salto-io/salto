@@ -15,7 +15,11 @@ import { PAGINATION } from './definitions/requests/pagination'
 import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references/references'
 import { createFromOauthResponse, createOAuthRequest } from './client/oauth'
-import { appRolesFilter, deployAdministrativeUnitMembersFilter, deployDirectoryRoleMembersFilter } from './filters'
+import {
+  entraApplicationFilter,
+  deployAdministrativeUnitMembersFilter,
+  deployDirectoryRoleMembersFilter,
+} from './filters'
 import { customConvertError } from './error_utils'
 import { Credentials, credentialsType, oauthRequestParameters } from './auth'
 
@@ -49,7 +53,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     customizeFilterCreators: args => ({
       deployAdministrativeUnitMembersFilter,
       deployDirectoryRoleMembersFilter,
-      appRolesFilter,
+      entraApplicationFilter,
       ...filters.createCommonFilters<Options, UserConfig>(args),
     }),
   },

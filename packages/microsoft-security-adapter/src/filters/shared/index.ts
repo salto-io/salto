@@ -8,3 +8,4 @@
 
 export { deployArrayFieldsFilterCreator } from './array_fields_deployment'
 export { mapMemberRefToChangeData } from './members_utils'
+export { cloneInstanceChange } from './utils'

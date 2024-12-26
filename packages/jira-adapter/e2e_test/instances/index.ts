@@ -18,7 +18,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
-import { createContextValues, createFieldValues } from './field'
+import { createContextValues, createFieldValues, createOptionsAndOrders } from './field'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
@@ -45,6 +45,12 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] },
   )
+
+  const fieldContextOptionsAndOrders = createOptionsAndOrders({
+    optionsType: findType('CustomFieldContextOption', fetchedElements),
+    orderType: findType('FieldContextOptionsOrder', fetchedElements),
+    contextInstance: fieldContext,
+  })
 
   const screen = new InstanceElement(
     randomString,
@@ -108,7 +114,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
       ? createDataCenterInstances(randomString, fetchedElements)
       : createCloudInstances(randomString, uuid, fetchedElements)),
     [field],
-    [fieldContext],
+    fieldContextOptionsAndOrders,
     [screen],
     [screenScheme],
     [issueTypeScreenScheme],

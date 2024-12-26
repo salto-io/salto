@@ -1897,6 +1897,35 @@ const createCustomizations = (): Record<
       },
       fieldCustomizations: {
         id: { hide: true },
+        nodes: {
+          standalone: {
+            typeName: 'bot_builder_node',
+            addParentAnnotation: true,
+            referenceFromParent: true,
+            nestPathUnderParent: true,
+          },
+        },
+      },
+    },
+  },
+  bot_builder_node: {
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: {
+          parts: [
+            { fieldName: 'externalId', condition: value => value?.externalId && value?.externalId !== null },
+            { fieldName: 'id', condition: value => !(value?.externalId && value?.externalId !== null) },
+          ],
+          extendsParent: true,
+        },
+        path: {
+          pathParts: [{ parts: [{ fieldName: 'name' }], extendsParent: true }],
+        },
+      },
+      fieldCustomizations: {
+        id: { fieldType: 'string', hide: true },
+        externalId: { fieldType: 'string', hide: true },
       },
     },
   },

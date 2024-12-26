@@ -99,6 +99,7 @@ fragment SubflowFields on SubflowType {
 
 fragment NodeWithAuxiliaryData on NodeType {
   id
+  externalId
   parentId
   targetType
   data
@@ -119,7 +120,6 @@ fragment IntentFields on IntentType {
 
 fragment TrainingPhraseFields on TrainingPhraseType {
   id
-  subflowId
   text
 }
 

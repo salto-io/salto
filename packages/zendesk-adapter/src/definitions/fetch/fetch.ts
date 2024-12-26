@@ -1855,7 +1855,6 @@ const createCustomizations = (): Record<
       {
         endpoint: {
           path: '/api/admin/private/answer_bot/graphql',
-          client: 'graphql',
           method: 'post',
           data: {
             operationName: 'fetchFlows',

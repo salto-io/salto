@@ -155,11 +155,19 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       // This is added as the deprecated filter for references (referencedInstanceNamesFilterCreatorDeprecated) looks only in this config for the referenced idFields
       idFields: ['&brandId', 'name'],
+      nestStandaloneInstances: true,
     },
   },
   bot_builder_answer: {
     transformation: {
       idFields: ['name'],
+      extendsParentId: true,
+      nestStandaloneInstances: true,
+    },
+  },
+  bot_builder_node: {
+    transformation: {
+      idFields: ['id'],
       extendsParentId: true,
     },
   },
@@ -2814,6 +2822,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     useNewInfra: true,
     useGuideNewInfra: false,
     translationBodyAsStaticFile: true,
+    fetchBotBuilder: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -3176,6 +3185,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           useNewInfra: { refType: BuiltinTypes.BOOLEAN },
           useGuideNewInfra: { refType: BuiltinTypes.BOOLEAN },
           translationBodyAsStaticFile: { refType: BuiltinTypes.BOOLEAN },
+          fetchBotBuilder: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -3215,6 +3225,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.useNewInfra`,
       `${FETCH_CONFIG}.useGuideNewInfra`,
       `${FETCH_CONFIG}.translationBodyAsStaticFile`,
+      `${FETCH_CONFIG}.fetchBotBuilder`,
       DEPLOY_CONFIG,
       FIX_ELEMENTS_CONFIG,
     ),

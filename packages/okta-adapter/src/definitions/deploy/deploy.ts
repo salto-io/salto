@@ -12,6 +12,7 @@ import { logger } from '@salto-io/logging'
 import {
   getChangeData,
   isAdditionChange,
+  isEqualValues,
   isInstanceChange,
   isModificationChange,
   isRemovalChange,
@@ -462,7 +463,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 skipIfIdentical: true,
                 transformForCheck: {
-                  omit: APP_POLICIES,
+                  omit: [
+                    ...APP_POLICIES,
+                    'applicationUserProvisioning',
+                    'applicationInboundProvisioning',
+                    'applicationProvisioningUsers',
+                    'applicationProvisioningGeneral',
+                  ],
                 },
               },
               request: {
@@ -485,7 +492,16 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     return {
                       value: {
                         name,
-                        ..._.omit(transformed, [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES]),
+                        ..._.omit(transformed, [
+                          ID_FIELD,
+                          LINKS_FIELD,
+                          CUSTOM_NAME_FIELD,
+                          ...APP_POLICIES,
+                          'applicationUserProvisioning',
+                          'applicationInboundProvisioning',
+                          'applicationProvisioningUsers',
+                          'applicationProvisioningGeneral',
+                        ]),
                       },
                     }
                   },
@@ -493,6 +509,139 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
             ...createDeployAppPolicyRequests(),
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.applicationInboundProvisioning === undefined &&
+                    change.data.after.value.applicationInboundProvisioning !== undefined,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}/connections/default/lifecycle/activate',
+                  method: 'post',
+                },
+                transformation: {
+                  root: 'applicationInboundProvisioning.status',
+                },
+              },
+            },
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.after.value.applicationUserProvisioning !== undefined &&
+                    !isEqualValues(
+                      change.data.before.value.applicationUserProvisioning?.capabilities,
+                      change.data.after.value.applicationUserProvisioning.capabilities,
+                    ),
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}/features/USER_PROVISIONING',
+                  method: 'put',
+                },
+                transformation: {
+                  root: 'applicationUserProvisioning.capabilities',
+                },
+              },
+            },
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.after.value.applicationInboundProvisioning !== undefined &&
+                    !isEqualValues(
+                      change.data.before.value.applicationInboundProvisioning?.capabilities,
+                      change.data.after.value.applicationInboundProvisioning.capabilities,
+                    ),
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}/features/INBOUND_PROVISIONING',
+                  method: 'put',
+                },
+                transformation: {
+                  root: 'applicationInboundProvisioning.capabilities',
+                },
+              },
+            },
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.before.value.applicationInboundProvisioning !== undefined &&
+                    change.data.after.value.applicationInboundProvisioning === undefined,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{id}/connections/default/lifecycle/deactivate',
+                  method: 'post',
+                },
+              },
+            },
+            {
+              condition: {
+                skipIfIdentical: true,
+                transformForCheck: {
+                  root: 'applicationProvisioningGeneral',
+                },
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/internal/apps/instance/{id}/settings/user-mgmt-general',
+                  client: 'private',
+                  method: 'post',
+                },
+                transformation: {
+                  adjust: async ({ value, context }) => {
+                    if (!isModificationChange(context.change)) {
+                      throw new Error('Change is not a modification change')
+                    }
+                    if ((value as Values).applicationProvisioningGeneral !== undefined) {
+                      return { value: (value as Values).applicationProvisioningGeneral }
+                    }
+                    const valueBefore = context.change.data.before.value
+                    return { value: { ...valueBefore.applicationProvisioningGeneral, enabled: false } }
+                  },
+                },
+              },
+            },
+            {
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isModificationChange(change) &&
+                    change.data.after.value.applicationProvisioningUsers !== undefined &&
+                    !isEqualValues(
+                      change.data.before.value.applicationProvisioningUsers,
+                      change.data.after.value.applicationProvisioningUsers,
+                    ),
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/internal/apps/{id}/settings/importMatchRules',
+                  client: 'private',
+                  method: 'post',
+                },
+                transformation: {
+                  root: 'applicationProvisioningUsers',
+                  single: false,
+                },
+              },
+              copyFromResponse: {
+                updateServiceIDs: false,
+              },
+            },
           ],
           remove: [
             {

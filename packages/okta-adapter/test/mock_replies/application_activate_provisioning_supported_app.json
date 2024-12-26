@@ -1,0 +1,146 @@
+[
+  {
+    "path": "/api/v1/apps/app-fakeid1/connections/default/lifecycle/activate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1735466315",
+      "content-type": "application/x-www-form-urlencoded"
+    }
+  },
+  {
+    "path": "/api/v1/apps/app-fakeid1/features/USER_PROVISIONING",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "name": "USER_PROVISIONING",
+      "status": "ENABLED",
+      "description": "User provisioning settings from Okta to a downstream application",
+      "capabilities": {
+        "create": {
+          "lifecycleCreate": {
+            "status": "DISABLED"
+          }
+        },
+        "update": {
+          "profile": {
+            "status": "DISABLED"
+          },
+          "lifecycleDeactivate": {
+            "status": "DISABLED"
+          },
+          "password": {
+            "status": "DISABLED",
+            "seed": "RANDOM",
+            "change": "KEEP_EXISTING"
+          }
+        }
+      },
+      "_links": {
+        "self": {
+          "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/features/USER_PROVISIONING",
+          "hints": {
+            "allow": ["GET", "PUT"]
+          }
+        }
+      }
+    },
+    "body": {
+      "create": {
+        "lifecycleCreate": {
+          "status": "DISABLED"
+        }
+      },
+      "update": {
+        "profile": {
+          "status": "DISABLED"
+        },
+        "lifecycleDeactivate": {
+          "status": "DISABLED"
+        },
+        "password": {
+          "status": "DISABLED",
+          "seed": "RANDOM",
+          "change": "KEEP_EXISTING"
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1735466315"
+    }
+  },
+  {
+    "path": "/api/v1/apps/app-fakeid1/features/INBOUND_PROVISIONING",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "name": "INBOUND_PROVISIONING",
+      "status": "ENABLED",
+      "description": "In-bound provisioning settings for provisioning users from an application to Okta",
+      "capabilities": {
+        "importSettings": {
+          "username": {
+            "userNameExpression": "salto",
+            "userNameFormat": "CUSTOM"
+          },
+          "schedule": {
+            "status": "DISABLED",
+            "fullImport": null,
+            "incrementalImport": null
+          }
+        },
+        "importRules": {
+          "userCreateAndMatch": {
+            "exactMatchCriteria": "USERNAME",
+            "allowPartialMatch": false,
+            "autoConfirmPartialMatch": false,
+            "autoConfirmExactMatch": false,
+            "autoConfirmNewUsers": false,
+            "autoActivateNewUsers": false
+          }
+        }
+      },
+      "_links": {
+        "self": {
+          "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/features/INBOUND_PROVISIONING",
+          "hints": {
+            "allow": ["GET", "PUT"]
+          }
+        }
+      }
+    },
+    "body": {
+      "importSettings": {
+        "username": {
+          "userNameFormat": "EMAIL"
+        },
+        "schedule": {
+          "status": "DISABLED"
+        }
+      },
+      "importRules": {
+        "userCreateAndMatch": {
+          "exactMatchCriteria": "EMAIL",
+          "allowPartialMatch": false,
+          "autoConfirmPartialMatch": false,
+          "autoConfirmExactMatch": false,
+          "autoConfirmNewUsers": false,
+          "autoActivateNewUsers": false
+        }
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "47",
+      "x-rate-limit-reset": "1735466315"
+    }
+  }
+]

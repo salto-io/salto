@@ -440,6 +440,44 @@ const createCustomizations = ({
             },
           },
         },
+        applicationUserProvisioning: {
+          typeName: 'ApplicationUserProvisioning',
+          conditions: [
+            {
+              fromField: 'name',
+              match: ['^google$', '^office365$', '^okta_org2org$', '^slack$', '^zoomus$', '^zscalerbyz$'],
+            },
+            // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+            { fromField: 'features', match: ['.+'] },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+          single: true,
+        },
+        applicationInboundProvisioning: {
+          typeName: 'ApplicationInboundProvisioning',
+          conditions: [
+            {
+              fromField: 'name',
+              match: ['^google$', '^office365$', '^okta_org2org$', '^zoomus$', '^slack$'],
+            },
+            // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+            { fromField: 'features', match: ['.+'] },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+          single: true,
+        },
         ...(usePrivateAPI
           ? {
               GroupPush: {
@@ -480,6 +518,43 @@ const createCustomizations = ({
                     fromField: 'status',
                   },
                 ],
+              },
+              applicationProvisioningGeneral: {
+                typeName: 'ApplicationProvisioningGeneral',
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: ['^(?!google$|office365$|okta_org2org$|slack$|zoomus$).*$'],
+                  },
+                  // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+                  { fromField: 'features', match: ['.+'] },
+                ],
+                context: {
+                  args: {
+                    appId: {
+                      root: 'id',
+                    },
+                  },
+                },
+                single: true,
+              },
+              applicationProvisioningUsers: {
+                typeName: 'ApplicationProvisioningUsers',
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: ['^(?!google$|office365$|okta_org2org$|slack$|zoomus$).*$'],
+                  },
+                  // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+                  { fromField: 'features', match: ['.+'] },
+                ],
+                context: {
+                  args: {
+                    appId: {
+                      root: 'id',
+                    },
+                  },
+                },
               },
             }
           : {}),
@@ -664,6 +739,69 @@ const createCustomizations = ({
               serviceUrl: { path: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-group-push' },
             },
             fieldCustomizations: { mappingRuleId: { hide: true } },
+          },
+        },
+        ApplicationUserProvisioning: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/apps/{appId}/features/USER_PROVISIONING',
+              },
+              transformation: {
+                omit: ['_links', 'name', 'description', 'status'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationInboundProvisioning: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/apps/{appId}/features/INBOUND_PROVISIONING',
+              },
+              transformation: {
+                omit: ['_links', 'name', 'description', 'status'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationProvisioningGeneral: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/internal/apps/instance/{appId}/settings/user-mgmt-general',
+                client: 'private',
+              },
+              transformation: {
+                pick: ['enabled', 'importSettings.userNameTemplate', 'importSettings.importInterval'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationProvisioningUsers: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/internal/apps/{appId}/settings/importMatchRules',
+                client: 'private',
+              },
+              transformation: {
+                omit: ['id'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+            serviceIDFields: [], // The default serviceId is 'id' which causes to returned values to be merged since we remove it.
           },
         },
       }

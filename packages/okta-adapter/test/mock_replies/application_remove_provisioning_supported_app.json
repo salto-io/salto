@@ -1,0 +1,19 @@
+[
+  {
+    "path": "/api/v1/apps/app-fakeid1/connections/default/lifecycle/deactivate",
+    "scope": "",
+    "method": "POST",
+    "status": 204,
+    "response": "",
+    "body": {
+      "name": "supportedApp",
+      "label": "app1",
+      "status": "ACTIVE"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1735465220"
+    }
+  }
+]

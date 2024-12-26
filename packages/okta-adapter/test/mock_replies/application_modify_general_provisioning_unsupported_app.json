@@ -1,0 +1,44 @@
+[
+  {
+    "path": "/api/v1/internal/apps/instance/app-fakeid1/settings/user-mgmt-general",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "enabled": true,
+      "manualIncrementalImportsSupported": false,
+      "importSettings": {
+        "userNameTemplate": {
+          "type": "CUSTOM",
+          "displayName": "Custom",
+          "ruleName": "global.import.login.customExpression",
+          "expression": "appuser.userName"
+        },
+        "userNameTemplateOptions": null,
+        "importInterval": -1,
+        "importCronSettings": null,
+        "offPeakHoursStart": null,
+        "offPeakHoursEnd": null,
+        "offPeakHoursTimeZone": null,
+        "activeUserStatusesEnabled": false
+      }
+    },
+    "body": {
+      "enabled": true,
+      "importSettings": {
+        "userNameTemplate": {
+          "type": "CUSTOM",
+          "displayName": "Custom",
+          "ruleName": "global.import.login.customExpression",
+          "expression": "appuser.userName"
+        },
+        "importInterval": -1
+      }
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "499",
+      "x-rate-limit-reset": "1735215039"
+    }
+  }
+]

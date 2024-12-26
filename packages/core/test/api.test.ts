@@ -36,6 +36,7 @@ import {
   ReferenceExpression,
   SeverityLevel,
   toChange,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -1311,7 +1312,7 @@ describe('api.ts', () => {
       type = new ObjectType({
         elemID: new ElemID('test1', 'test'),
       })
-      instance = new InstanceElement('test', type, { c: 4 })
+      instance = new InstanceElement('test', new TypeReference(type.elemID), { c: 4 })
 
       ws = mockWorkspace({
         accounts: ['test1'],
@@ -1533,6 +1534,22 @@ describe('api.ts', () => {
 
       expect(res).toEqual({ changes: [], errors: [] })
       expect(mockFixElements).toHaveBeenCalledTimes(0)
+    })
+    describe('Resolve instances types', () => {
+      let inputElements: Element[]
+      beforeEach(() => {
+        mockFixElements.mockImplementation(async elements => {
+          inputElements = elements
+          return { fixedElements: [], errors: [] }
+        })
+      })
+      it('should invoke fixElements with instances that have resolved type', async () => {
+        await api.fixElements(ws, [workspace.createElementSelector(instance.elemID.getFullName())])
+        expect(inputElements).toHaveLength(1)
+        const instanceElement = inputElements[0] as InstanceElement
+        expect(instanceElement).toBeInstanceOf(InstanceElement)
+        expect(instanceElement.refType.type).toBeDefined()
+      })
     })
   })
 

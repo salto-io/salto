@@ -56,6 +56,7 @@ describe('customFieldsWith10KOptionValidator', () => {
       },
     )
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.splitFieldContextOptions = false
   })
   describe('without splitFieldContextOptions', () => {
     it('should return info message when context has more than 10K options', async () => {

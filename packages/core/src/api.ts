@@ -824,12 +824,6 @@ export const getLoginStatuses = async (
   return Object.fromEntries(accounts.map(account => [account, logins[accountToServiceMap[account]]]))
 }
 
-export const getSupportedServiceAdapterNames = (adapterCreators?: Record<string, Adapter>): string[] => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  return Object.keys(actualAdapterCreator)
-}
-
 export const rename = async (
   workspace: Workspace,
   sourceElemId: ElemID,
@@ -850,15 +844,6 @@ export const rename = async (
   }
 
   return renameElementChanges
-}
-
-export const getAdapterConfigOptionsType = (
-  adapterName: string,
-  adapterCreators?: Record<string, Adapter>,
-): ObjectType | undefined => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  return actualAdapterCreator[adapterName]?.configCreator?.optionsType
 }
 
 /**

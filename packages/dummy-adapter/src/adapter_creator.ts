@@ -82,6 +82,7 @@ const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persist
     getConfigTypes: async () => [],
     getCustomReferences: async elements => getCustomReferences(elements),
     // we pass slimAdapter as this is only used for getConfigTypes which currently as defined does nothing with it!!
+    // can't import adapterCreators here as we get circular dependency
     adapterCreators: { dummy: slimAdapter },
   })
 

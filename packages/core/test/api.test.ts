@@ -42,7 +42,7 @@ import { collections } from '@salto-io/lowerdash'
 import { setPath } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import * as api from '../src/api'
-import { getAdapterConfigOptionsType, getAdditionalReferences, getLoginStatuses } from '../src/api'
+import { getAdditionalReferences, getLoginStatuses } from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
 import * as adapters from '../src/core/adapters/adapters'
@@ -1335,16 +1335,6 @@ describe('api.ts', () => {
       expect(Object.keys(statuses).length).toEqual(2)
       expect(Object.keys(statuses)).toContain('salto1')
       expect(Object.keys(statuses)).toContain('salto2')
-    })
-  })
-  describe('getAdapterConfigOptionsType', () => {
-    it('should returns adapter configCreator.optionsType when defined', () => {
-      expect(getAdapterConfigOptionsType(mockServiceWithConfigCreator, mockAdapterCreator)).toEqual(
-        mockConfigOptionsObjectType,
-      )
-    })
-    it('should returns undefined when adapter configCreator is undefined', () => {
-      expect(getAdapterConfigOptionsType(mockService, mockAdapterCreator)).toBeUndefined()
     })
   })
 

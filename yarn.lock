@@ -4074,6 +4074,7 @@ __metadata:
     "@salto-io/sap-adapter": 0.4.8
     "@salto-io/serviceplaceholder-adapter": 0.4.8
     "@salto-io/stripe-adapter": 0.4.8
+    "@salto-io/test-utils": 0.4.8
     "@salto-io/workato-adapter": 0.4.8
     "@salto-io/zendesk-adapter": 0.4.8
     "@salto-io/zuora-billing-adapter": 0.4.8

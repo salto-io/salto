@@ -781,6 +781,7 @@ export const deploy: CompatibleDeployFunc = async (
   _accounts?: string[],
   _checkOnly = false,
 ): Promise<DeployResult> => {
+  // for backward compatibility
   if (!('adapterCreators' in workspace)) {
     throw new Error('invalid params for mock')
   }

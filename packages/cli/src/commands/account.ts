@@ -19,13 +19,12 @@ import {
   addAdapter,
   getAdaptersCredentialsTypes,
   getLoginStatuses,
-  getSupportedServiceAdapterNames,
   installAdapter,
   verifyCredentials,
   updateCredentials,
 } from '@salto-io/core'
 import { Workspace, errors, isValidAccountName } from '@salto-io/workspace'
-import { adapterCreators } from '@salto-io/adapter-creators'
+import { adapterCreators, getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
@@ -220,7 +219,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   const theAccountName = accountName ?? serviceType
   await validateAndSetEnv(workspace, input, output)
 
-  const supportedServiceAdapters = getSupportedServiceAdapterNames(adapterCreators)
+  const supportedServiceAdapters = getSupportedServiceAdapterNames()
   if (!supportedServiceAdapters.includes(serviceType)) {
     errorOutputLine(formatInvalidServiceInput(serviceType, supportedServiceAdapters), output)
     return CliExitCode.UserInputError

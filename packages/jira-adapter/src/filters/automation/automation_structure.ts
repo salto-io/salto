@@ -15,6 +15,9 @@ import {
   getChangeData,
   Change,
   isInstanceChange,
+  StaticFile,
+  isStaticFile,
+  ElemID,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -22,6 +25,7 @@ import {
   safeJsonStringify,
   createSchemeGuard,
   TransformFuncSync,
+  fileNameFromNaclCase,
 } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -35,6 +39,7 @@ import {
   AUTOMATION_COMPONENT_TYPE,
   AUTOMATION_COMPONENT_VALUE_TYPE,
   AUTOMATION_OPERATION,
+  JIRA,
 } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
@@ -245,6 +250,23 @@ const createTransformHasAttachmentValueFunc =
     return value
   }
 
+const getHTMLStaticFileName = (path: ElemID): string => {
+  const pathName = fileNameFromNaclCase(path.getFullName()).split('instance.')
+  const fileName = pathName.length > 1 ? pathName[1] : ''
+  return fileName
+}
+
+const extractHTMLToStaticFile: TransformFuncSync = ({ value, path }) => {
+  if (path !== undefined && _.isPlainObject(value) && !isStaticFile(value.body) && value.mimeType === 'text/html') {
+    const bodyHTMLContent = value.body
+    value.body = new StaticFile({
+      filepath: `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`,
+      content: bodyHTMLContent,
+    })
+  }
+  return value
+}
+
 const revertCompareFieldValueStructure: TransformFuncSync = ({ value, field }) => {
   if (isCompareFieldValueObject(value) && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE) {
     const { compareFieldValue } = value
@@ -366,6 +388,7 @@ const filter: FilterCreator = ({ client }) => {
             convertToCompareFieldValue,
             createTransformDeleteLinkTypesFunc(),
             createTransformHasAttachmentValueFunc(),
+            extractHTMLToStaticFile,
           ])
           instance.value = (
             await transformElement({

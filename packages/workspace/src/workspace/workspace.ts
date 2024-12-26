@@ -489,6 +489,21 @@ const toReferenceIndexEntryWithDefaults = (
   sourceScope: referenceIndexEntry.sourceScope ?? DEFAULT_SOURCE_SCOPE,
 })
 
+const logValidationErrors = (errors: ReadonlyArray<ValidationError>, source: string): void => {
+  _(errors)
+    .groupBy(error => error.constructor.name)
+    .entries()
+    .forEach(([errorType, errorsGroup]) => {
+      log.warn(
+        'Invalid %s, error type %s, severity: %s element IDs: %o',
+        source,
+        errorType,
+        errorsGroup[0].severity,
+        errorsGroup.map(e => e.elemID.getFullName()),
+      )
+    })
+}
+
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   adaptersConfig: AdaptersConfigSource,
@@ -1067,14 +1082,9 @@ export const loadWorkspace = async (
       awu(currentWorkspaceState.states[envToUse].errors.values()).flat().toArray(),
     ])
 
-    _(validationErrors)
-      .groupBy(error => error.constructor.name)
-      .entries()
-      .forEach(([errorType, errorsGroup]) => {
-        log.warn(
-          `Invalid elements, error type: ${errorType}, severity: ${errorsGroup[0].severity} element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`,
-        )
-      })
+    logValidationErrors(validationErrors, 'elements')
+    logValidationErrors(configErrors.validation, 'config')
+
     return new Errors({
       parse: [...errorsFromSource.parse, ...configErrors.parse],
       merge: [...errorsFromSource.merge, ...mergeErrors, ...configErrors.merge],

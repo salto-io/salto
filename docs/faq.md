@@ -17,7 +17,7 @@ Currently, Salto supports the following services:
 - [Salesforce](../packages/salesforce-adapter)
 - [NetSuite](../packages/netsuite-adapter)
 - [Jira](../packages/jira-adapter)
-- [Confluence](../packages/confluence-adapter/)
+- [Confluence](../packages/confluence-adapter)
 - [Zendesk](../packages/zendesk-adapter)
 - [Okta](../packages/okta-adapter)
 - [Microsoft Security - Entra ID and Intune](../packages//microsoft-security-adapter/)

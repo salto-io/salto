@@ -60,6 +60,13 @@ describe('automationFetchFilter', () => {
             ],
           },
           ruleHome: 'some value', // should always omit this field
+          tags: [ // should always omit this field
+            {
+              ruleIdUuid: '018ea865-3a9c-7c73-95fc-0ecb6aa14456',
+              tagType: 'CREATION_TYPE',
+              tagValue: 'USER',
+            },
+          ],
         },
       ],
     },

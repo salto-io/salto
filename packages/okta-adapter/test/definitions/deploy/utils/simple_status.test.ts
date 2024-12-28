@@ -21,70 +21,70 @@ describe('simple_status', () => {
   describe('toActionNames', () => {
     describe('addition change', () => {
       const additionChange = toChange({ after: activeInst })
-      it('should return the correct action names', () => {
-        expect(
+      it('should return the correct action names', async () => {
+        await expect(
           toActionNames({
             change: additionChange,
             sharedContext: {},
             changeGroup: { groupID: 'groupID', changes: [additionChange] },
             elementSource: buildElementsSourceFromElements([]),
           }),
-        ).toEqual(['add', 'deactivate', 'activate'])
+        ).resolves.toEqual(['add', 'deactivate', 'activate'])
       })
     })
 
     describe('modification change', () => {
       describe('activation change', () => {
         const activationChange = toChange({ before: inactiveInst, after: activeInst })
-        it('should return the correct action names', () => {
-          expect(
+        it('should return the correct action names', async () => {
+          await expect(
             toActionNames({
               change: activationChange,
               sharedContext: {},
               changeGroup: { groupID: 'groupID', changes: [activationChange] },
               elementSource: buildElementsSourceFromElements([]),
             }),
-          ).toEqual(['modify', 'activate'])
+          ).resolves.toEqual(['modify', 'activate'])
         })
       })
       describe('deactivation change', () => {
         const deactivationChange = toChange({ before: activeInst, after: inactiveInst })
-        it('should return the correct action names', () => {
-          expect(
+        it('should return the correct action names', async () => {
+          await expect(
             toActionNames({
               change: deactivationChange,
               sharedContext: {},
               changeGroup: { groupID: 'groupID', changes: [deactivationChange] },
               elementSource: buildElementsSourceFromElements([]),
             }),
-          ).toEqual(['deactivate', 'modify'])
+          ).resolves.toEqual(['deactivate', 'modify'])
         })
       })
       describe('no status change', () => {
         const change = toChange({ before: activeInst, after: activeInst })
-        it('should return the correct action names', () => {
-          expect(
+        it('should return the correct action names', async () => {
+          await expect(
             toActionNames({
               change,
               sharedContext: {},
               changeGroup: { groupID: 'groupID', changes: [change] },
               elementSource: buildElementsSourceFromElements([]),
             }),
-          ).toEqual(['modify'])
+          ).resolves.toEqual(['modify'])
         })
       })
     })
     describe('removal change', () => {
       const removalChange = toChange({ before: activeInst })
-      it('should return the correct action names', () => {
-        expect(
+      it('should return the correct action names', async () => {
+        await expect(
           toActionNames({
             change: removalChange,
             sharedContext: {},
             changeGroup: { groupID: 'groupID', changes: [removalChange] },
             elementSource: buildElementsSourceFromElements([]),
           }),
-        ).toEqual(['remove'])
+        ).resolves.toEqual(['remove'])
       })
     })
   })

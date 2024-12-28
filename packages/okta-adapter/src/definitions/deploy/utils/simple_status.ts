@@ -57,7 +57,7 @@ export const modificationCondition: definitionUtils.deploy.DeployRequestConditio
 
 export const toActionNames: ({
   change,
-}: definitionUtils.deploy.ChangeAndContext) => (ActionName | AdditionalAction)[] = ({ change }) => {
+}: definitionUtils.deploy.ChangeAndContext) => Promise<(ActionName | AdditionalAction)[]> = async ({ change }) => {
   if (isAdditionChange(change)) {
     // Conditions inside 'activate' and 'deactivate' will determine which one to run, based on the service
     // response to the 'add' action.

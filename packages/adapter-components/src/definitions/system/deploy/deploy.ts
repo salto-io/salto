@@ -100,7 +100,11 @@ export type InstanceDeployApiDefinitions<AdditionalAction extends string, Client
   // changes will be marked as applied if at least one action succeeded, but will include errors from all changes (TODO may revisit in SALTO-5557).
   // Note: in most cases, customizing the actions goes hand in hand with customizing dependencies
   // (e.g. defining that all activate actions come after all add actions)
-  toActionNames?: ({ change, changeGroup, elementSource }: ChangeAndContext) => (ActionName | AdditionalAction)[]
+  toActionNames?: ({
+    change,
+    changeGroup,
+    elementSource,
+  }: ChangeAndContext) => Promise<(ActionName | AdditionalAction)[]>
 
   // by default, all actions for a type are run in parallel.
   // if the order is important (e.g. removals before additions), it can be controlled here

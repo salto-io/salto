@@ -64,8 +64,8 @@ describe('createDependencyGraph', () => {
 
   describe('without action or dependency customizations', () => {
     let graph: DAG<NodeType<never>>
-    beforeEach(() => {
-      graph = createDependencyGraph({
+    beforeEach(async () => {
+      graph = await createDependencyGraph({
         defQuery: queryWithDefault<InstanceDeployApiDefinitions<never, 'main'>>(
           (deployDef as DeployApiDefinitions<never, 'main'>).instances,
         ),
@@ -95,11 +95,11 @@ describe('createDependencyGraph', () => {
 
   describe('with custom actions and dependencies', () => {
     let graph: DAG<NodeType<'activate' | 'deactivate'>>
-    beforeEach(() => {
+    beforeEach(async () => {
       if (!deployDef.instances.customizations) {
         deployDef.instances.customizations = {}
       }
-      deployDef.instances.customizations.typeB.toActionNames = ({ change }) => {
+      deployDef.instances.customizations.typeB.toActionNames = async ({ change }) => {
         if (change.action === 'add') {
           return ['add', 'activate']
         }
@@ -117,7 +117,7 @@ describe('createDependencyGraph', () => {
         { first: { type: 'typeC' }, second: { type: 'typeB' } },
         { first: { type: 'unavailable1' }, second: { type: 'typeB' } },
       ]
-      graph = createDependencyGraph({
+      graph = await createDependencyGraph({
         defQuery: queryWithDefault<InstanceDeployApiDefinitions<'activate' | 'deactivate', 'main'>>(
           deployDef.instances,
         ),
@@ -173,13 +173,13 @@ describe('createDependencyGraph', () => {
 
   describe('with a dependency cycle', () => {
     let graph: DAG<NodeType<'activate' | 'deactivate'>>
-    beforeEach(() => {
+    beforeEach(async () => {
       deployDef.dependencies = [
         { first: { type: 'typeA', action: 'add' }, second: { type: 'typeB' } },
         { first: { type: 'typeB' }, second: { type: 'typeC' } },
         { first: { type: 'typeC', action: 'remove' }, second: { type: 'typeA', action: 'add' } },
       ]
-      graph = createDependencyGraph({
+      graph = await createDependencyGraph({
         defQuery: queryWithDefault<InstanceDeployApiDefinitions<'activate' | 'deactivate', 'main'>>(
           deployDef.instances,
         ),
@@ -241,8 +241,8 @@ describe('createDependencyGraph', () => {
     describe('without action or dependency customizations', () => {
       let graph: DAG<NodeType<never>>
 
-      beforeEach(() => {
-        graph = createDependencyGraph({
+      beforeEach(async () => {
+        graph = await createDependencyGraph({
           defQuery: queryWithDefault<InstanceDeployApiDefinitions<never, 'main'>>(
             (deployDef as DeployApiDefinitions<never, 'main'>).instances,
           ),
@@ -264,7 +264,7 @@ describe('createDependencyGraph', () => {
     })
     describe('with additional action and dependency customizations', () => {
       let graph: DAG<NodeType<never>>
-      beforeEach(() => {
+      beforeEach(async () => {
         if (!deployDef.instances.customizations) {
           deployDef.instances.customizations = {}
         }
@@ -272,7 +272,7 @@ describe('createDependencyGraph', () => {
         deployDef.dependencies = [
           { first: { type: 'typeA', action: 'modify' }, second: { type: 'typeAItems', action: 'modify' } },
         ]
-        graph = createDependencyGraph({
+        graph = await createDependencyGraph({
           defQuery: queryWithDefault<InstanceDeployApiDefinitions<never, 'main'>>(
             (deployDef as DeployApiDefinitions<never, 'main'>).instances,
           ),

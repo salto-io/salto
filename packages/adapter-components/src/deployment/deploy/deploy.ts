@@ -113,7 +113,7 @@ export const deployChanges = async <TOptions extends APIDefinitionsOptions>({
     change => getChangeData(change).elemID,
   )
 
-  const graph = createDependencyGraph({
+  const graph = await createDependencyGraph({
     defQuery,
     dependencies,
     changes: changes.concat(Object.values(subResourceChangesByChangeID).flat()),

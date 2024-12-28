@@ -20,11 +20,11 @@ Currently, Salto supports the following services:
 - [Confluence](../packages/confluence-adapter)
 - [Zendesk](../packages/zendesk-adapter)
 - [Okta](../packages/okta-adapter)
-- [Microsoft Security - Entra ID and Intune](../packages//microsoft-security-adapter/)
+- [Microsoft Security - Entra ID and Intune](../packages/microsoft-security-adapter)
 - [Workato](../packages/workato-adapter)
-- [PagerDuty](../packages/pagerduty-adapter/)
+- [PagerDuty](../packages/pagerduty-adapter)
 - [Zuora Billing](../packages/zuora-billing-adapter)
-- [Intercom](../packages/intercom-adapter/)
+- [Intercom](../packages/intercom-adapter)
 - [Stripe](../packages/stripe-adapter)
 
 

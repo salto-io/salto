@@ -17,7 +17,7 @@ import {
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
-import { getParents, validatePlainObject } from '@salto-io/adapter-utils'
+import { getParents, naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -48,6 +48,7 @@ import {
   AUTHORIZATION_SERVER,
   GROUP_RULE_TYPE_NAME,
   ROLE_TYPE_NAME,
+  USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -62,6 +63,7 @@ import { addBrandIdToRequest } from './types/email_domain'
 import { isSystemScope } from './types/authorization_servers'
 import { isActiveGroupRuleChange } from './types/group_rules'
 import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole, shouldUpdateRolePermission } from './types/roles'
+import { USER_ROLE_CHANGE_ID_FIELDS, getRoleIdFromSharedContext } from './types/user_roles'
 
 const log = logger(module)
 
@@ -927,6 +929,51 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/users/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [USER_ROLES_TYPE_NAME]: {
+      recurseIntoPath: [
+        {
+          typeName: 'UserRole',
+          fieldPath: ['roles'],
+          changeIdFields: USER_ROLE_CHANGE_ID_FIELDS.map(f => naclCase(f)),
+        },
+      ],
+      requestsByAction: {
+        default: { request: { earlySuccess: true } },
+      },
+    },
+    UserRole: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{userId}/roles', method: 'post' },
+                context: { userId: '{_parent.0.user}' },
+                transformation: {
+                  adjust: async ({ value }) => {
+                    validatePlainObject(value, USER_ROLES_TYPE_NAME)
+                    if (value.type === 'CUSTOM') {
+                      return {
+                        value: _.pick(value, USER_ROLE_CHANGE_ID_FIELDS), // custom role payload
+                      }
+                    }
+                    return { value: _.pick(value, ['type']) } // standard role payload
+                  },
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{userId}/roles/{id}', method: 'delete' },
+                context: getRoleIdFromSharedContext,
               },
             },
           ],

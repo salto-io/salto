@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import {
   definitions,
   fetch as fetchUtils,
@@ -36,6 +36,7 @@ import {
   AUTOMATION_RULE_TYPE_NAME,
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
@@ -337,6 +338,74 @@ const createCustomizations = ({
     },
   },
   ...getPolicyCustomizations(),
+  [USER_ROLES_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/iam/assignees/users',
+        },
+        transformation: {
+          root: 'value',
+          adjust: async ({ value }) => {
+            validatePlainObject(value, 'User Roles response')
+            return {
+              value: {
+                ...value,
+                // duplicate id to additional field to extract reference, because currently references can't be used as service ids
+                user: _.get(value, 'id'),
+              },
+            }
+          },
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['id'],
+      recurseInto: {
+        roles: {
+          typeName: 'UserRole',
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'user', isReference: true }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        orn: { omit: true },
+        _links: { omit: true },
+      },
+    },
+  },
+  UserRole: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/users/{id}/roles',
+          method: 'get',
+        },
+      },
+    ],
+    resource: { directFetch: false },
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        _links: { omit: true },
+        status: { omit: true },
+        assignmentType: { omit: true },
+      },
+    },
+  },
   Application: {
     requests: [
       {

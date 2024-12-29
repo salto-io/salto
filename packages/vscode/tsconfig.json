@@ -16,7 +16,6 @@
   "include": ["src/**/*", "test/**/*", "e2e_test/**/*"],
   "references": [
     { "path": "../core" },
-    { "path": "../adapter-creators" },
     { "path": "../element-test-utils" },
     { "path": "../file" },
     { "path": "../lang-server" },

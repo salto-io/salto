@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { adapterCreators } from '../../src/core/adapters'
 import { mockWorkspace } from '../common/workspace'
 import { createMockAdapter } from '../common/helpers'
 import {
@@ -35,15 +36,14 @@ const { awu } = collections.asynciterable
 
 describe('isInitializedFolder', () => {
   const mockAdapterName = 'mock'
-  const mockAdapterCreator: Record<string, Adapter> = {}
 
   let mockAdapter: ReturnType<typeof createMockAdapter>
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
-    mockAdapterCreator[mockAdapterName] = mockAdapter
+    adapterCreators[mockAdapterName] = mockAdapter
   })
   afterEach(() => {
-    delete mockAdapterCreator[mockAdapterName]
+    delete adapterCreators[mockAdapterName]
   })
 
   describe('when adapter returns false', () => {
@@ -52,11 +52,7 @@ describe('isInitializedFolder', () => {
     })
 
     it('should return false', async () => {
-      const res = await isInitializedFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await isInitializedFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.result).toBeFalse()
       expect(res.errors).toBeEmpty()
     })
@@ -68,11 +64,7 @@ describe('isInitializedFolder', () => {
     })
 
     it('should return true', async () => {
-      const res = await isInitializedFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await isInitializedFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.result).toBeTrue()
       expect(res.errors).toBeEmpty()
     })
@@ -93,11 +85,7 @@ describe('isInitializedFolder', () => {
     })
 
     it('should return an error', async () => {
-      const res = await isInitializedFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await isInitializedFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.result).toBeFalse()
       expect(res.errors).toEqual([
         {
@@ -115,11 +103,7 @@ describe('isInitializedFolder', () => {
     })
 
     it('should return an error', async () => {
-      const res = await isInitializedFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await isInitializedFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.errors).toEqual([
         {
           severity: 'Error',
@@ -133,14 +117,14 @@ describe('isInitializedFolder', () => {
 
 describe('initFolder', () => {
   const mockAdapterName = 'mock'
-  const mockAdapterCreator: Record<string, Adapter> = {}
+
   let mockAdapter: ReturnType<typeof createMockAdapter>
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
-    mockAdapterCreator[mockAdapterName] = mockAdapter
+    adapterCreators[mockAdapterName] = mockAdapter
   })
   afterEach(() => {
-    delete mockAdapterCreator[mockAdapterName]
+    delete adapterCreators[mockAdapterName]
   })
 
   describe('when adapter returns no errors', () => {
@@ -149,11 +133,7 @@ describe('initFolder', () => {
     })
 
     it('should return no errors', async () => {
-      const res = await initFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await initFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.errors).toBeEmpty()
     })
   })
@@ -172,11 +152,7 @@ describe('initFolder', () => {
     })
 
     it('should return errors', async () => {
-      const res = await initFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await initFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.errors).toEqual([
         {
           severity: 'Error',
@@ -193,11 +169,7 @@ describe('initFolder', () => {
     })
 
     it('should return an error', async () => {
-      const res = await initFolder({
-        adapterName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      const res = await initFolder({ adapterName: mockAdapterName, baseDir: 'dir' })
       expect(res.errors).toEqual([
         {
           severity: 'Error',
@@ -211,7 +183,6 @@ describe('initFolder', () => {
 
 describe('calculatePatch', () => {
   const mockAdapterName = 'mock'
-  const mockAdapterCreator: Record<string, Adapter> = {}
   const type = new ObjectType({
     elemID: new ElemID(mockAdapterName, 'type'),
     fields: {
@@ -228,7 +199,7 @@ describe('calculatePatch', () => {
   let workspace: Workspace
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
-    mockAdapterCreator[mockAdapterName] = mockAdapter
+    adapterCreators[mockAdapterName] = mockAdapter
 
     workspace = mockWorkspace({
       elements: [type, instanceWithHidden, instanceNacl],
@@ -240,7 +211,7 @@ describe('calculatePatch', () => {
     })
   })
   afterEach(() => {
-    delete mockAdapterCreator[mockAdapterName]
+    delete adapterCreators[mockAdapterName]
   })
 
   describe('when there is a difference between the folders', () => {
@@ -258,7 +229,6 @@ describe('calculatePatch', () => {
         fromDir: 'before',
         toDir: 'after',
         accountName: mockAdapterName,
-        adapterCreators: mockAdapterCreator,
       })
       expect(res.success).toBeTruthy()
       expect(res.fetchErrors).toHaveLength(0)
@@ -282,7 +252,6 @@ describe('calculatePatch', () => {
         fromDir: 'before',
         toDir: 'after',
         accountName: mockAdapterName,
-        adapterCreators: mockAdapterCreator,
       })
       expect(res.success).toBeTruthy()
       expect(res.fetchErrors).toHaveLength(0)
@@ -305,7 +274,6 @@ describe('calculatePatch', () => {
         fromDir: 'before',
         toDir: 'after',
         accountName: mockAdapterName,
-        adapterCreators: mockAdapterCreator,
       })
       expect(res.success).toBeTruthy()
       expect(res.fetchErrors).toHaveLength(0)
@@ -324,7 +292,6 @@ describe('calculatePatch', () => {
         fromDir: 'before',
         toDir: 'after',
         accountName: mockAdapterName,
-        adapterCreators: mockAdapterCreator,
       })
       expect(res.success).toBeFalsy()
       expect(res.fetchErrors).toHaveLength(0)
@@ -357,7 +324,6 @@ describe('calculatePatch', () => {
         fromDir: 'before',
         toDir: 'after',
         accountName: mockAdapterName,
-        adapterCreators: mockAdapterCreator,
       })
       expect(res.success).toBeTruthy()
       expect(res.changes).toHaveLength(1)
@@ -383,7 +349,6 @@ describe('calculatePatch', () => {
         fromDir: 'before',
         toDir: 'after',
         accountName: mockAdapterName,
-        adapterCreators: mockAdapterCreator,
       })
       expect(res.success).toBeTruthy()
       expect(res.fetchErrors).toHaveLength(0)
@@ -399,13 +364,7 @@ describe('calculatePatch', () => {
     it('Should throw an error', async () => {
       delete (mockAdapter as Adapter).adapterFormat
       await expect(
-        calculatePatch({
-          workspace,
-          fromDir: 'before',
-          toDir: 'after',
-          accountName: mockAdapterName,
-          adapterCreators: mockAdapterCreator,
-        }),
+        calculatePatch({ workspace, fromDir: 'before', toDir: 'after', accountName: mockAdapterName }),
       ).rejects.toThrow()
     })
   })
@@ -413,15 +372,15 @@ describe('calculatePatch', () => {
 
 describe('syncWorkspaceToFolder', () => {
   const mockAdapterName = 'mock'
-  const mockAdapterCreator: Record<string, Adapter> = {}
+
   let mockAdapter: ReturnType<typeof createMockAdapter>
 
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
-    mockAdapterCreator[mockAdapterName] = mockAdapter
+    adapterCreators[mockAdapterName] = mockAdapter
   })
   afterEach(() => {
-    delete mockAdapterCreator[mockAdapterName]
+    delete adapterCreators[mockAdapterName]
   })
   describe('when the folder has different elements from the workspace', () => {
     let separateInstanceInFolder: InstanceElement
@@ -455,12 +414,7 @@ describe('syncWorkspaceToFolder', () => {
     describe('when adapter supports all required actions', () => {
       let result: SyncWorkspaceToFolderResult
       beforeEach(async () => {
-        result = await syncWorkspaceToFolder({
-          workspace,
-          accountName: mockAdapterName,
-          baseDir: 'dir',
-          adapterCreators: mockAdapterCreator,
-        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return no errors', () => {
         expect(result.errors).toBeEmpty()
@@ -502,12 +456,7 @@ describe('syncWorkspaceToFolder', () => {
       let result: SyncWorkspaceToFolderResult
       beforeEach(async () => {
         delete (mockAdapter as Adapter).adapterFormat
-        result = await syncWorkspaceToFolder({
-          workspace,
-          accountName: mockAdapterName,
-          baseDir: 'dir',
-          adapterCreators: mockAdapterCreator,
-        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return an error', () => {
         expect(result.errors).toHaveLength(1)
@@ -519,12 +468,7 @@ describe('syncWorkspaceToFolder', () => {
       let result: SyncWorkspaceToFolderResult
       beforeEach(async () => {
         delete (mockAdapter as Adapter).adapterFormat
-        result = await syncWorkspaceToFolder({
-          workspace,
-          accountName: mockAdapterName,
-          baseDir: 'dir',
-          adapterCreators: mockAdapterCreator,
-        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return an error', () => {
         expect(result.errors).toHaveLength(1)
@@ -539,12 +483,7 @@ describe('syncWorkspaceToFolder', () => {
       beforeEach(async () => {
         errors = [{ severity: 'Error', message: 'something failed', detailedMessage: 'something failed' }]
         mockAdapter.adapterFormat.loadElementsFromFolder.mockResolvedValue({ elements: [], errors })
-        result = await syncWorkspaceToFolder({
-          workspace,
-          accountName: mockAdapterName,
-          baseDir: 'dir',
-          adapterCreators: mockAdapterCreator,
-        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return the error without trying to update the folder', () => {
         expect(result.errors).toEqual(errors)
@@ -558,12 +497,7 @@ describe('syncWorkspaceToFolder', () => {
         mockAdapter.adapterFormat.loadElementsFromFolder.mockResolvedValue({
           elements: [separateInstanceInFolder, separateInstanceInFolder],
         })
-        result = await syncWorkspaceToFolder({
-          workspace,
-          accountName: mockAdapterName,
-          baseDir: 'dir',
-          adapterCreators: mockAdapterCreator,
-        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return error without trying to update the folder', () => {
         expect(result.errors).not.toHaveLength(0)
@@ -583,12 +517,7 @@ describe('syncWorkspaceToFolder', () => {
           },
         ]
         mockAdapter.adapterFormat.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
-        result = await syncWorkspaceToFolder({
-          workspace,
-          accountName: mockAdapterName,
-          baseDir: 'dir',
-          adapterCreators: mockAdapterCreator,
-        })
+        result = await syncWorkspaceToFolder({ workspace, accountName: mockAdapterName, baseDir: 'dir' })
       })
       it('should return the error in the result', () => {
         expect(result.errors).toEqual(errors)
@@ -605,7 +534,7 @@ describe('syncWorkspaceToFolder', () => {
         accounts: [accountName],
         accountToServiceName: { [accountName]: mockAdapterName },
       })
-      result = syncWorkspaceToFolder({ workspace, accountName, baseDir: 'dir', adapterCreators: mockAdapterCreator })
+      result = syncWorkspaceToFolder({ workspace, accountName, baseDir: 'dir' })
     })
     it('should throw an error', async () => {
       await expect(result).rejects.toThrow()
@@ -615,7 +544,6 @@ describe('syncWorkspaceToFolder', () => {
 
 describe('updateElementFolder', () => {
   const mockAdapterName = 'mock'
-  const mockAdapterCreator: Record<string, Adapter> = {}
   let mockAdapter: ReturnType<typeof createMockAdapter>
   let workspace: Workspace
   let changes: ReadonlyArray<Change>
@@ -623,7 +551,7 @@ describe('updateElementFolder', () => {
 
   beforeEach(() => {
     mockAdapter = createMockAdapter(mockAdapterName)
-    mockAdapterCreator[mockAdapterName] = mockAdapter
+    adapterCreators[mockAdapterName] = mockAdapter
 
     const type = new ObjectType({
       elemID: new ElemID(mockAdapterName, 'type'),
@@ -646,18 +574,12 @@ describe('updateElementFolder', () => {
   })
 
   afterEach(() => {
-    delete mockAdapterCreator[mockAdapterName]
+    delete adapterCreators[mockAdapterName]
   })
 
   describe('when called with valid parameters', () => {
     beforeEach(async () => {
-      await updateElementFolder({
-        changes,
-        workspace,
-        accountName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
     })
 
     it('should call dumpElementsToFolder with the correct parameters', async () => {
@@ -681,13 +603,7 @@ describe('updateElementFolder', () => {
         },
       ]
       mockAdapter.adapterFormat.dumpElementsToFolder.mockResolvedValue({ errors, unappliedChanges: [] })
-      result = await updateElementFolder({
-        changes,
-        workspace,
-        accountName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      result = await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
     })
 
     it('should return the error in the result', () => {
@@ -699,13 +615,7 @@ describe('updateElementFolder', () => {
     let result: UpdateElementFolderResult
     it('should return an error', async () => {
       delete (mockAdapter as Adapter).adapterFormat
-      result = await updateElementFolder({
-        changes,
-        workspace,
-        accountName: mockAdapterName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      result = await updateElementFolder({ changes, workspace, accountName: mockAdapterName, baseDir: 'dir' })
       expect(result).toEqual({
         unappliedChanges: [],
         errors: [
@@ -729,13 +639,7 @@ describe('updateElementFolder', () => {
         accounts: [accountName],
         accountToServiceName: { [accountName]: mockAdapterName },
       })
-      result = updateElementFolder({
-        changes,
-        workspace,
-        accountName,
-        baseDir: 'dir',
-        adapterCreators: mockAdapterCreator,
-      })
+      result = updateElementFolder({ changes, workspace, accountName, baseDir: 'dir' })
     })
     it('should throw an error', async () => {
       await expect(result).rejects.toThrow()

@@ -34,13 +34,13 @@ import {
   isSaltoElementError,
   SaltoElementError,
 } from '@salto-io/adapter-api'
-import { getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
 import {
   Plan,
   PlanItem,
   FetchChange,
   FetchResult,
   LocalChange,
+  getSupportedServiceAdapterNames,
   DeployError,
   GroupProperties,
   DetailedChangeId,

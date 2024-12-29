@@ -7,7 +7,8 @@
  */
 import { Adapter, ElemID, GetCustomReferencesFunc, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import { getCustomReferencesFunc } from '../../src/local-workspace/workspace'
+import { getCustomReferences } from '../../src/local-workspace/workspace'
+import { adapterCreators } from '../../src/core/adapters'
 import { mockAdaptersConfigSource } from '../common/workspace'
 
 describe('local workspace', () => {
@@ -15,7 +16,6 @@ describe('local workspace', () => {
 
   describe('getCustomReferences', () => {
     let instance: InstanceElement
-    const mockAdapterCreator: Record<string, Adapter> = {}
     const adaptersConfigSource = mockAdaptersConfigSource()
 
     beforeEach(() => {
@@ -46,8 +46,8 @@ describe('local workspace', () => {
         ]),
       }
 
-      mockAdapterCreator.test = mockTestAdapter as unknown as Adapter
-      mockAdapterCreator.test2 = mockTest2Adapter as unknown as Adapter
+      adapterCreators.test = mockTestAdapter as unknown as Adapter
+      adapterCreators.test2 = mockTest2Adapter as unknown as Adapter
     })
     it('Should call the right adapter getCustomReferences', async () => {
       const AdapterConfigType = new ObjectType({
@@ -56,7 +56,6 @@ describe('local workspace', () => {
       })
       const adapterConfig = new InstanceElement(ElemID.CONFIG_NAME, AdapterConfigType)
       await adaptersConfigSource.setAdapter('test2', 'test', adapterConfig)
-      const getCustomReferences = getCustomReferencesFunc(mockAdapterCreator)
       const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
       expect(references).toEqual([
         {
@@ -68,7 +67,6 @@ describe('local workspace', () => {
     })
 
     it('Should use the adapter name when it is not present in the account to service name mapping', async () => {
-      const getCustomReferences = getCustomReferencesFunc(mockAdapterCreator)
       const references = await getCustomReferences([instance], {}, adaptersConfigSource)
       expect(references).toEqual([
         {
@@ -80,25 +78,22 @@ describe('local workspace', () => {
     })
 
     it('Should return empty array if adapter does not have getCustomReferences func', async () => {
-      mockAdapterCreator.test = {} as unknown as Adapter
-      const getCustomReferences = getCustomReferencesFunc(mockAdapterCreator)
+      adapterCreators.test = {} as unknown as Adapter
       const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
       expect(references).toEqual([])
     })
 
     it('Should not access the adapter config if adapter does not have getCustomReferences func', async () => {
-      mockAdapterCreator.test = {} as unknown as Adapter
-      const getCustomReferences = getCustomReferencesFunc(mockAdapterCreator)
+      adapterCreators.test = {} as unknown as Adapter
       const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
       expect(adaptersConfigSource.getAdapter).not.toHaveBeenCalled()
       expect(references).toEqual([])
     })
 
     it('Should return empty array if adapter getCustomReferences throws an error', async () => {
-      mockAdapterCreator.test = {
+      adapterCreators.test = {
         getCustomReferences: mockFunction<GetCustomReferencesFunc>().mockRejectedValue(new Error('aaa')),
       } as unknown as Adapter
-      const getCustomReferences = getCustomReferencesFunc(mockAdapterCreator)
       const references = await getCustomReferences([instance], { test2: 'test' }, adaptersConfigSource)
       expect(references).toEqual([])
     })

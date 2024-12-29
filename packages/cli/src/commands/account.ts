@@ -19,12 +19,12 @@ import {
   addAdapter,
   getAdaptersCredentialsTypes,
   getLoginStatuses,
+  getSupportedServiceAdapterNames,
   installAdapter,
   verifyCredentials,
   updateCredentials,
 } from '@salto-io/core'
 import { Workspace, errors, isValidAccountName } from '@salto-io/workspace'
-import { adapterCreators, getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
@@ -172,7 +172,7 @@ const getLoginInputFlow = async (
     : // In this login option we ask the user to enter his credentials
       (credentialsType: ObjectType): Promise<InstanceElement> => getConfigWithHeader(credentialsType, output)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
-  const result = await verifyCredentials(newConfig, adapterCreators)
+  const result = await verifyCredentials(newConfig)
   if (!result.success) {
     throw result.error
   }
@@ -230,9 +230,9 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  await installAdapter(serviceType, adapterCreators)
+  await installAdapter(serviceType)
   if (login) {
-    const adapterCredentialsTypes = getAdaptersCredentialsTypes({ names: [serviceType], adapterCreators })[serviceType]
+    const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceType])[serviceType]
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, theAccountName, loginParameters)
     } catch (e) {
@@ -241,7 +241,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     }
   }
 
-  await addAdapter({ workspace, adapterName: serviceType, accountName: theAccountName, adapterCreators })
+  await addAdapter(workspace, serviceType, theAccountName)
   await workspace.flush()
   outputLine(formatAccountAdded(serviceType), output)
   return CliExitCode.Success
@@ -333,7 +333,7 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
     errorOutputLine(formatAccountNotConfigured(accountName), output)
     return CliExitCode.AppError
   }
-  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName], adapterCreators))[accountName]
+  const accountLoginStatus = (await getLoginStatuses(workspace, [accountName]))[accountName]
   if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }

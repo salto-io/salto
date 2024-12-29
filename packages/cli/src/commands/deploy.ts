@@ -9,7 +9,6 @@ import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyFunctionToChangeDataSync } from '@salto-io/adapter-utils'
 import { Progress } from '@salto-io/adapter-api'
-import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   PlanItem,
   Plan,
@@ -189,14 +188,13 @@ const deployPlan = async (
     .flatMap(item => Array.from(item.changes()))
     .map(change => applyFunctionToChangeDataSync(change, element => element.clone()))
 
-  const result = await deploy({
+  const result = await deploy(
     workspace,
     actionPlan,
-    reportProgress: updateAction,
+    (item: PlanItem, step: ItemStatus, details?: string | Progress) => updateAction(item, step, details),
     accounts,
     checkOnly,
-    adapterCreators,
-  })
+  )
 
   const summary = summarizeDeployChanges(requestedChanges, result.appliedChanges ?? [])
   const nonErroredActions = Object.keys(actions).filter(
@@ -265,7 +263,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     return CliExitCode.AppError
   }
 
-  const actionPlan = await preview({ workspace, accounts: actualAccounts, checkOnly, adapterCreators })
+  const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
   const executingDeploy = !dryRun && (force || (await shouldDeploy(actionPlan, checkOnly)))
   if (!dryRun) {

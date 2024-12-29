@@ -10,31 +10,18 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { cleanDatabases } from '@salto-io/local-workspace'
-import { Adapter } from '@salto-io/adapter-api'
-// for backward comptability
-import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { getDefaultAdapterConfig } from './adapters'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-export const cleanWorkspace = async (
-  workspace: Workspace,
-  cleanArgs: WorkspaceComponents,
-  adapterCreators?: Record<string, Adapter>,
-): Promise<void> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
+export const cleanWorkspace = async (workspace: Workspace, cleanArgs: WorkspaceComponents): Promise<void> => {
   await workspace.clear(_.omit(cleanArgs, 'accountConfig'))
   if (cleanArgs.accountConfig === true) {
     await awu(workspace.accounts()).forEach(async account => {
       const service = workspace.getServiceFromAccountName(account)
-      const defaultConfig = await getDefaultAdapterConfig({
-        adapterName: service,
-        accountName: account,
-        adapterCreators: actualAdapterCreator,
-      })
+      const defaultConfig = await getDefaultAdapterConfig(service, account)
       if (defaultConfig === undefined) {
         // some services might not have configs to restore
         log.info('Cannot restore config for account %s', account)

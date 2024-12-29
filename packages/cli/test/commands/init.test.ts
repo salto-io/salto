@@ -5,10 +5,8 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { staticFiles, Workspace } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/core'
-import { adapterCreators } from '@salto-io/adapter-creators'
-import { Adapter } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/init'
 import { buildEventName } from '../../src/telemetry'
@@ -17,23 +15,14 @@ import { CommandArgs } from '../../src/command_builder'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
-  initLocalWorkspace: jest
-    .fn()
-    .mockImplementation(
-      (baseDir: {
-        baseDir: string
-        envName?: string
-        stateStaticFilesSource?: staticFiles.StateStaticFilesSource
-        adapterCreators: Record<string, Adapter>
-      }): Workspace => {
-        if (baseDir.envName === 'error') throw new Error('failed')
-        return {
-          uid: '',
-          currentEnv: () => 'default',
-          envs: () => ['default'],
-        } as unknown as Workspace
-      },
-    ),
+  initLocalWorkspace: jest.fn().mockImplementation((_baseDir: string, envName: string): Workspace => {
+    if (envName === 'error') throw new Error('failed')
+    return {
+      uid: '',
+      currentEnv: () => 'default',
+      envs: () => ['default'],
+    } as unknown as Workspace
+  }),
   locateWorkspaceRoot: jest.fn(),
 }))
 
@@ -114,11 +103,7 @@ describe('init command', () => {
       expect(telemetry.sendCountEvent).toHaveBeenCalledTimes(2)
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.start, 1, expect.objectContaining({}))
       expect(telemetry.sendCountEvent).toHaveBeenCalledWith(eventsNames.success, 1, expect.objectContaining({}))
-      expect(mockInitLocalWorkspace).toHaveBeenCalledWith({
-        baseDir: expect.anything(),
-        envName: 'userEnvInput',
-        adapterCreators,
-      })
+      expect(mockInitLocalWorkspace).toHaveBeenCalledWith(expect.anything(), 'userEnvInput')
     })
     it('should print errors', async () => {
       await action({

@@ -6,7 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import * as core from '@salto-io/core'
-import { adapterCreators } from '@salto-io/adapter-creators'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { cleanAction, cacheUpdateAction, setStateProviderAction, wsValidateAction } from '../../src/commands/workspace'
@@ -151,18 +150,14 @@ describe('workspace command group', () => {
           }),
         ).toBe(CliExitCode.Success)
         expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
-        expect(core.cleanWorkspace).toHaveBeenCalledWith(
-          workspace,
-          {
-            nacl: true,
-            state: true,
-            cache: true,
-            staticResources: true,
-            credentials: true,
-            accountConfig: true,
-          },
-          adapterCreators,
-        )
+        expect(core.cleanWorkspace).toHaveBeenCalledWith(workspace, {
+          nacl: true,
+          state: true,
+          cache: true,
+          staticResources: true,
+          credentials: true,
+          accountConfig: true,
+        })
 
         expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
         expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
@@ -212,18 +207,14 @@ describe('workspace command group', () => {
           }),
         ).toBe(CliExitCode.Success)
         expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
-        expect(core.cleanWorkspace).toHaveBeenCalledWith(
-          workspace,
-          {
-            nacl: true,
-            state: true,
-            cache: true,
-            staticResources: true,
-            credentials: true,
-            accountConfig: true,
-          },
-          adapterCreators,
-        )
+        expect(core.cleanWorkspace).toHaveBeenCalledWith(workspace, {
+          nacl: true,
+          state: true,
+          cache: true,
+          staticResources: true,
+          credentials: true,
+          accountConfig: true,
+        })
         expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
         expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
       })

@@ -8,7 +8,6 @@
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
 import { ProviderOptionsS3, StateConfig, WorkspaceComponents } from '@salto-io/workspace'
-import { adapterCreators } from '@salto-io/adapter-creators'
 import { getUserBooleanInput } from '../callbacks'
 import {
   header,
@@ -54,7 +53,7 @@ export const cleanAction: WorkspaceCommandAction<CleanArgs> = async ({
   outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
 
   try {
-    await cleanWorkspace(workspace, cleanArgs, adapterCreators)
+    await cleanWorkspace(workspace, cleanArgs)
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
     return CliExitCode.AppError

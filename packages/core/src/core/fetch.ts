@@ -64,6 +64,7 @@ import {
   WalkOnFunc,
   walkOnValue,
   elementAnnotationTypes,
+  getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
@@ -89,6 +90,7 @@ import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
 import { mergeLists, mergeStaticFiles, mergeStrings } from './merge_content'
 import { FetchChange, FetchChangeMetadata } from '../types'
+import { calculateDiff } from './plan/diff'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -132,19 +134,11 @@ export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
-): Promise<Iterable<DetailedChangeWithBaseChange>> =>
-  wu(
-    (
-      await getPlan({
-        before,
-        after,
-        dependencyChangers: [],
-        topLevelFilters,
-      })
-    ).itemsByEvalOrder(),
-  )
-    .map(item => item.detailedChanges())
-    .flatten()
+): Promise<DetailedChangeWithBaseChange[]> => {
+  const numElements = (await awu(await before.list()).length()) + (await awu(await after.list()).length())
+  const changes = await calculateDiff(before, after, topLevelFilters, numElements, undefined, true)
+  return changes.flatMap(change => getDetailedChangesFromChange(change))
+}
 
 type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'
 type WorkspaceDetailedChange = {
@@ -167,7 +161,7 @@ const getDetailedChangeTree = async (
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
 ): Promise<DetailedChangeTreeResult> => {
-  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
+  const changes = await getDetailedChanges(before, after, topLevelFilters)
   const changesTree = new collections.treeMap.TreeMap(
     changes.map(change => [change.id.getFullName(), [{ change, origin }]]),
   )
@@ -358,13 +352,13 @@ const getChangesNestedUnderID = (
     .filter(item => id.isEqual(item.change.id) || id.isParentOf(item.change.id))
     .toArray()
 
-const toFetchChanges = (
+const toFetchChanges = async (
   serviceAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
   workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
-): Iterable<FetchChange> => {
+): Promise<Iterable<FetchChange>> => {
   const handledChangeIDs = new Set<string>()
-  return wu(serviceAndPendingChanges.keys())
-    .map((id): FetchChange[] | undefined => {
+  return awu(serviceAndPendingChanges.keys())
+    .map(async (id): Promise<FetchChange[] | undefined> => {
       if (handledChangeIDs.has(id)) {
         // If we get here it means this change was a "relatedChange" in a previous iteration
         // which means we already handled this change and we should not handle it again
@@ -372,7 +366,16 @@ const toFetchChanges = (
       }
 
       const elemId = ElemID.fromFullName(id)
+
+      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
+      const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
+        changeList => changeList.map(change => change.change),
+      )
       const wsChanges = getChangesNestedUnderID(elemId, workspaceToServiceChanges).map(({ change }) => change)
+      if (pendingChanges.length === 0 && wsChanges.length === 0) {
+        return serviceChanges.map((change): FetchChange => ({ change, serviceChanges, pendingChanges: [] }))
+      }
+
       if (!types.isNonEmptyArray(wsChanges)) {
         // If we get here it means there is a difference between the account and the state
         // but there is no difference between the account and the workspace. this can happen
@@ -383,13 +386,8 @@ const toFetchChanges = (
         return undefined
       }
 
-      // Find all changes that relate to the current ID and mark them as handled
-      const relatedChanges = getChangesNestedUnderID(elemId, serviceAndPendingChanges)
+      // Mark all changes that relate to the current ID as handled
       relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
-
-      const [serviceChanges, pendingChanges] = _.partition(relatedChanges, change => change.origin === 'service').map(
-        changeList => changeList.map(change => change.change),
-      )
 
       if (!types.isNonEmptyArray(serviceChanges)) {
         // If nothing changed in the account, we don't want to do anything
@@ -429,7 +427,8 @@ const toFetchChanges = (
       return wsChanges.map(createFetchChange)
     })
     .filter(values.isDefined)
-    .flatten(true)
+    .flatMap(i => i)
+    .toArray()
 }
 
 export type FetchChangesResult = {
@@ -853,7 +852,7 @@ export const calcFetchChanges = async ({
       'calculate service-state changes',
     )
 
-    // We only care about conflicts with changes from the service, so for the next two comparisons
+    // We only care about conflicts with changes from the service, so for the next comparison
     // we only need to check elements for which we have service changes
     const serviceChangesTopLevelIDs = new Set(
       wu(serviceChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
@@ -872,13 +871,21 @@ export const calcFetchChanges = async ({
       'calculate pending changes',
     )
 
+    // Workspace to service changes are only interesting for the elements that have pending changes -
+    // otherwise the diff will be the same as the service-to-state diff, so we avoid recalculating it by only checking
+    // elements that have pending changes.
+    const pendingChangesTopLevelIDs = new Set(
+      wu(pendingChanges.values()).map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName()),
+    )
+    const pendingChangeIdsFilter: IDFilter = id => pendingChangesTopLevelIDs.has(id.getFullName())
+
     // Changes from the service that are not in the nacls
     const { changesTree: workspaceToServiceChanges } = await log.timeDebug(
       () =>
         getDetailedChangeTree(
           workspaceElements,
           partialFetchElementSource,
-          [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
+          [accountFetchFilter, partialFetchFilter, pendingChangeIdsFilter],
           'service',
         ),
       'calculate service-workspace changes',
@@ -898,7 +905,7 @@ export const calcFetchChanges = async ({
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
-  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
+  const fetchChanges = await toFetchChanges(serviceChanges, workspaceToServiceChanges)
   const serviceElementsMap = _.groupBy(accountElements, e => e.elemID.getFullName())
 
   const changes = await awu(fetchChanges)

@@ -50,6 +50,28 @@ const log = logger(module)
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 
+const changeToDiffNode = (change: Change<ChangeDataType>): DiffNode<ChangeDataType> => {
+  if (isAdditionChange(change)) {
+    return {
+      originalId: change.data.after.elemID.getFullName(),
+      action: 'add',
+      data: { after: change.data.after },
+    }
+  }
+  if (isRemovalChange(change)) {
+    return {
+      originalId: change.data.before.elemID.getFullName(),
+      action: 'remove',
+      data: { before: change.data.before },
+    }
+  }
+  return {
+    originalId: change.data.before.elemID.getFullName(),
+    action: 'modify',
+    data: { before: change.data.before, after: change.data.after },
+  }
+}
+
 const addDifferentElements =
   (
     before: ReadOnlyElementsSource,
@@ -58,19 +80,14 @@ const addDifferentElements =
     numElements: number,
     compareOptions?: CompareOptions,
   ): PlanTransformer =>
-  graph =>
-    log.timeDebug(
-      async () => {
-        const outputGraph = graph.clone()
-        const changes = await calculateDiff(before, after, topLevelFilters, numElements, compareOptions)
-        changes.forEach(change => {
-          outputGraph.addNode(changeId(change), [], change)
-        })
-        return outputGraph
-      },
-      'add nodes to graph with for %d elements',
-      numElements,
-    )
+  async graph => {
+    const outputGraph = graph.clone()
+    const changes = await calculateDiff(before, after, topLevelFilters, numElements, compareOptions)
+    changes.forEach(change => {
+      outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
+    })
+    return outputGraph
+  }
 
 const resolveNodeElements =
   (before: ReadOnlyElementsSource, after: ReadOnlyElementsSource): PlanTransformer =>

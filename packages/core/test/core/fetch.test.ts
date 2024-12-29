@@ -325,7 +325,7 @@ describe('fetch', () => {
         })
       })
 
-      it('should use the existing elements to resolve the fetched elements when calculcating changes', async () => {
+      it('should use the existing elements to resolve the fetched elements when calculating changes', async () => {
         const beforeElement = new InstanceElement(
           'name',
           new ObjectType({
@@ -361,10 +361,12 @@ describe('fetch', () => {
           elements: [afterElement],
           partialFetchData: { isPartial: true },
         })
+        const workspaceElementSource = createInMemoryElementSource([beforeElement, workspaceReferencedElement])
+        const stateElementSource = createInMemoryElementSource([beforeElement, stateReferencedElement])
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
-          createInMemoryElementSource([beforeElement, stateReferencedElement]),
+          workspaceElementSource,
+          stateElementSource,
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
@@ -380,10 +382,12 @@ describe('fetch', () => {
 
         if (workspaceChange.action === 'modify' && accountChange.action === 'modify') {
           expect(workspaceChange.data.after).toBe(4)
-          expect(workspaceChange.data.before.resValue).toBe(5)
+          expect(workspaceChange.data.before.resValue).toBe(undefined)
+          expect(await workspaceChange.data.before.getResolvedValue(workspaceElementSource)).toBe(5)
 
           expect(accountChange.data.after).toBe(4)
-          expect(accountChange.data.before.resValue).toBe(6)
+          expect(accountChange.data.before.resValue).toBe(undefined)
+          expect(await workspaceChange.data.before.getResolvedValue(stateElementSource)).toBe(6)
         }
       })
       it('should return an empty partiallyFetchedAccounts correctly', async () => {

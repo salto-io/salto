@@ -15,6 +15,7 @@ import {
   isModificationChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   Workspace,
   ElementSelector,
@@ -814,7 +815,7 @@ export const fixElementsAction: WorkspaceCommandAction<FixElementsArgs> = async 
   await validateAndSetEnv(workspace, input, output)
 
   try {
-    const { changes, errors } = await fixElements(workspace, validSelectors)
+    const { changes, errors } = await fixElements(workspace, validSelectors, adapterCreators)
 
     if (changes.length === 0) {
       outputLine(Prompts.EMPTY_PLAN, output)

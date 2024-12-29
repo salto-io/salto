@@ -8,16 +8,17 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(require('../../jest.base.config.js'), {
-  displayName: 'dummy-adapter',
+  displayName: 'salto',
   rootDir: `${__dirname}`,
   collectCoverageFrom: ['!<rootDir>/index.ts'],
   coverageThreshold: {
+    // Slowly start increasing here, never decrease!
     global: {
-      branches: 82.35,
-      functions: 90.76,
-      lines: 96.71,
-      statements: 96.5,
+      branches: 100,
+      functions: 50,
+      lines: 100,
+      statements: 96.3,
     },
   },
-  setupFilesAfterEnv: ['@salto-io/element-test-utils/all'],
+  setupFilesAfterEnv: ['jest-extended/all'],
 })

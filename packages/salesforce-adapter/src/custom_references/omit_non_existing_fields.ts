@@ -5,18 +5,51 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { isInstanceElement } from '@salto-io/adapter-api'
+
+import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { isCustomMetadataRecordInstanceSync, isInstanceOfCustomObjectSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 
-const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] =
-  ({ elementsSource }) =>
-  async elements => {
-    const instanceElements = elements.filter(isInstanceElement)
-    const typee = await instanceElements[0].getType(elementsSource)
-    console.log(typee)
+const createError = (instance: InstanceElement, invalidValues: string[]): ChangeError => {
+  invalidValues.forEach(value => {
+    delete instance.value[value]
+  })
+  const createErrorMessage = (): ChangeError => ({
+    elemID: instance.elemID,
+    severity: 'Info' as const,
+    message: "Omitting invalid values that don't exist as instance type's field",
+    detailedMessage: `The ${instance.elemID.getFullName()} has values that don't exist as ${instance.elemID.typeName}'s field. Fields omitted: ${invalidValues.join(', ')}`,
+  })
+  return createErrorMessage()
+}
 
-    return { fixedElements: [], errors: [] }
-  }
+const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () => async elements => {
+  const instanceElements = elements
+    .filter(isInstanceElement)
+    .filter(element => isInstanceOfCustomObjectSync(element) || isCustomMetadataRecordInstanceSync(element))
+    .map(instance => instance.clone())
+  const fixedElements: InstanceElement[] = []
+  const errors: ChangeError[] = []
+  const fromTypeToValidFields: Map<string, Set<string>> = new Map()
+  instanceElements.forEach(instance => {
+    const { typeName } = instance.elemID
+    if (!fromTypeToValidFields.has(typeName)) {
+      const instanceType = instance.getTypeSync()
+      fromTypeToValidFields.set(typeName, new Set(Object.keys(instanceType.fields)))
+    }
+    const invalidValues = Object.keys(instance.value)
+      .map(value => {
+        const validFields = fromTypeToValidFields.get(typeName)
+        return !validFields?.has(value) ? value : ''
+      })
+      .filter(value => value !== '')
+    if (invalidValues.length > 0) {
+      fixedElements.push(instance)
+      errors.push(createError(instance, invalidValues))
+    }
+  })
+  return { fixedElements, errors }
+}
 
 export const omitNonExistingFieldsHandler: WeakReferencesHandler = {
   findWeakReferences: async () => [],

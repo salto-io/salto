@@ -10,7 +10,7 @@ import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapt
 import { isCustomMetadataRecordInstanceSync, isInstanceOfCustomObjectSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 
-const fixValuesAndcreateError = (instance: InstanceElement, invalidValues: string[]): ChangeError => {
+const fixValuesAndCreateError = (instance: InstanceElement, invalidValues: string[]): ChangeError => {
   invalidValues.forEach(value => {
     delete instance.value[value]
   })
@@ -45,7 +45,7 @@ const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () =
       .filter(value => value !== '')
     if (invalidValues.length > 0) {
       fixedElements.push(instance)
-      errors.push(fixValuesAndcreateError(instance, invalidValues))
+      errors.push(fixValuesAndCreateError(instance, invalidValues))
     }
   })
   return { fixedElements, errors }

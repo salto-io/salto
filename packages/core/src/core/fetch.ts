@@ -8,6 +8,8 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
+// for backward comptability
+import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import {
   AdapterOperations,
   AdapterOperationsContext,
@@ -50,6 +52,7 @@ import {
   Value,
   Values,
   isRemovalChange,
+  Adapter,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults,
@@ -1454,6 +1457,7 @@ export const getFetchAdapterAndServicesSetup = async ({
   elementsSource,
   ignoreStateElemIdMapping = false,
   ignoreStateElemIdMappingForSelectors = [],
+  adapterCreators,
 }: {
   workspace: Workspace
   fetchAccounts: string[]
@@ -1461,10 +1465,13 @@ export const getFetchAdapterAndServicesSetup = async ({
   elementsSource: ReadOnlyElementsSource
   ignoreStateElemIdMapping?: boolean
   ignoreStateElemIdMappingForSelectors?: ElementSelector[]
+  adapterCreators?: Record<string, Adapter>
 }): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
+  // for backward compatibility
+  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const elemIDGetters = await createElemIdGetters({
     workspace,
     accountToServiceNameMap,
@@ -1481,6 +1488,7 @@ export const getFetchAdapterAndServicesSetup = async ({
     accountToServiceNameMap,
     elemIDGetters,
     resolveTypes,
+    actualAdapterCreator,
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

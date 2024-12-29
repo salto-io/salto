@@ -9,6 +9,7 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import {
   fetch as apiFetch,
   FetchFunc,
@@ -19,6 +20,7 @@ import {
   FetchFromWorkspaceFunc,
   loadLocalWorkspace,
   fetchFromWorkspace,
+  FetchFuncParams,
 } from '@salto-io/core'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
@@ -76,7 +78,7 @@ const createFetchFromWorkspaceCommand =
     env: string,
     fromState: boolean,
   ): FetchFunc =>
-  async (workspace, progressEmitter, accounts) => {
+  async (args: FetchFuncParams) => {
     let otherWorkspace: Workspace
     try {
       otherWorkspace = await loadLocalWorkspace({
@@ -86,13 +88,15 @@ const createFetchFromWorkspaceCommand =
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
     }
+
     return fetchFromWorkspaceFunc({
-      workspace,
+      workspace: args.workspace,
       otherWorkspace,
-      progressEmitter,
-      accounts,
+      progressEmitter: args.progressEmitter,
+      accounts: args.accounts,
       env,
       fromState,
+      adapterCreators,
     })
   }
 
@@ -175,14 +179,17 @@ export const fetchCommand = async ({
     throw new Error('The state only flag can only be used in default mode')
   }
 
-  const fetchResult = await fetch(
+  const fetchResult = await fetch({
     workspace,
-    fetchProgress,
+    progressEmitter: fetchProgress,
+    // remove when there is no need to be backward compatible
+    // @ts-expect-error accounts is getting mixed up with workspace accounts. in here its string[] and not ((env?: string | undefined) => string[]) and we  get an error
     accounts,
-    regenerateSaltoIds,
+    ignoreStateElemIdMapping: regenerateSaltoIds,
     withChangesDetection,
-    regenerateSaltoIdsForSelectors,
-  )
+    ignoreStateElemIdMappingForSelectors: regenerateSaltoIdsForSelectors,
+    adapterCreators,
+  })
 
   // A few merge errors might have occurred,
   // but since it's fetch flow, we omitted the elements

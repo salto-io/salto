@@ -14,7 +14,8 @@ import {
   ReferenceExpression,
   ModificationChange,
 } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { inspectValue, naclCase } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
 import { JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
@@ -26,6 +27,8 @@ import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
 import { createInstances as createDataCenterInstances, modifyDataCenterInstances } from './datacenter'
 import { createInstances as createCloudInstances, modifyCloudInstances } from './cloud'
+
+const log = logger(module)
 
 export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -109,11 +112,12 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     createStatusValues(randomString.toLowerCase(), fetchedElements),
   )
 
-  return [
+  const instances = [
     ...(isDataCenter
       ? createDataCenterInstances(randomString, fetchedElements)
       : createCloudInstances(randomString, uuid, fetchedElements)),
     [field],
+    [fieldContext],
     fieldContextOptionsAndOrders,
     [screen],
     [screenScheme],
@@ -125,6 +129,12 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     // [group],
     [status],
   ]
+  instances.forEach(instGroup =>
+    instGroup.forEach(instance =>
+      log.debug(`E2E created instance ${instance.elemID.getFullName()} with values ${inspectValue(instance.value)}`),
+    ),
+  )
+  return instances
 }
 
 export const createModifyInstances = (

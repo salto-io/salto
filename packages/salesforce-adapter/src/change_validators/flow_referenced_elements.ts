@@ -83,13 +83,14 @@ const createUnusedElementChangeError = (elemId: ElemID, elemName: string): Chang
   detailedMessage: `The Flow Element "${elemName}" isn’t being used in the Flow.`,
 })
 
-const createChangeError = ({
-  unusedElements,
-  missingReferences,
+const createChangeErrors = ({
+  flowNodes,
+  targetReferences,
 }: {
-  unusedElements: Record<string, ElemID>
-  missingReferences: Map<string, ElemID[]>
+  flowNodes: Record<string, ElemID>
+  targetReferences: Map<string, ElemID[]>
 }): ChangeError[] => {
+  const { unusedElements, missingReferences } = getUnusedElementsAndMissingReferences({ flowNodes, targetReferences })
   const unusedElementErrors = Object.entries(unusedElements).map(([name, elemId]) =>
     createUnusedElementChangeError(elemId, name),
   )
@@ -105,7 +106,6 @@ const changeValidator: ChangeValidator = async changes =>
     .map(getChangeData)
     .filter(isInstanceOfTypeSync(FLOW_METADATA_TYPE))
     .map(getFlowNodesAndTargetReferences)
-    .map(getUnusedElementsAndMissingReferences)
-    .flatMap(createChangeError)
+    .flatMap(createChangeErrors)
 
 export default changeValidator

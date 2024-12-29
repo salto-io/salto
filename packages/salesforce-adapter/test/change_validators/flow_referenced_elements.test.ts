@@ -14,7 +14,7 @@ import {
   MetadataInstanceElement,
   MetadataObjectType,
 } from '../../src/transformers/transformer'
-import { TARGET_REFERENCE } from '../../src/constants'
+import { FLOW_NODE_FIELD_NAMES, TARGET_REFERENCE } from '../../src/constants'
 
 describe('flowReferencedElements change validator', () => {
   let flowChange: Change
@@ -27,7 +27,7 @@ describe('flowReferencedElements change validator', () => {
         metadataType: 'FlowConnector',
       },
       fields: {
-        targetReference: { refType: BuiltinTypes.STRING },
+        [TARGET_REFERENCE]: { refType: BuiltinTypes.STRING },
       },
     })
     FlowNode = createMetadataObjectType({
@@ -35,9 +35,9 @@ describe('flowReferencedElements change validator', () => {
         metadataType: 'FlowNode',
       },
       fields: {
-        name: { refType: BuiltinTypes.STRING },
-        locationX: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
-        locationY: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
+        [FLOW_NODE_FIELD_NAMES.NAME]: { refType: BuiltinTypes.STRING },
+        [FLOW_NODE_FIELD_NAMES.LOCATION_X]: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
+        [FLOW_NODE_FIELD_NAMES.LOCATION_Y]: { refType: BuiltinTypes.NUMBER, annotations: { constant: 1 } },
         connector: { refType: FlowConnector, annotations: { required: false } },
       },
     })
@@ -60,29 +60,29 @@ describe('flowReferencedElements change validator', () => {
         {
           fullName: 'TestFlow',
           start: {
-            connector: { targetReference: 'ActionCall' },
+            connector: { [TARGET_REFERENCE]: 'ActionCall' },
           },
           actionCalls: [
             {
-              name: 'ActionCall',
-              connector: { targetReference: 'Assignment' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'ActionCall',
+              connector: { [TARGET_REFERENCE]: 'Assignment' },
             },
           ],
           assignments: [
             {
-              name: 'Assignment',
-              connector: { targetReference: 'Decision' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'Assignment',
+              connector: { [TARGET_REFERENCE]: 'Decision' },
             },
           ],
           decisions: [
             {
-              name: 'Decision',
-              connector: { targetReference: 'RecordCreate' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'Decision',
+              connector: { [TARGET_REFERENCE]: 'RecordCreate' },
             },
           ],
           recordCreates: [
             {
-              name: 'RecordCreate',
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'RecordCreate',
             },
           ],
         },
@@ -102,7 +102,7 @@ describe('flowReferencedElements change validator', () => {
         {
           fullName: 'TestFlow',
           start: {
-            connector: { targetReference: 'ActionCall' },
+            connector: { [TARGET_REFERENCE]: 'ActionCall' },
           },
         },
         Flow,
@@ -111,7 +111,6 @@ describe('flowReferencedElements change validator', () => {
     })
     it('should not return any errors', async () => {
       const errors = await flowReferencedElements([flowChange])
-      expect(errors).toHaveLength(1)
       expect(errors).toEqual([
         {
           severity: 'Error',
@@ -130,7 +129,7 @@ describe('flowReferencedElements change validator', () => {
           fullName: 'TestFlow',
           actionCalls: [
             {
-              name: 'ActionCall',
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'ActionCall',
             },
           ],
         },
@@ -140,13 +139,12 @@ describe('flowReferencedElements change validator', () => {
     })
     it('should not return any errors', async () => {
       const errors = await flowReferencedElements([flowChange])
-      expect(errors).toHaveLength(1)
       expect(errors).toEqual([
         {
           severity: 'Info',
           message: 'Unused Flow Element',
           detailedMessage: `The Flow Element "${'ActionCall'}" isn’t being used in the Flow.`,
-          elemID: flow.elemID.createNestedID('actionCalls', '0', 'name'),
+          elemID: flow.elemID.createNestedID('actionCalls', '0', FLOW_NODE_FIELD_NAMES.NAME),
         },
       ])
     })
@@ -158,18 +156,18 @@ describe('flowReferencedElements change validator', () => {
         {
           fullName: 'TestFlow',
           start: {
-            connector: { targetReference: 'ActionCall' },
+            connector: { [TARGET_REFERENCE]: 'ActionCall' },
           },
           assignments: [
             {
-              name: 'Assignment',
-              connector: { targetReference: 'Decision' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'Assignment',
+              connector: { [TARGET_REFERENCE]: 'Decision' },
             },
           ],
           decisions: [
             {
-              name: 'Decision',
-              connector: { targetReference: 'RecordCreate' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'Decision',
+              connector: { [TARGET_REFERENCE]: 'RecordCreate' },
             },
           ],
         },
@@ -184,7 +182,7 @@ describe('flowReferencedElements change validator', () => {
           severity: 'Info',
           message: 'Unused Flow Element',
           detailedMessage: `The Flow Element "${'Assignment'}" isn’t being used in the Flow.`,
-          elemID: flow.elemID.createNestedID('assignments', '0', 'name'),
+          elemID: flow.elemID.createNestedID('assignments', '0', FLOW_NODE_FIELD_NAMES.NAME),
         },
         {
           severity: 'Error',
@@ -208,18 +206,18 @@ describe('flowReferencedElements change validator', () => {
         {
           fullName: 'TestFlow',
           start: {
-            connector: { targetReference: 'Assignment' },
+            connector: { [TARGET_REFERENCE]: 'Assignment' },
           },
           assignments: [
             {
-              name: 'Assignment',
-              connector: { targetReference: 'ActionCall' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'Assignment',
+              connector: { [TARGET_REFERENCE]: 'ActionCall' },
             },
           ],
           decisions: [
             {
-              name: 'Decision',
-              connector: { targetReference: 'ActionCall' },
+              [FLOW_NODE_FIELD_NAMES.NAME]: 'Decision',
+              connector: { [TARGET_REFERENCE]: 'ActionCall' },
             },
           ],
         },
@@ -229,18 +227,26 @@ describe('flowReferencedElements change validator', () => {
     })
     it('should create change error per reference', async () => {
       const errors = await flowReferencedElements([flowChange])
-      expect(errors[1]).toEqual({
-        severity: 'Error',
-        message: 'Reference to missing Flow Element',
-        detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
-        elemID: flow.elemID.createNestedID('assignments', '0', 'connector', TARGET_REFERENCE),
-      })
-      expect(errors[2]).toEqual({
-        severity: 'Error',
-        message: 'Reference to missing Flow Element',
-        detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
-        elemID: flow.elemID.createNestedID('decisions', '0', 'connector', TARGET_REFERENCE),
-      })
+      expect(errors).toIncludeSameMembers([
+        {
+          severity: 'Error',
+          message: 'Reference to missing Flow Element',
+          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          elemID: flow.elemID.createNestedID('assignments', '0', 'connector', TARGET_REFERENCE),
+        },
+        {
+          severity: 'Error',
+          message: 'Reference to missing Flow Element',
+          detailedMessage: `The Flow Element "${'ActionCall'}" does not exist.`,
+          elemID: flow.elemID.createNestedID('decisions', '0', 'connector', TARGET_REFERENCE),
+        },
+        {
+          severity: 'Info',
+          message: 'Unused Flow Element',
+          detailedMessage: `The Flow Element "${'Decision'}" isn’t being used in the Flow.`,
+          elemID: flow.elemID.createNestedID('decisions', '0', FLOW_NODE_FIELD_NAMES.NAME),
+        },
+      ])
     })
   })
 })

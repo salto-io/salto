@@ -155,14 +155,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       // This is added as the deprecated filter for references (referencedInstanceNamesFilterCreatorDeprecated) looks only in this config for the referenced idFields
       idFields: ['&brandId', 'name'],
-      nestStandaloneInstances: true,
     },
   },
   bot_builder_answer: {
     transformation: {
       idFields: ['name'],
       extendsParentId: true,
-      nestStandaloneInstances: true,
     },
   },
   bot_builder_node: {

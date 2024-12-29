@@ -1871,7 +1871,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] },
-        path: { pathParts: [{ parts: [{ fieldName: 'brand', isReference: true }, { fieldName: 'name' }] }] },
+        path: { pathParts: [{ parts: [{ fieldName: 'brandId', isReference: true }, { fieldName: 'name' }] }] },
       },
       fieldCustomizations: {
         id: { hide: true },
@@ -1892,7 +1892,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: DEFAULT_ID_PARTS, extendsParent: true },
         path: {
-          pathParts: [{ parts: [{ fieldName: 'name' }], extendsParent: true }],
+          pathParts: [{ parts: DEFAULT_ID_PARTS, extendsParent: true }],
         },
       },
       fieldCustomizations: {
@@ -1912,16 +1912,10 @@ const createCustomizations = (): Record<
     element: {
       topLevel: {
         isTopLevel: true,
-        elemID: {
-          parts: [{ fieldName: 'id' }],
-          extendsParent: true,
-        },
-        path: {
-          pathParts: [{ parts: [{ fieldName: 'name' }], extendsParent: true }],
-        },
+        elemID: { parts: [{ fieldName: 'id' }], extendsParent: true },
+        path: { pathParts: [{ parts: [{ fieldName: 'id' }], extendsParent: true }] },
       },
       fieldCustomizations: {
-        id: { fieldType: 'string', hide: true },
         externalId: { fieldType: 'string', hide: true },
       },
     },

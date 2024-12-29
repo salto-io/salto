@@ -556,7 +556,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       return clientsBySubdomain[subdomain]
     }
     const fetchConfig = this.userConfig[FETCH_CONFIG]
-    if (this.userConfig[FETCH_CONFIG].fetchBotBuilder === false) {
+    if (fetchConfig.fetchBotBuilder === false) {
       fetchConfig.exclude.push({ type: 'bot_builder_flow' })
     }
     this.fetchQuery = elementUtils.query.createElementQuery(fetchConfig, fetchCriteria)

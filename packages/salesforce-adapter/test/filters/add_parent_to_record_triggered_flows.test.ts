@@ -33,88 +33,96 @@ describe('addParentToRecordTriggeredFlows', () => {
     let updateLeadFlow: Element
     let opportunity: Element
     let lead: Element
+    let filter: FilterWith<'onFetch'>
 
-    describe('when there are record triggered flows', () => {
-      describe('when addParentToRecordTriggeredFlows in Enabled', () => {
-        describe('when all objects that trigger flows exist in the workspace', () => {
-          beforeEach(async () => {
-            opportunity = createCustomObjectType(OPPORTUNITY_METADATA_TYPE, {})
-            elementsSource = [opportunity]
-            elements = [
-              (updateOpportunityFlow = createInstanceElement(
-                { fullName: 'UpdateOpportunity', start: { object: OPPORTUNITY_METADATA_TYPE } },
-                mockTypes.Flow,
-              )),
-              (updateLeadFlow = createInstanceElement(
-                { fullName: 'UpdateLead', start: { object: 'Lead' } },
-                mockTypes.Flow,
-              )),
-              (lead = createCustomObjectType('Lead', {})),
-            ]
-            const filter: FilterWith<'onFetch'> = filterCreator({
-              config: {
-                ...defaultFilterContext,
-                fetchProfile: buildFetchProfile({
-                  fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
-                }),
-                elementsSource: buildElementsSourceFromElements(elementsSource),
-              },
-            }) as FilterWith<'onFetch'>
-            await filter.onFetch(elements)
-          })
-          it('should add parent annotation to updateOpportunityFlow', async () => {
-            expect(updateOpportunityFlow.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
-              new ReferenceExpression(opportunity.elemID, opportunity),
-            )
-          })
-          it('should add parent annotation to updateLeadFlow', async () => {
-            expect(updateLeadFlow.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
-              new ReferenceExpression(lead.elemID, lead),
-            )
-          })
+    describe('when all parents exist in the workspace', () => {
+      beforeEach(() => {
+        opportunity = createCustomObjectType(OPPORTUNITY_METADATA_TYPE, {})
+        elementsSource = [opportunity]
+        elements = [
+          (updateOpportunityFlow = createInstanceElement(
+            { fullName: 'UpdateOpportunity', start: { object: OPPORTUNITY_METADATA_TYPE } },
+            mockTypes.Flow,
+          )),
+          (updateLeadFlow = createInstanceElement(
+            { fullName: 'UpdateLead', start: { object: 'Lead' } },
+            mockTypes.Flow,
+          )),
+          (lead = createCustomObjectType('Lead', {})),
+        ]
+      })
+      describe('when addParentToRecordTriggeredFlows feature is enabled', () => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
+              }),
+              elementsSource: buildElementsSourceFromElements(elementsSource),
+            },
+          }) as FilterWith<'onFetch'>
+          await filter.onFetch(elements)
         })
-        describe('when object that trigger Flow is missing from the workspace', () => {
-          beforeEach(async () => {
-            jest.clearAllMocks()
-            elementsSource = []
-            elements = [
-              (updateOpportunityFlow = createInstanceElement(
-                { fullName: 'UpdateOpportunity', start: { object: OPPORTUNITY_METADATA_TYPE } },
-                mockTypes.Flow,
-              )),
-              (updateLeadFlow = createInstanceElement(
-                { fullName: 'UpdateLead', start: { object: 'Lead' } },
-                mockTypes.Flow,
-              )),
-            ]
-            const filter: FilterWith<'onFetch'> = filterCreator({
-              config: {
-                ...defaultFilterContext,
-                fetchProfile: buildFetchProfile({
-                  fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
-                }),
-                elementsSource: buildElementsSourceFromElements(elementsSource),
-              },
-            }) as FilterWith<'onFetch'>
-            await filter.onFetch(elements)
-          })
-          it('should return warning that opportunity is missing from the workspace', () => {
-            expect(mockLogError).toHaveBeenCalledWith(
-              'could not add parent reference to instance %s, the object %s is missing from the workspace',
-              updateOpportunityFlow,
-              OPPORTUNITY_METADATA_TYPE,
-            )
-          })
-          it('should return warning that lead is missing from the workspace', () => {
-            expect(mockLogError).toHaveBeenCalledWith(
-              'could not add parent reference to instance %s, the object %s is missing from the workspace',
-              updateLeadFlow,
-              'Lead',
-            )
-          })
+        it('should add parent annotation when the parent was not fetched in the current partial fetch', async () => {
+          expect(updateOpportunityFlow.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+            new ReferenceExpression(opportunity.elemID, opportunity),
+          )
+        })
+        it('should add parent annotation when the parent was fetched in the current partial fetch', async () => {
+          expect(updateLeadFlow.annotations[CORE_ANNOTATIONS.PARENT][0]).toEqual(
+            new ReferenceExpression(lead.elemID, lead),
+          )
         })
       })
-      describe('when addParentToRecordTriggeredFlows in Disabled', () => {})
+      describe('when addParentToRecordTriggeredFlows in Disabled', () => {
+        beforeEach(async () => {
+          filter = filterCreator({
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({
+                fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: false } },
+              }),
+              elementsSource: buildElementsSourceFromElements(elementsSource),
+            },
+          }) as FilterWith<'onFetch'>
+          await filter.onFetch(elements)
+        })
+        it('should not create parent annotation', async () => {
+          expect(updateOpportunityFlow.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+          expect(updateLeadFlow.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+        })
+      })
+    })
+    describe('when parent does not exist', () => {
+      beforeEach(async () => {
+        jest.clearAllMocks()
+        elementsSource = []
+        elements = [
+          (updateOpportunityFlow = createInstanceElement(
+            { fullName: 'UpdateOpportunity', start: { object: OPPORTUNITY_METADATA_TYPE } },
+            mockTypes.Flow,
+          )),
+          (updateLeadFlow = createInstanceElement(
+            { fullName: 'UpdateLead', start: { object: 'Lead' } },
+            mockTypes.Flow,
+          )),
+        ]
+        filter = filterCreator({
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              fetchParams: { target: [], optionalFeatures: { addParentToRecordTriggeredFlows: true } },
+            }),
+            elementsSource: buildElementsSourceFromElements(elementsSource),
+          },
+        }) as FilterWith<'onFetch'>
+        await filter.onFetch(elements)
+      })
+      it('should not create parent annotation', () => {
+        expect(updateOpportunityFlow.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+        expect(updateLeadFlow.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+      })
     })
   })
 })

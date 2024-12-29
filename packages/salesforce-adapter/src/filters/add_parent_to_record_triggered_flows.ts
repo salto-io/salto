@@ -53,7 +53,7 @@ const filter: FilterCreator = ({ config }) => ({
       }
       log.warn(
         'could not add parent reference to instance %s, the object %s is missing from the workspace',
-        flow,
+        flow.elemID.getFullName(),
         flow.value.start.object,
       )
       return acc

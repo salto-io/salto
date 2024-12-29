@@ -62,6 +62,7 @@ import { apiNameSync, metadataTypeSync } from '../src/filters/utils'
 import { SalesforceArtifacts, INSTANCE_FULL_NAME_FIELD, ProgressReporterSuffix } from '../src/constants'
 import { SalesforceClient } from '../index'
 
+const NEW_ID = 'new_id'
 const { makeArray } = collections.array
 
 describe('SalesforceAdapter CRUD', () => {
@@ -173,7 +174,7 @@ describe('SalesforceAdapter CRUD', () => {
           connection.metadata.deploy.mockReturnValueOnce(
             mockDeployResult({
               success: true,
-              componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: 'new_id' }],
+              componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: NEW_ID }],
             }),
           )
           result = await createElement(adapter, instance)
@@ -198,7 +199,7 @@ describe('SalesforceAdapter CRUD', () => {
             connection.metadata.deploy.mockReturnValueOnce(
               mockDeployResult({
                 success: true,
-                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: 'new_id' }],
+                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: NEW_ID }],
               }),
             )
             result = await createElement(adapter, instance)
@@ -241,7 +242,7 @@ describe('SalesforceAdapter CRUD', () => {
             connection.metadata.deploy.mockReturnValueOnce(
               mockDeployResult({
                 success: true,
-                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: 'new_id' }],
+                componentSuccess: [{ fullName: instanceName, componentType: 'Flow', id: NEW_ID }],
               }),
             )
             result = await createElement(adapter, instance)
@@ -1486,7 +1487,7 @@ describe('SalesforceAdapter CRUD', () => {
   describe('Update operation', () => {
     let result: DeployResult
     describe('for an instance element', () => {
-      describe('for non profile instances', () => {
+      describe('when the internal ID of the Element changes', () => {
         beforeEach(async () => {
           const DEPLOYMENT_ID = 'testDeploymentId'
           const beforeInstanceNoProfile = createInstanceElement(mockDefaultValues.ApexPage, mockTypes.ApexPage)
@@ -1505,7 +1506,7 @@ describe('SalesforceAdapter CRUD', () => {
                 {
                   fullName: mockDefaultValues.ApexPage.fullName,
                   componentType: constants.APEX_PAGE_METADATA_TYPE,
-                  id: 'new_id',
+                  id: NEW_ID,
                 },
               ],
               retrieveResult: await mockRetrieveResult({}),
@@ -1525,9 +1526,9 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
         it('should update internal id for non profile instances', async () => {
-          const a = _.get(getChangeData(result.appliedChanges[0]), 'value')[constants.INTERNAL_ID_FIELD]
-          expect(a).not.toBe('ApexPageId')
-          expect(a).toBe('new_id')
+          const deployedInstance = getChangeData(result.appliedChanges[0]) as InstanceElement
+          expect(deployedInstance).toBeInstanceOf(InstanceElement)
+          expect(deployedInstance.value[constants.INTERNAL_ID_FIELD]).toEqual(NEW_ID)
         })
       })
       describe('for general instance element', () => {

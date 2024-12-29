@@ -34,6 +34,7 @@ describe('elements url filter', () => {
   SalesforceClient.prototype.queryAll = mockQueryAll
 
   beforeEach(() => {
+    jest.restoreAllMocks()
     ;({ connection, client } = mockClient())
     filter = elementsUrlFilter({ client, config: defaultFilterContext })
     standardObject = new ObjectType({
@@ -41,7 +42,7 @@ describe('elements url filter', () => {
       annotations: { apiName: 'Account', metadataType: 'CustomObject' },
     })
   })
-  describe('onFetch tests', () => {
+  describe('onFetch', () => {
     it('should add object type its service url', async () => {
       connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
       await filter.onFetch?.([standardObject])
@@ -122,16 +123,10 @@ describe('elements url filter', () => {
     })
 
     describe('when feature is throwing an error', () => {
-      const elementsUrlRetrieverSpy = jest.spyOn(ElementsUrlRetrieverModule, 'lightningElementsUrlRetriever')
-
       beforeEach(() => {
-        elementsUrlRetrieverSpy.mockImplementation(() => {
+        jest.spyOn(ElementsUrlRetrieverModule, 'lightningElementsUrlRetriever').mockImplementation(() => {
           throw new Error()
         })
-      })
-
-      afterEach(() => {
-        elementsUrlRetrieverSpy.mockRestore()
       })
 
       it('should return a warning', async () => {
@@ -154,7 +149,7 @@ describe('elements url filter', () => {
       })
     })
   })
-  describe('onDeploy tests', () => {
+  describe('onDeploy', () => {
     it('should add object type its service url', async () => {
       connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
       await filter.onDeploy?.([toChange({ after: standardObject })])

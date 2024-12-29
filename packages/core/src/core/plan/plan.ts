@@ -77,12 +77,11 @@ const addDifferentElements =
     before: ReadOnlyElementsSource,
     after: ReadOnlyElementsSource,
     topLevelFilters: IDFilter[],
-    numElements: number,
     compareOptions?: CompareOptions,
   ): PlanTransformer =>
   async graph => {
     const outputGraph = graph.clone()
-    const changes = await calculateDiff(before, after, topLevelFilters, numElements, compareOptions)
+    const changes = await calculateDiff({ before, after, topLevelFilters, compareOptions })
     changes.forEach(change => {
       outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
     })
@@ -279,7 +278,7 @@ export const getPlan = async ({
   return log.timeDebug(
     async () => {
       const diffGraph = await buildDiffGraph(
-        addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements, compareOptions),
+        addDifferentElements(before, after, topLevelFilters, compareOptions),
         resolveNodeElements(before, after),
         addNodeDependencies(dependencyChangers),
       )

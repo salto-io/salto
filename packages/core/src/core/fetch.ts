@@ -135,8 +135,7 @@ export const getDetailedChanges = async (
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
-  const numElements = (await awu(await before.list()).length()) + (await awu(await after.list()).length())
-  const changes = await calculateDiff(before, after, topLevelFilters, numElements, undefined, true)
+  const changes = await calculateDiff({ before, after, topLevelFilters, removeRedundantChanges: true })
   return changes.flatMap(change => getDetailedChangesFromChange(change))
 }
 

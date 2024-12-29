@@ -82,7 +82,7 @@ const addDifferentElements =
   async graph => {
     const outputGraph = graph.clone()
     const changes = await calculateDiff({ before, after, topLevelFilters, compareOptions })
-    changes.forEach(change => {
+    await awu(changes).forEach(change => {
       outputGraph.addNode(changeId(change), [], changeToDiffNode(change))
     })
     return outputGraph

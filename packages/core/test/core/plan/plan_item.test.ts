@@ -97,12 +97,19 @@ describe('PlanItem', () => {
       const changes = [...planItem.detailedChanges()]
       expect(changes).toHaveLength(2)
 
-      expect(changes[0].id).toEqual(newElement.fields.new.elemID)
-      expect(changes[0].action).toEqual('add')
-
-      expect(changes[1].id).toEqual(newElement.fields.location.elemID.createNestedID('label'))
-      expect(changes[1].action).toEqual('modify')
-      expect(_.get(changes[1].data, 'after')).toEqual(newElement.fields.location.annotations.label)
+      expect(changes).toContainEqual(
+        expect.objectContaining({
+          id: newElement.fields.new.elemID,
+          action: 'add',
+        }),
+      )
+      expect(changes).toContainEqual(
+        expect.objectContaining({
+          id: newElement.fields.location.elemID.createNestedID('label'),
+          action: 'modify',
+          data: expect.toContainEntry(['after', newElement.fields.location.annotations.label]),
+        }),
+      )
     })
     it('should return add / remove changes at the appropriate level', async () => {
       const [plan, newElement] = await planWithNewType()
@@ -182,14 +189,23 @@ describe('PlanItem', () => {
 
       const detailedChanges1 = changes[0].detailedChanges()
       expect(detailedChanges1).toHaveLength(1)
-      expect(detailedChanges1[0].id).toEqual(newElement.fields.new.elemID)
-      expect(detailedChanges1[0].action).toEqual('add')
-
       const detailedChanges2 = changes[1].detailedChanges()
       expect(detailedChanges2).toHaveLength(1)
-      expect(detailedChanges2[0].id).toEqual(newElement.fields.location.elemID.createNestedID('label'))
-      expect(detailedChanges2[0].action).toEqual('modify')
-      expect(_.get(detailedChanges2[0].data, 'after')).toEqual(newElement.fields.location.annotations.label)
+
+      const allDetailedChanges = [...detailedChanges1, ...detailedChanges2].flat()
+      expect(allDetailedChanges).toContainEqual(
+        expect.objectContaining({
+          id: newElement.fields.new.elemID,
+          action: 'add',
+        }),
+      )
+      expect(allDetailedChanges).toContainEqual(
+        expect.objectContaining({
+          id: newElement.fields.location.elemID.createNestedID('label'),
+          action: 'modify',
+          data: expect.toContainEntry(['after', newElement.fields.location.annotations.label]),
+        }),
+      )
     })
     it('should return add / remove changes at the appropriate level', async () => {
       const [plan, newElement] = await planWithNewType()

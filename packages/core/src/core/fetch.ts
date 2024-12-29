@@ -136,7 +136,10 @@ export const getDetailedChanges = async (
   topLevelFilters: IDFilter[],
 ): Promise<DetailedChangeWithBaseChange[]> => {
   const changes = await calculateDiff({ before, after, topLevelFilters, removeRedundantChanges: true })
-  return changes.flatMap(change => getDetailedChangesFromChange(change))
+  return awu(changes)
+    .map(change => getDetailedChangesFromChange(change))
+    .flat()
+    .toArray()
 }
 
 type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'

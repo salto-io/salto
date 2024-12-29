@@ -7,8 +7,7 @@
  */
 import _ from 'lodash'
 import { Workspace } from '@salto-io/workspace'
-import { Tags } from '@salto-io/core'
-import { getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
+import { Tags, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { KeyedOption } from '../../types'
 import { EnvArg } from './env'
 

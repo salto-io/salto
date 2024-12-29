@@ -36,9 +36,8 @@ import {
   DeployResult,
   Telemetry,
   CommandConfig,
+  deploy as coreDeploy,
   ItemStatus,
-  DeployParams,
-  CompatibleDeployFunc,
 } from '@salto-io/core'
 import {
   Workspace,
@@ -774,32 +773,28 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
-export const deploy: CompatibleDeployFunc = async (
-  workspace: Workspace | DeployParams,
-  _actionPlan?: Plan,
-  _reportProgress?: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  _accounts?: string[],
+export const deploy: typeof coreDeploy = async (
+  workspace: Workspace,
+  actionPlan: Plan,
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
+  _accounts = workspace.accounts(),
   _checkOnly = false,
 ): Promise<DeployResult> => {
-  // for backward compatibility
-  if (!('adapterCreators' in workspace)) {
-    throw new Error('invalid params for mock')
-  }
   let numOfChangesReported = 0
-  wu(workspace.actionPlan.itemsByEvalOrder()).forEach(change => {
+  wu(actionPlan.itemsByEvalOrder()).forEach(change => {
     numOfChangesReported += 1
     if (numOfChangesReported / 3 === 1) {
-      workspace.reportProgress(change, 'started')
-      workspace.reportProgress(change, 'error', '')
+      reportProgress(change, 'started')
+      reportProgress(change, 'error', '')
       return
     }
     if (numOfChangesReported / 2 === 1) {
-      workspace.reportProgress(change, 'started')
-      workspace.reportProgress(change, 'finished')
+      reportProgress(change, 'started')
+      reportProgress(change, 'finished')
       return
     }
-    workspace.reportProgress(change, 'started')
-    workspace.reportProgress(change, 'cancelled', '')
+    reportProgress(change, 'started')
+    reportProgress(change, 'cancelled', '')
   })
 
   return {

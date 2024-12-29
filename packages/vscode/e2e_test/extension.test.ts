@@ -10,7 +10,6 @@ import tmp from 'tmp-promise'
 import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
 import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
-import { adapterCreators } from '@salto-io/adapter-creators'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -37,10 +36,7 @@ describe.skip('extension e2e', () => {
       await copyFile(naclFile.fullPath, `${wsPath}/${naclFile.basename}`)
     })
 
-    workspace = new ws.EditorWorkspace(
-      wsPath,
-      await initLocalWorkspace({ baseDir: wsPath, envName: 'default', adapterCreators }),
-    )
+    workspace = new ws.EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
   })
 
   afterAll(async () => {

@@ -1913,10 +1913,7 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         elemID: {
-          parts: [
-            { fieldName: 'externalId', condition: value => value?.externalId && value?.externalId !== null },
-            { fieldName: 'id', condition: value => !(value?.externalId && value?.externalId !== null) },
-          ],
+          parts: [{ fieldName: 'id' }],
           extendsParent: true,
         },
         path: {

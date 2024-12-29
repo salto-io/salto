@@ -16,6 +16,7 @@ import {
   isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -100,17 +101,27 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
           }
         })
     } catch (err) {
-      log.error('An error occurred during deployment of custom field context options: %o', err)
-      const message = inspectValue(err)
-      errors.push(
-        ...relevantChanges.map(change => ({
-          message,
-          detailedMessage: message,
-          severity: 'Error' as SeverityLevel,
-          elemID: getChangeData(change).elemID,
-        })),
-      )
-      appliedChanges = []
+      if (
+        addChanges.length === 0 &&
+        modifyChanges.length === 0 &&
+        err instanceof clientUtils.HTTPError &&
+        err.response.status === 404
+      ) {
+        // We delete the context before the options, so if the context is already deleted, we can ignore the error
+        log.debug('All field context options were already deleted')
+      } else {
+        log.error('An error occurred during deployment of custom field context options: %o', err)
+        const message = inspectValue(err)
+        errors.push(
+          ...relevantChanges.map(change => ({
+            message,
+            detailedMessage: message,
+            severity: 'Error' as SeverityLevel,
+            elemID: getChangeData(change).elemID,
+          })),
+        )
+        appliedChanges = []
+      }
     }
 
     return {

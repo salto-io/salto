@@ -182,6 +182,7 @@ export const fetchCommand = async ({
   const fetchResult = await fetch({
     workspace,
     progressEmitter: fetchProgress,
+    // remove when there is no need to be backward compatible
     // @ts-expect-error accounts is getting mixed up with workspace accounts. in here its string[] and not ((env?: string | undefined) => string[]) and we  get an error
     accounts,
     ignoreStateElemIdMapping: regenerateSaltoIds,

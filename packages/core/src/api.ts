@@ -229,7 +229,7 @@ export type DeployParams = {
   checkOnly?: boolean
   adapterCreators: Record<string, Adapter>
 }
-
+// remove when there is no need to be backward compatible
 export type CompatibleDeployFunc = (
   workspace: Workspace | DeployParams,
   actionPlan?: Plan,

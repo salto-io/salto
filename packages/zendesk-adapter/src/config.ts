@@ -2766,6 +2766,7 @@ export const SUPPORTED_TYPES = {
   // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
   tag: ['tags'],
   custom_object: ['custom_objects'],
+  bot_builder_flow: ['bot_builder_flow'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand

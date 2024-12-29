@@ -17,8 +17,8 @@ const fixValuesAndCreateError = (instance: InstanceElement, invalidValues: strin
   const createErrorMessage = (): ChangeError => ({
     elemID: instance.elemID,
     severity: 'Info' as const,
-    message: "Omitting invalid values that don't exist as instance type's field",
-    detailedMessage: `The ${instance.elemID.getFullName()} has values that don't exist as ${instance.elemID.typeName}'s field. Fields omitted: ${invalidValues.join(', ')}`,
+    message: "Omitting invalid values that didn't exist as instance type's field",
+    detailedMessage: `${instance.elemID.getFullName()} had values that didn't exist as ${instance.elemID.typeName}'s field. Fields omitted: ${invalidValues.join(', ')}`,
   })
   return createErrorMessage()
 }

@@ -7,7 +7,7 @@
  */
 
 import _ from 'lodash'
-import { ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER, DetailedChange, Adapter } from '@salto-io/adapter-api'
+import { ObjectType, ReferenceInfo, Element, GLOBAL_ADAPTER, DetailedChange } from '@salto-io/adapter-api'
 import {
   elementSource,
   EnvConfig,
@@ -16,7 +16,6 @@ import {
   Workspace,
   staticFiles,
   configSource as cs,
-  WorkspaceGetCustomReferencesFunc,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -24,20 +23,13 @@ import {
   loadLocalWorkspace as localWorkspaceLoad,
   initLocalWorkspace as localInitLocalWorkspace,
 } from '@salto-io/local-workspace'
-// for backward comptability
-import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
-import { getAdaptersConfigTypesMap } from '../core/adapters'
+import { adapterCreators, getAdaptersConfigTypesMap } from '../core/adapters'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export const getAdapterConfigsPerAccount = async (
-  envs: EnvConfig[],
-  adapterCreators?: Record<string, Adapter>,
-): Promise<ObjectType[]> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const configTypesByAccount = getAdaptersConfigTypesMap(actualAdapterCreator)
+export const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
+  const configTypesByAccount = getAdaptersConfigTypesMap()
   const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
   const differentlyNamedAccounts = Object.fromEntries(
     envs
@@ -58,33 +50,6 @@ export const getAdapterConfigsPerAccount = async (
   return Object.values(configTypesByAccount).flat()
 }
 
-export const getCustomReferencesFunc = (adapterCreators: Record<string, Adapter>): WorkspaceGetCustomReferencesFunc =>
-  async function getCustomReferences(
-    elements: Element[],
-    accountToServiceName: Record<string, string>,
-    adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
-  ): Promise<ReferenceInfo[]> {
-    const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
-      const serviceName = accountToServiceName[account] ?? account
-      try {
-        const refFunc = adapterCreators[serviceName]?.getCustomReferences
-        if (refFunc !== undefined) {
-          return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
-        }
-      } catch (err) {
-        log.error('failed to get custom references for %s: %o', account, err)
-      }
-      return []
-    }
-
-    const accountToElements = _.groupBy(
-      elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER),
-      e => e.elemID.adapter,
-    )
-    return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
-  }
-
-// for backward compatibility - should be deleted!
 export const getCustomReferences = async (
   elements: Element[],
   accountToServiceName: Record<string, string>,
@@ -93,7 +58,7 @@ export const getCustomReferences = async (
   const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
     const serviceName = accountToServiceName[account] ?? account
     try {
-      const refFunc = allAdapterCreators[serviceName]?.getCustomReferences
+      const refFunc = adapterCreators[serviceName]?.getCustomReferences
       if (refFunc !== undefined) {
         return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
       }
@@ -117,70 +82,25 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
-  adapterCreators?: Record<string, Adapter>
 }
 
 export async function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<Workspace> {
-  // for backward compatibility
-  const actualAdapterCreator = args.adapterCreators ?? allAdapterCreators
   return localWorkspaceLoad({
     ...args,
     getConfigTypes: getAdapterConfigsPerAccount,
-    getCustomReferences: getCustomReferencesFunc(actualAdapterCreator),
-    adapterCreators: actualAdapterCreator,
+    getCustomReferences,
   })
 }
 
-type InitLocalWorkspaceParams = {
-  baseDir: string
-  envName?: string
-  stateStaticFilesSource?: staticFiles.StateStaticFilesSource
-  adapterCreators: Record<string, Adapter>
-}
-
-const getInitLocalWorkspace: (
-  baseDirOrParams: string | InitLocalWorkspaceParams,
-  envName?: string,
+export const initLocalWorkspace = async (
+  baseDir: string,
+  envName = 'default',
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-) => InitLocalWorkspaceParams = (baseDirOrParams, envName, stateStaticFilesSource) => {
-  if (!_.isString(baseDirOrParams)) {
-    return baseDirOrParams
-  }
-  return {
-    baseDir: baseDirOrParams,
-    envName,
-    stateStaticFilesSource,
-    adapterCreators: allAdapterCreators,
-  }
-}
-
-// As a transitionary step, we support both a string input and an argument object
-export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
-// @deprecated
-export function initLocalWorkspace(
-  inputBaseDir: string,
-  inputEnvName?: string,
-  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace>
-
-export async function initLocalWorkspace(
-  inputBaseDir: string | InitLocalWorkspaceParams,
-  inputEnvName = 'default',
-  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> {
-  // for backward compatibility
-  const {
-    baseDir,
-    envName = 'default',
-    stateStaticFilesSource,
-    adapterCreators,
-  } = getInitLocalWorkspace(inputBaseDir, inputEnvName, inputStateStaticFilesSource)
-
-  return localInitLocalWorkspace(
+): Promise<Workspace> =>
+  localInitLocalWorkspace(
     baseDir,
     envName,
-    Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
-    getCustomReferencesFunc(adapterCreators),
+    Object.values(getAdaptersConfigTypesMap()).flat(),
+    getCustomReferences,
     stateStaticFilesSource,
   )
-}

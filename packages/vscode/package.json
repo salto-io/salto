@@ -94,7 +94,6 @@
     "package": "bash ./scripts/package.sh"
   },
   "dependencies": {
-    "@salto-io/adapter-creators": "0.4.8",
     "@salto-io/core": "0.4.8",
     "@salto-io/file": "0.4.8",
     "@salto-io/lang-server": "0.4.8",

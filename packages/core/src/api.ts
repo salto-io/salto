@@ -358,14 +358,17 @@ export type FetchFuncParams = {
   adapterCreators: Record<string, Adapter>
 }
 
-export type FetchFunc = (
-  workspace: Workspace | FetchFuncParams,
+type NewFetchFunc = (inputWorkspace: FetchFuncParams) => Promise<FetchResult>
+type OldFetchFunc = (
+  inputWorkspace: Workspace,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
   withChangesDetection?: boolean,
   ignoreStateElemIdMappingForSelectors?: ElementSelector[],
 ) => Promise<FetchResult>
+
+export type FetchFunc = OldFetchFunc | NewFetchFunc
 
 export type FetchFromWorkspaceFuncParams = {
   workspace: Workspace
@@ -379,7 +382,14 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
-const getFetchArgs: (...args: Parameters<FetchFunc>) => FetchFuncParams = (
+const getFetchArgs: (
+  workspaceOrParams: Workspace | FetchFuncParams,
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  accounts?: string[],
+  ignoreStateElemIdMapping?: boolean,
+  withChangesDetection?: boolean,
+  ignoreStateElemIdMappingForSelectors?: ElementSelector[],
+) => FetchFuncParams = (
   workspaceOrParams,
   progressEmitter,
   accounts,
@@ -390,6 +400,7 @@ const getFetchArgs: (...args: Parameters<FetchFunc>) => FetchFuncParams = (
   if ('adapterCreators' in workspaceOrParams) {
     return workspaceOrParams
   }
+
   return {
     workspace: workspaceOrParams,
     progressEmitter,

@@ -21,7 +21,6 @@ import {
   loadLocalWorkspace,
   fetchFromWorkspace,
   FetchFuncParams,
-  FetchResult,
 } from '@salto-io/core'
 import { Workspace, nacl, createElementSelectors, ElementSelector } from '@salto-io/workspace'
 import { promises, values } from '@salto-io/lowerdash'
@@ -61,7 +60,7 @@ export type FetchCommandArgs = {
   mode: nacl.RoutingMode
   cliTelemetry: CliTelemetry
   output: CliOutput
-  fetch: FetchFunc | ((workspace: FetchFuncParams) => Promise<FetchResult>)
+  fetch: FetchFunc
   getApprovedChanges: ApproveChangesFunc
   shouldUpdateConfig: ShouldUpdateConfigFunc
   shouldCalcTotalSize: boolean
@@ -72,21 +71,6 @@ export type FetchCommandArgs = {
   withChangesDetection?: boolean
 }
 
-const getInitLocalWorkspace: (
-  workspaceOrParams: Workspace | FetchFuncParams,
-  progressEmitter?: EventEmitter<FetchProgressEvents>,
-  accounts?: string[],
-) => Omit<FetchFuncParams, 'adapterCreators'> = (workspaceOrParams, progressEmitter, accounts) => {
-  if ('adapterCreators' in workspaceOrParams) {
-    return workspaceOrParams
-  }
-  return {
-    workspace: workspaceOrParams,
-    progressEmitter,
-    accounts,
-  }
-}
-
 const createFetchFromWorkspaceCommand =
   (
     fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
@@ -94,7 +78,7 @@ const createFetchFromWorkspaceCommand =
     env: string,
     fromState: boolean,
   ): FetchFunc =>
-  async (workspace, progressEmitter, accounts) => {
+  async (args: FetchFuncParams) => {
     let otherWorkspace: Workspace
     try {
       otherWorkspace = await loadLocalWorkspace({
@@ -104,18 +88,12 @@ const createFetchFromWorkspaceCommand =
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
     }
-    // for backward compatibility
-    const {
-      workspace: actualWorkspace,
-      progressEmitter: actualProgressEmitter,
-      accounts: actualAccounts,
-    } = getInitLocalWorkspace(workspace, progressEmitter, accounts)
 
     return fetchFromWorkspaceFunc({
-      workspace: actualWorkspace,
+      workspace: args.workspace,
       otherWorkspace,
-      progressEmitter: actualProgressEmitter,
-      accounts: actualAccounts,
+      progressEmitter: args.progressEmitter,
+      accounts: args.accounts,
       env,
       fromState,
       adapterCreators,
@@ -204,6 +182,7 @@ export const fetchCommand = async ({
   const fetchResult = await fetch({
     workspace,
     progressEmitter: fetchProgress,
+    // @ts-expect-error accounts is getting mixed up with workspace accounts. in here its string[] and not ((env?: string | undefined) => string[]) and we  get an error
     accounts,
     ignoreStateElemIdMapping: regenerateSaltoIds,
     withChangesDetection,

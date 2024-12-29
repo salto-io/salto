@@ -192,8 +192,7 @@ const deployPlan = async (
   const result = await deploy({
     workspace,
     actionPlan,
-    reportProgress: (item: PlanItem, step: ItemStatus, details?: string | Progress) =>
-      updateAction(item, step, details),
+    reportProgress: updateAction,
     accounts,
     checkOnly,
     adapterCreators,

@@ -7,7 +7,4 @@ coverage
 
 /dist
 
-# Generated parser js file
-/src/parser/internal/ts_plugin/hcl.js
-
 

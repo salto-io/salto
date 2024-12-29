@@ -58,22 +58,22 @@ export function getAdaptersCredentialsTypes(
   args: getAdaptersCredentialsTypesArgs,
 ): Record<string, AdapterAuthentication>
 // @deprecated
-export function getAdaptersCredentialsTypes(names?: ReadonlyArray<string>): Record<string, AdapterAuthentication>
+export function getAdaptersCredentialsTypes(inputNames?: ReadonlyArray<string>): Record<string, AdapterAuthentication>
 
 export function getAdaptersCredentialsTypes(
-  names?: ReadonlyArray<string> | getAdaptersCredentialsTypesArgs,
+  inputNames?: ReadonlyArray<string> | getAdaptersCredentialsTypesArgs,
 ): Record<string, AdapterAuthentication> {
   // for backward compatibility
-  const { names: actualNames, adapterCreators } = getGetAdaptersCredentialsTypes(names)
+  const { names, adapterCreators } = getGetAdaptersCredentialsTypes(inputNames)
   let relevantAdapterCreators: Record<string, Adapter>
-  if (actualNames === undefined) {
+  if (names === undefined) {
     relevantAdapterCreators = adapterCreators
   } else {
-    const nonExistingAdapters = actualNames.filter(name => !Object.keys(adapterCreators).includes(name))
+    const nonExistingAdapters = names.filter(name => !Object.keys(adapterCreators).includes(name))
     if (!_.isEmpty(nonExistingAdapters)) {
       throw new Error(`No adapter available for ${nonExistingAdapters}`)
     }
-    relevantAdapterCreators = _.pick(adapterCreators, actualNames)
+    relevantAdapterCreators = _.pick(adapterCreators, names)
   }
   return _.mapValues(relevantAdapterCreators, creator => creator.authenticationMethods)
 }
@@ -153,37 +153,36 @@ const getGetDefaultAdapterConfigArgs: (
 export function getDefaultAdapterConfig(args: GetDefaultAdapterConfigParams): Promise<InstanceElement[] | undefined>
 // @deprecated
 export function getDefaultAdapterConfig(
-  adapterName: string | GetDefaultAdapterConfigParams,
-  accountName?: string,
-  options?: InstanceElement,
+  inputAdapterName: string | GetDefaultAdapterConfigParams,
+  inputAccountName?: string,
+  inputOptions?: InstanceElement,
 ): Promise<InstanceElement[] | undefined>
 
 export async function getDefaultAdapterConfig(
-  adapterName: string | GetDefaultAdapterConfigParams,
-  accountName?: string,
-  options?: InstanceElement,
+  inputAdapterName: string | GetDefaultAdapterConfigParams,
+  inputAccountName?: string,
+  inputOptions?: InstanceElement,
 ): Promise<InstanceElement[] | undefined> {
   // for backward compatibility
-  const {
-    adapterName: actualAdapterName,
-    accountName: actualAccountName,
-    options: actualOptions,
-    adapterCreators,
-  } = getGetDefaultAdapterConfigArgs(adapterName, accountName, options)
-  const { getConfig } = adapterCreators[actualAdapterName]?.configCreator ?? {}
+  const { adapterName, accountName, options, adapterCreators } = getGetDefaultAdapterConfigArgs(
+    inputAdapterName,
+    inputAccountName,
+    inputOptions,
+  )
+  const { getConfig } = adapterCreators[adapterName]?.configCreator ?? {}
   const defaultConf = [
     getConfig !== undefined
-      ? await getConfig(actualOptions)
-      : (await getAdapterConfigFromType(actualAdapterName, adapterCreators)) ?? [],
+      ? await getConfig(options)
+      : (await getAdapterConfigFromType(adapterName, adapterCreators)) ?? [],
   ].flat()
   if (defaultConf.length === 0) {
     return undefined
   }
-  if (actualAccountName && actualAdapterName !== actualAccountName) {
+  if (accountName && adapterName !== accountName) {
     return awu(defaultConf)
       .map(async conf => {
         const confClone = conf.clone()
-        await updateElementsWithAlternativeAccount([confClone], actualAccountName, actualAdapterName)
+        await updateElementsWithAlternativeAccount([confClone], accountName, adapterName)
         return confClone
       })
       .toArray()

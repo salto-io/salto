@@ -158,29 +158,29 @@ const getInitLocalWorkspace: (
 export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
 // @deprecated
 export function initLocalWorkspace(
-  baseDir: string,
-  envName?: string,
-  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+  inputBaseDir: string,
+  inputEnvName?: string,
+  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
 ): Promise<Workspace>
 
 export async function initLocalWorkspace(
-  baseDir: string | InitLocalWorkspaceParams,
-  envName = 'default',
-  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+  inputBaseDir: string | InitLocalWorkspaceParams,
+  inputEnvName = 'default',
+  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
 ): Promise<Workspace> {
   // for backward compatibility
   const {
-    baseDir: actualBaseDir,
-    envName: actualEnvName = 'default',
-    stateStaticFilesSource: actualStateStaticFilesSource,
+    baseDir,
+    envName = 'default',
+    stateStaticFilesSource,
     adapterCreators,
-  } = getInitLocalWorkspace(baseDir, envName, stateStaticFilesSource)
+  } = getInitLocalWorkspace(inputBaseDir, inputEnvName, inputStateStaticFilesSource)
 
   return localInitLocalWorkspace(
-    actualBaseDir,
-    actualEnvName,
+    baseDir,
+    envName,
     Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
     getCustomReferencesFunc(adapterCreators),
-    actualStateStaticFilesSource,
+    stateStaticFilesSource,
   )
 }

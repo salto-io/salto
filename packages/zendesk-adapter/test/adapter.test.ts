@@ -222,6 +222,9 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -671,6 +674,7 @@ describe('adapter', () => {
       })
       it('should generate the right elements on fetch with new infra', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -694,6 +698,7 @@ describe('adapter', () => {
                   default: false,
                   customizations: {},
                 },
+                fetchBotBuilder: true,
               },
             }),
             elementsSource: buildElementsSourceFromElements([]),
@@ -777,6 +782,21 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_answer.instance.myBrand_test_bot_us__Testing@uumuu',
+          'zendesk.bot_builder_answer__trainingPhrases',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_flow.instance.myBrand_test_bot@us',
+          'zendesk.bot_builder_flow__assignedChannelIntegrations',
+          'zendesk.bot_builder_flow__fallback',
+          'zendesk.bot_builder_flow__freeTextQuery',
+          'zendesk.bot_builder_flow__greeting',
+          'zendesk.bot_builder_flow__greeting__suggestedAnswers',
+          'zendesk.bot_builder_flow__helpCenterAutoReplyFeedback',
+          'zendesk.bot_builder_flow__publishedChannelIntegrations',
+          'zendesk.bot_builder_node',
+          'zendesk.bot_builder_node.instance.myBrand_test_bot_us__Testing_uumuu__01J4SRF1HAS4TQFQ99PKFRCQXB@uuuuumuu',
+          'zendesk.bot_builder_node__data',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -1233,6 +1253,7 @@ describe('adapter', () => {
       })
       it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -1289,6 +1310,7 @@ describe('adapter', () => {
       })
       it('should not generate tags when excluded', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -1398,6 +1420,9 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -1852,6 +1877,7 @@ describe('adapter', () => {
       })
       it('should omit inactive instances according to config', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -1955,6 +1981,9 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -2408,6 +2437,7 @@ describe('adapter', () => {
       })
       it('should filter elements by type+name on fetch', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -2603,6 +2633,7 @@ describe('adapter', () => {
 
       it('should return fetch error when no brand matches brands config, and still generate types', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const creds = new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'token456',

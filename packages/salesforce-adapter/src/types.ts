@@ -105,6 +105,7 @@ const OPTIONAL_FEATURES = [
   'networkReferences',
   'extendFetchTargets',
   'addParentToInstancesWithinFolder',
+  'addParentToRecordTriggeredFlows',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',
@@ -182,6 +183,7 @@ const CHANGE_VALIDATORS = [
   'orderedMaps',
   'layoutDuplicateFields',
   'customApplications',
+  'flowReferencedElements',
 ] as const
 const DEPRECATED_CHANGE_VALIDATORS = ['multipleDefaults'] as const
 export type ChangeValidatorName = (typeof CHANGE_VALIDATORS)[number]

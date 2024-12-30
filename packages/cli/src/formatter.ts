@@ -489,6 +489,11 @@ export const formatActionStart = (action: PlanItem): string => {
   return elements.join('\n')
 }
 
+export const formatActionUpdate = (itemName: string, details: string): string => {
+  const styledItemName = formatItemName(itemName)
+  return body(`${styledItemName} ${details}\n`)
+}
+
 export const formatActionInProgress = (itemName: string, actionName: ActionName, start: Date): string => {
   const elapsed = getElapsedTime(start)
   const styledItemName = formatItemName(itemName)

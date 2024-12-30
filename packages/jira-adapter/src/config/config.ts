@@ -195,7 +195,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     ignoreMissingExtensions: false,
   },
   masking: {
-    automationHeaders: [],
+    automationHeaders: ['Authorization', 'x-api-key'],
     secretRegexps: ['xoxb-.*'], // xoxb-.* is Slack token, used by script runner
   },
 }

@@ -79,25 +79,26 @@ export enum FIELD_TYPE_NAMES {
 // Flow constants
 export const FLOW_NODE = 'FlowNode'
 export const TARGET_REFERENCE = 'targetReference'
+export const ASSIGN_TO_REFERENCE = 'assignToReference'
 export enum FLOW_NODE_FIELD_NAMES {
   NAME = 'name',
   LOCATION_X = 'locationX',
   LOCATION_Y = 'locationY',
 }
 
-export enum FLOW_FIELD_TYPE_NAMES {
-  FLOW_ASSIGNMENT_ITEM = 'FlowAssignmentItem',
-  FLOW_STAGE_STEP_OUTPUT_PARAMETER = 'FlowStageStepOutputParameter',
-  FLOW_SUBFLOW_OUTPUT_ASSIGNMENT = 'FlowSubflowOutputAssignment',
-  FLOW_TRANSFORM_VALUE_ACTION = 'FlowTransformValueAction',
-  FLOW_SCREEN_FIELD_OUTPUT_PARAMETER = 'FlowScreenFieldOutputParameter',
-  FLOW_WAIT_EVENT_OUTPUT_PARAMETER = 'FlowWaitEventOutputParameter',
-  FLOW_STAGE_STEP_EXIT_ACTION_OUTPUT_PARAMETER = 'FlowStageStepExitActionOutputParameter',
-  FLOW_APEX_PLUGIN_CALL_OUTPUT_PARAMETER = 'FlowApexPluginCallOutputParameter',
-  FLOW_ACTION_CALL_OUTPUT_PARAMETER = 'FlowActionCallOutputParameter',
-  FLOW_OUTPUT_FIELD_ASSIGNMENT = 'FlowOutputFieldAssignment',
-  FLOW_STAGE_STEP_ENTRY_ACTION_OUTPUT_PARAMETER = 'FlowStageStepEntryActionOutputParameter',
-}
+export const FLOW_FIELD_TYPE_NAMES = {
+  FLOW_ASSIGNMENT_ITEM: 'FlowAssignmentItem',
+  FLOW_STAGE_STEP_OUTPUT_PARAMETER: 'FlowStageStepOutputParameter',
+  FLOW_SUBFLOW_OUTPUT_ASSIGNMENT: 'FlowSubflowOutputAssignment',
+  FLOW_TRANSFORM_VALUE_ACTION: 'FlowTransformValueAction',
+  FLOW_SCREEN_FIELD_OUTPUT_PARAMETER: 'FlowScreenFieldOutputParameter',
+  FLOW_WAIT_EVENT_OUTPUT_PARAMETER: 'FlowWaitEventOutputParameter',
+  FLOW_STAGE_STEP_EXIT_ACTION_OUTPUT_PARAMETER: 'FlowStageStepExitActionOutputParameter',
+  FLOW_APEX_PLUGIN_CALL_OUTPUT_PARAMETER: 'FlowApexPluginCallOutputParameter',
+  FLOW_ACTION_CALL_OUTPUT_PARAMETER: 'FlowActionCallOutputParameter',
+  FLOW_OUTPUT_FIELD_ASSIGNMENT: 'FlowOutputFieldAssignment',
+  FLOW_STAGE_STEP_ENTRY_ACTION_OUTPUT_PARAMETER: 'FlowStageStepEntryActionOutputParameter',
+} as const
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown

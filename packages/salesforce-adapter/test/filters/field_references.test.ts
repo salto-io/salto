@@ -47,6 +47,7 @@ import {
   CPQ_TESTED_OBJECT,
   CPQ_DISCOUNT_SCHEDULE,
   CPQ_CONSTRAINT_FIELD,
+  ASSIGN_TO_REFERENCE,
 } from '../../src/constants'
 import { metadataType, apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
@@ -812,7 +813,6 @@ describe('Serialization Strategies', () => {
     let filter: FilterWith<'onFetch'>
     let targetType: ObjectType
     let flowInstance: InstanceElement
-    let targetInstance: InstanceElement
     beforeEach(() => {
       targetType = createCustomObjectType('TestType__c', {
         fields: {
@@ -822,16 +822,12 @@ describe('Serialization Strategies', () => {
           },
         },
       })
-      targetInstance = createInstanceElement(
-        { fullName: 'TargetInstance', TestCustomField__c: 'custom field value' },
-        targetType,
-      )
       flowInstance = createInstanceElement(
         {
           fullName: 'TestFlow',
           assignments: [
             {
-              assignToReference: RESOLVED_VALUE,
+              [ASSIGN_TO_REFERENCE]: RESOLVED_VALUE,
             },
           ],
         },
@@ -851,9 +847,10 @@ describe('Serialization Strategies', () => {
       }) as FilterWith<'onFetch'>
     })
     it('should create reference to the CustomField and deserialize it to the original value', async () => {
-      await filter.onFetch([flowInstance, mockTypes.Flow, targetType, targetInstance])
-      const createdReference = flowInstance.value.assignments[0].assignToReference as ReferenceExpression
+      await filter.onFetch([flowInstance, mockTypes.Flow, targetType])
+      const createdReference = flowInstance.value.assignments[0][ASSIGN_TO_REFERENCE] as ReferenceExpression
       expect(createdReference).toBeInstanceOf(ReferenceExpression)
+      // Make sure serialization works on the created reference
       expect(
         await ReferenceSerializationStrategyLookup.assignToReferenceField.serialize({
           ref: createdReference,

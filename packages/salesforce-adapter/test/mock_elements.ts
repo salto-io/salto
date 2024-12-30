@@ -59,6 +59,7 @@ import {
   CPQ_INDEX_FIELD,
   OPPORTUNITY_METADATA_TYPE,
   FLOW_FIELD_TYPE_NAMES,
+  ASSIGN_TO_REFERENCE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -479,7 +480,7 @@ export const mockTypes = {
           createMetadataObjectType({
             annotations: { metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_ASSIGNMENT_ITEM },
             fields: {
-              assignToReference: {
+              [ASSIGN_TO_REFERENCE]: {
                 refType: BuiltinTypes.STRING,
               },
             },

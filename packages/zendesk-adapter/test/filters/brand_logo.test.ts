@@ -9,6 +9,7 @@ import FormData from 'form-data'
 import {
   ObjectType,
   ElemID,
+  Element,
   InstanceElement,
   isInstanceElement,
   StaticFile,
@@ -64,7 +65,7 @@ describe('brand logo filter', () => {
 
   describe('onFetch', () => {
     let brandInstance: InstanceElement
-    let elements: (ObjectType | InstanceElement)[]
+    let elements: Element[]
     beforeEach(() => {
       brandInstance = new InstanceElement('brand', brandType, {
         id: brandId,

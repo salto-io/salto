@@ -61,7 +61,7 @@ const filterCreator: FilterCreator = () => ({
     }
     const channelType = elements.filter(isObjectType).find(e => e.elemID.name === CHANNEL_TYPE_NAME)
     if (channelType === undefined) {
-      log.warn(`Failed to find ${CHANNEL_TYPE_NAME} type. Not adding channel instances`)
+      log.error(`Failed to find ${CHANNEL_TYPE_NAME} type. Not adding channel instances`)
       return
     }
     const channels = (triggerDefinitionInstance.value.conditions_all ?? [])

@@ -295,11 +295,9 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when the request fails with mappable problem', () => {
-        const MAPPABLE_PROBLEM: string = 'This schedulable class has jobs pending or in progress'
         let result: DeployResult
         beforeEach(async () => {
           const newInst = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
-
           connection.metadata.deploy.mockReturnValueOnce(
             mockDeployResult({
               success: false,
@@ -307,7 +305,7 @@ describe('SalesforceAdapter CRUD', () => {
                 {
                   fullName: await apiName(newInst),
                   componentType: await metadataType(newInst),
-                  problem: MAPPABLE_PROBLEM,
+                  problem: constants.SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
                 },
               ],
             }),

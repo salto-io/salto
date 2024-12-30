@@ -10,6 +10,7 @@ import { DeployMessage } from '@salto-io/jsforce'
 import { decorators } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { inspectValue } from '@salto-io/adapter-utils'
 import {
   ENOTFOUND,
   ERROR_HTTP_502,
@@ -191,7 +192,11 @@ export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): Depl
     return deployMessage
   }
   if (matchedMapperNames.length > 1) {
-    log.error('The error %o matched on more than one mapper. Matcher mappers: %o', problem, matchedMapperNames)
+    log.error(
+      'The error %s matched on more than one mapper. Matcher mappers: %s',
+      problem,
+      inspectValue(matchedMapperNames),
+    )
     return deployMessage
   }
   const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]

@@ -54,6 +54,7 @@ export type ZendeskFetchConfig = definitions.UserFetchConfig<{
   useNewInfra?: boolean
   useGuideNewInfra?: boolean
   translationBodyAsStaticFile?: boolean
+  fetchBotBuilder?: boolean
 }
 
 export type ZendeskClientRateLimitConfig = definitions.ClientRateLimitConfig & { rateLimitBuffer?: number }

@@ -44,7 +44,7 @@ describe('hardcoded channel filter', () => {
 
   describe('onFetch', () => {
     it('should add the correct type and instances', async () => {
-      const elements = [triggerDefinitionObjType.clone(), triggerDefinitionInstance.clone()]
+      const elements = [triggerDefinitionObjType, triggerDefinitionInstance, channelObjType].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zendesk.channel',
@@ -60,9 +60,6 @@ describe('hardcoded channel filter', () => {
         .find(e => e.elemID.getFullName() === 'zendesk.channel.instance.Web_form@s')
       expect(webFormChannel).toBeDefined()
       expect(webFormChannel?.value?.name).toEqual('Web form')
-      const channelType = elements.filter(isObjectType).find(e => e.elemID.typeName === CHANNEL_TYPE_NAME)
-      expect(channelType).toBeDefined()
-      expect(Object.keys(channelType?.fields ?? {}).sort()).toEqual(['id', 'name'])
     })
     it('should add nothing if there is no trigger definition instance', async () => {
       const elements = [channelObjType.clone(), triggerDefinitionObjType.clone()]
@@ -77,9 +74,10 @@ describe('hardcoded channel filter', () => {
     })
     it('should add nothing if there is no channels in the trigger definition instance', async () => {
       const emptyTriggerDefinitionsInstance = new InstanceElement(ElemID.CONFIG_NAME, triggerDefinitionObjType)
-      const elements = [triggerDefinitionObjType.clone(), emptyTriggerDefinitionsInstance]
+      const elements = [triggerDefinitionObjType.clone(), channelObjType.clone(), emptyTriggerDefinitionsInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.channel',
         'zendesk.trigger_definition',
         'zendesk.trigger_definition.instance',
       ])
@@ -99,9 +97,10 @@ describe('hardcoded channel filter', () => {
           },
         ],
       })
-      const elements = [triggerDefinitionObjType.clone(), invalidTriggerDefinitionInstance]
+      const elements = [triggerDefinitionObjType.clone(), channelObjType.clone(), invalidTriggerDefinitionInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.channel',
         'zendesk.trigger_definition',
         'zendesk.trigger_definition.instance',
       ])
@@ -121,9 +120,10 @@ describe('hardcoded channel filter', () => {
           },
         ],
       })
-      const elements = [triggerDefinitionObjType.clone(), invalidTriggerDefinitionInstance]
+      const elements = [triggerDefinitionObjType.clone(), channelObjType.clone(), invalidTriggerDefinitionInstance]
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.channel',
         'zendesk.trigger_definition',
         'zendesk.trigger_definition.instance',
       ])
@@ -141,12 +141,22 @@ describe('hardcoded channel filter', () => {
           },
         ],
       })
-      const elements = [triggerDefinitionObjType.clone(), invalidTriggerDefinitionInstance]
+      const elements = [triggerDefinitionObjType.clone(), channelObjType.clone(), invalidTriggerDefinitionInstance]
       await filter.onFetch(elements)
+      expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zendesk.channel',
+        'zendesk.trigger_definition',
+        'zendesk.trigger_definition.instance',
+      ])
+    })
+    it('should not add anything if the channel type is missing', async () => {
+      const elements = [triggerDefinitionObjType.clone(), triggerDefinitionInstance]
+      const res = await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zendesk.trigger_definition',
         'zendesk.trigger_definition.instance',
       ])
+      expect(res).toBeUndefined()
     })
   })
 })

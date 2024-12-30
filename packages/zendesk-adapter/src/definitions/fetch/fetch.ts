@@ -659,6 +659,12 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         alias: { aliasComponents: [{ fieldName: 'filename' }] },
       },
+      fieldCustomizations: {
+        id: { hide: true },
+        filename: { fieldType: 'string' },
+        contentType: { fieldType: 'string' },
+        content: { fieldType: 'string' },
+      },
     },
   },
 
@@ -1563,6 +1569,10 @@ const createCustomizations = (): Record<
       topLevel: {
         isTopLevel: true,
         alias: { aliasComponents: [{ fieldName: 'name' }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        name: { fieldType: 'string' },
       },
     },
   },

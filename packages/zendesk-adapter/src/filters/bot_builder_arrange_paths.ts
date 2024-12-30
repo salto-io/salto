@@ -72,22 +72,13 @@ const pathFromParent = ({
   instance,
   needTypeDirectory,
   needOwnFolder,
-  parent,
+  parentPath,
 }: {
   instance: InstanceElement
   needTypeDirectory: boolean
   needOwnFolder: boolean
-  parent: InstanceElement
+  parentPath: readonly string[]
 }): readonly string[] => {
-  const parentPath = parent.path
-  if (parentPath === undefined) {
-    return [
-      ...BOT_BUILDER_PATH,
-      UNSORTED,
-      BOT_BUILDER_ELEMENT_DIRECTORY[instance.elemID.typeName],
-      pathNaclCase(naclCase(instance.elemID.name)),
-    ]
-  }
   const name = getName(instance)
   const newPath = parentPath.slice(0, parentPath.length - 1)
   if (needTypeDirectory) {
@@ -111,16 +102,18 @@ const filterCreator: FilterCreator = () => ({
       .filter(inst => inst.elemID.typeName === BOT_BUILDER_FLOW)
 
     botBuilderFlowInstances.forEach(flowInstance => {
-      const brandName = flowInstance.value.brandId.value.value.name
-      flowInstance.path = pathForFlowElements(flowInstance, brandName)
+      const brandName = flowInstance.value.brandId?.value.value?.name
+      const flowPath = pathForFlowElements(flowInstance, brandName)
+      flowInstance.path = flowPath
       flowInstance.value.subflows?.filter(isReferenceExpression).forEach((botBuilderAnswerRef: ReferenceExpression) => {
         const botBuilderAnswerInstance = botBuilderAnswerRef.value
-        botBuilderAnswerInstance.path = pathFromParent({
-          instance: botBuilderAnswerRef.value,
+        const answerPath = pathFromParent({
+          instance: botBuilderAnswerInstance,
           needTypeDirectory: true,
           needOwnFolder: true,
-          parent: flowInstance,
+          parentPath: flowPath,
         })
+        botBuilderAnswerInstance.path = answerPath
         botBuilderAnswerInstance.value.nodes
           ?.filter(isReferenceExpression)
           .forEach((botBuilderNodeRef: ReferenceExpression) => {
@@ -128,7 +121,7 @@ const filterCreator: FilterCreator = () => ({
               instance: botBuilderNodeRef.value,
               needTypeDirectory: true,
               needOwnFolder: false,
-              parent: botBuilderAnswerInstance,
+              parentPath: answerPath,
             })
           })
       })

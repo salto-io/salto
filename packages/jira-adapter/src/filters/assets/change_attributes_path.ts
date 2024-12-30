@@ -18,7 +18,7 @@ import { OBJECT_SCHEMA_TYPE, OBJECT_TYPE_ATTRIBUTE_TYPE } from '../../constants'
 const filter: FilterCreator = ({ config }) => ({
   name: 'changeAttributesPathFilter',
   onFetch: async elements => {
-    if (!config.fetch.enableJSM || !(config.fetch.enableJsmExperimental || config.fetch.enableJSMPremium)) {
+    if (!config.fetch.enableJSM) {
       return
     }
     const attributes = elements

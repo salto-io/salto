@@ -106,6 +106,7 @@ export const APP_PROVISIONING_FIELD_NAMES = [
   'applicationProvisioningGeneral',
 ]
 
-// Apps with public APIs supporting inbound provisioning.
+// Apps with public APIs supporting inbound and user provisioning.
 // Full list: https://developer.okta.com/docs/api/openapi/okta-management/management/tag/ApplicationFeatures
 export const INBOUND_PROVISIONING_SUPPORTED_APP_NAMES = ['google', 'office365', 'okta_org2org', 'slack', 'zoomus']
+export const USER_PROVISIONING_SUPPORTED_APP_NAMES = [...INBOUND_PROVISIONING_SUPPORTED_APP_NAMES, 'zscalerbyz']

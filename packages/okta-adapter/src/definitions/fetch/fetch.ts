@@ -37,6 +37,7 @@ import {
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
   INBOUND_PROVISIONING_SUPPORTED_APP_NAMES,
+  USER_PROVISIONING_SUPPORTED_APP_NAMES,
   USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
@@ -446,7 +447,7 @@ const createCustomizations = ({
           conditions: [
             {
               fromField: 'name',
-              match: INBOUND_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`).concat(['^zscalerbyz$']),
+              match: USER_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`),
             },
             // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
             { fromField: 'features', match: ['.+'] },

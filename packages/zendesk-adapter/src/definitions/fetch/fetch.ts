@@ -1038,6 +1038,7 @@ const createCustomizations = (): Record<
             {
               fieldName: 'locale_id',
               referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
             },
           ],
           separator: ' - ',
@@ -1515,6 +1516,7 @@ const createCustomizations = (): Record<
             {
               fieldName: 'locale',
               referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
             },
             {
               fieldName: '_parent.0',
@@ -1576,6 +1578,7 @@ const createCustomizations = (): Record<
             {
               fieldName: 'locale',
               referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
             },
             {
               fieldName: '_parent.0',
@@ -1815,6 +1818,7 @@ const createCustomizations = (): Record<
             {
               fieldName: 'locale',
               referenceFieldName: 'locale',
+              useFieldValueAsFallback: true,
             },
             {
               fieldName: '_parent.0',

@@ -60,7 +60,7 @@ const LANGUAGE_SETTINGS = 'language settings'
 const SETTINGS = 'Settings'
 const THEME_SETTINGS = 'Theme settings'
 
-const aliasMap: Record<string, AliasData> = {
+export const aliasMap: Record<string, AliasData> = {
   app_installation: {
     aliasComponents: [
       {

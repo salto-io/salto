@@ -22,15 +22,6 @@ fragment FlowFields on FlowType {
   sourceLanguage
   enabledLanguages
   dismissedIntents
-  publishedChannelIntegrations {
-    ...ChannelIntegrationFields
-  }
-  channelIntegrations {
-    ...ChannelIntegrationFields
-  }
-  assignedChannelIntegrations {
-    ...ChannelIntegrationFields
-  }
   isArticleRecommendationsEnabled
   helpCenterAutoReplyStatus
   noMatchedIntentAutoReplyStatus
@@ -61,25 +52,10 @@ fragment FlowFields on FlowType {
   }
 }
 
-fragment ChannelIntegrationFields on ChannelIntegrationType {
-  id
-  status
-  type
-  displayName
-  brandId
-  productLine
-  brandColor
-  conversationColor
-  actionColor
-  displayStyle
-}
-
 fragment SubflowFields on SubflowType {
   id
   flowId
   name
-  updatedAt
-  editedAt
   status
   isFromLegacyFlow
   campaigns {
@@ -152,7 +128,6 @@ fragment HelpCenterAutoReplyFeedbackFields on HelpCenterAutoReplyFeedbackType {
 fragment SubflowSummaryFields on SubflowType {
   id
   name
-  updatedAt
   status
   isFromLegacyFlow
 }

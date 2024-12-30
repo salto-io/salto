@@ -153,8 +153,8 @@ const createElementQueryWithExcludedUserRoles = (
   fetchConfig: OktaUserFetchConfig,
   criteria: Record<string, elementUtils.query.QueryCriterion>,
 ): elementUtils.query.ElementQuery => {
-  const isUserRolesExcluded = fetchConfig.exclude.find(fetchEnrty => fetchEnrty.type === USER_ROLES_TYPE_NAME)
-  const isUserRolesIncluded = fetchConfig.include.find(fetchEntry => fetchEntry.type === USER_ROLES_TYPE_NAME)
+  const isUserRolesExcluded = fetchConfig.exclude.some(fetchEnrty => fetchEnrty.type === USER_ROLES_TYPE_NAME)
+  const isUserRolesIncluded = fetchConfig.include.some(fetchEntry => fetchEntry.type === USER_ROLES_TYPE_NAME)
   const updatedConfig =
     !isUserRolesExcluded && !isUserRolesIncluded
       ? {

@@ -144,14 +144,14 @@ export const getExcludeUserRolesConfigSuggestion = (
     )
     return undefined
   }
-  const isUserRolesExcluded = typesToExclude.find(fetchEnty => fetchEnty?.type === USER_ROLES_TYPE_NAME)
-  const isUserRolesIncluded = typesToInclude.find(fetchEnty => fetchEnty?.type === USER_ROLES_TYPE_NAME)
+  const isUserRolesExcluded = typesToExclude.some(fetchEntry => fetchEntry?.type === USER_ROLES_TYPE_NAME)
+  const isUserRolesIncluded = typesToInclude.some(fetchEntry => fetchEntry?.type === USER_ROLES_TYPE_NAME)
   if (!isUserRolesExcluded && !isUserRolesIncluded) {
     return {
       type: 'typeToExclude',
       value: USER_ROLES_TYPE_NAME,
       reason:
-        'UserRoles type is excluded by default. To include it, explicitly add "JsonWebKey" type into the include list.',
+        'UserRoles type is excluded by default. To include it, explicitly add "UserRoles" type into the include list.',
     }
   }
   return undefined

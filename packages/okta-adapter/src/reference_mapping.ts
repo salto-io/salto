@@ -308,11 +308,13 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'role', parentTypes: ['UserRole'] },
     serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
     target: { type: 'Role' },
   },
   {
     src: { field: naclCase('resource-set'), parentTypes: ['UserRole'] },
     serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
     target: { type: 'ResourceSet' },
   },
 ]

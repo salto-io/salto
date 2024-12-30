@@ -20,7 +20,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 /**
- * When removing user roles, the removed role id must be provided.
+ * When removing a user role, the removed role id must be provided.
  * As the role id is not persisted on the element, we make an API request to get the current roles,
  * and keeps a mapping between the user roles to thier ids in the shared context, to be used during deploy.
  */
@@ -38,8 +38,8 @@ const filterCreator: FilterCreator = ({ definitions, sharedContext }) => ({
     await awu(changes)
       .filter(isInstanceChange)
       .filter(isRemovalOrModificationChange)
-      .filter(change => getChangeData(change).elemID.typeName === USER_ROLES_TYPE_NAME)
       .map(change => getChangeData(change))
+      .filter(instance => instance.elemID.typeName === USER_ROLES_TYPE_NAME)
       .forEach(async instance => {
         const { user } = instance.value
         try {
@@ -47,7 +47,7 @@ const filterCreator: FilterCreator = ({ definitions, sharedContext }) => ({
             callerIdentifier: { typeName: 'UserRole' },
             contextPossibleArgs: { id: [user] },
           })
-          const roles = response.map(res => res.value).map(val => ({ [getRoleId(val)]: _.get(val, 'id') }))
+          const roles = response.map(({ value }) => ({ [getRoleId(value)]: _.get(value, 'id') }))
           _.assign(sharedContext, { [instance.elemID.getFullName()]: _.merge({}, ...roles) })
         } catch (e) {
           log.error(

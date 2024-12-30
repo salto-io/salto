@@ -125,7 +125,6 @@ fragment TrainingPhraseFields on TrainingPhraseType {
 
 fragment FreeTextQueryFields on FreeTextQueryType {
   id
-  flowId
   isDisambiguationEnabled
   disambiguationMessageText
   isDisambiguationAiEnhancedMessage
@@ -136,7 +135,6 @@ fragment FreeTextQueryFields on FreeTextQueryType {
 
 fragment HelpCenterAutoReplyFeedbackFields on HelpCenterAutoReplyFeedbackType {
   id
-  flowId
   messageForPositive
   generateVariantsForPositive
   suggestedAnswersForPositive {
@@ -153,7 +151,6 @@ fragment HelpCenterAutoReplyFeedbackFields on HelpCenterAutoReplyFeedbackType {
 
 fragment SubflowSummaryFields on SubflowType {
   id
-  flowId
   name
   updatedAt
   status
@@ -162,7 +159,6 @@ fragment SubflowSummaryFields on SubflowType {
 
 fragment GreetingFields on GreetingType {
   id
-  flowId
   isMessageTextEnabled
   messageText
   isAiEnhancedMessage
@@ -174,7 +170,6 @@ fragment GreetingFields on GreetingType {
 
 fragment FallbackFields on FallbackType {
   id
-  flowId
   messageText
   isAiEnhancedMessage
   suggestedAnswers {
@@ -185,7 +180,6 @@ fragment FallbackFields on FallbackType {
 
 fragment IntentAutoReplyStatusFields on IntentAutoReplyStatusType {
   id
-  flowId
   intentKey
   status
 }

@@ -19,8 +19,6 @@ import {
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { merger, Workspace, ElementSelector, expressions, elementSource, hiddenValues } from '@salto-io/workspace'
-// for backward comptability
-import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { FetchResult } from '../types'
 import { MergeErrorWithElements, getFetchAdapterAndServicesSetup, calcFetchChanges } from './fetch'
 import { getPlan } from './plan'
@@ -102,7 +100,7 @@ const getAdapterAndContext = async ({
 type IsInitializedFolderArgs = {
   baseDir: string
   adapterName: string
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }
 
 export type IsInitializedFolderResult = {
@@ -115,9 +113,7 @@ export const isInitializedFolder = async ({
   adapterName,
   adapterCreators,
 }: IsInitializedFolderArgs): Promise<IsInitializedFolderResult> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const adapter = actualAdapterCreator[adapterName]
+  const adapter = adapterCreators[adapterName]
   if (adapter.adapterFormat?.isInitializedFolder === undefined) {
     return {
       result: false,
@@ -137,7 +133,7 @@ export const isInitializedFolder = async ({
 type InitFolderArgs = {
   baseDir: string
   adapterName: string
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }
 
 export type InitFolderResult = {
@@ -149,9 +145,7 @@ export const initFolder = async ({
   adapterName,
   adapterCreators,
 }: InitFolderArgs): Promise<InitFolderResult> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
-  const adapter = actualAdapterCreator[adapterName]
+  const adapter = adapterCreators[adapterName]
   const adapterInitFolder = adapter.adapterFormat?.initFolder
   if (adapterInitFolder === undefined) {
     return {
@@ -207,9 +201,7 @@ const filterHiddenChanges = async (
 type CalculatePatchArgs = {
   fromDir: string
   toDir: string
-} & Omit<GetAdapterAndContextArgs, 'adapterCreators'> & {
-    adapterCreators?: Record<string, Adapter>
-  }
+} & GetAdapterAndContextArgs
 
 export const calculatePatch = async ({
   workspace,
@@ -220,14 +212,12 @@ export const calculatePatch = async ({
   ignoreStateElemIdMappingForSelectors,
   adapterCreators,
 }: CalculatePatchArgs): Promise<FetchResult> => {
-  // for backward compatibility
-  const actualAdapterCreator = adapterCreators ?? allAdapterCreators
   const { adapter, adapterContext } = await getAdapterAndContext({
     workspace,
     accountName,
     ignoreStateElemIdMapping,
     ignoreStateElemIdMappingForSelectors,
-    adapterCreators: actualAdapterCreator,
+    adapterCreators,
   })
   const loadElementsFromFolder = adapter.adapterFormat?.loadElementsFromFolder
   if (loadElementsFromFolder === undefined) {
@@ -286,9 +276,7 @@ export const calculatePatch = async ({
 
 type SyncWorkspaceToFolderArgs = {
   baseDir: string
-} & Omit<GetAdapterAndContextArgs, 'adapterCreators'> & {
-    adapterCreators?: Record<string, Adapter>
-  }
+} & GetAdapterAndContextArgs
 
 export type SyncWorkspaceToFolderResult = {
   errors: ReadonlyArray<SaltoError>
@@ -304,8 +292,6 @@ export const syncWorkspaceToFolder = ({
 }: SyncWorkspaceToFolderArgs): Promise<SyncWorkspaceToFolderResult> =>
   log.time(
     async () => {
-      // for backward compatibility
-      const actualAdapterCreator = adapterCreators ?? allAdapterCreators
       const {
         resolvedElements: workspaceElements,
         adapter,
@@ -315,7 +301,7 @@ export const syncWorkspaceToFolder = ({
         accountName,
         ignoreStateElemIdMapping,
         ignoreStateElemIdMappingForSelectors,
-        adapterCreators: actualAdapterCreator,
+        adapterCreators,
       })
       const loadElementsFromFolder = adapter.adapterFormat?.loadElementsFromFolder
       const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
@@ -388,7 +374,7 @@ type UpdateElementFolderArgs = {
   baseDir: string
   accountName: string
   changes: ReadonlyArray<Change>
-  adapterCreators?: Record<string, Adapter>
+  adapterCreators: Record<string, Adapter>
 }
 
 export type UpdateElementFolderResult = {
@@ -405,12 +391,10 @@ export const updateElementFolder = ({
 }: UpdateElementFolderArgs): Promise<UpdateElementFolderResult> =>
   log.time(
     async () => {
-      // for backward compatibility
-      const actualAdapterCreator = adapterCreators ?? allAdapterCreators
       const { adapter, adapterContext } = await getAdapterAndContext({
         workspace,
         accountName,
-        adapterCreators: actualAdapterCreator,
+        adapterCreators,
       })
       const dumpElementsToFolder = adapter.adapterFormat?.dumpElementsToFolder
       if (dumpElementsToFolder === undefined) {

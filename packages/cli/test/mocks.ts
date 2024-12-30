@@ -36,9 +36,8 @@ import {
   DeployResult,
   Telemetry,
   CommandConfig,
-  ItemStatus,
+  deploy as coreDeploy,
   DeployParams,
-  CompatibleDeployFunc,
 } from '@salto-io/core'
 import {
   Workspace,
@@ -774,17 +773,7 @@ export const preview = (): Plan => {
   return result as Plan
 }
 
-export const deploy: CompatibleDeployFunc = async (
-  workspace: Workspace | DeployParams,
-  _actionPlan?: Plan,
-  _reportProgress?: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  _accounts?: string[],
-  _checkOnly = false,
-): Promise<DeployResult> => {
-  // for backward compatibility
-  if (!('adapterCreators' in workspace)) {
-    throw new Error('invalid params for mock')
-  }
+export const deploy: typeof coreDeploy = async (workspace: DeployParams): Promise<DeployResult> => {
   let numOfChangesReported = 0
   wu(workspace.actionPlan.itemsByEvalOrder()).forEach(change => {
     numOfChangesReported += 1

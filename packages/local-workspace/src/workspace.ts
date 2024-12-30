@@ -229,7 +229,7 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
-  getConfigTypes: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
+  getConfigTypes: (envs: EnvConfig[], adapterCreators: Record<string, Adapter>) => Promise<ObjectType[]>
   getCustomReferences: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
 }

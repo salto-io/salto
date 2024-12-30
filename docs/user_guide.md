@@ -10,21 +10,24 @@ Salto consists of 3 main components:
 2. The Salto command line interface — a tool which uses NaCl files to manage the configuration of business applications, with operations such as `deploy` (to deploy configuration changes to a business application) and `fetch` (to fetch the latest state of a business application into NaCl files). This tool is composed of a core processing engine, and various adapters to interact with the different business applications.
 3. The Salto vs-code extension — An extension to the popular vs-code IDE to easily interact with NaCl files.
 
-Currently, Salto supports the following business applications:
+Currently, Salto supports the following services:
 
-- [Salesforce](https://github.com/salto-io/salto/tree/main/packages/salesforce-adapter)
-- [NetSuite](https://github.com/salto-io/salto/tree/main/packages/netsuite-adapter)
-- [Workato](https://github.com/salto-io/salto/tree/main/packages/workato-adapter)
-- [Zendesk](https://github.com/salto-io/salto/tree/main/packages/zendesk-adapter)
-- [SAP](https://github.com/salto-io/salto/tree/main/packages/sap-adapter)
-- [Zuora Billing](https://github.com/salto-io/salto/tree/main/packages/zuora-billing-adapter)
-- [Jira](https://github.com/salto-io/salto/tree/main/packages/jira-adapter)
-- [Stripe](https://github.com/salto-io/salto/tree/main/packages/stripe-adapter)
-- [Okta](https://github.com/salto-io/salto/tree/main/packages/okta-adapter)
+- [Salesforce](../packages/salesforce-adapter)
+- [NetSuite](../packages/netsuite-adapter)
+- [Jira](../packages/jira-adapter)
+- [Confluence](../packages/confluence-adapter)
+- [Zendesk](../packages/zendesk-adapter)
+- [Okta](../packages/okta-adapter)
+- [Microsoft Security - Entra ID and Intune](../packages/microsoft-security-adapter)
+- [Workato](../packages/workato-adapter)
+- [PagerDuty](../packages/pagerduty-adapter)
+- [Zuora Billing](../packages/zuora-billing-adapter)
+- [Intercom](../packages/intercom-adapter)
+- [Stripe](../packages/stripe-adapter)
 
-Support for other business applications is in the works.
+Support for other SaaS applications is in the works.
 
->Throughout this guide, we will use the terms "business applications" and "services" interchangeably
+>Throughout this guide, we will use the terms "SaaS applications", "business applications" and "services" interchangeably
 
 ---
 

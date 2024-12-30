@@ -36,12 +36,13 @@ import {
   AUTOMATION_RULE_TYPE_NAME,
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  INBOUND_PROVISIONING_SUPPORTED_APP_NAMES,
   USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
-import { assignPolicyIdsToApplication, isOktaDashboard } from './types/application'
+import { assignPolicyIdsToApplication, generateExcludeRegex, isOktaDashboard } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
 import { isNotDeletedEmailDomain } from './types/email_domain'
 import { isDefaultDomain } from './types/domain'
@@ -445,7 +446,7 @@ const createCustomizations = ({
           conditions: [
             {
               fromField: 'name',
-              match: ['^google$', '^office365$', '^okta_org2org$', '^slack$', '^zoomus$', '^zscalerbyz$'],
+              match: INBOUND_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`).concat(['^zscalerbyz$']),
             },
             // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
             { fromField: 'features', match: ['.+'] },
@@ -464,7 +465,7 @@ const createCustomizations = ({
           conditions: [
             {
               fromField: 'name',
-              match: ['^google$', '^office365$', '^okta_org2org$', '^zoomus$', '^slack$'],
+              match: INBOUND_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`),
             },
             // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
             { fromField: 'features', match: ['.+'] },
@@ -524,7 +525,7 @@ const createCustomizations = ({
                 conditions: [
                   {
                     fromField: 'name',
-                    match: ['^(?!google$|office365$|okta_org2org$|slack$|zoomus$).*$'],
+                    match: generateExcludeRegex(INBOUND_PROVISIONING_SUPPORTED_APP_NAMES),
                   },
                   // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
                   { fromField: 'features', match: ['.+'] },
@@ -543,7 +544,7 @@ const createCustomizations = ({
                 conditions: [
                   {
                     fromField: 'name',
-                    match: ['^(?!google$|office365$|okta_org2org$|slack$|zoomus$).*$'],
+                    match: generateExcludeRegex(INBOUND_PROVISIONING_SUPPORTED_APP_NAMES),
                   },
                   // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
                   { fromField: 'features', match: ['.+'] },

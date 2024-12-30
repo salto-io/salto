@@ -40,14 +40,6 @@
             "change": "KEEP_EXISTING"
           }
         }
-      },
-      "_links": {
-        "self": {
-          "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/features/USER_PROVISIONING",
-          "hints": {
-            "allow": ["GET", "PUT"]
-          }
-        }
       }
     },
     "body": {
@@ -105,14 +97,6 @@
             "autoConfirmExactMatch": false,
             "autoConfirmNewUsers": false,
             "autoActivateNewUsers": false
-          }
-        }
-      },
-      "_links": {
-        "self": {
-          "href": "https://salto.okta.com/api/v1/apps/app-fakeid1/features/INBOUND_PROVISIONING",
-          "hints": {
-            "allow": ["GET", "PUT"]
           }
         }
       }

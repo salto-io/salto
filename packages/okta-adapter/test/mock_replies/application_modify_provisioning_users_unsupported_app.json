@@ -1,7 +1,7 @@
 [
   {
     "path": "/api/v1/internal/apps/app-fakeid1/settings/importMatchRules",
-    "scope": "",
+    "scope": "admin",
     "method": "POST",
     "status": 200,
     "response": [

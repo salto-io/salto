@@ -98,3 +98,14 @@ export const SCHEMA_TYPES = [GROUP_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, 
 export const EMAIL_DOMAIN_TYPE_NAME = 'EmailDomain'
 export const SIGN_IN_PAGE_TYPE_NAME = 'SignInPage'
 export const ERROR_PAGE_TYPE_NAME = 'ErrorPage'
+
+export const APP_PROVISIONING_FIELD_NAMES = [
+  'applicationUserProvisioning',
+  'applicationInboundProvisioning',
+  'applicationProvisioningUsers',
+  'applicationProvisioningGeneral',
+]
+
+// Apps with public APIs supporting inbound provisioning.
+// Full list: https://developer.okta.com/docs/api/openapi/okta-management/management/tag/ApplicationFeatures
+export const INBOUND_PROVISIONING_SUPPORTED_APP_NAMES = ['google', 'office365', 'okta_org2org', 'slack', 'zoomus']

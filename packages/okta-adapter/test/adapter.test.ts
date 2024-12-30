@@ -80,11 +80,13 @@ const nullProgressReporter: ProgressReporter = {
   reportProgress: () => null,
 }
 
-const loadMockReplies = (filename: string, isPrivateAPI?: Boolean): void => {
+const loadMockReplies = (filename: string): void => {
   const defs: nock.Definition[] = nock.loadDefs(`${__dirname}/mock_replies/${filename}`)
   defs.forEach(def => {
     if (def.scope === '') {
-      def.scope = isPrivateAPI ? 'https://test-admin.okta.com:443' : 'https://test.okta.com:443'
+      def.scope = 'https://test.okta.com:443'
+    } else if (def.scope === 'admin') {
+      def.scope = 'https://test-admin.okta.com:443'
     }
   })
   nock.define(defs)
@@ -595,11 +597,8 @@ describe('adapter', () => {
     })
 
     beforeEach(() => {
-      const getBaseUrl = (): string => {
-        const currentTest = expect.getState().currentTestName
-        return currentTest?.includes('using private API') ? 'https://test-admin.okta.com' : 'https://test.okta.com'
-      }
-      nock(`${getBaseUrl()}:443`).persist().get('/api/v1/org').reply(200, { id: 'accountId' })
+      nock('https://test.okta.com:443').persist().get('/api/v1/org').optionally().reply(200, { id: 'accountId' })
+      nock('https://test-admin.okta.com:443').persist().get('/api/v1/org').optionally().reply(200, { id: 'accountId' })
 
       orgSettingType = new ObjectType({
         elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME),
@@ -609,7 +608,7 @@ describe('adapter', () => {
       createOperations = (elements: Element[] = [], config?: OktaUserConfig) =>
         adapter.operations({
           credentials: new InstanceElement('config', accessTokenCredentialsType, {
-            baseUrl: getBaseUrl(),
+            baseUrl: 'https://test.okta.com',
             token: 't',
           }),
           config: new InstanceElement('config', adapter.configType as ObjectType, config ?? DEFAULT_CONFIG),
@@ -2424,7 +2423,7 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully modify applicationProvisioningGeneral for unsupported application using private API', async () => {
-        loadMockReplies('application_modify_general_provisioning_unsupported_app.json', true)
+        loadMockReplies('application_modify_general_provisioning_unsupported_app.json')
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
@@ -2464,7 +2463,7 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully modify applicationProvisioningUsers for unsupported application using private API', async () => {
-        loadMockReplies('application_modify_provisioning_users_unsupported_app.json', true)
+        loadMockReplies('application_modify_provisioning_users_unsupported_app.json')
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
@@ -2677,7 +2676,7 @@ describe('adapter', () => {
         expect(nock.pendingMocks()).toHaveLength(0)
       })
       it('should successfully deactivate provisiong by removing applicationProvisioningGeneral and applicationProvisioningUsers for unsupported application using private API', async () => {
-        loadMockReplies('application_deactivate_provisioning_unsupported_app.json', true)
+        loadMockReplies('application_deactivate_provisioning_unsupported_app.json')
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',
@@ -2739,6 +2738,55 @@ describe('adapter', () => {
         const updatedApp = activeCustomApp.clone()
         updatedApp.value.applicationProvisioningGeneral = undefined
         updatedApp.value.applicationProvisioningUsers = undefined
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify applicationProvisioningGeneral and visibillity for unsupported application using public and private API', async () => {
+        loadMockReplies('application_modify_provisioning_and_visibillity_unsupported_app.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          visibility: {
+            autoLaunch: false,
+            autoSubmitToolbar: true,
+            hide: {
+              iOS: false,
+              web: false,
+            },
+          },
+          applicationProvisioningGeneral: {
+            enabled: true,
+            importSettings: {
+              userNameTemplate: {
+                type: 'CUSTOM',
+                displayName: 'Custom',
+                ruleName: 'global.import.login.customExpression',
+                expression: 'appuser.userName',
+              },
+              importInterval: 86400,
+            },
+          },
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.applicationProvisioningGeneral.importSettings.importInterval = -1
+        updatedApp.value.visibility.hide.iOS = true
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',

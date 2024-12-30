@@ -106,6 +106,7 @@ export type FetchParams = {
   strictInstanceStructure?: boolean
   fieldsToOmit?: FieldToOmitParams[]
   findReferencesInFilesWithExtension?: string[]
+  singletonCustomRecords?: string[]
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -116,6 +117,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   strictInstanceStructure: 'strictInstanceStructure',
   fieldsToOmit: 'fieldsToOmit',
   findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
+  singletonCustomRecords: 'singletonCustomRecords',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -612,6 +614,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
     findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
+    singletonCustomRecords: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

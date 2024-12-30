@@ -105,7 +105,11 @@ const MAX_SPLIT_CONCURRENCY = 2000
 // these core annotations are generated from other values of the element and are non-deployable.
 // having conflicts on them have no real meaning so it's better to omit them.
 // more context can be found in https://salto-io.atlassian.net/browse/SALTO-4888
-const NO_CONFLICT_CORE_ANNOTATIONS = [CORE_ANNOTATIONS.ALIAS, CORE_ANNOTATIONS.PARENT]
+const NO_CONFLICT_CORE_ANNOTATIONS = [
+  CORE_ANNOTATIONS.ALIAS,
+  CORE_ANNOTATIONS.PARENT,
+  CORE_ANNOTATIONS.GENERATED_DEPENDENCIES,
+]
 
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
   getAuthorInformation(changedElement)

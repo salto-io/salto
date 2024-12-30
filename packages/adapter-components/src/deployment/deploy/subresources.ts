@@ -22,6 +22,7 @@ import {
   isAdditionOrModificationChange,
   isObjectType,
   getDeepInnerTypeSync,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeDataSync, inspectValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { types, collections } from '@salto-io/lowerdash'
@@ -109,10 +110,13 @@ export const createChangesForSubResources = async <TOptions extends APIDefinitio
         getChangeData(change).elemID.getFullName(),
       )
     }
-    return fields
-      .map(({ fieldValue }) => fieldValue)
-      .map(String)
-      .join('_')
+    return (
+      fields
+        // if referenceResolution strategy is "on_demand", field value might be a reference expression
+        .map(({ fieldValue }) => (isReferenceExpression(fieldValue) ? fieldValue.elemID.getFullName() : fieldValue))
+        .map(String)
+        .join('_')
+    )
   }
 
   const createChangeFromSubResource = (

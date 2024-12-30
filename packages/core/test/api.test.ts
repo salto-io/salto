@@ -1636,7 +1636,7 @@ describe('api.ts', () => {
         })
       })
       it('should invoke fixElements with instances that have resolved type', async () => {
-        await api.fixElements(ws, [workspace.createElementSelector(instance.elemID.getFullName())])
+        await api.fixElements(ws, [workspace.createElementSelector(instance.elemID.getFullName())], mockAdapterCreator)
         expect(inputElements).toHaveLength(1)
         const instanceElement = inputElements[0] as InstanceElement
         expect(instanceElement).toBeInstanceOf(InstanceElement)

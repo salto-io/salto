@@ -26556,5 +26556,158 @@
       "previous_page": null,
       "count": 2
     }
+  },
+  {
+    "url": "/api/admin/private/answer_bot/graphql",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "data": {
+        "flows": [
+          {
+            "id": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+            "name": "test bot",
+            "botAvatarUrl": "https://static.zdassets.com/web_widget/latest/default_avatar.png",
+            "botType": "ADVANCED",
+            "brandId": "1500000550682",
+            "status": "published",
+            "sourceLanguage": "English",
+            "enabledLanguages": ["en"],
+            "dismissedIntents": [],
+            "publishedChannelIntegrations": [
+              {
+                "id": "622d14d3b4e30100f3d30880",
+                "status": "Active",
+                "type": "Web",
+                "displayName": "Brandon",
+                "brandId": "1500000550682",
+                "productLine": "suite",
+                "brandColor": "65758e",
+                "conversationColor": "0099ff",
+                "actionColor": "0099ff",
+                "displayStyle": "button"
+              }
+            ],
+            "channelIntegrations": [],
+            "assignedChannelIntegrations": [
+              {
+                "id": "622d14d3b4e30100f3d30880",
+                "status": "Active",
+                "type": "Web",
+                "displayName": "Brandon",
+                "brandId": "1500000550682",
+                "productLine": "suite",
+                "brandColor": "65758e",
+                "conversationColor": "0099ff",
+                "actionColor": "0099ff",
+                "displayStyle": "button"
+              }
+            ],
+            "isArticleRecommendationsEnabled": true,
+            "helpCenterAutoReplyStatus": "articleRecommendations",
+            "noMatchedIntentAutoReplyStatus": "generativeReply",
+            "isRestrictedArticlePreviewEnabled": false,
+            "persona": null,
+            "personaEmojisAllowanceMode": "allowAll",
+            "personaEmojisFilterList": null,
+            "previewFlowId": "01FXTKH2Q7TZG6X0629XJ4YZM8-preview",
+            "smallTalkReplyStatus": "none",
+            "hasBeenPublished": true,
+            "subflows": [
+              {
+                "id": "01J4SREMAVJ032QRF0JQXE9HAG",
+                "flowId": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+                "name": "Testing",
+                "updatedAt": "2024-08-08T19:47:24.000Z",
+                "editedAt": "2024-08-08T19:46:55.000Z",
+                "status": "published",
+                "isFromLegacyFlow": false,
+                "campaigns": [],
+                "intents": [],
+                "trainingPhrases": [
+                  {
+                    "id": "01J4SRDVYYMTXK95K9TX87T10R",
+                    "text": "tests are great"
+                  },
+                  {
+                    "id": "01J4SRDVYYZ44C2M0VKQTHYNH8",
+                    "text": "why are we testing"
+                  }
+                ],
+                "nodes": [
+                  {
+                    "id": "01J4SRF1HAS4TQFQ99PKFRCQXB",
+                    "externalId": null,
+                    "parentId": null,
+                    "targetType": "message",
+                    "data": {
+                      "text": "Hi there, nice job.",
+                      "links": [],
+                      "images": []
+                    },
+                    "version": null,
+                    "__typename": "NodeType"
+                  }
+                ]
+              }
+            ],
+            "freeTextQuery": {
+              "id": "01HSZTT9WA2FXW7SMRSZXTNHS5",
+              "flowId": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+              "isDisambiguationEnabled": false,
+              "disambiguationMessageText": "Can you confirm what your question is about?",
+              "isDisambiguationAiEnhancedMessage": null,
+              "isClarificationEnabled": true,
+              "clarificationMessageText": "I'm sorry. I didn't get that. Could you tell me more or rephrase your question, please?",
+              "isClarificationAiEnhancedMessage": null
+            },
+            "helpCenterAutoReplyFeedback": {
+              "id": "01JC10437SXMHPYWC1CCYW43XC",
+              "flowId": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+              "messageForPositive": "Great. You can ask another question anytime.",
+              "generateVariantsForPositive": null,
+              "suggestedAnswersForPositive": [],
+              "messageForNegative": "Sorry I couldn't find a good answer to your question",
+              "generateVariantsForNegative": null,
+              "suggestedAnswersForNegative": [],
+              "isTalkToHumanOptionEnabledForPositive": null,
+              "isTalkToHumanOptionEnabledForNegative": null
+            },
+            "greeting": {
+              "id": "01G2K6HA4G942N60FSP7M2WSBC",
+              "flowId": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+              "isMessageTextEnabled": false,
+              "messageText": "Hi there. Got a question? I'm here to help.",
+              "isAiEnhancedMessage": null,
+              "suggestedAnswers": [
+                {
+                  "id": "01FXTKH2QP34ZCHQHKWMWN9RC6",
+                  "flowId": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+                  "name": "test bot",
+                  "updatedAt": "2024-11-06T13:24:00.000Z",
+                  "status": "unpublishedChanges",
+                  "isFromLegacyFlow": true
+                }
+              ],
+              "isTalkToHumanOptionEnabled": null
+            },
+            "fallback": {
+              "id": "01GJC183X6S15J6RSAM4XZHVB2",
+              "flowId": "01FXTKH2Q7TZG6X0629XJ4YZM8",
+              "messageText": "I didn't get that. Try rephrasing your question.",
+              "isAiEnhancedMessage": null,
+              "suggestedAnswers": [],
+              "isTalkToHumanOptionEnabled": null
+            },
+            "intentAutoReplyStatuses": []
+          }
+        ]
+      }
+    },
+    "headers": {},
+    "data": {
+      "operationName": "fetchFlows",
+      "query": "\n query fetchFlows {\n  flows {\n    ...FlowFields\n  }\n}\n\nfragment FlowFields on FlowType {\n  id\n  name\n  botAvatarUrl\n  botType\n  brandId\n  status\n  sourceLanguage\n  enabledLanguages\n  dismissedIntents\n  publishedChannelIntegrations {\n    ...ChannelIntegrationFields\n  }\n  channelIntegrations {\n    ...ChannelIntegrationFields\n  }\n  assignedChannelIntegrations {\n    ...ChannelIntegrationFields\n  }\n  isArticleRecommendationsEnabled\n  helpCenterAutoReplyStatus\n  noMatchedIntentAutoReplyStatus\n  isRestrictedArticlePreviewEnabled\n  persona\n  personaEmojisAllowanceMode\n  personaEmojisFilterList\n  previewFlowId\n  smallTalkReplyStatus\n  hasBeenPublished\n  subflows {\n    ...SubflowFields\n  }\n  freeTextQuery {\n    ...FreeTextQueryFields\n  }\n  helpCenterAutoReplyFeedback {\n    ...HelpCenterAutoReplyFeedbackFields\n  }\n  greeting {\n    ...GreetingFields\n  }\n  fallback {\n    ...FallbackFields\n  }\n  intentAutoReplyStatuses {\n    ...IntentAutoReplyStatusFields\n  }\n}\n\nfragment ChannelIntegrationFields on ChannelIntegrationType {\n  id\n  status\n  type\n  displayName\n  brandId\n  productLine\n  brandColor\n  conversationColor\n  actionColor\n  displayStyle\n}\n\nfragment SubflowFields on SubflowType {\n  id\n  flowId\n  name\n  updatedAt\n  editedAt\n  status\n  isFromLegacyFlow\n  campaigns {\n    ...ProactiveCampaignFields\n  }\n  intents {\n    ...IntentFields\n  }\n  trainingPhrases {\n    ...TrainingPhraseFields\n  }\n  nodes {\n    ...NodeWithAuxiliaryData\n    __typename\n  }\n}\n\nfragment NodeWithAuxiliaryData on NodeType {\n  id\n  externalId\n  parentId\n  targetType\n  data\n  version\n  __typename\n}\n\nfragment ProactiveCampaignFields on ProactiveCampaignType {\n  campaignId\n  name\n}\n\nfragment IntentFields on IntentType {\n  subflowIntentId\n  subflowId\n  intentKey\n}\n\nfragment TrainingPhraseFields on TrainingPhraseType {\n  id\n  text\n}\n\nfragment FreeTextQueryFields on FreeTextQueryType {\n  id\n  flowId\n  isDisambiguationEnabled\n  disambiguationMessageText\n  isDisambiguationAiEnhancedMessage\n  isClarificationEnabled\n  clarificationMessageText\n  isClarificationAiEnhancedMessage\n}\n\nfragment HelpCenterAutoReplyFeedbackFields on HelpCenterAutoReplyFeedbackType {\n  id\n  flowId\n  messageForPositive\n  generateVariantsForPositive\n  suggestedAnswersForPositive {\n    ...SubflowSummaryFields\n  }\n  messageForNegative\n  generateVariantsForNegative\n  suggestedAnswersForNegative {\n    ...SubflowSummaryFields\n  }\n  isTalkToHumanOptionEnabledForPositive\n  isTalkToHumanOptionEnabledForNegative\n}\n\nfragment SubflowSummaryFields on SubflowType {\n  id\n  flowId\n  name\n  updatedAt\n  status\n  isFromLegacyFlow\n}\n\nfragment GreetingFields on GreetingType {\n  id\n  flowId\n  isMessageTextEnabled\n  messageText\n  isAiEnhancedMessage\n  suggestedAnswers {\n    ...SubflowSummaryFields\n  }\n  isTalkToHumanOptionEnabled\n}\n\nfragment FallbackFields on FallbackType {\n  id\n  flowId\n  messageText\n  isAiEnhancedMessage\n  suggestedAnswers {\n    ...SubflowSummaryFields\n  }\n  isTalkToHumanOptionEnabled\n}\n\nfragment IntentAutoReplyStatusFields on IntentAutoReplyStatusType {\n  id\n  flowId\n  intentKey\n  status\n}\n\n"
+    }
   }
 ]

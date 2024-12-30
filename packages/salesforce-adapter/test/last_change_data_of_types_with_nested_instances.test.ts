@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { FileProperties } from '@salto-io/jsforce'
+import { FileProperties, MetadataObject } from '@salto-io/jsforce'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../src/constants'
@@ -29,10 +29,12 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
   let connection: MockInterface<Connection>
   let listedTypes: string[]
   let metadataQuery: MetadataQuery<FileProperties>
+  let metadataTypeInfos: MetadataObject[]
+  let filePropByRelatedType: Record<string, FileProperties[]>
   beforeEach(() => {
     ;({ client, connection } = mockClient())
     listedTypes = []
-    const filePropByRelatedType: Record<string, FileProperties[]> = {
+    filePropByRelatedType = {
       // CustomObject props
       BusinessProcess: [
         // Latest related property for Updated__c
@@ -150,6 +152,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
     let excludedRelatedTypes: string[]
     beforeEach(() => {
       excludedRelatedTypes = ['Index']
+      metadataTypeInfos = Object.keys(filePropByRelatedType).map(type => ({ xmlName: type }))
       metadataQuery = buildFilePropsMetadataQuery(
         buildMetadataQuery({
           fetchParams: {
@@ -172,11 +175,51 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
       const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
         client,
         metadataQuery,
+        metadataTypeInfos,
       })
       const expected: LastChangeDateOfTypesWithNestedInstances = {
         AssignmentRules: {},
         AutoResponseRules: {},
         CustomLabels: '2023-11-09T00:00:00.000Z',
+        CustomObject: {
+          Test1__c: '2024-11-07T00:00:00.000Z',
+          Test2__c: '2024-11-07T00:00:00.000Z',
+        },
+        EscalationRules: {},
+        SharingRules: {},
+        Workflow: {},
+      }
+      expect(lastChangeDateOfTypesWithNestedInstances).toEqual(expected)
+    })
+  })
+  describe('when types are not managed in the environment', () => {
+    beforeEach(() => {
+      metadataTypeInfos = [{ xmlName: 'CustomLabel' }, { xmlName: CUSTOM_OBJECT }, { xmlName: '' }]
+      metadataQuery = buildFilePropsMetadataQuery(
+        buildMetadataQuery({
+          fetchParams: {
+            metadata: {
+              include: [
+                {
+                  metadataType: '.*',
+                  namespace: '',
+                },
+              ],
+            },
+          },
+        }),
+      )
+    })
+    it('should not update', async () => {
+      const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
+        client,
+        metadataQuery,
+        metadataTypeInfos,
+      })
+      const expected: LastChangeDateOfTypesWithNestedInstances = {
+        AssignmentRules: {},
+        AutoResponseRules: {},
+        CustomLabels: undefined,
         CustomObject: {
           Test1__c: '2024-11-07T00:00:00.000Z',
           Test2__c: '2024-11-07T00:00:00.000Z',

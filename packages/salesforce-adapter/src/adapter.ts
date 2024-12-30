@@ -594,9 +594,11 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
     const fetchParams = this.userConfig.fetch ?? {}
     this.initializeCustomListFunctions(withChangesDetection)
     const baseQuery = buildMetadataQuery({ fetchParams })
+    const metadataTypeInfosPromise = this.listMetadataTypes(baseQuery)
     const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
       client: this.client,
       metadataQuery: buildFilePropsMetadataQuery(baseQuery),
+      metadataTypeInfos: await metadataTypeInfosPromise,
     })
     const targetedFetchInclude = fetchParams.target
       ? await getMetadataIncludeFromFetchTargets(fetchParams.target, this.elementsSource)
@@ -630,7 +632,6 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         .filter((namedType): namedType is [string, TypeElement] => namedType[0] !== undefined),
     )
     const metadataMetaType = fetchProfile.isFeatureEnabled('metaTypes') ? MetadataMetaType : undefined
-    const metadataTypeInfosPromise = this.listMetadataTypes(fetchProfile.metadataQuery)
 
     progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await this.fetchTypes({

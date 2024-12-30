@@ -305,7 +305,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
       },
     },
     [SPACE_SETTINGS_TYPE_NAME]: {
-      toActionNames: ({ change }) => {
+      toActionNames: async ({ change }) => {
         if (isAdditionOrModificationChange(change)) {
           return ['modify']
         }

@@ -129,7 +129,7 @@ describe('page definitions utils', () => {
         spaceId: new ReferenceExpression(getChangeData(spaceChange).elemID),
       }),
     })
-    it('should return the original action when there is no space change in the change group', () => {
+    it('should return the original action when there is no space change in the change group', async () => {
       const args = {
         change: pageChange,
         changeGroup: {
@@ -139,9 +139,9 @@ describe('page definitions utils', () => {
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
       }
-      expect(homepageAdditionToModification(args)).toEqual([pageChange.action])
+      await expect(homepageAdditionToModification(args)).resolves.toEqual([pageChange.action])
     })
-    it('should return the original action if page is not pointing to space change', () => {
+    it('should return the original action if page is not pointing to space change', async () => {
       const args = {
         change: pageChange,
         changeGroup: {
@@ -151,9 +151,9 @@ describe('page definitions utils', () => {
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
       }
-      expect(homepageAdditionToModification(args)).toEqual([pageChange.action])
+      await expect(homepageAdditionToModification(args)).resolves.toEqual([pageChange.action])
     })
-    it('should return the original action if page is pointing to a different space instance', () => {
+    it('should return the original action if page is pointing to a different space instance', async () => {
       const args = {
         change: pageChangeWithRefToDifferentSpace,
         changeGroup: {
@@ -163,9 +163,9 @@ describe('page definitions utils', () => {
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
       }
-      expect(homepageAdditionToModification(args)).toEqual([pageChangeWithRefToDifferentSpace.action])
+      await expect(homepageAdditionToModification(args)).resolves.toEqual([pageChangeWithRefToDifferentSpace.action])
     })
-    it('should return the original action if page change is not addition', () => {
+    it('should return the original action if page change is not addition', async () => {
       const pageNotAdditionChange = toChange({ before: getChangeData(pageChangeWithRefToSpace) })
       const args = {
         change: pageNotAdditionChange,
@@ -176,9 +176,9 @@ describe('page definitions utils', () => {
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
       }
-      expect(homepageAdditionToModification(args)).toEqual([pageNotAdditionChange.action])
+      await expect(homepageAdditionToModification(args)).resolves.toEqual([pageNotAdditionChange.action])
     })
-    it('should return the "modify" action', () => {
+    it('should return the "modify" action', async () => {
       const args = {
         change: pageChangeWithRefToSpace,
         changeGroup: {
@@ -188,7 +188,7 @@ describe('page definitions utils', () => {
         elementSource: buildElementsSourceFromElements([]),
         sharedContext: {},
       }
-      expect(homepageAdditionToModification(args)).toEqual(['modify'])
+      await expect(homepageAdditionToModification(args)).resolves.toEqual(['modify'])
     })
   })
   describe('putHomepageIdInAdditionContext', () => {

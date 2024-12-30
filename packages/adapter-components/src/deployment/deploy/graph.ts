@@ -47,30 +47,33 @@ const isStandardDependentAction = <AdditionalAction extends string = never>(
 ): boolean =>
   isStandardAction(sourceAction) && isStandardAction(targetAction) && isDependentAction(sourceAction, targetAction)
 
-const groupChangesByTypeAndAction = <ClientOptions extends string, AdditionalAction extends string = never>(
+const groupChangesByTypeAndAction = async <ClientOptions extends string, AdditionalAction extends string = never>(
   changes: Change<InstanceElement>[],
   defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>,
   changeContext: Omit<ChangeAndContext, 'change'>,
-): Record<string, ChangesByAction<AdditionalAction>> => {
+): Promise<Record<string, ChangesByAction<AdditionalAction>>> => {
   const changesByTypeAndAction: Record<string, ChangesByAction<AdditionalAction>> = {}
-  changes.forEach(c => {
-    const { typeName } = getChangeData(c).elemID
-    const actions = (defQuery.query(typeName)?.toActionNames ?? toDefaultActionNames)({
-      change: c,
-      ...changeContext,
-    })
-    if (changesByTypeAndAction[typeName] === undefined) {
-      changesByTypeAndAction[typeName] = {}
-    }
-    const typeChanges = changesByTypeAndAction[typeName]
-    actions.forEach(a => {
-      if (typeChanges[a] !== undefined) {
-        typeChanges[a]?.push(c)
-      } else {
-        typeChanges[a] = [c]
+  await Promise.all(
+    changes.map(async c => {
+      const { typeName } = getChangeData(c).elemID
+      const toActionNamesFunc = defQuery.query(typeName)?.toActionNames ?? toDefaultActionNames
+      const actions = await toActionNamesFunc({
+        change: c,
+        ...changeContext,
+      })
+      if (changesByTypeAndAction[typeName] === undefined) {
+        changesByTypeAndAction[typeName] = {}
       }
-    })
-  })
+      const typeChanges = changesByTypeAndAction[typeName]
+      actions.forEach(a => {
+        if (typeChanges[a] !== undefined) {
+          typeChanges[a]?.push(c)
+        } else {
+          typeChanges[a] = [c]
+        }
+      })
+    }),
+  )
   return changesByTypeAndAction
 }
 
@@ -78,7 +81,7 @@ const groupChangesByTypeAndAction = <ClientOptions extends string, AdditionalAct
  * define the dependencies when deploying a change group, based on the existing changes.
  * dependencies can be controlled at the type + action level
  */
-export const createDependencyGraph = <ClientOptions extends string, AdditionalAction extends string>({
+export const createDependencyGraph = async <ClientOptions extends string, AdditionalAction extends string>({
   defQuery,
   dependencies,
   changes,
@@ -87,8 +90,8 @@ export const createDependencyGraph = <ClientOptions extends string, AdditionalAc
   defQuery: DefQuery<InstanceDeployApiDefinitions<AdditionalAction, ClientOptions>>
   dependencies?: ChangeDependency<AdditionalAction>[]
   changes: Change<InstanceElement>[]
-} & Omit<ChangeAndContext, 'change'>): DAG<NodeType<AdditionalAction>> => {
-  const changesByTypeAndAction = groupChangesByTypeAndAction(changes, defQuery, changeContext)
+} & Omit<ChangeAndContext, 'change'>): Promise<DAG<NodeType<AdditionalAction>>> => {
+  const changesByTypeAndAction = await groupChangesByTypeAndAction(changes, defQuery, changeContext)
 
   const graph = new DAG<NodeType<AdditionalAction>>()
   Object.entries(changesByTypeAndAction).forEach(([typeName, mapping]) => {

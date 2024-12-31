@@ -130,7 +130,7 @@ const groupAppRolesByParent = async (
 ): Promise<Record<string, InstanceElement[]>> =>
   _.groupBy(
     (await getInstancesFromElementSource(elementSource, [APP_ROLE_TYPE_NAME])).map(appRole =>
-      addAppRoleIdToAppRole(appRole, appRoleNameToInternalId),
+      addAppRoleIdToAppRole(appRole.clone(), appRoleNameToInternalId),
     ),
     // If no parent is found & the app role is not part of the received changes, we will just skip it
     elem => getParents(elem)[0]?.elemID.getFullName(),

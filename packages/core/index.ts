@@ -22,11 +22,7 @@ export {
 } from './src/core/adapters/adapters'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
-export {
-  getAdapterConfigsPerAccount,
-  getCustomReferences,
-  getCustomReferencesFunc,
-} from './src/local-workspace/workspace'
+export { getAdapterConfigsPerAccount, getCustomReferences } from './src/local-workspace/workspace'
 // Note: SALTO-7000: These are exported for backward compatibility
 export {
   localWorkspaceConfigSource,

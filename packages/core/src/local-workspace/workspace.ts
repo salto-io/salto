@@ -16,13 +16,13 @@ import {
   Workspace,
   staticFiles,
   configSource as cs,
-  WorkspaceGetCustomReferencesFunc,
 } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   loadLocalWorkspace as localWorkspaceLoad,
   initLocalWorkspace as localInitLocalWorkspace,
+  getCustomReferencesImplementation,
 } from '@salto-io/local-workspace'
 // for backward comptability
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
@@ -31,6 +31,7 @@ import { getAdaptersConfigTypesMap } from '../core/adapters'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+// for backward compatibility - should be deleted!
 export const getAdapterConfigsPerAccount = async (
   envs: EnvConfig[],
   adapterCreators?: Record<string, Adapter>,
@@ -57,32 +58,6 @@ export const getAdapterConfigsPerAccount = async (
   })
   return Object.values(configTypesByAccount).flat()
 }
-
-export const getCustomReferencesFunc = (adapterCreators: Record<string, Adapter>): WorkspaceGetCustomReferencesFunc =>
-  async function getCustomReferences(
-    elements: Element[],
-    accountToServiceName: Record<string, string>,
-    adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
-  ): Promise<ReferenceInfo[]> {
-    const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
-      const serviceName = accountToServiceName[account] ?? account
-      try {
-        const refFunc = adapterCreators[serviceName]?.getCustomReferences
-        if (refFunc !== undefined) {
-          return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
-        }
-      } catch (err) {
-        log.error('failed to get custom references for %s: %o', account, err)
-      }
-      return []
-    }
-
-    const accountToElements = _.groupBy(
-      elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER),
-      e => e.elemID.adapter,
-    )
-    return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
-  }
 
 // for backward compatibility - should be deleted!
 export const getCustomReferences = async (
@@ -125,8 +100,6 @@ export async function loadLocalWorkspace(args: LoadLocalWorkspaceArgs): Promise<
   const actualAdapterCreator = args.adapterCreators ?? allAdapterCreators
   return localWorkspaceLoad({
     ...args,
-    getConfigTypes: getAdapterConfigsPerAccount,
-    getCustomReferences: getCustomReferencesFunc(actualAdapterCreator),
     adapterCreators: actualAdapterCreator,
   })
 }
@@ -180,7 +153,7 @@ export async function initLocalWorkspace(
     baseDir,
     envName,
     Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
-    getCustomReferencesFunc(adapterCreators),
+    getCustomReferencesImplementation(adapterCreators),
     stateStaticFilesSource,
   )
 }

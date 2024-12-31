@@ -23,6 +23,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   shouldPopulateInternalIdAfterDeploy: true,
   addParentToInstancesWithinFolder: false,
   addParentToRecordTriggeredFlows: false,
+  packageVersionReference: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

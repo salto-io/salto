@@ -65,12 +65,25 @@ const getCustomReferences: GetCustomReferencesFunc = async elements =>
       ]
     : []
 
+const slimAdapter: Adapter = {
+  operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
+  validateCredentials: async () => ({ accountId: '' }),
+  authenticationMethods: {
+    basic: {
+      credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
+    },
+  },
+}
+
 const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persistent: boolean }): Promise<Workspace> =>
   loadLocalWorkspace({
     path: baseDir,
     persistent,
     getConfigTypes: async () => [],
     getCustomReferences: async elements => getCustomReferences(elements),
+    // we pass slimAdapter as this is only used for getConfigTypes which currently as defined does nothing with it!!
+    // can't import adapterCreators here as we get circular dependency
+    adapterCreators: { dummy: slimAdapter },
   })
 
 const loadElementsFromFolder: AdapterFormat['loadElementsFromFolder'] = async ({ baseDir }) => {

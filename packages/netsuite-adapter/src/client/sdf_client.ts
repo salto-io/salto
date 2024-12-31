@@ -65,6 +65,8 @@ import {
   MissingManifestFeaturesError,
   getFailedObjectsMap,
   getFailedObjects,
+  PartialSuccessDeployErrors,
+  DeployWarning,
 } from './errors'
 import { isSdfOAuthCredentials, SdfCredentials, SdfOAuthCredentials, SdfTokenBasedCredentials } from './credentials'
 import {
@@ -95,6 +97,7 @@ import {
 import { fixManifest } from './manifest_utils'
 import {
   detectLanguage,
+  ErrorDetectors,
   FEATURE_NAME,
   fetchLockedObjectErrorRegex,
   fetchUnexpectedErrorRegex,
@@ -171,7 +174,7 @@ const ALL = 'ALL'
 export const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
 
 // e.g. *** ERREUR ***
-const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
+const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$', 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -320,6 +323,70 @@ export default class SdfClient {
     }
   }
 
+  private static toFeaturesDeployError(
+    dataLines: string[],
+    errorDetectors: ErrorDetectors,
+  ): FeaturesDeployError | undefined {
+    const { configureFeatureFailRegex } = errorDetectors
+    const featureDeployFailes = dataLines.filter(line => configureFeatureFailRegex.test(line))
+    if (featureDeployFailes.length === 0) {
+      return undefined
+    }
+
+    log.warn('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
+    const errorIds = featureDeployFailes
+      .map(line => line.match(configureFeatureFailRegex)?.groups)
+      .filter(isDefined)
+      .map(groups => groups[FEATURE_NAME])
+
+    const errorMessage = dataLines
+      .filter(line => errorIds.some(id => new RegExp(`\\b${id}\\b`).test(line)))
+      .join(os.EOL)
+
+    return new FeaturesDeployError(errorMessage, errorIds)
+  }
+
+  private static toDeployWarnings(dataLines: string[], errorDetectors: ErrorDetectors): DeployWarning[] {
+    const { deployWarningTitle, deployWarningDetailsLine, deployWarningDetailsToExtract, deployWarningForCustomField } =
+      errorDetectors
+    const { warnings } = dataLines.reduce(
+      (acc, line) => {
+        if (acc.currentWarning !== undefined) {
+          const { objectId, lines } = acc.currentWarning
+          if (deployWarningDetailsToExtract.some(regex => regex.test(line))) {
+            lines.push(line)
+            const [customFieldObjectId] = getGroupItemFromRegex(line, deployWarningForCustomField, OBJECT_ID)
+            if (customFieldObjectId !== undefined) {
+              acc.warnings.push({ objectId: customFieldObjectId, lines: [lines[0], line] })
+            }
+            return acc
+          }
+          if (deployWarningDetailsLine.test(line)) {
+            log.warn('ignoring SDF warning for objectId %s: %s', objectId, line)
+            return acc
+          }
+          return { ...acc, currentWarning: undefined }
+        }
+        const [objectId] = getGroupItemFromRegex(line, deployWarningTitle, OBJECT_ID)
+        if (objectId !== undefined) {
+          const currentWarning = { objectId, lines: [line] }
+          return { currentWarning, warnings: acc.warnings.concat(currentWarning) }
+        }
+        return acc
+      },
+      {
+        warnings: [] as { objectId: string; lines: string[] }[],
+        currentWarning: undefined as { objectId: string; lines: string[] } | undefined,
+      },
+    )
+    return (
+      warnings
+        // the first line is the warning title. if there's no details lines we want to omit the warning.
+        .filter(warning => warning.lines.length > 1)
+        .map(warning => new DeployWarning(warning.objectId, warning.lines.join(os.EOL)))
+    )
+  }
+
   private static verifySuccessfulDeploy(data: unknown): void {
     if (!_.isArray(data)) {
       log.warn('suitecloud deploy returned unexpected value: %o', data)
@@ -335,21 +402,15 @@ export default class SdfClient {
     }
 
     const detectedLanguage = detectLanguage(errorString)
-    const { configureFeatureFailRegex } = multiLanguageErrorDetectors[detectedLanguage]
-    const featureDeployFailes = dataLines.filter(line => configureFeatureFailRegex.test(line))
-    if (featureDeployFailes.length === 0) return
+    const errorDetectors = multiLanguageErrorDetectors[detectedLanguage]
 
-    log.warn('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
-    const errorIds = featureDeployFailes
-      .map(line => line.match(configureFeatureFailRegex)?.groups)
-      .filter(isDefined)
-      .map(groups => groups[FEATURE_NAME])
+    const partialDeployErrors = ([] as Error[])
+      .concat(SdfClient.toFeaturesDeployError(dataLines, errorDetectors) ?? [])
+      .concat(SdfClient.toDeployWarnings(dataLines, errorDetectors))
 
-    const errorMessage = dataLines
-      .filter(line => errorIds.some(id => new RegExp(`\\b${id}\\b`).test(line)))
-      .join(os.EOL)
-
-    throw new FeaturesDeployError(errorMessage, errorIds)
+    if (partialDeployErrors.length > 0) {
+      throw new PartialSuccessDeployErrors(errorString, partialDeployErrors)
+    }
   }
 
   private verifySuccessfulAction(actionResult: ActionResult, commandName: string): void {
@@ -968,7 +1029,7 @@ export default class SdfClient {
   }
 
   private customizeDeployError(error: Error): Error {
-    if (error instanceof FeaturesDeployError) {
+    if (error instanceof PartialSuccessDeployErrors) {
       return error
     }
 
@@ -1016,7 +1077,10 @@ export default class SdfClient {
     const allDeployedObjects = getGroupItemFromRegex(error.message, deployedObjectRegex, OBJECT_ID)
     if (allDeployedObjects.length > 0) {
       const errorMessages = sliceMessagesByRegex(messages, deployedObjectRegex, false)
-      const message = errorMessages.length > 0 ? errorMessages.join(os.EOL) : error.message
+      const joinedErrorMessage = errorMessages.length > 0 ? errorMessages.join(os.EOL) : undefined
+      const messageAfterFatalError = joinedErrorMessage?.split(fatalErrorMessageRegex).slice(-1)[0]?.trimStart()
+
+      const message = messageAfterFatalError ?? joinedErrorMessage ?? error.message
       // the last object in the error message is the one that failed the deploy
       const errorsMap = new Map([[allDeployedObjects.slice(-1)[0], [{ message }]]])
       return new ObjectsDeployError(error.message, errorsMap)

@@ -22,6 +22,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   extendFetchTargets: false,
   shouldPopulateInternalIdAfterDeploy: true,
   addParentToInstancesWithinFolder: false,
+  addParentToRecordTriggeredFlows: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

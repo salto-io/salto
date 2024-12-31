@@ -62,6 +62,10 @@ const extractTranslationBodyParts = async (
     return translationBody.parts
   }
   if (isStaticFile(translationBody)) {
+    if (translationBody.getContent() === undefined) {
+      log.warn(`Translation body content is undefined for staticFile with path ${translationBody.filepath}`)
+      return []
+    }
     if (translationBody.isTemplate) {
       const templateExpression = await parserUtils.staticFileToTemplateExpression(translationBody)
       if (templateExpression === undefined) {

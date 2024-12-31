@@ -274,7 +274,7 @@ export const createDeployProgressReporter = async (
       suffix = args.suffix
       if (!wasDeploymentIdReported && deployResult.id) {
         wasDeploymentIdReported = true
-        const message = `Deployment with ID ${deployResult.id}  was created in Salesforce.`
+        const message = `Deployment with ID ${deployResult.id} was created in Salesforce.`
         log.debug(message)
         progressReporter.reportProgress({
           message,
@@ -368,6 +368,10 @@ export const adapter: Adapter = {
       fixElements: async elements => {
         const salesforceAdapter = createSalesforceAdapter()
         return salesforceAdapter.fixElements(elements)
+      },
+      cancelServiceAsyncTask: async input => {
+        const salesforceAdapter = createSalesforceAdapter()
+        return salesforceAdapter.cancelServiceAsyncTask(input)
       },
     }
   },

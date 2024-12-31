@@ -223,6 +223,10 @@ export const createUnassociatedAttachment = async (
     const fileContent = isStaticFile(attachmentInstance.value.content)
       ? await attachmentInstance.value.content.getContent()
       : attachmentInstance.value.content
+
+    if (isStaticFile(attachmentInstance.value.content) && fileContent === undefined) {
+      log.warn(`Attachment ${attachmentInstance.elemID.getFullName()} has no content`)
+    }
     const form = new FormData()
     form.append('inline', attachmentInstance.value.inline.toString())
     form.append('file', fileContent, attachmentInstance.value.file_name)

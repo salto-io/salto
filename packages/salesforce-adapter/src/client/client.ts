@@ -33,7 +33,13 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountInfo, CredentialError, Value } from '@salto-io/adapter-api'
+import {
+  AccountInfo,
+  CancelServiceAsyncTaskInput,
+  CancelServiceAsyncTaskResult,
+  CredentialError,
+  Value,
+} from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
@@ -574,6 +580,7 @@ interface ISalesforceClient {
   queryAll(queryString: string): Promise<AsyncIterable<SalesforceRecord[]>>
   bulkLoadOperation(operation: BulkLoadOperation, type: string, records: SalesforceRecord[]): Promise<BatchResultInfo[]>
   request(url: string): Promise<unknown>
+  cancelMetadataValidateOrDeployTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult>
 }
 
 type ListMetadataObjectsResult = ReturnType<ISalesforceClient['listMetadataObjects']>
@@ -585,6 +592,15 @@ export type CustomListFuncDef = {
   func: CustomListFunc
   mode: CustomListFuncMode
 }
+
+type CanceledDeployResult = {
+  deployResult: {
+    status: string
+  }
+}
+
+const isCancelDeployResult = (result: unknown): result is CanceledDeployResult =>
+  _.isString(_.get(result, ['deployResult', 'status']))
 
 export default class SalesforceClient implements ISalesforceClient {
   private readonly retryOptions: RequestRetryOptions
@@ -1000,6 +1016,62 @@ export default class SalesforceClient implements ISalesforceClient {
       }),
       progressCallback,
     )
+  }
+
+  @mapToUserFriendlyErrorMessages
+  @logDecorator(['taskId'])
+  @requiresLogin()
+  public async cancelMetadataValidateOrDeployTask({
+    taskId,
+  }: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
+    try {
+      const deploymentStatus = await this.conn.metadata.checkDeployStatus(taskId)
+      if (deploymentStatus.done) {
+        log.debug('Deployment with id %s is already done, no need to cancel', taskId)
+        return { errors: [] }
+      }
+      const cancelDeployResult = await this.conn.request({
+        method: 'PATCH',
+        url: `/services/data/v${API_VERSION}/metadata/deployRequest/${taskId}`,
+        body: inspectValue({
+          deployResult: {
+            status: 'Canceling',
+          },
+        }),
+      })
+      if (!isCancelDeployResult(cancelDeployResult)) {
+        return {
+          errors: [
+            {
+              message: `Failed to cancel async deployment with id ${taskId}`,
+              detailedMessage: 'Salesforce cancelDeployResult value does not contain status',
+              severity: 'Error',
+            },
+          ],
+        }
+      }
+      const waitUntilCanceled = async (): Promise<CancelServiceAsyncTaskResult> => {
+        const deployStatus = await this.conn.metadata.checkDeployStatus(taskId)
+        log.trace('waitUntilCanceled deployStatus: %s', inspectValue(deployStatus))
+        if (deployStatus.done) {
+          return { errors: [] }
+        }
+        await new Promise(resolve => setTimeout(resolve, this.conn.metadata.pollInterval))
+        return waitUntilCanceled()
+      }
+      return await waitUntilCanceled()
+    } catch (e) {
+      log.error('Failed to cancel deployment with id %s: %s', taskId, inspectValue(e))
+      return {
+        errors: [
+          {
+            message: `Failed to cancel async deployment with id ${taskId}`,
+            detailedMessage: e.message,
+            severity: 'Error',
+          },
+        ],
+      }
+    }
   }
 
   @mapToUserFriendlyErrorMessages

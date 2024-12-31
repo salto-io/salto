@@ -370,6 +370,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: BRAND_TYPE_NAME },
   },
   {
+    src: { field: 'brandId' },
+    serializationStrategy: 'id',
+    target: { type: BRAND_TYPE_NAME },
+  },
+  {
     src: { field: 'brand_ids' },
     serializationStrategy: 'id',
     target: { type: BRAND_TYPE_NAME },

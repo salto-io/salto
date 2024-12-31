@@ -26,6 +26,8 @@ import {
   PartialFetchData,
   ReadOnlyElementsSource,
   TypeElement,
+  CancelServiceAsyncTaskInput,
+  CancelServiceAsyncTaskResult,
 } from '@salto-io/adapter-api'
 import {
   filter,
@@ -140,6 +142,7 @@ import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
+import addParentToRecordTriggeredFlows from './filters/add_parent_to_record_triggered_flows'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
@@ -224,6 +227,8 @@ export const allFilters: Array<FilterCreator> = [
   // convertMapsFilter should run before profile fieldReferencesFilter
   convertMapsFilter,
   flowFilter,
+  elementsUrlFilter,
+  // customObjectInstanceReferencesFilter should run after elementsUrlFilter
   customObjectInstanceReferencesFilter,
   cpqReferencableFieldReferencesFilter,
   cpqCustomScriptFilter,
@@ -238,7 +243,6 @@ export const allFilters: Array<FilterCreator> = [
   extendTriggersMetadataFilter,
   profilePathsFilter,
   territoryFilter,
-  elementsUrlFilter,
   nestedInstancesAuthorInformation,
   customObjectAuthorFilter,
   dataInstancesAuthorFilter,
@@ -259,6 +263,8 @@ export const allFilters: Array<FilterCreator> = [
   // should run after convertListsFilter
   replaceFieldValuesFilter,
   valueToStaticFileFilter,
+  // addParentToRecordTriggeredFlows should run before fieldReferenceFilter
+  addParentToRecordTriggeredFlows,
   fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,
@@ -813,6 +819,10 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
 
   async validate(deployOptions: SalesforceAdapterDeployOptions): Promise<DeployResult> {
     return this.deployOrValidate(deployOptions, true)
+  }
+
+  async cancelServiceAsyncTask(input: CancelServiceAsyncTaskInput): Promise<CancelServiceAsyncTaskResult> {
+    return this.client.cancelMetadataValidateOrDeployTask(input)
   }
 
   private async listMetadataTypes(metadataQuery: MetadataQuery): Promise<MetadataObject[]> {

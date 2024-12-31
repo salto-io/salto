@@ -5,7 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { DeployResult, GroupProperties } from '@salto-io/core'
+import { CompatibleDeployFunc, DeployResult, GroupProperties } from '@salto-io/core'
 import * as saltoCoreModule from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import * as saltoFileModule from '@salto-io/file'
@@ -22,7 +22,7 @@ const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
 
 const mockDeployImpl =
-  (extraProperties?: DeployResult['extraProperties']): typeof saltoCoreModule.deploy =>
+  (extraProperties?: DeployResult['extraProperties']): CompatibleDeployFunc =>
   async (...args) =>
     // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
     // "The module factory of `jest.mock()` is not allowed to reference any
@@ -442,7 +442,7 @@ describe('deploy command', () => {
     })
   })
   describe('when there are deploy actions', () => {
-    const testDeployActionsVisability = async (userBooleanInput: boolean): Promise<void> => {
+    const testDeployActionsVisibility = async (userBooleanInput: boolean): Promise<void> => {
       mockGetUserBooleanInput.mockResolvedValueOnce(userBooleanInput)
       await action({
         ...cliCommandArgs,
@@ -482,10 +482,10 @@ describe('deploy command', () => {
       expect(mockedDeploy.shouldDeploy).toHaveBeenCalled()
     }
     it('should print deploy actions when deploy is done', async () => {
-      await testDeployActionsVisability(true)
+      await testDeployActionsVisibility(true)
     })
     it('should print deploy actions when deploy is canceled', async () => {
-      await testDeployActionsVisability(false)
+      await testDeployActionsVisibility(false)
     })
   })
   describe('Using environment variable', () => {

@@ -7,6 +7,7 @@
  */
 import { cancelServiceAsyncTask } from '@salto-io/core'
 import { inspectValue } from '@salto-io/adapter-utils'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { errorOutputLine, outputLine } from '../outputer'
 import { CliExitCode } from '../types'
@@ -18,7 +19,7 @@ export type CancelTaskInput = {
 export const action: WorkspaceCommandAction<CancelTaskInput> = async ({ input, workspace, output }) => {
   const { taskId, account } = input
   try {
-    const result = await cancelServiceAsyncTask({ workspace, account, input: { taskId } })
+    const result = await cancelServiceAsyncTask({ workspace, account, input: { taskId }, adapterCreators })
     const errors = result.errors.filter(e => e.severity === 'Error')
     if (errors.length > 0) {
       errorOutputLine(`Failed to cancel async task ${taskId} with Errors: ${inspectValue(errors)}`, output)

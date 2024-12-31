@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
+import { Adapter, DetailedChange, GLOBAL_ADAPTER, ObjectType, ReferenceInfo, Element } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import {
   Workspace,
@@ -30,8 +30,13 @@ import {
   getBaseDirFromEnvName,
   getStaticFileCacheName,
   WorkspaceGetCustomReferencesFunc,
+  elementSource,
+  adaptersConfigSource,
+  createAdapterReplacedID,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
+import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from './app_config'
 import { loadState } from './state'
@@ -44,6 +49,7 @@ const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { buildStaticFilesSource } = staticFiles
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
@@ -229,10 +235,70 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
-  getConfigTypes: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
-  getCustomReferences: WorkspaceGetCustomReferencesFunc
+  getConfigTypes?: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
 }
+
+export const getAdapterConfigsPerAccount = async (
+  envs: EnvConfig[],
+  adapterCreators: Record<string, Adapter>,
+): Promise<ObjectType[]> => {
+  // for backward compatibility
+  const configTypesByAccount = Object.fromEntries(
+    Object.entries(
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
+      ),
+    ).filter(entry => entry[1].length > 0),
+  )
+  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
+  const differentlyNamedAccounts = Object.fromEntries(
+    envs
+      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
+      .filter(([accountName, serviceName]) => accountName !== serviceName),
+  )
+  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
+    const adapter = differentlyNamedAccounts[account]
+    const adapterConfigs = configTypesByAccount[adapter]
+    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
+      configElementSource,
+      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
+      adapter,
+      account,
+    )
+    configTypesByAccount[account] = additionalConfigs
+  })
+  return Object.values(configTypesByAccount).flat()
+}
+
+export const getCustomReferencesImplementation = (
+  adapterCreators: Record<string, Adapter>,
+): WorkspaceGetCustomReferencesFunc =>
+  async function getCustomReferences(
+    elements: Element[],
+    accountToServiceName: Record<string, string>,
+    adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
+  ): Promise<ReferenceInfo[]> {
+    const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
+      const serviceName = accountToServiceName[account] ?? account
+      try {
+        const refFunc = adapterCreators[serviceName]?.getCustomReferences
+        if (refFunc !== undefined) {
+          return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
+        }
+      } catch (err) {
+        log.error('failed to get custom references for %s: %o', account, err)
+      }
+      return []
+    }
+
+    const accountToElements = _.groupBy(
+      elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER),
+      e => e.elemID.adapter,
+    )
+    return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
+  }
 
 export async function loadLocalWorkspace({
   path: lookupDir,
@@ -246,6 +312,8 @@ export async function loadLocalWorkspace({
   adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
+  const getConfigTypesFunc = getConfigTypes ?? getAdapterConfigsPerAccount
+  const getCustomReferencesFunc = getCustomReferences ?? getCustomReferencesImplementation(adapterCreators)
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
@@ -259,7 +327,7 @@ export async function loadLocalWorkspace({
       baseDir,
       remoteMapCreator,
       persistent,
-      await getConfigTypes(workspaceConfig.envs, adapterCreators),
+      await getConfigTypesFunc(workspaceConfig.envs, adapterCreators),
       configOverrides,
     )
     const envNames = workspaceConfig.envs.map(e => e.name)
@@ -282,7 +350,7 @@ export async function loadLocalWorkspace({
       ignoreFileChanges,
       persistent,
       undefined,
-      getCustomReferences,
+      getCustomReferencesFunc,
     )
 
     return {

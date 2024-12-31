@@ -606,6 +606,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Group' },
   },
   {
+    src: { field: 'namespace', parentTypes: ['PackageVersion'] },
+    target: { type: 'InstalledPackage' },
+  },
+  {
     src: {
       field: 'compactLayoutAssignment',
       parentTypes: [RECORD_TYPE_METADATA_TYPE],
@@ -1141,6 +1145,7 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
     .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
+    .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

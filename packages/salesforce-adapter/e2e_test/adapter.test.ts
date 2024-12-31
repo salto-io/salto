@@ -112,7 +112,7 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants
-const { isDefined } = lowerDashValues
+const { isDefined, isPlainObject } = lowerDashValues
 
 describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
@@ -3191,16 +3191,16 @@ describe('Salesforce adapter E2E with real account', () => {
                 ...mockDefaultValues.LightningComponentBundle,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
                 lwcResources: {
-                  lwcResource: [
-                    {
+                  lwcResource: {
+                    'myLightningComponentBundle_js@v': {
                       source: lwcJsResourceContent,
                       filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
                     },
-                    {
+                    'myLightningComponentBundle_html@v': {
                       source: lwcHtmlResourceContent,
                       filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
                     },
-                  ],
+                  },
                 },
               },
               type: constants.LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
@@ -3219,15 +3219,24 @@ describe('Salesforce adapter E2E with real account', () => {
             const updatedValue = '// UPDATED'
             const updatedInstance = await updateInstance(
               lwcInstance,
-              ['lwcResources', 'lwcResource', '0', 'source'],
+              ['lwcResources', 'lwcResource', 'myLightningComponentBundle_js@v', 'source'],
               updatedValue,
             )
             const instanceInfo = await getMetadataFromElement(client, lwcInstance)
             expect(instanceInfo).toBeDefined()
             const lwcResources = _.get(instanceInfo, ['lwcResources', 'lwcResource'])
-            const updatedResource = makeArray(lwcResources).find(
-              lwcResource => lwcResource.filePath === 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
-            )
+            const updatedResource = Object.values(lwcResources)
+              .filter(
+                (val: unknown): val is { filePath: string; source: Buffer } =>
+                  isPlainObject(val) && _.isString(_.get(val, 'filePath')) && _.isBuffer(_.get(val, 'source')),
+              )
+              .find(
+                lwcResource => lwcResource.filePath === 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
+              )
+            expect(updatedResource).toBeDefined()
+            if (updatedResource === undefined) {
+              return
+            }
             expect(updatedResource.source).toEqual(Buffer.from(updatedValue).toString('base64'))
 
             // verify the xml attribute fields have no XML_ATTRIBUTE_PREFIX in the NaCL result

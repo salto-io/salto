@@ -85,6 +85,10 @@ const createInstances = async (
     return query.isCustomRecordMatch({ type: type.annotations[SCRIPT_ID], instanceId: record[SCRIPT_ID] })
   })
 
+  if (filteredRecords.length === 0) {
+    return { instances: [], errors: [] }
+  }
+
   if (shouldBeSingleton && filteredRecords.length === 1) {
     return {
       instances: [

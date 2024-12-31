@@ -449,6 +449,9 @@ export const getInternalId = (elem: Element): string =>
   isInstanceElement(elem) ? elem.value[INTERNAL_ID_FIELD] : elem.annotations[INTERNAL_ID_ANNOTATION]
 
 export const setInternalId = (elem: Element, val: string): void => {
+  if (val.length === 0) {
+    return
+  }
   if (isInstanceElement(elem)) {
     elem.value[INTERNAL_ID_FIELD] = val
   } else {

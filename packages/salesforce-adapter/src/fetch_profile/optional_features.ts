@@ -20,6 +20,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   genAiReferences: true,
   networkReferences: false,
   extendFetchTargets: false,
+  shouldPopulateInternalIdAfterDeploy: true,
   addParentToInstancesWithinFolder: false,
   addParentToRecordTriggeredFlows: false,
 }

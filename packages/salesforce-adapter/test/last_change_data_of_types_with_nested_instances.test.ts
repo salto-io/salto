@@ -194,7 +194,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
   })
   describe('when types are not managed in the environment', () => {
     beforeEach(() => {
-      metadataTypeInfos = [{ xmlName: 'CustomLabel' }, { xmlName: CUSTOM_OBJECT }, { xmlName: '' }]
+      metadataTypeInfos = [{ xmlName: CUSTOM_OBJECT }]
       metadataQuery = buildFilePropsMetadataQuery(
         buildMetadataQuery({
           fetchParams: {
@@ -210,7 +210,7 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         }),
       )
     })
-    it('should not update', async () => {
+    it('should not consider the unmanaged types', async () => {
       const lastChangeDateOfTypesWithNestedInstances = await getLastChangeDateOfTypesWithNestedInstances({
         client,
         metadataQuery,
@@ -221,8 +221,8 @@ describe('getLastChangeDateOfTypesWithNestedInstances', () => {
         AutoResponseRules: {},
         CustomLabels: undefined,
         CustomObject: {
-          Test1__c: '2024-11-07T00:00:00.000Z',
-          Test2__c: '2024-11-07T00:00:00.000Z',
+          Test1__c: '2023-11-01T00:00:00.000Z',
+          Test2__c: '2023-11-01T00:00:00.000Z',
         },
         EscalationRules: {},
         SharingRules: {},

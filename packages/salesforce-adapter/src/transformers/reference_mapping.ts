@@ -237,6 +237,13 @@ const GEN_AI_REFERENCES_DEF: FieldReferenceDefinition[] = [
   },
 ]
 
+const PACKAGE_VERSION_REFERENCE_DEF: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'namespace', parentTypes: ['PackageVersion'] },
+    target: { type: 'InstalledPackage' },
+  },
+]
+
 const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
   {
     src: { field: 'changePasswordTemplate', parentTypes: ['Network'] },
@@ -604,10 +611,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'group', parentTypes: ['SharedTo'] },
     target: { type: 'Group' },
-  },
-  {
-    src: { field: 'namespace', parentTypes: ['PackageVersion'] },
-    target: { type: 'InstalledPackage' },
   },
   {
     src: {
@@ -1145,7 +1148,7 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
     .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
-    .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
+    .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? PACKAGE_VERSION_REFERENCE_DEF : [])
 
 /**
  * Translate a reference expression back to its original value before deploy.

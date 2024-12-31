@@ -12,6 +12,7 @@ import {
   ElemID,
   InstanceElement,
   ListType,
+  MapType,
   ObjectType,
   toChange,
   TypeElement,
@@ -270,7 +271,7 @@ export const mockTypes = {
         refType: createMetadataObjectType({
           annotations: { metadataType: 'LwcResources' },
           fields: {
-            lwcResource: { refType: new ListType(BuiltinTypes.STRING) },
+            lwcResource: { refType: new MapType(BuiltinTypes.STRING) },
           },
         }),
       },

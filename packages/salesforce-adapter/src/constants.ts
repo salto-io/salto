@@ -459,6 +459,8 @@ export const OPPORTUNITY_METADATA_TYPE = 'Opportunity'
 export const ANIMATION_RULE_METADATA_TYPE = 'AnimationRule'
 export const CANVAS_METADATA_TYPE = 'CanvasMetadata'
 export const STATIC_RESOURCE_METADATA_TYPE = 'StaticResource'
+export const AURA_DEFINITION_BUNDLE_METADATA_TYPE = 'AuraDefinitionBundle'
+export const GEN_AI_FUNCTION_METADATA_TYPE = 'GenAiFunction'
 
 // Wave Metadata Types
 export const WAVE_RECIPE_METADATA_TYPE = 'WaveRecipe'

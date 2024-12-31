@@ -30,10 +30,12 @@ import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
 import {
+  DeployWarning,
   FeaturesDeployError,
   ManifestValidationError,
   MissingManifestFeaturesError,
   ObjectsDeployError,
+  PartialSuccessDeployErrors,
   SettingsDeployError,
 } from '../../src/client/errors'
 import { AdditionalDependencies } from '../../src/config/types'
@@ -915,7 +917,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const type = featuresType()
         const featuresDeployError = new FeaturesDeployError('error', ['ABC'])
         beforeEach(() => {
-          mockSdfDeploy.mockRejectedValue(featuresDeployError)
+          mockSdfDeploy.mockRejectedValue(new PartialSuccessDeployErrors('error', [featuresDeployError]))
         })
         it('should return error only when the only feature to deployed failed', async () => {
           const before = new InstanceElement(ElemID.CONFIG_NAME, type, {
@@ -973,6 +975,77 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             ],
             appliedChanges: [change],
             failedFeaturesIds: ['ABC'],
+          })
+        })
+      })
+
+      describe('deploy warnings', () => {
+        const deployWarnings = new PartialSuccessDeployErrors('error', [
+          new DeployWarning('someObject', 'warning -- ignored some fields of someObject'),
+          new DeployWarning('anotherObject', 'warning -- ignored some fields of anotherObject'),
+          new DeployWarning('nonExistObject', 'warning -- ignored some fields of nonExistObject'),
+          new DeployWarning('customRecordId', 'warning -- ignored some fields of customRecordFieldId'),
+          new DeployWarning('customRecordFieldId', 'warning -- ignored some fields of customRecordFieldId'),
+        ])
+        beforeEach(() => {
+          mockSdfDeploy.mockRejectedValue(deployWarnings)
+        })
+        it('should return salto errors with Warning severity', async () => {
+          const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+          const customRecordType = new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord123'),
+            fields: {
+              custom_field: { refType: BuiltinTypes.STRING, annotations: { scriptid: 'customRecordFieldId' } },
+            },
+            annotations: { scriptid: 'customRecordId' },
+          })
+          const change1 = toChange({
+            after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+          })
+          const change2 = toChange({
+            after: new InstanceElement('instance2', type, { scriptid: 'anotherObject' }),
+          })
+          const change3 = toChange({
+            after: new InstanceElement('instance3', type, { scriptid: 'objectWithoutWarning' }),
+          })
+          const change4 = toChange({
+            before: customRecordType,
+            after: customRecordType,
+          })
+          const change4Field = toChange({
+            after: customRecordType.fields.custom_field,
+          })
+          const changes = [change1, change2, change3, change4, change4Field]
+          expect(
+            await client.deploy(changes, SDF_CREATE_OR_UPDATE_GROUP_ID, ...deployParams, async () => true),
+          ).toEqual({
+            errors: [
+              {
+                elemID: getChangeData(change1).elemID,
+                message: 'warning -- ignored some fields of someObject',
+                detailedMessage: 'warning -- ignored some fields of someObject',
+                severity: 'Warning',
+              },
+              {
+                elemID: getChangeData(change2).elemID,
+                message: 'warning -- ignored some fields of anotherObject',
+                detailedMessage: 'warning -- ignored some fields of anotherObject',
+                severity: 'Warning',
+              },
+              {
+                elemID: customRecordType.elemID,
+                message: 'warning -- ignored some fields of customRecordFieldId',
+                detailedMessage: 'warning -- ignored some fields of customRecordFieldId',
+                severity: 'Warning',
+              },
+              {
+                elemID: customRecordType.fields.custom_field.elemID,
+                message: 'warning -- ignored some fields of customRecordFieldId',
+                detailedMessage: 'warning -- ignored some fields of customRecordFieldId',
+                severity: 'Warning',
+              },
+            ],
+            appliedChanges: changes,
           })
         })
       })

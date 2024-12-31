@@ -25,6 +25,7 @@ import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../../filter'
 import { RECORD_ID_SCHEMA, SAVED_SEARCH_RESULTS_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
+import { isSdfCreateOrUpdateGroupId } from '../../group_changes'
 import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE, SAVED_SEARCH, INTERNAL_ID, SCRIPT_ID } from '../../constants'
 import { getCustomListValues, isCustomListInstance } from '../../elements_source_index/elements_source_index'
@@ -256,7 +257,7 @@ const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: El
  * so we will be able to reference them in other instances
  * that are returned from SOAP API (e.g., Employee)
  */
-const filterCreator: RemoteFilterCreator = ({ client }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, changesGroupId }) => ({
   name: 'SDFInternalIds',
   remote: true,
   onFetch: async elements => {
@@ -276,23 +277,14 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
    * This removes the internal id before deploy since we don't want to actually deploy it to SDF
    */
   preDeploy: async changes => {
-    if (!client.isSuiteAppConfigured()) {
+    if (!changesGroupId || !isSdfCreateOrUpdateGroupId(changesGroupId)) {
       return
     }
-    const changesData = changes.filter(isAdditionOrModificationChange).map(getChangeData)
-    changesData
-      .filter(isInstanceElement)
-      .filter(e => isSupportedInstance(e) || isSavedSearch(e))
-      .forEach(inst => {
-        delete inst.value[INTERNAL_ID]
-      })
-    changesData
-      .filter(isObjectType)
-      .filter(isCustomRecordType)
-      .forEach(type => {
-        delete type.annotations[INTERNAL_ID]
-      })
-    changesData
+    const elements = changes.filter(isAdditionOrModificationChange).map(getChangeData)
+    elements.forEach(element => {
+      delete getElementValueOrAnnotations(element)[INTERNAL_ID]
+    })
+    elements
       .filter(isInstanceElement)
       .filter(isCustomListInstance)
       .forEach(instance => {

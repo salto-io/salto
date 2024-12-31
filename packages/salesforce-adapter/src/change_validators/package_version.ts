@@ -6,27 +6,50 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import {
+  // ChangeError,
+  ChangeValidator,
+  ElemID,
+  // ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  // ReadOnlyElementsSource,
+  // ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { APEX_CLASS_METADATA_TYPE, APEX_TRIGGER_METADATA_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const TYPES_TO_VALIDATE=
+const TYPES_TO_VALIDATE = new Set([APEX_CLASS_METADATA_TYPE, APEX_TRIGGER_METADATA_TYPE])
 
+const isOfTypeToValidate = (instance: InstanceElement): boolean =>
+  TYPES_TO_VALIDATE.has(instance.getTypeSync().elemID.typeName)
 
+// const isValidPackageVersion=(elementSource: ReadOnlyElementsSource|undefined): (instance:InstanceElement)=>boolean{
+//   return (instance:InstanceElement)=>{
+//     return instance?false:true
+//   }
+// }
 
-/**
- * It is forbidden to set more than one 'default' field as 'true' for some types.
- */
-const changeValidator: ChangeValidator = async changes => {
-  const instanceChangesErrors = await awu(changes)
+// const createPackageVersionsError = (instance: InstanceElement): ChangeError => {
+
+// }
+
+const changeValidator: ChangeValidator = async (changes, elementSource) => {
+  const instanceChangesErrors = awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .flatMap(getInstancesMultipleDefaultsErrors)
-    .toArray()
-
-  return instanceChangesErrors
+    // .filter(isOfTypeToValidate).filter(isValidPackageVersion(elementSource))
+    // .map(createPackageVersionsError)
+    .filter(err => err !== undefined)
+  const a = await elementSource?.getAll()
+  const b = await elementSource?.get(new ElemID('salesforce.InstalledPackage.instance.SBQQ'))
+  console.log(instanceChangesErrors, a, b, isOfTypeToValidate)
+  return []
 }
 
 export default changeValidator

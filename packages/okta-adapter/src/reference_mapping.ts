@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import {
   APPLICATION_TYPE_NAME,
@@ -29,6 +29,7 @@ import {
   USER_TYPE_NAME,
   GROUP_MEMBERSHIP_TYPE_NAME,
   JWK_TYPE_NAME,
+  USER_ROLES_TYPE_NAME,
 } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
@@ -304,6 +305,18 @@ const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'credentials.oauthClient.client_id',
     target: { type: APPLICATION_TYPE_NAME },
   },
+  {
+    src: { field: 'role', parentTypes: ['UserRole'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: 'Role' },
+  },
+  {
+    src: { field: naclCase('resource-set'), parentTypes: ['UserRole'] },
+    serializationStrategy: 'id',
+    missingRefStrategy: 'typeAndValue',
+    target: { type: 'ResourceSet' },
+  },
 ]
 
 const userReferenceRules: OktaFieldReferenceDefinition[] = [
@@ -331,6 +344,11 @@ const userReferenceRules: OktaFieldReferenceDefinition[] = [
     src: { field: 'id', parentTypes: ['UserTypeRef'] },
     serializationStrategy: 'id',
     target: { type: USERTYPE_TYPE_NAME },
+  },
+  {
+    src: { field: 'user', parentTypes: [USER_ROLES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: USER_TYPE_NAME },
   },
 ]
 

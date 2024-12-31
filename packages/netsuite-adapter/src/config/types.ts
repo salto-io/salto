@@ -106,6 +106,7 @@ export type FetchParams = {
   strictInstanceStructure?: boolean
   fieldsToOmit?: FieldToOmitParams[]
   findReferencesInFilesWithExtension?: string[]
+  singletonCustomRecords?: string[]
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -116,6 +117,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   strictInstanceStructure: 'strictInstanceStructure',
   fieldsToOmit: 'fieldsToOmit',
   findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
+  singletonCustomRecords: 'singletonCustomRecords',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -257,7 +259,6 @@ export type NetsuiteValidatorName =
   | 'removeListItem'
   | 'file'
   | 'uniqueFields'
-  | 'subInstances'
   | 'standardTypesInvalidValues'
   | 'mappedListsIndexes'
   | 'notYetSupportedValues'
@@ -612,6 +613,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
     findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
+    singletonCustomRecords: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -657,7 +659,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     removeListItem: { refType: BuiltinTypes.BOOLEAN },
     file: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
-    subInstances: { refType: BuiltinTypes.BOOLEAN },
     standardTypesInvalidValues: { refType: BuiltinTypes.BOOLEAN },
     mappedListsIndexes: { refType: BuiltinTypes.BOOLEAN },
     notYetSupportedValues: { refType: BuiltinTypes.BOOLEAN },

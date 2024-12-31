@@ -95,8 +95,8 @@ salesforce {
     }
     data = {
       includeObjects = [
-        ".*SBQQ__CustomAction__c.*",
-        ".*PricebookEntry.*",
+        "SBQQ__CustomAction__c",
+        "PricebookEntry",
       ]
       saltoManagementFieldSettings = {
         defaultFieldName = "ManagedBySalto__c"
@@ -117,14 +117,14 @@ salesforce {
         ]
         overrides = [
           {
-            objectsRegex = ".*pricebookEntryName.*"
+            objectsRegex = "PricebookEntry"
             idFields = [
               "Pricebook2Id",
               "Name",
             ]
           },
           {
-            objectsRegex = ".*SBQQCustomActionName.*"
+            objectsRegex = "SBQQ__CustomAction__c"
             idFields = [
               "SBQQ__Location__c",
               "SBQQ__DisplayOrder__c",

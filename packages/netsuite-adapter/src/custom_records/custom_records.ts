@@ -8,8 +8,16 @@
 import Ajv from 'ajv'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, ObjectType, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
+import { regex } from '@salto-io/lowerdash'
+import {
+  InstanceElement,
+  ObjectType,
+  ElemIdGetter,
+  OBJECT_SERVICE_ID,
+  toServiceIdsString,
+  ElemID,
+  SaltoElementError,
+} from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_RECORDS_PATH, INTERNAL_ID, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
 import { NetsuiteQuery } from '../config/query'
@@ -18,7 +26,6 @@ import { RecordValue } from '../client/suiteapp_client/soap_client/types'
 import { CustomRecordResult } from '../client/types'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 type SuiteQLRecord = {
   id: string
@@ -55,78 +62,113 @@ const createInstances = async (
   client: NetsuiteClient,
   records: RecordValue[],
   type: ObjectType,
+  query: NetsuiteQuery,
+  shouldBeSingleton: boolean,
   elemIdGetter?: ElemIdGetter,
-): Promise<InstanceElement[]> => {
+): Promise<{ instances: InstanceElement[]; errors: SaltoElementError[] }> => {
   const idToSuiteQLRecord = records.some(record => !record[SCRIPT_ID])
     ? await queryCustomRecordsTable(client, type.annotations[SCRIPT_ID])
     : {}
 
-  return records
-    .map(({ [SOAP_SCRIPT_ID]: scriptId, ...record }) => ({
-      ...record,
-      [SCRIPT_ID]: scriptId
-        ? String(scriptId).toLowerCase()
-        : idToSuiteQLRecord[record.attributes.internalId]?.scriptid.toLowerCase(),
-    }))
-    .filter(record => {
-      if (!record[SCRIPT_ID]) {
-        log.warn('Dropping record without %s of type %s: %o', SCRIPT_ID, type.elemID.name, record)
-        return false
-      }
-      return true
-    })
-    .map(record => ({
-      name:
-        elemIdGetter?.(
+  const recordsWithScriptId = records.map(({ [SOAP_SCRIPT_ID]: scriptId, ...record }) => ({
+    ...record,
+    [SCRIPT_ID]: scriptId
+      ? String(scriptId).toLowerCase()
+      : idToSuiteQLRecord[record.attributes.internalId]?.scriptid.toLowerCase(),
+  }))
+
+  const filteredRecords = recordsWithScriptId.filter(record => {
+    if (!record[SCRIPT_ID]) {
+      log.warn('Dropping record without %s of type %s: %o', SCRIPT_ID, type.elemID.name, record)
+      return false
+    }
+    return query.isCustomRecordMatch({ type: type.annotations[SCRIPT_ID], instanceId: record[SCRIPT_ID] })
+  })
+
+  if (filteredRecords.length === 0) {
+    return { instances: [], errors: [] }
+  }
+
+  if (shouldBeSingleton && filteredRecords.length === 1) {
+    return {
+      instances: [
+        new InstanceElement(ElemID.CONFIG_NAME, type, filteredRecords[0], [
           NETSUITE,
-          {
-            [INTERNAL_ID]: record.attributes.internalId,
-            [OBJECT_SERVICE_ID]: toServiceIdsString({
-              [SCRIPT_ID]: type.annotations[SCRIPT_ID],
-            }),
-          },
-          naclCase(record[SCRIPT_ID]),
-        ).name ?? naclCase(record[SCRIPT_ID]),
-      record,
-    }))
-    .map(
-      ({ name, record }) =>
-        new InstanceElement(name, type, record, [NETSUITE, CUSTOM_RECORDS_PATH, type.elemID.name, pathNaclCase(name)]),
-    )
+          CUSTOM_RECORDS_PATH,
+          type.elemID.name,
+          type.elemID.name,
+        ]),
+      ],
+      errors: [],
+    }
+  }
+
+  const instances = filteredRecords.map(record => {
+    const name =
+      elemIdGetter?.(
+        NETSUITE,
+        {
+          [INTERNAL_ID]: record.attributes.internalId,
+          [OBJECT_SERVICE_ID]: toServiceIdsString({
+            [SCRIPT_ID]: type.annotations[SCRIPT_ID],
+          }),
+        },
+        naclCase(record[SCRIPT_ID]),
+      ).name ?? naclCase(record[SCRIPT_ID])
+
+    return new InstanceElement(name, type, record, [
+      NETSUITE,
+      CUSTOM_RECORDS_PATH,
+      type.elemID.name,
+      pathNaclCase(name),
+    ])
+  })
+
+  const errors: SaltoElementError[] = shouldBeSingleton
+    ? [
+        {
+          severity: 'Warning',
+          elemID: type.elemID,
+          message: 'Fetched multiple instances for a singleton custom record type',
+          detailedMessage: `Expected a single instance of type ${type.elemID.name}, but received the following instances instead:
+${instances.map(instance => instance.elemID.getFullName()).join('\n')}`,
+        },
+      ]
+    : []
+
+  return { instances, errors }
 }
 
 export const getCustomRecords = async (
   client: NetsuiteClient,
   customRecordTypes: ObjectType[],
   query: NetsuiteQuery,
+  singletonCustomRecords: string[],
   elemIdGetter?: ElemIdGetter,
 ): Promise<CustomRecordResult> => {
   if (!client.isSuiteAppConfigured()) {
-    return { elements: [], largeTypesError: [] }
+    return { elements: [], largeTypesError: [], errors: [] }
   }
   const customRecordTypesMap = _.keyBy(customRecordTypes, type => type.annotations[SCRIPT_ID] as string)
   const { customRecords, largeTypesError } = await client.getCustomRecords(
     Object.keys(customRecordTypesMap).filter(query.isCustomRecordTypeMatch),
   )
 
-  const results = await awu(customRecords)
-    .map(async ({ type, records }) =>
-      !customRecordTypesMap[type] || records.length === 0
-        ? {
-            type,
-            instances: [],
-          }
-        : {
-            type,
-            instances: await createInstances(client, records, customRecordTypesMap[type], elemIdGetter),
-          },
-    )
-    .toArray()
+  const results = await Promise.all(
+    customRecords.map(async ({ type, records }) => {
+      if (!customRecordTypesMap[type] || records.length === 0) {
+        return { type, instances: [], errors: [] }
+      }
+      const shouldBeSingleton = singletonCustomRecords.some(singletonTypeRegex =>
+        regex.isFullRegexMatch(singletonTypeRegex, type),
+      )
+      return createInstances(client, records, customRecordTypesMap[type], query, shouldBeSingleton, elemIdGetter)
+    }),
+  )
 
   return {
-    elements: results.flatMap(({ type, instances }) =>
-      instances.filter(instance => query.isCustomRecordMatch({ type, instanceId: instance.value[SCRIPT_ID] })),
-    ),
+    elements: results.flatMap(({ instances }) => instances),
+    errors: results.flatMap(({ errors }) => errors),
     largeTypesError,
   }
 }

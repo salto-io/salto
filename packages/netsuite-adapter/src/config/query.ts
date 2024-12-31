@@ -49,8 +49,8 @@ export type FetchByQueryFailures = {
 
 export type FetchByQueryReturnType = {
   elements: ChangeDataType[]
+  fetchErrors: SaltoError[]
   deletedElements?: ElemID[]
-  deletedElementErrors?: SaltoError[]
   failures: FetchByQueryFailures
 }
 

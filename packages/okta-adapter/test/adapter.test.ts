@@ -33,7 +33,7 @@ import { definitions } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
-import { DEFAULT_CONFIG } from '../src/user_config'
+import { DEFAULT_CONFIG, OktaUserConfig } from '../src/user_config'
 import fetchMockReplies from './fetch_mock_replies.json'
 import {
   USER_TYPE_NAME,
@@ -72,6 +72,7 @@ import {
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
   ROLE_TYPE_NAME,
+  USER_ROLES_TYPE_NAME,
 } from '../src/constants'
 import * as logoModule from '../src/logo'
 
@@ -555,7 +556,7 @@ describe('adapter', () => {
   })
   describe('deploy', () => {
     let operations: AdapterOperations
-    let createOperations: (elements: Element[]) => AdapterOperations
+    let createOperations: (elements: Element[], config?: OktaUserConfig) => AdapterOperations
 
     let appType: ObjectType
     let groupType: ObjectType
@@ -566,6 +567,8 @@ describe('adapter', () => {
     let authServerType: ObjectType
     let authServerInstance: InstanceElement
     let roleType: ObjectType
+    let resourceSetType: ObjectType
+    let userType: ObjectType
     const emailTemplateType = new ObjectType({
       elemID: new ElemID(OKTA, EMAIL_TEMPLATE_TYPE_NAME),
       fields: {
@@ -599,13 +602,13 @@ describe('adapter', () => {
       })
       const orgSetting = new InstanceElement('_config', orgSettingType, { subdomain: 'subdomain' })
 
-      createOperations = (elements: Element[] = []) =>
+      createOperations = (elements: Element[] = [], config?: OktaUserConfig) =>
         adapter.operations({
           credentials: new InstanceElement('config', accessTokenCredentialsType, {
             baseUrl: 'https://test.okta.com',
             token: 't',
           }),
-          config: new InstanceElement('config', adapter.configType as ObjectType, DEFAULT_CONFIG),
+          config: new InstanceElement('config', adapter.configType as ObjectType, config ?? DEFAULT_CONFIG),
           elementsSource: buildElementsSourceFromElements([orgSetting, ...elements]),
         })
       operations = createOperations([])
@@ -660,6 +663,20 @@ describe('adapter', () => {
       })
       roleType = new ObjectType({
         elemID: new ElemID(OKTA, ROLE_TYPE_NAME),
+        fields: {
+          id: {
+            refType: BuiltinTypes.SERVICE_ID,
+          },
+        },
+      })
+      resourceSetType = new ObjectType({
+        elemID: new ElemID(OKTA, 'ResourceSet'),
+        fields: {
+          id: { refType: BuiltinTypes.SERVICE_ID },
+        },
+      })
+      userType = new ObjectType({
+        elemID: new ElemID(OKTA, USER_TYPE_NAME),
         fields: {
           id: {
             refType: BuiltinTypes.SERVICE_ID,
@@ -1524,18 +1541,6 @@ describe('adapter', () => {
     })
 
     describe('deploy users', () => {
-      let userType: ObjectType
-      beforeEach(() => {
-        userType = new ObjectType({
-          elemID: new ElemID(OKTA, USER_TYPE_NAME),
-          fields: {
-            id: {
-              refType: BuiltinTypes.SERVICE_ID,
-            },
-          },
-        })
-      })
-
       it('should successfully add a user', async () => {
         loadMockReplies('user_add.json')
         const user1 = new InstanceElement('user1', userType, {
@@ -1701,9 +1706,9 @@ describe('adapter', () => {
       })
     })
     describe('deploy user type', () => {
-      let userType: InstanceElement
+      let userTypeInst: InstanceElement
       beforeEach(() => {
-        userType = new InstanceElement('userType', userTypeType, {
+        userTypeInst = new InstanceElement('userType', userTypeType, {
           id: 'usertype-fakeid1',
           name: 'superuser',
           [LINKS_FIELD]: {
@@ -1718,7 +1723,7 @@ describe('adapter', () => {
 
       it('should successfully add a user type', async () => {
         loadMockReplies('user_type_add.json')
-        const userTypeWithoutId = userType.clone()
+        const userTypeWithoutId = userTypeInst.clone()
         delete userTypeWithoutId.value.id
         delete userTypeWithoutId.value[LINKS_FIELD]
         const result = await operations.deploy({
@@ -1748,7 +1753,7 @@ describe('adapter', () => {
 
       it('should successfully modify a user type', async () => {
         loadMockReplies('user_type_modify.json')
-        const updatedUserType = userType.clone()
+        const updatedUserType = userTypeInst.clone()
         updatedUserType.value.name = 'poweruser'
         const result = await operations.deploy({
           changeGroup: {
@@ -1774,7 +1779,7 @@ describe('adapter', () => {
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'domain',
-            changes: [toChange({ before: userType })],
+            changes: [toChange({ before: userTypeInst })],
           },
           progressReporter: nullProgressReporter,
         })
@@ -2374,7 +2379,7 @@ describe('adapter', () => {
     describe('deploy profile mapping', () => {
       let profileMappingType: ObjectType
       let app: InstanceElement
-      let userType: InstanceElement
+      let userTypeInst: InstanceElement
 
       beforeEach(() => {
         const profileMappingSourceType = new ObjectType({
@@ -2397,7 +2402,7 @@ describe('adapter', () => {
           id: 'app-fakeid1',
           name: 'app1',
         })
-        userType = new InstanceElement('userType', userTypeType, {
+        userTypeInst = new InstanceElement('userType', userTypeType, {
           id: 'usertype-fakeid1',
           name: 'superuser',
         })
@@ -2406,7 +2411,11 @@ describe('adapter', () => {
       it('should successfully add a profile mapping', async () => {
         loadMockReplies('profile_mapping_add.json')
         const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
-          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          source: {
+            id: new ReferenceExpression(userTypeInst.elemID, userTypeInst),
+            type: 'user',
+            name: userTypeInst.value.name,
+          },
           target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
         })
         const result = await operations.deploy({
@@ -2428,7 +2437,11 @@ describe('adapter', () => {
         loadMockReplies('profile_mapping_modify.json')
         const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
           id: 'profilemapping-fakeid1',
-          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          source: {
+            id: new ReferenceExpression(userTypeInst.elemID, userTypeInst),
+            type: 'user',
+            name: userTypeInst.value.name,
+          },
           target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
           properties: {
             name: {
@@ -2460,7 +2473,11 @@ describe('adapter', () => {
         loadMockReplies('profile_mapping_remove.json')
         const profileMapping = new InstanceElement('profileMapping', profileMappingType, {
           id: 'profilemapping-fakeid1',
-          source: { id: new ReferenceExpression(userType.elemID, userType), type: 'user', name: userType.value.name },
+          source: {
+            id: new ReferenceExpression(userTypeInst.elemID, userTypeInst),
+            type: 'user',
+            name: userTypeInst.value.name,
+          },
           target: { id: new ReferenceExpression(app.elemID, app), type: 'appuser', name: app.value.name },
         })
         const result = await operations.deploy({
@@ -3505,6 +3522,137 @@ describe('adapter', () => {
           changeGroup: {
             groupID: role.elemID.getFullName(),
             changes: [toChange({ before: role })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+    })
+    describe('deploy user roles', () => {
+      let user: InstanceElement
+      let customRole: InstanceElement
+      let resourceSet: InstanceElement
+      let userRoleType: ObjectType
+      let userRolesType: ObjectType
+
+      beforeEach(() => {
+        operations = createOperations([], { ...DEFAULT_CONFIG, fetch: { ...DEFAULT_CONFIG.fetch, exclude: [] } })
+        userRoleType = new ObjectType({
+          elemID: new ElemID(OKTA, 'UserRole'),
+          fields: {
+            role: { refType: BuiltinTypes.STRING },
+            'resource_set@b': { refType: BuiltinTypes.STRING },
+          },
+        })
+        userRolesType = new ObjectType({
+          elemID: new ElemID(OKTA, USER_ROLES_TYPE_NAME),
+          fields: {
+            id: { refType: BuiltinTypes.SERVICE_ID },
+            user: { refType: BuiltinTypes.STRING },
+            roles: { refType: new ListType(userRoleType) },
+          },
+        })
+        user = new InstanceElement('user', userType, {
+          id: 'userId',
+        })
+        customRole = new InstanceElement('customRole', roleType, {
+          id: 'customRoleId',
+          label: 'test',
+          description: 'test',
+          permissions: [
+            {
+              label: 'okta.users.userprofile.manage',
+            },
+          ],
+        })
+        resourceSet = new InstanceElement('resourceSet', resourceSetType, {
+          id: 'resourceSetId',
+        })
+      })
+
+      it('should successfully add user roles', async () => {
+        loadMockReplies('user_role_add.json')
+        const userRolesIns = new InstanceElement('userRoles', userRolesType, {
+          user: new ReferenceExpression(user.elemID, user),
+          roles: [
+            {
+              label: 'Report Admin',
+              type: 'REPORT_ADMIN',
+            },
+            {
+              label: 'test',
+              type: 'CUSTOM',
+              'resource_set@b': new ReferenceExpression(resourceSet.elemID, resourceSet),
+              role: new ReferenceExpression(customRole.elemID, customRole),
+            },
+          ],
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: userRolesIns.elemID.getFullName(),
+            changes: [toChange({ after: userRolesIns })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully modify user roles', async () => {
+        loadMockReplies('user_role_modify.json')
+        const beforeUserRole = new InstanceElement('userRoles', userRolesType, {
+          id: user.value.id,
+          user: new ReferenceExpression(user.elemID, user),
+          roles: [
+            {
+              label: 'Report Admin',
+              type: 'REPORT_ADMIN',
+            },
+            {
+              label: 'test',
+              type: 'CUSTOM',
+              'resource_set@b': new ReferenceExpression(resourceSet.elemID, resourceSet),
+              role: new ReferenceExpression(customRole.elemID, customRole),
+            },
+          ],
+        })
+        const afterUserRole = beforeUserRole.clone()
+        afterUserRole.value.roles = [{ label: 'Group Membership Administrator', type: 'GROUP_MEMBERSHIP_ADMIN' }]
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: userRolesType.elemID.getFullName(),
+            changes: [toChange({ before: beforeUserRole, after: afterUserRole })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully remove user roles', async () => {
+        loadMockReplies('user_role_remove.json')
+        const userRolesIns = new InstanceElement('userRoles', userRolesType, {
+          id: user.value.id,
+          user: new ReferenceExpression(user.elemID, user),
+          roles: [
+            {
+              label: 'Report Admin',
+              type: 'REPORT_ADMIN',
+            },
+            {
+              label: 'test',
+              type: 'CUSTOM',
+              'resource_set@b': new ReferenceExpression(resourceSet.elemID, resourceSet),
+              role: new ReferenceExpression(customRole.elemID, customRole),
+            },
+          ],
+        })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: userRolesIns.elemID.getFullName(),
+            changes: [toChange({ before: userRolesIns })],
           },
           progressReporter: nullProgressReporter,
         })

@@ -74,6 +74,7 @@ describe('change validator', () => {
           },
           elements: [],
           deletedElements: [],
+          fetchErrors: [],
         })
     })
     describe('without SuiteApp', () => {
@@ -157,6 +158,7 @@ describe('change validator', () => {
           },
           elements: [serviceInstance],
           deletedElements: [],
+          fetchErrors: [],
         })
     })
     it('should not have change error when warnOnStaleWorkspaceData is false', async () => {

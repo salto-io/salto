@@ -105,6 +105,8 @@ const OPTIONAL_FEATURES = [
   'networkReferences',
   'extendFetchTargets',
   'addParentToInstancesWithinFolder',
+  'addParentToRecordTriggeredFlows',
+  'shouldPopulateInternalIdAfterDeploy',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

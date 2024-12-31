@@ -39,7 +39,7 @@ import {
   assertMetadataObjectType,
   Types,
 } from './transformers/transformer'
-import { apiNameSync, fullApiName } from './filters/utils'
+import { apiNameSync, fullApiName, setInternalId } from './filters/utils'
 import {
   API_NAME_SEPARATOR,
   CUSTOM_FIELD,
@@ -51,7 +51,7 @@ import {
 } from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
-import { QuickDeployParams } from './types'
+import { FetchProfile, QuickDeployParams } from './types'
 import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
 import { DeployProgressReporter } from './adapter_creator'
 
@@ -189,6 +189,7 @@ export const addChangeToPackage = async (
 type MetadataId = {
   type: string
   fullName: string
+  id: string
 }
 
 const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: string): MetadataId | undefined => {
@@ -197,7 +198,7 @@ const getUnFoundDeleteName = (message: DeployMessage, deletionsPackageName: stri
       ? message.problem.match(/No.*named: (?<fullName>.*) found/)
       : undefined
   const fullName = match?.groups?.fullName
-  return fullName === undefined ? undefined : { type: message.componentType, fullName }
+  return fullName === undefined ? undefined : { type: message.componentType, fullName, id: message.id }
 }
 
 const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): boolean =>
@@ -364,6 +365,7 @@ const processDeployResponse = (
     .map(success => ({
       type: success.componentType,
       fullName: success.fullName,
+      id: success.id,
     }))
     .concat(unFoundDeleteNames)
 
@@ -498,6 +500,7 @@ export const deployMetadata = async (
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
   progressReporter: DeployProgressReporter,
+  fetchProfile: FetchProfile,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
   quickDeployParams?: QuickDeployParams,
@@ -606,12 +609,22 @@ export const deployMetadata = async (
     deployedComponentsElemIdsByType,
     checkOnly ?? false,
   )
+
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]
     // TODO - this logic is not perfect, it might produce false positives when there are
     // child xml instances (because we pass in everything with a single change)
-    return successfulFullNames.some(successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName))
+    const metadataId = successfulFullNames.find(successfulId =>
+      changeDeployedIds[successfulId.type]?.has(successfulId.fullName),
+    )
+    if (metadataId) {
+      if (fetchProfile.isFeatureEnabled('shouldPopulateInternalIdAfterDeploy')) {
+        setInternalId(getChangeData(change), metadataId.id)
+      }
+      return true
+    }
+    return false
   }
 
   const postDeployRetrieveZipContent = sfDeployRes.details?.[0]?.retrieveResult?.zipFile

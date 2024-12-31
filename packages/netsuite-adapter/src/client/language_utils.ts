@@ -19,7 +19,7 @@ export const fetchLockedObjectErrorRegex = new RegExp(
 
 type SupportedLanguage = 'english' | 'french'
 
-type ErrorDetectors = {
+export type ErrorDetectors = {
   deployStartMessageRegex: RegExp
   settingsValidationErrorRegex: RegExp
   objectValidationErrorRegexes: RegExp[]
@@ -30,6 +30,10 @@ type ErrorDetectors = {
   manifestErrorDetailsRegex: RegExp
   configureFeatureFailRegex: RegExp
   otherErrorRegexes: RegExp[]
+  deployWarningTitle: RegExp
+  deployWarningDetailsLine: RegExp
+  deployWarningDetailsToExtract: RegExp[]
+  deployWarningForCustomField: RegExp
 }
 
 export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetectors> = {
@@ -73,6 +77,16 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
       RegExp('An error occured during validation of Custom Objects against the account'),
       RegExp('An error occurred during manifest validation.'),
     ],
+    deployWarningTitle: RegExp(
+      `WARNING -- One or more potential issues were found during custom object validation\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`,
+      'gm',
+    ),
+    deployWarningDetailsLine: RegExp('^Details:'),
+    deployWarningDetailsToExtract: [
+      RegExp('The \\w+ field is not supported .* and will be ignored'),
+      RegExp('The \\w+ object field is invalid or not supported and will be ignored'),
+    ],
+    deployWarningForCustomField: RegExp(`(?<${OBJECT_ID}>[a-z0-9_]+) \\(customrecordcustomfield\\)`, 'gm'),
   },
   // NOTE: all non-english letters are replaced with a dot
   french: {
@@ -123,10 +137,20 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
       RegExp('An error occured during validation of Custom Objects against the account'),
       RegExp('An error occurred during manifest validation.'),
     ],
+    deployWarningTitle: RegExp(
+      `WARNING -- Un ou plusieurs probl.mes potentiels ont .t. d.tect.s lors de la validation d'un objet personnalis.\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`,
+      'gm',
+    ),
+    deployWarningDetailsLine: RegExp('^D.tails:'),
+    deployWarningDetailsToExtract: [
+      RegExp("Le champ \\w+ n'est pas pris en charge .* et sera ignor."),
+      RegExp("L'objet \\w+ n'est pas valide ou n'est pas pris en charge et sera ignor."),
+    ],
+    deployWarningForCustomField: RegExp(`(?<${OBJECT_ID}>[a-z0-9_]+) \\(customrecordcustomfield\\)`, 'gm'),
   },
 }
 
-const frenchRegexDetector = RegExp('(\\*\\*\\* ERREUR \\*\\*\\*|Commencer le d.ploiement)')
+const frenchRegexDetector = RegExp('(\\*\\*\\* ERREUR \\*\\*\\*|Commencer le d.ploiement|Un ou plusieurs probl.mes)')
 
 export const detectLanguage = (errorMessage: string): SupportedLanguage => {
   const detectedLanguage: SupportedLanguage = frenchRegexDetector.test(errorMessage) ? 'french' : 'english'

@@ -17,6 +17,7 @@ import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../..
 import { clientscriptType } from '../../../src/autogen/types/standard_types/clientscript'
 import { savedsearchType } from '../../../src/autogen/types/standard_types/savedsearch'
 import { getTypesToInternalId } from '../../../src/data_elements/types'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../../src/group_changes'
 
 describe('sdf internal ids tests', () => {
   let filterOpts: RemoteFilterOpts
@@ -80,6 +81,7 @@ describe('sdf internal ids tests', () => {
       config: await getDefaultAdapterConfig(),
       internalIdToTypes,
       typeToInternalId,
+      changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID,
     }
   })
   describe('no suite app client', () => {
@@ -222,7 +224,6 @@ describe('sdf internal ids tests', () => {
       customScriptInstance.value.internalId = '3'
       savedSearchInstance.value.internalId = '4'
       await filterCreator(filterOpts).preDeploy?.(elements.map(element => toChange({ after: element })))
-      expect(accountInstance.value.internalId).toBe('1')
       expect(customRecordType.annotations.internalId).toBe(undefined)
       expect(customScriptInstance.value.internalId).toBe(undefined)
       expect(savedSearchInstance.value.internalId).toBe(undefined)

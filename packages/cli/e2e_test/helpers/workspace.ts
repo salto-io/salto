@@ -197,7 +197,15 @@ export const runDeploy = async ({
 }): Promise<void> => {
   const cliOutput = mockCliOutput()
   const result = await runCommand({
-    args: ['deploy', '-f'],
+    args: [
+      'deploy',
+      '-f',
+      // to be changed at https://salto-io.atlassian.net/browse/SALTO-7121
+      '-C',
+      'salesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+      '-C',
+      'e2esalesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+    ],
     workspacePath,
     cliOutput,
   })

@@ -161,9 +161,8 @@ export const MAX_METADATA_DEPLOY_LIMIT_MESSAGE =
   ' For more info you may refer to: https://help.salto.io/en/articles/8263355-the-metadata-deployment-exceeded-the-maximum-allowed-size-of-50mb'
 
 export const INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE =
-  ' This issue could be caused by unmanaged Dashboards in your environment.\n' +
-  ' To prevent this, ensure Dashboards are managed.\n' +
-  ' For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
+  "Please make sure you're managing Dashboards in your Salto environment and that your deployment contains the referenced Dashboard instance.\n" +
+  'For more information, please refer to: https://help.salto.io/en/articles/7439350-supported-salesforce-types'
 
 export const DEPLOY_PROBLEM_MAPPER: DeployProblemMappers = {
   [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: {

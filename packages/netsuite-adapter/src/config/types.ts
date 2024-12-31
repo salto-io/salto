@@ -259,7 +259,6 @@ export type NetsuiteValidatorName =
   | 'removeListItem'
   | 'file'
   | 'uniqueFields'
-  | 'subInstances'
   | 'standardTypesInvalidValues'
   | 'mappedListsIndexes'
   | 'notYetSupportedValues'
@@ -660,7 +659,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     removeListItem: { refType: BuiltinTypes.BOOLEAN },
     file: { refType: BuiltinTypes.BOOLEAN },
     uniqueFields: { refType: BuiltinTypes.BOOLEAN },
-    subInstances: { refType: BuiltinTypes.BOOLEAN },
     standardTypesInvalidValues: { refType: BuiltinTypes.BOOLEAN },
     mappedListsIndexes: { refType: BuiltinTypes.BOOLEAN },
     notYetSupportedValues: { refType: BuiltinTypes.BOOLEAN },

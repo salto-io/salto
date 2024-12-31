@@ -31,7 +31,6 @@ import reportTypesMoveEnvironment from './change_validators/report_types_move_en
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import uniqueFieldsValidator from './change_validators/unique_fields'
-import subInstancesValidator from './change_validators/subinstances'
 import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
 import safeDeployValidator from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
@@ -88,7 +87,6 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   removeListItemWithoutScriptID: removeListItemWithoutScriptIDValidator,
   file: fileValidator,
   uniqueFields: uniqueFieldsValidator,
-  subInstances: subInstancesValidator,
   standardTypesInvalidValues: standardTypesInvalidValuesValidator,
   mappedListsIndexes: mappedListsIndexesValidator,
   notYetSupportedValues: notYetSupportedValuesValidator,

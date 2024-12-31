@@ -23,7 +23,7 @@ import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { extractCustomRecordFields, getElementServiceIdRecords } from '../filters/element_references'
-import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE, SELECT_RECORD_TYPE } from '../constants'
+import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, SELECT_RECORD_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -51,7 +51,7 @@ export const assignToInternalIdsIndex = async (
 ): Promise<void> => {
   const values = getElementValueOrAnnotations(element)
   const internalId = values[INTERNAL_ID]
-  if (!internalId || values[IS_SUB_INSTANCE]) {
+  if (!internalId) {
     return
   }
   const { elemID } = element

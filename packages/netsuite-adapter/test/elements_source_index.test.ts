@@ -53,7 +53,6 @@ describe('createElementsSourceIndex', () => {
     getAllMock.mockImplementation(
       buildElementsSourceFromElements([
         new InstanceElement('name', type, { internalId: '4' }),
-        new InstanceElement('name2', type, { internalId: '5', isSubInstance: true }),
         type,
         new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -86,7 +85,6 @@ describe('createElementsSourceIndex', () => {
     getAllMock.mockImplementation(
       buildElementsSourceFromElements([
         toBeDeleted,
-        new InstanceElement('name2', type, { internalId: '5', isSubInstance: true }),
         type,
         new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -118,7 +116,6 @@ describe('createElementsSourceIndex', () => {
     getAllMock.mockImplementation(
       buildElementsSourceFromElements([
         new InstanceElement('name', type, { internalId: '4' }),
-        new InstanceElement('name2', type, { internalId: '5', isSubInstance: true }),
         type,
         new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),

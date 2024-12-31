@@ -69,7 +69,7 @@ export type ErrorMappers = {
   [SALESFORCE_ERRORS.INSUFFICIENT_ACCESS]: ErrorMapper<Error>
 }
 
-const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
+export const withSalesforceError = (salesforceError: string, saltoErrorMessage: string): string =>
   `${saltoErrorMessage}\n\nUnderlying Error: ${salesforceError}`
 
 export const ERROR_MAPPERS: ErrorMappers = {

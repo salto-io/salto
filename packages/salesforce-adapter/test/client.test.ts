@@ -50,6 +50,7 @@ import {
   MAX_METADATA_DEPLOY_LIMIT_MESSAGE,
   INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE,
   getUserFriendlyDeployMessage,
+  withSalesforceError,
 } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
@@ -543,15 +544,18 @@ describe('salesforce client', () => {
       types.NonEmptyArray<TestInput> | TestInput
     > = {
       [SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS]: {
-        expectedMessage: SCHEDULABLE_CLASS_MESSAGE,
+        expectedMessage: withSalesforceError(SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS, SCHEDULABLE_CLASS_MESSAGE),
         problem: SALESFORCE_DEPLOY_PROBLEMS.SCHEDULABLE_CLASS,
       },
       [SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT]: {
-        expectedMessage: MAX_METADATA_DEPLOY_LIMIT_MESSAGE,
+        expectedMessage: withSalesforceError(
+          SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT,
+          MAX_METADATA_DEPLOY_LIMIT_MESSAGE,
+        ),
         problem: SALESFORCE_DEPLOY_PROBLEMS.MAX_METADATA_DEPLOY_LIMIT,
       },
       [SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME]: {
-        expectedMessage: INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE,
+        expectedMessage: `${SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME}\n${INVALID_DASHBOARD_UNIQUE_NAME_MESSAGE}`,
         problem: SALESFORCE_DEPLOY_PROBLEMS.INVALID_DASHBOARD_UNIQUE_NAME,
       },
     }
@@ -579,7 +583,11 @@ describe('salesforce client', () => {
           problemType: 'TestType',
           success: false,
         }
-        expect(getUserFriendlyDeployMessage(deployMessage).problem).toContain(expectedMessage)
+        const expectedResult = {
+          ...deployMessage,
+          problem: expectedMessage,
+        }
+        expect(getUserFriendlyDeployMessage(deployMessage)).toEqual(expectedResult)
       })
     })
   })

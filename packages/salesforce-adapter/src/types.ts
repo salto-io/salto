@@ -107,6 +107,7 @@ const OPTIONAL_FEATURES = [
   'addParentToInstancesWithinFolder',
   'addParentToRecordTriggeredFlows',
   'shouldPopulateInternalIdAfterDeploy',
+  'packageVersionReference',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

@@ -16,6 +16,7 @@ import { strings, collections } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
 import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   addElements,
@@ -288,7 +289,7 @@ describe.each([
       let elementsWithHidden: readonly Element[]
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV2_NAME)
-        const workspace = await loadLocalWorkspace({ path: baseDir })
+        const workspace = await loadLocalWorkspace({ path: baseDir, adapterCreators })
         visibleElements = await awu(await (await workspace.elements(false)).getAll()).toArray()
         elementsWithHidden = await awu(await (await workspace.elements(true)).getAll()).toArray()
       })

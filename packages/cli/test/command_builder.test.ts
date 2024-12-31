@@ -8,6 +8,7 @@
 import { logger, LogLevel } from '@salto-io/logging'
 import { loadLocalWorkspace } from '@salto-io/core'
 import { mockFunction } from '@salto-io/test-utils'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import * as mocks from './mocks'
 import {
   createPublicCommandDef,
@@ -250,7 +251,11 @@ describe('Command builder', () => {
         })
         it('should pass workspace path and config overrides to the workspace', () => {
           const expectedChanges = getConfigOverrideChanges(configOverrides)
-          expect(loadLocalWorkspace).toHaveBeenCalledWith({ path: 'test_path', configOverrides: expectedChanges })
+          expect(loadLocalWorkspace).toHaveBeenCalledWith({
+            path: 'test_path',
+            configOverrides: expectedChanges,
+            adapterCreators,
+          })
         })
       })
       describe('when action is successful', () => {

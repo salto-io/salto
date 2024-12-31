@@ -84,6 +84,7 @@ const createFetchFromWorkspaceCommand =
       otherWorkspace = await loadLocalWorkspace({
         path: otherWorkspacePath,
         persistent: false,
+        adapterCreators,
       })
     } catch (err) {
       throw new Error(`Failed to load source workspace: ${err.message ?? err}`)

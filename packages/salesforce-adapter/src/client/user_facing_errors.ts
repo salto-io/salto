@@ -139,9 +139,9 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(async or
 
 // Deploy Problems Mapping
 
-type DeployProblemMapper = {
+export type DeployProblemMapper = {
   test: (problem: string) => boolean
-  map: (problem: DeployMessage) => string
+  map: (deployMessage: DeployMessage) => string
 }
 
 export type DeployProblemMappers = {

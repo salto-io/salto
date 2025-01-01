@@ -276,7 +276,7 @@ export const DEFAULT_FILTERS = [
   guideThemeSettingFilter, // needs to be after guideThemeFilter as it depends on successful theme fetches
   addAliasFilter, // should run after fieldReferencesFilter and guideThemeSettingFilter
   guideArrangePaths,
-  botBuilderArrangePaths,
+  botBuilderArrangePaths, // should run after fieldReferencesFilter
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   addImportantValuesFilter,

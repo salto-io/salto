@@ -30,6 +30,19 @@ const BOT_BUILDER_ELEMENT_DIRECTORY: Record<string, string> = {
   [BOT_BUILDER_NODE]: 'nodes',
 }
 
+const NO_VALUE_DEFAULT = 'unknown'
+
+const ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
+  [BOT_BUILDER_FLOW]: (instance?: InstanceElement) => instance?.value.name ?? NO_VALUE_DEFAULT,
+  [BOT_BUILDER_ANSWER]: (instance?: InstanceElement) => instance?.value.name ?? NO_VALUE_DEFAULT,
+  [BOT_BUILDER_NODE]: (instance?: InstanceElement) => instance?.value.id ?? NO_VALUE_DEFAULT,
+}
+
+const getName = (instance: InstanceElement): string =>
+  ELEMENT_NAME[instance.elemID.typeName] === undefined
+    ? pathNaclCase(naclCase(instance.elemID.name))
+    : pathNaclCase(naclCase(ELEMENT_NAME[instance.elemID.typeName](instance)))
+
 /**
  * calculates a path which is related to a specific brand and does not have a parent
  */
@@ -43,27 +56,9 @@ const pathForFlowElements = (instance: InstanceElement, brandName: string | unde
       pathNaclCase(naclCase(instance.elemID.name)),
     ]
   }
-  return [
-    ...BOT_BUILDER_PATH,
-    'brands',
-    brandName,
-    BOT_BUILDER_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    instance.value.name,
-    instance.value.name,
-  ]
+  const name = getName(instance)
+  return [...BOT_BUILDER_PATH, 'brands', brandName, BOT_BUILDER_ELEMENT_DIRECTORY[instance.elemID.typeName], name, name]
 }
-
-const NO_VALUE_DEFAULT = 'unknown'
-
-const ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
-  [BOT_BUILDER_ANSWER]: (instance?: InstanceElement) => instance?.value.name ?? NO_VALUE_DEFAULT,
-  [BOT_BUILDER_NODE]: (instance?: InstanceElement) => instance?.value.id ?? NO_VALUE_DEFAULT,
-}
-
-const getName = (instance: InstanceElement): string =>
-  ELEMENT_NAME[instance.elemID.typeName] === undefined
-    ? pathNaclCase(naclCase(instance.elemID.name))
-    : pathNaclCase(naclCase(ELEMENT_NAME[instance.elemID.typeName](instance)))
 
 /**
  * calculates a path which is related to a specific brand and has a parent.

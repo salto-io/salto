@@ -56,6 +56,7 @@ fragment SubflowFields on SubflowType {
   id
   flowId
   name
+  updated_at: updatedAt
   status
   isFromLegacyFlow
   campaigns {

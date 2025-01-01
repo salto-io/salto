@@ -61,7 +61,7 @@ import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
 import { isApplicationProvisioningUsersModified, isCustomApp } from '../fetch/types/application'
 import { addBrandIdToRequest } from './types/email_domain'
-import { isSystemScope } from './types/authorization_servers'
+import { SUB_CLAIM_NAME, isSubDefaultClaim, isSystemScope } from './types/authorization_servers'
 import { isActiveGroupRuleChange } from './types/group_rules'
 import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole, shouldUpdateRolePermission } from './types/roles'
 import { USER_ROLE_CHANGE_ID_FIELDS, getRoleIdFromSharedContext } from './types/user_roles'
@@ -1378,6 +1378,28 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                   method: 'post',
                 },
               },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    !isSubDefaultClaim(change),
+              },
+            },
+            // This request retrieves the "sub" default claim that is automatically created when an authorization server is created.
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/authorizationServers/{parent_id}/claims',
+                  method: 'get',
+                  queryArgs: { includeClaims: SUB_CLAIM_NAME },
+                },
+              },
+              condition: {
+                custom:
+                  () =>
+                  ({ change }) =>
+                    isSubDefaultClaim(change),
+              },
             },
           ],
           modify: [
@@ -1402,6 +1424,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
+      toActionNames: ({ change }) =>
+        isAdditionChange(change) && isSubDefaultClaim(change) ? ['add', 'modify'] : [change.action],
+      actionDependencies: [{ first: 'add', second: 'modify' }],
     },
     [EMAIL_TEMPLATE_TYPE_NAME]: {
       requestsByAction: {

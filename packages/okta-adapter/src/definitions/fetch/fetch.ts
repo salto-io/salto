@@ -1473,7 +1473,15 @@ const createCustomizations = ({
     },
   },
   OAuth2Claim: {
-    requests: [{ endpoint: { path: '/api/v1/authorizationServers/{id}/claims' } }],
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/authorizationServers/{id}/claims',
+          // only include claims that are shown in Okta's Admin Console
+          queryArgs: { includeClaims: 'sub,custom' },
+        },
+      },
+    ],
     resource: { directFetch: false },
     element: {
       topLevel: { isTopLevel: true, elemID: { extendsParent: true } },

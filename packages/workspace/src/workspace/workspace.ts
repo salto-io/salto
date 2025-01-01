@@ -1734,7 +1734,65 @@ export async function loadWorkspace(
   return workspace
 }
 
-export const initWorkspace = async (
+type initWorkspaceParams = {
+  uid: string
+  defaultEnvName: string
+  config: WorkspaceConfigSource
+  adaptersConfig: AdaptersConfigSource
+  credentials: ConfigSource
+  envs: EnvironmentsSources
+  remoteMapCreator: RemoteMapCreator
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc
+  adapterCreators: Record<string, Adapter>
+}
+
+const getInitWorkspaceParams: (
+  uidOrParams: string | initWorkspaceParams,
+  defaultEnvName?: string,
+  config?: WorkspaceConfigSource,
+  adaptersConfig?: AdaptersConfigSource,
+  credentials?: ConfigSource,
+  envs?: EnvironmentsSources,
+  remoteMapCreator?: RemoteMapCreator,
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+) => initWorkspaceParams = (
+  uidOrParams,
+  defaultEnvName,
+  config,
+  adaptersConfig,
+  credentials,
+  envs,
+  remoteMapCreator,
+  getCustomReferences,
+) => {
+  if (!_.isString(uidOrParams)) {
+    return uidOrParams
+  }
+  if (
+    defaultEnvName === undefined ||
+    config === undefined ||
+    adaptersConfig === undefined ||
+    credentials === undefined ||
+    envs === undefined ||
+    remoteMapCreator === undefined
+  ) {
+    throw new Error('invalid params are undefined')
+  }
+  return {
+    uid: uidOrParams,
+    defaultEnvName,
+    config,
+    adaptersConfig,
+    credentials,
+    envs,
+    remoteMapCreator,
+    getCustomReferences,
+    adapterCreators: {},
+  }
+}
+
+export function initWorkspace(args: initWorkspaceParams): Promise<Workspace>
+export function initWorkspace(
   uid: string,
   defaultEnvName: string,
   config: WorkspaceConfigSource,
@@ -1742,23 +1800,52 @@ export const initWorkspace = async (
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
-  getCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
-): Promise<Workspace> => {
+  getCustomReferences: WorkspaceGetCustomReferencesFunc,
+): Promise<Workspace>
+
+export async function initWorkspace(
+  inputUid: string | initWorkspaceParams,
+  inputDefaultEnvName?: string,
+  inputConfig?: WorkspaceConfigSource,
+  inputAdaptersConfig?: AdaptersConfigSource,
+  inputCredentials?: ConfigSource,
+  inputEnvs?: EnvironmentsSources,
+  inputRemoteMapCreator?: RemoteMapCreator,
+  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
+): Promise<Workspace> {
+  const {
+    uid,
+    defaultEnvName,
+    config,
+    adaptersConfig,
+    credentials,
+    envs,
+    remoteMapCreator,
+    getCustomReferences,
+    adapterCreators,
+  } = getInitWorkspaceParams(
+    inputUid,
+    inputDefaultEnvName,
+    inputConfig,
+    inputAdaptersConfig,
+    inputCredentials,
+    inputEnvs,
+    inputRemoteMapCreator,
+    inputGetCustomReferences,
+  )
   log.debug('Initializing workspace with id: %s', uid)
   await config.setWorkspaceConfig({
     uid,
     envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(
+  return loadWorkspace({
     config,
     adaptersConfig,
     credentials,
-    envs,
+    environmentsSources: envs,
     remoteMapCreator,
-    undefined,
-    undefined,
-    undefined,
     getCustomReferences,
-  )
+    adapterCreators,
+  })
 }

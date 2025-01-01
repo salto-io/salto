@@ -26,7 +26,6 @@ import {
 // for backward comptability
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { getAdaptersConfigTypesMap } from '../core/adapters'
-import { getCustomReferencesImplementation } from '../../../workspace/src/workspace/workspace'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -149,11 +148,11 @@ export async function initLocalWorkspace(
     adapterCreators,
   } = getInitLocalWorkspace(inputBaseDir, inputEnvName, inputStateStaticFilesSource)
 
-  return localInitLocalWorkspace(
+  return localInitLocalWorkspace({
     baseDir,
     envName,
-    Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
-    getCustomReferencesImplementation(adapterCreators),
+    configTypes: Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
     stateStaticFilesSource,
-  )
+    adapterCreators,
+  })
 }

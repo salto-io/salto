@@ -14,17 +14,17 @@ import { AdjustFunctionSingle } from '../types'
 
 // The parent_id field is not deployable and is added during fetch for internal use
 export const omitParentIdFromPathAdjustCreator: (...fieldPath: string[]) => AdjustFunctionSingle =
-  fieldPath =>
+  (...fieldPath) =>
   async ({ value, typeName }) => {
     validatePlainObject(value, typeName)
     const fieldValues = _.get(value, fieldPath)
     if (!_.isEmpty(fieldValues)) {
-      validateArray(fieldValues, fieldPath)
+      validateArray(fieldValues, fieldPath.join('.'))
       _.set(
         value,
         fieldPath,
         fieldValues.map((fieldValue: unknown): Values => {
-          validatePlainObject(fieldValue, fieldPath)
+          validatePlainObject(fieldValue, fieldPath.join('.'))
           return _.omit(fieldValue, PARENT_ID_FIELD_NAME)
         }),
       )

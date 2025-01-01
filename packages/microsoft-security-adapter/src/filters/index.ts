@@ -7,4 +7,4 @@
  */
 export { deployAdministrativeUnitMembersFilter } from './entra/deploy_administrative_unit_members'
 export { deployDirectoryRoleMembersFilter } from './entra/deploy_directory_role_members'
-export { entraApplicationFilter } from './entra/application_standalone_fields'
+export { entraApplicationStandaloneFieldsFilter } from './entra/application_standalone_fields'

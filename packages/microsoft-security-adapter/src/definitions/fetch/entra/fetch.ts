@@ -13,13 +13,8 @@ import { entraConstants, PARENT_ID_FIELD_NAME } from '../../../constants'
 import { GRAPH_BETA_PATH, GRAPH_V1_PATH } from '../../requests/clients'
 import { FetchCustomizations } from '../shared/types'
 import { DEFAULT_TRANSFORMATION, ID_FIELD_TO_HIDE, NAME_ID_FIELD } from '../shared/defaults'
-import {
-  adjustEntitiesWithExpandedMembers,
-  createDefinitionForAppRoleAssignment,
-  addParentIdToStandaloneFields,
-  adjustApplication,
-} from './utils'
-import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
+import { adjustEntitiesWithExpandedMembers, createDefinitionForAppRoleAssignment, adjustApplication } from './utils'
+import { createCustomizationsWithBasePathForFetch, addParentIdToStandaloneFields } from '../shared/utils'
 
 const {
   TOP_LEVEL_TYPES: {

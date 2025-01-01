@@ -20,7 +20,7 @@ export const concatAdjustFunctions =
   async ({ value, typeName, ...args }) => {
     validatePlainObject(value, typeName)
     let currentArgs = { ...args, value, typeName }
-    await awu([...adjustFunctions]).forEach(async adjustFunc => {
+    await awu(adjustFunctions).forEach(async adjustFunc => {
       const result = await adjustFunc(currentArgs)
       currentArgs = { ...currentArgs, ...result }
     })

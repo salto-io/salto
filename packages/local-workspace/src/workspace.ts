@@ -359,13 +359,74 @@ export async function loadLocalWorkspace({
   }
 }
 
-export const initLocalWorkspace = async (
+type InitLocalWorkspaceParams = {
+  baseDir: string
+  envName?: string
+  configTypes: ObjectType[]
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource
+  adapterCreators: Record<string, Adapter>
+}
+
+const getInitLocalWorkspace: (
+  baseDirOrParams: string | InitLocalWorkspaceParams,
+  envName?: string,
+  configTypes?: ObjectType[],
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+  stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+) => InitLocalWorkspaceParams = (
+  baseDirOrParams,
+  envName,
+  configTypes,
+  getCustomReferences,
+  stateStaticFilesSource,
+) => {
+  if (!_.isString(baseDirOrParams)) {
+    return baseDirOrParams
+  }
+  if (configTypes === undefined) {
+    throw new Error('configTypes cannot be undefined')
+  }
+  return {
+    baseDir: baseDirOrParams,
+    envName,
+    configTypes,
+    getCustomReferences,
+    stateStaticFilesSource,
+    adapterCreators: {},
+  }
+}
+
+export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
+export function initLocalWorkspace(
   baseDir: string,
-  envName = 'default',
+  envName: string,
   configTypes: ObjectType[],
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-): Promise<Workspace> => {
+): Promise<Workspace>
+
+export async function initLocalWorkspace(
+  inputBaseDir: string | InitLocalWorkspaceParams,
+  inputEnvName = 'default',
+  inputConfigTypes?: ObjectType[],
+  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
+  inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
+): Promise<Workspace> {
+  const {
+    baseDir,
+    envName = 'default',
+    adapterCreators,
+    configTypes,
+    getCustomReferences,
+    stateStaticFilesSource,
+  } = getInitLocalWorkspace(
+    inputBaseDir,
+    inputEnvName,
+    inputConfigTypes,
+    inputGetCustomReferences,
+    inputStateStaticFilesSource,
+  )
   const uid = uuidv4()
   const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
@@ -395,16 +456,17 @@ export const initLocalWorkspace = async (
       workspaceConfig: { uid },
     })
 
-    const workspace = await initWorkspace(
+    const workspace = await initWorkspace({
       uid,
-      envName,
-      workspaceConfigSrc,
+      defaultEnvName: envName,
+      config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      elemSources,
+      envs: elemSources,
       remoteMapCreator,
       getCustomReferences,
-    )
+      adapterCreators,
+    })
     return workspace
   } catch (e) {
     try {

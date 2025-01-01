@@ -149,19 +149,30 @@ describe('local workspace', () => {
 
   describe('initLocalWorkspace', () => {
     const mockInit = ws.initWorkspace as jest.Mock
+    const mockAdapterCreators: Record<string, Adapter> = {}
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => filename === '/fake/salto.config')
-      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
-        ExistingWorkspaceError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          configTypes: [],
+          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreators,
+        }),
+      ).rejects.toThrow(ExistingWorkspaceError)
     })
 
     it('should throw error if local storage exists', async () => {
       mockExists.mockImplementation((filename: string) => filename.startsWith(getSaltoHome()))
-      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
-        NotAnEmptyWorkspaceError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          configTypes: [],
+          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
+        }),
+      ).rejects.toThrow(NotAnEmptyWorkspaceError)
     })
 
     it('should throw error for invalid name', async () => {

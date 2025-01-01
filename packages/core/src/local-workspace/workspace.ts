@@ -22,11 +22,11 @@ import { logger } from '@salto-io/logging'
 import {
   loadLocalWorkspace as localWorkspaceLoad,
   initLocalWorkspace as localInitLocalWorkspace,
-  getCustomReferencesImplementation,
 } from '@salto-io/local-workspace'
 // for backward comptability
 import { adapterCreators as allAdapterCreators } from '@salto-io/adapter-creators'
 import { getAdaptersConfigTypesMap } from '../core/adapters'
+import { getCustomReferencesImplementation } from '../../../workspace/src/workspace/workspace'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

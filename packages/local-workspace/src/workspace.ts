@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { Adapter, DetailedChange, GLOBAL_ADAPTER, ObjectType, ReferenceInfo, Element } from '@salto-io/adapter-api'
+import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import {
   Workspace,
@@ -240,7 +240,7 @@ type LoadLocalWorkspaceArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-export const getAdapterConfigsPerAccount = async (
+const getAdapterConfigsPerAccount = async (
   envs: EnvConfig[],
   adapterCreators: Record<string, Adapter>,
 ): Promise<ObjectType[]> => {
@@ -272,34 +272,6 @@ export const getAdapterConfigsPerAccount = async (
   return Object.values(configTypesByAccount).flat()
 }
 
-export const getCustomReferencesImplementation = (
-  adapterCreators: Record<string, Adapter>,
-): WorkspaceGetCustomReferencesFunc =>
-  async function getCustomReferences(
-    elements: Element[],
-    accountToServiceName: Record<string, string>,
-    adaptersConfig: adaptersConfigSource.AdaptersConfigSource,
-  ): Promise<ReferenceInfo[]> {
-    const accountElementsToRefs = async ([account, accountElements]: [string, Element[]]): Promise<ReferenceInfo[]> => {
-      const serviceName = accountToServiceName[account] ?? account
-      try {
-        const refFunc = adapterCreators[serviceName]?.getCustomReferences
-        if (refFunc !== undefined) {
-          return await refFunc(accountElements, await adaptersConfig.getAdapter(account))
-        }
-      } catch (err) {
-        log.error('failed to get custom references for %s: %o', account, err)
-      }
-      return []
-    }
-
-    const accountToElements = _.groupBy(
-      elements.filter(e => e.elemID.adapter !== GLOBAL_ADAPTER),
-      e => e.elemID.adapter,
-    )
-    return (await Promise.all(Object.entries(accountToElements).map(accountElementsToRefs))).flat()
-  }
-
 export async function loadLocalWorkspace({
   path: lookupDir,
   configOverrides,
@@ -313,7 +285,6 @@ export async function loadLocalWorkspace({
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   const getConfigTypesFunc = getConfigTypes ?? getAdapterConfigsPerAccount
-  const getCustomReferencesFunc = getCustomReferences ?? getCustomReferencesImplementation(adapterCreators)
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
@@ -341,17 +312,18 @@ export async function loadLocalWorkspace({
       persistent,
       workspaceConfig,
     })
-    const ws = await loadWorkspace(
-      workspaceConfigSrc,
+    const ws = await loadWorkspace({
+      config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      elemSources,
+      environmentsSources: elemSources,
       remoteMapCreator,
       ignoreFileChanges,
       persistent,
-      undefined,
-      getCustomReferencesFunc,
-    )
+      mergedRecoveryMode: undefined,
+      getCustomReferences,
+      adapterCreators,
+    })
 
     return {
       ...ws,
@@ -391,7 +363,7 @@ export const initLocalWorkspace = async (
   baseDir: string,
   envName = 'default',
   configTypes: ObjectType[],
-  getCustomReferences: WorkspaceGetCustomReferencesFunc,
+  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
 ): Promise<Workspace> => {
   const uid = uuidv4()

@@ -723,7 +723,9 @@ describe('DeployRequester', () => {
         sharedContext: {},
         errors: {},
       })
-    }).rejects.toThrow('Something went wrong')
+    }).rejects.toThrow(
+      'Response validation failed for action remove adapter.test.instance.instance: { data: {}, status: 400 }',
+    )
   })
 
   it('should call the client few times when polling', async () => {

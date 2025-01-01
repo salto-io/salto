@@ -126,13 +126,20 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             },
           ],
           remove: [
-            // BrandThemes are removed automatically by Okta when the Brand is removed.
-            // We use an empty request list here to mark this action as supported in case a user removed the theme
-            // alongside its Brand.
-            // A separate Change Validator ensures that themes aren't removed by themselves.
             {
+              // BrandThemes are removed automatically by Okta when a Brand is removed.
+              // We send a GET query to verify that the theme is actually removed.
               request: {
-                earlySuccess: true,
+                endpoint: {
+                  path: '/api/v1/brands/{brandId}/themes',
+                  method: 'get',
+                },
+                context: {
+                  brandId: '{_parent.0.id}',
+                },
+              },
+              validate: {
+                allowedStatusCodes: [404],
               },
             },
           ],

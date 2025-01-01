@@ -2884,7 +2884,7 @@ describe('Salesforce adapter E2E with real account', () => {
         const updateInstance = async (
           instance: InstanceElement,
           updatedFieldPath: string[],
-          updatedValue: string,
+          updatedValue: Value,
         ): Promise<InstanceElement> => {
           const after = instance.clone()
           _.set(after.value, updatedFieldPath, updatedValue)
@@ -2898,7 +2898,7 @@ describe('Salesforce adapter E2E with real account', () => {
           if (deployResult.errors.length > 0) {
             if (deployResult.errors.length === 1) throw deployResult.errors[0]
             throw new Error(
-              `Failed updating instance ${instance.elemID.getFullName()} with errors: ${deployResult.errors}`,
+              `Failed updating instance ${instance.elemID.getFullName()} with errors: ${deployResult.errors.map(err => err.message).join(', ')}`,
             )
           }
           return getChangeData(deployResult.appliedChanges[0]) as InstanceElement
@@ -3216,7 +3216,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update LightningComponentBundle instance', async () => {
-            const updatedValue = '// UPDATED'
+            const updatedValue = Buffer.from('// UPDATED')
             const updatedInstance = await updateInstance(
               lwcInstance,
               ['lwcResources', 'lwcResource', 'myLightningComponentBundle_js@v', 'source'],

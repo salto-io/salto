@@ -3771,7 +3771,7 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('claim-fakeid')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
-      it('should successfully add a default authorization server claim', async () => {
+      it('should successfully add a default authorization server claim with modifed values', async () => {
         loadMockReplies('authorization_server_default_claim_add.json')
         const defaultClaim = new InstanceElement(
           'sub',

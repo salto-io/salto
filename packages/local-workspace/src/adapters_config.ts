@@ -130,11 +130,11 @@ const getBuildLocalAdaptersConfigSourceParams: (
     adapterCreators: {},
   }
 }
-
+// As a transitionary step, we support both a string input and an argument object
 export function buildLocalAdaptersConfigSource(
   args: BuildLocalAdaptersConfigSourceParams,
 ): Promise<acs.AdaptersConfigSource>
-
+// @deprecated
 export function buildLocalAdaptersConfigSource(
   baseDir: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,

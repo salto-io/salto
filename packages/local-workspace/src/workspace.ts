@@ -359,8 +359,9 @@ const getInitLocalWorkspace: (
     adapterCreators: {},
   }
 }
-
+// As a transitionary step, we support both a string input and an argument object
 export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Workspace>
+// @deprecated
 export function initLocalWorkspace(
   baseDir: string,
   envName: string,

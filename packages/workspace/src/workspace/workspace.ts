@@ -596,8 +596,9 @@ const getLoadWorkspaceParams: (
     adapterCreators: {},
   }
 }
-
+// As a transitionary step, we support both a string WorkspaceConfigSource and an argument object
 export function loadWorkspace(args: loadWorkspaceParams): Promise<Workspace>
+// @deprecated
 export function loadWorkspace(
   config: WorkspaceConfigSource,
   adaptersConfig: AdaptersConfigSource,
@@ -1511,17 +1512,18 @@ export async function loadWorkspace(
         state: source.state,
       }))
       const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
-      return loadWorkspace(
+      return loadWorkspace({
         config,
         adaptersConfig,
         credentials,
-        envSources,
+        environmentsSources: envSources,
         remoteMapCreator,
         ignoreFileChanges,
         persistent,
         mergedRecoveryMode,
         getCustomReferences,
-      )
+        adapterCreators,
+      })
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -1790,8 +1792,9 @@ const getInitWorkspaceParams: (
     adapterCreators: {},
   }
 }
-
+// As a transitionary step, we support both a string input and an argument object
 export function initWorkspace(args: initWorkspaceParams): Promise<Workspace>
+// @deprecated
 export function initWorkspace(
   uid: string,
   defaultEnvName: string,

@@ -361,7 +361,12 @@ const validateAdditionalDependencies = ({
   }
 }
 
-const validateFetchConfig = ({ include, exclude, fieldsToOmit }: Record<keyof FetchParams, unknown>): void => {
+const validateFetchConfig = ({
+  include,
+  exclude,
+  fieldsToOmit,
+  singletonCustomRecords,
+}: Record<keyof FetchParams, unknown>): void => {
   validateDefined(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
   validateFetchParameters(include)
@@ -377,6 +382,11 @@ const validateFetchConfig = ({ include, exclude, fieldsToOmit }: Record<keyof Fe
 
   if (fieldsToOmit !== undefined) {
     validateFieldsToOmitConfig(fieldsToOmit)
+  }
+
+  if (singletonCustomRecords !== undefined) {
+    validateArrayOfStrings(singletonCustomRecords, [CONFIG.fetch, FETCH_PARAMS.singletonCustomRecords])
+    validateRegularExpressions(singletonCustomRecords, [CONFIG.fetch, FETCH_PARAMS.singletonCustomRecords])
   }
 }
 

@@ -151,6 +151,24 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  bot_builder_flow: {
+    transformation: {
+      // This is added as the deprecated filter for references (referencedInstanceNamesFilterCreatorDeprecated) looks only in this config for the referenced idFields
+      idFields: ['&brandId', 'name'],
+    },
+  },
+  bot_builder_answer: {
+    transformation: {
+      idFields: ['name'],
+      extendsParentId: true,
+    },
+  },
+  bot_builder_node: {
+    transformation: {
+      idFields: ['id'],
+      extendsParentId: true,
+    },
+  },
   organization: {
     transformation: {
       sourceTypeName: 'organizations__organizations',
@@ -2746,6 +2764,7 @@ export const SUPPORTED_TYPES = {
   // tags are included in supportedTypes so that they can be easily omitted, but are fetched separately
   tag: ['tags'],
   custom_object: ['custom_objects'],
+  bot_builder_flow: ['bot_builder_flow'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand
@@ -2802,6 +2821,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     useNewInfra: true,
     useGuideNewInfra: false,
     translationBodyAsStaticFile: true,
+    fetchBotBuilder: false,
   },
   [DEPLOY_CONFIG]: {
     createMissingOrganizations: false,
@@ -3164,6 +3184,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           useNewInfra: { refType: BuiltinTypes.BOOLEAN },
           useGuideNewInfra: { refType: BuiltinTypes.BOOLEAN },
           translationBodyAsStaticFile: { refType: BuiltinTypes.BOOLEAN },
+          fetchBotBuilder: { refType: BuiltinTypes.BOOLEAN },
         },
         omitElemID: true,
       }),
@@ -3203,6 +3224,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.useNewInfra`,
       `${FETCH_CONFIG}.useGuideNewInfra`,
       `${FETCH_CONFIG}.translationBodyAsStaticFile`,
+      `${FETCH_CONFIG}.fetchBotBuilder`,
       DEPLOY_CONFIG,
       FIX_ELEMENTS_CONFIG,
     ),

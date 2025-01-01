@@ -25,6 +25,8 @@ import {
   TypeElement,
   ChangeDataType,
   FixElementsFunc,
+  SaltoElementError,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -400,6 +402,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordTypes: ObjectType[]
       lockedCustomRecordTypes: ObjectType[]
       customRecords: InstanceElement[]
+      customRecordErrors: SaltoElementError[]
       instancesIds: ObjectID[]
       failures: Omit<FetchByQueryFailures, 'largeSuiteQLTables'>
     }> => {
@@ -427,10 +430,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const [objectTypes, otherTypes] = _.partition(types, isObjectType)
       const [customRecordTypes, standardTypes] = _.partition(objectTypes, isCustomRecordType)
       const lockedCustomRecordTypes = getLockedCustomRecordTypes(failedTypes, instancesIds)
-      const { elements: customRecords, largeTypesError: failedCustomRecords } = await getCustomRecords(
+      const {
+        elements: customRecords,
+        errors: customRecordErrors,
+        largeTypesError: failedCustomRecords,
+      } = await getCustomRecords(
         this.client,
         customRecordTypes.concat(lockedCustomRecordTypes),
         fetchQueryWithBundles,
+        this.config.fetch.singletonCustomRecords ?? [],
         this.getElemIdFunc,
       )
       return {
@@ -439,6 +447,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         customRecordTypes,
         lockedCustomRecordTypes,
         customRecords,
+        customRecordErrors,
         instancesIds,
         failures: { failedCustomRecords, failedFilePaths, failedToFetchAllAtOnce, failedTypes },
       }
@@ -451,6 +460,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         customRecordTypes,
         lockedCustomRecordTypes,
         customRecords,
+        customRecordErrors,
         instancesIds,
         failures,
       },
@@ -470,7 +480,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     // we calculate deleted elements only in partial-fetch mode
-    const { deletedElements = [], errors: deletedElementErrors }: FetchDeletionResult = isPartial
+    const { deletedElements = [], errors: deletedElementErrors = [] }: FetchDeletionResult = isPartial
       ? await getDeletedElements({
           client: this.client,
           elementsSource: this.elementsSource,
@@ -500,6 +510,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       .concat(serverTimeElements)
       .concat(scriptIdListElements)
 
+    const fetchErrors = ([] as SaltoError[]).concat(customRecordErrors).concat(deletedElementErrors)
+
     await this.createFiltersRunner({
       operation: 'fetch',
       isPartial,
@@ -511,8 +523,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return {
       failures,
       elements,
+      fetchErrors,
       deletedElements,
-      deletedElementErrors,
     }
   }
 
@@ -548,7 +560,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const fetchWithChangesDetection = !isFirstFetch && withChangesDetection
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
-    const { failures, elements, deletedElements, deletedElementErrors } = await this.fetchByQuery(
+    const { failures, elements, deletedElements, fetchErrors } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
       fetchWithChangesDetection,
@@ -561,9 +573,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const partialFetchData = setPartialFetchData(isPartial, deletedElements)
 
     if (_.isUndefined(updatedConfig)) {
-      return { elements, errors: deletedElementErrors, partialFetchData }
+      return { elements, errors: fetchErrors, partialFetchData }
     }
-    return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
+    return { elements, updatedConfig, errors: fetchErrors, partialFetchData }
   }
 
   private async getChangedObjectsQuery(

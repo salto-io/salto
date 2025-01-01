@@ -92,8 +92,21 @@ export const GROUP_PUSH_TYPE_NAME = 'GroupPush'
 export const GROUP_PUSH_RULE_TYPE_NAME = 'GroupPushRule'
 export const DOMAIN_TYPE_NAME = 'Domain'
 export const USER_TYPE_NAME = 'User'
+export const USER_ROLES_TYPE_NAME = 'UserRoles'
 export const SMS_TEMPLATE_TYPE_NAME = 'SmsTemplate'
 export const SCHEMA_TYPES = [GROUP_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME]
 export const EMAIL_DOMAIN_TYPE_NAME = 'EmailDomain'
 export const SIGN_IN_PAGE_TYPE_NAME = 'SignInPage'
 export const ERROR_PAGE_TYPE_NAME = 'ErrorPage'
+
+export const APP_PROVISIONING_FIELD_NAMES = [
+  'applicationUserProvisioning',
+  'applicationInboundProvisioning',
+  'applicationProvisioningUsers',
+  'applicationProvisioningGeneral',
+]
+
+// Apps with public APIs supporting inbound and user provisioning.
+// Full list: https://developer.okta.com/docs/api/openapi/okta-management/management/tag/ApplicationFeatures
+export const INBOUND_PROVISIONING_SUPPORTED_APP_NAMES = ['google', 'office365', 'okta_org2org', 'slack', 'zoomus']
+export const USER_PROVISIONING_SUPPORTED_APP_NAMES = [...INBOUND_PROVISIONING_SUPPORTED_APP_NAMES, 'zscalerbyz']

@@ -76,5 +76,4 @@ export const createAutomationValues = (name: string): Values => ({
     },
   ],
   labels: [],
-  tags: [],
 })

@@ -222,11 +222,13 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
           'zendesk.brand.instance.myBrand',
-          'zendesk.brand_logo',
           'zendesk.brands',
           'zendesk.business_hours_schedule',
           'zendesk.business_hours_schedule.instance.New_schedule@s',
@@ -249,41 +251,6 @@ describe('adapter', () => {
           'zendesk.category_translation.instance.Development_myBrand__myBrand_en_us_ub@uuuuum',
           'zendesk.category_translation.instance.General_myBrand__myBrand_en_us_ub@uuuuum',
           'zendesk.category_translation__translations',
-          'zendesk.channel',
-          'zendesk.channel.instance.Answer_Bot_for_Web_Widget@s',
-          'zendesk.channel.instance.Automation',
-          'zendesk.channel.instance.CTI_phone_call__incoming_@sssjk',
-          'zendesk.channel.instance.CTI_phone_call__outgoing_@sssjk',
-          'zendesk.channel.instance.CTI_voicemail@s',
-          'zendesk.channel.instance.Channel_Integrations@s',
-          'zendesk.channel.instance.Chat',
-          'zendesk.channel.instance.Closed_ticket@s',
-          'zendesk.channel.instance.Email',
-          'zendesk.channel.instance.Facebook_Messenger@s',
-          'zendesk.channel.instance.Facebook_Post@s',
-          'zendesk.channel.instance.Facebook_Private_Message@s',
-          'zendesk.channel.instance.Forum_topic@s',
-          'zendesk.channel.instance.Get_Satisfaction@s',
-          'zendesk.channel.instance.Help_Center_post@s',
-          'zendesk.channel.instance.Instagram_Direct@s',
-          'zendesk.channel.instance.LINE',
-          'zendesk.channel.instance.Mobile',
-          'zendesk.channel.instance.Mobile_SDK@s',
-          'zendesk.channel.instance.Phone_call__incoming_@ssjk',
-          'zendesk.channel.instance.Phone_call__outgoing_@ssjk',
-          'zendesk.channel.instance.Satisfaction_Prediction@s',
-          'zendesk.channel.instance.Text',
-          'zendesk.channel.instance.Ticket_sharing@s',
-          'zendesk.channel.instance.Twitter',
-          'zendesk.channel.instance.Twitter_DM@s',
-          'zendesk.channel.instance.Twitter_Direct_Message@s',
-          'zendesk.channel.instance.Twitter_Like@s',
-          'zendesk.channel.instance.Voicemail',
-          'zendesk.channel.instance.WeChat',
-          'zendesk.channel.instance.Web_Widget@s',
-          'zendesk.channel.instance.Web_form@s',
-          'zendesk.channel.instance.Web_service__API_@ssjk',
-          'zendesk.channel.instance.WhatsApp',
           'zendesk.custom_object',
           'zendesk.custom_object_field',
           'zendesk.custom_object_field__custom_field_options',
@@ -671,6 +638,7 @@ describe('adapter', () => {
       })
       it('should generate the right elements on fetch with new infra', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -694,6 +662,7 @@ describe('adapter', () => {
                   default: false,
                   customizations: {},
                 },
+                fetchBotBuilder: true,
               },
             }),
             elementsSource: buildElementsSourceFromElements([]),
@@ -777,6 +746,21 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_answer.instance.myBrand_test_bot_us__Testing@uumuu',
+          'zendesk.bot_builder_answer__trainingPhrases',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_flow.instance.myBrand_test_bot@us',
+          'zendesk.bot_builder_flow__assignedChannelIntegrations',
+          'zendesk.bot_builder_flow__fallback',
+          'zendesk.bot_builder_flow__freeTextQuery',
+          'zendesk.bot_builder_flow__greeting',
+          'zendesk.bot_builder_flow__greeting__suggestedAnswers',
+          'zendesk.bot_builder_flow__helpCenterAutoReplyFeedback',
+          'zendesk.bot_builder_flow__publishedChannelIntegrations',
+          'zendesk.bot_builder_node',
+          'zendesk.bot_builder_node.instance.myBrand_test_bot_us__Testing_uumuu__01J4SRF1HAS4TQFQ99PKFRCQXB@uuuuumuu',
+          'zendesk.bot_builder_node__data',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -1233,6 +1217,7 @@ describe('adapter', () => {
       })
       it('should generate the right elements on fetch with new infra, with elemID customization', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -1289,6 +1274,7 @@ describe('adapter', () => {
       })
       it('should not generate tags when excluded', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -1398,6 +1384,9 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -1852,6 +1841,7 @@ describe('adapter', () => {
       })
       it('should omit inactive instances according to config', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -1955,6 +1945,9 @@ describe('adapter', () => {
           'zendesk.automation_order',
           'zendesk.automation_order.instance',
           'zendesk.automations',
+          'zendesk.bot_builder_answer',
+          'zendesk.bot_builder_flow',
+          'zendesk.bot_builder_node',
           'zendesk.brand',
           'zendesk.brand.instance.brandWithGuide',
           'zendesk.brand.instance.brandWithoutGuide',
@@ -2408,6 +2401,7 @@ describe('adapter', () => {
       })
       it('should filter elements by type+name on fetch', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const { elements } = await adapter
           .operations({
             credentials: new InstanceElement('config', basicCredentialsType, {
@@ -2603,6 +2597,7 @@ describe('adapter', () => {
 
       it('should return fetch error when no brand matches brands config, and still generate types', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        mockAxiosAdapter.onPost().reply(callbackResponseFunc)
         const creds = new InstanceElement('config', basicCredentialsType, {
           username: 'user123',
           password: 'token456',

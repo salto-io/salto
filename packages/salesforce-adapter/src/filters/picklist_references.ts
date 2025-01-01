@@ -237,7 +237,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         createReferencesForBusinessProcess({ instance, picklistValuesReferenceIndex, nonHandledParents }),
       )
     if (nonHandledParents.size > 0) {
-      log.warn(
+      log.trace(
         'Failed to resolve picklist values for the following business process parents: %s',
         inspectValue(nonHandledParents),
       )

@@ -15,6 +15,7 @@ import {
   isObjectType,
   isObjectTypeChange,
   ObjectType,
+  SaltoElementError,
   TopLevelElement,
   Values,
 } from '@salto-io/adapter-api'
@@ -96,6 +97,7 @@ export type DataElementsResult = {
 
 export type CustomRecordResult = {
   elements: InstanceElement[]
+  errors: SaltoElementError[]
   largeTypesError: string[]
 }
 

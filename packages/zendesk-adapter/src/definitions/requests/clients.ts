@@ -54,6 +54,8 @@ export const createClientDefinitions = (
           '/api/v2/custom_objects/{custom_object_key}/fields': { get: { pagination: 'links' } },
           '/api/v2/guide/permission_groups': { get: { pagination: 'basic_cursor_with_args' } },
           '/api/v2/help_center/user_segments': { get: { pagination: 'links' } },
+          // This is for the graphql endpoint, which is readonly for fetch. It allows it to be used in fetch
+          '/api/admin/private/answer_bot/graphql': { post: { readonly: true } },
         },
       },
     },

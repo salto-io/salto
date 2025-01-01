@@ -142,6 +142,7 @@ import flowCoordinatesFilter from './filters/flow_coordinates'
 import taskAndEventCustomFields from './filters/task_and_event_custom_fields'
 import picklistReferences from './filters/picklist_references'
 import addParentToInstancesWithinFolderFilter from './filters/add_parent_to_instances_within_folder'
+import addParentToRecordTriggeredFlows from './filters/add_parent_to_record_triggered_flows'
 import { getConfigFromConfigChanges } from './config_change'
 import { Filter, FilterContext, FilterCreator, FilterResult } from './filter'
 import {
@@ -262,6 +263,8 @@ export const allFilters: Array<FilterCreator> = [
   // should run after convertListsFilter
   replaceFieldValuesFilter,
   valueToStaticFileFilter,
+  // addParentToRecordTriggeredFlows should run before fieldReferenceFilter
+  addParentToRecordTriggeredFlows,
   fieldReferencesFilter,
   // should run after customObjectsInstancesFilter for now
   referenceAnnotationsFilter,
@@ -775,6 +778,7 @@ export default class SalesforceAdapter implements SalesforceAdapterOperations {
         this.client,
         this.nestedMetadataTypes,
         progressReporter,
+        fetchProfile,
         this.userConfig.client?.deploy?.deleteBeforeUpdate,
         checkOnly,
         this.userConfig.client?.deploy?.quickDeployParams,

@@ -58,6 +58,8 @@ import {
   CPQ_TERM_CONDITION,
   CPQ_INDEX_FIELD,
   OPPORTUNITY_METADATA_TYPE,
+  FLOW_FIELD_TYPE_NAMES,
+  ASSIGN_TO_REFERENCE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -473,6 +475,18 @@ export const mockTypes = {
     fields: {
       status: { refType: BuiltinTypes.STRING },
       actionType: { refType: BuiltinTypes.STRING },
+      assignments: {
+        refType: new ListType(
+          createMetadataObjectType({
+            annotations: { metadataType: FLOW_FIELD_TYPE_NAMES.FLOW_ASSIGNMENT_ITEM },
+            fields: {
+              [ASSIGN_TO_REFERENCE]: {
+                refType: BuiltinTypes.STRING,
+              },
+            },
+          }),
+        ),
+      },
     },
   }),
   FlowDefinition: createMetadataObjectType({
@@ -869,6 +883,7 @@ export const mockDefaultValues = {
     apiVersion: API_VERSION,
     content: '<apex:page>Created by e2e test for profile test!</apex:page>',
     label: 'ApexPageForProfile',
+    internalId: 'ApexPageId',
   },
   AuraDefinitionBundle: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestAuraDefinitionBundle',

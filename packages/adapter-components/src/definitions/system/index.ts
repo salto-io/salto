@@ -33,6 +33,7 @@ export {
   AdjustFunctionMulti,
   ContextParams,
   GeneratedItem,
+  ExtractionParams,
 } from './shared'
 export { RequiredDefinitions } from './types'
 export { mergeDefinitionsWithOverrides } from './overrides'

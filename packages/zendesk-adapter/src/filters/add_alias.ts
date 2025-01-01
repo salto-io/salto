@@ -60,7 +60,7 @@ const LANGUAGE_SETTINGS = 'language settings'
 const SETTINGS = 'Settings'
 const THEME_SETTINGS = 'Theme settings'
 
-const aliasMap: Record<string, AliasData> = {
+export const aliasMap: Record<string, AliasData> = {
   app_installation: {
     aliasComponents: [
       {
@@ -197,7 +197,7 @@ const aliasMap: Record<string, AliasData> = {
   organization_field__custom_field_options: {
     aliasComponents: [
       {
-        fieldName: 'raw_name',
+        fieldName: 'value',
       },
     ],
   },
@@ -253,7 +253,7 @@ const aliasMap: Record<string, AliasData> = {
   [TICKET_FIELD_CUSTOM_FIELD_OPTION]: {
     aliasComponents: [
       {
-        fieldName: 'raw_name',
+        fieldName: 'value',
       },
     ],
   },
@@ -288,7 +288,7 @@ const aliasMap: Record<string, AliasData> = {
   user_field__custom_field_options: {
     aliasComponents: [
       {
-        fieldName: 'raw_name',
+        fieldName: 'value',
       },
     ],
   },

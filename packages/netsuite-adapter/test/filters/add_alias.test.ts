@@ -16,7 +16,7 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
-import { CUSTOM_RECORD_TYPE, IS_SUB_INSTANCE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import filterCreator from '../../src/filters/add_alias'
 import { LocalFilterOpts } from '../../src/filter'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
@@ -50,11 +50,9 @@ describe('add alias filter', () => {
   let settingsInstance: InstanceElement
   let bundleInstance: InstanceElement
   let customRecordInstance: InstanceElement
-  let subInstance: InstanceElement
 
   let dataInstanceWithFallback: InstanceElement
   let itemInstanceWithFallback: InstanceElement
-  let subInstanceWithFallback: InstanceElement
 
   let translationCollectionInstance: InstanceElement
   let standardInstanceWithTranslation: InstanceElement
@@ -107,20 +105,11 @@ describe('add alias filter', () => {
     customRecordInstance = new InstanceElement('val_123', customRecordType, {
       name: 'Custom Record Instance',
     })
-    subInstance = new InstanceElement('subInstance1', customer, {
-      name: 'Sub Instance 1',
-      label: 'some label',
-      [IS_SUB_INSTANCE]: true,
-    })
     dataInstanceWithFallback = new InstanceElement('customer2', customer, {
       entityId: 'Customer 2',
     })
     itemInstanceWithFallback = new InstanceElement('assemblyItem2', assemblyItem, {
       itemId: 'Assembly Item 2',
-    })
-    subInstanceWithFallback = new InstanceElement('subInstance2', customer, {
-      label: 'Sub Instance 2',
-      [IS_SUB_INSTANCE]: true,
     })
 
     translationCollectionInstance = new InstanceElement('custtranslation1', translationcollection, {
@@ -193,10 +182,8 @@ describe('add alias filter', () => {
       settingsInstance,
       bundleInstance,
       customRecordInstance,
-      subInstance,
       dataInstanceWithFallback,
       itemInstanceWithFallback,
-      subInstanceWithFallback,
       translationCollectionInstance,
       standardInstanceWithTranslation,
       customRecordTypeWithTranslation,
@@ -232,10 +219,8 @@ describe('add alias filter', () => {
     expect(settingsInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Company Features')
     expect(bundleInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Bundle Name')
     expect(customRecordInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Custom Record Instance')
-    expect(subInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Sub Instance 1')
     expect(dataInstanceWithFallback.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Customer 2')
     expect(itemInstanceWithFallback.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Assembly Item 2')
-    expect(subInstanceWithFallback.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Sub Instance 2')
     expect(translationCollectionInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Translation')
     expect(standardInstanceWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Workflow')
     expect(customRecordTypeWithTranslation.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Translated Custom Record Type')

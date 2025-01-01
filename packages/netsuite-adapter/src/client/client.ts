@@ -64,13 +64,13 @@ import {
   SUITEAPP_UPDATING_CONFIG_GROUP_ID,
 } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
-import { ADDITIONAL_DEPENDENCIES, APPLICATION_ID, CONFIG_FEATURES, CUSTOM_RECORD_TYPE, ROLE } from '../constants'
+import { ADDITIONAL_DEPENDENCIES, APPLICATION_ID, CUSTOM_RECORD_TYPE, ROLE } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import {
-  FeaturesDeployError,
   MissingManifestFeaturesError,
+  PartialSuccessDeployErrors,
   getChangesElemIdsToRemove,
-  toFeaturesDeployPartialSuccessResult,
+  toPartialSuccessDeployResult,
 } from './errors'
 import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies } from '../config/types'
@@ -406,6 +406,8 @@ export default class NetsuiteClient {
       const changesToApply = changesToDeploy.flatMap(
         change => changesByTopLevel[getChangeData(change).elemID.getFullName()],
       )
+      const successfulDeployResult = { errors, appliedChanges: changesToApply }
+
       const manifestDependencies = NetsuiteClient.toManifestDependencies(additionalDependencies, featuresMap)
 
       try {
@@ -415,21 +417,10 @@ export default class NetsuiteClient {
           () => this.sdfClient.deploy(suiteAppId, { manifestDependencies, validateOnly }, dependencyGraph),
           'sdfDeploy',
         )
-        return { errors, appliedChanges: changesToApply }
+        return successfulDeployResult
       } catch (error) {
-        if (error instanceof FeaturesDeployError) {
-          const { message } = error
-          const featuresError = changesToDeploy
-            .filter(isInstanceChange)
-            .map(getChangeData)
-            .filter(inst => inst.elemID.typeName === CONFIG_FEATURES)
-            .map(({ elemID }) => toElementError({ elemID, message, detailedMessage: message }))
-
-          return {
-            errors: errors.concat(featuresError),
-            appliedChanges: toFeaturesDeployPartialSuccessResult(error, changesToApply),
-            failedFeaturesIds: error.ids,
-          }
+        if (error instanceof PartialSuccessDeployErrors) {
+          return toPartialSuccessDeployResult(error, successfulDeployResult)
         }
         if (error instanceof MissingManifestFeaturesError) {
           const res = NetsuiteClient.updateFeaturesMap(featuresMap, error)

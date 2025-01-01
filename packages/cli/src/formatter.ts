@@ -34,13 +34,13 @@ import {
   isSaltoElementError,
   SaltoElementError,
 } from '@salto-io/adapter-api'
+import { getSupportedServiceAdapterNames } from '@salto-io/adapter-creators'
 import {
   Plan,
   PlanItem,
   FetchChange,
   FetchResult,
   LocalChange,
-  getSupportedServiceAdapterNames,
   DeployError,
   GroupProperties,
   DetailedChangeId,
@@ -487,6 +487,11 @@ export const formatActionStart = (action: PlanItem): string => {
   const itemName = `${formatItemName(planItemName(action))}`
   const elements = [body(`${itemName} ${Prompts.START_ACTION[action.action]}`), emptyLine()]
   return elements.join('\n')
+}
+
+export const formatActionUpdate = (itemName: string, details: string): string => {
+  const styledItemName = formatItemName(itemName)
+  return body(`${styledItemName} ${details}\n`)
 }
 
 export const formatActionInProgress = (itemName: string, actionName: ActionName, start: Date): string => {

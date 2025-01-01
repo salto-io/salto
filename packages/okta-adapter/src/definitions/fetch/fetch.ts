@@ -7,7 +7,7 @@
  */
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import {
   definitions,
   fetch as fetchUtils,
@@ -36,11 +36,14 @@ import {
   AUTOMATION_RULE_TYPE_NAME,
   SIGN_IN_PAGE_TYPE_NAME,
   ERROR_PAGE_TYPE_NAME,
+  INBOUND_PROVISIONING_SUPPORTED_APP_NAMES,
+  USER_PROVISIONING_SUPPORTED_APP_NAMES,
+  USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import { isGroupPushEntry } from '../../filters/group_push'
 import { extractSchemaIdFromUserType } from './types/user_type'
 import { isNotMappingToAuthenticatorApp } from './types/profile_mapping'
-import { assignPolicyIdsToApplication, isOktaDashboard } from './types/application'
+import { assignPolicyIdsToApplication, generateExcludeRegex, isOktaDashboard } from './types/application'
 import { shouldConvertUserIds } from '../../user_utils'
 import { isNotDeletedEmailDomain } from './types/email_domain'
 import { isDefaultDomain } from './types/domain'
@@ -337,6 +340,74 @@ const createCustomizations = ({
     },
   },
   ...getPolicyCustomizations(),
+  [USER_ROLES_TYPE_NAME]: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/iam/assignees/users',
+        },
+        transformation: {
+          root: 'value',
+          adjust: async ({ value }) => {
+            validatePlainObject(value, 'User Roles response')
+            return {
+              value: {
+                ...value,
+                // duplicate id to additional field to extract reference, because currently references can't be used as service ids
+                user: _.get(value, 'id'),
+              },
+            }
+          },
+        },
+      },
+    ],
+    resource: {
+      directFetch: true,
+      serviceIDFields: ['id'],
+      recurseInto: {
+        roles: {
+          typeName: 'UserRole',
+          context: {
+            args: {
+              id: {
+                root: 'id',
+              },
+            },
+          },
+        },
+      },
+    },
+    element: {
+      topLevel: {
+        isTopLevel: true,
+        elemID: { parts: [{ fieldName: 'user', isReference: true }] },
+      },
+      fieldCustomizations: {
+        id: { hide: true },
+        orn: { omit: true },
+        _links: { omit: true },
+      },
+    },
+  },
+  UserRole: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/users/{id}/roles',
+          method: 'get',
+        },
+      },
+    ],
+    resource: { directFetch: false },
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        _links: { omit: true },
+        status: { omit: true },
+        assignmentType: { omit: true },
+      },
+    },
+  },
   Application: {
     requests: [
       {
@@ -370,6 +441,44 @@ const createCustomizations = ({
               },
             },
           },
+        },
+        applicationUserProvisioning: {
+          typeName: 'ApplicationUserProvisioning',
+          conditions: [
+            {
+              fromField: 'name',
+              match: USER_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`),
+            },
+            // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+            { fromField: 'features', match: ['.+'] },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+          single: true,
+        },
+        applicationInboundProvisioning: {
+          typeName: 'ApplicationInboundProvisioning',
+          conditions: [
+            {
+              fromField: 'name',
+              match: INBOUND_PROVISIONING_SUPPORTED_APP_NAMES.map(name => `^${name}$`),
+            },
+            // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+            { fromField: 'features', match: ['.+'] },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+          single: true,
         },
         ...(usePrivateAPI
           ? {
@@ -412,6 +521,43 @@ const createCustomizations = ({
                   },
                 ],
               },
+              applicationProvisioningGeneral: {
+                typeName: 'ApplicationProvisioningGeneral',
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: generateExcludeRegex(INBOUND_PROVISIONING_SUPPORTED_APP_NAMES),
+                  },
+                  // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+                  { fromField: 'features', match: ['.+'] },
+                ],
+                context: {
+                  args: {
+                    appId: {
+                      root: 'id',
+                    },
+                  },
+                },
+                single: true,
+              },
+              applicationProvisioningUsers: {
+                typeName: 'ApplicationProvisioningUsers',
+                conditions: [
+                  {
+                    fromField: 'name',
+                    match: generateExcludeRegex(INBOUND_PROVISIONING_SUPPORTED_APP_NAMES),
+                  },
+                  // Provisioning is only available for apps with features, but it's possible for an app to have features without provisioning.
+                  { fromField: 'features', match: ['.+'] },
+                ],
+                context: {
+                  args: {
+                    appId: {
+                      root: 'id',
+                    },
+                  },
+                },
+              },
             }
           : {}),
       },
@@ -439,6 +585,10 @@ const createCustomizations = ({
         _links: { hide: true },
         _embedded: { omit: true },
         credentials: { fieldType: 'ApplicationCredentials' },
+        applicationProvisioningUsers: { fieldType: 'unknown' },
+        applicationProvisioningGeneral: { fieldType: 'unknown' },
+        applicationInboundProvisioning: { fieldType: 'ApplicationFeature' },
+        applicationUserProvisioning: { fieldType: 'ApplicationFeature' },
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
@@ -595,6 +745,69 @@ const createCustomizations = ({
               serviceUrl: { path: '/admin/app/{_parent.0.name}/instance/{_parent.0.id}/#tab-group-push' },
             },
             fieldCustomizations: { mappingRuleId: { hide: true } },
+          },
+        },
+        ApplicationUserProvisioning: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/apps/{appId}/features/USER_PROVISIONING',
+              },
+              transformation: {
+                omit: ['_links', 'name', 'description', 'status'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationInboundProvisioning: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/apps/{appId}/features/INBOUND_PROVISIONING',
+              },
+              transformation: {
+                omit: ['_links', 'name', 'description', 'status'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationProvisioningGeneral: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/internal/apps/instance/{appId}/settings/user-mgmt-general',
+                client: 'private',
+              },
+              transformation: {
+                pick: ['enabled', 'importSettings.userNameTemplate', 'importSettings.importInterval'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+          },
+        },
+        ApplicationProvisioningUsers: {
+          requests: [
+            {
+              endpoint: {
+                path: '/api/v1/internal/apps/{appId}/settings/importMatchRules',
+                client: 'private',
+              },
+              transformation: {
+                omit: ['id'],
+              },
+            },
+          ],
+          resource: {
+            directFetch: false,
+            serviceIDFields: [], // The default serviceId is 'id' which causes to returned values to be merged since we remove it.
           },
         },
       }

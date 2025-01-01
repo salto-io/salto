@@ -1,0 +1,97 @@
+[
+  {
+    "path": "/api/v1/internal/apps/app-fakeid1/settings/importMatchRules",
+    "scope": "admin",
+    "method": "POST",
+    "status": 200,
+    "response": [
+      {
+        "id": "mmrltr605ipFTlCAc697",
+        "priorityOrder": 1,
+        "conditions": {
+          "expression": {
+            "value": "(source.login eq target.login) OR (source.email eq target.email)",
+            "type": "OTHER"
+          }
+        },
+        "postMatchActions": {
+          "autoConfirm": true,
+          "autoActivate": false
+        }
+      },
+      {
+        "id": "mmrltr605jUOROja9697",
+        "priorityOrder": 2,
+        "conditions": {
+          "expression": {
+            "value": "(source.firstName eq target.firstName) AND (source.lastName eq target.lastName)",
+            "type": "OTHER"
+          }
+        },
+        "postMatchActions": {
+          "autoConfirm": false,
+          "autoActivate": false
+        }
+      },
+      {
+        "id": "mmrltr605kNAeKLZS697",
+        "priorityOrder": 9999,
+        "conditions": {
+          "expression": {
+            "value": null,
+            "type": "CUSTOM"
+          }
+        },
+        "postMatchActions": {
+          "autoConfirm": true,
+          "autoActivate": true
+        }
+      }
+    ],
+    "body": [
+      {
+        "priorityOrder": 1,
+        "conditions": {
+          "expression": {
+            "value": "(source.login eq target.login) OR (source.email eq target.email)",
+            "type": "OTHER"
+          }
+        },
+        "postMatchActions": {
+          "autoConfirm": true,
+          "autoActivate": false
+        }
+      },
+      {
+        "priorityOrder": 2,
+        "conditions": {
+          "expression": {
+            "value": "(source.firstName eq target.firstName) AND (source.lastName eq target.lastName)",
+            "type": "OTHER"
+          }
+        },
+        "postMatchActions": {
+          "autoConfirm": false,
+          "autoActivate": false
+        }
+      },
+      {
+        "priorityOrder": 9999,
+        "conditions": {
+          "expression": {
+            "type": "CUSTOM"
+          }
+        },
+        "postMatchActions": {
+          "autoConfirm": true,
+          "autoActivate": true
+        }
+      }
+    ],
+    "reqHeaders": {
+      "x-rate-limit-limit": "500",
+      "x-rate-limit-remaining": "499",
+      "x-rate-limit-reset": "1735222481"
+    }
+  }
+]

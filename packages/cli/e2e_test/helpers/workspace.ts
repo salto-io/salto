@@ -9,6 +9,7 @@ import glob from 'glob'
 import { Plan, telemetrySender, preview, loadLocalWorkspace, AppConfig } from '@salto-io/core'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { parser } from '@salto-io/parser'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { readTextFile, writeFile } from '@salto-io/file'
 import {
   ActionName,
@@ -196,7 +197,15 @@ export const runDeploy = async ({
 }): Promise<void> => {
   const cliOutput = mockCliOutput()
   const result = await runCommand({
-    args: ['deploy', '-f'],
+    args: [
+      'deploy',
+      '-f',
+      // to be changed at https://salto-io.atlassian.net/browse/SALTO-7121
+      '-C',
+      'salesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+      '-C',
+      'e2esalesforce.fetch.optionalFeatures.shouldPopulateInternalIdAfterDeploy=false',
+    ],
     workspacePath,
     cliOutput,
   })
@@ -240,7 +249,7 @@ export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Worksp
 
 export const runPreviewGetPlan = async (fetchOutputDir: string, accounts?: string[]): Promise<Plan> => {
   const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
-  return preview(workspace, accounts)
+  return preview({ workspace, accounts, adapterCreators })
 }
 
 const getChangedElementName = (change: Change): string => getChangeData(change).elemID.name

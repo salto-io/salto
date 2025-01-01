@@ -17,7 +17,7 @@ import {
   isRemovalChange,
   Values,
 } from '@salto-io/adapter-api'
-import { getParents, validatePlainObject } from '@salto-io/adapter-utils'
+import { getParents, naclCase, validatePlainObject } from '@salto-io/adapter-utils'
 import { AdditionalAction, ClientOptions } from '../types'
 import {
   APPLICATION_TYPE_NAME,
@@ -48,6 +48,8 @@ import {
   AUTHORIZATION_SERVER,
   GROUP_RULE_TYPE_NAME,
   ROLE_TYPE_NAME,
+  APP_PROVISIONING_FIELD_NAMES,
+  USER_ROLES_TYPE_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -57,11 +59,12 @@ import {
 } from './types/application'
 import { isActivationChange, isDeactivationChange } from './utils/status'
 import * as simpleStatus from './utils/simple_status'
-import { isCustomApp } from '../fetch/types/application'
+import { isApplicationProvisioningUsersModified, isCustomApp } from '../fetch/types/application'
 import { addBrandIdToRequest } from './types/email_domain'
 import { isSystemScope } from './types/authorization_servers'
 import { isActiveGroupRuleChange } from './types/group_rules'
 import { adjustRoleAdditionChange, isPermissionChangeOfAddedRole, shouldUpdateRolePermission } from './types/roles'
+import { USER_ROLE_CHANGE_ID_FIELDS, getRoleIdFromSharedContext } from './types/user_roles'
 
 const log = logger(module)
 
@@ -460,7 +463,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 skipIfIdentical: true,
                 transformForCheck: {
-                  omit: APP_POLICIES,
+                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES],
                 },
               },
               request: {
@@ -483,7 +486,13 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     return {
                       value: {
                         name,
-                        ..._.omit(transformed, [ID_FIELD, LINKS_FIELD, CUSTOM_NAME_FIELD, ...APP_POLICIES]),
+                        ..._.omit(transformed, [
+                          ID_FIELD,
+                          LINKS_FIELD,
+                          CUSTOM_NAME_FIELD,
+                          ...APP_POLICIES,
+                          ...APP_PROVISIONING_FIELD_NAMES,
+                        ]),
                       },
                     }
                   },
@@ -491,6 +500,25 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               },
             },
             ...createDeployAppPolicyRequests(),
+            {
+              condition: {
+                custom: isApplicationProvisioningUsersModified,
+              },
+              request: {
+                endpoint: {
+                  path: '/api/v1/internal/apps/{id}/settings/importMatchRules',
+                  client: 'private',
+                  method: 'post',
+                },
+                transformation: {
+                  root: 'applicationProvisioningUsers',
+                  single: false,
+                },
+              },
+              copyFromResponse: {
+                updateServiceIDs: false,
+              },
+            },
           ],
           remove: [
             {
@@ -542,12 +570,177 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           ],
         },
       },
+      recurseIntoPath: [
+        {
+          fieldPath: ['applicationInboundProvisioning'],
+          typeName: 'ApplicationInboundProvisioning',
+          changeIdFields: [],
+        },
+        {
+          fieldPath: ['applicationUserProvisioning'],
+          typeName: 'ApplicationUserProvisioning',
+          changeIdFields: [],
+        },
+        {
+          fieldPath: ['applicationProvisioningGeneral'],
+          typeName: 'ApplicationProvisioningGeneral',
+          changeIdFields: [],
+        },
+      ],
       toActionNames: ({ change }) => {
         if (isRemovalChange(change)) {
           return ['deactivate', 'remove']
         }
         if (isModificationChange(change)) {
           return ['activate', 'modify', 'deactivate']
+        }
+        return [change.action]
+      },
+      actionDependencies: [
+        {
+          first: 'deactivate',
+          second: 'remove',
+        },
+        {
+          first: 'activate',
+          second: 'modify',
+        },
+        {
+          first: 'modify',
+          second: 'deactivate',
+        },
+      ],
+    },
+    ApplicationInboundProvisioning: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{parent_id}/connections/default/lifecycle/activate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{parent_id}/features/INBOUND_PROVISIONING',
+                  method: 'put',
+                },
+                transformation: {
+                  root: 'capabilities',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{parent_id}/connections/default/lifecycle/deactivate',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => {
+        if (isAdditionChange(change)) {
+          return ['add', 'modify']
+        }
+        return [change.action]
+      },
+    },
+    ApplicationUserProvisioning: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/apps/{parent_id}/features/USER_PROVISIONING',
+                  method: 'put',
+                },
+                transformation: {
+                  root: 'capabilities',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => {
+        if (isAdditionChange(change)) {
+          return ['add', 'modify']
+        }
+        return [change.action]
+      },
+    },
+    ApplicationProvisioningGeneral: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                earlySuccess: true,
+              },
+            },
+          ],
+          modify: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/internal/apps/instance/{parent_id}/settings/user-mgmt-general',
+                  client: 'private',
+                  method: 'post',
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: {
+                  path: '/api/v1/internal/apps/instance/{parent_id}/settings/user-mgmt-general',
+                  client: 'private',
+                  method: 'post',
+                },
+                transformation: {
+                  adjust: async ({ context }) => {
+                    if (!isRemovalChange(context.change)) {
+                      throw new Error('Change is not a removal change')
+                    }
+                    const valueBefore = context.change.data.before.value
+                    return { value: { ...valueBefore, enabled: false } }
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      toActionNames: ({ change }) => {
+        if (isAdditionChange(change)) {
+          return ['add', 'modify']
         }
         return [change.action]
       },
@@ -927,6 +1120,51 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
             {
               request: {
                 endpoint: { path: '/api/v1/users/{id}', method: 'delete' },
+              },
+            },
+          ],
+        },
+      },
+    },
+    [USER_ROLES_TYPE_NAME]: {
+      recurseIntoPath: [
+        {
+          typeName: 'UserRole',
+          fieldPath: ['roles'],
+          changeIdFields: USER_ROLE_CHANGE_ID_FIELDS.map(f => naclCase(f)),
+        },
+      ],
+      requestsByAction: {
+        default: { request: { earlySuccess: true } },
+      },
+    },
+    UserRole: {
+      requestsByAction: {
+        customizations: {
+          add: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{userId}/roles', method: 'post' },
+                context: { userId: '{_parent.0.user}' },
+                transformation: {
+                  adjust: async ({ value }) => {
+                    validatePlainObject(value, USER_ROLES_TYPE_NAME)
+                    if (value.type === 'CUSTOM') {
+                      return {
+                        value: _.pick(value, USER_ROLE_CHANGE_ID_FIELDS), // custom role payload
+                      }
+                    }
+                    return { value: _.pick(value, ['type']) } // standard role payload
+                  },
+                },
+              },
+            },
+          ],
+          remove: [
+            {
+              request: {
+                endpoint: { path: '/api/v1/users/{userId}/roles/{id}', method: 'delete' },
+                context: getRoleIdFromSharedContext,
               },
             },
           ],

@@ -496,7 +496,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
-        alias: { aliasComponents: [{ fieldName: 'raw_name' }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -555,7 +555,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
-        alias: { aliasComponents: [{ fieldName: 'raw_name' }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },
@@ -609,7 +609,7 @@ const createCustomizations = (): Record<
         isTopLevel: true,
         elemID: { parts: [{ fieldName: 'value' }], extendsParent: true },
         path: { pathParts: [{ parts: [{ fieldName: 'value' }], extendsParent: true }] },
-        alias: { aliasComponents: [{ fieldName: 'raw_name' }] },
+        alias: { aliasComponents: [{ fieldName: 'value' }] },
       },
       fieldCustomizations: {
         id: { hide: true, fieldType: 'number' },

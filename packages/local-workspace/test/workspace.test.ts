@@ -185,13 +185,13 @@ describe('local workspace', () => {
       const envName = 'env-name'
       mockExists.mockResolvedValue(false)
       await initLocalWorkspace('.', envName, [], async () => [])
-      expect(mockInit.mock.calls[0][1]).toBe(envName)
-      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][5]
+      expect(mockInit.mock.calls[0][0].defaultEnvName).toBe(envName)
+      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][0].envs
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, envName))
-      const uuid = mockInit.mock.calls[0][0]
+      const uuid = mockInit.mock.calls[0][0].uid
       expect(dirStoresBaseDirs).toContain(uuid)
       expect(dirStoresBaseDirs).toContain(path.join(uuid, CREDENTIALS_CONFIG_PATH))
     })
@@ -258,7 +258,7 @@ describe('local workspace', () => {
         })
 
         expect(mockLoad).toHaveBeenCalledTimes(1)
-        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][0].environmentsSources
         expect(Object.keys(envSources.sources)).toHaveLength(3)
         expect(mockCreateDirStore).toHaveBeenCalledTimes(13)
         const dirStoresBaseDirs = mockCreateDirStore.mock.calls
@@ -280,17 +280,17 @@ describe('local workspace', () => {
           })
         })
         it('should use the credentials source that was passed as a paramter', async () => {
-          expect(mockLoad).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.anything(),
-            credentialSource,
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            undefined,
-            expect.anything(),
-          )
+          expect(mockLoad).toHaveBeenCalledWith({
+            config: expect.anything(),
+            adaptersConfig: expect.anything(),
+            credentials: credentialSource,
+            environmentsSources: expect.anything(),
+            remoteMapCreator: expect.anything(),
+            ignoreFileChanges: expect.anything(),
+            persistent: expect.anything(),
+            getCustomReferences: expect.anything(),
+            adapterCreators: expect.anything(),
+          })
         })
       })
       describe('when loadLocalWorkspace throws an error', () => {
@@ -367,8 +367,8 @@ describe('local workspace', () => {
     beforeAll(() => {
       mockExists.mockResolvedValue(true)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      mockLoad.mockImplementation(async (_config, _adaptersConfig, _credentials, elemSource: EnvironmentsSources) => {
-        wsElemSrcs = elemSource
+      mockLoad.mockImplementation(async config => {
+        wsElemSrcs = config.environmentsSources
         return {
           demoteAll: jest.fn(),
           currentEnv: () => 'default',
@@ -551,7 +551,7 @@ describe('local workspace', () => {
         adapterCreators: mockAdapterCreator,
       })
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][0].environmentsSources
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(10)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))

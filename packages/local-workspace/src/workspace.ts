@@ -244,7 +244,6 @@ const getAdapterConfigsPerAccount = async (
   envs: EnvConfig[],
   adapterCreators: Record<string, Adapter>,
 ): Promise<ObjectType[]> => {
-  // for backward compatibility
   const configTypesByAccount = Object.fromEntries(
     Object.entries(
       _.mapValues(adapterCreators, adapterCreator =>

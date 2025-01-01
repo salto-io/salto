@@ -183,6 +183,7 @@ describe('workspace', () => {
     const adaptersConfigSource = mockAdaptersConfigSource()
 
     beforeEach(() => {
+      jest.clearAllMocks()
       const type = new ObjectType({
         elemID: new ElemID('test2', 'type'),
       })

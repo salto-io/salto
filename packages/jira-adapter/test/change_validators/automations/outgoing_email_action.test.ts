@@ -9,13 +9,7 @@ import { ObjectType, ElemID, InstanceElement, toChange, StaticFile } from '@salt
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
 import { outgoingEmailActionContentValidator } from '../../../src/change_validators/automation/outgoing_email_action'
 
-export const HTML_BODY_TEST = `<!DOCTYPE html>
-<html>
-<body>
-<h1>My test html header</h1>
-<p>My test html paragraph.</p>
-</body>
-</html>`
+export const HTML_BODY_TEST = '<html><body><h1>Test</h1></body></html>'
 
 describe('outgoingEmailAutomationValidator', () => {
   let automationType: ObjectType
@@ -94,7 +88,7 @@ describe('outgoingEmailAutomationValidator', () => {
         severity: 'Error',
         message: 'A content of an outgoing email automation action is not valid.',
         detailedMessage:
-          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance2.components.0 has an invalid content.',
+          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance2.components.0 has an invalid body content. To resolve it, change it to its previous content.',
       },
     ])
   })
@@ -113,7 +107,7 @@ describe('outgoingEmailAutomationValidator', () => {
         severity: 'Error',
         message: 'A content of an outgoing email automation action is not valid.',
         detailedMessage:
-          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance3.components.0 has an invalid content.',
+          'The outgoing email action of this component: jira.Automation.instance.invalidAfterInstance3.components.0 has an invalid body content. To resolve it, change it to its previous content.',
       },
     ])
   })

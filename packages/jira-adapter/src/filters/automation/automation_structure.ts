@@ -16,8 +16,6 @@ import {
   Change,
   isInstanceChange,
   StaticFile,
-  isStaticFile,
-  ElemID,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -25,7 +23,6 @@ import {
   safeJsonStringify,
   createSchemeGuard,
   TransformFuncSync,
-  fileNameFromNaclCase,
 } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -43,6 +40,7 @@ import {
 } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
+import { getHTMLStaticFileName } from '../../utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -250,22 +248,29 @@ const createTransformHasAttachmentValueFunc =
     return value
   }
 
-const getHTMLStaticFileName = (path: ElemID): string => {
-  const pathName = fileNameFromNaclCase(path.getFullName()).split('instance.')
-  const fileName = pathName.length > 1 ? pathName[1] : ''
-  return fileName
-}
-
-const extractHTMLToStaticFile: TransformFuncSync = ({ value, path }) => {
-  if (path !== undefined && _.isPlainObject(value) && !isStaticFile(value.body) && value.mimeType === 'text/html') {
-    const bodyHTMLContent = value.body
-    value.body = new StaticFile({
-      filepath: `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`,
-      content: bodyHTMLContent,
-    })
+const extractHTMLContentToStaticFile =
+  (): TransformFuncSync =>
+  async ({ value, path }) => {
+    if (path !== undefined && _.isPlainObject(value) && value.mimeType === 'text/html') {
+      const filePath = `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`
+      value.body = new StaticFile({
+        filepath: filePath,
+        content: value.body,
+      })
+    }
+    return value
   }
-  return value
-}
+
+const transformStaticFileBufferToHTML =
+  (): TransformFuncSync =>
+  async ({ value, path }) => {
+    if (path !== undefined && _.isPlainObject(value) && value.mimeType === 'text/html') {
+      const htmlContentBuffer = value.body
+      const htmlContent = htmlContentBuffer.toString()
+      value.body = htmlContent
+    }
+    return value
+  }
 
 const revertCompareFieldValueStructure: TransformFuncSync = ({ value, field }) => {
   if (isCompareFieldValueObject(value) && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE) {
@@ -388,7 +393,7 @@ const filter: FilterCreator = ({ client }) => {
             convertToCompareFieldValue,
             createTransformDeleteLinkTypesFunc(),
             createTransformHasAttachmentValueFunc(),
-            extractHTMLToStaticFile,
+            extractHTMLContentToStaticFile(),
           ])
           instance.value = (
             await transformElement({
@@ -425,6 +430,7 @@ const filter: FilterCreator = ({ client }) => {
               revertCompareFieldValueStructure,
               createTransformDeleteLinkTypesFunc(true),
               createTransformHasAttachmentValueFunc(true),
+              transformStaticFileBufferToHTML(),
             ])
             instance.value = (
               await transformElement({

@@ -13,8 +13,6 @@ export {
   STATES_DIR_NAME,
   locateWorkspaceRoot,
   createEnvironmentSource,
-  getCustomReferencesImplementation,
-  getAdapterConfigsPerAccount,
 } from './src/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,

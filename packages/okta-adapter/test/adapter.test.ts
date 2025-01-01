@@ -2805,6 +2805,64 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      it('should successfully add oAuth2ScopeConsentGrant', async () => {
+        loadMockReplies('application_modify_oAuth_grants.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          oAuth2ScopeConsentGrants: [{ scopeId: 'okta.otherScope' }],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.oAuth2ScopeConsentGrants.push({ scopeId: 'okta.scope' })
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
+      it('should successfully Remove oAuth2ScopeConsentGrant', async () => {
+        loadMockReplies('application_remove_oAuth_grants.json')
+        const activeCustomApp = new InstanceElement('app', appType, {
+          id: 'app-fakeid1',
+          label: 'app1',
+          name: 'supportedApp',
+          status: ACTIVE_STATUS,
+          oAuth2ScopeConsentGrants: [{ scopeId: 'okta.otherScope' }, { scopeId: 'okta.scope' }],
+        })
+        const updatedApp = activeCustomApp.clone()
+        updatedApp.value.oAuth2ScopeConsentGrants = [{ scopeId: 'okta.scope' }]
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: 'app',
+            changes: [
+              toChange({
+                before: activeCustomApp,
+                after: updatedApp,
+              }),
+            ],
+          },
+          progressReporter: nullProgressReporter,
+        })
+
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.label).toEqual('app1')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
     })
     describe('deploy group schema', () => {
       let groupSchemaType: ObjectType

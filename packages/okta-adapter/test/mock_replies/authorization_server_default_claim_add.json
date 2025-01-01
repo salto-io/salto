@@ -1,0 +1,73 @@
+[
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/claims?includeClaims=sub",
+    "scope": "",
+    "method": "GET",
+    "status": 200,
+    "response": [
+      {
+        "id": "claim-fakeid",
+        "name": "sub",
+        "status": "ACTIVE",
+        "claimType": "RESOURCE",
+        "valueType": "EXPRESSION",
+        "value": "(appuser != null) ? appuser.userName : app.clientId",
+        "conditions": {
+          "scopes": []
+        },
+        "system": true,
+        "alwaysIncludeInToken": true,
+        "apiResourceId": null
+      }
+    ],
+    "body": {
+      "name": "sub",
+      "status": "ACTIVE",
+      "claimType": "RESOURCE",
+      "valueType": "EXPRESSION",
+      "value": "(appuser != null) ? appuser.userName : app.name",
+      "system": true,
+      "alwaysIncludeInToken": true
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "95",
+      "x-rate-limit-reset": "1735739033"
+    }
+  },
+  {
+    "path": "/api/v1/authorizationServers/authorizationserver-fakeid1/claims/claim-fakeid",
+    "scope": "",
+    "method": "PUT",
+    "status": 200,
+    "response": {
+      "id": "claim-fakeid",
+      "name": "sub",
+      "status": "ACTIVE",
+      "claimType": "RESOURCE",
+      "valueType": "EXPRESSION",
+      "value": "(appuser != null) ? appuser.userName : app.name",
+      "conditions": {
+        "scopes": []
+      },
+      "system": true,
+      "alwaysIncludeInToken": true,
+      "apiResourceId": null
+    },
+    "body": {
+      "name": "sub",
+      "status": "ACTIVE",
+      "claimType": "RESOURCE",
+      "valueType": "EXPRESSION",
+      "value": "(appuser != null) ? appuser.userName : app.name",
+      "system": true,
+      "alwaysIncludeInToken": true,
+      "id": "claim-fakeid"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "100",
+      "x-rate-limit-remaining": "94",
+      "x-rate-limit-reset": "1735739033"
+    }
+  }
+]

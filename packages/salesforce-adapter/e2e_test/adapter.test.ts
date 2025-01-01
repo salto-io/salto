@@ -395,7 +395,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
       const lwcResourceStaticFile = lwcResource.source as StaticFile
-      expect(await lwcResourceStaticFile.getContent()).toEqual(Buffer.from(lwcJsResourceContent))
+      expect(await lwcResourceStaticFile.getContent()).toEqual(lwcJsResourceContent)
       expect(lwcResourceStaticFile.filepath).toEqual(
         'salesforce/Records/LightningComponentBundle/testLightningComponentBundle/testLightningComponentBundle.js',
       )

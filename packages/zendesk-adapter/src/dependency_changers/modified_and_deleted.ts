@@ -21,7 +21,14 @@ import {
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { deployment, references as referencesUtils } from '@salto-io/adapter-components'
 import _, { isArray } from 'lodash'
-import { MACRO_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
+import {
+  GUIDE_THEME_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  THEME_SETTINGS_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  TRIGGER_CATEGORY_TYPE_NAME,
+  TRIGGER_TYPE_NAME,
+} from '../constants'
 
 const { isDefined } = lowerDashValues
 const { MISSING_REF_PREFIX } = referencesUtils
@@ -91,6 +98,15 @@ const dependencyTuple: Record<string, DeletedDependency[]> = {
     {
       typeName: TICKET_FIELD_TYPE_NAME,
       getDeletedTypeFullNameFromModificationChangeFunc: getFieldsFromTrigger,
+    },
+  ],
+  [THEME_SETTINGS_TYPE_NAME]: [
+    {
+      typeName: GUIDE_THEME_TYPE_NAME,
+      getDeletedTypeFullNameFromModificationChangeFunc: (change, type) => {
+        const data = change.data[type]
+        return [data.value?.liveTheme?.elemID.getFullName()].filter(isDefined)
+      },
     },
   ],
 }

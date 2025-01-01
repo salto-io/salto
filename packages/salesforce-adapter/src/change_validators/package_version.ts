@@ -7,9 +7,9 @@
  */
 
 import {
+  ChangeError,
   // ChangeError,
   ChangeValidator,
-  ElemID,
   // ElemID,
   getChangeData,
   InstanceElement,
@@ -18,15 +18,32 @@ import {
   // ReadOnlyElementsSource,
   // ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-import { APEX_CLASS_METADATA_TYPE, APEX_TRIGGER_METADATA_TYPE } from '../constants'
+// import { collections } from '@salto-io/lowerdash'
+import {
+  APEX_CLASS_METADATA_TYPE,
+  APEX_COMPONENT_METADATA_TYPE,
+  APEX_PAGE_METADATA_TYPE,
+  APEX_TRIGGER_METADATA_TYPE,
+  EMAIL_TEMPLATE_METADATA_TYPE,
+} from '../constants'
 
-const { awu } = collections.asynciterable
+// const { awu } = collections.asynciterable
 
-const TYPES_TO_VALIDATE = new Set([APEX_CLASS_METADATA_TYPE, APEX_TRIGGER_METADATA_TYPE])
+type TypeToValidate = {
+  type: string
+  exactVersion: boolean
+}
+
+const TYPES_TO_VALIDATE: TypeToValidate[] = [
+  { type: APEX_CLASS_METADATA_TYPE, exactVersion: false },
+  { type: APEX_PAGE_METADATA_TYPE, exactVersion: false },
+  { type: APEX_COMPONENT_METADATA_TYPE, exactVersion: false },
+  { type: EMAIL_TEMPLATE_METADATA_TYPE, exactVersion: false },
+  { type: APEX_TRIGGER_METADATA_TYPE, exactVersion: true },
+]
 
 const isOfTypeToValidate = (instance: InstanceElement): boolean =>
-  TYPES_TO_VALIDATE.has(instance.getTypeSync().elemID.typeName)
+  TYPES_TO_VALIDATE.some(type => type.type === instance.getTypeSync().elemID.typeName)
 
 // const isValidPackageVersion=(elementSource: ReadOnlyElementsSource|undefined): (instance:InstanceElement)=>boolean{
 //   return (instance:InstanceElement)=>{
@@ -38,17 +55,19 @@ const isOfTypeToValidate = (instance: InstanceElement): boolean =>
 
 // }
 
-const changeValidator: ChangeValidator = async (changes, elementSource) => {
-  const instanceChangesErrors = awu(changes)
+const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
+  // for every instance return a list of change errors, if no errors found return empty list
+  return []
+}
+
+const changeValidator: ChangeValidator = async changes => {
+  const instanceChangesErrors = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    // .filter(isOfTypeToValidate).filter(isValidPackageVersion(elementSource))
-    // .map(createPackageVersionsError)
-    .filter(err => err !== undefined)
-  const a = await elementSource?.getAll()
-  const b = await elementSource?.get(new ElemID('salesforce.InstalledPackage.instance.SBQQ'))
-  console.log(instanceChangesErrors, a, b, isOfTypeToValidate)
+    .filter(isOfTypeToValidate)
+    .flatMap(createPackageVersionErrors)
+  console.log(instanceChangesErrors)
   return []
 }
 

@@ -107,6 +107,7 @@ export type FetchParams = {
   fieldsToOmit?: FieldToOmitParams[]
   findReferencesInFilesWithExtension?: string[]
   singletonCustomRecords?: string[]
+  visibleLockedCustomRecordTypes?: boolean
 } & LockedElementsConfig['fetch']
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -118,6 +119,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   fieldsToOmit: 'fieldsToOmit',
   findReferencesInFilesWithExtension: 'findReferencesInFilesWithExtension',
   singletonCustomRecords: 'singletonCustomRecords',
+  visibleLockedCustomRecordTypes: 'visibleLockedCustomRecordTypes',
 }
 
 export type AdditionalSdfDeployDependencies = {
@@ -276,6 +278,7 @@ export type NetsuiteValidatorName =
   | 'undeployableBundleChanges'
   | 'removeListItemWithoutScriptID'
   | 'customRecordEmptyPermissionList'
+  | 'lockedCustomRecordTypes'
 
 export type NonSuiteAppValidatorName = 'removeFileCabinet' | 'removeStandardTypes'
 
@@ -615,6 +618,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
     findReferencesInFilesWithExtension: { refType: new ListType(BuiltinTypes.STRING) },
     singletonCustomRecords: { refType: new ListType(BuiltinTypes.STRING) },
+    visibleLockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -680,6 +684,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     undeployableBundleChanges: { refType: BuiltinTypes.BOOLEAN },
     removeListItemWithoutScriptID: { refType: BuiltinTypes.BOOLEAN },
     customRecordEmptyPermissionList: { refType: BuiltinTypes.BOOLEAN },
+    lockedCustomRecordTypes: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

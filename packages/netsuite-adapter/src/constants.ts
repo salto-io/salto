@@ -64,6 +64,7 @@ export const SUPPORT_CASE_PROFILE = 'supportCaseProfile'
 // Type Annotations
 export const SOURCE = 'source'
 export const METADATA_TYPE = 'metadataType'
+export const IS_LOCKED = 'isLocked'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'

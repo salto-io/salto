@@ -442,6 +442,22 @@ const createCustomizations = ({
             },
           },
         },
+        oAuth2ScopeConsentGrants: {
+          typeName: 'OAuth2ScopeConsentGrant',
+          conditions: [
+            {
+              fromField: 'signOnMode',
+              match: ['OPENID_CONNECT'],
+            },
+          ],
+          context: {
+            args: {
+              appId: {
+                root: 'id',
+              },
+            },
+          },
+        },
         applicationUserProvisioning: {
           typeName: 'ApplicationUserProvisioning',
           conditions: [
@@ -589,6 +605,7 @@ const createCustomizations = ({
         applicationProvisioningGeneral: { fieldType: 'unknown' },
         applicationInboundProvisioning: { fieldType: 'ApplicationFeature' },
         applicationUserProvisioning: { fieldType: 'ApplicationFeature' },
+        oAuth2ScopeConsentGrants: { fieldType: 'list<OAuth2ScopeConsentGrant>' },
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
@@ -681,6 +698,27 @@ const createCustomizations = ({
         type: { omit: true },
         properties: { omit: true },
         [naclCase('$schema')]: { omit: true },
+      },
+    },
+  },
+  OAuth2ScopeConsentGrant: {
+    requests: [
+      {
+        endpoint: {
+          path: '/api/v1/apps/{appId}/grants',
+        },
+        transformation: {
+          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source'],
+        },
+      },
+    ],
+    resource: {
+      directFetch: false,
+    },
+    element: {
+      fieldCustomizations: {
+        id: { omit: true },
+        issuer: { omit: true },
       },
     },
   },

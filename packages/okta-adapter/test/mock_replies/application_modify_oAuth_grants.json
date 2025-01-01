@@ -1,0 +1,118 @@
+[
+  {
+    "path": "/api/v1/apps/app-fakeid1/grants",
+    "scope": "",
+    "method": "GET",
+    "status": 200,
+    "response": [
+      {
+        "id": "fakeid10",
+        "status": "ACTIVE",
+        "created": "2025-01-01T11:36:31.000Z",
+        "createdBy": {
+          "id": "fakeid11",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T11:36:31.000Z",
+        "issuer": "https://salto.okta.com",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.eventHooks.read",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid12",
+        "status": "ACTIVE",
+        "created": "2024-12-31T13:12:45.000Z",
+        "createdBy": {
+          "id": "fakeid12",
+          "type": "User"
+        },
+        "lastUpdated": "2024-12-31T13:12:45.000Z",
+        "issuer": "https://salto.okta.com",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.accessRequests.request.manage",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid13",
+        "status": "ACTIVE",
+        "created": "2025-01-01T08:37:18.000Z",
+        "createdBy": {
+          "id": "fakeid13",
+          "type": "User"
+        },
+        "lastUpdated": "2025-01-01T08:37:18.000Z",
+        "issuer": "https://salto.okta.com",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.accessRequests.catalog.read",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid14",
+        "status": "ACTIVE",
+        "created": "2024-12-05T11:38:35.000Z",
+        "createdBy": {
+          "id": "fakeid14",
+          "type": "User"
+        },
+        "lastUpdated": "2024-12-05T11:38:35.000Z",
+        "issuer": "https://salto.okta.com",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.deviceAssurance.read",
+        "source": "ADMIN"
+      },
+      {
+        "id": "fakeid15",
+        "status": "ACTIVE",
+        "created": "2024-12-05T11:38:35.000Z",
+        "createdBy": {
+          "id": "fakeid16",
+          "type": "User"
+        },
+        "lastUpdated": "2024-12-05T11:38:35.000Z",
+        "issuer": "https://salto.okta.com",
+        "clientId": "clientclientclientid",
+        "scopeId": "okta.deviceAssurance.manage",
+        "source": "ADMIN"
+      }
+    ],
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "49",
+      "x-rate-limit-reset": "1735735537"
+    }
+  },
+  {
+    "path": "/api/v1/apps/app-fakeid1/grants",
+    "scope": "",
+    "method": "POST",
+    "status": 200,
+    "response": {
+      "id": "fakeid17",
+      "status": "ACTIVE",
+      "created": "2025-01-01T12:44:38.000Z",
+      "createdBy": {
+        "id": "fakeid108",
+        "type": "User"
+      },
+      "lastUpdated": "2025-01-01T12:44:38.000Z",
+      "issuer": "https://salto.okta.com",
+      "clientId": "clientclientclientid",
+      "scopeId": "okta.accessRequests.request.read",
+      "source": "ADMIN",
+      "_embedded": {
+        "scope": {
+          "id": "okta.accessRequests.request.read"
+        }
+      }
+    },
+    "body": {
+      "scopeId": "okta.scope"
+    },
+    "reqHeaders": {
+      "x-rate-limit-limit": "50",
+      "x-rate-limit-remaining": "48",
+      "x-rate-limit-reset": "1735735537"
+    }
+  }
+]

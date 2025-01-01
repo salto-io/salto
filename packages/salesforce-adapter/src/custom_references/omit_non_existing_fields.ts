@@ -7,45 +7,43 @@
  */
 
 import { ChangeError, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { isCustomMetadataRecordInstanceSync, isInstanceOfCustomObjectSync } from '../filters/utils'
 import { WeakReferencesHandler } from '../types'
 
-const fixValuesAndCreateError = (instance: InstanceElement, invalidValues: string[]): ChangeError => {
-  invalidValues.forEach(value => {
-    delete instance.value[value]
-  })
-  const createErrorMessage = (): ChangeError => ({
+const omitNonExistingFieldsValues = (instance: InstanceElement, unknownFields: string[]): ChangeError => {
+  instance.value = _.omit(instance.value, unknownFields)
+  return {
     elemID: instance.elemID,
     severity: 'Info' as const,
-    message: "Omitting invalid values that didn't exist as instance type's field",
-    detailedMessage: `${instance.elemID.getFullName()} had values that didn't exist as ${instance.elemID.typeName}'s field. Fields omitted: ${invalidValues.join(', ')}`,
-  })
-  return createErrorMessage()
+    message: 'Omitted values of fields that are not defined in the type',
+    detailedMessage: `Omitted the following values: ${unknownFields.join(', ')}`,
+  }
 }
 
 const removeWeakReferences: WeakReferencesHandler['removeWeakReferences'] = () => async elements => {
   const instanceElements = elements
     .filter(isInstanceElement)
     .filter(element => isInstanceOfCustomObjectSync(element) || isCustomMetadataRecordInstanceSync(element))
-    .map(instance => instance.clone())
   const fixedElements: InstanceElement[] = []
   const errors: ChangeError[] = []
-  const fromTypeToValidFields: Map<string, Set<string>> = new Map()
+  const unknownFieldsByType: Map<string, Set<string>> = new Map()
   instanceElements.forEach(instance => {
     const { typeName } = instance.elemID
-    if (!fromTypeToValidFields.has(typeName)) {
+    if (!unknownFieldsByType.has(typeName)) {
       const instanceType = instance.getTypeSync()
-      fromTypeToValidFields.set(typeName, new Set(Object.keys(instanceType.fields)))
+      unknownFieldsByType.set(typeName, new Set(Object.keys(instanceType.fields)))
     }
-    const invalidValues = Object.keys(instance.value)
+    const unknownFields = Object.keys(instance.value)
       .map(value => {
-        const validFields = fromTypeToValidFields.get(typeName)
+        const validFields = unknownFieldsByType.get(typeName)
         return !validFields?.has(value) ? value : ''
       })
       .filter(value => value !== '')
-    if (invalidValues.length > 0) {
-      fixedElements.push(instance)
-      errors.push(fixValuesAndCreateError(instance, invalidValues))
+    if (unknownFields.length > 0) {
+      const clonedInstance = instance.clone()
+      fixedElements.push(clonedInstance)
+      errors.push(omitNonExistingFieldsValues(clonedInstance, unknownFields))
     }
   })
   return { fixedElements, errors }

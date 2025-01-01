@@ -39,7 +39,7 @@ enum OutgoingEmailErrorType {
   notStaticFile = 'notStaticFile',
 }
 
-const AUTOMATION_COMPONENT_SCHEME = Joi.object({
+const OUTGOING_EMAIL_AUTOMATION_COMPONENT_SCHEME = Joi.object({
   type: Joi.string().required(),
   value: Joi.object({
     mimeType: Joi.string().required(),
@@ -49,7 +49,9 @@ const AUTOMATION_COMPONENT_SCHEME = Joi.object({
   .unknown(true)
   .required()
 
-const isAutomationComponent = createSchemeGuard<AutomationComponent>(AUTOMATION_COMPONENT_SCHEME)
+const isOutgoingEmailAutomationComponent = createSchemeGuard<AutomationComponent>(
+  OUTGOING_EMAIL_AUTOMATION_COMPONENT_SCHEME,
+)
 
 const isValidEmailConfig = (
   component: AutomationComponent,
@@ -75,16 +77,42 @@ const getErrorTypeFromEmailConfig = (
 ): { elemID: ElemID; errorTypes: OutgoingEmailErrorType[] }[] | undefined => {
   if (instance.value.components !== undefined) {
     const componentsElemID = instance.elemID.createNestedID('components')
-    return makeArray(instance.value.components)
-      .filter(isAutomationComponent)
-      .map((component, index) => {
-        const componentElemID = componentsElemID.createNestedID(index.toString())
-        return isValidEmailConfig(component, componentElemID)
-      })
+    const componentsWithElemIDs = makeArray(instance.value.components).map((component, index) => {
+      const componentElemID = componentsElemID.createNestedID(index.toString())
+      return { component, componentElemID }
+    })
+    return componentsWithElemIDs
+      .filter(({ component }) => isOutgoingEmailAutomationComponent(component))
+      .map(({ component, componentElemID }) => isValidEmailConfig(component, componentElemID))
       .filter(isDefined)
       .flat()
   }
   return undefined
+}
+
+const generateErrorMessage = (
+  errorType: OutgoingEmailErrorType,
+  componentElemID: ElemID,
+  instanceElemID: ElemID,
+): { elemID: ElemID; severity: SeverityLevel; message: string; detailedMessage: string } | undefined => {
+  switch (errorType) {
+    case OutgoingEmailErrorType.mimeType:
+      return {
+        elemID: instanceElemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'A mimeType of an outgoing email automation action is incorrect.',
+        detailedMessage: `The outgoing email action of this component: ${componentElemID.getFullName()} has an invalid mimeType. To resolve it, change its mimeType to 'text/html'.`,
+      }
+    case OutgoingEmailErrorType.notStaticFile:
+      return {
+        elemID: instanceElemID,
+        severity: 'Error' as SeverityLevel,
+        message: 'A content of an outgoing email automation action is not valid.',
+        detailedMessage: `The outgoing email action of this component: ${componentElemID.getFullName()} has an invalid body content. To resolve it, change it to its previous content.`,
+      }
+    default:
+      return undefined
+  }
 }
 
 export const outgoingEmailActionContentValidator: ChangeValidator = async changes =>
@@ -99,26 +127,7 @@ export const outgoingEmailActionContentValidator: ChangeValidator = async change
         return errors
           .map(({ elemID: componentElemID, errorTypes }) =>
             errorTypes
-              .map(errorType => {
-                switch (errorType) {
-                  case OutgoingEmailErrorType.mimeType:
-                    return {
-                      elemID: instance.elemID,
-                      severity: 'Error' as SeverityLevel,
-                      message: 'A mimeType of an outgoing email automation action is incorrect.',
-                      detailedMessage: `The outgoing email action of this component: ${componentElemID.getFullName()} has an invalid mimeType. To resolve it, change its mimeType to 'text/html'.`,
-                    }
-                  case OutgoingEmailErrorType.notStaticFile:
-                    return {
-                      elemID: instance.elemID,
-                      severity: 'Error' as SeverityLevel,
-                      message: 'A content of an outgoing email automation action is not valid.',
-                      detailedMessage: `The outgoing email action of this component: ${componentElemID.getFullName()} has an invalid content.`,
-                    }
-                  default:
-                    return undefined
-                }
-              })
+              .map(errorType => generateErrorMessage(errorType, componentElemID, instance.elemID))
               .filter(isDefined),
           )
           .flat()

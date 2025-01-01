@@ -8,18 +8,30 @@
 
 import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
-import { validatePlainObject } from '@salto-io/adapter-utils'
+import { validateArray, validatePlainObject } from '@salto-io/adapter-utils'
 import { PARENT_ID_FIELD_NAME } from '../../../../constants'
 
 /*
  * Add parent_id to fields that will be extracted from the parent object.
  * Ensures uniqueness in serviceId for fields whose IDs uniqueness is parent-contextual.
  */
-export const addParentIdToStandaloneFields = ({ fieldPath, value }: { fieldPath: string[]; value: Values }): object[] =>
-  _.get(value, fieldPath, []).map((obj: unknown) => {
-    validatePlainObject(obj, fieldPath.join('.'))
+export const addParentIdToStandaloneFields = ({
+  fieldPath,
+  value,
+}: {
+  fieldPath: string[]
+  value: Values
+}): object[] | undefined => {
+  const fieldValue = _.get(value, fieldPath)
+  if (fieldValue === undefined) {
+    return undefined
+  }
+  validateArray(fieldValue, fieldPath.join('.'))
+  return fieldValue.map((obj: unknown, index: number) => {
+    validatePlainObject(obj, `${fieldPath.join('.')}[${index}]`)
     return {
       [PARENT_ID_FIELD_NAME]: value.id,
       ...obj,
     }
   })
+}

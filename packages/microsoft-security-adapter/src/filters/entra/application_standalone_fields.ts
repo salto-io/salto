@@ -36,7 +36,6 @@ import { entraConstants, PARENT_ID_FIELD_NAME } from '../../constants'
 import { FilterCreator } from '../../definitions/types'
 import { customConvertError } from '../../error_utils'
 import { changeResolver } from '../../definitions/references'
-import { cloneInstanceChange } from '../shared'
 
 const {
   APP_ROLE_TYPE_NAME,
@@ -159,15 +158,16 @@ const groupInstancesByParent = async (
     elem => getParents(elem)[0]?.elemID.getFullName(),
   )
 
-const addStandaloneFieldsToParent = ({
-  parent,
+const addStandaloneFieldsToParentChange = ({
+  parentChange,
   parentToInstancesMap,
   instanceNameToInternalId,
 }: {
-  parent: InstanceElement
+  parentChange: Change<InstanceElement>
   parentToInstancesMap: Record<string, InstanceElement[]>
   instanceNameToInternalId: Record<string, string>
 }): void => {
+  const parent = getChangeData(parentChange)
   const [appRoleInstances, permissionScopeInstances] = _.partition(
     parentToInstancesMap[parent.elemID.getFullName()] ?? [],
     instance => instance.elemID.typeName === APP_ROLE_TYPE_NAME,
@@ -232,17 +232,15 @@ const setOrCreateParentChangeWithStandaloneFields = ({
     }
   }
 
-  const parentChange = cloneInstanceChange(
-    existingParentChange ?? {
-      action: 'modify' as const,
-      data: {
-        before: parent,
-        after: parent,
-      },
+  const parentChange = existingParentChange ?? {
+    action: 'modify' as const,
+    data: {
+      before: parent,
+      after: parent.clone(),
     },
-  )
+  }
 
-  addStandaloneFieldsToParent({ parent, parentToInstancesMap, instanceNameToInternalId })
+  addStandaloneFieldsToParentChange({ parentChange, parentToInstancesMap, instanceNameToInternalId })
 
   return { parentChange, isExistingChange: existingParentChange !== undefined }
 }
@@ -394,7 +392,11 @@ const addParentIdToChanges = async (changes: Change[]): Promise<void> => {
  *   Therefore, we remove the duplicates after fetching all the elements.
  * - In the deploy phase, we need to deploy these instances as part of the application/SP. They don't have a separate API call.
  */
-export const entraApplicationFilter: FilterCreator = ({ definitions, elementSource, sharedContext }) => ({
+export const entraApplicationStandaloneFieldsFilter: FilterCreator = ({
+  definitions,
+  elementSource,
+  sharedContext,
+}) => ({
   name: 'entraApplicationStandaloneFieldsFilter',
   onFetch: removeDuplicatedInstances,
   deploy: async (changes, changeGroup) => {

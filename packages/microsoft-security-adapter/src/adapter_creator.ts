@@ -16,7 +16,7 @@ import { Options } from './definitions/types'
 import { REFERENCES } from './definitions/references/references'
 import { createFromOauthResponse, createOAuthRequest } from './client/oauth'
 import {
-  entraApplicationFilter,
+  entraApplicationStandaloneFieldsFilter,
   deployAdministrativeUnitMembersFilter,
   deployDirectoryRoleMembersFilter,
 } from './filters'
@@ -53,7 +53,7 @@ export const adapter = createAdapter<Credentials, Options, UserConfig>({
     customizeFilterCreators: args => ({
       deployAdministrativeUnitMembersFilter,
       deployDirectoryRoleMembersFilter,
-      entraApplicationFilter,
+      entraApplicationStandaloneFieldsFilter,
       ...filters.createCommonFilters<Options, UserConfig>(args),
     }),
   },

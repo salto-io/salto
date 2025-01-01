@@ -30,7 +30,9 @@ export const adjustApplication: AdjustFunctionSingle = async ({ value }) => {
   return {
     value: {
       ...value,
-      identifierUris: identifierUris.filter(uri => uri !== `api://${_.get(value, 'appId')}`),
+      identifierUris: _.isEmpty(identifierUris)
+        ? undefined
+        : identifierUris.filter(uri => uri !== `api://${_.get(value, 'appId')}`),
       [APP_ROLES_FIELD_NAME]: addParentIdToStandaloneFields({ fieldPath: [APP_ROLES_FIELD_NAME], value }),
       ...(apiField && {
         [API_FIELD_NAME]: {

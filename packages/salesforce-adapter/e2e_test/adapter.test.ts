@@ -3228,7 +3228,7 @@ describe('Salesforce adapter E2E with real account', () => {
             const updatedResource = Object.values(lwcResources)
               .filter(
                 (val: unknown): val is { filePath: string; source: Buffer } =>
-                  isPlainObject(val) && _.isString(_.get(val, 'filePath')) && _.isBuffer(_.get(val, 'source')),
+                  isPlainObject(val) && _.isString(_.get(val, 'filePath')) && _.isString(_.get(val, 'source')),
               )
               .find(
                 lwcResource => lwcResource.filePath === 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
@@ -3237,7 +3237,7 @@ describe('Salesforce adapter E2E with real account', () => {
             if (updatedResource === undefined) {
               return
             }
-            expect(updatedResource.source).toEqual(Buffer.from(updatedValue).toString('base64'))
+            expect(updatedResource.source).toEqual(updatedValue.toString('base64'))
 
             // verify the xml attribute fields have no XML_ATTRIBUTE_PREFIX in the NaCL result
             expect(updatedInstance.value.targetConfigs.targetConfig[0].targets).toEqual('lightning__RecordPage')

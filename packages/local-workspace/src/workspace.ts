@@ -30,13 +30,8 @@ import {
   getBaseDirFromEnvName,
   getStaticFileCacheName,
   WorkspaceGetCustomReferencesFunc,
-  elementSource,
-  adaptersConfigSource,
-  createAdapterReplacedID,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from './app_config'
 import { loadState } from './state'
@@ -49,7 +44,6 @@ const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { buildStaticFilesSource } = staticFiles
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
@@ -240,37 +234,6 @@ type LoadLocalWorkspaceArgs = {
   adapterCreators: Record<string, Adapter>
 }
 
-const getAdapterConfigsPerAccount = async (
-  envs: EnvConfig[],
-  adapterCreators: Record<string, Adapter>,
-): Promise<ObjectType[]> => {
-  const configTypesByAccount = Object.fromEntries(
-    Object.entries(
-      _.mapValues(adapterCreators, adapterCreator =>
-        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
-      ),
-    ).filter(entry => entry[1].length > 0),
-  )
-  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
-  const differentlyNamedAccounts = Object.fromEntries(
-    envs
-      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
-      .filter(([accountName, serviceName]) => accountName !== serviceName),
-  )
-  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const adapter = differentlyNamedAccounts[account]
-    const adapterConfigs = configTypesByAccount[adapter]
-    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
-      configElementSource,
-      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
-      adapter,
-      account,
-    )
-    configTypesByAccount[account] = additionalConfigs
-  })
-  return Object.values(configTypesByAccount).flat()
-}
-
 export async function loadLocalWorkspace({
   path: lookupDir,
   configOverrides,
@@ -283,7 +246,6 @@ export async function loadLocalWorkspace({
   adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
-  const getConfigTypesFunc = getConfigTypes ?? getAdapterConfigsPerAccount
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
@@ -293,13 +255,15 @@ export async function loadLocalWorkspace({
   const cacheDirName = path.join(workspaceConfigSrc.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   try {
-    const adaptersConfig = await buildLocalAdaptersConfigSource(
+    const adaptersConfig = await buildLocalAdaptersConfigSource({
       baseDir,
       remoteMapCreator,
       persistent,
-      await getConfigTypesFunc(workspaceConfig.envs, adapterCreators),
+      envs: workspaceConfig.envs,
+      configTypes: await getConfigTypes?.(workspaceConfig.envs, adapterCreators),
+      adapterCreators,
       configOverrides,
-    )
+    })
     const envNames = workspaceConfig.envs.map(e => e.name)
     const credentials = credentialSource ?? credentialsSource(workspaceConfigSrc.localStorage)
 
@@ -439,11 +403,19 @@ export async function initLocalWorkspace(
   }
 
   const workspaceConfigSrc = await workspaceConfigSource(baseDir, localStorage)
+  const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   try {
     const persistentMode = true
 
-    const adaptersConfig = await buildLocalAdaptersConfigSource(baseDir, remoteMapCreator, persistentMode, configTypes)
+    const adaptersConfig = await buildLocalAdaptersConfigSource({
+      baseDir,
+      remoteMapCreator,
+      persistent: persistentMode,
+      configTypes,
+      adapterCreators,
+      envs: workspaceConfig.envs,
+    })
     const credentials = credentialsSource(localStorage)
 
     const elemSources = await loadLocalElementsSources({

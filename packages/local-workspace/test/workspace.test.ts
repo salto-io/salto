@@ -150,24 +150,6 @@ describe('local workspace', () => {
   describe('initLocalWorkspace', () => {
     const mockInit = ws.initWorkspace as jest.Mock
     const mockAdapterCreators: Record<string, Adapter> = {}
-    const getConf = repoDirStore.get as jest.Mock
-    getConf.mockResolvedValue({
-      filename: '',
-      buffer: `
-            salto {
-              uid = "98bb902f-a144-42da-9672-f36e312e8e09"
-              name = "test"
-              envs = [
-                  {
-                    name = "default"
-                  },
-                  {
-                    name = "env2"
-                  },
-              ]
-              currentEnv = "default"
-            }`,
-    })
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => filename === '/fake/salto.config')

@@ -404,7 +404,6 @@ export async function initLocalWorkspace(
   }
 
   const workspaceConfigSrc = await workspaceConfigSource(baseDir, localStorage)
-  const workspaceConfig = await workspaceConfigSrc.getWorkspaceConfig()
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   try {
     const persistentMode = true
@@ -415,7 +414,7 @@ export async function initLocalWorkspace(
       persistent: persistentMode,
       configTypes,
       adapterCreators,
-      envs: workspaceConfig.envs,
+      envs: [],
     })
     const credentials = credentialsSource(localStorage)
 

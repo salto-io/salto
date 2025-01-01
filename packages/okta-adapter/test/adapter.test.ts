@@ -3771,6 +3771,37 @@ describe('adapter', () => {
         expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('claim-fakeid')
         expect(nock.pendingMocks()).toHaveLength(0)
       })
+      it('should successfully add a default authorization server claim with modifed values', async () => {
+        loadMockReplies('authorization_server_default_claim_add.json')
+        const defaultClaim = new InstanceElement(
+          'sub',
+          claimType,
+          {
+            name: 'sub',
+            status: 'ACTIVE',
+            claimType: 'RESOURCE',
+            valueType: 'EXPRESSION',
+            value: '(appuser != null) ? appuser.userName : app.name',
+            system: true,
+            alwaysIncludeInToken: true,
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(authServerInstance.elemID, authServerInstance)],
+          },
+        )
+        const result = await operations.deploy({
+          changeGroup: {
+            groupID: defaultClaim.elemID.getFullName(),
+            changes: [toChange({ after: defaultClaim })],
+          },
+          progressReporter: nullProgressReporter,
+        })
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(getChangeData(result.appliedChanges[0] as Change<InstanceElement>).value.id).toEqual('claim-fakeid')
+        expect(nock.pendingMocks()).toHaveLength(0)
+      })
       it('should successfully modify an authorization server claim', async () => {
         loadMockReplies('authorization_server_claim_modify.json')
         claimInstance.value.id = 'claim-fakeid'

@@ -139,11 +139,11 @@ export const createWorkspace = async (
 ): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? inMemRemoteMapCreator()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
-  return loadWorkspace(
-    configSource || mockWorkspaceConfigSource(),
-    adaptersConfigSource || mockAdaptersConfigSource(),
-    credentials || mockCredentialsSource(),
-    {
+  return loadWorkspace({
+    config: configSource || mockWorkspaceConfigSource(),
+    adaptersConfig: adaptersConfigSource || mockAdaptersConfigSource(),
+    credentials: credentials || mockCredentialsSource(),
+    environmentsSources: {
       commonSourceName: '',
       sources: elementSources || {
         '': {
@@ -161,10 +161,8 @@ export const createWorkspace = async (
         },
       },
     },
-    mapCreator,
-    undefined,
-    undefined,
-    undefined,
+    remoteMapCreator: mapCreator,
     getCustomReferences,
-  )
+    adapterCreators: {},
+  })
 }

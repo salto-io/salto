@@ -150,6 +150,24 @@ describe('local workspace', () => {
   describe('initLocalWorkspace', () => {
     const mockInit = ws.initWorkspace as jest.Mock
     const mockAdapterCreators: Record<string, Adapter> = {}
+    const getConf = repoDirStore.get as jest.Mock
+    getConf.mockResolvedValue({
+      filename: '',
+      buffer: `
+            salto {
+              uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+              name = "test"
+              envs = [
+                  {
+                    name = "default"
+                  },
+                  {
+                    name = "env2"
+                  },
+              ]
+              currentEnv = "default"
+            }`,
+    })
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => filename === '/fake/salto.config')
@@ -177,14 +195,19 @@ describe('local workspace', () => {
 
     it('should throw error for invalid name', async () => {
       mockExists.mockResolvedValue(false)
-      await expect(initLocalWorkspace('/fake/tmp/', 'long'.repeat(100), [], async () => [])).rejects.toThrow(
-        errors.InvalidEnvNameError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          envName: 'long'.repeat(100),
+          configTypes: [],
+          adapterCreators: mockAdapterCreator,
+        }),
+      ).rejects.toThrow(errors.InvalidEnvNameError)
     })
     it('should call initWorkspace with correct input', async () => {
       const envName = 'env-name'
       mockExists.mockResolvedValue(false)
-      await initLocalWorkspace('.', envName, [], async () => [])
+      await initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator })
       expect(mockInit.mock.calls[0][0].defaultEnvName).toBe(envName)
       const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][0].envs
       expect(Object.keys(envSources.sources)).toHaveLength(2)
@@ -200,14 +223,18 @@ describe('local workspace', () => {
       it('should call close', async () => {
         mockExists.mockResolvedValue(false)
         mockInit.mockRejectedValue(new Error('oh no!'))
-        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        await expect(
+          initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator }),
+        ).rejects.toThrow(new Error('oh no!'))
         expect(mockClose).toHaveBeenCalledTimes(1)
       })
       it('should call close, and throw the original error, if close throws as well', async () => {
         mockExists.mockResolvedValue(false)
         mockInit.mockRejectedValue(new Error('oh no!'))
         mockClose.mockRejectedValue('close error!')
-        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        await expect(
+          initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator }),
+        ).rejects.toThrow(new Error('oh no!'))
         expect(mockClose).toHaveBeenCalledTimes(1)
       })
     })
@@ -280,17 +307,11 @@ describe('local workspace', () => {
           })
         })
         it('should use the credentials source that was passed as a paramter', async () => {
-          expect(mockLoad).toHaveBeenCalledWith({
-            config: expect.anything(),
-            adaptersConfig: expect.anything(),
-            credentials: credentialSource,
-            environmentsSources: expect.anything(),
-            remoteMapCreator: expect.anything(),
-            ignoreFileChanges: expect.anything(),
-            persistent: expect.anything(),
-            getCustomReferences: expect.anything(),
-            adapterCreators: expect.anything(),
-          })
+          expect(mockLoad).toHaveBeenCalledWith(
+            expect.objectContaining({
+              credentials: credentialSource,
+            }),
+          )
         })
       })
       describe('when loadLocalWorkspace throws an error', () => {

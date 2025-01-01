@@ -2416,17 +2416,18 @@ salesforce.staticFile staticFileInstance {
 
   describe('init', () => {
     const workspaceConf = mockWorkspaceConfigSource({ uid: 'uid' })
+    const mockAdapterCreators: Record<string, Adapter> = {}
     afterEach(async () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
-      const workspace = await initWorkspace(
-        'uid',
-        'default',
-        workspaceConf,
-        mockAdaptersConfigSource(),
-        mockCredentialsSource(),
-        {
+      const workspace = await initWorkspace({
+        uid: 'uid',
+        defaultEnvName: 'default',
+        config: workspaceConf,
+        adaptersConfig: mockAdaptersConfigSource(),
+        credentials: mockCredentialsSource(),
+        envs: {
           commonSourceName: '',
           sources: {
             default: {
@@ -2443,9 +2444,9 @@ salesforce.staticFile staticFileInstance {
             },
           },
         },
-        inMemRemoteMapCreator(),
-        async () => [],
-      )
+        remoteMapCreator: inMemRemoteMapCreator(),
+        adapterCreators: mockAdapterCreators,
+      })
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual({
         uid: 'uid',
         envs: [{ name: 'default', accountToServiceName: {} }],

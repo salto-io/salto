@@ -8,7 +8,7 @@
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
-import { readOnlyFieldsValidator } from '../../../src/change_validators'
+import { readOnlyFieldsValidator } from '../../../src/change_validators/shared/read_only_fields_validator'
 
 // Please notice that only a subset of the types are being tested here, since the logic is the same for all of them.
 describe(`${readOnlyFieldsValidator.name}`, () => {

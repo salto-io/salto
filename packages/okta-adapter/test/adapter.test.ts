@@ -2812,6 +2812,7 @@ describe('adapter', () => {
           label: 'app1',
           name: 'supportedApp',
           status: ACTIVE_STATUS,
+          signOnMode: 'OPENID_CONNECT',
           apiScopes: [{ scopeId: 'okta.otherScope' }],
         })
         const updatedApp = activeCustomApp.clone()
@@ -2841,6 +2842,7 @@ describe('adapter', () => {
           label: 'app1',
           name: 'supportedApp',
           status: ACTIVE_STATUS,
+          signOnMode: 'OPENID_CONNECT',
           apiScopes: [{ scopeId: 'okta.otherScope' }, { scopeId: 'okta.scope' }],
         })
         const updatedApp = activeCustomApp.clone()

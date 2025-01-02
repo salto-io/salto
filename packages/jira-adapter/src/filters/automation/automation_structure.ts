@@ -15,6 +15,7 @@ import {
   getChangeData,
   Change,
   isInstanceChange,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -35,9 +36,11 @@ import {
   AUTOMATION_COMPONENT_TYPE,
   AUTOMATION_COMPONENT_VALUE_TYPE,
   AUTOMATION_OPERATION,
+  JIRA,
 } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
+import { getHTMLStaticFileName } from '../../utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -245,6 +248,30 @@ const createTransformHasAttachmentValueFunc =
     return value
   }
 
+const extractHTMLContentToStaticFile =
+  (): TransformFuncSync =>
+  async ({ value, path }) => {
+    if (path !== undefined && _.isPlainObject(value) && value.mimeType === 'text/html') {
+      const filePath = `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`
+      value.body = new StaticFile({
+        filepath: filePath,
+        content: value.body,
+      })
+    }
+    return value
+  }
+
+const transformStaticFileBufferToHTML =
+  (): TransformFuncSync =>
+  async ({ value, path }) => {
+    if (path !== undefined && _.isPlainObject(value) && value.mimeType === 'text/html') {
+      const htmlContentBuffer = value.body
+      const htmlContent = htmlContentBuffer.toString()
+      value.body = htmlContent
+    }
+    return value
+  }
+
 const revertCompareFieldValueStructure: TransformFuncSync = ({ value, field }) => {
   if (isCompareFieldValueObject(value) && field?.getTypeSync()?.elemID.typeName === AUTOMATION_COMPONENT_VALUE_TYPE) {
     const { compareFieldValue } = value
@@ -366,6 +393,7 @@ const filter: FilterCreator = ({ client }) => {
             convertToCompareFieldValue,
             createTransformDeleteLinkTypesFunc(),
             createTransformHasAttachmentValueFunc(),
+            extractHTMLContentToStaticFile(),
           ])
           instance.value = (
             await transformElement({
@@ -402,6 +430,7 @@ const filter: FilterCreator = ({ client }) => {
               revertCompareFieldValueStructure,
               createTransformDeleteLinkTypesFunc(true),
               createTransformHasAttachmentValueFunc(true),
+              transformStaticFileBufferToHTML(),
             ])
             instance.value = (
               await transformElement({

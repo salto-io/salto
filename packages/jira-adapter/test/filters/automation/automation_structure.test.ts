@@ -14,12 +14,14 @@ import {
   ReferenceExpression,
   ElemID,
   isReferenceExpression,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
+import { HTML_BODY_TEST } from '../../change_validators/automations/outgoing_email_action.test'
 
 describe('automationStructureFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -139,6 +141,12 @@ describe('automationStructureFilter', () => {
           value: true,
           updated: 1111,
         },
+        {
+          id: '9',
+          component: 'ACTION',
+          type: 'jira.issue.outgoing.email',
+          value: { body: HTML_BODY_TEST, mimeType: 'text/html' },
+        },
       ],
       projects: [
         {
@@ -204,6 +212,11 @@ describe('automationStructureFilter', () => {
 
     instanceAfterFetch.value.components[8].hasAttachmentsValue = instanceAfterFetch.value.components[8].value
     delete instanceAfterFetch.value.components[8].value
+
+    instanceAfterFetch.value.components[9].value.body = new StaticFile({
+      filepath: 'jira/Automation/instance.components.8.value.html',
+      content: Buffer.from(HTML_BODY_TEST, 'utf8'),
+    })
 
     changedInstance = instanceAfterFetch.clone()
     changedInstance.value.components[0].component = 'BRANCH'
@@ -285,6 +298,14 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[8].value).toBeUndefined()
       expect(instance.value.components[8].hasAttachmentsValue).toBeTrue()
     })
+
+    it('should make a new static file and replace the email content body to the static file path', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[9].value.body).toBeInstanceOf(StaticFile)
+      expect(instance.value.components[9].value.body.filepath).toBe('jira/Automation/.html')
+      expect(instance.value.components[9].value.body.internalContent).toBe(HTML_BODY_TEST)
+    })
+
     it('should not throw if wrong structure', async () => {
       const exceptionInstance = new InstanceElement('instance', type, {
         id: '111',
@@ -413,6 +434,13 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[3].value.compareValue.value).toEqual('["\\"123","234","345","a]"]')
       expect(after.value.components[4].value.compareFieldValue).toBeUndefined()
       expect(after.value.components[4].value.compareValue.value).toEqual('234')
+    })
+    it('should return the html content of an outgoing email to the body field', async () => {
+      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
+      await filter.preDeploy(changes)
+      const [before, after] = getAllChangeData(changes[0])
+      expect(before.value.components[9].value.body).toBe(HTML_BODY_TEST)
+      expect(after.value.components[9].value.body).toBe(HTML_BODY_TEST)
     })
   })
 

@@ -83,7 +83,7 @@ import {
   defaultSupportAddressValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ChangeValidatorName, ZendeskConfig } from './config'
+import { ChangeValidatorName, OldZendeskConfig } from './config'
 import { ZendeskDeployConfig, ZendeskFetchConfig } from './user_config'
 
 const {
@@ -103,7 +103,7 @@ export default ({
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
-  config: ZendeskConfig
+  config: OldZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   fetchConfig: ZendeskFetchConfig
   deployConfig?: ZendeskDeployConfig

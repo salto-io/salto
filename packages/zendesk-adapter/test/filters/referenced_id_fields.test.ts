@@ -45,6 +45,9 @@ describe('referenced id fields filter', () => {
       createFilterCreatorParams({
         config: {
           fetch: DEFAULT_CONFIG[FETCH_CONFIG],
+        },
+        oldApiDefinitions: {
+          fetch: DEFAULT_CONFIG[FETCH_CONFIG],
           apiDefinitions: {
             typeDefaults: {
               transformation: {

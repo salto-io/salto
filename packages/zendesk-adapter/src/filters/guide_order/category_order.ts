@@ -16,7 +16,7 @@ import { getBrandsForGuide } from '../utils'
 /**
  * Handle the order of categories in brand
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, oldApiDefinitions }) => ({
   name: 'categoryOrderFilter',
   /** Create an InstanceElement of the categories order inside the brands */
   onFetch: async (elements: Element[]) => {
@@ -54,7 +54,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes: categoryOrderChange,
       orderField: CATEGORIES_FIELD,
       client,
-      config,
+      config: oldApiDefinitions,
     })
 
     return {

@@ -53,7 +53,7 @@ export const addParentFields = (value: Values): void => {
 // filter omits these fields in preDeploy. and adds them in onDeploy. During deploy, the field
 // 'parent_section_id' is ignored and is deployed as modification change separately later.
 // Additionally, this filter sends a separate request when `source_locale` is modified
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
   name: 'guideParentSection',
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
@@ -77,7 +77,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
       }
 
-      await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
+      await deployChange(change, client, oldApiDefinitions.apiDefinitions, fieldsToIgnore)
     })
     // need to deploy separately parent_section_id if exists since zendesk API does not support
     // parent_section_id if the data request has more fields in it.
@@ -101,7 +101,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         await deployChange(
           toChange({ before: parentSectionInstanceBefore, after: parentSectionInstanceAfter }),
           client,
-          config.apiDefinitions,
+          oldApiDefinitions.apiDefinitions,
         )
       }
     })

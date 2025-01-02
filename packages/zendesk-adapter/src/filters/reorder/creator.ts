@@ -64,7 +64,7 @@ export const createReorderFilterCreator =
     activeFieldName,
     filterName,
   }: ReorderFilterCreatorParams): FilterCreator =>
-  ({ config, client }) => ({
+  ({ oldApiDefinitions, client }) => ({
     name: filterName,
     onFetch: async (elements: Element[]): Promise<void> => {
       const orderTypeName = createOrderTypeName(typeName)
@@ -162,7 +162,7 @@ export const createReorderFilterCreator =
             elemID: getChangeData(change).elemID,
           })
         }
-        await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
+        await deployFunc(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG])
       } catch (err) {
         if (!isSaltoError(err)) {
           throw err

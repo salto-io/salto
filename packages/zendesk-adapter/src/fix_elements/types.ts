@@ -7,11 +7,11 @@
  */
 import { FixElementsFunc, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import ZendeskClient from '../client/client'
-import { ZendeskConfig } from '../config'
+import { OldZendeskConfig } from '../config'
 
 export type FixElementsArgs = {
   client: ZendeskClient
-  config: ZendeskConfig
+  config: OldZendeskConfig
   elementsSource: ReadOnlyElementsSource
 }
 

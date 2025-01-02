@@ -43,7 +43,7 @@ const { makeArray } = collections.array
 
 export const createCustomFieldOptionsFilterCreator =
   ({ filterName, parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams): FilterCreator =>
-  ({ config, client, elementsSource }) => ({
+  ({ oldApiDefinitions, client, elementSource }) => ({
     name: filterName,
     onFetch: async (elements: Element[]): Promise<void> => {
       const parentType = elements.filter(isObjectType).find(inst => inst.elemID.typeName === parentTypeName)
@@ -100,7 +100,7 @@ export const createCustomFieldOptionsFilterCreator =
         if (options.length > 0) {
           // replace with the original references - since the current restore logic
           // does not restore references correctly when the resolved values contain templates
-          const originalInstance = await elementsSource.get(instance.elemID)
+          const originalInstance = await elementSource.get(instance.elemID)
           if (originalInstance === undefined) {
             log.warn('Could not find original instance for %s, not replacing options', instance.elemID.getFullName())
             return instance
@@ -141,20 +141,20 @@ export const createCustomFieldOptionsFilterCreator =
         const deployResult = await deployChangesByGroups(
           [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
           async change => {
-            await deployChange(change, client, config.apiDefinitions)
+            await deployChange(change, client, oldApiDefinitions.apiDefinitions)
           },
         )
         return { deployResult, leftoverChanges }
       }
       const deployResult = await deployChanges(parentChanges, async change => {
-        const response = await deployChange(change, client, config.apiDefinitions, [
+        const response = await deployChange(change, client, oldApiDefinitions.apiDefinitions, [
           DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME,
         ])
         return addIdsToChildrenUponAddition({
           response,
           parentChange: change,
           childrenChanges,
-          apiDefinitions: config[API_DEFINITIONS_CONFIG],
+          apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
           childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
           childUniqueFieldName: 'value',
         })

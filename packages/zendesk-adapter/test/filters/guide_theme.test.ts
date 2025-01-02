@@ -170,7 +170,7 @@ describe('filterCreator', () => {
           },
         }
         filter = filterCreator(
-          createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([articleInstance]) }),
+          createFilterCreatorParams({ config, elementSource: buildElementsSourceFromElements([articleInstance]) }),
         )
         mockDownload = jest.spyOn(DownloadModule, 'download')
       })
@@ -335,7 +335,7 @@ describe('filterCreator', () => {
         },
       }
       filter = filterCreator(
-        createFilterCreatorParams({ config, elementsSource: buildElementsSourceFromElements([themeSettingsInstance]) }),
+        createFilterCreatorParams({ config, elementSource: buildElementsSourceFromElements([themeSettingsInstance]) }),
       )
       mockCreate = jest.spyOn(CreateModule, 'create')
       mockDelete = jest.spyOn(DeleteModule, 'deleteTheme')
@@ -469,7 +469,7 @@ describe('filterCreator', () => {
           filter = filterCreator(
             createFilterCreatorParams({
               config,
-              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+              elementSource: buildElementsSourceFromElements([themeSettingsInstance2]),
             }),
           )
 
@@ -595,7 +595,7 @@ describe('filterCreator', () => {
           filter = filterCreator(
             createFilterCreatorParams({
               config,
-              elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+              elementSource: buildElementsSourceFromElements([themeSettingsInstance2]),
             }),
           )
           await filter.deploy?.(changes)
@@ -647,7 +647,7 @@ describe('filterCreator', () => {
             filter = filterCreator(
               createFilterCreatorParams({
                 config,
-                elementsSource: buildElementsSourceFromElements([themeSettingsInstance2]),
+                elementSource: buildElementsSourceFromElements([themeSettingsInstance2]),
               }),
             )
             mockPublish.mockResolvedValue(['Failed to publish'])

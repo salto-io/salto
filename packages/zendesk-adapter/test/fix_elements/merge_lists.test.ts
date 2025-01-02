@@ -18,10 +18,10 @@ import { elementSource } from '@salto-io/workspace'
 import { mergeListsHandler } from '../../src/fix_elements/merge_lists'
 import { TICKET_FIELD_CUSTOM_FIELD_OPTION, TICKET_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
 import ZendeskClient from '../../src/client/client'
-import { DEFAULT_CONFIG, FIX_ELEMENTS_CONFIG, ZendeskConfig } from '../../src/config'
+import { DEFAULT_CONFIG, FIX_ELEMENTS_CONFIG, OldZendeskConfig } from '../../src/config'
 
 describe('mergeListsHandler', () => {
-  let config: ZendeskConfig
+  let config: OldZendeskConfig
   let client: ZendeskClient
   let elementsSource: ReadOnlyElementsSource
   let clonedTicket: InstanceElement
@@ -47,7 +47,7 @@ describe('mergeListsHandler', () => {
     config = {
       ...DEFAULT_CONFIG,
       [FIX_ELEMENTS_CONFIG]: { ...DEFAULT_CONFIG[FIX_ELEMENTS_CONFIG], mergeLists: true },
-    } as ZendeskConfig
+    } as OldZendeskConfig
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })

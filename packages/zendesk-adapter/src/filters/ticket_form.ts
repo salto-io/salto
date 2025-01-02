@@ -85,7 +85,7 @@ const removeCustomTicketStatusFromTicketFieldIDsField = (
  * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
  * required_on_statuses then it removes the statuses field.
  */
-const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
+const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, elementSource }) => ({
   name: 'ticketFormDeploy',
   onFetch: async (elements: Element[]): Promise<void> => {
     if (config[FETCH_CONFIG].omitTicketStatusTicketField !== true) {
@@ -130,10 +130,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
           newAfter !== undefined ? toChange({ before: change.data.before, after: newAfter }) : undefined
         if (intermediateChange !== undefined) {
           // first deploy is without the removed fields
-          await deployChange(intermediateChange, client, config.apiDefinitions)
+          await deployChange(intermediateChange, client, oldApiDefinitions.apiDefinitions)
         }
       }
-      await deployChange(change, client, config.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions.apiDefinitions)
     })
     const deployedChangesElemId = new Set(
       tempDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),
@@ -158,9 +158,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       return
     }
 
-    const ticketFields = await awu(await elementsSource.list())
+    const ticketFields = await awu(await elementSource.list())
       .filter(id => id.typeName === TICKET_FIELD_TYPE_NAME)
-      .map(id => elementsSource.get(id))
+      .map(id => elementSource.get(id))
       .filter(isInstanceElement)
       .toArray()
     const ticketStatusTicketField = ticketFields.find(field => field.value.type === 'custom_status')
@@ -178,7 +178,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       await awu(ticketFormChanges)
         .map(change => getChangeData(change).elemID)
         .map(async id => {
-          const form = await elementsSource.get(id)
+          const form = await elementSource.get(id)
           if (!isInstanceElement(form)) {
             return [id.getFullName(), undefined]
           }

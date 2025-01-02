@@ -16,7 +16,7 @@ import { API_DEFINITIONS_CONFIG } from '../config'
 /**
  * Adds collision warnings and remove colliding elements and their children
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions }) => ({
   name: 'omitCollisionsFilter',
   onFetch: async (elements: Element[]) => {
     const collidingElements = getInstancesWithCollidingElemID(elements.filter(isInstanceElement))
@@ -30,8 +30,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
       getInstanceName: async instance => instance.elemID.name,
       getIdFieldsByType: typeName =>
         configUtils.getConfigWithDefault(
-          config[API_DEFINITIONS_CONFIG].types[typeName]?.transformation,
-          config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+          oldApiDefinitions[API_DEFINITIONS_CONFIG].types[typeName]?.transformation,
+          oldApiDefinitions[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
         ).idFields,
       idFieldsName: 'idFields',
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',

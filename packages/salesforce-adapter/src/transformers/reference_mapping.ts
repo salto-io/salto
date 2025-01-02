@@ -275,15 +275,6 @@ const NETWORK_REFERENCES_DEF: FieldReferenceDefinition[] = [
   },
 ]
 
-const FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF: FieldReferenceDefinition = {
-  src: {
-    field: ASSIGN_TO_REFERENCE,
-    parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
-  },
-  serializationStrategy: 'assignToReferenceField',
-  target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-}
-
 /**
  * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
@@ -1000,6 +991,14 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'recordField',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
+  {
+    src: {
+      field: ASSIGN_TO_REFERENCE,
+      parentTypes: Object.values(FLOW_FIELD_TYPE_NAMES),
+    },
+    serializationStrategy: 'assignToReferenceField',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
 ]
 
 const matchName = (name: string, matcher: string | RegExp): boolean =>
@@ -1147,7 +1146,6 @@ export const getDefsFromFetchProfile = (fetchProfile: FetchProfile): FieldRefere
   fieldNameToTypeMappingDefs
     .concat(fetchProfile.isFeatureEnabled('genAiReferences') ? GEN_AI_REFERENCES_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('networkReferences') ? NETWORK_REFERENCES_DEF : [])
-    .concat(fetchProfile.isFeatureEnabled('addParentToRecordTriggeredFlows') ? FLOW_ASSIGNMENT_ITEM_REFERENCE_DEF : [])
     .concat(fetchProfile.isFeatureEnabled('packageVersionReference') ? PACKAGE_VERSION_REFERENCE_DEF : [])
 
 /**

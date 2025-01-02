@@ -6,6 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import {
+  Change,
   Element,
   getChangeData,
   isAdditionChange,
@@ -21,6 +22,28 @@ import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { getContextParent } from '../../common/fields'
+
+const removeOptionsWithDeletedContext = (
+  changes: Change[],
+  appliedChanges: readonly Change[],
+): {
+  leftoverChanges: Change[]
+  optionsWithDeletedContext: Change[]
+} => {
+  const deletedContextElemIDs = new Set(
+    appliedChanges.filter(isRemovalChange).map(change => getChangeData(change).elemID.getFullName()),
+  )
+
+  const [optionsWithDeletedContext, leftoverChanges] = _.partition(
+    changes,
+    change =>
+      isInstanceChange(change) &&
+      isRemovalChange(change) &&
+      getChangeData(change).elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME &&
+      deletedContextElemIDs.has(getContextParent(getChangeData(change)).elemID.getFullName()),
+  )
+  return { leftoverChanges, optionsWithDeletedContext }
+}
 
 const filter: FilterCreator = ({ client, config, paginator, elementsSource }) => ({
   name: 'contextDeploymentFilter',
@@ -65,12 +88,15 @@ const filter: FilterCreator = ({ client, config, paginator, elementsSource }) =>
             })
         })
 
-      // we should deploy the default values after the options deployment
+      const changesUpdates = removeOptionsWithDeletedContext(leftoverChanges, deployResult.appliedChanges)
+
       return {
-        leftoverChanges: leftoverChanges.concat(deployResult.appliedChanges),
+        // we remove the removal options as they were deleted, and we add the applied changes as
+        // we should deploy the default values after the options deployment
+        leftoverChanges: changesUpdates.leftoverChanges.concat(deployResult.appliedChanges),
         deployResult: {
           errors: deployResult.errors,
-          appliedChanges: [],
+          appliedChanges: changesUpdates.optionsWithDeletedContext,
         },
       }
     }

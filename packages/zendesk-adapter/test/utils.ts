@@ -7,21 +7,28 @@
  */
 
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
+import {
+  client as clientUtils,
+  elements as elementUtils,
+  definitions as definitionsUtils,
+} from '@salto-io/adapter-components'
+import { DEFAULT_CONFIG } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
-import { BrandIdToClient } from '../src/filter'
+import { FilterCreator } from '../src/filter'
+import { createClientDefinitions, createFetchDefinitions } from '../src/definitions'
+import { ZendeskFetchOptions } from '../src/definitions/types'
+import { PAGINATION } from '../src/definitions/requests/pagination'
 
-type FilterCreatorParams = {
+export const createDefinitions = ({
+  client,
+}: {
   client: ZendeskClient
-  paginator: clientUtils.Paginator
-  config: ZendeskConfig
-  fetchQuery: elementUtils.query.ElementQuery
-  elementsSource: ReadOnlyElementsSource
-  brandIdToClient: BrandIdToClient
-}
+}): definitionsUtils.RequiredDefinitions<ZendeskFetchOptions> => ({
+  clients: createClientDefinitions({ main: client, guide: client }),
+  pagination: PAGINATION,
+  fetch: createFetchDefinitions({}),
+})
 
 export const createFilterCreatorParams = ({
   client = new ZendeskClient({
@@ -32,14 +39,19 @@ export const createFilterCreatorParams = ({
     paginationFuncCreator: paginate,
   }),
   config = DEFAULT_CONFIG,
+  oldApiDefinitions = DEFAULT_CONFIG,
   fetchQuery = elementUtils.query.createMockQuery(),
-  elementsSource = buildElementsSourceFromElements([]),
+  elementSource = buildElementsSourceFromElements([]),
   brandIdToClient = {},
-}: Partial<FilterCreatorParams>): FilterCreatorParams => ({
+  definitions = createDefinitions({ client }),
+}: Partial<Parameters<FilterCreator>[0]>): Parameters<FilterCreator>[0] => ({
   client,
   paginator,
   config,
+  definitions,
+  oldApiDefinitions,
   fetchQuery,
-  elementsSource,
+  elementSource,
   brandIdToClient,
+  sharedContext: {},
 })

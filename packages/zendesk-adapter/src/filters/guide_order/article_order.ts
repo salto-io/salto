@@ -15,7 +15,7 @@ import { FETCH_CONFIG, isGuideEnabled } from '../../config'
 /**
  * Handles the sections and articles orders inside section
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, oldApiDefinitions }) => ({
   name: 'articleOrderFilter',
   /** Create an InstanceElement of the sections and articles order inside the sections */
   onFetch: async (elements: Element[]) => {
@@ -60,7 +60,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes: articleOrderChanges,
       orderField: ARTICLES_FIELD,
       client,
-      config,
+      config: oldApiDefinitions,
     })
 
     return {

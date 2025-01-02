@@ -43,8 +43,9 @@ import {
   CUSTOM_OBJECT_TYPE_NAME,
   CUSTOM_OBJECT_FIELD_TYPE_NAME,
 } from '../constants'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { FETCH_CONFIG } from '../config'
 import { ELEMENTS_REGEXES, transformReferenceUrls } from './utils'
+import { ZendeskUserConfig } from '../user_config'
 
 const { createMissingInstance } = referencesUtils
 const log = logger(module)
@@ -499,7 +500,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
   return part
 }
 
-export const handleTemplateExpressionsOnFetch = (elements: Element[], config: ZendeskConfig): void => {
+export const handleTemplateExpressionsOnFetch = (elements: Element[], config: ZendeskUserConfig): void => {
   replaceFormulasWithTemplates({
     instances: elements.filter(isInstanceElement),
     ...config[FETCH_CONFIG],

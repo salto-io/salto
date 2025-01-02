@@ -139,7 +139,7 @@ describe('audit_logs filter', () => {
           },
         },
         paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([]),
+        elementSource: buildElementsSourceFromElements([]),
       }),
     ) as FilterType
     mockGet.mockImplementation(params => {
@@ -180,7 +180,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([]),
+          elementSource: buildElementsSourceFromElements([]),
         }),
       ) as FilterType
       const elements = [
@@ -291,7 +291,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([
+          elementSource: buildElementsSourceFromElements([
             auditTimeInstance,
             auditTimeType,
             ...rawElements,
@@ -384,7 +384,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
+          elementSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
         }),
       ) as FilterType
       mockGet.mockImplementation(params => {
@@ -440,7 +440,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
+          elementSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, automationInstance]),
         }),
       ) as FilterType
       mockGet.mockImplementation(params => {
@@ -507,7 +507,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
+          elementSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
         }),
       ) as FilterType
       mockGet.mockImplementation(params => {
@@ -569,7 +569,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
+          elementSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
         }),
       ) as FilterType
       mockGet.mockImplementation(params => {
@@ -635,7 +635,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, ...rawElements]),
+          elementSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, ...rawElements]),
         }),
       ) as FilterType
       mockGet.mockImplementation(params => {
@@ -686,7 +686,7 @@ describe('audit_logs filter', () => {
             },
           },
           paginator: mockPaginator,
-          elementsSource: buildElementsSourceFromElements([
+          elementSource: buildElementsSourceFromElements([
             auditTimeInstance,
             auditTimeType,
             articleTranslationInstance,

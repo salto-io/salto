@@ -277,7 +277,7 @@ describe('article filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    const elementsSource = buildElementsSourceFromElements([
+    const elementSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
       notInlineArticleAttachmentInstance,
@@ -286,7 +286,7 @@ describe('article filter', () => {
     filter = filterCreator(
       createFilterCreatorParams({
         client,
-        elementsSource,
+        elementSource,
         brandIdToClient,
         config: {
           ...DEFAULT_CONFIG,

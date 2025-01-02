@@ -87,7 +87,7 @@ describe('guide translation filter', () => {
     jest.clearAllMocks()
     filter = filterCreator(
       createFilterCreatorParams({
-        elementsSource: buildElementsSourceFromElements([guideLanguageSettingsInstance]),
+        elementSource: buildElementsSourceFromElements([guideLanguageSettingsInstance]),
       }),
     ) as FilterType
   })

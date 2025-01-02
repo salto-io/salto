@@ -6,12 +6,12 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import { filters } from '@salto-io/adapter-components'
-import { FilterContext } from '../config'
-import { FilterCreator, FilterResult } from '../filter'
-import ZendeskClient from '../client/client'
+import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
+import { ZendeskUserConfig } from '../user_config'
+import { ZendeskFetchOptions } from '../definitions/types'
 
 const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreatorDeprecated<ZendeskClient, FilterContext, FilterResult>(params.client.getUrl().href)(
+  filters.serviceUrlFilterCreator<ZendeskUserConfig, FilterResult, FilterAdditionalParams, ZendeskFetchOptions>()(
     params,
   )
 

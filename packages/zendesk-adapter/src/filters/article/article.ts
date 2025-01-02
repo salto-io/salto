@@ -56,7 +56,8 @@ import {
   maybeModifySourceLocaleInGuideObject,
   replaceAttachmentReferencesInArticleTranslationBody,
 } from './utils'
-import { API_DEFINITIONS_CONFIG, CLIENT_CONFIG, FETCH_CONFIG, isGuideEnabled, ZendeskConfig } from '../../config'
+import { API_DEFINITIONS_CONFIG, CLIENT_CONFIG, FETCH_CONFIG, isGuideEnabled } from '../../config'
+import { ZendeskUserConfig } from '../../user_config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -197,18 +198,18 @@ const associateAttachments = async (
 const createUnassociatedAttachmentFromChange = async ({
   attachmentChange,
   client,
-  elementsSource,
+  elementSource,
   articleNameToAttachments,
 }: {
   attachmentChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
   client: ZendeskClient
-  elementsSource: ReadOnlyElementsSource
+  elementSource: ReadOnlyElementsSource
   articleNameToAttachments: Record<string, number[]>
 }): Promise<void> => {
   const attachmentInstance = getChangeData(attachmentChange)
   await createUnassociatedAttachment(client, attachmentInstance)
   // Keeping article-attachment relation for deploy stage
-  const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
+  const instanceBeforeResolve = await elementSource.get(attachmentInstance.elemID)
   if (instanceBeforeResolve === undefined) {
     log.error(`Couldn't find attachment ${attachmentInstance.elemID.name} instance.`)
     // Deleting the newly created udpated-id attachment instance
@@ -224,7 +225,7 @@ const createUnassociatedAttachmentFromChange = async ({
   // We can't really modify article attachments in Zendesk
   // To do so we're going to delete the existing attachment and create a new one instead
   if (isModificationChange(attachmentChange)) {
-    const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
+    const articleInstance = await parentArticleRef.getResolvedValue(elementSource)
     if (articleInstance === undefined) {
       log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
       await deleteArticleAttachment(client, attachmentInstance)
@@ -250,15 +251,15 @@ const createUnassociatedAttachmentFromChange = async ({
 const handleArticleAttachmentsPreDeploy = async ({
   changes,
   client,
-  elementsSource,
+  elementSource,
   articleNameToAttachments,
   config,
 }: {
   changes: Change<InstanceElement>[]
   client: ZendeskClient
-  elementsSource: ReadOnlyElementsSource
+  elementSource: ReadOnlyElementsSource
   articleNameToAttachments: Record<string, number[]>
-  config: ZendeskConfig
+  config: ZendeskUserConfig
 }): Promise<InstanceElement[]> => {
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
@@ -280,7 +281,7 @@ const handleArticleAttachmentsPreDeploy = async ({
         createUnassociatedAttachmentFromChange({
           attachmentChange,
           client,
-          elementsSource,
+          elementSource,
           articleNameToAttachments,
         }),
       )
@@ -302,7 +303,7 @@ const handleArticleAttachmentsPreDeploy = async ({
       client,
       articleValues,
       attachmentInstances: modificationAndAdditionInlineInstances,
-      elementsSource,
+      elementsSource: elementSource,
     })
   }
   return attachmentChanges.map(getChangeData)
@@ -400,7 +401,7 @@ const shouldIgnoreUserSegment = (change: Change<InstanceElement>): boolean => {
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdToClient = {} }) => {
+const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, elementSource, brandIdToClient = {} }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     name: 'articleFilter',
@@ -458,7 +459,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         brandIdToClient,
         attachmentType,
         articleById,
-        apiDefinitions: config[API_DEFINITIONS_CONFIG],
+        apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
         attachments: isAttachments(attachments) ? attachments : [],
         config,
       })
@@ -473,7 +474,13 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       return { errors: attachmentErrors }
     },
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      await handleArticleAttachmentsPreDeploy({ changes, client, elementsSource, articleNameToAttachments, config })
+      await handleArticleAttachmentsPreDeploy({
+        changes,
+        client,
+        elementSource,
+        articleNameToAttachments,
+        config,
+      })
       await awu(changes)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
@@ -507,7 +514,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         if (shouldIgnoreUserSegment(change)) {
           fieldsToIgnore.push('user_segment_id')
         }
-        await deployChange(change, client, config.apiDefinitions, fieldsToIgnore)
+        await deployChange(change, client, oldApiDefinitions.apiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)
         if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
           await associateAttachments(
@@ -537,7 +544,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       }
 
       const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE_USER_TYPE)
-      const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
+      const everyoneUserSegmentInstance = await elementSource.get(everyoneUserSegmentElemID)
       relevantChanges.map(getChangeData).forEach(articleInstance => {
         removeTitleAndBody(articleInstance)
         if (articleInstance.value[USER_SEGMENT_ID_FIELD] === null) {

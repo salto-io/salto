@@ -15,7 +15,7 @@ import {
   ZENDESK,
 } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
-import { DEFAULT_CONFIG, FETCH_CONFIG, ZendeskConfig } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { createFetchDefinitions } from '../../src/definitions'
 
@@ -190,7 +190,7 @@ describe('add alias filter', () => {
 
   describe('equality between infra versions', () => {
     it('should be equal', () => {
-      const defs = createFetchDefinitions({} as ZendeskConfig, {})
+      const defs = createFetchDefinitions({})
       Object.entries(defs.instances.customizations ?? {}).forEach(([type, inst]) => {
         if (type in aliasMap) {
           expect(inst?.element?.topLevel?.alias).toEqual(aliasMap[type])

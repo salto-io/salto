@@ -13,8 +13,9 @@ import { logger } from '@salto-io/logging'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, ZENDESK } from '../constants'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { FETCH_CONFIG } from '../config'
 import { TYPES_WITH_SIDE_CONVERSATIONS } from '../change_validators/side_conversation'
+import { ZendeskUserConfig } from '../user_config'
 
 const log = logger(module)
 const { createMissingInstance } = referencesUtils
@@ -33,7 +34,7 @@ const sideConversationTicketActionSchema = joi
 const isSideConversationTicketAction = (action: Value): action is SideConversationTicketAction =>
   sideConversationTicketActionSchema.validate(action).error === undefined
 
-export const sideConversationsOnFetch = (elements: Element[], config: ZendeskConfig): void => {
+export const sideConversationsOnFetch = (elements: Element[], config: ZendeskUserConfig): void => {
   const relevantInstances = elements
     .filter(isInstanceElement)
     .filter(instance => TYPES_WITH_SIDE_CONVERSATIONS.includes(instance.elemID.typeName))

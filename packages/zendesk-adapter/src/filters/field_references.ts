@@ -40,11 +40,12 @@ import {
   BOT_BUILDER_ANSWER,
   BOT_BUILDER_FLOW,
 } from '../constants'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { FETCH_CONFIG } from '../config'
 import {
   ZendeskMissingReferenceStrategyLookup,
   ZendeskMissingReferenceStrategyName,
 } from './references/missing_references'
+import { ZendeskUserConfig } from '../user_config'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -1164,7 +1165,7 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
   defs => new ZendeskFieldReferenceResolver(defs),
 )
 
-export const fieldReferencesOnFetch = async (elements: Element[], config: ZendeskConfig): Promise<void> => {
+export const fieldReferencesOnFetch = async (elements: Element[], config: ZendeskUserConfig): Promise<void> => {
   const addReferences = async (refDefs: ZendeskFieldReferenceDefinition[]): Promise<void> => {
     const fixedDefs = refDefs.map(def =>
       config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'zendeskMissingRefStrategy'),

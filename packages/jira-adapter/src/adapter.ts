@@ -235,22 +235,8 @@ export const DEFAULT_FILTERS = [
   // This should run before duplicateIdsFilter
   projectRoleRemoveTeamManagedDuplicatesFilter,
   // This should happen before any filter that creates references
-  duplicateIdsFilter,
-  fieldStructureFilter,
-  // This should run here again because fieldStructureFilter creates the instances and references
-  duplicateIdsFilter,
-  // This must run after duplicateIdsFilter
-  unresolvedParentsFilter,
+  fieldStructureFilter, // fieldStructureFilter adds instances so it should run before duplicateIdsFilter
   localeFilter,
-  contextReferencesFilter,
-  // must run after contextReferencesFilter
-  assetsObjectFieldConfigurationFilter,
-  fieldTypeReferencesFilter,
-  fieldDeploymentFilter,
-  // This must run after fieldDeploymentFilter
-  contextDeploymentFilter,
-  // This must run after contextDeploymentFilter
-  avatarsFilter,
   iconUrlFilter,
   triggersFilter,
   resolutionPropertyFilter,
@@ -318,14 +304,28 @@ export const DEFAULT_FILTERS = [
   forbiddenPermissionSchemeFilter,
   // Must run before jqlReferencesFilter
   enhancedSearchNoiseReductionFilter,
-  jqlReferencesFilter,
   removeEmptyValuesFilter,
   maskingFilter,
   pluginVersionFliter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
+  // serviceUrl filters must run before duplicateIdsFilter
   serviceUrlJsmFilter, // Must run before fieldReferencesFilter
+  serviceUrlInformationFilter,
+  serviceUrlFilter,
+  addAliasFilter, // must run before duplicateIdsFilter
+  duplicateIdsFilter,
+  unresolvedParentsFilter, // must run after duplicateIdsFilter
+  contextReferencesFilter, // must run after duplicateIdsFilter
+  assetsObjectFieldConfigurationFilter, // must run after contextReferencesFilter
+  fieldTypeReferencesFilter,
+  fieldDeploymentFilter,
+  // This must run after fieldDeploymentFilter
+  contextDeploymentFilter,
+  // This must run after contextDeploymentFilter
+  avatarsFilter,
+  jqlReferencesFilter, // must run after assetsObjectFieldConfigurationFilter
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   addJsmTypesAsFieldsFilter,
@@ -346,8 +346,6 @@ export const DEFAULT_FILTERS = [
   missingFieldDescriptionsFilter,
   // Must run after fieldReferencesFilter
   sortListsFilter,
-  serviceUrlInformationFilter,
-  serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
   missingDescriptionsFilter,

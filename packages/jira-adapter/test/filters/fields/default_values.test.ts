@@ -39,6 +39,7 @@ describe('default values', () => {
         patch: mockFunction<clientUtils.HTTPWriteClientInterface['patch']>(),
       }
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      config.fetch.splitFieldContextOptions = false
       type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME) })
     })
 

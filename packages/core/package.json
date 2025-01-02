@@ -31,7 +31,6 @@
   "dependencies": {
     "@salto-io/adapter-api": "0.4.8",
     "@salto-io/adapter-components": "0.4.8",
-    "@salto-io/adapter-creators": "0.4.8",
     "@salto-io/adapter-utils": "0.4.8",
     "@salto-io/dag": "0.4.8",
     "@salto-io/local-workspace": "0.4.8",

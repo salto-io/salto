@@ -258,6 +258,56 @@ describe('Microsoft Security adapter', () => {
               expect(appIdString).toEqual('b0d12345-ef57-41d3-a7f7-cb2dcd0ef7c8')
             })
           })
+
+          describe('authentication strength policies', () => {
+            let authenticationStrengthPolicies: InstanceElement[]
+            beforeEach(async () => {
+              authenticationStrengthPolicies = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraAuthenticationStrengthPolicy')
+            })
+
+            it('should create the correct instances for Entra authentication strength policies', async () => {
+              expect(authenticationStrengthPolicies).toHaveLength(1)
+
+              const authenticationStrengthPolicyNames = authenticationStrengthPolicies.map(e => e.elemID.name)
+              expect(authenticationStrengthPolicyNames).toEqual(
+                expect.arrayContaining(['test_authentication_strength_policy@s']),
+              )
+            })
+          })
+
+          describe('conditional access policies', () => {
+            let conditionalAccessPolicies: InstanceElement[]
+            beforeEach(async () => {
+              conditionalAccessPolicies = elements
+                .filter(isInstanceElement)
+                .filter(e => e.elemID.typeName === 'EntraConditionalAccessPolicy')
+            })
+
+            it('should create the correct instances for Entra conditional access policies', async () => {
+              expect(conditionalAccessPolicies).toHaveLength(1)
+
+              const conditionalAccessPolicyNames = conditionalAccessPolicies.map(e => e.elemID.name)
+              expect(conditionalAccessPolicyNames).toEqual(expect.arrayContaining(['test_conditional_access_policy@s']))
+            })
+
+            it('should adjust the authenticationStrength object correctly', async () => {
+              const policyWithAuthStrength = conditionalAccessPolicies.find(
+                e => e.elemID.name === 'test_conditional_access_policy@s',
+              )
+              expect(policyWithAuthStrength).toBeDefined()
+              const { grantControls } = (policyWithAuthStrength as InstanceElement).value
+              expect(grantControls).toBeDefined()
+              const { authenticationStrength } = grantControls
+              expect(authenticationStrength).toBeDefined()
+              expect(Object.keys(authenticationStrength)).toEqual(['id'])
+              expect(authenticationStrength.id).toBeInstanceOf(ReferenceExpression)
+              expect(authenticationStrength.id.elemID.getFullName()).toEqual(
+                'microsoft_security.EntraAuthenticationStrengthPolicy.instance.test_authentication_strength_policy@s',
+              )
+            })
+          })
         })
 
         describe('Intune', () => {

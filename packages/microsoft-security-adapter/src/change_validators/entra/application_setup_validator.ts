@@ -36,7 +36,8 @@ const createApplicationSetupMessage = (instance: InstanceElement): ChangeError =
   }
 }
 /**
- * Ensures that a service provider application integrates with Okta using the SAML 2.0 protocol.
+ * This validator will return a message for each new application or service principal instance,
+ * suggesting to complete the credentials setup in the Entra admin center.
  */
 export const applicationSetupValidator: ChangeValidator = async changes =>
   changes

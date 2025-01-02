@@ -160,7 +160,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       }
 
       const objectType = createOrganizationType()
-      const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
+      const fieldsToIgnore = new Set(
+        FIELDS_TO_IGNORE.concat(config.systemFields ?? []).concat(
+          config.fetchProfile.isFeatureEnabled('omitTotalTrustedRequestsUsageField')
+            ? ['TotalTrustedRequestsUsage']
+            : [],
+        ),
+      )
       await enrichTypeWithFields(client, objectType, fieldsToIgnore, config.fetchProfile)
 
       const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])

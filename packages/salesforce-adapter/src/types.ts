@@ -107,6 +107,7 @@ const OPTIONAL_FEATURES = [
   'addParentToInstancesWithinFolder',
   'shouldPopulateInternalIdAfterDeploy',
   'packageVersionReference',
+  'omitTotalTrustedRequestsUsageField',
 ] as const
 const DEPRECATED_OPTIONAL_FEATURES = [
   'addMissingIds',

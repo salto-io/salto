@@ -23,6 +23,7 @@ const optionalFeaturesDefaultValues: OptionalFeaturesDefaultValues = {
   shouldPopulateInternalIdAfterDeploy: true,
   addParentToInstancesWithinFolder: false,
   packageVersionReference: false,
+  omitTotalTrustedRequestsUsageField: false,
 }
 
 export const isFeatureEnabled = (name: keyof OptionalFeatures, optionalFeatures?: OptionalFeatures): boolean =>

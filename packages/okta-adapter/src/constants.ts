@@ -98,6 +98,7 @@ export const SCHEMA_TYPES = [GROUP_SCHEMA_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, 
 export const EMAIL_DOMAIN_TYPE_NAME = 'EmailDomain'
 export const SIGN_IN_PAGE_TYPE_NAME = 'SignInPage'
 export const ERROR_PAGE_TYPE_NAME = 'ErrorPage'
+export const API_SCOPES = 'apiScopes'
 
 export const APP_PROVISIONING_FIELD_NAMES = [
   'applicationUserProvisioning',

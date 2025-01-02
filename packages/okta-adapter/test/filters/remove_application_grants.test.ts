@@ -33,8 +33,9 @@ describe('removedApplicationGrants', () => {
   type FilterType = filterUtils.FilterWith<'preDeploy'>
   let filter: FilterType
   let applicationType: ObjectType
-  const sharedContext = {}
+  let sharedContext: Record<string, unknown> | undefined
   beforeEach(() => {
+    sharedContext = {}
     mockRequestAllForResource
       .mockResolvedValueOnce([
         {

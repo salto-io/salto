@@ -219,6 +219,13 @@ export const setContextOptionsSplitted = async ({
 }): Promise<void> => {
   const [addedCascade, addedSimple] = _.partition(added, isCascadeOption)
 
+  // we need the cascade options to be first in delete due to API limitations
+  removed.sort((a, b) => {
+    if (isCascadeOption(a) && !isCascadeOption(b)) return -1
+    if (!isCascadeOption(a) && isCascadeOption(b)) return 1
+    return 0
+  })
+
   setCascadeOptions(modified.filter(isCascadeOption))
   setCascadeOptions(addedCascade)
   const optionsCount = await countOptionsInContext(contextId, elementsSource)

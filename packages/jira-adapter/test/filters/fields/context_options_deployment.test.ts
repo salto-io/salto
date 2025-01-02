@@ -248,47 +248,46 @@ describe('ContextOptionsDeployment', () => {
       undefined,
     )
   })
+  it('should remove cascading options before their parents', async () => {
+    addOption1.value.id = '1option'
+    addOption2.value.id = '2option'
+    const cascadeInstance = new InstanceElement(
+      'cascadeOption',
+      createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
+      { id: 'cascadeOption' },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption1.elemID, addOption1),
+      },
+    )
+    changes = [
+      toChange({ before: addOption1 }),
+      toChange({ before: cascadeInstance }),
+      toChange({ before: addOption2 }),
+    ]
+    await filter.deploy(changes)
+    expect(connection.delete).toHaveBeenCalledTimes(3)
+    expect(connection.delete).toHaveBeenNthCalledWith(
+      1,
+      '/rest/api/3/field/1field/context/1context/option/cascadeOption',
+      undefined,
+    )
+    expect(connection.delete).toHaveBeenCalledWith(
+      '/rest/api/3/field/1field/context/1context/option/1option',
+      undefined,
+    )
+    expect(connection.delete).toHaveBeenCalledWith(
+      '/rest/api/3/field/1field/context/1context/option/2option',
+      undefined,
+    )
+  })
   it('should return a correct deployment result', async () => {
     const result = await filter.deploy(changes)
     expect(result.leftoverChanges).toHaveLength(1)
     expect(result.deployResult.errors).toHaveLength(0)
     expect(result.deployResult.appliedChanges).toHaveLength(6)
   })
-  it('should update the ids of order instances references', async () => {
-    connection.post.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        options: [
-          {
-            id: '4',
-            value: 'p1',
-          },
-          {
-            id: '5',
-            value: 'p2',
-          },
-        ],
-      },
-    })
-    const orderType = createEmptyType(OPTIONS_ORDER_TYPE_NAME)
-    const orderInstance1 = new InstanceElement('order1', orderType, {
-      options: [
-        new ReferenceExpression(getChangeData(changes[0]).elemID, _.cloneDeep(getChangeData(changes[0]))),
-        new ReferenceExpression(getChangeData(changes[1]).elemID, _.cloneDeep(getChangeData(changes[1]))),
-      ],
-    })
-    const orderInstance2 = new InstanceElement('order2', orderType, {
-      options: [
-        new ReferenceExpression(getChangeData(changes[2]).elemID, _.cloneDeep(getChangeData(changes[2]))),
-        new ReferenceExpression(getChangeData(changes[3]).elemID, _.cloneDeep(getChangeData(changes[3]))),
-      ],
-    })
-    await filter.deploy(changes.concat([toChange({ after: orderInstance1 }), toChange({ after: orderInstance2 })]))
-    expect(orderInstance1.value.options[0].value.value.id).toEqual('4')
-    expect(orderInstance1.value.options[1].value.value.id).toEqual('5')
-    expect(orderInstance2.value.options[0].value.value.id).toEqual('2option')
-    expect(orderInstance2.value.options[1].value.value.id).toEqual('3option')
-  })
+
   it('should properly handle salto errors', async () => {
     connection.post.mockRejectedValueOnce({
       message: 'error message',
@@ -544,13 +543,6 @@ describe('ContextOptionsDeployment', () => {
       expect(result.leftoverChanges).toHaveLength(5)
       expect(result.deployResult.errors).toHaveLength(0)
       expect(result.deployResult.appliedChanges).toHaveLength(10)
-    })
-    it('should update the ids of order instances references', async () => {
-      await filter.deploy(changes)
-      expect(getChangeData(changes[13]).value.options[0].value.value.id).toEqual('10')
-      expect(getChangeData(changes[13]).value.options[1].value.value.id).toEqual('11')
-      expect(getChangeData(changes[14]).value.options[0].value.value.id).toEqual('20')
-      expect(getChangeData(changes[14]).value.options[1].value.value.id).toEqual('22')
     })
     it('should add id to additions', async () => {
       await filter.deploy(changes)

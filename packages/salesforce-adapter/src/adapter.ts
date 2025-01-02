@@ -362,6 +362,10 @@ const METADATA_TO_RETRIEVE = [
   'ExternalDataSource',
   'FlexiPage',
   'FlowDefinition',
+  'GenAiFunction',
+  'GenAiPlanner',
+  'GenAiPlugin',
+  'GenAiPromptTemplate',
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
   'Profile',

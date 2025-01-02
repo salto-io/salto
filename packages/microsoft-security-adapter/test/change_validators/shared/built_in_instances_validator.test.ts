@@ -8,7 +8,7 @@
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ADAPTER_NAME, entraConstants } from '../../../src/constants'
-import { builtInInstancesValidator } from '../../../src/change_validators'
+import { builtInInstancesValidator } from '../../../src/change_validators/shared/built_in_instances_validator'
 
 describe(`${builtInInstancesValidator.name}`, () => {
   describe(entraConstants.AUTHENTICATION_STRENGTH_POLICY_TYPE_NAME, () => {

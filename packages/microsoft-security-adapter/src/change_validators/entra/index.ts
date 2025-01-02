@@ -7,10 +7,8 @@
  */
 
 import { ChangeValidator } from '@salto-io/adapter-api'
-import sharedChangeValidators from './shared'
-import entraChangeValidators from './entra'
+import { applicationSetupValidator } from './application_setup_validator'
 
 export default (): Record<string, ChangeValidator> => ({
-  ...sharedChangeValidators(),
-  ...entraChangeValidators(),
+  applicationSetup: applicationSetupValidator,
 })

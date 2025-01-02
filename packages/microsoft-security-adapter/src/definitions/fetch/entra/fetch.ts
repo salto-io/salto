@@ -244,6 +244,7 @@ const graphV1Customizations: FetchCustomizations = {
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
+          omit: ['keyCredentials', 'passwordCredentials', 'tokenEncryptionKeyId'],
           adjust: adjustApplication,
         },
       },
@@ -282,7 +283,9 @@ const graphV1Customizations: FetchCustomizations = {
             'homepage',
             'info',
             'oauth2PermissionScopes',
+            'keyCredentials',
             'passwordCredentials',
+            'tokenEncryptionKeyId',
             'preferredSingleSignOnMode',
             'preferredTokenSigningKeyThumbprint',
             'resourceSpecificApplicationPermissions',

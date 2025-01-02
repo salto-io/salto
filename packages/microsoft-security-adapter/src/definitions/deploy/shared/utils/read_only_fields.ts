@@ -12,7 +12,7 @@ import { isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
 import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
-} from '../../../../change_validators'
+} from '../../../../change_validators/shared'
 import { AdjustFunctionSingle as AdjustFunctionSingleWithContext } from '../types'
 
 /*

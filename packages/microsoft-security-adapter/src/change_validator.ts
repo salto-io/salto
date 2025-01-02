@@ -7,10 +7,10 @@
  */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { builtInInstancesValidator, readOnlyFieldsValidator, requiredFieldsValidator } from './change_validators'
 import { createDeployDefinitions } from './definitions'
 import { entraConstants } from './constants'
 import { Options } from './definitions/types'
+import changeValidators from './change_validators'
 
 export default (): Record<string, ChangeValidator> => ({
   createCheckDeploymentBasedOnDefinitions:
@@ -18,7 +18,5 @@ export default (): Record<string, ChangeValidator> => ({
       deployDefinitions: createDeployDefinitions(),
       typesDeployedViaParent: [entraConstants.APP_ROLE_TYPE_NAME],
     }),
-  builtInInstances: builtInInstancesValidator,
-  requiredFields: requiredFieldsValidator,
-  readOnlyFields: readOnlyFieldsValidator,
+  ...changeValidators(),
 })

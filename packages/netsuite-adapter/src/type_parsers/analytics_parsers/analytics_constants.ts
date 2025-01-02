@@ -18,7 +18,6 @@ export const IGNORE_T_VALUE = 'ignore_t_value'
 // xml fields
 export const FIELD_DEFINITION = '_T_'
 export const TYPE = '@_type'
-export const FIELD_TYPE = 'fieldType'
 
 // const strings
 export const ROOT = 'root'

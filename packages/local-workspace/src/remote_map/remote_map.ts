@@ -469,7 +469,9 @@ export const createRemoteMapCreator = (
   return {
     // Note: this implementation of `close` is not safe as it closes everything in the location, even if there are other
     // remote map creators using it
-    close: async () => closeRemoteMapsOfLocation(location),
+    close: async () => {
+      await closeRemoteMapsOfLocation(location)
+    },
     create: async <T, K extends string = string>({
       namespace,
       batchInterval = 1000,

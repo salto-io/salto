@@ -51,12 +51,14 @@ describe('removedApplicationGrants', () => {
     applicationType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   })
 
-  it('should assign current role ids to the shared context', async () => {
+  it('should assign current grant ids to the shared context', async () => {
     const instA = new InstanceElement('a', applicationType, {
-      oAuth2ScopeConsentGrants: [{ scopeId: 'okta.scope' }, { scopeId: 'okta.otherScope' }],
+      signOnMode: 'OPENID_CONNECT',
+      apiScopes: [{ scopeId: 'okta.scope' }, { scopeId: 'okta.otherScope' }],
     })
     const instB = new InstanceElement('b', applicationType, {
-      oAuth2ScopeConsentGrants: [{ scopId: 'okta.anotherOtherScope' }],
+      signOnMode: 'OPENID_CONNECT',
+      apiScopes: [{ scopId: 'okta.anotherOtherScope' }],
     })
     const changes = [toChange({ before: instA }), toChange({ before: instB, after: instB })]
     await filter.preDeploy(changes)
@@ -69,5 +71,18 @@ describe('removedApplicationGrants', () => {
         'okta.anotherOtherScope': '3',
       },
     })
+  })
+  it("should not assign current grant ids to the shared context if the application signOnMode isn't OPENID_CONNECT", async () => {
+    const instA = new InstanceElement('a', applicationType, {
+      signOnMode: 'BROWSER_PLUGIN',
+      apiScopes: [{ scopeId: 'okta.scope' }, { scopeId: 'okta.otherScope' }],
+    })
+    const instB = new InstanceElement('b', applicationType, {
+      signOnMode: 'BROWSER_PLUGIN',
+      apiScopes: [{ scopId: 'okta.anotherOtherScope' }],
+    })
+    const changes = [toChange({ before: instA }), toChange({ before: instB, after: instB })]
+    await filter.preDeploy(changes)
+    expect(sharedContext).toEqual({})
   })
 })

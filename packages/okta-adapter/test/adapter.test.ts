@@ -2812,10 +2812,10 @@ describe('adapter', () => {
           label: 'app1',
           name: 'supportedApp',
           status: ACTIVE_STATUS,
-          oAuth2ScopeConsentGrants: [{ scopeId: 'okta.otherScope' }],
+          apiScopes: [{ scopeId: 'okta.otherScope' }],
         })
         const updatedApp = activeCustomApp.clone()
-        updatedApp.value.oAuth2ScopeConsentGrants.push({ scopeId: 'okta.scope' })
+        updatedApp.value.apiScopes.push({ scopeId: 'okta.scope' })
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',
@@ -2841,10 +2841,10 @@ describe('adapter', () => {
           label: 'app1',
           name: 'supportedApp',
           status: ACTIVE_STATUS,
-          oAuth2ScopeConsentGrants: [{ scopeId: 'okta.otherScope' }, { scopeId: 'okta.scope' }],
+          apiScopes: [{ scopeId: 'okta.otherScope' }, { scopeId: 'okta.scope' }],
         })
         const updatedApp = activeCustomApp.clone()
-        updatedApp.value.oAuth2ScopeConsentGrants = [{ scopeId: 'okta.scope' }]
+        updatedApp.value.apiScopes = [{ scopeId: 'okta.scope' }]
         const result = await operations.deploy({
           changeGroup: {
             groupID: 'app',

@@ -64,7 +64,7 @@ const createDeployAppPolicyRequest = (
 })
 
 export const APP_POLICIES = ['accessPolicy', 'profileEnrollment']
-export const GRANTS_CHANGE_ID_FIELDS = ['issuer', 'scopeId']
+export const GRANTS_CHANGE_ID_FIELDS = ['scopeId']
 
 export const createDeployAppPolicyRequests = (): definitions.deploy.DeployableRequestDefinition<ClientOptions>[] =>
   APP_POLICIES.map(createDeployAppPolicyRequest)
@@ -91,9 +91,10 @@ export const getSubdomainFromElementsSource = async (
   return orgSettingInstance.value.subdomain
 }
 
-export const getDefaultDomainFromElementsSource = async (
-  elementsSource: ReadOnlyElementsSource,
-): Promise<string | undefined> => {
+/* Retrieve the default domain from the default domain instance for use in application grant deployments.
+ * This is necessary because the default domain varies across environments and isn't multi-environment friendly.
+ */
+export const getIssuerField = async (elementsSource: ReadOnlyElementsSource): Promise<string | undefined> => {
   const defaultDomainInstance = await elementsSource.get(
     new ElemID(OKTA, DOMAIN_TYPE_NAME, 'instance', 'Default_Domain@s'),
   )

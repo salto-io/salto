@@ -442,12 +442,12 @@ const createCustomizations = ({
             },
           },
         },
-        oAuth2ScopeConsentGrants: {
+        apiScopes: {
           typeName: 'OAuth2ScopeConsentGrant',
           conditions: [
             {
               fromField: 'signOnMode',
-              match: ['OPENID_CONNECT'],
+              match: ['^OPENID_CONNECT$'],
             },
           ],
           context: {
@@ -605,7 +605,7 @@ const createCustomizations = ({
         applicationProvisioningGeneral: { fieldType: 'unknown' },
         applicationInboundProvisioning: { fieldType: 'ApplicationFeature' },
         applicationUserProvisioning: { fieldType: 'ApplicationFeature' },
-        oAuth2ScopeConsentGrants: { fieldType: 'list<OAuth2ScopeConsentGrant>' },
+        apiScopes: { fieldType: 'list<OAuth2ScopeConsentGrant>' },
         settings: { fieldType: 'unknown' },
         profileEnrollment: { fieldType: 'string' },
         accessPolicy: { fieldType: 'string' },
@@ -718,7 +718,7 @@ const createCustomizations = ({
     element: {
       fieldCustomizations: {
         id: { omit: true },
-        issuer: { omit: true },
+        issuer: { omit: true }, // Omitted to ensure consistency across environments, as the issuer can differ between environments.
       },
     },
   },

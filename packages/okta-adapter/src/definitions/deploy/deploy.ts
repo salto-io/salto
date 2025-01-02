@@ -50,11 +50,12 @@ import {
   ROLE_TYPE_NAME,
   APP_PROVISIONING_FIELD_NAMES,
   USER_ROLES_TYPE_NAME,
+  API_SCOPES,
 } from '../../constants'
 import {
   APP_POLICIES,
   createDeployAppPolicyRequests,
-  getDefaultDomainFromElementsSource,
+  getIssuerField,
   getOAuth2ScopeConsentGrantIdFromSharedContext,
   getSubdomainFromElementsSource,
   GRANTS_CHANGE_ID_FIELDS,
@@ -445,7 +446,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     CUSTOM_NAME_FIELD,
                     ...APP_POLICIES,
                     ...APP_PROVISIONING_FIELD_NAMES,
-                    'oAuth2ScopeConsentGrants',
+                    API_SCOPES,
                   ],
                 },
               },
@@ -473,7 +474,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 skipIfIdentical: true,
                 transformForCheck: {
-                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES, 'oAuth2ScopeConsentGrants'],
+                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES, API_SCOPES],
                 },
               },
               request: {
@@ -502,7 +503,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                           CUSTOM_NAME_FIELD,
                           ...APP_POLICIES,
                           ...APP_PROVISIONING_FIELD_NAMES,
-                          'oAuth2ScopeConsentGrants',
+                          API_SCOPES,
                         ]),
                       },
                     }
@@ -598,9 +599,9 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           changeIdFields: [],
         },
         {
-          fieldPath: ['oAuth2ScopeConsentGrants'],
+          fieldPath: [API_SCOPES],
           typeName: 'OAuth2ScopeConsentGrant',
-          changeIdFields: GRANTS_CHANGE_ID_FIELDS.map(f => naclCase(f)),
+          changeIdFields: GRANTS_CHANGE_ID_FIELDS,
         },
       ],
       toActionNames: ({ change }) => {
@@ -1197,7 +1198,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                 transformation: {
                   adjust: async ({ value, context }) => {
                     validatePlainObject(value, 'OAuth2ScopeConsentGrant')
-                    const domain = await getDefaultDomainFromElementsSource(context.elementSource)
+                    const domain = await getIssuerField(context.elementSource)
                     return {
                       value: {
                         ...value,

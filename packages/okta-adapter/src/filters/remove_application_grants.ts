@@ -20,7 +20,7 @@ const { awu } = collections.asynciterable
 
 /**
  * When removing an application grant, the removed grant id must be provided.
- * As the grant id is not persisted on the element, we make an API request to get the current grants and ids.
+ * As the grant id is not persisted on the element, we make an API request to get the current grants ids.
  */
 const filterCreator: FilterCreator = ({ sharedContext, definitions }) => ({
   name: 'removedApplicationGrants',
@@ -38,6 +38,7 @@ const filterCreator: FilterCreator = ({ sharedContext, definitions }) => ({
       .filter(isRemovalOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
+      .filter(appInstance => appInstance.value.signOnMode === 'OPENID_CONNECT')
       .forEach(async instance => {
         const { id } = instance.value
         try {
@@ -50,11 +51,7 @@ const filterCreator: FilterCreator = ({ sharedContext, definitions }) => ({
           }))
           _.assign(sharedContext, { [instance.elemID.getFullName()]: _.merge({}, ...oAuth2ScopeConsentGrantsResponse) })
         } catch (e) {
-          log.error(
-            'Failed to fetch oAuth2ScopeConsentGrants for %s: %s',
-            instance.elemID.getFullName(),
-            safeJsonStringify(e.message),
-          )
+          log.error('Failed to fetch apiScopes for %s: %s', instance.elemID.getFullName(), safeJsonStringify(e.message))
         }
       })
   },

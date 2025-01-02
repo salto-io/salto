@@ -248,6 +248,39 @@ describe('ContextOptionsDeployment', () => {
       undefined,
     )
   })
+  it('should remove cascading options before their parents', async () => {
+    addOption1.value.id = '1option'
+    addOption2.value.id = '2option'
+    const cascadeInstance = new InstanceElement(
+      'cascadeOption',
+      createEmptyType(FIELD_CONTEXT_OPTION_TYPE_NAME),
+      { id: 'cascadeOption' },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(addOption1.elemID, addOption1),
+      },
+    )
+    changes = [
+      toChange({ before: addOption1 }),
+      toChange({ before: cascadeInstance }),
+      toChange({ before: addOption2 }),
+    ]
+    await filter.deploy(changes)
+    expect(connection.delete).toHaveBeenCalledTimes(3)
+    expect(connection.delete).toHaveBeenNthCalledWith(
+      1,
+      '/rest/api/3/field/1field/context/1context/option/cascadeOption',
+      undefined,
+    )
+    expect(connection.delete).toHaveBeenCalledWith(
+      '/rest/api/3/field/1field/context/1context/option/1option',
+      undefined,
+    )
+    expect(connection.delete).toHaveBeenCalledWith(
+      '/rest/api/3/field/1field/context/1context/option/2option',
+      undefined,
+    )
+  })
   it('should return a correct deployment result', async () => {
     const result = await filter.deploy(changes)
     expect(result.leftoverChanges).toHaveLength(1)

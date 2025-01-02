@@ -261,7 +261,7 @@ const closeTmpConnection = async (
   log.debug('closed temporary connection to %s', tmpLocation)
 }
 
-export const closeRemoteMapsOfLocation = async (location: string): Promise<void> =>
+export const closeRemoteMapsOfLocation = async (location: string): Promise<boolean> =>
   log.timeDebug(
     async () => {
       let didClose = false
@@ -295,6 +295,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
       if (didClose) {
         remoteMapLocations.return(location)
       }
+      return didClose
     },
     'closeRemoteMapsOfLocation with location %s',
     location,

@@ -10,14 +10,14 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_recurse_into_field'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
-import { DEFAULT_CONFIG, FETCH_CONFIG, ZendeskConfig } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG, OldZendeskConfig } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 
 describe('add empty recurseInto fields in new infra', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   let client: ZendeskClient
-  let oldInfraConfig: ZendeskConfig
+  let oldInfraConfig: OldZendeskConfig
 
   const businessHoursScheduleTypeName = 'business_hours_schedule'
   const routingAttributeTypeName = 'routing_attribute'

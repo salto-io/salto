@@ -15,7 +15,7 @@ import { SLA_POLICY_TYPE_NAME } from '../constants'
 /**
  * Deploys sla policy
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'slaPolicyFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [slaPoliciesChanges, leftoverChanges] = _.partition(
@@ -27,7 +27,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
       const instance = getChangeData(clonedChange)
       instance.value.filter = instance.value.filter ?? { all: [], any: [] }
-      await deployChange(clonedChange, client, config.apiDefinitions)
+      await deployChange(clonedChange, client, oldApiDefinitions.apiDefinitions)
       getChangeData(change).value.id = instance.value.id
     })
     return { deployResult, leftoverChanges }

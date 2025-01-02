@@ -105,7 +105,6 @@ const OPTIONAL_FEATURES = [
   'networkReferences',
   'extendFetchTargets',
   'addParentToInstancesWithinFolder',
-  'addParentToRecordTriggeredFlows',
   'shouldPopulateInternalIdAfterDeploy',
   'packageVersionReference',
 ] as const

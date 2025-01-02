@@ -19,7 +19,7 @@ import { entraConstants } from '../../constants'
 const { APPLICATION_TYPE_NAME, SERVICE_PRINCIPAL_TYPE_NAME } = entraConstants
 
 const createApplicationSetupMessage = (instance: InstanceElement): ChangeError => {
-  const appType = instance.elemID.typeName === SERVICE_PRINCIPAL_TYPE_NAME ? 'app registration' : 'application'
+  const appType = instance.elemID.typeName === APPLICATION_TYPE_NAME ? 'app registration' : 'application'
   return {
     elemID: instance.elemID,
     severity: 'Info',

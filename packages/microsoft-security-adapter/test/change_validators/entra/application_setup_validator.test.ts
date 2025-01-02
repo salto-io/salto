@@ -27,15 +27,15 @@ describe(applicationSetupValidator.name, () => {
         const res = await applicationSetupValidator(changes)
         expect(res).toEqual([
           {
-            elemID: applicationInstance.elemID,
             severity: 'Info',
-            message: 'Credentials setup may be required for the new application',
-            detailedMessage: 'The newly created application may require additional credentials setup.',
+            message: 'Credentials setup may be required for the new app registration',
+            detailedMessage: 'The newly created app registration may require additional credentials setup.',
+            elemID: applicationInstance.elemID,
             deployActions: {
               postAction: {
-                title: 'Complete the application setup',
+                title: 'Complete the app registration setup',
                 description:
-                  'The new application (testApplication) currently lacks credentials. If needed, please configure credentials in the Entra admin center.',
+                  'The new app registration (testApplication) currently lacks credentials. If needed, please configure credentials in the Entra admin center.',
                 showOnFailure: false,
                 subActions: [],
               },
@@ -89,15 +89,15 @@ describe(applicationSetupValidator.name, () => {
         const res = await applicationSetupValidator(changes)
         expect(res).toEqual([
           {
-            severity: 'Info',
-            message: 'Credentials setup may be required for the new app registration',
-            detailedMessage: 'The newly created app registration may require additional credentials setup.',
             elemID: servicePrincipalInstance.elemID,
+            severity: 'Info',
+            message: 'Credentials setup may be required for the new application',
+            detailedMessage: 'The newly created application may require additional credentials setup.',
             deployActions: {
               postAction: {
-                title: 'Complete the app registration setup',
+                title: 'Complete the application setup',
                 description:
-                  'The new app registration (testServicePrincipal) currently lacks credentials. If needed, please configure credentials in the Entra admin center.',
+                  'The new application (testServicePrincipal) currently lacks credentials. If needed, please configure credentials in the Entra admin center.',
                 showOnFailure: false,
                 subActions: [],
               },

@@ -15,11 +15,13 @@ const toEntraTypeName = (typeName: string): string => `Entra${typeName}`
 export const SERVICE_BASE_URL = 'https://entra.microsoft.com'
 
 /* Fields */
+export const API_FIELD_NAME = 'api'
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
 export const APP_ROLES_FIELD_NAME = 'appRoles'
 export const AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME = 'authenticationMethodConfigurations'
 export const CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_FIELD_NAME = 'allowedValues'
 export const DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME = 'delegatedPermissionClassifications'
+export const DELEGATED_PERMISSION_IDS_FIELD_NAME = 'delegatedPermissionIds'
 export const DOMAIN_NAME_REFERENCES_FIELD_NAME = 'domainNameReferences'
 export const GROUP_ADDITIONAL_DATA_FIELD_NAME = 'additionalData'
 export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicy'
@@ -27,6 +29,7 @@ export const IDENTIFIER_URIS_FIELD_NAME = 'identifierUris'
 export const MEMBERS_FIELD_NAME = 'members'
 export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications'
 export const REQUIRED_RESOURCE_ACCESS_FIELD_NAME = 'requiredResourceAccess'
+export const OAUTH2_PERMISSION_SCOPES_FIELD_NAME = 'oauth2PermissionScopes'
 
 /* Type names */
 // Top level
@@ -49,6 +52,7 @@ export const GROUP_TYPE_NAME = toEntraTypeName('Group')
 export const HOME_REALM_DISCOVERY_POLICY_TYPE_NAME = toEntraTypeName('HomeRealmDiscoveryPolicy')
 export const LIFE_CYCLE_POLICY_TYPE_NAME = toEntraTypeName('GroupLifeCyclePolicy')
 export const OAUTH2_PERMISSION_GRANT_TYPE_NAME = toEntraTypeName('Oauth2PermissionGrant')
+export const OAUTH2_PERMISSION_SCOPE_TYPE_NAME = toEntraTypeName('Oauth2PermissionScope')
 export const PERMISSION_GRANT_POLICY_TYPE_NAME = toEntraTypeName('PermissionGrantPolicy')
 export const ROLE_DEFINITION_TYPE_NAME = toEntraTypeName('RoleDefinition')
 export const SERVICE_PRINCIPAL_TYPE_NAME = toEntraTypeName('ServicePrincipal')
@@ -59,7 +63,7 @@ export const ADMINISTRATIVE_UNIT_MEMBERS_TYPE_NAME = recursiveNestedTypeName(
   ADMINISTRATIVE_UNIT_TYPE_NAME,
   MEMBERS_FIELD_NAME,
 )
-export const APPLICATION_API_TYPE_NAME = recursiveNestedTypeName(APPLICATION_TYPE_NAME, 'api')
+export const APPLICATION_API_TYPE_NAME = recursiveNestedTypeName(APPLICATION_TYPE_NAME, API_FIELD_NAME)
 export const AUTHENTICATION_METHOD_CONFIGURATION_TYPE_NAME = recursiveNestedTypeName(
   AUTHENTICATION_METHOD_POLICY_TYPE_NAME,
   AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME,

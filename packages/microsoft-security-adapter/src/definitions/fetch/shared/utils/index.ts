@@ -8,3 +8,4 @@
 
 export { createCustomizationsWithBasePath as createCustomizationsWithBasePathForFetch } from './path_adjustment'
 export { createStaticFileFromBase64Blob } from './static_file'
+export { addParentIdToStandaloneFields } from './parent_id'

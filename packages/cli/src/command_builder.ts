@@ -8,6 +8,7 @@
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { logger, compareLogLevels, LogLevel } from '@salto-io/logging'
+import { adapterCreators } from '@salto-io/adapter-creators'
 import { Workspace } from '@salto-io/workspace'
 import { loadLocalWorkspace, Tags } from '@salto-io/core'
 import { CliOutput, CliExitCode, CliError, PositionalOption, KeyedOption, CliArgs, CliTelemetry } from './types'
@@ -213,6 +214,7 @@ export const createWorkspaceCommand = <T>(def: WorkspaceCommandDef<T>): CommandD
       path: args.workspacePath,
       configOverrides: getConfigOverrideChanges(args.input),
       ...(def.loadWorkspaceArgs ?? {}),
+      adapterCreators,
     })
 
     args.cliTelemetry.setTags({

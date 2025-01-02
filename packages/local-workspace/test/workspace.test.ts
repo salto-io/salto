@@ -149,38 +149,54 @@ describe('local workspace', () => {
 
   describe('initLocalWorkspace', () => {
     const mockInit = ws.initWorkspace as jest.Mock
+    const mockAdapterCreators: Record<string, Adapter> = {}
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => filename === '/fake/salto.config')
-      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
-        ExistingWorkspaceError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          configTypes: [],
+          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreators,
+        }),
+      ).rejects.toThrow(ExistingWorkspaceError)
     })
 
     it('should throw error if local storage exists', async () => {
       mockExists.mockImplementation((filename: string) => filename.startsWith(getSaltoHome()))
-      await expect(initLocalWorkspace('/fake/tmp/', undefined, [], async () => [])).rejects.toThrow(
-        NotAnEmptyWorkspaceError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          configTypes: [],
+          getCustomReferences: async () => [],
+          adapterCreators: mockAdapterCreator,
+        }),
+      ).rejects.toThrow(NotAnEmptyWorkspaceError)
     })
 
     it('should throw error for invalid name', async () => {
       mockExists.mockResolvedValue(false)
-      await expect(initLocalWorkspace('/fake/tmp/', 'long'.repeat(100), [], async () => [])).rejects.toThrow(
-        errors.InvalidEnvNameError,
-      )
+      await expect(
+        initLocalWorkspace({
+          baseDir: '/fake/tmp/',
+          envName: 'long'.repeat(100),
+          configTypes: [],
+          adapterCreators: mockAdapterCreator,
+        }),
+      ).rejects.toThrow(errors.InvalidEnvNameError)
     })
     it('should call initWorkspace with correct input', async () => {
       const envName = 'env-name'
       mockExists.mockResolvedValue(false)
-      await initLocalWorkspace('.', envName, [], async () => [])
-      expect(mockInit.mock.calls[0][1]).toBe(envName)
-      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][5]
+      await initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator })
+      expect(mockInit.mock.calls[0][0].defaultEnvName).toBe(envName)
+      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][0].envs
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, envName))
-      const uuid = mockInit.mock.calls[0][0]
+      const uuid = mockInit.mock.calls[0][0].uid
       expect(dirStoresBaseDirs).toContain(uuid)
       expect(dirStoresBaseDirs).toContain(path.join(uuid, CREDENTIALS_CONFIG_PATH))
     })
@@ -189,14 +205,18 @@ describe('local workspace', () => {
       it('should call close', async () => {
         mockExists.mockResolvedValue(false)
         mockInit.mockRejectedValue(new Error('oh no!'))
-        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        await expect(
+          initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator }),
+        ).rejects.toThrow(new Error('oh no!'))
         expect(mockClose).toHaveBeenCalledTimes(1)
       })
       it('should call close, and throw the original error, if close throws as well', async () => {
         mockExists.mockResolvedValue(false)
         mockInit.mockRejectedValue(new Error('oh no!'))
         mockClose.mockRejectedValue('close error!')
-        await expect(initLocalWorkspace('.', envName, [], async () => [])).rejects.toThrow(new Error('oh no!'))
+        await expect(
+          initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator }),
+        ).rejects.toThrow(new Error('oh no!'))
         expect(mockClose).toHaveBeenCalledTimes(1)
       })
     })
@@ -247,7 +267,7 @@ describe('local workspace', () => {
         })
 
         expect(mockLoad).toHaveBeenCalledTimes(1)
-        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+        const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][0].environmentsSources
         expect(Object.keys(envSources.sources)).toHaveLength(3)
         expect(mockCreateDirStore).toHaveBeenCalledTimes(13)
         const dirStoresBaseDirs = mockCreateDirStore.mock.calls
@@ -270,15 +290,9 @@ describe('local workspace', () => {
         })
         it('should use the credentials source that was passed as a paramter', async () => {
           expect(mockLoad).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.anything(),
-            credentialSource,
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            expect.anything(),
-            undefined,
-            expect.anything(),
+            expect.objectContaining({
+              credentials: credentialSource,
+            }),
           )
         })
       })
@@ -356,8 +370,8 @@ describe('local workspace', () => {
     beforeAll(() => {
       mockExists.mockResolvedValue(true)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      mockLoad.mockImplementation(async (_config, _adaptersConfig, _credentials, elemSource: EnvironmentsSources) => {
-        wsElemSrcs = elemSource
+      mockLoad.mockImplementation(async config => {
+        wsElemSrcs = config.environmentsSources
         return {
           demoteAll: jest.fn(),
           currentEnv: () => 'default',
@@ -540,7 +554,7 @@ describe('local workspace', () => {
         adapterCreators: mockAdapterCreator,
       })
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
+      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][0].environmentsSources
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(10)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))

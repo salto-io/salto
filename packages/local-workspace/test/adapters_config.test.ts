@@ -35,7 +35,15 @@ describe('adapters local config', () => {
     ;(nacl.naclFilesSource as jest.Mock).mockResolvedValue(mockNaclFilesSource)
     mockNaclFilesSource.load.mockResolvedValue({ changes: [], cacheValid: true })
 
-    await buildLocalAdaptersConfigSource('baseDir', remoteMap.inMemRemoteMapCreator(), true, [], [])
+    await buildLocalAdaptersConfigSource({
+      baseDir: 'baseDir',
+      remoteMapCreator: remoteMap.inMemRemoteMapCreator(),
+      persistent: true,
+      configTypes: [],
+      configOverrides: [],
+      envs: [],
+      adapterCreators: {},
+    })
   })
 
   describe('initialization', () => {

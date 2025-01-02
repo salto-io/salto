@@ -13,15 +13,13 @@ import {
   getChangeData,
   isAdditionChange,
   isInstanceChange,
-  isInstanceElement,
   isModificationChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { inspectValue, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
-import { FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME } from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME } from './constants'
 import { setContextOptionsSplitted } from './context_options_splitted'
 import { getContextAndFieldIds } from '../../common/fields'
 
@@ -84,21 +82,6 @@ const filter: FilterCreator = ({ config, client, paginator, elementsSource }) =>
         elementsSource,
         paginator,
       })
-      // update the ids of added options
-      const addedOptionFullNameToId = _.fromPairs(
-        addChanges.map(getChangeData).map(option => [option.elemID.getFullName(), option.value.id]),
-      )
-      leftoverChanges
-        .map(getChangeData)
-        .filter(isInstanceElement)
-        .filter(relevantInstance => relevantInstance.elemID.typeName === OPTIONS_ORDER_TYPE_NAME)
-        .flatMap(orderInstance => collections.array.makeArray(orderInstance.value.options))
-        .filter(isResolvedReferenceExpression)
-        .forEach(optionRef => {
-          if (addedOptionFullNameToId[optionRef.elemID.getFullName()] !== undefined) {
-            optionRef.value.value.id = addedOptionFullNameToId[optionRef.elemID.getFullName()]
-          }
-        })
     } catch (err) {
       log.error('An error occurred during deployment of custom field context options: %o', err)
       const message = inspectValue(err)

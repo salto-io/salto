@@ -18,12 +18,7 @@ import { hasValidParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
 import { deployChanges } from '../../deployment/standard_deployment'
-import {
-  FIELD_CONTEXT_OPTION_TYPE_NAME,
-  FIELD_CONTEXT_TYPE_NAME,
-  FIELD_TYPE_NAME,
-  OPTIONS_ORDER_TYPE_NAME,
-} from './constants'
+import { FIELD_CONTEXT_OPTION_TYPE_NAME, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { getContextParent } from '../../common/fields'
 
@@ -64,9 +59,7 @@ const filter: FilterCreator = ({ client, config, paginator, elementsSource }) =>
           leftoverChanges
             .map(getChangeData)
             .filter(isInstanceElement)
-            .filter(relevantInstance =>
-              [FIELD_CONTEXT_OPTION_TYPE_NAME, OPTIONS_ORDER_TYPE_NAME].includes(relevantInstance.elemID.typeName),
-            )
+            .filter(relevantInstance => relevantInstance.elemID.typeName === FIELD_CONTEXT_OPTION_TYPE_NAME)
             .forEach(relevantInstance => {
               getContextParent(relevantInstance).value.id = instance.value.id
             })

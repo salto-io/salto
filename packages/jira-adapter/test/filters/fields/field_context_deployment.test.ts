@@ -252,7 +252,6 @@ describe('fieldContextDeployment', () => {
       expect(getParent(optionInstance).value.id).toEqual('newIdcontext')
       expect(getParent(cascadeInstance).value.id).toBeUndefined()
       expect(getParent(getParent(cascadeInstance)).value.id).toEqual('newIdcontext')
-      expect(getParent(orderInstance).value.id).toEqual('newIdcontext')
     })
     it('should keep context changes in leftoverChanges', async () => {
       const { leftoverChanges } = await filter.deploy(changes)

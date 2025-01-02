@@ -254,41 +254,7 @@ describe('ContextOptionsDeployment', () => {
     expect(result.deployResult.errors).toHaveLength(0)
     expect(result.deployResult.appliedChanges).toHaveLength(6)
   })
-  it('should update the ids of order instances references', async () => {
-    connection.post.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        options: [
-          {
-            id: '4',
-            value: 'p1',
-          },
-          {
-            id: '5',
-            value: 'p2',
-          },
-        ],
-      },
-    })
-    const orderType = createEmptyType(OPTIONS_ORDER_TYPE_NAME)
-    const orderInstance1 = new InstanceElement('order1', orderType, {
-      options: [
-        new ReferenceExpression(getChangeData(changes[0]).elemID, _.cloneDeep(getChangeData(changes[0]))),
-        new ReferenceExpression(getChangeData(changes[1]).elemID, _.cloneDeep(getChangeData(changes[1]))),
-      ],
-    })
-    const orderInstance2 = new InstanceElement('order2', orderType, {
-      options: [
-        new ReferenceExpression(getChangeData(changes[2]).elemID, _.cloneDeep(getChangeData(changes[2]))),
-        new ReferenceExpression(getChangeData(changes[3]).elemID, _.cloneDeep(getChangeData(changes[3]))),
-      ],
-    })
-    await filter.deploy(changes.concat([toChange({ after: orderInstance1 }), toChange({ after: orderInstance2 })]))
-    expect(orderInstance1.value.options[0].value.value.id).toEqual('4')
-    expect(orderInstance1.value.options[1].value.value.id).toEqual('5')
-    expect(orderInstance2.value.options[0].value.value.id).toEqual('2option')
-    expect(orderInstance2.value.options[1].value.value.id).toEqual('3option')
-  })
+
   it('should properly handle salto errors', async () => {
     connection.post.mockRejectedValueOnce({
       message: 'error message',
@@ -544,13 +510,6 @@ describe('ContextOptionsDeployment', () => {
       expect(result.leftoverChanges).toHaveLength(5)
       expect(result.deployResult.errors).toHaveLength(0)
       expect(result.deployResult.appliedChanges).toHaveLength(10)
-    })
-    it('should update the ids of order instances references', async () => {
-      await filter.deploy(changes)
-      expect(getChangeData(changes[13]).value.options[0].value.value.id).toEqual('10')
-      expect(getChangeData(changes[13]).value.options[1].value.value.id).toEqual('11')
-      expect(getChangeData(changes[14]).value.options[0].value.value.id).toEqual('20')
-      expect(getChangeData(changes[14]).value.options[1].value.value.id).toEqual('22')
     })
     it('should add id to additions', async () => {
       await filter.deploy(changes)

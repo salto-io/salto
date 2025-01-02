@@ -318,6 +318,79 @@ describe('handleHiddenChanges', () => {
     })
   })
 
+  describe('Field annotation added for existing field', () => {
+    it('should hide existing fields when their added annotation defines them as hidden', async () => {
+      const objectTypeBefore = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {},
+      })
+      const objectTypeAfter = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          stringValue: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const instance = new InstanceElement('instance', objectTypeBefore, {
+        stringValue: 'hidden',
+      })
+      const { stringValue } = objectTypeAfter.fields
+      const change = toDetailedChangeFromBaseChange(toChange({ after: stringValue }))
+      const { hidden, visible } = await handleHiddenChanges(
+        [change],
+        mockState([objectTypeAfter, instance]),
+        createInMemoryElementSource([objectTypeAfter, instance]),
+      )
+
+      expect(hidden).toHaveLength(0)
+      expect(visible).toHaveLength(2)
+      expect(visible).toContainEqual(
+        expect.objectContaining({
+          id: instance.elemID.createNestedID('stringValue'),
+          action: 'remove',
+        }),
+      )
+    })
+  })
+
+  describe('Field annotation removed for existing field', () => {
+    it('should unhide existing fields when their field annotation is removed and defined them as hidden', async () => {
+      const objectTypeBefore = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          stringValue: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
+      const objectTypeAfter = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {},
+      })
+      const instance = new InstanceElement('instance', objectTypeAfter, {
+        stringValue: 'hidden',
+      })
+      const instanceVisible = new InstanceElement('instance', objectTypeBefore)
+      const { stringValue } = objectTypeBefore.fields
+      const change = toDetailedChangeFromBaseChange(toChange({ before: stringValue }))
+      const { visible } = await handleHiddenChanges(
+        [change],
+        mockState([objectTypeAfter, instance]),
+        createInMemoryElementSource([objectTypeAfter, instanceVisible]),
+      )
+
+      expect(visible).toContainEqual(
+        expect.objectContaining({
+          id: instance.elemID.createNestedID('stringValue'),
+          action: 'add',
+        }),
+      )
+    })
+  })
+
   describe('hidden_string in instance annotations', () => {
     let instance: InstanceElement
     let instanceType: ObjectType
@@ -859,128 +932,128 @@ describe('handleHiddenChanges', () => {
       expect(changes).toBeEmpty()
     })
   })
+})
 
-  describe('getElemHiddenParts', () => {
-    describe('ObjectType attribute handling', () => {
-      let elementsSource: ReadOnlyElementsSource
-      let testElement: ObjectType
-      let annotationType: ObjectType
+describe('getElemHiddenParts', () => {
+  describe('ObjectType attribute handling', () => {
+    let elementsSource: ReadOnlyElementsSource
+    let testElement: ObjectType
+    let annotationType: ObjectType
 
-      beforeEach(() => {
-        annotationType = new ObjectType({
-          elemID: new ElemID('test', 'annotationType'),
-        })
-        testElement = new ObjectType({
-          elemID: new ElemID('test', 'type'),
-          annotations: {
-            value1: 'test',
-            value2: 'test',
-          },
-          annotationRefsOrTypes: {
-            value1: annotationType,
-            value2: BuiltinTypes.STRING,
-          },
-        })
-        elementsSource = buildElementsSourceFromElements([annotationType, testElement])
+    beforeEach(() => {
+      annotationType = new ObjectType({
+        elemID: new ElemID('test', 'annotationType'),
       })
-
-      it('should not hide annotation value of type that is _hidden', async () => {
-        annotationType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-        const result = await getElementHiddenParts(testElement, elementsSource)
-        expect(result).toBeUndefined()
+      testElement = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        annotations: {
+          value1: 'test',
+          value2: 'test',
+        },
+        annotationRefsOrTypes: {
+          value1: annotationType,
+          value2: BuiltinTypes.STRING,
+        },
       })
-
-      it('should hide annotation value of type that is _hidden_value', async () => {
-        annotationType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-        const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
-        expect(result).toBeDefined()
-        expect(result.annotations).toEqual({ value1: 'test' })
-      })
+      elementsSource = buildElementsSourceFromElements([annotationType, testElement])
     })
 
-    describe('Object Type Fields Handling', () => {
-      let elementsSource: ReadOnlyElementsSource
-      let testElement: ObjectType
+    it('should not hide annotation value of type that is _hidden', async () => {
+      annotationType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+      const result = await getElementHiddenParts(testElement, elementsSource)
+      expect(result).toBeUndefined()
+    })
 
-      beforeEach(() => {
-        const fieldWithPartiallyHiddenAnnotations = new ObjectType({
-          elemID: new ElemID('test', 'fieldWithPartiallyHiddenAnnotations'),
-          annotationRefsOrTypes: {
-            stringValue: BuiltinTypes.STRING,
-            hiddenStringValue: BuiltinTypes.HIDDEN_STRING,
-          },
-        })
-        const hiddenFieldWithNoHiddenAnnotations = new ObjectType({
-          elemID: new ElemID('test', 'hiddenFieldWithNoHiddenAnnotations'),
-          annotations: {
-            [CORE_ANNOTATIONS.HIDDEN]: true,
-          },
-          annotationRefsOrTypes: {
-            stringValue: BuiltinTypes.STRING,
-            booleanValue: BuiltinTypes.BOOLEAN,
-          },
-        })
-        const hiddenValueFieldWithNoHiddenAnnotations = new ObjectType({
-          elemID: new ElemID('test', 'hiddenValueFieldWithNoHiddenAnnotations'),
-          annotations: {
-            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-          },
-          annotationRefsOrTypes: {
-            stringValue: BuiltinTypes.STRING,
-            booleanValue: BuiltinTypes.BOOLEAN,
-          },
-        })
+    it('should hide annotation value of type that is _hidden_value', async () => {
+      annotationType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+      const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
+      expect(result).toBeDefined()
+      expect(result.annotations).toEqual({ value1: 'test' })
+    })
+  })
 
-        testElement = new ObjectType({
-          elemID: new ElemID('test', 'type'),
-          fields: {
-            fieldWithPartiallyHiddenAnnotations: {
-              refType: fieldWithPartiallyHiddenAnnotations,
-              annotations: {
-                stringValue: 'test',
-                hiddenStringValue: 'testHidden',
-              },
-            },
-            hiddenFieldWithNoHiddenAnnotations: {
-              refType: hiddenFieldWithNoHiddenAnnotations,
-              annotations: {
-                stringValue: 'test',
-                booleanValue: true,
-              },
-            },
-            hiddenValueFieldWithNoHiddenAnnotations: {
-              refType: hiddenValueFieldWithNoHiddenAnnotations,
-              annotations: {
-                stringValue: 'test',
-                booleanValue: true,
-              },
-            },
-          },
-        })
-        elementsSource = buildElementsSourceFromElements([
-          testElement,
-          hiddenFieldWithNoHiddenAnnotations,
-          hiddenFieldWithNoHiddenAnnotations,
-          hiddenValueFieldWithNoHiddenAnnotations,
-        ])
+  describe('Object Type Fields Handling', () => {
+    let elementsSource: ReadOnlyElementsSource
+    let testElement: ObjectType
+
+    beforeEach(() => {
+      const fieldWithPartiallyHiddenAnnotations = new ObjectType({
+        elemID: new ElemID('test', 'fieldWithPartiallyHiddenAnnotations'),
+        annotationRefsOrTypes: {
+          stringValue: BuiltinTypes.STRING,
+          hiddenStringValue: BuiltinTypes.HIDDEN_STRING,
+        },
+      })
+      const hiddenFieldWithNoHiddenAnnotations = new ObjectType({
+        elemID: new ElemID('test', 'hiddenFieldWithNoHiddenAnnotations'),
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN]: true,
+        },
+        annotationRefsOrTypes: {
+          stringValue: BuiltinTypes.STRING,
+          booleanValue: BuiltinTypes.BOOLEAN,
+        },
+      })
+      const hiddenValueFieldWithNoHiddenAnnotations = new ObjectType({
+        elemID: new ElemID('test', 'hiddenValueFieldWithNoHiddenAnnotations'),
+        annotations: {
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        },
+        annotationRefsOrTypes: {
+          stringValue: BuiltinTypes.STRING,
+          booleanValue: BuiltinTypes.BOOLEAN,
+        },
       })
 
-      it('should return ObjectType with all of the hiddenValueFieldWithNoHiddenAnnotations and the specific annotations from fieldWithPartiallyHiddenAnnotations', async () => {
-        const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
-        expect(result).toBeDefined()
-        const { fields } = result
-        const {
-          fieldWithPartiallyHiddenAnnotations,
-          hiddenFieldWithNoHiddenAnnotations,
-          hiddenValueFieldWithNoHiddenAnnotations,
-        } = fields
-        expect(fieldWithPartiallyHiddenAnnotations).toBeDefined()
-        expect(hiddenFieldWithNoHiddenAnnotations).toBeDefined()
-        expect(hiddenValueFieldWithNoHiddenAnnotations).toBeDefined()
-        expect(fieldWithPartiallyHiddenAnnotations.annotations).toEqual({ hiddenStringValue: 'testHidden' })
-        expect(hiddenFieldWithNoHiddenAnnotations.annotations).toEqual({})
-        expect(hiddenValueFieldWithNoHiddenAnnotations.annotations).toEqual({})
+      testElement = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          fieldWithPartiallyHiddenAnnotations: {
+            refType: fieldWithPartiallyHiddenAnnotations,
+            annotations: {
+              stringValue: 'test',
+              hiddenStringValue: 'testHidden',
+            },
+          },
+          hiddenFieldWithNoHiddenAnnotations: {
+            refType: hiddenFieldWithNoHiddenAnnotations,
+            annotations: {
+              stringValue: 'test',
+              booleanValue: true,
+            },
+          },
+          hiddenValueFieldWithNoHiddenAnnotations: {
+            refType: hiddenValueFieldWithNoHiddenAnnotations,
+            annotations: {
+              stringValue: 'test',
+              booleanValue: true,
+            },
+          },
+        },
       })
+      elementsSource = buildElementsSourceFromElements([
+        testElement,
+        hiddenFieldWithNoHiddenAnnotations,
+        hiddenFieldWithNoHiddenAnnotations,
+        hiddenValueFieldWithNoHiddenAnnotations,
+      ])
+    })
+
+    it('should return ObjectType with all of the hiddenValueFieldWithNoHiddenAnnotations and the specific annotations from fieldWithPartiallyHiddenAnnotations', async () => {
+      const result = (await getElementHiddenParts(testElement, elementsSource)) as ObjectType
+      expect(result).toBeDefined()
+      const { fields } = result
+      const {
+        fieldWithPartiallyHiddenAnnotations,
+        hiddenFieldWithNoHiddenAnnotations,
+        hiddenValueFieldWithNoHiddenAnnotations,
+      } = fields
+      expect(fieldWithPartiallyHiddenAnnotations).toBeDefined()
+      expect(hiddenFieldWithNoHiddenAnnotations).toBeDefined()
+      expect(hiddenValueFieldWithNoHiddenAnnotations).toBeDefined()
+      expect(fieldWithPartiallyHiddenAnnotations.annotations).toEqual({ hiddenStringValue: 'testHidden' })
+      expect(hiddenFieldWithNoHiddenAnnotations.annotations).toEqual({})
+      expect(hiddenValueFieldWithNoHiddenAnnotations.annotations).toEqual({})
     })
   })
 })

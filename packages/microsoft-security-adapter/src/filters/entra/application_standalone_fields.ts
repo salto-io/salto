@@ -115,9 +115,10 @@ const extractUniqueParentsFromInstanceChanges = (
   instanceChanges: Change<InstanceElement>[],
 ): { uniqueParents: InstanceElement[]; errors: SaltoElementError[] } => {
   const parentsOrErrors = instanceChanges.map((change): InstanceElement | SaltoElementError => {
-    const parent = getParents(getChangeData(change))[0]?.value
-    if (parent === undefined || !isInstanceElement(parent)) {
-      log.error('%s has no parent or its parent is not an instance element', getChangeData(change).elemID.getFullName())
+    try {
+      return getParent(getChangeData(change))
+    } catch (e) {
+      log.error('Failed to get parent for %s: %o', getChangeData(change).elemID.getFullName(), e)
       const message = `Expected ${getChangeData(change).elemID.typeName} to have an application or service principal parent`
       return {
         elemID: getChangeData(change).elemID,
@@ -126,7 +127,6 @@ const extractUniqueParentsFromInstanceChanges = (
         severity: 'Error',
       }
     }
-    return parent
   })
   const [parents, errors] = _.partition(parentsOrErrors, isInstanceElement)
   return {

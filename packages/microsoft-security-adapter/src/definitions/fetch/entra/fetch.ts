@@ -61,7 +61,7 @@ const {
   OAUTH2_PERMISSION_SCOPES_FIELD_NAME,
 } = entraConstants
 
-const APP_ROLES_FIELD_CUSTOMIZATIONS = {
+const APP_ROLES_STANDALONE_DEFINITION = {
   standalone: {
     typeName: APP_ROLE_TYPE_NAME,
     nestPathUnderParent: true,
@@ -69,7 +69,7 @@ const APP_ROLES_FIELD_CUSTOMIZATIONS = {
   },
 }
 
-const OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS = {
+const OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION = {
   standalone: {
     typeName: OAUTH2_PERMISSION_SCOPE_TYPE_NAME,
     nestPathUnderParent: true,
@@ -270,9 +270,9 @@ const graphV1Customizations: FetchCustomizations = {
         appId: {
           hide: true,
         },
-        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_STANDALONE_DEFINITION,
         // This is a workaround for SALTO-7146
-        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS,
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION,
       },
     },
   },
@@ -282,7 +282,7 @@ const graphV1Customizations: FetchCustomizations = {
     },
     element: {
       fieldCustomizations: {
-        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS,
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION,
       },
     },
   },
@@ -369,9 +369,9 @@ const graphV1Customizations: FetchCustomizations = {
             referenceFromParent: false,
           },
         },
-        [APP_ROLES_FIELD_NAME]: APP_ROLES_FIELD_CUSTOMIZATIONS,
+        [APP_ROLES_FIELD_NAME]: APP_ROLES_STANDALONE_DEFINITION,
         // This is a workaround for SALTO-7146
-        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_CUSTOMIZATIONS,
+        [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]: OAUTH2_PERMISSION_SCOPE_STANDALONE_DEFINITION,
         [APP_ROLE_ASSIGNMENT_FIELD_NAME]: {
           standalone: {
             typeName: SERVICE_PRINCIPAL_APP_ROLE_ASSIGNMENT_TYPE_NAME,
@@ -413,8 +413,9 @@ const graphV1Customizations: FetchCustomizations = {
         isTopLevel: true,
         elemID: {
           extendsParent: true,
-          parts: [{ fieldName: 'value' }, { fieldName: 'type' }],
+          parts: [{ fieldName: 'value' }],
         },
+        alias: { aliasComponents: [NAME_ID_FIELD] },
       },
       fieldCustomizations: ID_FIELD_TO_HIDE,
     },

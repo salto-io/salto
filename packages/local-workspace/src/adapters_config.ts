@@ -61,9 +61,6 @@ const getAdapterConfigsPerAccount = async (
   envs: EnvConfig[],
   adapterCreators: Record<string, Adapter>,
 ): Promise<ObjectType[]> => {
-  if (_.isEmpty(envs) || _.isEmpty(Object.keys(adapterCreators))) {
-    throw new Error('getAdapterConfigsPerAccount should not be called with empty params')
-  }
   const configTypesByAccount = Object.fromEntries(
     Object.entries(
       _.mapValues(adapterCreators, adapterCreator =>
@@ -148,7 +145,7 @@ export async function buildLocalAdaptersConfigSource(
   inputRemoteMapCreator?: remoteMap.RemoteMapCreator,
   inputPersistent?: boolean,
   inputConfigTypes?: ObjectType[],
-  inputConfigOverrides: DetailedChange[] = [],
+  inputConfigOverrides?: DetailedChange[],
 ): Promise<acs.AdaptersConfigSource> {
   const {
     baseDir,

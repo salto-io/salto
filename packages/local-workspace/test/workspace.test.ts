@@ -157,7 +157,6 @@ describe('local workspace', () => {
         initLocalWorkspace({
           baseDir: '/fake/tmp/',
           configTypes: [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreators,
         }),
       ).rejects.toThrow(ExistingWorkspaceError)
@@ -169,7 +168,6 @@ describe('local workspace', () => {
         initLocalWorkspace({
           baseDir: '/fake/tmp/',
           configTypes: [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         }),
       ).rejects.toThrow(NotAnEmptyWorkspaceError)
@@ -191,7 +189,7 @@ describe('local workspace', () => {
       mockExists.mockResolvedValue(false)
       await initLocalWorkspace({ baseDir: '.', envName, configTypes: [], adapterCreators: mockAdapterCreator })
       expect(mockInit.mock.calls[0][0].defaultEnvName).toBe(envName)
-      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][0].envs
+      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][0].environmentSources
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0]).map(params => toWorkspaceRelative(params))

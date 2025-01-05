@@ -72,6 +72,7 @@ import {
   deserializeReferenceSourcesEntries,
   getCustomReferencesImplementation,
 } from '../../src/workspace/workspace'
+import * as workspaceToMock from '../../src/workspace/workspace'
 import {
   DeleteCurrentEnvError,
   UnknownEnvError,
@@ -3603,6 +3604,11 @@ salesforce.staticFile staticFileInstance {
         // Case where the target is baseId
         { source: anotherSourceInstance.elemID, target: targetElementId, type: 'weak', sourceScope: 'value' },
       ]
+      jest.spyOn(workspaceToMock, 'getCustomReferencesImplementation').mockImplementation(
+        () =>
+          async (..._args) =>
+            customRefs,
+      )
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3612,7 +3618,6 @@ salesforce.staticFile staticFileInstance {
         undefined,
         elementSources,
         undefined,
-        async (..._args) => customRefs,
       )
     })
 
@@ -3692,6 +3697,11 @@ salesforce.staticFile staticFileInstance {
           type: 'strong',
         },
       ]
+      jest.spyOn(workspaceToMock, 'getCustomReferencesImplementation').mockImplementation(
+        () =>
+          async (..._args) =>
+            customRefs,
+      )
       workspace = await createWorkspace(
         undefined,
         undefined,
@@ -3701,7 +3711,6 @@ salesforce.staticFile staticFileInstance {
         undefined,
         elementSources,
         undefined,
-        async (..._args) => customRefs,
       )
     })
 

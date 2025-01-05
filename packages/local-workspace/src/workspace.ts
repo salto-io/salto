@@ -243,7 +243,6 @@ export async function loadLocalWorkspace({
   stateStaticFilesSource,
   ignoreFileChanges = false,
   getConfigTypes,
-  getCustomReferences,
   adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
@@ -285,7 +284,6 @@ export async function loadLocalWorkspace({
       ignoreFileChanges,
       persistent,
       mergedRecoveryMode: undefined,
-      getCustomReferences,
       adapterCreators,
     })
 
@@ -336,7 +334,6 @@ type InitLocalWorkspaceParams = {
   baseDir: string
   envName?: string
   configTypes?: ObjectType[]
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   adapterCreators: Record<string, Adapter>
 }
@@ -347,7 +344,7 @@ const getInitLocalWorkspace: (
   configTypes?: ObjectType[],
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
-) => InitLocalWorkspaceParams = (
+) => InitLocalWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
   baseDirOrParams,
   envName,
   configTypes,
@@ -392,7 +389,6 @@ export async function initLocalWorkspace(
     envName = 'default',
     adapterCreators,
     configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
-    getCustomReferences,
     stateStaticFilesSource,
   } = getInitLocalWorkspace(
     inputBaseDir,
@@ -445,7 +441,6 @@ export async function initLocalWorkspace(
       credentials,
       environmentSources: elemSources,
       remoteMapCreator,
-      getCustomReferences,
       adapterCreators,
     })
     return workspace

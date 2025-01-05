@@ -134,7 +134,7 @@ export const createWorkspace = async (
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
   remoteMapCreator?: RemoteMapCreator,
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc,
+  _getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   persistent = true,
 ): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? inMemRemoteMapCreator()
@@ -162,7 +162,6 @@ export const createWorkspace = async (
       },
     },
     remoteMapCreator: mapCreator,
-    getCustomReferences,
     adapterCreators: {},
   })
 }

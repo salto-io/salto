@@ -547,7 +547,6 @@ type loadWorkspaceParams = {
   ignoreFileChanges?: boolean
   persistent?: boolean
   mergedRecoveryMode?: MergedRecoveryMode
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
 }
 
@@ -561,7 +560,7 @@ const getLoadWorkspaceParams: (
   persistent?: boolean,
   mergedRecoveryMode?: MergedRecoveryMode,
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
-) => loadWorkspaceParams = (
+) => loadWorkspaceParams & { getCustomReferences?: WorkspaceGetCustomReferencesFunc } = (
   configOrArgs,
   adaptersConfig,
   credentials,
@@ -1521,7 +1520,6 @@ export async function loadWorkspace(
         ignoreFileChanges,
         persistent,
         mergedRecoveryMode,
-        getCustomReferences,
         adapterCreators,
       })
     },
@@ -1744,7 +1742,6 @@ type initWorkspaceParams = {
   credentials: ConfigSource
   environmentSources: EnvironmentsSources
   remoteMapCreator: RemoteMapCreator
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
 }
 
@@ -1824,7 +1821,6 @@ export async function initWorkspace(
     credentials,
     environmentSources,
     remoteMapCreator,
-    getCustomReferences,
     adapterCreators,
   } = getInitWorkspaceParams(
     inputUid,
@@ -1848,7 +1844,6 @@ export async function initWorkspace(
     credentials,
     environmentsSources: environmentSources,
     remoteMapCreator,
-    getCustomReferences,
     adapterCreators,
   })
 }

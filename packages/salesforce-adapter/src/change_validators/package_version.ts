@@ -13,8 +13,11 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
+  isInstanceElement,
+  isReferenceExpression,
   Value,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import {
   APEX_CLASS_METADATA_TYPE,
   APEX_COMPONENT_METADATA_TYPE,
@@ -23,25 +26,39 @@ import {
   EMAIL_TEMPLATE_METADATA_TYPE,
 } from '../constants'
 
-const TYPES_TO_VALIDATE_TO_EXACT_VERSION = new Map<string, boolean>([
-  [APEX_CLASS_METADATA_TYPE, false],
-  [APEX_PAGE_METADATA_TYPE, false],
-  [APEX_COMPONENT_METADATA_TYPE, false],
-  [EMAIL_TEMPLATE_METADATA_TYPE, false],
-  [APEX_TRIGGER_METADATA_TYPE, true],
-])
-
-const isOfTypeToValidate = (instance: InstanceElement): boolean =>
-  Array.from(TYPES_TO_VALIDATE_TO_EXACT_VERSION.keys()).some(type => type === instance.getTypeSync().elemID.typeName)
-
-const getVersionNumberSplitted = (namespace: Value): Number => {
-  const numberAsNumber = Number(namespace.resValue.value.versionNumber)
-  return numberAsNumber !== undefined ? numberAsNumber : -1
+export type Def = {
+  exactVersion: boolean
 }
 
-const convertNumStringsToNumber = (major: string, minor: string): Number => {
+export const TYPES_TO_IS_DEMANDING_EXACT_VERSION = new Map<string, Def>([
+  [APEX_CLASS_METADATA_TYPE, { exactVersion: false }],
+  [APEX_PAGE_METADATA_TYPE, { exactVersion: false }],
+  [APEX_COMPONENT_METADATA_TYPE, { exactVersion: false }],
+  [EMAIL_TEMPLATE_METADATA_TYPE, { exactVersion: false }],
+  [APEX_TRIGGER_METADATA_TYPE, { exactVersion: true }],
+])
+
+type PackageVersionInstanceElement = InstanceElement & {
+  versionNumber: string
+}
+
+const isPackageVersionInstanceElement = (element: InstanceElement): element is PackageVersionInstanceElement =>
+  isInstanceElement(element) && _.isString(_.get(element.value, ['versionNumber']))
+
+const isOfTypeToValidate = (instance: InstanceElement): boolean =>
+  Array.from(TYPES_TO_IS_DEMANDING_EXACT_VERSION.keys()).some(type => type === instance.getTypeSync().elemID.typeName)
+
+const getVersionNumber = (namespace: Value): Number | undefined => {
+  if (!isReferenceExpression(namespace) || !isPackageVersionInstanceElement(namespace.value)) {
+    return undefined
+  }
+  const numberAsNumber = Number(namespace.value.value.versionNumber)
+  return !Number.isNaN(numberAsNumber) ? numberAsNumber : undefined
+}
+
+const convertNumStringsToNumber = (major: string, minor: string): Number | undefined => {
   const num = Number(`${major}.${minor}`)
-  return num !== undefined ? num : -1
+  return !Number.isNaN(num) ? num : undefined
 }
 
 const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] => {
@@ -52,25 +69,28 @@ const createPackageVersionErrors = (instance: InstanceElement): ChangeError[] =>
   instance.value.packageVersions.forEach(
     (packageVersion: { majorNumber: string; minorNumber: string; namespace: Value }, index: Number) => {
       const { majorNumber, minorNumber, namespace } = packageVersion
-      const packageVersionNumber = getVersionNumberSplitted(namespace)
+      const packageVersionNumber = getVersionNumber(namespace)
       const instanceVersion = convertNumStringsToNumber(majorNumber, minorNumber)
-      if (
-        TYPES_TO_VALIDATE_TO_EXACT_VERSION.get(instance.elemID.typeName) &&
-        instanceVersion !== packageVersionNumber
-      ) {
-        errors.push({
-          elemID: instance.elemID.createNestedID('packageVersions', String(index)),
-          severity: 'Warning',
-          message: "Cannot deploy instances with different package version than target environment's package version",
-          detailedMessage: `${namespace.resValue.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
-        })
-      } else if (instanceVersion > packageVersionNumber) {
-        errors.push({
-          elemID: instance.elemID.createNestedID('packageVersions', String(index)),
-          severity: 'Warning',
-          message: "Cannot deploy instances with greater package version than target environment's package version",
-          detailedMessage: `${namespace.resValue.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
-        })
+      if (instanceVersion !== undefined && packageVersionNumber !== undefined) {
+        // continue (discuss with tamtamir)
+        if (
+          TYPES_TO_IS_DEMANDING_EXACT_VERSION.get(instance.elemID.typeName)?.exactVersion &&
+          instanceVersion !== packageVersionNumber
+        ) {
+          errors.push({
+            elemID: instance.elemID.createNestedID('packageVersions', String(index)),
+            severity: 'Warning',
+            message: "Cannot deploy instances with different package version than target environment's package version",
+            detailedMessage: `${namespace.resValue.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
+          })
+        } else if (instanceVersion > packageVersionNumber) {
+          errors.push({
+            elemID: instance.elemID.createNestedID('packageVersions', String(index)),
+            severity: 'Warning',
+            message: "Cannot deploy instances with greater package version than target environment's package version",
+            detailedMessage: `${namespace.resValue.value.fullName}'s version at the target environment is ${packageVersionNumber}, while ${instanceVersion} at the instance`,
+          })
+        }
       }
     },
   )

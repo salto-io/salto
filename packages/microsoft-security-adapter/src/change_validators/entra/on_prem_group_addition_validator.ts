@@ -7,8 +7,19 @@
  */
 
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
 import { entraConstants } from '../../constants'
+
+// If onPremisesSyncEnabled is defined, it means the group was originally (or is currently) synced from an on-premises directory.
+// In any case, we block the creation of such groups, as the created group will differ from the original on-premises group.
+const isOnPremGroup = (instance: InstanceElement): boolean =>
+  _.get(instance.value, 'onPremisesSyncEnabled') !== undefined
 
 /*
  * Validates that on-premises groups are not created. Returns an error for each new group with onPremisesSyncEnabled set.
@@ -20,9 +31,7 @@ export const onPremGroupAdditionValidator: ChangeValidator = async changes => {
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === entraConstants.GROUP_TYPE_NAME)
-    // If onPremisesSyncEnabled is set to false it means this group was originally synced from an on-premises directory but is no longer synced.
-    // We still block the creation of such groups, as the created group will still differ from the original on-premises group.
-    .filter(instance => _.get(instance.value, 'onPremisesSyncEnabled') !== undefined)
+    .filter(isOnPremGroup)
 
   return onPremGroupAdditions.map(instance => ({
     elemID: instance.elemID,

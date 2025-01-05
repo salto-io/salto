@@ -43,7 +43,7 @@ describe(onPremGroupAdditionValidator.name, () => {
           const groupType = new ObjectType({
             elemID: new ElemID(ADAPTER_NAME, entraConstants.GROUP_TYPE_NAME),
           })
-          const group = new InstanceElement('testGroup', groupType, { onPremisesSyncEnabled: true })
+          const group = new InstanceElement('testGroup', groupType, { onPremisesSyncEnabled })
           const changes =
             changeType === 'modification'
               ? [

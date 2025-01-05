@@ -233,12 +233,12 @@ const isAttributeChangeToNotHidden = (change: DetailedChange, hiddenValue: boole
   isRemovalOrModificationChange(change) &&
   change.data.before === true
 
-const isFieldAnnotationWithHiddenValueAdded = (change: DetailedChange): boolean =>
+const isFieldAdditionWithHiddenValue = (change: DetailedChange): boolean =>
   isFieldChange(change) &&
   isAdditionChange(change) &&
   change.data.after?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
 
-const isFieldAnnotationWithHiddenValueRemoved = (change: DetailedChange): boolean =>
+const isFieldRemovalWithHiddenValue = (change: DetailedChange): boolean =>
   isFieldChange(change) &&
   isRemovalChange(change) &&
   change.data.before?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
@@ -248,12 +248,15 @@ const isHiddenAttributeChange = (change: DetailedChange, hiddenValue: boolean): 
   change.id.nestingLevel === 1 &&
   (isAttributeChangeToHidden(change, hiddenValue) || isAttributeChangeToNotHidden(change, hiddenValue))
 
+const isFieldModificationWithHiddenValue = (change: DetailedChange): boolean =>
+  change.id.idType === 'field' &&
+  change.id.nestingLevel === 2 &&
+  (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))
+
 const isHiddenChangeOnField = (change: DetailedChange): boolean =>
-  (change.id.idType === 'field' &&
-    change.id.nestingLevel === 2 &&
-    (isAttributeChangeToHidden(change, true) || isAttributeChangeToNotHidden(change, true))) ||
-  isFieldAnnotationWithHiddenValueAdded(change) ||
-  isFieldAnnotationWithHiddenValueRemoved(change)
+  isFieldModificationWithHiddenValue(change) ||
+  isFieldAdditionWithHiddenValue(change) ||
+  isFieldRemovalWithHiddenValue(change)
 
 const isTopLevelModificationWithHiddenChange = <T>(
   change: DetailedChange<T>,
@@ -391,7 +394,7 @@ const groupAnnotationIdsByParentAndName = (ids: ElemID[]): Record<string, Set<st
 const getChangeParentIdsByHideAction = (changes: DetailedChange[]): { hide: Set<string>; unhide: Set<string> } => {
   const [hideChanges, unhideChanges] = _.partition(
     changes,
-    c => isAttributeChangeToHidden(c, true) || isFieldAnnotationWithHiddenValueAdded(c),
+    c => isAttributeChangeToHidden(c, true) || isFieldAdditionWithHiddenValue(c),
   )
   return {
     hide: new Set(

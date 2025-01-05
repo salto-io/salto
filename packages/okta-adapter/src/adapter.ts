@@ -61,7 +61,6 @@ import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
 import schemaDeploymentFilter from './filters/schema_deployment'
 import appLogoFilter from './filters/app_logo'
-import brandThemeRemovalFilter from './filters/brand_theme_removal'
 import brandThemeFilesFilter from './filters/brand_theme_files'
 import groupMembersFilter from './filters/group_members'
 import unorderedListsFilter from './filters/unordered_lists'
@@ -117,7 +116,6 @@ const DEFAULT_FILTERS = [
   appUserSchemaAdditionAndRemovalFilter,
   schemaDeploymentFilter,
   appLogoFilter,
-  brandThemeRemovalFilter,
   brandThemeFilesFilter,
   fieldReferencesFilter,
   // should run after fieldReferencesFilter

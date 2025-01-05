@@ -12,7 +12,8 @@ import { Values } from '@salto-io/adapter-api'
 import { PARENT_ID_FIELD_NAME } from '../../../../constants'
 import { AdjustFunctionSingle } from '../types'
 
-// The parent_id field is not deployable and is added during fetch for internal use
+// This is the reverse of addParentIdToStandaloneFields.
+// The parent_id field is not deployable and is added during fetch for internal use.
 export const omitParentIdFromPathAdjustCreator: (...fieldPath: string[]) => AdjustFunctionSingle =
   (...fieldPath) =>
   async ({ value, typeName }) => {

@@ -14,6 +14,8 @@ import { PARENT_ID_FIELD_NAME } from '../../../../constants'
 /*
  * Add parent_id to fields that will be extracted from the parent object.
  * Ensures uniqueness in serviceId for fields whose IDs uniqueness is parent-contextual.
+ * @param fieldPath - the path to the field in the parent object
+ * @param value - the parent object
  */
 export const addParentIdToStandaloneFields = ({
   fieldPath,

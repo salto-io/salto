@@ -62,6 +62,9 @@ const getPermissionScopeFieldPath = (parentTypeName: string): string[] =>
     ? [API_FIELD_NAME, OAUTH2_PERMISSION_SCOPES_FIELD_NAME]
     : [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]
 
+// Remove duplicated instances of EntraAppRole or EntraOAuth2PermissionScope if there are multiple instances with the same elemID
+// We prefer to keep the standalone instances with the application parent, if it exists,
+// since attempting to deploy it as part of the Service Principal will fail due to inconsistencies with the application.
 const removeDuplicatedInstances = async (elements: Element[]): Promise<void> => {
   const potentiallyDuplicatedInstances = elements
     .map((elem, index) => ({ elem, index }))
@@ -72,8 +75,6 @@ const removeDuplicatedInstances = async (elements: Element[]): Promise<void> => 
   ).filter(instances => instances.length > 1)
 
   const instancesToRemove = duplicatedInstances.flatMap(instances => {
-    // We prefer to keep the standalone instances with the application parent, if it exists,
-    // since attempting to deploy it as part of the Service Principal will fail due to inconsistencies with the application.
     const instanceWithApplicationParentIdx = instances.findIndex(
       ({ elem }) => getParents(elem)[0]?.elemID.typeName === APPLICATION_TYPE_NAME,
     )
@@ -98,6 +99,8 @@ const removeDuplicatedInstances = async (elements: Element[]): Promise<void> => 
   indicesToRemove.sort((a, b) => b - a).forEach(index => elements.splice(index, 1))
 }
 
+// Extract unique parents from standalone fields changes.
+// If no parent is found, we return an error for each standalone field.
 const extractUniqueParentsFromStandaloneFieldsChanges = (
   standaloneFieldsChanges: Change<InstanceElement>[],
 ): { uniqueParents: InstanceElement[]; errors: SaltoElementError[] } => {
@@ -122,6 +125,12 @@ const extractUniqueParentsFromStandaloneFieldsChanges = (
   }
 }
 
+// Partition changes into:
+// - standalone fields changes (changes of EntraAppRole or EntraOAuth2PermissionScope)
+// - existing parent changes (changes in the parent of the standalone fields)
+// - parents with standalone fields changes (unique parents of standalone fields changes, either with or without changes)
+// - other changes (changes that are not standalone fields or their parents)
+// - instancesWithNoParentErrors (errors for standalone fields with no parent)
 const partitionChanges = (
   changes: Change[],
 ): {
@@ -153,8 +162,8 @@ const partitionChanges = (
   }
 }
 
-// We must specify an id for each standalone field on creation.
-// We should also make sure to manually set the same id for their corresponding changes, to update the nacls correctly.
+// We must specify an id for each standalone field on the creation request.
+// We should also make sure to manually set the same id for their corresponding changes, to update the nacls properly.
 const addIdToStandaloneFields = ({
   standaloneFieldsChanges,
   standaloneFieldsInstances,
@@ -180,6 +189,8 @@ const addIdToStandaloneFields = ({
   })
 }
 
+// Update the parent change with the standalone fields.
+// The standalone fields are deployed as part of the parent, so we need to include them in the parent change.
 const updateParentChangeWithStandaloneFields = ({
   parentChange,
   standaloneFields,
@@ -253,6 +264,9 @@ const revertChangesToParent = (parentChange: Change): void => {
   })
 }
 
+// Calculate the changes to deploy:
+// The standalone fields are deployed as part of the parent, so we need to include them in the parent change.
+// We either modify the existing parent change or create a new (modification) one if there isn't a change for the parent.
 const getChangesToDeploy = async ({
   standaloneFieldsChanges,
   existingParentChanges,
@@ -315,6 +329,9 @@ const getChangesToDeploy = async ({
   return parentChangesToDeploy
 }
 
+// Calculate the deploy result:
+// The deploy request only includes the parent changes, so we need to add the standalone fields changes to the result, if their parent change was applied.
+// We also need to filter applied parent changes that didn't originally have changes.
 const calculateDeployResult = ({
   deployResult: { errors, appliedChanges: appliedParentChanges },
   standaloneFieldsChanges,
@@ -348,7 +365,7 @@ const calculateDeployResult = ({
 
 /*
  * Add parent_id to the newly added standalone fields.
- * This is needed to ensures uniqueness in serviceId for those fields, whose IDs uniqueness is parent-contextual.
+ * This is needed to ensure uniqueness in serviceId for those fields, whose IDs uniqueness is parent-contextual.
  */
 const addParentIdToChanges = async (changes: Change[]): Promise<void> => {
   const relevantChanges = changes.filter(isInstanceChangeOfRelevantTypes).filter(isAdditionOrModificationChange)

@@ -198,6 +198,7 @@ const getPolicyCustomizations = (): Record<string, definitions.fetch.InstanceFet
           isTopLevel: true,
           elemID: { extendsParent: true },
           serviceUrl: { path: details.ruleServiceUrl ?? details.policyServiceUrl },
+          allowEmptyArrays: typeName === PROFILE_ENROLLMENT_RULE_TYPE_NAME ? true : undefined,
         },
 
         fieldCustomizations: {

@@ -18,7 +18,6 @@ import {
   createDefinitionForAppRoleAssignment,
   addParentIdToAppRoles,
   adjustApplication,
-  adjustConditionalAccessPolicy,
 } from './utils'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 
@@ -59,6 +58,7 @@ const {
   PERMISSION_GRANT_POLICY_TYPE_NAME,
   APP_ROLE_TYPE_NAME,
   CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+  AUTHENTICATION_STRENGTH_PATH,
 } = entraConstants
 
 const APP_ROLES_FIELD_CUSTOMIZATIONS = {
@@ -810,7 +810,14 @@ const graphBetaCustomizations: FetchCustomizations = {
         },
         transformation: {
           ...DEFAULT_TRANSFORMATION,
-          adjust: adjustConditionalAccessPolicy,
+          omit: [
+            'allowedCombinations',
+            'description',
+            'displayName',
+            'policyType',
+            'requirementsSatisfied',
+            'combinationConfigurations',
+          ].map(fieldName => [...AUTHENTICATION_STRENGTH_PATH, fieldName].join('.')),
         },
       },
     ],

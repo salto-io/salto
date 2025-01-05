@@ -270,8 +270,7 @@ const HTML_RESPONSE_SCHEME = Joi.object({
 
 export const getHTMLStaticFileName = (path: ElemID): string => {
   const pathName = fileNameFromNaclCase(path.getFullName()).split('instance.')
-  const fileName = pathName.length > 1 ? pathName[1] : ''
-  return fileName
+  return pathName[1]
 }
 
 export const isHTMLResponse = createSchemeGuard<HTMLResponse>(HTML_RESPONSE_SCHEME, 'Failed to get HTML response')

@@ -23,6 +23,7 @@ import {
   safeJsonStringify,
   createSchemeGuard,
   TransformFuncSync,
+  TransformFuncArgs,
 } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -248,13 +249,15 @@ const createTransformHasAttachmentValueFunc =
     return value
   }
 
+const isOutgoingEmailAutomationValue = ({ value }: TransformFuncArgs): boolean =>
+  _.isPlainObject(value) && value.mimeType === 'text/html'
+
 const extractHTMLContentToStaticFile =
   (): TransformFuncSync =>
   async ({ value, path }) => {
-    if (path !== undefined && _.isPlainObject(value) && value.mimeType === 'text/html') {
-      const filePath = `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`
+    if (path !== undefined && isOutgoingEmailAutomationValue({ value })) {
       value.body = new StaticFile({
-        filepath: filePath,
+        filepath: `${JIRA}/${AUTOMATION_TYPE}/${getHTMLStaticFileName(path)}.html`,
         content: value.body,
       })
     }
@@ -263,11 +266,9 @@ const extractHTMLContentToStaticFile =
 
 const transformStaticFileBufferToHTML =
   (): TransformFuncSync =>
-  async ({ value, path }) => {
-    if (path !== undefined && _.isPlainObject(value) && value.mimeType === 'text/html') {
-      const htmlContentBuffer = value.body
-      const htmlContent = htmlContentBuffer.toString()
-      value.body = htmlContent
+  async ({ value }) => {
+    if (isOutgoingEmailAutomationValue({ value })) {
+      value.body = value.body.toString()
     }
     return value
   }

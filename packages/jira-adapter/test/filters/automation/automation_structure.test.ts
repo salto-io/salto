@@ -15,13 +15,14 @@ import {
   ElemID,
   isReferenceExpression,
   StaticFile,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
 import automationStructureFilter from '../../../src/filters/automation/automation_structure'
 import { createAutomationTypes } from '../../../src/filters/automation/types'
 import { JIRA } from '../../../src/constants'
-import { HTML_BODY_TEST } from '../../change_validators/automations/outgoing_email_action.test'
+import { HTML_BODY_TEST } from '../../change_validators/automations/outgoing_email.test'
 
 describe('automationStructureFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -490,6 +491,15 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[4].value.compareValue).toBeUndefined()
       expect(after.value.components[4].value.compareFieldValue).toBeObject()
       expect(after.value.components[4].value.compareFieldValue.value).toBeInstanceOf(ReferenceExpression)
+    })
+    it('should ', async () => {
+      const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      const [before, after] = getAllChangeData(changes[0])
+      expect(isStaticFile(before.value.components[9].value.body)).toBe(true)
+      expect(isStaticFile(after.value.components[9].value.body)).toBe(true)
+      expect(after.value.components[9].value.body.internalContent).toBe(HTML_BODY_TEST)
     })
   })
 })

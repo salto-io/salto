@@ -76,7 +76,7 @@ import { enhancedSearchDeploymentValidator } from './script_runner/enhanced_sear
 import { emptyProjectScopedContextValidator } from './field_contexts/empty_project_scoped_context'
 import { fieldValidator } from './field'
 import { globalTransitionValidator } from './workflowsV2/global_transition'
-import { outgoingEmailActionContentValidator } from './automation/outgoing_email_action'
+import { outgoingEmailContentValidator } from './automation/outgoing_email'
 
 const { deployTypesNotSupportedValidator, createChangeValidator, uniqueFieldsChangeValidatorCreator, SCOPE } =
   deployment.changeValidators
@@ -161,7 +161,7 @@ export default (client: JiraClient, config: JiraConfig, paginator: clientUtils.P
     field: fieldValidator,
     kanbanBoardBacklog: kanbanBoardBacklogValidator,
     globalTransition: globalTransitionValidator,
-    outgoingEmailAction: outgoingEmailActionContentValidator,
+    outgoingEmailAction: outgoingEmailContentValidator,
   }
 
   return createChangeValidator({

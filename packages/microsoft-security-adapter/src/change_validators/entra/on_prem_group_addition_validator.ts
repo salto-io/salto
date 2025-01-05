@@ -12,6 +12,7 @@ import { entraConstants } from '../../constants'
 
 /*
  * Validates that on-premises groups are not created. Returns an error for each new group with onPremisesSyncEnabled set.
+ * The MS Graph API does not support creating on-premises groups, so we block the creation of such groups in advance.
  */
 export const onPremGroupAdditionValidator: ChangeValidator = async changes => {
   const onPremGroupAdditions = changes

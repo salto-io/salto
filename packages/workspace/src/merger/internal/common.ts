@@ -8,7 +8,7 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import { ElemID, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
-import { inspectValue } from '@salto-io/adapter-utils'
+import { ERROR_MESSAGES, inspectValue } from '@salto-io/adapter-utils'
 
 export abstract class MergeError
   extends types.Bean<
@@ -19,8 +19,9 @@ export abstract class MergeError
   >
   implements SaltoElementError
 {
+  // eslint-disable-next-line class-methods-use-this
   get message(): string {
-    return `Error merging ${this.elemID.getFullName()}: ${this.error}`
+    return ERROR_MESSAGES.OTHER_ISSUES
   }
 
   get detailedMessage(): string {

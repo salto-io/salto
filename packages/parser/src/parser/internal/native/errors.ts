@@ -5,6 +5,7 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
+import { ERROR_MESSAGES } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { Keywords } from '../../language'
 import { ParseError } from '../../types'
@@ -15,7 +16,7 @@ const createError = (range: SourceRange, summary: string, message?: string): Par
   subject: range,
   context: range,
   severity: 'Error',
-  message: message || summary,
+  message: ERROR_MESSAGES.INVALID_NACL_CONTENT,
   detailedMessage: message || summary,
 })
 

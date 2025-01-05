@@ -45,6 +45,7 @@ import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { getFieldsAndAnnoTypes } from './utils'
 
 describe('Elements validation', () => {
+  const INVALID_NACL_CONTENT_ERROR = 'Element has invalid nacl content'
   const metaElemID = new ElemID('salto', 'meta')
   const baseElemID = new ElemID('salto', 'simple')
   const metaType = new ObjectType({
@@ -652,7 +653,8 @@ describe('Elements validation', () => {
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0].message).toMatch('Field reqStr is required but has no value')
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch('Field reqStr is required but has no value')
           expect(errors[0].elemID).toEqual(extInst.elemID)
         })
 
@@ -667,7 +669,10 @@ describe('Elements validation', () => {
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0].message).toMatch(`Field ${extType.fields.reqNested.name} is required but has no value`)
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
+            `Field ${extType.fields.reqNested.name} is required but has no value`,
+          )
           expect(errors[0].elemID).toEqual(extInst.elemID)
         })
 
@@ -699,7 +704,8 @@ describe('Elements validation', () => {
             ]),
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0].message).toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', '1'))
         })
 
@@ -724,7 +730,8 @@ describe('Elements validation', () => {
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0].message).toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(`Field ${simpleType.fields.bool.name} is required but has no value`)
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', 'b'))
         })
 
@@ -824,12 +831,14 @@ describe('Elements validation', () => {
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
           expect(errors).toHaveLength(2)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             'Error validating "salto.nested.instance.nested_inst":' +
               " Field 'additional' is not defined in the 'nested' type which does not allow additional properties.",
           )
           expect(errors[0].elemID).toEqual(extInst.elemID)
-          expect(errors[1].message).toMatch(
+          expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].detailedMessage).toMatch(
             'Error validating "salto.nested.instance.nested_inst":' +
               " Field 'additional2' is not defined in the 'nested' type which does not allow additional properties.",
           )
@@ -879,7 +888,8 @@ describe('Elements validation', () => {
             createInMemoryElementSource([extInst, extType, ...(await getFieldsAndAnnoTypes(extType))]),
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             'Error validating "salto.nested.instance.nested_inst.reqNested":' +
               " Field 'additional' is not defined in the 'simple' type which does not allow additional properties.",
           )
@@ -911,15 +921,18 @@ describe('Elements validation', () => {
             createInMemoryElementSource([testInstance, topType, validatingType, nonValidatingType]),
           )
           expect(errors).toHaveLength(3)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             'Error validating "salto.top.instance.test_inst.mapFieldValidating.d":' +
               " Field 'additional4' is not defined in the 'validating' type which does not allow additional properties.",
           )
-          expect(errors[1].message).toMatch(
+          expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].detailedMessage).toMatch(
             'Error validating "salto.top.instance.test_inst.listFieldValidating.0":' +
               " Field 'additional2' is not defined in the 'validating' type which does not allow additional properties.",
           )
-          expect(errors[2].message).toMatch(
+          expect(errors[2].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[2].detailedMessage).toMatch(
             'Error validating "salto.top.instance.test_inst.listFieldValidating.2":' +
               " Field 'additional3' is not defined in the 'validating' type which does not allow additional properties.",
           )
@@ -995,8 +1008,9 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(errors[0].message).toMatch('Value "-1" is not valid')
-          expect(errors[0].message).toMatch('bigger than 0 and smaller than 10')
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch('Value "-1" is not valid')
+          expect(errors[0].detailedMessage).toMatch('bigger than 0 and smaller than 10')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictNumber'))
         })
 
@@ -1015,8 +1029,9 @@ describe('Elements validation', () => {
           const restrictedNumberElemID = extInst.elemID.createNestedID('restrictNumber')
           expect(valueTypeValidation.elemID).toEqual(restrictedNumberElemID)
           expect(typeForRangeValidation).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(typeForRangeValidation.message).toMatch('Value "Not A Number" is not valid')
-          expect(typeForRangeValidation.message).toMatch('bigger than 0 and smaller than 10')
+          expect(typeForRangeValidation.message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(typeForRangeValidation.detailedMessage).toMatch('Value "Not A Number" is not valid')
+          expect(typeForRangeValidation.detailedMessage).toMatch('bigger than 0 and smaller than 10')
           expect(typeForRangeValidation.elemID).toEqual(restrictedNumberElemID)
         })
 
@@ -1031,13 +1046,15 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch(`Value "${extInst.value.nested.str}" is not valid`)
-          expect(errors[0].message).toMatch('expected one of: "str"')
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(`Value "${extInst.value.nested.str}" is not valid`)
+          expect(errors[0].detailedMessage).toMatch('expected one of: "str"')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[1].message).toMatch(`Value "${extInst.value.restrictStr}" is not valid`)
-          expect(errors[1].message).toMatch('expected one of: "restriction1", "restriction2"')
+          expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].detailedMessage).toMatch(`Value "${extInst.value.restrictStr}" is not valid`)
+          expect(errors[1].detailedMessage).toMatch('expected one of: "restriction1", "restriction2"')
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
 
@@ -1056,10 +1073,11 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             `Value "${extType.fields.restrictedAnnotation.annotations.temp}" is not valid`,
           )
-          expect(errors[0].message).toMatch('expected one of: "val1", "val2"')
+          expect(errors[0].detailedMessage).toMatch('expected one of: "val1", "val2"')
           expect(errors[0].elemID).toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'temp'))
         })
 
@@ -1082,13 +1100,15 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(errors[0].message).toMatch('Value "11" is not valid')
-          expect(errors[0].message).toMatch('bigger than 1 and smaller than 10')
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch('Value "11" is not valid')
+          expect(errors[0].detailedMessage).toMatch('bigger than 1 and smaller than 10')
           expect(errors[0].elemID).toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'range'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(errors[1].message).toMatch('Value "11" is not valid')
-          expect(errors[1].message).toMatch('smaller than 10')
+          expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].detailedMessage).toMatch('Value "11" is not valid')
+          expect(errors[1].detailedMessage).toMatch('smaller than 10')
           expect(errors[1].elemID).toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMin'))
         })
 
@@ -1102,13 +1122,15 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(errors[0].message).toMatch('Value "0" is not valid')
-          expect(errors[0].message).toMatch('bigger than 1 and smaller than 10')
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch('Value "0" is not valid')
+          expect(errors[0].detailedMessage).toMatch('bigger than 1 and smaller than 10')
           expect(errors[0].elemID).toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'range'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(errors[1].message).toMatch('Value "0" is not valid')
-          expect(errors[1].message).toMatch('bigger than 1')
+          expect(errors[1].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[1].detailedMessage).toMatch('Value "0" is not valid')
+          expect(errors[1].detailedMessage).toMatch('bigger than 1')
           expect(errors[1].elemID).toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMax'))
         })
 
@@ -1192,7 +1214,8 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             'Value "ABC" is not valid for field regexOnlyLower. expected value to match "^[a-z]*$" regular expression',
           )
           expect(errors[0].elemID).toEqual(
@@ -1231,7 +1254,8 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             'Value "AAA_123" is not valid for field restrictStringRegex. expected value to match "^[a-z0-9]*$" regular expression',
           )
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictStringRegex'))
@@ -1254,7 +1278,8 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
-          expect(errors[0].message).toMatch(
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch(
             'Value "211" is not valid for field restrictNumberRegex. expected value to match "^1[0-9]*$" regular expression',
           )
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictNumberRegex'))
@@ -1279,8 +1304,9 @@ describe('Elements validation', () => {
           )
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueMaxListLengthValidationError)
-          expect(errors[0].message).toMatch('List of size 10 is too large for field')
-          expect(errors[0].message).toMatch('restrictedListLength maximum length is 6')
+          expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+          expect(errors[0].detailedMessage).toMatch('List of size 10 is too large for field')
+          expect(errors[0].detailedMessage).toMatch('restrictedListLength maximum length is 6')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictedListLength'))
         })
       })
@@ -1366,7 +1392,8 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatStr'))
-        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should not return error on str primitive type with list', async () => {
@@ -1386,7 +1413,8 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatStr', '1'))
-        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should return error on bad str primitive type with object', async () => {
@@ -1397,7 +1425,8 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatStr'))
-        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should return error on bad num primitive type', async () => {
@@ -1408,7 +1437,8 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('flatNum'))
-        expect(errors[0].message).toMatch(new RegExp('Invalid value type for number$'))
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch(new RegExp('Invalid value type for number$'))
       })
 
       it('should return error on bad bool primitive type', async () => {
@@ -1490,7 +1520,8 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('map', 'invalid'))
-        expect(errors[0].message).toMatch(new RegExp('Invalid value type for string$'))
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch(new RegExp('Invalid value type for string$'))
       })
 
       it('should return error on inconsistent object map values', async () => {
@@ -1845,7 +1876,8 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(varElementInst.elemID.createNestedID('someVal'))
-        expect(errors[0].message).toMatch('not a variable')
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch('not a variable')
       })
       it('should return error when the value is an object (not supported for now)', async () => {
         const objVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'objVar')
@@ -1854,7 +1886,8 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
-        expect(errors[0].message).toMatch('Value "{"key":"val"}" is not valid for field objVar')
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch('Value "{"key":"val"}" is not valid for field objVar')
       })
       it('should return error when the value is a reference to an element', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
@@ -1866,8 +1899,9 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
-        expect(errors[0].message).toMatch('Value "{"elemID":{"adapter":"..." is not valid for field instVar')
-        expect(errors[0].message).toMatch('a primitive')
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch('Value "{"elemID":{"adapter":"..." is not valid for field instVar')
+        expect(errors[0].detailedMessage).toMatch('a primitive')
       })
       it('should return error when the value is a reference to an object', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
@@ -1879,8 +1913,9 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
-        expect(errors[0].message).toMatch('Value "{"str":"str","num":1,"..." is not valid for field instVar')
-        expect(errors[0].message).toMatch('a primitive')
+        expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+        expect(errors[0].detailedMessage).toMatch('Value "{"str":"str","num":1,"..." is not valid for field instVar')
+        expect(errors[0].detailedMessage).toMatch('a primitive')
       })
       it('should return error when the value is an unresolved reference', async () => {
         const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
@@ -2034,7 +2069,8 @@ describe('Elements validation', () => {
       const instance = new InstanceElement('name', new TypeReference(new ElemID('instance', 'notExists')))
       const errors = await validateElements([instance], createInMemoryElementSource([instance]))
       expect(errors).toHaveLength(1)
-      expect(errors[0].message).toBe(
+      expect(errors[0].message).toMatch(INVALID_NACL_CONTENT_ERROR)
+      expect(errors[0].detailedMessage).toBe(
         'Error validating "instance.notExists.instance.name": type notExists of instance name does not exist',
       )
     })
@@ -2081,13 +2117,26 @@ describe('Elements validation', () => {
 
   describe('InvalidStaticFileError', () => {
     const elemID = new ElemID('adapter', 'bla')
-    it('should have correct message for missing', () =>
-      expect(new InvalidStaticFileError({ elemID, error: new MissingStaticFile('path').message }).message).toEqual(
+    it('should have correct message for missing', () => {
+      const invalidStaticFileError = new InvalidStaticFileError({
+        elemID,
+        error: new MissingStaticFile('path').message,
+      })
+      expect(invalidStaticFileError.message).toMatch(INVALID_NACL_CONTENT_ERROR)
+      expect(invalidStaticFileError.detailedMessage).toEqual(
         'Error validating "adapter.bla": Missing static file: path',
-      ))
-    it('should have correct message for invalid', () =>
-      expect(new InvalidStaticFileError({ elemID, error: new AccessDeniedStaticFile('path').message }).message).toEqual(
+      )
+    })
+
+    it('should have correct message for invalid', () => {
+      const invalidStaticFileError = new InvalidStaticFileError({
+        elemID,
+        error: new AccessDeniedStaticFile('path').message,
+      })
+      expect(invalidStaticFileError.message).toMatch(INVALID_NACL_CONTENT_ERROR)
+      expect(invalidStaticFileError.detailedMessage).toEqual(
         'Error validating "adapter.bla": Unable to access static file: path',
-      ))
+      )
+    })
   })
 })

@@ -13,6 +13,7 @@ export {
   STATES_DIR_NAME,
   locateWorkspaceRoot,
   createEnvironmentSource,
+  getAdaptersConfigTypesMap,
 } from './src/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,

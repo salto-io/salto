@@ -5,9 +5,9 @@
  *
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
-import { getSupportedServiceAdapterNames, getAdapterConfigOptionsType } from '@salto-io/adapter-creators'
 
-export { getSupportedServiceAdapterNames, getAdapterConfigOptionsType }
+// exported for backward compatibility
+export { getSupportedServiceAdapterNames, getAdapterConfigOptionsType } from '@salto-io/adapter-creators'
 export { Plan, PlanItem, ChangeWithDetails } from './src/core/plan'
 export { FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'

@@ -6,9 +6,24 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 import path from 'path'
-import { nacl, staticFiles, adaptersConfigSource as acs, remoteMap, buildStaticFilesCache } from '@salto-io/workspace'
-import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
+import {
+  nacl,
+  staticFiles,
+  adaptersConfigSource as acs,
+  remoteMap,
+  buildStaticFilesCache,
+  EnvConfig,
+  elementSource,
+  adaptersConfigSource,
+  createAdapterReplacedID,
+} from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
+import { Adapter, DetailedChange, ObjectType } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
+
+const { awu } = collections.asynciterable
 
 const createNaclSource = async (
   baseDir: string,
@@ -42,14 +57,112 @@ const createNaclSource = async (
   return source
 }
 
-export const buildLocalAdaptersConfigSource = async (
+const getAdapterConfigsPerAccount = async (
+  envs: EnvConfig[],
+  adapterCreators: Record<string, Adapter>,
+): Promise<ObjectType[]> => {
+  const configTypesByAccount = Object.fromEntries(
+    Object.entries(
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
+      ),
+    ).filter(entry => entry[1].length > 0),
+  )
+  const configElementSource = elementSource.createInMemoryElementSource(Object.values(configTypesByAccount).flat())
+  const differentlyNamedAccounts = Object.fromEntries(
+    envs
+      .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
+      .filter(([accountName, serviceName]) => accountName !== serviceName),
+  )
+  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
+    const adapter = differentlyNamedAccounts[account]
+    const adapterConfigs = configTypesByAccount[adapter]
+    const additionalConfigs = await adaptersConfigSource.calculateAdditionalConfigTypes(
+      configElementSource,
+      adapterConfigs.map(conf => createAdapterReplacedID(conf.elemID, account)),
+      adapter,
+      account,
+    )
+    configTypesByAccount[account] = additionalConfigs
+  })
+  return Object.values(configTypesByAccount).flat()
+}
+
+type BuildLocalAdaptersConfigSourceParams = {
+  baseDir: string
+  remoteMapCreator: remoteMap.RemoteMapCreator
+  persistent: boolean
+  configTypes?: ObjectType[]
+  configOverrides?: DetailedChange[]
+  adapterCreators: Record<string, Adapter>
+  envs: EnvConfig[]
+}
+
+const getBuildLocalAdaptersConfigSourceParams: (
+  baseDirOrParams: string | BuildLocalAdaptersConfigSourceParams,
+  remoteMapCreator?: remoteMap.RemoteMapCreator,
+  persistent?: boolean,
+  configTypes?: ObjectType[],
+  configOverrides?: DetailedChange[],
+) => BuildLocalAdaptersConfigSourceParams = (
+  baseDirOrParams,
+  remoteMapCreator,
+  persistent,
+  configTypes,
+  configOverrides,
+) => {
+  if (!_.isString(baseDirOrParams)) {
+    return baseDirOrParams
+  }
+  if (remoteMapCreator === undefined || persistent === undefined || configTypes === undefined) {
+    throw new Error('configTypes cannot be undefined')
+  }
+  return {
+    baseDir: baseDirOrParams,
+    remoteMapCreator,
+    persistent,
+    configTypes,
+    configOverrides,
+    envs: [],
+    adapterCreators: {},
+  }
+}
+// As a transitionary step, we support both a string input and an argument object
+export function buildLocalAdaptersConfigSource(
+  args: BuildLocalAdaptersConfigSourceParams,
+): Promise<acs.AdaptersConfigSource>
+// @deprecated
+export function buildLocalAdaptersConfigSource(
   baseDir: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   persistent: boolean,
   configTypes: ObjectType[],
-  configOverrides: DetailedChange[] = [],
-): Promise<acs.AdaptersConfigSource> =>
-  acs.buildAdaptersConfigSource({
+  configOverrides?: DetailedChange[],
+): Promise<acs.AdaptersConfigSource>
+
+export async function buildLocalAdaptersConfigSource(
+  inputIaseDir: string | BuildLocalAdaptersConfigSourceParams,
+  inputRemoteMapCreator?: remoteMap.RemoteMapCreator,
+  inputPersistent?: boolean,
+  inputConfigTypes?: ObjectType[],
+  inputConfigOverrides?: DetailedChange[],
+): Promise<acs.AdaptersConfigSource> {
+  const {
+    baseDir,
+    remoteMapCreator,
+    persistent,
+    envs,
+    adapterCreators,
+    configTypes = await getAdapterConfigsPerAccount(envs, adapterCreators),
+    configOverrides = [],
+  } = getBuildLocalAdaptersConfigSourceParams(
+    inputIaseDir,
+    inputRemoteMapCreator,
+    inputPersistent,
+    inputConfigTypes,
+    inputConfigOverrides,
+  )
+  return acs.buildAdaptersConfigSource({
     naclSource: await createNaclSource(baseDir, remoteMapCreator, persistent),
     ignoreFileChanges: false,
     remoteMapCreator,
@@ -57,3 +170,4 @@ export const buildLocalAdaptersConfigSource = async (
     configTypes,
     configOverrides,
   })
+}

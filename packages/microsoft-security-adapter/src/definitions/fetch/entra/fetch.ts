@@ -19,7 +19,6 @@ import {
   addParentIdToAppRoles,
   adjustApplication,
 } from './utils'
-import { CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES } from '../../../constants/entra'
 import { createCustomizationsWithBasePathForFetch } from '../shared/utils'
 
 const {
@@ -58,6 +57,8 @@ const {
   DOMAIN_TYPE_NAME,
   PERMISSION_GRANT_POLICY_TYPE_NAME,
   APP_ROLE_TYPE_NAME,
+  CONTEXT_LIFE_CYCLE_POLICY_MANAGED_GROUP_TYPES,
+  AUTHENTICATION_STRENGTH_PATH,
 } = entraConstants
 
 const APP_ROLES_FIELD_CUSTOMIZATIONS = {
@@ -807,7 +808,17 @@ const graphBetaCustomizations: FetchCustomizations = {
         endpoint: {
           path: '/identity/conditionalAccess/policies',
         },
-        transformation: DEFAULT_TRANSFORMATION,
+        transformation: {
+          ...DEFAULT_TRANSFORMATION,
+          omit: [
+            'allowedCombinations',
+            'description',
+            'displayName',
+            'policyType',
+            'requirementsSatisfied',
+            'combinationConfigurations',
+          ].map(fieldName => [...AUTHENTICATION_STRENGTH_PATH, fieldName].join('.')),
+        },
       },
     ],
     resource: {

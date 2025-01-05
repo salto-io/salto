@@ -249,11 +249,6 @@ const resolveChanges = async (
   })
 }
 
-const prepareDumpChanges = async (
-  changes: ReadonlyArray<Change>,
-  elementsSource: ReadOnlyElementsSource,
-): Promise<ReadonlyArray<Change>> => filterHiddenChanges(await resolveChanges(changes, elementsSource), elementsSource)
-
 type CalculatePatchArgs = {
   fromDir: string
   toDir: string
@@ -425,7 +420,7 @@ export const syncWorkspaceToFolder = ({
       )
       return dumpElementsToFolder({
         baseDir,
-        changes: await prepareDumpChanges(changes, adapterContext.elementsSource),
+        changes: await filterHiddenChanges(changes, adapterContext.elementsSource),
         elementsSource: adapterContext.elementsSource,
       })
     },
@@ -477,7 +472,10 @@ export const updateElementFolder = ({
       }
       return dumpElementsToFolder({
         baseDir,
-        changes: await prepareDumpChanges(changes, adapterContext.elementsSource),
+        changes: await filterHiddenChanges(
+          await resolveChanges(changes, adapterContext.elementsSource),
+          adapterContext.elementsSource,
+        ),
         elementsSource: adapterContext.elementsSource,
       })
     },

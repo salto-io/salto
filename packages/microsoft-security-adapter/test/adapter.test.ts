@@ -164,7 +164,7 @@ describe('Microsoft Security adapter', () => {
 
                 expect(resourceAccess[1].id).toBeInstanceOf(ReferenceExpression)
                 expect(resourceAccess[1].id.elemID.getFullName()).toEqual(
-                  'microsoft_security.EntraOauth2PermissionScope.instance.test_application__testValue_User@suuu',
+                  'microsoft_security.EntraOauth2PermissionScope.instance.test_application__testValue@suu',
                 )
               })
 
@@ -239,7 +239,7 @@ describe('Microsoft Security adapter', () => {
               expect(permissionScopeInstances).toHaveLength(1)
 
               const permissionScopeNames = permissionScopeInstances.map(e => e.elemID.name)
-              expect(permissionScopeNames).toEqual(expect.arrayContaining(['test_application__testValue_User@suuu']))
+              expect(permissionScopeNames).toEqual(expect.arrayContaining(['test_application__testValue@suu']))
             })
 
             it('should include parent reference to the application', async () => {

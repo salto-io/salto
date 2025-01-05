@@ -1629,6 +1629,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'schemaVersion' },
         { fieldName: 'idUuid' },
         { fieldName: 'tags' },
+        { fieldName: 'webhookToken' },
         // serviceDesk is referenced from the associated request type, so we don't need to keep it in the automation component
         { fieldName: 'serviceDesk' },
       ],

@@ -11,7 +11,6 @@ import { v4 as uuid4 } from 'uuid'
 import { values } from '@salto-io/lowerdash'
 import {
   Change,
-  ChangeGroup,
   DeployResult,
   Element,
   InstanceElement,
@@ -50,18 +49,6 @@ const {
 const log = logger(module)
 const { isDefined, isPlainObject } = values
 
-type CustomDeployChangesFunc = (params: {
-  changes: Change<InstanceElement>[]
-  changeGroup: ChangeGroup
-}) => Promise<DeployResult>
-
-type DeployResultWithLeftoverChanges = { deployResult: DeployResult; leftoverChanges: Change[] }
-
-type ParentChangeWithExistingFlag = {
-  parentChange: Change<InstanceElement>
-  isExistingChange: boolean
-}
-
 const RELEVANT_TYPE_NAMES = [APP_ROLE_TYPE_NAME, OAUTH2_PERMISSION_SCOPE_TYPE_NAME]
 
 const isInstanceElementOfRelevantTypes = (elem: Element): elem is InstanceElement =>
@@ -85,13 +72,13 @@ const removeDuplicatedInstances = async (elements: Element[]): Promise<void> => 
   ).filter(instances => instances.length > 1)
 
   const instancesToRemove = duplicatedInstances.flatMap(instances => {
-    // We prefer to keep the extracted instances with the application parent, if it exists,
+    // We prefer to keep the standalone instances with the application parent, if it exists,
     // since attempting to deploy it as part of the Service Principal will fail due to inconsistencies with the application.
     const instanceWithApplicationParentIdx = instances.findIndex(
       ({ elem }) => getParents(elem)[0]?.elemID.typeName === APPLICATION_TYPE_NAME,
     )
     if (instanceWithApplicationParentIdx === -1) {
-      // This shouldn't happen, as we expect to find at most 2 similar extracted instances, when one of them has an application parent
+      // This shouldn't happen, as we expect to find at most 2 similar standalone instances, when one of them has an application parent
       log.warn(
         'Found multiple %s with the same elemID, but none of them have an application parent',
         instances[0].elem.elemID.typeName,
@@ -111,10 +98,10 @@ const removeDuplicatedInstances = async (elements: Element[]): Promise<void> => 
   indicesToRemove.sort((a, b) => b - a).forEach(index => elements.splice(index, 1))
 }
 
-const extractUniqueParentsFromInstanceChanges = (
-  instanceChanges: Change<InstanceElement>[],
+const extractUniqueParentsFromStandaloneFieldsChanges = (
+  standaloneFieldsChanges: Change<InstanceElement>[],
 ): { uniqueParents: InstanceElement[]; errors: SaltoElementError[] } => {
-  const parentsOrErrors = instanceChanges.map((change): InstanceElement | SaltoElementError => {
+  const parentsOrErrors = standaloneFieldsChanges.map((change): InstanceElement | SaltoElementError => {
     try {
       return getParent(getChangeData(change))
     } catch (e) {
@@ -135,40 +122,74 @@ const extractUniqueParentsFromInstanceChanges = (
   }
 }
 
-const addIdToInstance = (
-  instance: InstanceElement,
-  instanceNameToInternalId: Record<string, string>,
-): InstanceElement => {
-  if (instance.value.id === undefined) {
-    instance.value.id = instanceNameToInternalId[instance.elemID.getFullName()]
-  }
-  return instance
-}
-
-const groupInstancesByParent = async (
-  elementSource: ReadOnlyElementsSource,
-  instanceNameToInternalId: Record<string, string>,
-): Promise<Record<string, InstanceElement[]>> =>
-  _.groupBy(
-    (await getInstancesFromElementSource(elementSource, RELEVANT_TYPE_NAMES)).map(instance =>
-      addIdToInstance(instance.clone(), instanceNameToInternalId),
-    ),
-    // If no parent is found & the instance is not part of the received changes, we will just skip it
-    elem => getParents(elem)[0]?.elemID.getFullName(),
+const partitionChanges = (
+  changes: Change[],
+): {
+  standaloneFieldsChanges: Change<InstanceElement>[]
+  existingParentChanges: Change<InstanceElement>[]
+  parentsWithStandaloneFieldsChanges: InstanceElement[]
+  otherChanges: Change[]
+  instancesWithNoParentErrors: SaltoElementError[]
+} => {
+  const [standaloneFieldsChanges, potentialParentChanges] = _.partition(changes, isInstanceChangeOfRelevantTypes)
+  const { uniqueParents: parentsWithStandaloneFieldsChanges, errors: instancesWithNoParentErrors } =
+    extractUniqueParentsFromStandaloneFieldsChanges(standaloneFieldsChanges)
+  const parentsWithStandaloneFieldsChangesFullNames = new Set(
+    parentsWithStandaloneFieldsChanges.map(parent => parent.elemID.getFullName()),
+  )
+  const [existingParentChanges, otherChanges] = _.partition(
+    potentialParentChanges,
+    (change): change is Change<InstanceElement> =>
+      isInstanceChange(change) &&
+      parentsWithStandaloneFieldsChangesFullNames.has(getChangeData(change).elemID.getFullName()),
   )
 
-const addStandaloneFieldsToParentChange = ({
+  return {
+    standaloneFieldsChanges,
+    existingParentChanges,
+    parentsWithStandaloneFieldsChanges,
+    otherChanges,
+    instancesWithNoParentErrors,
+  }
+}
+
+// We must specify an id for each standalone field on creation.
+// We should also make sure to manually set the same id for their corresponding changes, to update the nacls correctly.
+const addIdToStandaloneFields = ({
+  standaloneFieldsChanges,
+  standaloneFieldsInstances,
+}: {
+  standaloneFieldsChanges: Change<InstanceElement>[]
+  standaloneFieldsInstances: InstanceElement[]
+}): void => {
+  const instanceNameToInternalId = new Map<string, string>()
+
+  standaloneFieldsChanges.forEach(change => {
+    const changeData = getChangeData(change)
+    if (change.action === 'add') {
+      const id = uuid4()
+      instanceNameToInternalId.set(changeData.elemID.getFullName(), id)
+      changeData.value.id = id
+    }
+  })
+
+  standaloneFieldsInstances.forEach(standaloneField => {
+    if (standaloneField.value.id === undefined) {
+      standaloneField.value.id = instanceNameToInternalId.get(standaloneField.elemID.getFullName())
+    }
+  })
+}
+
+const updateParentChangeWithStandaloneFields = ({
   parentChange,
-  parentToInstancesMap,
-  instanceNameToInternalId,
+  standaloneFields,
 }: {
   parentChange: Change<InstanceElement>
-  parentToInstancesMap: Record<string, InstanceElement[]>
-  instanceNameToInternalId: Record<string, string>
+  standaloneFields: InstanceElement[]
 }): void => {
   const parent = getChangeData(parentChange)
   const [appRoleInstances, permissionScopeInstances] = _.partition(
-    parentToInstancesMap[parent.elemID.getFullName()] ?? [],
+    standaloneFields,
     instance => instance.elemID.typeName === APP_ROLE_TYPE_NAME,
   )
   _.set(
@@ -194,161 +215,135 @@ const addStandaloneFieldsToParentChange = ({
         // The permission references are not resolved properly for newly created permissions, since they didn't have an id
         // We need to set the id manually
         if (isInstanceElement(ref.value) && ref.value.value.id === undefined) {
-          ref.value.value.id = instanceNameToInternalId[ref.value.elemID.getFullName()]
+          const referencedPermission = permissionScopeInstances.find(
+            permission => permission.elemID.getFullName() === ref.value.elemID.getFullName(),
+          )
+          if (referencedPermission === undefined) {
+            log.error('Failed to find permission with elemID %s', ref.value.elemID.getFullName())
+            return
+          }
+          ref.value.value.id = referencedPermission.value.id
         }
       }
     })
   })
 }
 
-const setOrCreateParentChangeWithStandaloneFields = ({
-  parent,
-  otherChanges,
-  parentToInstancesMap,
-  instanceNameToInternalId,
+// The standalone fields are added to the parent change in place, but they shouldn't be included in the applied change to avoid modifying the nacls.
+// Using the original change isn't an option because the applied changes may include the id returned from the service, which we want to retain.
+const revertChangesToParent = (parentChange: Change): void => {
+  if (!isInstanceChange(parentChange)) {
+    log.error('Expected parent change to be an instance change, but got %o', parentChange)
+    return
+  }
+
+  if (isRemovalChange(parentChange)) {
+    return
+  }
+
+  applyFunctionToChangeDataSync(parentChange, instance => {
+    instance.value = _.omit(instance.value, [
+      APP_ROLES_FIELD_NAME,
+      getPermissionScopeFieldPath(instance.elemID.typeName).join('.'),
+    ])
+    if (instance.value[API_FIELD_NAME] !== undefined && _.isEmpty(instance.value[API_FIELD_NAME])) {
+      delete instance.value[API_FIELD_NAME]
+    }
+    return instance
+  })
+}
+
+const getChangesToDeploy = async ({
+  standaloneFieldsChanges,
+  existingParentChanges,
+  parentsWithStandaloneFieldsChanges,
+  elementSource,
 }: {
-  parent: InstanceElement
-  otherChanges: Change[]
-  parentToInstancesMap: Record<string, InstanceElement[]>
-  instanceNameToInternalId: Record<string, string>
-}): ParentChangeWithExistingFlag | undefined => {
-  const parentFullName = parent.elemID.getFullName()
-  const existingParentChange = _.remove(
-    otherChanges,
-    change => getChangeData(change).elemID.getFullName() === parentFullName,
-  )[0]
+  standaloneFieldsChanges: Change<InstanceElement>[]
+  existingParentChanges: Change<InstanceElement>[]
+  parentsWithStandaloneFieldsChanges: InstanceElement[]
+  elementSource: ReadOnlyElementsSource
+}): Promise<Change<InstanceElement>[]> => {
+  const allParentsToStandaloneFields = _.groupBy(
+    await getInstancesFromElementSource(elementSource, RELEVANT_TYPE_NAMES),
+    // If no parent is found:
+    // - If there's a change for the standalone field, we already return deploy error (calculated in extractUniqueParentsFromStandaloneFieldsChanges)
+    // - If there's no change for the standalone field, we ignore it.
+    elem => getParents(elem)[0]?.elemID.getFullName(),
+  )
+  const relevantParentsFullNames = new Set(
+    parentsWithStandaloneFieldsChanges.map(parent => parent.elemID.getFullName()),
+  )
+  const relevantParentToStandaloneFields = _.pickBy(allParentsToStandaloneFields, (_instances, parentFullName) =>
+    relevantParentsFullNames.has(parentFullName),
+  )
+  const clonedParentToStandaloneFields = _.mapValues(relevantParentToStandaloneFields, instances =>
+    instances.map(instance => instance.clone()),
+  )
 
-  if (existingParentChange !== undefined) {
-    // We shouldn't really reach this point, as we validate the parent in 'extractUniqueParentsFromInstanceChanges', but just for TS to be happy
-    if (!isInstanceChange(existingParentChange)) {
-      log.error('Parent %s is not an instance change, skipping its app extracted instances deployment', parentFullName)
-      return undefined
-    }
+  addIdToStandaloneFields({
+    standaloneFieldsInstances: Object.values(clonedParentToStandaloneFields).flat(),
+    standaloneFieldsChanges,
+  })
 
-    if (isRemovalChange(existingParentChange)) {
-      // We need to deploy removal changes using the filter in order to know whether the extracted fields changes should be marked as applied or not
-      return { parentChange: existingParentChange, isExistingChange: true }
-    }
-  }
+  const fullNamesToExistingParentChanges = Object.fromEntries(
+    existingParentChanges.map(change => [getChangeData(change).elemID.getFullName(), change]),
+  )
+  const parentChangesToDeploy = parentsWithStandaloneFieldsChanges
+    .map(parent => {
+      const parentChange = fullNamesToExistingParentChanges[parent.elemID.getFullName()] ?? {
+        action: 'modify' as const,
+        data: {
+          before: parent,
+          after: parent.clone(),
+        },
+      }
+      if (isRemovalChange(parentChange)) {
+        // No need to update the parent change with the standalone fields, since it's a removal change, and the standalone fields will be removed as well.
+        return parentChange
+      }
 
-  const parentChange = existingParentChange ?? {
-    action: 'modify' as const,
-    data: {
-      before: parent,
-      after: parent.clone(),
-    },
-  }
+      updateParentChangeWithStandaloneFields({
+        parentChange,
+        standaloneFields: clonedParentToStandaloneFields[parent.elemID.getFullName()] ?? [],
+      })
 
-  addStandaloneFieldsToParentChange({ parentChange, parentToInstancesMap, instanceNameToInternalId })
+      return parentChange
+    })
+    .filter(isDefined)
 
-  return { parentChange, isExistingChange: existingParentChange !== undefined }
+  return parentChangesToDeploy
 }
 
 const calculateDeployResult = ({
   deployResult: { errors, appliedChanges: appliedParentChanges },
-  parentChanges,
-  relevantInstanceChanges,
+  standaloneFieldsChanges,
+  existingParentChanges,
   instancesWithNoParentErrors,
-  instanceNameToInternalId,
 }: {
   deployResult: DeployResult
-  parentChanges: ParentChangeWithExistingFlag[]
-  relevantInstanceChanges: Change<InstanceElement>[]
+  standaloneFieldsChanges: Change<InstanceElement>[]
+  existingParentChanges: Change<InstanceElement>[]
   instancesWithNoParentErrors: SaltoElementError[]
-  instanceNameToInternalId: Record<string, string>
 }): DeployResult => {
-  const appliedParentChangesFullNames = appliedParentChanges.map(change => getChangeData(change).elemID.getFullName())
-  const appliedExistingParentChanges = parentChanges
-    .filter(
-      ({ parentChange, isExistingChange }) =>
-        isExistingChange && appliedParentChangesFullNames.includes(getChangeData(parentChange).elemID.getFullName()),
-    )
-    .map(({ parentChange }) =>
-      // We add the extracted fields to the parent change in place, but we shouldn't include it in the applied change,
-      // so we remove it before returning it as an applied change.
-      // The reason we don't just use the original change is that the applied changes may contain the id returned from the service,
-      // which we want to keep.
-      applyFunctionToChangeDataSync(parentChange, instance => {
-        instance.value = _.omit(instance.value, [
-          APP_ROLES_FIELD_NAME,
-          getPermissionScopeFieldPath(instance.elemID.typeName).join('.'),
-        ])
-        if (instance.value[API_FIELD_NAME] !== undefined && _.isEmpty(instance.value[API_FIELD_NAME])) {
-          delete instance.value[API_FIELD_NAME]
-        }
-        return instance
-      }),
-    )
-  const appliedStandaloneFieldsChanges = relevantInstanceChanges.filter(change =>
-    appliedParentChangesFullNames.includes(getParents(getChangeData(change))[0]?.elemID.getFullName()),
+  const existingParentChangesFullNames = new Set(
+    existingParentChanges.map(change => getChangeData(change).elemID.getFullName()),
   )
-  appliedStandaloneFieldsChanges.forEach(change => addIdToInstance(getChangeData(change), instanceNameToInternalId))
+  const appliedExistingParentChanges = appliedParentChanges.filter(change =>
+    existingParentChangesFullNames.has(getChangeData(change).elemID.getFullName()),
+  )
+
+  const appliedParentChangesFullNames = new Set(
+    appliedParentChanges.map(change => getChangeData(change).elemID.getFullName()),
+  )
+  const appliedStandaloneFieldsChanges = standaloneFieldsChanges.filter(change =>
+    appliedParentChangesFullNames.has(getParents(getChangeData(change))[0]?.elemID.getFullName()),
+  )
+
   return {
     errors: errors.concat(instancesWithNoParentErrors),
     appliedChanges: appliedExistingParentChanges.concat(appliedStandaloneFieldsChanges),
   }
-}
-
-const deployStandaloneFieldsChangesViaParent = async ({
-  changes,
-  changeGroup,
-  elementSource,
-  deployChangesFunc,
-}: {
-  changes: Change[]
-  changeGroup: ChangeGroup
-  elementSource: ReadOnlyElementsSource
-  deployChangesFunc: CustomDeployChangesFunc
-}): Promise<DeployResultWithLeftoverChanges> => {
-  const [relevantInstanceChanges, otherChanges] = _.partition(changes, isInstanceChangeOfRelevantTypes)
-  // We must specify an id for each field object on addition.
-  // Since they're not deployed on their own we should also make sure to update their matching changes with the id we generate.
-  const instanceNameToInternalId = Object.fromEntries(
-    relevantInstanceChanges.map(change => [
-      getChangeData(change).elemID.getFullName(),
-      getChangeData(change).value.id ?? uuid4(),
-    ]),
-  )
-  const parentToInstancesMap = await groupInstancesByParent(elementSource, instanceNameToInternalId)
-
-  const { uniqueParents, errors: instancesWithNoParentErrors } =
-    extractUniqueParentsFromInstanceChanges(relevantInstanceChanges)
-  const parentChanges = uniqueParents
-    .map(parent =>
-      setOrCreateParentChangeWithStandaloneFields({
-        parent,
-        parentToInstancesMap,
-        otherChanges,
-        instanceNameToInternalId,
-      }),
-    )
-    .filter(isDefined)
-  const changesToDeploy = parentChanges.map(({ parentChange }) => parentChange)
-
-  const calculateDeployResultLocal = (deployResult: DeployResult): DeployResultWithLeftoverChanges => ({
-    deployResult: calculateDeployResult({
-      deployResult,
-      parentChanges,
-      relevantInstanceChanges,
-      instancesWithNoParentErrors,
-      instanceNameToInternalId,
-    }),
-    leftoverChanges: otherChanges,
-  })
-
-  if (_.isEmpty(changesToDeploy)) {
-    return calculateDeployResultLocal({ errors: [], appliedChanges: [] })
-  }
-
-  const deployResult = await deployChangesFunc({
-    changes: changesToDeploy,
-    changeGroup: {
-      ...changeGroup,
-      changes: changesToDeploy,
-    },
-  })
-
-  return calculateDeployResultLocal(deployResult)
 }
 
 /*
@@ -381,7 +376,7 @@ const addParentIdToChanges = async (changes: Change[]): Promise<void> => {
 }
 
 /**
- * Handles the duplications & deployment of 2 extracted fields from the application/service principal:
+ * Handles the duplications & deployment of 2 standalone fields extracted from the application/service principal:
  * - App roles
  * - OAuth2 permission scopes
  * We extract these fields to top level instances in order to be able to reference them.
@@ -435,26 +430,57 @@ export const entraApplicationStandaloneFieldsFilter: FilterCreator = ({
       }
     }
 
-    const deployChangesFunc: CustomDeployChangesFunc = ({
-      changes: adjustedChanges,
-      changeGroup: adjustedChangeGroup,
-    }) =>
-      deployment.deployChanges({
-        changes: adjustedChanges,
-        changeGroup: adjustedChangeGroup,
-        definitions: { deploy, ...otherDefs },
-        elementSource,
-        convertError: customConvertError,
-        changeResolver,
-        sharedContext,
-      })
+    const {
+      standaloneFieldsChanges,
+      existingParentChanges,
+      parentsWithStandaloneFieldsChanges,
+      otherChanges,
+      instancesWithNoParentErrors,
+    } = partitionChanges(changes)
 
-    return deployStandaloneFieldsChangesViaParent({
-      changes,
-      changeGroup,
+    const changesToDeploy = await getChangesToDeploy({
+      standaloneFieldsChanges,
+      existingParentChanges,
+      parentsWithStandaloneFieldsChanges,
       elementSource,
-      deployChangesFunc,
     })
+
+    if (changesToDeploy.length === 0) {
+      return {
+        deployResult: {
+          appliedChanges: [],
+          errors: instancesWithNoParentErrors,
+        },
+        leftoverChanges: otherChanges,
+      }
+    }
+
+    const deployResult = await deployment.deployChanges({
+      changes: changesToDeploy,
+      changeGroup: {
+        ...changeGroup,
+        changes: changesToDeploy,
+      },
+      definitions: { deploy, ...otherDefs },
+      elementSource,
+      sharedContext,
+      convertError: customConvertError,
+      changeResolver,
+    })
+
+    deployResult.appliedChanges.forEach(revertChangesToParent)
+
+    const deployResultWithStandaloneFields = calculateDeployResult({
+      deployResult,
+      standaloneFieldsChanges,
+      existingParentChanges,
+      instancesWithNoParentErrors,
+    })
+
+    return {
+      deployResult: deployResultWithStandaloneFields,
+      leftoverChanges: otherChanges,
+    }
   },
   onDeploy: addParentIdToChanges,
 })

@@ -19,7 +19,7 @@ import {
   DeployResult,
   isModificationChange,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeDataSync, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, definitions, fetch } from '@salto-io/adapter-components'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { PAGINATION } from '../../../src/definitions/requests/pagination'
@@ -68,7 +68,6 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    mockDeployChanges.mockResolvedValue({ errors: [], appliedChanges: [] })
 
     const mockAddRequest = {
       request: {
@@ -204,7 +203,7 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
     })
 
     describe('when the standalone fields do not have parent application', () => {
-      it('should arbitrarily remove all but the first app role if none of them have an application parent', async () => {
+      it('should arbitrarily remove all but the first standalone field if none of them have an application parent', async () => {
         const appRoleA = new InstanceElement('testAppRole', appRoleType, { id: 'testAppRole' }, undefined, {
           [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(servicePrincipalType.elemID, servicePrincipalInstance),
         })
@@ -313,9 +312,11 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
             ].map(elem => elem.clone())
             elementsInElementSourceBeforeDeploy = elementsInElementSource.map(elem => elem.clone())
 
-            mockDeployChanges.mockImplementation(async ({ changes }) => ({
+            mockDeployChanges.mockImplementation(async ({ changes: receivedChanges }) => ({
               errors: [],
-              appliedChanges: changes,
+              appliedChanges: receivedChanges.map((change: Change<InstanceElement>) =>
+                applyFunctionToChangeDataSync(change, inst => inst.clone()),
+              ),
             }))
 
             filter = entraApplicationStandaloneFieldsFilter({
@@ -401,9 +402,11 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
               ].map(elem => elem.clone())
               elementsInElementSourceBeforeDeploy = elementsInElementSource.map(elem => elem.clone())
 
-              mockDeployChanges.mockImplementation(async ({ changes }) => ({
+              mockDeployChanges.mockImplementation(async ({ changes: receivedChanges }) => ({
                 errors: [],
-                appliedChanges: changes,
+                appliedChanges: receivedChanges.map((change: Change<InstanceElement>) =>
+                  applyFunctionToChangeDataSync(change, inst => inst.clone()),
+                ),
               }))
 
               filter = entraApplicationStandaloneFieldsFilter({
@@ -429,13 +432,12 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
                 result = await filter.deploy(changes, { changes, groupID: 'test' })
               })
 
-              it('should create and deploy a parent modification change with all its app roles', async () => {
+              it('should create and deploy a parent modification change with all its standalone fields', async () => {
                 const changesParam = mockDeployChanges.mock.calls[0][0].changes
                 expect(changesParam).toHaveLength(1)
                 const parentChange = changesParam[0] as ModificationChange<InstanceElement>
                 expect(isModificationChange(parentChange)).toBeTruthy()
                 const parentChangeData = getChangeData(parentChange)
-
                 expect(_.get(parentChangeData.value, APP_ROLES_FIELD_NAME)).toEqual(
                   expect.arrayContaining([
                     { id: 'appRoleA' },
@@ -479,21 +481,46 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
 
                 beforeEach(async () => {
                   parentChange = toChange({ after: parent })
-                  const changes = [otherChange, parentChange, appRoleChange, oauth2PermissionScopeChange]
+                  const clonedParentChange = applyFunctionToChangeDataSync(parentChange, inst => inst.clone())
+                  const changes = [
+                    otherChange,
+                    clonedParentChange,
+                    appRoleChange,
+                    appRoleChangeWithoutId,
+                    oauth2PermissionScopeChange,
+                  ]
                   result = await filter.deploy(changes, { changes, groupID: 'test' })
                 })
 
-                it('should update the original parent change to include the updated app roles', async () => {
+                it('should update the original parent change to include the updated standalone fields', async () => {
                   const changesParam = mockDeployChanges.mock.calls[0][0].changes
                   expect(changesParam).toHaveLength(1)
                   expect(changesParam[0].action).toEqual('add')
-                  expect(changesParam[0]).toEqual(parentChange)
+                  const parentChangeData: InstanceElement = getChangeData(changesParam[0])
+                  expect(_.get(parentChangeData.value, APP_ROLES_FIELD_NAME)).toEqual(
+                    expect.arrayContaining([
+                      { id: 'appRoleA' },
+                      { id: 'appRoleB' },
+                      { id: expect.stringMatching(/^[\w-]{36}$/), not_id: 'appRoleC' },
+                    ]),
+                  )
 
-                  expect(result.deployResult.appliedChanges).toEqual([
-                    parentChange,
-                    appRoleChange,
-                    oauth2PermissionScopeChange,
-                  ])
+                  const scopeFieldPath =
+                    parentTypeName === APPLICATION_TYPE_NAME
+                      ? [API_FIELD_NAME, OAUTH2_PERMISSION_SCOPES_FIELD_NAME]
+                      : [OAUTH2_PERMISSION_SCOPES_FIELD_NAME]
+                  expect(_.get(parentChangeData.value, scopeFieldPath)).toEqual(
+                    expect.arrayContaining([{ id: 'scopeA' }, { id: 'scopeB' }]),
+                  )
+
+                  expect(result.deployResult.appliedChanges).toEqual(
+                    expect.arrayContaining([
+                      parentChange,
+                      appRoleChange,
+                      appRoleChangeWithoutId,
+                      oauth2PermissionScopeChange,
+                    ]),
+                  )
                   expect(result.deployResult.errors).toHaveLength(0)
                   expect(result.leftoverChanges).toHaveLength(1)
                   expect(result.leftoverChanges[0]).toEqual(otherChange)
@@ -597,7 +624,9 @@ describe(entraApplicationStandaloneFieldsFilter.name, () => {
 
             mockDeployChanges.mockImplementation(async ({ changes: receivedChanges }) => ({
               errors: [],
-              appliedChanges: receivedChanges,
+              appliedChanges: receivedChanges.map((change: Change<InstanceElement>) =>
+                applyFunctionToChangeDataSync(change, inst => inst.clone()),
+              ),
             }))
 
             filter = entraApplicationStandaloneFieldsFilter({

@@ -61,54 +61,8 @@ type BuildLocalAdaptersConfigSourceParams = {
   envs: EnvConfig[]
 }
 
-const getBuildLocalAdaptersConfigSourceParams: (
-  baseDirOrParams: string | BuildLocalAdaptersConfigSourceParams,
-  remoteMapCreator?: remoteMap.RemoteMapCreator,
-  persistent?: boolean,
-  configTypes?: ObjectType[],
-  configOverrides?: DetailedChange[],
-) => BuildLocalAdaptersConfigSourceParams = (
-  baseDirOrParams,
-  remoteMapCreator,
-  persistent,
-  configTypes,
-  configOverrides,
-) => {
-  if (!_.isString(baseDirOrParams)) {
-    return baseDirOrParams
-  }
-  if (remoteMapCreator === undefined || persistent === undefined || configTypes === undefined) {
-    throw new Error('configTypes cannot be undefined')
-  }
-  return {
-    baseDir: baseDirOrParams,
-    remoteMapCreator,
-    persistent,
-    configTypes,
-    configOverrides,
-    envs: [],
-    adapterCreators: {},
-  }
-}
-// As a transitionary step, we support both a string input and an argument object
-export function buildLocalAdaptersConfigSource(
-  args: BuildLocalAdaptersConfigSourceParams,
-): Promise<acs.AdaptersConfigSource>
-// @deprecated
-export function buildLocalAdaptersConfigSource(
-  baseDir: string,
-  remoteMapCreator: remoteMap.RemoteMapCreator,
-  persistent: boolean,
-  configTypes: ObjectType[],
-  configOverrides?: DetailedChange[],
-): Promise<acs.AdaptersConfigSource>
-
 export async function buildLocalAdaptersConfigSource(
-  inputIaseDir: string | BuildLocalAdaptersConfigSourceParams,
-  inputRemoteMapCreator?: remoteMap.RemoteMapCreator,
-  inputPersistent?: boolean,
-  inputConfigTypes?: ObjectType[],
-  inputConfigOverrides?: DetailedChange[],
+  args: BuildLocalAdaptersConfigSourceParams,
 ): Promise<acs.AdaptersConfigSource> {
   const {
     baseDir,
@@ -118,13 +72,7 @@ export async function buildLocalAdaptersConfigSource(
     adapterCreators,
     configTypes = await getAdapterConfigsPerAccount(envs, adapterCreators),
     configOverrides = [],
-  } = getBuildLocalAdaptersConfigSourceParams(
-    inputIaseDir,
-    inputRemoteMapCreator,
-    inputPersistent,
-    inputConfigTypes,
-    inputConfigOverrides,
-  )
+  } = args
   return acs.buildAdaptersConfigSource({
     naclSource: await createNaclSource(baseDir, remoteMapCreator, persistent),
     ignoreFileChanges: false,

@@ -6,8 +6,6 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-// exported for backward compatibility
-export { getSupportedServiceAdapterNames, getAdapterConfigOptionsType } from '@salto-io/adapter-creators'
 export { Plan, PlanItem, ChangeWithDetails } from './src/core/plan'
 export { FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
@@ -25,7 +23,6 @@ export {
 } from './src/core/adapters/adapters'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export { RenameElementIdError } from './src/core/rename'
-export { getAdapterConfigsPerAccount, getCustomReferences } from './src/local-workspace/workspace'
 // Note: SALTO-7000: These are exported for backward compatibility
 export {
   localWorkspaceConfigSource,

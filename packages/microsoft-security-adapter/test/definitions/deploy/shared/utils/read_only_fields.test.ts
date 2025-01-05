@@ -9,7 +9,7 @@
 import {
   TYPE_NAME_TO_READ_ONLY_FIELDS_ADDITION,
   TYPE_NAME_TO_READ_ONLY_FIELDS_MODIFICATION,
-} from '../../../../../src/change_validators'
+} from '../../../../../src/change_validators/shared'
 import { omitReadOnlyFields } from '../../../../../src/definitions/deploy/shared/utils'
 import { contextMock, modificationChangeMock, removalChangeMock } from '../../../../mocks'
 

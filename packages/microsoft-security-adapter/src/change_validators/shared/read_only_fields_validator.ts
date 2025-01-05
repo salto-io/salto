@@ -62,9 +62,14 @@ const TYPE_NAME_TO_READ_ONLY_FIELDS: Record<string, ReadOnlyFieldDefinition[]> =
   [entraConstants.GROUP_TYPE_NAME]: [
     { fieldName: 'mail', verifyAdditionChanges: true },
     { fieldName: 'assignedLicenses', verifyAdditionChanges: true },
-    { fieldName: 'onPremisesProvisioningErrors', verifyAdditionChanges: true },
     { fieldName: 'proxyAddresses', verifyAdditionChanges: true },
     { fieldName: 'uniqueName', verifyAdditionChanges: true },
+    { fieldName: 'onPremisesDomainName' },
+    { fieldName: 'onPremisesNetBiosName' },
+    { fieldName: 'onPremisesProvisioningErrors' },
+    { fieldName: 'onPremisesSamAccountName' },
+    { fieldName: 'onPremisesSecurityIdentifier' },
+    { fieldName: 'onPremisesSyncEnabled' },
   ],
 
   /* Intune instances */

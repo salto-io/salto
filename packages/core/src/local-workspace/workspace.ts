@@ -151,7 +151,6 @@ export async function initLocalWorkspace(
   return localInitLocalWorkspace({
     baseDir,
     envName,
-    configTypes: Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
     stateStaticFilesSource,
     adapterCreators,
   })

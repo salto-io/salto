@@ -147,9 +147,7 @@ const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
     workspace = await initLocalWorkspace({
       baseDir,
       envName: 'dummy',
-      configTypes: [],
       adapterCreators,
-      getCustomReferences: async () => [],
     })
     return {
       errors: [],

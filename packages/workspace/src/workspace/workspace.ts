@@ -617,10 +617,10 @@ export async function loadWorkspace(
   inputCredentials?: ConfigSource,
   inputEnvironmentsSources?: EnvironmentsSources,
   inputRemoteMapCreator?: RemoteMapCreator,
-  inputIgnoreFileChanges = false,
-  inputPersistent = true,
-  inputMergedRecoveryMode: MergedRecoveryMode = 'rebuild',
-  inputGetCustomReferences: WorkspaceGetCustomReferencesFunc = async () => [],
+  inputIgnoreFileChanges?: boolean,
+  inputPersistent?: boolean,
+  inputMergedRecoveryMode?: MergedRecoveryMode,
+  inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
 ): Promise<Workspace> {
   const {
     config,
@@ -1742,7 +1742,7 @@ type initWorkspaceParams = {
   config: WorkspaceConfigSource
   adaptersConfig: AdaptersConfigSource
   credentials: ConfigSource
-  envs: EnvironmentsSources
+  environmentSources: EnvironmentsSources
   remoteMapCreator: RemoteMapCreator
   getCustomReferences?: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
@@ -1754,7 +1754,7 @@ const getInitWorkspaceParams: (
   config?: WorkspaceConfigSource,
   adaptersConfig?: AdaptersConfigSource,
   credentials?: ConfigSource,
-  envs?: EnvironmentsSources,
+  environmentSources?: EnvironmentsSources,
   remoteMapCreator?: RemoteMapCreator,
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
 ) => initWorkspaceParams = (
@@ -1763,7 +1763,7 @@ const getInitWorkspaceParams: (
   config,
   adaptersConfig,
   credentials,
-  envs,
+  environmentSources,
   remoteMapCreator,
   getCustomReferences,
 ) => {
@@ -1775,7 +1775,7 @@ const getInitWorkspaceParams: (
     config === undefined ||
     adaptersConfig === undefined ||
     credentials === undefined ||
-    envs === undefined ||
+    environmentSources === undefined ||
     remoteMapCreator === undefined
   ) {
     throw new Error('invalid params are undefined')
@@ -1786,7 +1786,7 @@ const getInitWorkspaceParams: (
     config,
     adaptersConfig,
     credentials,
-    envs,
+    environmentSources,
     remoteMapCreator,
     getCustomReferences,
     adapterCreators: {},
@@ -1822,7 +1822,7 @@ export async function initWorkspace(
     config,
     adaptersConfig,
     credentials,
-    envs,
+    environmentSources,
     remoteMapCreator,
     getCustomReferences,
     adapterCreators,
@@ -1846,7 +1846,7 @@ export async function initWorkspace(
     config,
     adaptersConfig,
     credentials,
-    environmentsSources: envs,
+    environmentsSources: environmentSources,
     remoteMapCreator,
     getCustomReferences,
     adapterCreators,

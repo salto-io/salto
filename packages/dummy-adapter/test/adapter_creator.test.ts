@@ -209,9 +209,7 @@ describe('adapter creator', () => {
         expect(mockedLocalWorkspace.initLocalWorkspace).toHaveBeenCalledWith({
           baseDir: 'some_path',
           envName: 'dummy',
-          configTypes: [],
           adapterCreators: expect.anything(),
-          getCustomReferences: expect.any(Function),
         })
       })
       it('should return no errors', () => {

@@ -2427,7 +2427,7 @@ salesforce.staticFile staticFileInstance {
         config: workspaceConf,
         adaptersConfig: mockAdaptersConfigSource(),
         credentials: mockCredentialsSource(),
-        envs: {
+        environmentSources: {
           commonSourceName: '',
           sources: {
             default: {

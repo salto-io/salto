@@ -32,6 +32,7 @@ import {
   WorkspaceGetCustomReferencesFunc,
 } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
+import { getSubtypes } from '@salto-io/adapter-utils'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { CONFIG_DIR_NAME, getLocalStoragePath } from './app_config'
 import { loadState } from './state'
@@ -322,10 +323,19 @@ export async function loadLocalWorkspace({
   }
 }
 
+const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
+  Object.fromEntries(
+    Object.entries(
+      _.mapValues(adapterCreators, adapterCreator =>
+        adapterCreator.configType ? [adapterCreator.configType, ...getSubtypes([adapterCreator.configType], true)] : [],
+      ),
+    ).filter(entry => entry[1].length > 0),
+  )
+
 type InitLocalWorkspaceParams = {
   baseDir: string
   envName?: string
-  configTypes: ObjectType[]
+  configTypes?: ObjectType[]
   getCustomReferences?: WorkspaceGetCustomReferencesFunc
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   adapterCreators: Record<string, Adapter>
@@ -365,14 +375,14 @@ export function initLocalWorkspace(args: InitLocalWorkspaceParams): Promise<Work
 export function initLocalWorkspace(
   baseDir: string,
   envName: string,
-  configTypes: ObjectType[],
+  configTypes?: ObjectType[],
   getCustomReferences?: WorkspaceGetCustomReferencesFunc,
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource,
 ): Promise<Workspace>
 
 export async function initLocalWorkspace(
   inputBaseDir: string | InitLocalWorkspaceParams,
-  inputEnvName = 'default',
+  inputEnvName?: string,
   inputConfigTypes?: ObjectType[],
   inputGetCustomReferences?: WorkspaceGetCustomReferencesFunc,
   inputStateStaticFilesSource?: staticFiles.StateStaticFilesSource,
@@ -381,7 +391,7 @@ export async function initLocalWorkspace(
     baseDir,
     envName = 'default',
     adapterCreators,
-    configTypes,
+    configTypes = Object.values(getAdaptersConfigTypesMap(adapterCreators)).flat(),
     getCustomReferences,
     stateStaticFilesSource,
   } = getInitLocalWorkspace(
@@ -433,7 +443,7 @@ export async function initLocalWorkspace(
       config: workspaceConfigSrc,
       adaptersConfig,
       credentials,
-      envs: elemSources,
+      environmentSources: elemSources,
       remoteMapCreator,
       getCustomReferences,
       adapterCreators,

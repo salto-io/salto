@@ -30,8 +30,8 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions }) => ({
       getInstanceName: async instance => instance.elemID.name,
       getIdFieldsByType: typeName =>
         configUtils.getConfigWithDefault(
-          oldApiDefinitions[API_DEFINITIONS_CONFIG].types[typeName]?.transformation,
-          oldApiDefinitions[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
+          oldApiDefinitions.types[typeName]?.transformation,
+          oldApiDefinitions.typeDefaults.transformation,
         ).idFields,
       idFieldsName: 'idFields',
       docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',

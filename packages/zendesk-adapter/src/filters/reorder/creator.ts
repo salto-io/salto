@@ -162,7 +162,7 @@ export const createReorderFilterCreator =
             elemID: getChangeData(change).elemID,
           })
         }
-        await deployFunc(change, client, oldApiDefinitions[API_DEFINITIONS_CONFIG])
+        await deployFunc(change, client, oldApiDefinitions)
       } catch (err) {
         if (!isSaltoError(err)) {
           throw err

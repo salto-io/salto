@@ -16,7 +16,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
   name: 'defaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const deployResult = await deployChanges(changes.filter(isInstanceChange), async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     return { deployResult, leftoverChanges: [] }
   },

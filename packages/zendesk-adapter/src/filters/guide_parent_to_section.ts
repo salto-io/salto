@@ -77,7 +77,7 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
         fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
       }
 
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, fieldsToIgnore)
+      await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
     })
     // need to deploy separately parent_section_id if exists since zendesk API does not support
     // parent_section_id if the data request has more fields in it.
@@ -101,7 +101,7 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
         await deployChange(
           toChange({ before: parentSectionInstanceBefore, after: parentSectionInstanceAfter }),
           client,
-          oldApiDefinitions.apiDefinitions,
+          oldApiDefinitions,
         )
       }
     })

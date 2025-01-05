@@ -92,7 +92,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === BUSINESS_HOURS_SCHEDULE_TYPE_NAME,
     )
     const deployResult = await deployChanges(scheduleChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, ['holidays'])
+      await deployChange(change, client, oldApiDefinitions, ['holidays'])
       await deployIntervals(client, change)
     })
     return { deployResult, leftoverChanges }

@@ -62,7 +62,7 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
       .map(createDiffOnlyChange)
 
     const tempDeployResult = await deployChanges(editedCustomRoleModificationChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     const deployedChangesElemId = new Set(
       tempDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),

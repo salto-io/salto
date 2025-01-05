@@ -23,7 +23,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName) && isInstanceChange(change),
     )
     const deployResult = await deployChanges(guideBrandedTypesChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, ['brand'])
+      await deployChange(change, client, oldApiDefinitions, ['brand'])
     })
     return { deployResult, leftoverChanges }
   },

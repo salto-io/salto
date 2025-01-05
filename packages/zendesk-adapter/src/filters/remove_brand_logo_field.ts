@@ -24,7 +24,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
     const deployResult = await deployChanges(brandChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
+      await deployChange(change, client, oldApiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
     })
     return { deployResult, leftoverChanges }
   },

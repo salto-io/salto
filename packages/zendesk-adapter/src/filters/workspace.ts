@@ -50,7 +50,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === WORKSPACE_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(workspaceChanges, async change => {
-      const response = await deployChange(change, client, oldApiDefinitions.apiDefinitions, ['selected_macros'])
+      const response = await deployChange(change, client, oldApiDefinitions, ['selected_macros'])
       // It's possible for the deployment to return with status 200 and still have errors.
       if (response !== undefined && !_.isArray(response) && response.errors !== undefined) {
         let errorMsg = 'Something went wrong'

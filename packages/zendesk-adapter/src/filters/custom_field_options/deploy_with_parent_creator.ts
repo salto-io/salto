@@ -81,12 +81,12 @@ export const createDeployOptionsWithParentCreator =
       })
 
       const deployResult = await deployChanges([...parentChanges, ...additionalParentChanges], async change => {
-        const response = await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+        const response = await deployChange(change, client, oldApiDefinitions)
         return addIdsToChildrenUponAddition({
           response,
           parentChange: change,
           childrenChanges,
-          apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
+          apiDefinitions: oldApiDefinitions,
           childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
           childUniqueFieldName: 'value',
         })

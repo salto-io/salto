@@ -27,7 +27,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       const clonedChange = await applyFunctionToChangeData(change, inst => inst.clone())
       const instance = getChangeData(clonedChange)
       instance.value.filter = instance.value.filter ?? { all: [], any: [] }
-      await deployChange(clonedChange, client, oldApiDefinitions.apiDefinitions)
+      await deployChange(clonedChange, client, oldApiDefinitions)
       getChangeData(change).value.id = instance.value.id
     })
     return { deployResult, leftoverChanges }

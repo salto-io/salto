@@ -327,7 +327,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       const response = await addAttachment(client, instance)
       addId({
         change,
-        apiDefinitions: oldApiDefinitions.apiDefinitions,
+        apiDefinitions: oldApiDefinitions,
         response: response.data,
         dataField: MACRO_ATTACHMENT_DATA_FIELD,
         addAlsoOnModification: true,
@@ -364,7 +364,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         .map(change => resolveChangeElement(change, lookupFunc))
         .toArray()
       const macroDeployResult = await deployChanges(resolvedParentChanges, async change => {
-        await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+        await deployChange(change, client, oldApiDefinitions)
       })
       return {
         deployResult: {

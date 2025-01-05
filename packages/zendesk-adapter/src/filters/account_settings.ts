@@ -41,7 +41,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
     const deployResult = await deployChanges(accountSettingChanges, async change => {
       const fieldsToIgnore =
         getChangeData(change).value.routing?.autorouting_tag === '' ? ['routing.autorouting_tag'] : []
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, fieldsToIgnore)
+      await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
     })
     return { deployResult, leftoverChanges }
   },

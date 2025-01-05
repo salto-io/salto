@@ -22,7 +22,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === ROUTING_ATTRIBUTE_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(relevantChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, ['values'])
+      await deployChange(change, client, oldApiDefinitions, ['values'])
     })
     return { deployResult, leftoverChanges }
   },

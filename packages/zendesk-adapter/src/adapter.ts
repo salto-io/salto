@@ -584,7 +584,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           getElemIdFunc: this.getElemIdFunc,
           elementSource: elementsSource,
           sharedContext: {},
-          oldApiDefinitions: this.userConfig,
+          oldApiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
           client: filterRunnerClient ?? this.client,
           brandIdToClient,
         },

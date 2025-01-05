@@ -58,7 +58,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       change => getChangeData(change).elemID.typeName === VIEW_TYPE_NAME && !isRemovalChange(change),
     )
     const deployResult = await deployChanges(viewChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, ['conditions', 'execution'])
+      await deployChange(change, client, oldApiDefinitions, ['conditions', 'execution'])
     })
     return { deployResult, leftoverChanges }
   },

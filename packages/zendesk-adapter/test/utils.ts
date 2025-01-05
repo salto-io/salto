@@ -12,7 +12,7 @@ import {
   elements as elementUtils,
   definitions as definitionsUtils,
 } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { FilterCreator } from '../src/filter'
@@ -39,7 +39,7 @@ export const createFilterCreatorParams = ({
     paginationFuncCreator: paginate,
   }),
   config = DEFAULT_CONFIG,
-  oldApiDefinitions = DEFAULT_CONFIG,
+  oldApiDefinitions = DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
   fetchQuery = elementUtils.query.createMockQuery(),
   elementSource = buildElementsSourceFromElements([]),
   brandIdToClient = {},

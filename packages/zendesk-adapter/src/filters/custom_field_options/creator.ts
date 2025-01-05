@@ -141,20 +141,18 @@ export const createCustomFieldOptionsFilterCreator =
         const deployResult = await deployChangesByGroups(
           [nonRemovalChanges, removalChanges] as Change<InstanceElement>[][],
           async change => {
-            await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+            await deployChange(change, client, oldApiDefinitions)
           },
         )
         return { deployResult, leftoverChanges }
       }
       const deployResult = await deployChanges(parentChanges, async change => {
-        const response = await deployChange(change, client, oldApiDefinitions.apiDefinitions, [
-          DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME,
-        ])
+        const response = await deployChange(change, client, oldApiDefinitions, [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME])
         return addIdsToChildrenUponAddition({
           response,
           parentChange: change,
           childrenChanges,
-          apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
+          apiDefinitions: oldApiDefinitions,
           childFieldName: CUSTOM_FIELD_OPTIONS_FIELD_NAME,
           childUniqueFieldName: 'value',
         })

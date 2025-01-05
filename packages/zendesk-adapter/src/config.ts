@@ -3232,12 +3232,6 @@ export const configType = createMatchingObjectType<Partial<OldZendeskConfig>>({
   },
 })
 
-export type FilterContext = {
-  [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]?: ZendeskDeployConfig
-  [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
-}
-
 export const validateFetchConfig = (
   fetchConfigPath: string,
   userFetchConfig: definitions.UserFetchConfig<{ customNameMappingOptions: never }>,

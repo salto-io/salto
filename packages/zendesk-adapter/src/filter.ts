@@ -7,9 +7,8 @@
  */
 import { filterUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
-import { OldZendeskConfig } from './config'
 import { ZendeskFetchOptions } from './definitions/types'
-import { ZendeskUserConfig } from './user_config'
+import { ZendeskApiConfig, ZendeskUserConfig } from './user_config'
 
 export const { filterRunner } = filterUtils
 
@@ -22,7 +21,7 @@ export type FilterAdditionalParams = {
   fetchQuery: elementUtils.query.ElementQuery
   client: ZendeskClient
   paginator: clientUtils.Paginator
-  oldApiDefinitions: OldZendeskConfig
+  oldApiDefinitions: ZendeskApiConfig
 }
 
 export type FilterCreator = filterUtils.AdapterFilterCreator<

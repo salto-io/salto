@@ -31,7 +31,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       if (instance.value.password) {
         delete instance.value.password
       }
-      await deployChange(clonedChange, client, oldApiDefinitions.apiDefinitions)
+      await deployChange(clonedChange, client, oldApiDefinitions)
       getChangeData(change).value.id = getChangeData(clonedChange).value.id
     })
     return { deployResult, leftoverChanges }

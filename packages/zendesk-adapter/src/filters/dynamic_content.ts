@@ -97,11 +97,11 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
       clonedChangeData.value.name = placeholderToName(newPlaceholder)
       log.trace('Creating dynamic content item with placeholder %s', newPlaceholder)
       // addition change
-      const response = await deployChange(clonedAdditionChange, client, oldApiDefinitions.apiDefinitions)
+      const response = await deployChange(clonedAdditionChange, client, oldApiDefinitions)
       log.trace('Successfully created dynamic content item with placeholder %o', newPlaceholder)
 
       // must add ID before the modification change
-      addId({ response, change: clonedAdditionChange, apiDefinitions: oldApiDefinitions.apiDefinitions })
+      addId({ response, change: clonedAdditionChange, apiDefinitions: oldApiDefinitions })
       const afterChangeData = getChangeData(change)
       afterChangeData.value.id = getChangeData(clonedAdditionChange).value.id
       try {
@@ -109,18 +109,14 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         const result = await deployChange(
           { action: 'modify', data: { before: clonedChangeData, after: getChangeData(change) } },
           client,
-          oldApiDefinitions.apiDefinitions,
+          oldApiDefinitions,
         )
         log.trace('Successfully created dynamic content item %o', clonedChangeData.elemID.getFullName())
         return result
       } catch (modificationError) {
         // removal of failed modification
         try {
-          await deployChange(
-            { action: 'remove', data: { before: clonedChangeData } },
-            client,
-            oldApiDefinitions.apiDefinitions,
-          )
+          await deployChange({ action: 'remove', data: { before: clonedChangeData } }, client, oldApiDefinitions)
           log.warn(
             'Unable to modify dynamic content item %s, but removal was successful: %o',
             clonedChangeData.elemID.getFullName(),
@@ -165,7 +161,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
           variantRemovalChanges,
         ] as Change<InstanceElement>[][],
         async change => {
-          await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+          await deployChange(change, client, oldApiDefinitions)
         },
       )
       return { deployResult, leftoverChanges }
@@ -173,7 +169,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
     const deployResult = await deployChanges(itemChanges, async change => {
       const response = isAdditionOfAlteredDynamicContentItem(change)
         ? await alterDynamicContentAddition(change)
-        : await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+        : await deployChange(change, client, oldApiDefinitions)
       if (isSaltoError(response)) {
         throw response
       }
@@ -181,7 +177,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         response,
         parentChange: change,
         childrenChanges: variantChanges,
-        apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
+        apiDefinitions: oldApiDefinitions,
         childFieldName: VARIANTS_FIELD_NAME,
         childUniqueFieldName: 'locale_id',
       })

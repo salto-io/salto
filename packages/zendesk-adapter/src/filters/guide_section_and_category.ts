@@ -135,7 +135,7 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
         fieldsToIgnore.push(SOURCE_LOCALE_FIELD)
       }
 
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions, fieldsToIgnore)
+      await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
     })
     return { deployResult, leftoverChanges }
   },

@@ -112,7 +112,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client, elementSource
     const articleTranslationDeployResult = await deployChanges(
       defaultArticleTranslationModificationChanges,
       async change => {
-        await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+        await deployChange(change, client, oldApiDefinitions)
       },
     )
     const successfulModificationDeployChangesSet = new Set(

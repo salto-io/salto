@@ -130,10 +130,10 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, eleme
           newAfter !== undefined ? toChange({ before: change.data.before, after: newAfter }) : undefined
         if (intermediateChange !== undefined) {
           // first deploy is without the removed fields
-          await deployChange(intermediateChange, client, oldApiDefinitions.apiDefinitions)
+          await deployChange(intermediateChange, client, oldApiDefinitions)
         }
       }
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     const deployedChangesElemId = new Set(
       tempDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName()),

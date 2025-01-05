@@ -103,7 +103,7 @@ const filterCreator: FilterCreator = ({ client, oldApiDefinitions }) => ({
       change => CUSTOM_STATUS_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
     const customStatusesDeployResult = await deployChanges(customStatusChanges, async change => {
-      await deployChange(change, client, oldApiDefinitions.apiDefinitions)
+      await deployChange(change, client, oldApiDefinitions)
     })
     const [defaultCustomStatusChanges, leftoverChanges] = _.partition(
       firstLeftoverChanges,

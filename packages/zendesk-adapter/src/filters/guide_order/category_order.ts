@@ -54,7 +54,7 @@ const filterCreator: FilterCreator = ({ client, config, oldApiDefinitions }) => 
       changes: categoryOrderChange,
       orderField: CATEGORIES_FIELD,
       client,
-      config: oldApiDefinitions,
+      apiDefinitions: oldApiDefinitions,
     })
 
     return {

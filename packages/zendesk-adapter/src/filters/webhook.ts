@@ -73,7 +73,7 @@ const filterCreator: FilterCreator = ({ oldApiDefinitions, client }) => ({
         instance.value.authentication.data = placeholder
       }
       // Ignore external_source because it is impossible to deploy, the user was warned at externalSourceWebhook.ts
-      await deployChange(clonedChange, client, oldApiDefinitions.apiDefinitions, ['external_source'])
+      await deployChange(clonedChange, client, oldApiDefinitions, ['external_source'])
       getChangeData(change).value.id = getChangeData(clonedChange).value.id
     })
     return { deployResult, leftoverChanges }

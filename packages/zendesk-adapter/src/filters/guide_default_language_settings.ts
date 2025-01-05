@@ -119,7 +119,7 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, brand
           [change],
           // Deploying with the default_locale field does nothing, but we ignore it for safety
           async c => {
-            await deployChange(c, client, oldApiDefinitions.apiDefinitions, [DEFAULT_LOCALE])
+            await deployChange(c, client, oldApiDefinitions, [DEFAULT_LOCALE])
           },
         )
       })

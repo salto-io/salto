@@ -459,7 +459,7 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, eleme
         brandIdToClient,
         attachmentType,
         articleById,
-        apiDefinitions: oldApiDefinitions[API_DEFINITIONS_CONFIG],
+        apiDefinitions: oldApiDefinitions,
         attachments: isAttachments(attachments) ? attachments : [],
         config,
       })
@@ -514,7 +514,7 @@ const filterCreator: FilterCreator = ({ config, oldApiDefinitions, client, eleme
         if (shouldIgnoreUserSegment(change)) {
           fieldsToIgnore.push('user_segment_id')
         }
-        await deployChange(change, client, oldApiDefinitions.apiDefinitions, fieldsToIgnore)
+        await deployChange(change, client, oldApiDefinitions, fieldsToIgnore)
         const articleInstance = getChangeData(change)
         if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
           await associateAttachments(

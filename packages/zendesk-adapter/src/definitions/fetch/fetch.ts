@@ -2171,9 +2171,11 @@ const createCustomizations = (): Record<
 export const createFetchDefinitions = ({
   typesToOmit,
   typesToPick,
+  baseUrl,
 }: {
   typesToOmit?: string[]
   typesToPick?: string[]
+  baseUrl?: string
 }): definitions.fetch.FetchApiDefinitions<ZendeskFetchOptions> => {
   const initialCustomizations = createCustomizations()
   const withoutOmitted = typesToOmit !== undefined ? _.omit(initialCustomizations, typesToOmit) : initialCustomizations
@@ -2187,7 +2189,7 @@ export const createFetchDefinitions = ({
           onError: fetchUtils.errors.createGetInsufficientPermissionsErrorFunction([403]),
         },
         element: {
-          topLevel: { elemID: { parts: DEFAULT_ID_PARTS } },
+          topLevel: { elemID: { parts: DEFAULT_ID_PARTS }, serviceUrl: { baseUrl } },
           fieldCustomizations: DEFAULT_FIELD_CUSTOMIZATIONS,
         },
       },

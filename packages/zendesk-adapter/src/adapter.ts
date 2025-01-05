@@ -546,7 +546,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         pagination: PAGINATION,
         fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
           userElemID: _.omit(this.userConfig.fetch.elemID, typesToOmit) as ZendeskFetchConfig['elemID'],
-          fetchConfig: createFetchDefinitions({ typesToOmit }),
+          fetchConfig: createFetchDefinitions({ typesToOmit, baseUrl: this.client.getUrl().href }),
         }),
       },
       this.accountName,
@@ -720,7 +720,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
       const guideFetchDef = definitionsUtils.mergeWithUserElemIDDefinitions({
         userElemID: _.pick(this.userConfig.fetch.elemID, typesToPick) as ZendeskFetchConfig['elemID'],
-        fetchConfig: createFetchDefinitions({ typesToPick }),
+        fetchConfig: createFetchDefinitions({ typesToPick, baseUrl: this.client.getUrl().href }),
       })
       const guideDefinitions = {
         clients: client,
@@ -831,7 +831,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         pagination: PAGINATION,
         fetch: definitionsUtils.mergeWithUserElemIDDefinitions({
           userElemID: this.userConfig.fetch as ZendeskFetchConfig['elemID'],
-          fetchConfig: createFetchDefinitions({}),
+          fetchConfig: createFetchDefinitions({ baseUrl: this.client.getUrl().href }),
         }),
       },
       this.accountName,

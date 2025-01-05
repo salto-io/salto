@@ -27,7 +27,7 @@ export const createDefinitions = ({
 }): definitionsUtils.RequiredDefinitions<ZendeskFetchOptions> => ({
   clients: createClientDefinitions({ main: client, guide: client }),
   pagination: PAGINATION,
-  fetch: createFetchDefinitions({}),
+  fetch: createFetchDefinitions({ baseUrl: client.getUrl().href }),
 })
 
 export const createFilterCreatorParams = ({

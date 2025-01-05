@@ -81,10 +81,6 @@ const loadWorkspace = async ({ baseDir, persistent }: { baseDir: string; persist
   loadLocalWorkspace({
     path: baseDir,
     persistent,
-    getConfigTypes: async () => [],
-    getCustomReferences: async elements => getCustomReferences(elements),
-    // we pass slimAdapter as this is only used for getConfigTypes which currently as defined does nothing with it!!
-    // can't import adapterCreators here as we get circular dependency
     adapterCreators,
   })
 
@@ -142,8 +138,6 @@ const dumpElementsToFolder: AdapterFormat['dumpElementsToFolder'] = async ({ bas
 const initFolder: AdapterFormat['initFolder'] = async ({ baseDir }) => {
   let workspace: Workspace | undefined
   try {
-    // adapter creators uses a slimAdapter, for buildLocalAdaptersConfigSource it doesn't matter cause configTypes is defined
-    // for loadWorkspace it doesn't matter either cause we pass getCustomReferences which does nothing
     workspace = await initLocalWorkspace({
       baseDir,
       envName: 'dummy',

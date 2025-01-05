@@ -227,8 +227,6 @@ describe('local workspace', () => {
       await expect(
         loadLocalWorkspace({
           path: '.',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         }),
       ).rejects.toThrow(NotAWorkspaceError)
@@ -259,8 +257,6 @@ describe('local workspace', () => {
       it('should call loadWorkspace with correct input', async () => {
         await loadLocalWorkspace({
           path: '.',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         })
 
@@ -281,8 +277,6 @@ describe('local workspace', () => {
           await loadLocalWorkspace({
             path: '.',
             credentialSource,
-            getConfigTypes: async () => [],
-            getCustomReferences: async () => [],
             adapterCreators: mockAdapterCreator,
           })
         })
@@ -300,8 +294,6 @@ describe('local workspace', () => {
           await expect(
             loadLocalWorkspace({
               path: '.',
-              getConfigTypes: async () => [],
-              getCustomReferences: async () => [],
               adapterCreators: mockAdapterCreator,
             }),
           ).rejects.toThrow(new Error('oh no!'))
@@ -313,8 +305,6 @@ describe('local workspace', () => {
           await expect(
             loadLocalWorkspace({
               path: '.',
-              getConfigTypes: async () => [],
-              getCustomReferences: async () => [],
               adapterCreators: mockAdapterCreator,
             }),
           ).rejects.toThrow(new Error('oh no!'))
@@ -354,8 +344,6 @@ describe('local workspace', () => {
     it('should invoke the rename command on the dir stores after adding the local prefix to the env name', async () => {
       const workspace = await loadLocalWorkspace({
         path: '.',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
         adapterCreators: mockAdapterCreator,
       })
       await workspace.renameEnvironment('default', 'newEnvName')
@@ -399,8 +387,6 @@ describe('local workspace', () => {
       it('should successfully demote all without crashing', async () => {
         const workspace = await loadLocalWorkspace({
           path: '/west',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
@@ -435,8 +421,6 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(true)
         const workspace = await loadLocalWorkspace({
           path: '.',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
@@ -451,8 +435,6 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(false)
         const workspace = await loadLocalWorkspace({
           path: '/west',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         })
         await workspace.demoteAll()
@@ -490,8 +472,6 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(true)
         const workspace = await loadLocalWorkspace({
           path: '.',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         })
         await workspace.demoteAll()
@@ -505,8 +485,6 @@ describe('local workspace', () => {
         envIsEmpty.mockResolvedValueOnce(false)
         const workspace = await loadLocalWorkspace({
           path: '/west',
-          getConfigTypes: async () => [],
-          getCustomReferences: async () => [],
           adapterCreators: mockAdapterCreator,
         })
         await workspace.demoteAll()
@@ -547,8 +525,6 @@ describe('local workspace', () => {
       const mockLoad = ws.loadWorkspace as jest.Mock
       await loadLocalWorkspace({
         path: '.',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
         adapterCreators: mockAdapterCreator,
       })
       expect(mockLoad).toHaveBeenCalledTimes(1)
@@ -573,8 +549,6 @@ describe('local workspace', () => {
     it('calls workspace clear with the specified parameters and removes the empty envs folder', async () => {
       const workspace = await loadLocalWorkspace({
         path: '/west',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
         adapterCreators: mockAdapterCreator,
       })
       const args = {
@@ -596,8 +570,6 @@ describe('local workspace', () => {
       jest.spyOn(file.isEmptyDir, 'notFoundAsUndefined').mockReturnValueOnce(Promise.resolve(false))
       const workspace = await loadLocalWorkspace({
         path: '/west',
-        getConfigTypes: async () => [],
-        getCustomReferences: async () => [],
         adapterCreators: mockAdapterCreator,
       })
       const args = {

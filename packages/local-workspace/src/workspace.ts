@@ -25,7 +25,6 @@ import {
   COMMON_ENV_PREFIX,
   isValidEnvName,
   EnvironmentSource,
-  EnvConfig,
   buildStaticFilesCache,
   getBaseDirFromEnvName,
   getStaticFileCacheName,
@@ -230,8 +229,6 @@ type LoadLocalWorkspaceArgs = {
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   credentialSource?: cs.ConfigSource
   ignoreFileChanges?: boolean
-  getConfigTypes?: (envs: EnvConfig[], adapterCreators?: Record<string, Adapter>) => Promise<ObjectType[]>
-  getCustomReferences?: WorkspaceGetCustomReferencesFunc
   adapterCreators: Record<string, Adapter>
 }
 
@@ -242,7 +239,6 @@ export async function loadLocalWorkspace({
   credentialSource,
   stateStaticFilesSource,
   ignoreFileChanges = false,
-  getConfigTypes,
   adapterCreators,
 }: LoadLocalWorkspaceArgs): Promise<Workspace> {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
@@ -260,7 +256,6 @@ export async function loadLocalWorkspace({
       remoteMapCreator,
       persistent,
       envs: workspaceConfig.envs,
-      configTypes: await getConfigTypes?.(workspaceConfig.envs, adapterCreators),
       adapterCreators,
       configOverrides,
     })
@@ -321,7 +316,7 @@ export async function loadLocalWorkspace({
   }
 }
 
-const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
+export const getAdaptersConfigTypesMap = (adapterCreators: Record<string, Adapter>): Record<string, ObjectType[]> =>
   Object.fromEntries(
     Object.entries(
       _.mapValues(adapterCreators, adapterCreator =>

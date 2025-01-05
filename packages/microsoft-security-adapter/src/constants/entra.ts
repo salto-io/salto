@@ -18,11 +18,9 @@ export const SERVICE_BASE_URL = 'https://entra.microsoft.com'
 export const APP_ROLE_ASSIGNMENT_FIELD_NAME = 'appRoleAssignments'
 export const APP_ROLES_FIELD_NAME = 'appRoles'
 export const AUTHENTICATION_METHOD_CONFIGURATIONS_FIELD_NAME = 'authenticationMethodConfigurations'
-export const AUTHENTICATION_STRENGTH_FIELD_NAME = 'authenticationStrength'
 export const CUSTOM_SECURITY_ATTRIBUTE_ALLOWED_VALUES_FIELD_NAME = 'allowedValues'
 export const DELEGATED_PERMISSION_CLASSIFICATIONS_FIELD_NAME = 'delegatedPermissionClassifications'
 export const DOMAIN_NAME_REFERENCES_FIELD_NAME = 'domainNameReferences'
-export const GRANT_CONTROLS_FIELD_NAME = 'grantControls'
 export const GROUP_ADDITIONAL_DATA_FIELD_NAME = 'additionalData'
 export const GROUP_LIFE_CYCLE_POLICY_FIELD_NAME = 'lifeCyclePolicy'
 export const IDENTIFIER_URIS_FIELD_NAME = 'identifierUris'
@@ -31,7 +29,7 @@ export const PRE_AUTHORIZED_APPLICATIONS_FIELD_NAME = 'preAuthorizedApplications
 export const REQUIRED_RESOURCE_ACCESS_FIELD_NAME = 'requiredResourceAccess'
 
 // Paths to fields
-export const AUTHENTICATION_STRENGTH_PATH = [GRANT_CONTROLS_FIELD_NAME, AUTHENTICATION_STRENGTH_FIELD_NAME]
+export const AUTHENTICATION_STRENGTH_PATH = ['grantControls', 'authenticationStrength']
 
 /* Type names */
 // Top level

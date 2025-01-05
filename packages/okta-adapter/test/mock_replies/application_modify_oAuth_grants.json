@@ -14,7 +14,6 @@
           "type": "User"
         },
         "lastUpdated": "2025-01-01T11:36:31.000Z",
-        "issuer": "https://salto.okta.com",
         "clientId": "clientclientclientid",
         "scopeId": "okta.eventHooks.read",
         "source": "ADMIN"
@@ -28,7 +27,6 @@
           "type": "User"
         },
         "lastUpdated": "2024-12-31T13:12:45.000Z",
-        "issuer": "https://salto.okta.com",
         "clientId": "clientclientclientid",
         "scopeId": "okta.accessRequests.request.manage",
         "source": "ADMIN"
@@ -42,7 +40,6 @@
           "type": "User"
         },
         "lastUpdated": "2025-01-01T08:37:18.000Z",
-        "issuer": "https://salto.okta.com",
         "clientId": "clientclientclientid",
         "scopeId": "okta.accessRequests.catalog.read",
         "source": "ADMIN"
@@ -56,7 +53,6 @@
           "type": "User"
         },
         "lastUpdated": "2024-12-05T11:38:35.000Z",
-        "issuer": "https://salto.okta.com",
         "clientId": "clientclientclientid",
         "scopeId": "okta.deviceAssurance.read",
         "source": "ADMIN"
@@ -70,7 +66,6 @@
           "type": "User"
         },
         "lastUpdated": "2024-12-05T11:38:35.000Z",
-        "issuer": "https://salto.okta.com",
         "clientId": "clientclientclientid",
         "scopeId": "okta.deviceAssurance.manage",
         "source": "ADMIN"
@@ -107,7 +102,8 @@
       }
     },
     "body": {
-      "scopeId": "okta.scope"
+      "scopeId": "okta.scope",
+      "issuer": "https://example.com"
     },
     "reqHeaders": {
       "x-rate-limit-limit": "50",

@@ -50,7 +50,7 @@ import {
   ROLE_TYPE_NAME,
   APP_PROVISIONING_FIELD_NAMES,
   USER_ROLES_TYPE_NAME,
-  API_SCOPES,
+  API_SCOPES_FIELD_NAME,
 } from '../../constants'
 import {
   APP_POLICIES,
@@ -446,7 +446,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                     CUSTOM_NAME_FIELD,
                     ...APP_POLICIES,
                     ...APP_PROVISIONING_FIELD_NAMES,
-                    API_SCOPES,
+                    API_SCOPES_FIELD_NAME,
                   ],
                 },
               },
@@ -474,7 +474,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
               condition: {
                 skipIfIdentical: true,
                 transformForCheck: {
-                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES, API_SCOPES],
+                  omit: [...APP_POLICIES, ...APP_PROVISIONING_FIELD_NAMES, API_SCOPES_FIELD_NAME],
                 },
               },
               request: {
@@ -503,7 +503,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
                           CUSTOM_NAME_FIELD,
                           ...APP_POLICIES,
                           ...APP_PROVISIONING_FIELD_NAMES,
-                          API_SCOPES,
+                          API_SCOPES_FIELD_NAME,
                         ]),
                       },
                     }
@@ -599,7 +599,7 @@ const createCustomizations = (): Record<string, InstanceDeployApiDefinitions> =>
           changeIdFields: [],
         },
         {
-          fieldPath: [API_SCOPES],
+          fieldPath: [API_SCOPES_FIELD_NAME],
           typeName: 'OAuth2ScopeConsentGrant',
           changeIdFields: GRANTS_CHANGE_ID_FIELDS,
         },

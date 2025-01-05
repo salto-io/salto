@@ -6,7 +6,7 @@
  * CERTAIN THIRD PARTY SOFTWARE MAY BE CONTAINED IN PORTIONS OF THE SOFTWARE. See NOTICE FILE AT https://github.com/salto-io/salto/blob/main/NOTICES
  */
 
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { definitions } from '@salto-io/adapter-components'
 import {
   Change,
@@ -27,8 +27,10 @@ import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
 import { ClientOptions } from '../../types'
 import { CUSTOM_NAME_FIELD, DOMAIN_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME } from '../../../constants'
+import { isDefaultDomain } from '../../fetch/types/domain'
 
 const { isDefined } = values
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const createDeployAppPolicyRequest = (
@@ -95,9 +97,11 @@ export const getSubdomainFromElementsSource = async (
  * This is necessary because the default domain varies across environments and isn't multi-environment friendly.
  */
 export const getIssuerField = async (elementsSource: ReadOnlyElementsSource): Promise<string | undefined> => {
-  const defaultDomainInstance = await elementsSource.get(
-    new ElemID(OKTA, DOMAIN_TYPE_NAME, 'instance', 'Default_Domain@s'),
-  )
+  const defaultDomainInstance = (await awu(await elementsSource.getAll())
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === DOMAIN_TYPE_NAME)
+    .filter(instance => isDefaultDomain(instance.value))
+    .toArray())?.[0]
 
   if (!isInstanceElement(defaultDomainInstance)) {
     log.error(`Failed to get ${DOMAIN_TYPE_NAME} instance, can not find domain`)

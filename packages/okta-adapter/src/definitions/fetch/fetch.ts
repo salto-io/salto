@@ -708,7 +708,7 @@ const createCustomizations = ({
           path: '/api/v1/apps/{appId}/grants',
         },
         transformation: {
-          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source'],
+          omit: ['_links', 'createdBy', 'status', 'created', 'lastUpdated', 'clientId', 'source','issuer'],
         },
       },
     ],
@@ -718,7 +718,6 @@ const createCustomizations = ({
     element: {
       fieldCustomizations: {
         id: { omit: true },
-        issuer: { omit: true }, // Omitted to ensure consistency across environments, as the issuer can differ between environments.
       },
     },
   },

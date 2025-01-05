@@ -2807,6 +2807,19 @@ describe('adapter', () => {
       })
       it('should successfully add oAuth2ScopeConsentGrant', async () => {
         loadMockReplies('application_modify_oAuth_grants.json')
+        const domainType = new ObjectType({
+          elemID: new ElemID(OKTA, DOMAIN_TYPE_NAME),
+          fields: {
+            id: {
+              refType: BuiltinTypes.SERVICE_ID,
+            },
+          },
+        })
+        const defaultDomain = new InstanceElement('emailDomain', domainType, {
+          domain: 'example.com',
+          id: 'default'
+        })
+        operations = createOperations([defaultDomain])
         const activeCustomApp = new InstanceElement('app', appType, {
           id: 'app-fakeid1',
           label: 'app1',

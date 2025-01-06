@@ -15,7 +15,7 @@ import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values
 const { awu } = collections.asynciterable
 
 describe('parsing errors', () => {
-  const INVALID_NACL_CONTENT_ERROR = 'Element has invalid nacl content'
+  const INVALID_NACL_CONTENT_ERROR = 'Element has invalid Nacl content'
   describe('general element block structure', () => {
     describe('no labels', () => {
       const nacl = `

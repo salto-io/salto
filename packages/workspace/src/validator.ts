@@ -65,10 +65,7 @@ export abstract class ValidationError
   }>
   implements SaltoElementError
 {
-  // eslint-disable-next-line class-methods-use-this
-  get message(): string {
-    return ERROR_MESSAGES.INVALID_NACL_CONTENT
-  }
+  message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`
@@ -347,10 +344,7 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     this.target = target
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  get message(): string {
-    return ERROR_MESSAGES.UNRESOLVED_REFERENCE
-  }
+  message = ERROR_MESSAGES.UNRESOLVED_REFERENCE
 }
 
 export const isUnresolvedRefError = (err: SaltoError): err is UnresolvedReferenceValidationError =>

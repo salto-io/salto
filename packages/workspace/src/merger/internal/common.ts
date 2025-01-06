@@ -19,10 +19,7 @@ export abstract class MergeError
   >
   implements SaltoElementError
 {
-  // eslint-disable-next-line class-methods-use-this
-  get message(): string {
-    return ERROR_MESSAGES.OTHER_ISSUES
-  }
+  message = ERROR_MESSAGES.INVALID_NACL_CONTENT
 
   get detailedMessage(): string {
     return `Error merging ${this.elemID.getFullName()}: ${this.error}`

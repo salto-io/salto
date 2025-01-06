@@ -45,7 +45,7 @@ import { createInMemoryElementSource } from '../src/workspace/elements_source'
 import { getFieldsAndAnnoTypes } from './utils'
 
 describe('Elements validation', () => {
-  const INVALID_NACL_CONTENT_ERROR = 'Element has invalid nacl content'
+  const INVALID_NACL_CONTENT_ERROR = 'Element has invalid Nacl content'
   const metaElemID = new ElemID('salto', 'meta')
   const baseElemID = new ElemID('salto', 'simple')
   const metaType = new ObjectType({

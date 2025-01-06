@@ -683,7 +683,8 @@ describe('workspace', () => {
       expect(errors.hasErrors()).toBeTruthy()
       const err = 'Expected block labels, found { instead.'
       expect(errors.strings()[0]).toMatch(err)
-      expect(errors.parse[0].message).toMatch(err)
+      expect(errors.parse[0].message).toMatch('Element has invalid Nacl content')
+      expect(errors.parse[0].detailedMessage).toMatch(err)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
       const workspaceErrors = await Promise.all(wu(errors.all()).map(error => erroredWorkspace.transformError(error)))
@@ -4111,7 +4112,7 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(objInstToUpdateErr).toBeDefined()
-      expect(objInstToUpdateErr?.message).toContain('Element has invalid nacl content')
+      expect(objInstToUpdateErr?.message).toContain('Element has invalid Nacl content')
       expect(objInstToUpdateErr?.detailedMessage).toContain('Invalid value type for string')
     })
     it('create validation errors where the updated elements are used as value type', () => {
@@ -4120,7 +4121,7 @@ salesforce.staticFile staticFileInstance {
       )
 
       expect(usedAsTypeErr).toBeDefined()
-      expect(usedAsTypeErr?.message).toMatch('Element has invalid nacl content')
+      expect(usedAsTypeErr?.message).toMatch('Element has invalid Nacl content')
       expect(usedAsTypeErr?.detailedMessage).toContain('Invalid value type for salto.prim')
     })
     it('create validation errors where the updated elements are used as references', () => {
